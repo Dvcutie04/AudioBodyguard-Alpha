@@ -1,0 +1,82 @@
+Audio Bodyguard: Gatekeeper Field-Test Simulation (V1)
+Line Spacing: 1.15
+Project Context
+This document contains the finalized Python simulation logic for the Audio Bodyguard (AQSS-36-OMEGA) Hazard Engine. This script is designed to run within the a-Shell environment on iOS to provide empirical validation of threat detection latency under adversarial conditions before hardware finalization.
+Simulation Script
+import numpy as np
+import time
+
+# --- CONSTANTS & CONFIGURATION ---
+# T: Threshold - The gatekeeper for haptic trigger
+# SR: Sample Rate (48kHz standard)
+# BS: Buffer Size (100ms window)
+T, SR, BS = 0.35, 48000, 4800
+
+def run_field_test():
+    # 1. GENERATE ADVERSARIAL SIGNAL (Test Case B: Masked Threat)
+    # -5dB SNR: Threat buried in 85dB noise floor
+    noise = np.random.normal(0, 0.1, BS)
+    threat = np.zeros(BS)
+    # Slow-rise threat starting at sample 2000 (approx 41.6ms)
+    threat[2000:2500] = np.linspace(0, 0.15, 500) 
+    signal = noise + threat
+
+    # 2. HAZARD ENGINE CORE LOGIC (Dual-State Manifold)
+    hf, hs, tau = 0.0, 0.0, 0.0
+    triggers = []
+
+    start_time = time.time()
+    for i, x in enumerate(signal):
+        # Entropy-driven Tau Warping
+        eg = abs(x) 
+        tau += 1.2 if eg < 0.05 else 0.8
+        
+        # Hazard Accumulation
+        hf = (hf * 0.7) + (eg * 0.3)  # H_fast (Transient)
+        hs = (hs * 0.98) + (eg * 0.02) # H_slow (Anchor)
+        
+        # Total Hazard Calculation
+        ht = (hf * 0.6) + (hs * 0.4)
+        
+        if ht > T:
+            triggers.append(i)
+    
+    end_time = time.time()
+    exec_us = (end_time - start_time) * 1000000
+
+    # 3. ANALYSIS & OUTPUT
+    print("-" * 30)
+    if triggers:
+        # Latency calculation relative to threat onset (sample 2000)
+        latency_ms = ((triggers[0] - 2000) / SR) * 1000
+        print(f"✅ THREAT DETECTED")
+        print(f"📊 Latency: {latency_ms:.2f} ms")
+    else:
+        print("❌ THREAT MISSED")
+    
+    print(f"⏱️ Final Tau (Warped Time): {tau:.2f}")
+    print(f"💻 Loop Execution: {exec_us:.0f} us")
+    print("-" * 30)
+
+if __name__ == "__main__":
+    run_field_test()
+
+
+Instructions for iOS Files App
+Copy: Select and copy the entire Python block above.
+Open Files App: Navigate to On My iPhone > a-Shell.
+Save: Create a new text file or overwrite the existing gatekeeper.py. Ensure the extension is .py and not .txt.
+Execute: Return to a-Shell and type python gatekeeper.py.
+Target Metrics
+Metric
+Target Value
+Critical Limit
+ 
+Detection Latency
+< 2.1 ms
+> 5.0 ms (Requires LUT Tuning)
+Execution Time
+< 185 µs (Per Cycle)
+> 250 µs (Hardware Bottleneck)
+
+

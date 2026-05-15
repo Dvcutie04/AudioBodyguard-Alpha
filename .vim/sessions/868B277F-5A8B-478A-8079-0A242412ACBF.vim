@@ -1,6 +1,6 @@
 " ~/Documents/.vim/sessions/868B277F-5A8B-478A-8079-0A242412ACBF.vim:
 " Vim session script.
-" Created by session.vim 2.12 on 27 April 2026 at 16:37:30.
+" Created by session.vim 2.12 on 07 May 2026 at 17:23:04.
 " Open this file in Vim and run :source % to restore your session.
 
 if exists('g:syntax_on') != 1 | syntax on | endif
@@ -17,7 +17,7 @@ let s:so_save = &g:so | let s:siso_save = &g:siso | setg so=0 siso=0 | setl so=-
 let v:this_session=expand("<sfile>:p")
 silent only
 silent tabonly
-cd ~/Documents/Audio-Bodyguard
+cd ~/Documents
 if expand('%') == '' && !&modified && line('$') <= 1 && getline(1) == ''
   let s:wipebuf = bufnr('%')
 endif
@@ -27,11 +27,11 @@ if &shortmess =~ 'A'
 else
   set shortmess=aoO
 endif
-badd +0 quantum_reasoner.py
+badd +0 AQSS-36-OMEGA/AudioBodyguard/abg_core.py
 argglobal
 %argdel
-$argadd quantum_reasoner.py
-edit quantum_reasoner.py
+$argadd AQSS-36-OMEGA/AudioBodyguard/abg_core.py
+edit AQSS-36-OMEGA/AudioBodyguard/abg_core.py
 argglobal
 setlocal fdm=manual
 setlocal fde=0
@@ -43,11 +43,11 @@ setlocal fdn=20
 setlocal fen
 silent! normal! zE
 let &fdl = &fdl
-let s:l = 1 - ((0 * winheight(0) + 12) / 24)
+let s:l = 11 - ((10 * winheight(0) + 13) / 27)
 if s:l < 1 | let s:l = 1 | endif
 keepjumps exe s:l
 normal! zt
-keepjumps 1
+keepjumps 11
 normal! 0
 tabnext 1
 if exists('s:wipebuf') && len(win_findbuf(s:wipebuf)) == 0
