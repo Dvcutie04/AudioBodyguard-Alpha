@@ -1,32 +1,37 @@
 import numpy as np
 from sklearn.svm import SVC
-from typing import Tuple
 
-class QuantumFidelityKernel:
-    def __init__(self, n_qubits: int = 4, gamma: float = 1.0):
-        self.n_qubits = noqubits if 'noqubits' in locals() else n_qubits
-        self.gamma = gamma
+class QuantumKernel:
+    def __init__(self, n_qubits: int = 4):
+        self.n_qubits = n_qubits
 
-    def _quantum_feature_map(self, x: np.ndarray) -> np.ndarray:
-        return np.sin(x * np.pi / 2.0)
+    def _quantum_feature_map(self, x):
+        # Simulate quantum feature mapping state projection
+        angles = np.pi * x[:self.n_qubits]
+        return np.cos(angles) + 1j * np.sin(angles)
 
-    def compute_kernel_matrix(self, X1: np.ndarray, X2: np.ndarray) -> np.ndarray:
-        X1_mapped = self._quantum_feature_map(X1)
-        X2_mapped = self._quantum_feature_map(X2)
-        dists = np.linalg.norm(X1_mapped[: , np.newaxis] - X2_mapped[np.newaxis, :], axis=2)
-        return np.exp(-self.gamma * (dists ** 2))
+    def compute_kernel_matrix(self, X1, X2):
+        gram_matrix = np.zeros((len(X1), len(X2)))
+        for i, x1 in enumerate(X1):
+            phi1 = self._quantum_feature_map(x1)
+            for j, x2 in enumerate(X2):
+                phi2 = self._quantum_feature_map(x2)
+                # State fidelity overlap |<phi1|phi2>|^2
+                gram_matrix[i, j] = np.abs(np.vdot(phi1, phi2)) ** 2 / (self.n_qubits ** 2)
+        return gram_matrix
 
-class QSUMClassifier:
-    def __init__(self, n_qubits: int = 4, C: float = 1.0):
-        self.qkernel = QuantumFidelityKernel(n_qubits=n_qubits)
-        self.model = SVC(kernel='precomputed', C=C)
+class QSVMClassifier:
+    def __init__(self, n_qubits: int = 4):
+        self.qkernel = QuantumKernel(n_qubits=n_qubits)
+        self.model = SVC(kernel="precomputed")
         self.X_train = None
 
-    def fit(self, X: np.ndarray, y: np.ndarray):
+    def fit(self, X, y):
         self.X_train = X
         K_train = self.qkernel.compute_kernel_matrix(X, X)
         self.model.fit(K_train, y)
+        return self
 
-    def predict(self, X: np.ndarray) -> np.ndarray:
-        K_test = self.qkernel.compute_kernel_matrix(X, self.X_train)
-        return self.model.predict(K_test)
+    def score(self, X_test, y_test):
+        K_test = self.qkernel.compute_kernel_matrix(X_test, self.X_train)
+        return self.model.score(K_test, y_test)
