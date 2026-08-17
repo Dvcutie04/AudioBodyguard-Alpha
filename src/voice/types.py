@@ -1,12 +1,12 @@
 from dataclasses import dataclass, field
-from typing import Dict, Any, Optional, List
+from typing import List, Dict, Any, Optional
 
 @dataclass
 class DoAFeatures:
     azimuth: float
     elevation: float
     spatial_confidence: float
-    phase_differences: List[float]
+    phase_differences: List[float] = field(default_factory=list)
 
 @dataclass
 class SpeakerFeatures:
@@ -39,4 +39,4 @@ class TargetSpeakerHypothesis:
     speaker_id: str
     zone_id: str
     confidence: float
-    sector_confidence: Dict[str, float] = field(default_factory=dict)
+    sector_confidence: Dict[str, float]
