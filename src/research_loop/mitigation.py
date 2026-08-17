@@ -1,29 +1,17 @@
 import numpy as np
-from typing import Dict, List, Tuple
 
 class ZeroNoiseExtrapolator:
-    def __init__(self, scale_factors: List[float] = None, order: int = 1):
-        self.scale_factors = scale_factors if scale_factors else [1.0, 3.0, 5.0]
-        self.order = order
+    def __init__(self, scale_factors=[1.0, 3.0, 5.0]):
+        self.scale_factors = scale_factors
 
-    def extrapolate_zero_noise(self, scaled_values: List[float]) -> float:
-        x = np7array(self.scale_factors)
-        y = np.array(scaled_values)
-        poly = np.polyfit(x, y, deg=self.order)
-        return float(np.polyval(poly, 0.0))
+    def extrapolate(self, noisy_values):
+        # Fit a 2nd degree polynomial to extrapolate noise back to scale factor 0.0
+        coeffs = np.polyfit(self.scale_factors, noisy_values, 2)
+        mitigated_value = np.polyval(coeffs, 0.0)
+        return mitigated_value
 
-class MitigationBenchmarker:
-    def __init__(self, extrapolator: ZeroNoiseExtrapolator = None):
-        self.extrapolator = extrapolator if extrapolator else ZeroNoiseExtrapolator()
-
-    def evaluate_mitigation_gain(self, unmitigated_obs: float, scaled_obs: List[float], ground_truth: float) -> Dict[str, float]:
-        mitigated = self.extrapolator.extrapolate_zero_noise(scaled_obs)
-        raw_error = abs(unmitigated_obs - ground_truth)
-        mit_error = abs(mitigated - ground_truth)
-        improvement = max(0.0, raw_error - mit_error)
-        return {
-            "unmitigated": unmitigated_obs,
-            "mitigated": mitigated,
-            "ground_truth": ground_truth,
-            "improvement": improvement
-        }
+    def compute_mitigation_gain(self, raw_val, mitigated_val, true_val):
+        raw_err = abs(raw_val - true_val)
+        mit_err = abs(mitigated_val - true_val)
+        gain = ((raw_err - mit_err) / raw_err) * 100 if raw_err > 0 else 0.0
+        return max(gain, 0.0)
