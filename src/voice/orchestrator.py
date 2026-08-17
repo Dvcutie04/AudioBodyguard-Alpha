@@ -2,16 +2,18 @@ import json
 from dataclasses import asdict
 from typing import Optional, Dict, Any
 
-from .types import SpatialEvidence, TemporalFeatures, TargetSpeakerHypothesis
+from .types import SpatialEvidence, TargetSpeakerHypothesis
 from .doa import DoAExtractor
 from .speaker import SpeakerExtractor
 from .room import RoomAcousticsExtractor
+from .temporal import TemporalTracker
 
 class SpatialVoiceEngine:
     def __init__(self):
         self.doa_extractor = DoAExtractor()
         self.speaker_extractor = SpeakerExtractor()
         self.room_extractor = RoomAcousticsExtractor()
+        self.temporal_tracker = TemporalTracker()
         self.certainty_threshold = 0.80
 
     def _extract_cheap_features(self, frame: Any) -> SpatialEvidence:
@@ -19,7 +21,7 @@ class SpatialVoiceEngine:
         single_channel = frame[0] if isinstance(frame, list) and frame and isinstance(frame[0], list) else frame
         speaker = self.speaker_extractor.extract(single_channel)
         room = self.room_extractor.extract(single_channel)
-        temporal = TemporalFeatures(voice_activity=True, continuity_score=0.95, trajectory={})
+        temporal = self.temporal_tracker.extract(single_channel, current_azimuth=doa.azimuth)
         return SpatialEvidence(doa=doa, speaker=speaker, room=room, temporal=temporal)
 
     def _fuse_evidence(self, evidence: SpatialEvidence) -> TargetSpeakerHypothesis:
@@ -27,7 +29,7 @@ class SpatialVoiceEngine:
         return TargetSpeakerHypothesis(
             speaker_id=evidence.speaker.speix_id,
             zone_id=f"sector_{evidence.doa.azimuth}",
-            confidence=confidence,
+            confidence=round(confidence, 2),
             sector_confidence={
                 "spatial": evidence.doa.spatial_confidence,
                 "speaker": evidence.speaker.embedding_confidence,
@@ -54,6 +56,6 @@ class SpatialVoiceEngine:
 
 if __name__ == "__main__":
     engine = SpatialVoiceEngine()
-    sample_frame = [[0.0] * 160, [0.0] * 160]
+    sample_frame = [[0.05] * 160, [0.05] * 160]
     result = engine.process_frame(sample_frame)
     print(json.dumps(result, indent=2))
