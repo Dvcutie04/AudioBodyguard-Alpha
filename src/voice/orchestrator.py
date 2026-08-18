@@ -8,14 +8,16 @@ from .speaker import SpeakerExtractor
 from .room import RoomAcousticsExtractor
 from .temporal import TemporalTracker
 from .fusion import DynamicFusionEngine
+from .separator import BaseSourceSeparator, NullSeparator
 
 class SpatialVoiceEngine:
-    def __init__(self):
+    def __init__(self, separator: Optional[BaseSourceSeparator] = None):
         self.doa_extractor = DoAExtractor()
         self.speaker_extractor = SpeakerExtractor()
         self.room_extractor = RoomAcousticsExtractor()
         self.temporal_tracker = TemporalTracker()
         self.fusion_engine = DynamicFusionEngine()
+        self.separator = separator or NullSeparator()
 
     def _extract_cheap_features(self, frame: Any) -> SpatialEvidence:
         doa = self.doa_extractor.extract(frame)
@@ -29,10 +31,18 @@ class SpatialVoiceEngine:
         evidence = self._extract_cheap_features(frame)
         hypothesis = self.fusion_engine.fuse(evidence)
         fallback_status = hypothesis.sector_confidence.get("fallback_active", False)
-        action_taken = "Executed Gated Source Separation" if fallback_status else "Processed Cheap Features"
+        
+        separation_result = None
+        if fallback_status:
+            separation_result = self.separator.separate(frame, evidence)
+            action_taken = f"Executed Gated Source Separation ({self.separator.__class__.__name__})"
+        else:
+            action_taken = "Processed Cheap Features"
+            
         return {
             "hypothesis": asdict(hypothesis),
             "edge_optimization": action_taken,
+            "separation_output": separation_result,
             "cheap_features": asdict(evidence)
         }
 
