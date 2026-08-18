@@ -1,53 +1,35 @@
-import json
-from dataclasses import asdict
-from typing import Optional, Dict, Any
-
-from .types import SpatialEvidence
-from .doa import DoAExtractor
-from .speaker import SpeakerExtractor
-from .room import RoomAcousticsExtractor
-from .temporal import TemporalTracker
-from .fusion import DynamicFusionEngine
-from .separator import BaseSourceSeparator, NullSeparator
+from src.voice.sensor_health import SensorHealthMonitor
+from src.voice.feature_fabric import FeatureFabric
+from src.voice.trust_router import TrustGradientRouter
+from src.voice.predictive_horizon import PredictiveHorizon
 
 class SpatialVoiceEngine:
-    def __init__(self, separator: Optional[BaseSourceSeparator] = None):
-        self.doa_extractor = DoAExtractor()
-        self.speaker_extractor = SpeakerExtractor()
-        self.room_extractor = RoomAcousticsExtractor()
-        self.temporal_tracker = TemporalTracker()
-        self.fusion_engine = DynamicFusionEngine()
-        self.separator = separator or NullSeparator()
+    def __init__(self):
+        self.health_monitor = SensorHealthMonitor()
+        self.fabric = FeatureFabric()
+        self.router = TrustGradientRouter()
+        self.horizon = PredictiveHorizon()
 
-    def _extract_cheap_features(self, frame: Any) -> SpatialEvidence:
-        doa = self.doa_extractor.extract(frame)
-        single_channel = frame[0] if isinstance(frame, list) and frame and isinstance(frame[0], list) else frame
-        speaker = self.speaker_extractor.extract(single_channel)
-        room = self.room_extractor.extract(single_channel)
-        temporal = self.temporal_tracker.extract(single_channel, current_azimuth=doa.azimuth)
-        return SpatialEvidence(doa=doa, speaker=speaker, room=room, temporal=temporal)
-
-    def process_frame(self, frame: Any) -> Dict[str, Any]:
-        evidence = self._extract_cheap_features(frame)
-        hypothesis = self.fusion_engine.fuse(evidence)
-        fallback_status = hypothesis.sector_confidence.get("fallback_active", False)
+    def process_frame(self, frame):
+        health = self.health_monitor.inspect_frame(frame)
+        if not health["healthy"]:
+            return {
+                "status": "FAULT_DETECTED",
+                "fault_reason": health["status"],
+                "route": "FAIL_SAFE_GATED",
+                "confidence": 1.0
+            }
         
-        separation_result = None
-        if fallback_status:
-            separation_result = self.separator.separate(frame, evidence)
-            action_taken = f"Executed Gated Source Separation ({self.separator.__class__.__name__})"
-        else:
-            action_taken = "Processed Cheap Features"
-            
+        features = self.fabric.extract_features(frame)
+        prediction = self.horizon.update_and_predict(features)
+        decision = self.router.evaluate(features)
+        
         return {
-            "hypothesis": asdict(hypothesis),
-            "edge_optimization": action_taken,
-            "separation_output": separation_result,
-            "cheap_features": asdict(evidence)
+            "energy": features["energy"],
+            "zero_crossings": features["zero_crossings"],
+            "route": decision["route"],
+            "confidence": decision["confidence"],
+            "trajectory": prediction["trajectory"],
+            "risk_score": prediction["risk_score"],
+            "status": "processed"
         }
-
-if __name__ == "__main__":
-    engine = SpatialVoiceEngine()
-    sample_frame = [[0.05] * 160, [0.05] * 160]
-    result = engine.process_frame(sample_frame)
-    print(json.dumps(result, indent=2))

@@ -11,14 +11,18 @@
 # hlsearch on (H) or off (h):
 ~h
 # Command Line History (newest to oldest):
+:q!
+|2,0,1786837757,,"q!"
+:SaveSession! 868B277F-5A8B-478A-8079-0A242412ACBF
+|2,0,1786837698,,"SaveSession! 868B277F-5A8B-478A-8079-0A242412ACBF"
+:wa
+|2,0,1786837697,,"wa"
+:q
+|2,0,1779232727,,"q"
+:qw
+|2,0,1779232718,,"qw"
 :wq
 |2,0,1777845013,,"wq"
-:SaveSession! 868B277F-5A8B-478A-8079-0A242412ACBF
-|2,0,1777844905,,"SaveSession! 868B277F-5A8B-478A-8079-0A242412ACBF"
-:wa
-|2,0,1777844905,,"wa"
-:q!
-|2,0,1777318868,,"q!"
 :'<,'>wq
 |2,0,1776711456,,"'<,'>wq"
 :wq).
@@ -35,24 +39,27 @@
 # Debug Line History (newest to oldest):
 
 # Registers:
-""1	CHAR	0
+""1	LINE	0
+	
+|3,1,1,1,1,0,1786837616,""
+"2	CHAR	0
 	q
 	
-|3,1,1,0,2,0,1777844931,"q",""
-"2	LINE	0
+|3,0,2,0,2,0,1777844931,"q",""
+"3	LINE	0
 	n quantum_reasoner.py
-|3,0,2,1,1,0,1777330958,"n quantum_reasoner.py"
-"3	CHAR	0
+|3,0,3,1,1,0,1777330958,"n quantum_reasoner.py"
+"4	CHAR	0
 	
 	
-|3,0,3,0,2,0,1777318634,"",""
-"4	LINE	0
-	404: Not Found
-|3,0,4,1,1,0,1777239489,"404: Not Found"
+|3,0,4,0,2,0,1777318634,"",""
 "5	LINE	0
-	import time, subprocess, os, re
-|3,0,5,1,1,0,1777229947,"import time, subprocess, os, re"
+	404: Not Found
+|3,0,5,1,1,0,1777239489,"404: Not Found"
 "6	LINE	0
+	import time, subprocess, os, re
+|3,0,6,1,1,0,1777229947,"import time, subprocess, os, re"
+"7	LINE	0
 	 
 	  print("--- SENTINEL V3 ACTIVE ---")
 	   
@@ -75,13 +82,13 @@
 	                                                                                                                                                                time.sleep(1)
 	                                                                                                                                                                 
 	
-|3,0,6,1,22,0,1777229806," ","  print(\"--- SENTINEL V3 ACTIVE ---\")","   ","    while True:","             try:","                          # Pinging Google DNS to check CIT Internal gateway speed","                                   ping = subprocess.check_output(['ping', '-c', '1', '-W', '1', '8.8.8.8'], universal_newlines=True)","                                            ms = re.search(r'time=(\\d+\\.?\\d*)', ping).group(1)",>55
+|3,0,7,1,22,0,1777229806," ","  print(\"--- SENTINEL V3 ACTIVE ---\")","   ","    while True:","             try:","                          # Pinging Google DNS to check CIT Internal gateway speed","                                   ping = subprocess.check_output(['ping', '-c', '1', '-W', '1', '8.8.8.8'], universal_newlines=True)","                                            ms = re.search(r'time=(\\d+\\.?\\d*)', ping).group(1)",>55
 |<"                                                     ","                                                              status = \"GREEN\" if float(ms) < 150 else \"RED\"","                                                                       print(f\"[{time.strftime('%H:%M:%S')}] {status} | {ms}ms\")","                                                                                ",>114
 |<"                                                                                         if status == \"GREEN\":","                                                                                                          os.system('say Online')","                                                                                                                       ",>143
 |<"                                                                                                                            except Exception:","                                                                                                                                         print(\"Searching for network...\")","                                                                                                                                                  os.system('say Lost')",>157
 |<"                                                                                                                                                           ","                                                                                                                                                                time.sleep(1)",>163
 |<"                                                                                                                                                                 ",""
-"7	LINE	0
+"8	LINE	0
 	import time, subprocess, os, re
 	 
 	  # This part checks if your audio 'probe' is working
@@ -134,7 +141,7 @@
 	                                                                                                                                                          os.system('say Online')
 	                                                                                                                                                                           
 	                                                                                                                                                                                except Exception:
-|3,0,7,1,50,0,1777229396,"import time, subprocess, os, re"," ","  # This part checks if your audio 'probe' is working","   AUDIO_OK = (os.system('say probe >/dev/null 2>&1') == 0)","    print(f'--- SENTINEL ACTIVE (Audio: {AUDIO_OK}) ---')","     ","      while True:","               try:","                            # Checking the connection to the internet (Google DNS)",>144
+|3,0,8,1,50,0,1777229396,"import time, subprocess, os, re"," ","  # This part checks if your audio 'probe' is working","   AUDIO_OK = (os.system('say probe >/dev/null 2>&1') == 0)","    print(f'--- SENTINEL ACTIVE (Audio: {AUDIO_OK}) ---')","     ","      while True:","               try:","                            # Checking the connection to the internet (Google DNS)",>144
 |<"                                     ping_output = subprocess.check_output(['ping', '-c', '1', '-W', '1', '8.8.8.8'], universal_newlines=True)","                                              ms_match = re.search(r'time=(\\d+\\.?\\d*)', ping_output)","                                                       ","                                                                if ms_match:",>112
 |<"                                                                                 ms = float(ms_match.group(1))","                                                                                              # If the speed is fast (under 150ms), it's GREEN","                                                                                                           status = \"GREEN\" if ms < 150 else \"RED\"",>181
 |<"                                                                                                                        print(f\"[{time.strftime('%H:%M:%S')}] {status} | {ms}ms\")","                                                                                                                                     ",>198
@@ -149,48 +156,60 @@
 |<"                                                                                 ms = float(ms_match.group(1))","                                                                                              status = \"GREEN\" if ms < 150 else \"RED\"","                                                                                                           print(f\"[{time.strftime('%H:%M:%S')}] {status} | {ms}ms\")",>122
 |<"                                                                                                                        ","                                                                                                                                     if status == \"GREEN\":","                                                                                                                                                          os.system('say Online')",>173
 |<"                                                                                                                                                                           ","                                                                                                                                                                                except Exception:"
-"8	LINE	0
+"9	LINE	0
 	                                                                                                                                                                                                      os.system('say Lost')
 	                                                                                                                                                                                                               
 	                                                                                                                                                                                                                    time.sleep(0.5)
 	                                                                                                                                                                                                                     
 	
-|3,0,8,1,5,0,1777229076,"                                                                                                                                                                                                      os.system('say Lost')","                                                                                                                                                                                                               ",>229
+|3,0,9,1,5,0,1777229076,"                                                                                                                                                                                                      os.system('say Lost')","                                                                                                                                                                                                               ",>229
 |<"                                                                                                                                                                                                                    time.sleep(0.5)","                                                                                                                                                                                                                     ",""
-"9	LINE	0
-	686
-<import time, subprocess, os, re; AUDIO_OK = (os.system('say probe >/dev/null 2>&1') == 0); print(f'--- SENTINEL ACTIVE (Audio: {AUDIO_OK}) ---'); last = None; (os.system('say Online') if AUDIO_OK else None); [(print(f'[{time.strftime(\"%H:%M:%S\")}] {(\"GREEN\" if v and v < 150 else \"RED\")} | {v}ms'), (os.system('say Lost') if (not v or v > 300) and last == 'GREEN' else None), (os.system('say Online') if v and v < 150 and last != 'GREEN' else None)) for _ in iter(int, 1) for v in [next((float(re.search(r'time=(\d+\.?\d*)', subprocess.check_output(['ping', '-c', '1', '-W', '1', '8.8.8.8'], universal_newlines=True)).group(1)) for _ in [1] if time.sleep(0.5) or True), None)]]
-|3,0,9,1,1,0,1777228275,>700
-|<"import time, subprocess, os, re; AUDIO_OK = (os.system('say probe >/dev/null 2>&1') == 0); print(f'--- SENTINEL ACTIVE (Audio: {AUDIO_OK}) ---'); last = None; (os.system('say Online') if AUDIO_OK else None); [(print(f'[{time.strftime(\\\"%H:%M:%S\\\")}] {(\\\"GREEN\\\" if v and v < 150 else \\\"RED\\\")} | {v}ms'), (os.system('say Lost') if (not v or v > 300) and last == 'GREEN' else None), (os.system('say Online') if v and v < 150 and last != 'GREEN' else None)) for _ in iter(int, 1) 
-|<for v in [next((float(re.search(r'time=(\\d+\\.?\\d*)', subprocess.check_output(['ping', '-c', '1', '-W', '1', '8.8.8.8'], universal_newlines=True)).group(1)) for _ in [1] if time.sleep(0.5) or True), None)]]"
 "-	CHAR	0
 	q
 	
 |3,0,36,0,2,0,1777844931,"q",""
 
 # File marks:
-'0  19  0  ~/Documents/haptic_controller.py
-|4,48,19,0,1777845013,"~/Documents/haptic_controller.py"
-'1  19  0  ~/Documents/haptic_controller.py
-|4,49,19,0,1777845013,"~/Documents/haptic_controller.py"
-'2  1  0  ~/Documents/Audio-Bodyguard/quantum_reasoner.py
-|4,50,1,0,1777333089,"~/Documents/Audio-Bodyguard/quantum_reasoner.py"
-'3  34  0  ~/Documents/Audio-Bodyguard/quantum_reasoner.py
-|4,51,34,0,1777331013,"~/Documents/Audio-Bodyguard/quantum_reasoner.py"
-'4  34  0  ~/Documents/Audio-Bodyguard/quantum_reasoner.py
-|4,52,34,0,1777331013,"~/Documents/Audio-Bodyguard/quantum_reasoner.py"
-'5  32  0  ~/Documents/Audio-Bodyguard/quantum_reasoner.py
-|4,53,32,0,1777330675,"~/Documents/Audio-Bodyguard/quantum_reasoner.py"
-'6  32  0  ~/Documents/Audio-Bodyguard/quantum_reasoner.py
-|4,54,32,0,1777330675,"~/Documents/Audio-Bodyguard/quantum_reasoner.py"
-'7  32  0  ~/Documents/Audio-Bodyguard/quantum_reasoner.py
-|4,55,32,0,1777330675,"~/Documents/Audio-Bodyguard/quantum_reasoner.py"
-'8  32  0  ~/Documents/Audio-Bodyguard/quantum_reasoner.py
-|4,56,32,0,1777330675,"~/Documents/Audio-Bodyguard/quantum_reasoner.py"
-'9  114  0  ~/Documents/Audio-Bodyguard/core_v2.
-|4,57,114,0,1777318868,"~/Documents/Audio-Bodyguard/core_v2."
+'0  6  0  ~/Documents/scripts/send_home.py
+|4,48,6,0,1786837757,"~/Documents/scripts/send_home.py"
+'1  2  0  ~/Documents/tv.py
+|4,49,2,0,1779232727,"~/Documents/tv.py"
+'2  2  0  ~/Documents/tv.py
+|4,50,2,0,1779232727,"~/Documents/tv.py"
+'3  19  0  ~/Documents/haptic_controller.py
+|4,51,19,0,1777845013,"~/Documents/haptic_controller.py"
+'4  19  0  ~/Documents/haptic_controller.py
+|4,52,19,0,1777845013,"~/Documents/haptic_controller.py"
+'5  19  0  ~/Documents/haptic_controller.py
+|4,53,19,0,1777845013,"~/Documents/haptic_controller.py"
+'6  19  0  ~/Documents/haptic_controller.py
+|4,54,19,0,1777845013,"~/Documents/haptic_controller.py"
+'7  1  0  ~/Documents/Audio-Bodyguard/quantum_reasoner.py
+|4,55,1,0,1777333089,"~/Documents/Audio-Bodyguard/quantum_reasoner.py"
+'8  1  0  ~/Documents/Audio-Bodyguard/quantum_reasoner.py
+|4,56,1,0,1777333089,"~/Documents/Audio-Bodyguard/quantum_reasoner.py"
+'9  34  0  ~/Documents/Audio-Bodyguard/quantum_reasoner.py
+|4,57,34,0,1777331013,"~/Documents/Audio-Bodyguard/quantum_reasoner.py"
 
 # Jumplist (newest first):
+-'  6  0  ~/Documents/scripts/send_home.py
+|4,39,6,0,1786837757,"~/Documents/scripts/send_home.py"
+-'  1  0  ~/Documents/scripts/send_home.py
+|4,39,1,0,1786837439,"~/Documents/scripts/send_home.py"
+-'  2  0  ~/Documents/tv.py
+|4,39,2,0,1779232727,"~/Documents/tv.py"
+-'  2  0  ~/Documents/tv.py
+|4,39,2,0,1779232727,"~/Documents/tv.py"
+-'  1  0  ~/Documents/tv.py
+|4,39,1,0,1779232589,"~/Documents/tv.py"
+-'  1  0  ~/Documents/tv.py
+|4,39,1,0,1779232589,"~/Documents/tv.py"
+-'  19  0  ~/Documents/haptic_controller.py
+|4,39,19,0,1777845013,"~/Documents/haptic_controller.py"
+-'  19  0  ~/Documents/haptic_controller.py
+|4,39,19,0,1777845013,"~/Documents/haptic_controller.py"
+-'  19  0  ~/Documents/haptic_controller.py
+|4,39,19,0,1777845013,"~/Documents/haptic_controller.py"
 -'  19  0  ~/Documents/haptic_controller.py
 |4,39,19,0,1777845013,"~/Documents/haptic_controller.py"
 -'  19  0  ~/Documents/haptic_controller.py
@@ -199,16 +218,36 @@
 |4,39,16,0,1777844905,"~/Documents/haptic_controller.py"
 -'  16  0  ~/Documents/haptic_controller.py
 |4,39,16,0,1777844905,"~/Documents/haptic_controller.py"
+-'  16  0  ~/Documents/haptic_controller.py
+|4,39,16,0,1777844905,"~/Documents/haptic_controller.py"
+-'  16  0  ~/Documents/haptic_controller.py
+|4,39,16,0,1777844905,"~/Documents/haptic_controller.py"
+-'  16  0  ~/Documents/haptic_controller.py
+|4,39,16,0,1777844905,"~/Documents/haptic_controller.py"
 -'  1  0  ~/Documents/haptic_controller.py
 |4,39,1,0,1777844821,"~/Documents/haptic_controller.py"
 -'  1  0  ~/Documents/haptic_controller.py
 |4,39,1,0,1777844821,"~/Documents/haptic_controller.py"
+-'  1  0  ~/Documents/haptic_controller.py
+|4,39,1,0,1777844821,"~/Documents/haptic_controller.py"
+-'  1  0  ~/Documents/haptic_controller.py
+|4,39,1,0,1777844821,"~/Documents/haptic_controller.py"
+-'  1  0  ~/Documents/haptic_controller.py
+|4,39,1,0,1777844821,"~/Documents/haptic_controller.py"
 -'  1  0  ~/Documents/Audio-Bodyguard/quantum_reasoner.py
 |4,39,1,0,1777333089,"~/Documents/Audio-Bodyguard/quantum_reasoner.py"
 -'  1  0  ~/Documents/Audio-Bodyguard/quantum_reasoner.py
 |4,39,1,0,1777333089,"~/Documents/Audio-Bodyguard/quantum_reasoner.py"
 -'  1  0  ~/Documents/Audio-Bodyguard/quantum_reasoner.py
 |4,39,1,0,1777333089,"~/Documents/Audio-Bodyguard/quantum_reasoner.py"
+-'  1  0  ~/Documents/Audio-Bodyguard/quantum_reasoner.py
+|4,39,1,0,1777333089,"~/Documents/Audio-Bodyguard/quantum_reasoner.py"
+-'  1  0  ~/Documents/Audio-Bodyguard/quantum_reasoner.py
+|4,39,1,0,1777333089,"~/Documents/Audio-Bodyguard/quantum_reasoner.py"
+-'  1  0  ~/Documents/Audio-Bodyguard/quantum_reasoner.py
+|4,39,1,0,1777333089,"~/Documents/Audio-Bodyguard/quantum_reasoner.py"
+-'  1  0  ~/Documents/Audio-Bodyguard/quantum_reasoner.py
+|4,39,1,0,1777333089,"~/Documents/Audio-Bodyguard/quantum_reasoner.py"
 -'  34  0  ~/Documents/Audio-Bodyguard/quantum_reasoner.py
 |4,39,34,0,1777331013,"~/Documents/Audio-Bodyguard/quantum_reasoner.py"
 -'  34  0  ~/Documents/Audio-Bodyguard/quantum_reasoner.py
@@ -221,6 +260,34 @@
 |4,39,34,0,1777331013,"~/Documents/Audio-Bodyguard/quantum_reasoner.py"
 -'  34  0  ~/Documents/Audio-Bodyguard/quantum_reasoner.py
 |4,39,34,0,1777331013,"~/Documents/Audio-Bodyguard/quantum_reasoner.py"
+-'  34  0  ~/Documents/Audio-Bodyguard/quantum_reasoner.py
+|4,39,34,0,1777331013,"~/Documents/Audio-Bodyguard/quantum_reasoner.py"
+-'  34  0  ~/Documents/Audio-Bodyguard/quantum_reasoner.py
+|4,39,34,0,1777331013,"~/Documents/Audio-Bodyguard/quantum_reasoner.py"
+-'  34  0  ~/Documents/Audio-Bodyguard/quantum_reasoner.py
+|4,39,34,0,1777331013,"~/Documents/Audio-Bodyguard/quantum_reasoner.py"
+-'  34  0  ~/Documents/Audio-Bodyguard/quantum_reasoner.py
+|4,39,34,0,1777331013,"~/Documents/Audio-Bodyguard/quantum_reasoner.py"
+-'  34  0  ~/Documents/Audio-Bodyguard/quantum_reasoner.py
+|4,39,34,0,1777331013,"~/Documents/Audio-Bodyguard/quantum_reasoner.py"
+-'  34  0  ~/Documents/Audio-Bodyguard/quantum_reasoner.py
+|4,39,34,0,1777331013,"~/Documents/Audio-Bodyguard/quantum_reasoner.py"
+-'  34  0  ~/Documents/Audio-Bodyguard/quantum_reasoner.py
+|4,39,34,0,1777331013,"~/Documents/Audio-Bodyguard/quantum_reasoner.py"
+-'  32  0  ~/Documents/Audio-Bodyguard/quantum_reasoner.py
+|4,39,32,0,1777330817,"~/Documents/Audio-Bodyguard/quantum_reasoner.py"
+-'  32  0  ~/Documents/Audio-Bodyguard/quantum_reasoner.py
+|4,39,32,0,1777330817,"~/Documents/Audio-Bodyguard/quantum_reasoner.py"
+-'  32  0  ~/Documents/Audio-Bodyguard/quantum_reasoner.py
+|4,39,32,0,1777330817,"~/Documents/Audio-Bodyguard/quantum_reasoner.py"
+-'  32  0  ~/Documents/Audio-Bodyguard/quantum_reasoner.py
+|4,39,32,0,1777330817,"~/Documents/Audio-Bodyguard/quantum_reasoner.py"
+-'  32  0  ~/Documents/Audio-Bodyguard/quantum_reasoner.py
+|4,39,32,0,1777330817,"~/Documents/Audio-Bodyguard/quantum_reasoner.py"
+-'  32  0  ~/Documents/Audio-Bodyguard/quantum_reasoner.py
+|4,39,32,0,1777330817,"~/Documents/Audio-Bodyguard/quantum_reasoner.py"
+-'  32  0  ~/Documents/Audio-Bodyguard/quantum_reasoner.py
+|4,39,32,0,1777330817,"~/Documents/Audio-Bodyguard/quantum_reasoner.py"
 -'  32  0  ~/Documents/Audio-Bodyguard/quantum_reasoner.py
 |4,39,32,0,1777330817,"~/Documents/Audio-Bodyguard/quantum_reasoner.py"
 -'  32  0  ~/Documents/Audio-Bodyguard/quantum_reasoner.py
@@ -239,6 +306,24 @@
 |4,39,32,0,1777330675,"~/Documents/Audio-Bodyguard/quantum_reasoner.py"
 -'  32  0  ~/Documents/Audio-Bodyguard/quantum_reasoner.py
 |4,39,32,0,1777330675,"~/Documents/Audio-Bodyguard/quantum_reasoner.py"
+-'  32  0  ~/Documents/Audio-Bodyguard/quantum_reasoner.py
+|4,39,32,0,1777330675,"~/Documents/Audio-Bodyguard/quantum_reasoner.py"
+-'  32  0  ~/Documents/Audio-Bodyguard/quantum_reasoner.py
+|4,39,32,0,1777330675,"~/Documents/Audio-Bodyguard/quantum_reasoner.py"
+-'  32  0  ~/Documents/Audio-Bodyguard/quantum_reasoner.py
+|4,39,32,0,1777330675,"~/Documents/Audio-Bodyguard/quantum_reasoner.py"
+-'  1  0  ~/Documents/Audio-Bodyguard/quantum_reasoner.py
+|4,39,1,0,1777330450,"~/Documents/Audio-Bodyguard/quantum_reasoner.py"
+-'  1  0  ~/Documents/Audio-Bodyguard/quantum_reasoner.py
+|4,39,1,0,1777330450,"~/Documents/Audio-Bodyguard/quantum_reasoner.py"
+-'  1  0  ~/Documents/Audio-Bodyguard/quantum_reasoner.py
+|4,39,1,0,1777330450,"~/Documents/Audio-Bodyguard/quantum_reasoner.py"
+-'  1  0  ~/Documents/Audio-Bodyguard/quantum_reasoner.py
+|4,39,1,0,1777330450,"~/Documents/Audio-Bodyguard/quantum_reasoner.py"
+-'  1  0  ~/Documents/Audio-Bodyguard/quantum_reasoner.py
+|4,39,1,0,1777330450,"~/Documents/Audio-Bodyguard/quantum_reasoner.py"
+-'  1  0  ~/Documents/Audio-Bodyguard/quantum_reasoner.py
+|4,39,1,0,1777330450,"~/Documents/Audio-Bodyguard/quantum_reasoner.py"
 -'  1  0  ~/Documents/Audio-Bodyguard/quantum_reasoner.py
 |4,39,1,0,1777330450,"~/Documents/Audio-Bodyguard/quantum_reasoner.py"
 -'  1  0  ~/Documents/Audio-Bodyguard/quantum_reasoner.py
@@ -299,100 +384,28 @@
 |4,39,114,0,1777318868,"~/Documents/Audio-Bodyguard/core_v2."
 -'  114  0  ~/Documents/Audio-Bodyguard/core_v2.
 |4,39,114,0,1777318868,"~/Documents/Audio-Bodyguard/core_v2."
--'  56  2  ~/Documents/Audio-Bodyguard/core_v2.
-|4,39,56,2,1777318583,"~/Documents/Audio-Bodyguard/core_v2."
--'  56  2  ~/Documents/Audio-Bodyguard/core_v2.
-|4,39,56,2,1777318583,"~/Documents/Audio-Bodyguard/core_v2."
--'  56  2  ~/Documents/Audio-Bodyguard/core_v2.
-|4,39,56,2,1777318583,"~/Documents/Audio-Bodyguard/core_v2."
--'  56  2  ~/Documents/Audio-Bodyguard/core_v2.
-|4,39,56,2,1777318583,"~/Documents/Audio-Bodyguard/core_v2."
--'  56  2  ~/Documents/Audio-Bodyguard/core_v2.
-|4,39,56,2,1777318583,"~/Documents/Audio-Bodyguard/core_v2."
--'  56  2  ~/Documents/Audio-Bodyguard/core_v2.
-|4,39,56,2,1777318583,"~/Documents/Audio-Bodyguard/core_v2."
--'  56  2  ~/Documents/Audio-Bodyguard/core_v2.
-|4,39,56,2,1777318583,"~/Documents/Audio-Bodyguard/core_v2."
--'  56  2  ~/Documents/Audio-Bodyguard/core_v2.
-|4,39,56,2,1777318583,"~/Documents/Audio-Bodyguard/core_v2."
--'  56  2  ~/Documents/Audio-Bodyguard/core_v2.
-|4,39,56,2,1777318583,"~/Documents/Audio-Bodyguard/core_v2."
--'  56  2  ~/Documents/Audio-Bodyguard/core_v2.
-|4,39,56,2,1777318583,"~/Documents/Audio-Bodyguard/core_v2."
--'  56  2  ~/Documents/Audio-Bodyguard/core_v2.
-|4,39,56,2,1777318583,"~/Documents/Audio-Bodyguard/core_v2."
--'  56  2  ~/Documents/Audio-Bodyguard/core_v2.
-|4,39,56,2,1777318583,"~/Documents/Audio-Bodyguard/core_v2."
--'  56  2  ~/Documents/Audio-Bodyguard/core_v2.
-|4,39,56,2,1777318583,"~/Documents/Audio-Bodyguard/core_v2."
--'  56  2  ~/Documents/Audio-Bodyguard/core_v2.
-|4,39,56,2,1777318583,"~/Documents/Audio-Bodyguard/core_v2."
--'  56  2  ~/Documents/Audio-Bodyguard/core_v2.
-|4,39,56,2,1777318583,"~/Documents/Audio-Bodyguard/core_v2."
--'  56  2  ~/Documents/Audio-Bodyguard/core_v2.
-|4,39,56,2,1777318583,"~/Documents/Audio-Bodyguard/core_v2."
--'  56  2  ~/Documents/Audio-Bodyguard/core_v2.
-|4,39,56,2,1777318583,"~/Documents/Audio-Bodyguard/core_v2."
--'  56  2  ~/Documents/Audio-Bodyguard/core_v2.
-|4,39,56,2,1777318583,"~/Documents/Audio-Bodyguard/core_v2."
--'  56  2  ~/Documents/Audio-Bodyguard/core_v2.
-|4,39,56,2,1777318583,"~/Documents/Audio-Bodyguard/core_v2."
--'  56  2  ~/Documents/Audio-Bodyguard/core_v2.
-|4,39,56,2,1777318583,"~/Documents/Audio-Bodyguard/core_v2."
--'  56  2  ~/Documents/Audio-Bodyguard/core_v2.
-|4,39,56,2,1777318583,"~/Documents/Audio-Bodyguard/core_v2."
--'  56  2  ~/Documents/Audio-Bodyguard/core_v2.
-|4,39,56,2,1777318583,"~/Documents/Audio-Bodyguard/core_v2."
--'  56  2  ~/Documents/Audio-Bodyguard/core_v2.
-|4,39,56,2,1777318583,"~/Documents/Audio-Bodyguard/core_v2."
--'  56  2  ~/Documents/Audio-Bodyguard/core_v2.
-|4,39,56,2,1777318583,"~/Documents/Audio-Bodyguard/core_v2."
--'  1  0  ~/Documents/Audio-Bodyguard/core_v2.
-|4,39,1,0,1777318549,"~/Documents/Audio-Bodyguard/core_v2."
--'  1  0  ~/Documents/Audio-Bodyguard/core_v2.
-|4,39,1,0,1777318549,"~/Documents/Audio-Bodyguard/core_v2."
--'  1  0  ~/Documents/Audio-Bodyguard/core_v2.
-|4,39,1,0,1777318549,"~/Documents/Audio-Bodyguard/core_v2."
--'  1  0  ~/Documents/Audio-Bodyguard/core_v2.
-|4,39,1,0,1777318549,"~/Documents/Audio-Bodyguard/core_v2."
--'  1  0  ~/Documents/Audio-Bodyguard/core_v2.
-|4,39,1,0,1777318549,"~/Documents/Audio-Bodyguard/core_v2."
--'  1  0  ~/Documents/Audio-Bodyguard/core_v2.
-|4,39,1,0,1777318549,"~/Documents/Audio-Bodyguard/core_v2."
--'  1  0  ~/Documents/Audio-Bodyguard/core_v2.
-|4,39,1,0,1777318549,"~/Documents/Audio-Bodyguard/core_v2."
--'  1  0  ~/Documents/Audio-Bodyguard/core_v2.
-|4,39,1,0,1777318549,"~/Documents/Audio-Bodyguard/core_v2."
--'  1  0  ~/Documents/Audio-Bodyguard/core_v2.
-|4,39,1,0,1777318549,"~/Documents/Audio-Bodyguard/core_v2."
--'  1  0  ~/Documents/Audio-Bodyguard/core_v2.
-|4,39,1,0,1777318549,"~/Documents/Audio-Bodyguard/core_v2."
--'  1  0  ~/Documents/Audio-Bodyguard/core_v2.
-|4,39,1,0,1777318549,"~/Documents/Audio-Bodyguard/core_v2."
--'  1  0  ~/Documents/Audio-Bodyguard/core_v2.
-|4,39,1,0,1777318549,"~/Documents/Audio-Bodyguard/core_v2."
--'  1  0  ~/Documents/Audio-Bodyguard/core_v2.
-|4,39,1,0,1777318549,"~/Documents/Audio-Bodyguard/core_v2."
--'  1  0  ~/Documents/Audio-Bodyguard/core_v2.
-|4,39,1,0,1777318549,"~/Documents/Audio-Bodyguard/core_v2."
--'  1  0  ~/Documents/Audio-Bodyguard/core_v2.
-|4,39,1,0,1777318549,"~/Documents/Audio-Bodyguard/core_v2."
--'  1  0  ~/Documents/Audio-Bodyguard/core_v2.
-|4,39,1,0,1777318549,"~/Documents/Audio-Bodyguard/core_v2."
--'  1  0  ~/Documents/Audio-Bodyguard/core_v2.
-|4,39,1,0,1777318549,"~/Documents/Audio-Bodyguard/core_v2."
--'  1  0  ~/Documents/Audio-Bodyguard/core_v2.
-|4,39,1,0,1777318549,"~/Documents/Audio-Bodyguard/core_v2."
--'  1  0  ~/Documents/Audio-Bodyguard/core_v2.
-|4,39,1,0,1777318549,"~/Documents/Audio-Bodyguard/core_v2."
--'  1  0  ~/Documents/Audio-Bodyguard/core_v2.
-|4,39,1,0,1777318549,"~/Documents/Audio-Bodyguard/core_v2."
--'  1  0  ~/Documents/Audio-Bodyguard/core_v2.
-|4,39,1,0,1777318549,"~/Documents/Audio-Bodyguard/core_v2."
--'  1  0  ~/Documents/Audio-Bodyguard/core_v2.
-|4,39,1,0,1777318549,"~/Documents/Audio-Bodyguard/core_v2."
+-'  114  0  ~/Documents/Audio-Bodyguard/core_v2.
+|4,39,114,0,1777318868,"~/Documents/Audio-Bodyguard/core_v2."
+-'  114  0  ~/Documents/Audio-Bodyguard/core_v2.
+|4,39,114,0,1777318868,"~/Documents/Audio-Bodyguard/core_v2."
+-'  114  0  ~/Documents/Audio-Bodyguard/core_v2.
+|4,39,114,0,1777318868,"~/Documents/Audio-Bodyguard/core_v2."
+-'  114  0  ~/Documents/Audio-Bodyguard/core_v2.
+|4,39,114,0,1777318868,"~/Documents/Audio-Bodyguard/core_v2."
 
 # History of marks within files (newest to oldest):
+
+> ~/Documents/scripts/send_home.py
+	*	1786837743	0
+	"	6	0
+	^	5	0
+	.	5	0
+	+	4	3
+	+	5	0
+
+> ~/Documents/tv.py
+	*	1779232722	0
+	"	2	0
 
 > ~/Documents/haptic_controller.py
 	*	1777845008	0

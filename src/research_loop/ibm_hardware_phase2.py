@@ -1,3 +1,8 @@
+try:
+    from qiskit import QuantumCircuit, transpile
+    from qiskit.primitives import StatevectorSampler
+except ImportError:
+    QuantumCircuit = transpile = StatevectorSampler = None
 """
 Phase-2 IBM Hardware Execution Engine (AQSS-36-OMEGA)
 Handles Qiskit Runtime V2 execution with automated local simulation fallback.
@@ -7,8 +12,11 @@ import os
 from typing import List, Dict, Any, Tuple
 import numpy as np
 
-from qiskit import QuantumCircuit, transpile
-from qiskit.primitives import StatevectorSampler
+try:
+    from qiskit import QuantumCircuit, transpile
+except ImportError:
+    QuantumCircuit = None
+    transpile = None
 
 class IBMHardwareRunner:
     def __init__(self, backend_name: str = "ibm_brisbane", shots: int = 4096):

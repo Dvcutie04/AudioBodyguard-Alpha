@@ -1,1 +1,17 @@
-import os  def system_heartbeat():     # Using explicit spacing for a-Shell built-ins     os.system('play haptic --intensity 0.1 --pattern tick')  def process_motion_event(doppler_data):     velocity = doppler_data.get('velocity', 0)     if velocity > 5.0:         os.system('play haptic --intensity 1.0 --pattern heavy')     elif 1.0 < velocity <= 5.0:         os.system('play haptic --intensity 0.5 --pattern medium')     else:         system_heartbeat()  if __name__ == '__main__':     print('AQSS-36-OMEGA Haptic Bridge Active...')     system_heartbeat()
+import os
+
+def system_heartbeat():
+    os.system("say tick")
+
+def process_motion_event(d):
+    v = d.get("velocity", 0)
+    if v > 5.0:
+        os.system("say heavy")
+    elif 1.0 < v <= 5.0:
+        os.system("say medium")
+    else:
+        system_heartbeat()
+
+if __name__ == "__main__":
+    print("AQSS-36-OMEGA Haptic Bridge Active...")
+    system_heartbeat()
