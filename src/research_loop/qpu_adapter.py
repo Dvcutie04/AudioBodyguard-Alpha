@@ -2,7 +2,7 @@ import os
 
 class QPUAdapter:
     def __init__(self):
-        self.api_token = os.getenv( QQISKIT_IBM_TOKEN")
+        self.api_token = os.getenv("QISKIT_IBM_TOKEN")
         self.env = os.getenv("EXPERIMENT_ENV", "simulation")
 
     def submit_experiment(self, contract):
