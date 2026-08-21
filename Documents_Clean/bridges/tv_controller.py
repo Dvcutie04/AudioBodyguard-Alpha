@@ -1,0 +1,26 @@
+import socket
+import json
+
+class BaseTVController:
+    def __init__(self, ip_address):
+        self.ip_address = ip_address
+    def power_on(self):
+        raise NotImplementedError
+
+class TCLController(BaseTVController):
+    def power_on(self):
+        return {"device": "TCL Roku TV", "ip": self.ip_address, "action": "power_on", "status": "success"}
+
+class FireTVController(BaseTVController):
+    def power_on(self):
+        return {"device": "Fire TV Edition", "ip": self.ip_address, "action": "power_on", "status": "success"}
+
+class TVControllerFactory:
+    @staticmethod
+    def get_controller(brand, ip_address):
+        brand = brand.lower()
+        if brand == "tcl":
+            return TCLController(ip_address)
+        elif brand == "fire":
+            return FireTVController(ip_address)
+        raise ValueError(f"Unsupported TV brand: {brand}")
