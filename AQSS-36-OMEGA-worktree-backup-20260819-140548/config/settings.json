@@ -1,0 +1,1 @@
+{"trigger_confidence": 0.85, "debounce_ms": 120, "cooldown_ms": 250, "double_pulse_min_ms": 80, "double_pulse_max_ms": 400, "pattern_timeout_ms": 450}

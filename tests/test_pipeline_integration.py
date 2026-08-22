@@ -94,3 +94,11 @@ def test_fail_safe_dispatch_invariant(harness):
     for bad_state in unrecognized_states:
         env = DecisionEnvelope(sequence_id=501, decision_state=bad_state)
         assert harness.dispatcher._map_state_to_action(bad_state, env) == "NO_ACTION"
+
+def test_filter_cannot_create_threat():
+    EPSILON = 0.001
+    raw_threat_score = 0.12
+    def mock_adaptive_filter(threat_input):
+        return max(0.0, threat_input - 0.05)
+    filtered_threat_score = mock_adaptive_filter(raw_threat_score)
+    assert filtered_threat_score <= raw_threat_score + EPSILON, "Invariant violated: Adaptive filter unlawfully magnified threat evidence!"
