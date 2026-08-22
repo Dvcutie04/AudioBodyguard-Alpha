@@ -1,0 +1,98 @@
+[
+    {
+        "timestamp": "2026-08-21T17:55:58.016270",
+        "event": {
+            "db": 57.13,
+            "freq": 2551.65
+        },
+        "weights": {
+            "p_safe": 1.0,
+            "p_threat": 0.0,
+            "raw_event": {
+                "db": 57.13,
+                "freq": 2551.65
+            }
+        },
+        "decision": "LEVEL_0: FALSE_POSITIVE_SUPPRESSED"
+    },
+    {
+        "timestamp": "2026-08-21T17:56:27.256447",
+        "event": {
+            "db": 66.83,
+            "freq": 3933.99
+        },
+        "weights": {
+            "p_safe": 0.7723,
+            "p_threat": 0.2277,
+            "raw_event": {
+                "db": 66.83,
+                "freq": 3933.99
+            }
+        },
+        "decision": "LEVEL_1: LOW_CONFIDENCE_WARNING"
+    },
+    {
+        "timestamp": "2026-08-21T17:56:27.256932",
+        "event": {
+            "db": 91.2,
+            "freq": 3693.04
+        },
+        "weights": {
+            "p_safe": 0.0,
+            "p_threat": 1.0,
+            "raw_event": {
+                "db": 91.2,
+                "freq": 3693.04
+            }
+        },
+        "decision": "LEVEL_2: VERIFIED_SAFETY_THREAT_ESCALATION"
+    },
+    {
+        "timestamp": "2026-08-21T17:56:27.257150",
+        "event": {
+            "db": 64.16,
+            "freq": 906.85
+        },
+        "weights": {
+            "p_safe": 0.8613,
+            "p_threat": 0.1387,
+            "raw_event": {
+                "db": 64.16,
+                "freq": 906.85
+            }
+        },
+        "decision": "LEVEL_1: LOW_CONFIDENCE_WARNING"
+    },
+    {
+        "timestamp": "2026-08-21T17:56:27.257351",
+        "event": {
+            "db": 70.75,
+            "freq": 1289.43
+        },
+        "weights": {
+            "p_safe": 0.6417,
+            "p_threat": 0.3583,
+            "raw_event": {
+                "db": 70.75,
+                "freq": 1289.43
+            }
+        },
+        "decision": "LEVEL_1: LOW_CONFIDENCE_WARNING"
+    },
+    {
+        "timestamp": "2026-08-21T17:56:27.257577",
+        "event": {
+            "db": 80.74,
+            "freq": 344.95
+        },
+        "weights": {
+            "p_safe": 0.3087,
+            "p_threat": 0.6913,
+            "raw_event": {
+                "db": 80.74,
+                "freq": 344.95
+            }
+        },
+        "decision": "LEVEL_1: LOW_CONFIDENCE_WARNING"
+    }
+]

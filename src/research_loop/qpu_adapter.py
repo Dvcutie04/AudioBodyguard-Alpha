@@ -11,4 +11,5 @@ class QPUAdapter:
         return {"status": "routed_to_backend", "job_id": "mock_123"}
 
 if __name__ == '__main__':
-    print("QRU Adapter Initialized.")
+    print("QPU Adapter Initialized.")
+
