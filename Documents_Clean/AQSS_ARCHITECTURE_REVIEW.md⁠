@@ -1,51 +1,46 @@
-# AQSS-36-OMEGA — Principal Architecture Review & Policy Specification
+# AQSS-36-OMEGA — Exact UI/UX Visual Specification & Component Blueprint
 
-## Executive Assessment
-User reinforcement must never directly modify the threat detector or its safety invariants. It should modify a bounded policy-preference layer downstream of threat inference. This transforms the system from an unstable self-modifying safety engine into a constrained adaptive controller.
-
-### Core Architectural Flow
-Sensing → Feature Extraction → Threat Inference → Safety Governor → Adaptive Policy → User Feedback
+## Overview
+This document defines the exact visual parameters, color codes, geometries, and interactive states for the AQSS-36-OMEGA frontend interface, based on verified design mockups (Exhibits A, B, C, and custom control panels).
 
 ---
 
-## P0 Core Requirements & Invariants
+## 1. Global Sensitivity Bar Components
 
-1. **Separation of Concerns:** Threat inference (what is happening) is strictly decoupled from user preference (how the system should respond).
-2. **Safety Governor Authority:** The Safety Governor is mathematically authoritative over sensitivity. User settings cannot disable safety-critical threat detection.
-3. **Transactional Policy Updates:** Direct feedback mutation is replaced with a versioned update queue and transactional commits.
-4. **Bounded Learning & Hysteresis:** Incorporates clipping, mean reversion, and threshold hysteresis to prevent oscillation and calibration drift.
-5. **Epistemic Humility:** Feedback states include Agree, Disagree, and Unsure (`?`).
-6. **Authority Hierarchy:** 
-   $$\text{Safety} > \text{System Constraints} > \text{Explicit User Command} > \text{Learned Preference} > \text{Contextual Prediction}$$
+### Exhibit A: Standard Sensitivity Display
+* **Geometry:** Pill-shaped horizontal container with fully rounded capsule ends ($100\%$ border-radius). Divided into dual-tone layers.
+* **Color Fill (Left/Active Layer):** Soft pastel lavender / purple tint representing the active sensitivity threshold.
+* **Color Fill (Right/Remaining Layer):** Bright iOS-style vivid blue representing the remaining capacity.
+* **Marker Line:** A bold, solid black vertical indicator bar cleanly slicing through the transition point between the purple and blue fills.
+* **Percentage Label:** Bold, heavy-weight black digital typography displaying the exact value (`69%`) centered immediately below the bar geometry.
+
+### Exhibit B: Voice-Activated Listening Mode State
+* **Geometry:** Identical pill-shaped slider bar frame displaying the core `69%` metric with the dividing vertical black marker.
+* **Indicator Card:** Appended directly beneath the bar is an active state container featuring stacked vertical directional arrows (Bold purple chevron vectors pointing up and down simultaneously).
+* **Functionality:** Signals that the "ABG" spatial listening mode is engaged and awaiting or processing vocal adjustments.
+
+### Exhibit C: Custom Color-Themed Bar State
+* **Geometry:** Bounded vector bounding box featuring corner handles and a thin purple selection outline during editing.
+* **Color Palette Mapping:** Demonstrates custom theme application where the left track fill replaces lavender with deep solid black (`#010506`), juxtaposed against the bright blue right track fill, maintaining the central `69%` readout.
 
 ---
 
-## Recommended Module Structure
-```text
-src/
-├── policy/
-│   ├── global_sensitivity.py
-│   ├── policy_vector.py
-│   ├── context_profiles.py
-│   ├── hysteresis.py
-│   └── constraints.py
-├── inference/
-│   ├── acoustic_features.py
-│   ├── threat_model.py
-│   ├── confidence.py
-│   └── prediction.py
-├── governor/
-│   ├── safety_governor.py
-│   ├── action_authority.py
-│   └── safety_floor.py
-├── reinforcement/
-│   ├── feedback_event.py
-│   ├── feedback_validator.py
-│   ├── weighting.py
-│   ├── update_engine.py
-│   ├── stability.py
-│   └── rollback.py
-└── ux/
-    ├── sensitivity_controller.py
-    ├── voice_controller.py
-    └── feedback_controller.py
+## 2. Granular Controls & Color Picker Specifications
+
+### Transparency Control Panel (Exhibit D)
+* **Slider Track:** Horizontal light-gray continuous track with rounded terminal points and a subtle preset tick indicator near the minimum bound.
+* **Thumb Element:** Solid white circular draggable thumb handle featuring a soft drop shadow for elevation.
+* **Value Track Fill:** Vibrant solid purple fill spanning from the left origin to the current thumb position.
+* **Digital Stepper Control:** 
+  * Enclosed inside a rounded rectangular outline container beside the slider.
+  * Features a minimalist minus (`-`) touch target on the left, an explicit numeric read-out (`30`) centered, and a plus (`+`) touch target on the right for precise micro-adjustments.
+
+### Dark Azure Color & Spectrum Picker Interface
+* **Header Bar:** Features a clean title indicator ("Dark azure") and a confirmation checkmark icon (`✓`) on the right.
+* **2D Gradient Box:** A multi-dimensional color mapping box transitioning smoothly from pure white/gray at the top edge to deep dark azure/black at the bottom. Features a circular selection ring tracking the active coordinate.
+* **Hue Spectrum Bar:** A full-spectrum rainbow gradient bar running horizontally across the panel (Red → Yellow → Green → Cyan → Blue → Magenta → Red) with a central circular position selector ring.
+* **HEX Input Field:** 
+  * Enclosed in a pill-shaped border box with a circular color preview swatch on the left.
+  * Contains exact typography string code: `#010506`.
+  * Includes an active edit/eyedropper tool icon on the far right.
+
