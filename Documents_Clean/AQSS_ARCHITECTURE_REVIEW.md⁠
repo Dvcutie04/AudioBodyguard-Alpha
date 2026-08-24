@@ -1,0 +1,51 @@
+# AQSS-36-OMEGA — Principal Architecture Review & Policy Specification
+
+## Executive Assessment
+User reinforcement must never directly modify the threat detector or its safety invariants. It should modify a bounded policy-preference layer downstream of threat inference. This transforms the system from an unstable self-modifying safety engine into a constrained adaptive controller.
+
+### Core Architectural Flow
+Sensing → Feature Extraction → Threat Inference → Safety Governor → Adaptive Policy → User Feedback
+
+---
+
+## P0 Core Requirements & Invariants
+
+1. **Separation of Concerns:** Threat inference (what is happening) is strictly decoupled from user preference (how the system should respond).
+2. **Safety Governor Authority:** The Safety Governor is mathematically authoritative over sensitivity. User settings cannot disable safety-critical threat detection.
+3. **Transactional Policy Updates:** Direct feedback mutation is replaced with a versioned update queue and transactional commits.
+4. **Bounded Learning & Hysteresis:** Incorporates clipping, mean reversion, and threshold hysteresis to prevent oscillation and calibration drift.
+5. **Epistemic Humility:** Feedback states include Agree, Disagree, and Unsure (`?`).
+6. **Authority Hierarchy:** 
+   $$\text{Safety} > \text{System Constraints} > \text{Explicit User Command} > \text{Learned Preference} > \text{Contextual Prediction}$$
+
+---
+
+## Recommended Module Structure
+```text
+src/
+├── policy/
+│   ├── global_sensitivity.py
+│   ├── policy_vector.py
+│   ├── context_profiles.py
+│   ├── hysteresis.py
+│   └── constraints.py
+├── inference/
+│   ├── acoustic_features.py
+│   ├── threat_model.py
+│   ├── confidence.py
+│   └── prediction.py
+├── governor/
+│   ├── safety_governor.py
+│   ├── action_authority.py
+│   └── safety_floor.py
+├── reinforcement/
+│   ├── feedback_event.py
+│   ├── feedback_validator.py
+│   ├── weighting.py
+│   ├── update_engine.py
+│   ├── stability.py
+│   └── rollback.py
+└── ux/
+    ├── sensitivity_controller.py
+    ├── voice_controller.py
+    └── feedback_controller.py
