@@ -10,7 +10,7 @@ from src.edge.protocol import AcousticObservation, PrivacyStatus
 class TestBridgesModule(unittest.TestCase):
 
     def setUp(self):
-        # Base parameters with dummy digest placeholder
+        # 1. Base kwargs with a fixed-length dummy payload_digest
         base_kwargs = {
             "node_id": "edge_node_01",
             "sequence_id": 1,
@@ -24,20 +24,21 @@ class TestBridgesModule(unittest.TestCase):
             "payload_digest": "0000000000000000000000000000000000000000000000000000000000000000",
         }
 
-        # Calculate canonical SHA-256 digest of observation payload
+        # 2. Instantiate temporary observation to derive the target canonical hash structure
         temp_obs = AcousticObservation(**base_kwargs)
-        encoded_bytes = CanonicalCodec.encode_observation(temp_obs)
-        self.correct_digest = hashlib.sha256(encoded_bytes).hexdigest()
-
-        # Update base kwargs to use matching computed digest
-        base_kwargs["payload_digest"] = self.correct_digest
         
-        # Recalculate hash for final observation object so state matches payload content
-        final_obs = AcousticObservation(**base_kwargs)
-        final_bytes = CanonicalCodec.encode_observation(final_obs)
-        self.correct_digest = hashlib.sha256(final_bytes).hexdigest()
+        # 3. Calculate true SHA-256 over the canonical JSON bytes
+        calculated_hash = hashlib.sha256(CanonicalCodec.encode_observation(temp_obs)).hexdigest()
 
-        base_kwargs["payload_digest"] = self.correct_digest
+        # 4. Construct the final immutable observation with the matching payload_digest
+        base_kwargs["payload_digest"] = calculated_hash
+        self.obs = AcousticObservation(**base_kwargs)
+
+        # 5. Compute the actual final digest of self.obs for the envelope
+        final_digest = hashlib.sha256(CanonicalCodec.encode_observation(self.obs)).hexdigest()
+
+        # 6. Align self.obs payload_digest and envelope payload_digest to the true final digest
+        base_kwargs["payload_digest"] = final_digest
         self.obs = AcousticObservation(**base_kwargs)
 
         self.envelope = ObservationEnvelope(
@@ -46,7 +47,7 @@ class TestBridgesModule(unittest.TestCase):
             node_id="edge_node_01",
             sequence_id=1,
             monotonic_timestamp_ns=1000000000,
-            payload_digest=self.correct_digest,
+            payload_digest=final_digest,
             authentication_tag="dummy_mac_tag",
             payload=self.obs,
         )
@@ -70,4 +71,3 @@ class TestBridgesModule(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
-
