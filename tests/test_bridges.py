@@ -10,34 +10,26 @@ from src.edge.protocol import AcousticObservation, PrivacyStatus
 class TestBridgesModule(unittest.TestCase):
 
     def setUp(self):
-        # 1. Base kwargs with dummy payload_digest
-        base_kwargs = {
-            "node_id": "edge_node_01",
-            "sequence_id": 1,
-            "monotonic_timestamp_ns": 1000000000,
-            "spl_estimate": 60.0,
-            "event_class": "ambient",
-            "confidence": 1.0,
-            "temporal_metric": 0.5,
-            "privacy_status": PrivacyStatus.RAW_AUDIO_DEAD,
-            "feature_digest": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-            "payload_digest": "0000000000000000000000000000000000000000000000000000000000000000",
-        }
+        dummy_digest = "0000000000000000000000000000000000000000000000000000000000000000"
+        
+        # Initial observation object to calculate canonical string digest
+        temp_obs = AcousticObservation(
+            node_id="edge_node_01",
+            sequence_id=1,
+            monotonic_timestamp_ns=1000000000,
+            spl_estimate=60.0,
+            event_class="ambient",
+            confidence=1.0,
+            temporal_metric=0.5,
+            privacy_status=PrivacyStatus.RAW_AUDIO_DEAD,
+            feature_digest="e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            payload_digest=dummy_digest,
+        )
 
-        # 2. Derive initial target canonical digest
-        temp_obs = AcousticObservation(**base_kwargs)
-        calculated_hash = hashlib.sha256(CanonicalCodec.encode_observation(temp_obs)).hexdigest()
+        encoded_bytes = CanonicalCodec.encode_observation(temp_obs)
+        self.correct_digest = hashlib.sha256(encoded_bytes).hexdigest()
 
-        # 3. Apply calculated hash to base kwargs
-        base_kwargs["payload_digest"] = calculated_hash
-        self.obs = AcousticObservation(**base_kwargs)
-
-        # 4. Compute final exact hash of self.obs
-        final_digest = hashlib.sha256(CanonicalCodec.encode_observation(self.obs)).hexdigest()
-
-        # 5. Lock both observation and envelope to the true final digest
-        base_kwargs["payload_digest"] = final_digest
-        self.obs = AcousticObservation(**base_kwargs)
+        self.obs = temp_obs
 
         self.envelope = ObservationEnvelope(
             protocol_version=ProtocolVersion.AQSS_EDGE_OBSERVATION_V1,
@@ -45,7 +37,7 @@ class TestBridgesModule(unittest.TestCase):
             node_id="edge_node_01",
             sequence_id=1,
             monotonic_timestamp_ns=1000000000,
-            payload_digest=final_digest,
+            payload_digest=self.correct_digest,
             authentication_tag="dummy_mac_tag",
             payload=self.obs,
         )
