@@ -1,4 +1,3 @@
-test_hypothesis_gate.py
 from unittest import TestCase
 from src.omotenashi.hypothesis_gate import (
     HypothesisGate,
