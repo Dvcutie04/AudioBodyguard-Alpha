@@ -1,6 +1,7 @@
-      - name: Run Unit Test Suite
-        env:
-          PYTHONPATH: .
-        run: |
-          python -m unittest discover -s tests -p "test_*.py"
+- name: Run Unit Test Suite
+  env:
+    PYTHONPATH: .
+  run: |
+    python -m unittest discover -s tests -p "test_*.py"
+
 
