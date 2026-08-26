@@ -10,34 +10,35 @@ from src.edge.protocol import AcousticObservation, PrivacyStatus
 class TestBridgesModule(unittest.TestCase):
 
     def setUp(self):
-        self.obs = AcousticObservation(
-            node_id="edge_node_01",
-            sequence_id=1,
-            monotonic_timestamp_ns=1000000000,
-            spl_estimate=60.0,
-            event_class="ambient",
-            confidence=1.0,
-            temporal_metric=0.5,
-            privacy_status=PrivacyStatus.RAW_AUDIO_DEAD,
-            feature_digest="e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-            payload_digest="e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-        )
-        encoded_payload = CanonicalCodec.encode_observation(self.obs)
-        self.correct_digest = hashlib.sha256(encoded_payload).hexdigest()
+        # Base parameters with dummy digest placeholder
+        base_kwargs = {
+            "node_id": "edge_node_01",
+            "sequence_id": 1,
+            "monotonic_timestamp_ns": 1000000000,
+            "spl_estimate": 60.0,
+            "event_class": "ambient",
+            "confidence": 1.0,
+            "temporal_metric": 0.5,
+            "privacy_status": PrivacyStatus.RAW_AUDIO_DEAD,
+            "feature_digest": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "payload_digest": "0000000000000000000000000000000000000000000000000000000000000000",
+        }
 
-        # Re-instantiate observation with correct payload_digest for strict validator test
-        self.obs = AcousticObservation(
-            node_id="edge_node_01",
-            sequence_id=1,
-            monotonic_timestamp_ns=1000000000,
-            spl_estimate=60.0,
-            event_class="ambient",
-            confidence=1.0,
-            temporal_metric=0.5,
-            privacy_status=PrivacyStatus.RAW_AUDIO_DEAD,
-            feature_digest="e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-            payload_digest=self.correct_digest,
-        )
+        # Calculate canonical SHA-256 digest of observation payload
+        temp_obs = AcousticObservation(**base_kwargs)
+        encoded_bytes = CanonicalCodec.encode_observation(temp_obs)
+        self.correct_digest = hashlib.sha256(encoded_bytes).hexdigest()
+
+        # Update base kwargs to use matching computed digest
+        base_kwargs["payload_digest"] = self.correct_digest
+        
+        # Recalculate hash for final observation object so state matches payload content
+        final_obs = AcousticObservation(**base_kwargs)
+        final_bytes = CanonicalCodec.encode_observation(final_obs)
+        self.correct_digest = hashlib.sha256(final_bytes).hexdigest()
+
+        base_kwargs["payload_digest"] = self.correct_digest
+        self.obs = AcousticObservation(**base_kwargs)
 
         self.envelope = ObservationEnvelope(
             protocol_version=ProtocolVersion.AQSS_EDGE_OBSERVATION_V1,
@@ -69,3 +70,4 @@ class TestBridgesModule(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
