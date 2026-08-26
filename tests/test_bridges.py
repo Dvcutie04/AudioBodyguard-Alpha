@@ -10,7 +10,7 @@ from src.edge.protocol import AcousticObservation, PrivacyStatus
 class TestBridgesModule(unittest.TestCase):
 
     def setUp(self):
-        # 1. Base kwargs with a fixed-length dummy payload_digest
+        # 1. Base kwargs with dummy payload_digest
         base_kwargs = {
             "node_id": "edge_node_01",
             "sequence_id": 1,
@@ -24,20 +24,18 @@ class TestBridgesModule(unittest.TestCase):
             "payload_digest": "0000000000000000000000000000000000000000000000000000000000000000",
         }
 
-        # 2. Instantiate temporary observation to derive the target canonical hash structure
+        # 2. Derive initial target canonical digest
         temp_obs = AcousticObservation(**base_kwargs)
-        
-        # 3. Calculate true SHA-256 over the canonical JSON bytes
         calculated_hash = hashlib.sha256(CanonicalCodec.encode_observation(temp_obs)).hexdigest()
 
-        # 4. Construct the final immutable observation with the matching payload_digest
+        # 3. Apply calculated hash to base kwargs
         base_kwargs["payload_digest"] = calculated_hash
         self.obs = AcousticObservation(**base_kwargs)
 
-        # 5. Compute the actual final digest of self.obs for the envelope
+        # 4. Compute final exact hash of self.obs
         final_digest = hashlib.sha256(CanonicalCodec.encode_observation(self.obs)).hexdigest()
 
-        # 6. Align self.obs payload_digest and envelope payload_digest to the true final digest
+        # 5. Lock both observation and envelope to the true final digest
         base_kwargs["payload_digest"] = final_digest
         self.obs = AcousticObservation(**base_kwargs)
 
