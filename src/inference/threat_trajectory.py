@@ -3,6 +3,14 @@ from typing import List, Dict, Any
 
 
 @dataclass
+class TrajectoryState:
+    velocity: float = 0.0
+    acceleration: float = 0.0
+    predicted_threat: float = 0.0
+    trend: str = "stable"
+
+
+@dataclass
 class TrajectoryPoint:
     timestamp: float
     threat_level: float
@@ -14,7 +22,7 @@ class ThreatTrajectoryEngine:
         self.history_window = history_window
         self.history: List[TrajectoryPoint] = []
 
-    def update(self, threat_level: float, confidence: float, timestamp: float) -> Dict[str, Any]:
+    def update(self, threat_level: float, confidence: float, timestamp: float) -> TrajectoryState:
         point = TrajectoryPoint(timestamp=timestamp, threat_level=threat_level, confidence=confidence)
         self.history.append(point)
         if len(self.history) > self.history_window:
@@ -23,14 +31,14 @@ class ThreatTrajectoryEngine:
         velocity = self.calculate_velocity()
         acceleration = self.calculate_acceleration()
         predicted_threat = min(1.0, max(0.0, threat_level + velocity))
+        trend = "escalating" if velocity > 0.05 else ("de-escalating" if velocity < -0.05 else "stable")
 
-        return {
-            "trajectory_points": len(self.history),
-            "velocity": velocity,
-            "acceleration": acceleration,
-            "predicted_threat": predicted_threat,
-            "trend": "escalating" if velocity > 0.05 else ("de-escalating" if velocity < -0.05 else "stable")
-        }
+        return TrajectoryState(
+            velocity=velocity,
+            acceleration=acceleration,
+            predicted_threat=predicted_threat,
+            trend=trend,
+        )
 
     def calculate_velocity(self) -> float:
         if len(self.history) < 2:
