@@ -1,121 +1,103 @@
-import hashlib
-import json
-import time
 from dataclasses import dataclass, field
-from enum import Enum
-from typing import Optional
+from enum import Enum, auto
+from typing import Any, Dict, Optional
+import hashlib
+import time
+import uuid
+import json
 
+class TransactionState(Enum):
+    PENDING = auto()
+    LEASE_VALIDATED = auto()
+    SIMULATED = auto()
+    PRECHECK_PASSED = auto()
+    EXECUTING = auto()
+    COMMITTED = auto()
+    
+    # Terminal & Recovery States
+    FAILED_VERIFICATION = auto()
+    FAILED_DRIFT = auto()
+    FAILED_CAPABILITY = auto()
+    ROLLBACK_REQUIRED = auto()
+    ROLLED_BACK = auto()
+    RECOVERY_REQUIRED = auto()
+    PHYSICAL_STATE_UNKNOWN = auto()
 
-class DeviceType(Enum):
-    TV = "TV"
-    SMART_SPEAKER = "SMART_SPEAKER"
-    AV_RECEIVER = "AV_RECEIVER"
-
-
-class ActuationStatus(Enum):
-    PREPARED = "PREPARED"
-    EXECUTING = "EXECUTING"
-    EXECUTED = "EXECUTED"
-    OBSERVING = "OBSERVING"
-    VERIFIED = "VERIFIED"
-    ROLLED_BACK = "ROLLED_BACK"
-    ROLLBACK_FAILED = "ROLLBACK_FAILED"
-    ROLLBACK_UNAVAILABLE = "ROLLBACK_UNAVAILABLE"
-    REJECTED = "REJECTED"
-    FAILED = "FAILED"
-    VERIFICATION_MISMATCH = "VERIFICATION_MISMATCH"
-    VERIFICATION_TIMEOUT = "VERIFICATION_TIMEOUT"
-    CAPABILITY_REJECTED = "CAPABILITY_REJECTED"
-    IDEMPOTENCY_CONFLICT = "IDEMPOTENCY_CONFLICT"
-    DUPLICATE_ABSORBED = "DUPLICATE_ABSORBED"
-
-
-@dataclass(frozen=True)
-class DeviceIdentity:
-    device_id: str
-    device_type: DeviceType
-    manufacturer: str
-    model: str
-
-
-@dataclass(frozen=True)
-class DeviceCapabilities:
-    volume_absolute: bool = True
-    volume_delta: bool = True
-    mute: bool = True
-    power: bool = True
-    input_select: bool = False
-    max_volume_delta_db: float = 10.0
-    min_volume_db: float = 0.0
-    max_volume_db: float = 100.0
-
-    @property
-    def capability_digest(self) -> str:
-        payload = {
-            "volume_absolute": self.volume_absolute,
-            "volume_delta": self.volume_delta,
-            "mute": self.mute,
-            "power": self.power,
-            "input_select": self.input_select,
-            "max_volume_delta_db": self.max_volume_delta_db,
-            "min_volume_db": self.min_volume_db,
-            "max_volume_db": self.max_volume_db,
-        }
-        raw_json = json.dumps(payload, sort_keys=True)
-        return hashlib.sha256(raw_json.encode("utf-8")).hexdigest()
-
+class PreconditionStatus(Enum):
+    MATCH = auto()
+    DRIFT = auto()
+    STALE = auto()
+    UNKNOWN = auto()
+    MALFORMED = auto()
+    UNAVAILABLE = auto()
 
 @dataclass(frozen=True)
 class DeviceState:
-    power: bool
-    volume: float
-    muted: bool
-    input_source: str = "HDMI_1"
+    device_id: str
+    epoch: int
+    payload: Dict[str, Any]
+    observed_at: float = field(default_factory=time.time)
+    firmware_identity: str = "unknown"
+    
+    @property
+    def digest(self) -> str:
+        canonical_payload = json.dumps(self.payload, sort_keys=True)
+        data = f"{self.device_id}|{self.epoch}|{self.firmware_identity}|{canonical_payload}"
+        return hashlib.sha256(data.encode()).hexdigest()
+
+@dataclass(frozen=True)
+class CapabilityLease:
+    device_id: str
+    capability_digest: str
+    firmware_identity: str
+    protocol_version: str
+    issued_at: float
+    expires_at: float
+    nonce: str
+    issuer: str
+    
+    @property
+    def lease_digest(self) -> str:
+        data = f"{self.device_id}|{self.capability_digest}|{self.firmware_identity}|{self.nonce}"
+        return hashlib.sha256(data.encode()).hexdigest()
+
+@dataclass(frozen=True)
+class AuthorizedActionIntent:
+    intent_id: str
+    device_id: str
+    operation: str
+    target_state: DeviceState
+    expected_pre_state: DeviceState
+    authorization_digest: str
+    deadline_at: float
+    created_at: float = field(default_factory=time.time)
 
     @property
-    def state_digest(self) -> str:
-        payload = {
-            "power": self.power,
-            "volume": round(float(self.volume), 2),
-            "muted": self.muted,
-            "input_source": self.input_source,
-        }
-        raw_json = json.dumps(payload, sort_keys=True)
-        return hashlib.sha256(raw_json.encode("utf-8")).hexdigest()
-
+    def intent_digest(self) -> str:
+        data = f"{self.intent_id}|{self.operation}|{self.target_state.digest}|{self.expected_pre_state.digest}"
+        return hashlib.sha256(data.encode()).hexdigest()
 
 @dataclass(frozen=True)
 class TransactionIdentity:
-    action_id: str
+    intent_id: str
     device_id: str
     intent_digest: str
-
+    capability_digest: str
+    
     @property
-    def transaction_digest(self) -> str:
-        raw_string = f"{self.action_id}:{self.device_id}:{self.intent_digest}"
-        return hashlib.sha256(raw_string.encode("utf-8")).hexdigest()
-
-
-@dataclass(frozen=True)
-class ActuationReceipt:
-    receipt_id: str
-    action_id: str
-    device_id: str
-    intent_digest: str
-    status: str
-    timestamp: float = field(default_factory=time.time)
-    transaction_digest: Optional[str] = None
-    capability_digest: Optional[str] = None
-    pre_state_digest: Optional[str] = None
-    post_state_digest: Optional[str] = None
-    fabric_sequence: Optional[int] = None
-
+    def tx_hash(self) -> str:
+        data = f"{self.intent_id}|{self.device_id}|{self.intent_digest}|{self.capability_digest}"
+        return hashlib.sha256(data.encode()).hexdigest()
 
 @dataclass(frozen=True)
 class VerificationResult:
-    verified: bool
-    expected_state: DeviceState
-    observed_state: DeviceState
-    error_message: Optional[str] = None
-    transaction_digest: Optional[str] = None
-    verification_digest: Optional[str] = None
+    transaction_id: str
+    expected_state_digest: str
+    observed_state_digest: str
+    match: bool
+    observation_epoch: int
+    observed_at: float
+    device_id: str
+    verification_method: str
+    failure_code: Optional[str] = None
+    lineage_digest: Optional[str] = None
