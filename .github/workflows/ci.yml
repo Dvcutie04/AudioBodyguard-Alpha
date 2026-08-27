@@ -1,0 +1,24 @@
+name: AQSS-36-OMEGA CI Pipeline
+
+on:
+  push:
+    branches: [ "main", "master" ]
+  pull_request:
+    branches: [ "main", "master" ]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python 3.13
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+
+      - name: Run Deterministic Safety & Full Test Suite
+        env:
+          PYTHONPATH: .
+        run: |
+          python -m unittest discover -s tests -p "test_*.py" -v
