@@ -11,11 +11,11 @@ class TestIntegratedTrajectory(unittest.TestCase):
         def make_ev_for_target(target_prob):
             return EvidenceVector(
                 acoustic_energy=target_prob,
-                spectral_change=target_prob * 0.5,
-                impulsiveness=target_prob,
+                spectral_change=0.5,
+                impulsiveness=0.5,
                 periodicity=0.5,
                 persistence=0.5,
-                spatial_change=target_prob * 0.5,
+                spatial_change=0.5,
                 escalation=target_prob,
                 anomaly_score=target_prob,
             )
