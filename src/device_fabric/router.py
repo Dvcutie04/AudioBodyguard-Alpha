@@ -1,5 +1,4 @@
 import time
-import uuid
 from typing import Dict, Tuple
 from src.device_fabric.adapter import DeviceAdapter
 from src.device_fabric.contracts import (
@@ -80,24 +79,24 @@ class DeviceFabricRouter:
         pre_digest = pre_state.state_digest
 
         # 3. Execution
-        raw_receipt = await adapter.execute(action_id, intent_digest, command, payload)
+        receipt = await adapter.execute(action_id, intent_digest, command, payload)
 
-        if raw_receipt.status == ActuationStatus.DUPLICATE_ABSORBED.value:
+        if receipt.status == ActuationStatus.DUPLICATE_ABSORBED.value:
             v_res = VerificationResult(
                 verified=True,
                 expected_state=expected_target_state,
                 observed_state=pre_state,
                 transaction_digest=tx_digest,
             )
-            return raw_receipt, v_res
+            return receipt, v_res
 
-        if raw_receipt.status != ActuationStatus.EXECUTED.value:
+        if receipt.status != ActuationStatus.EXECUTED.value:
             observed = await adapter.observe_state()
-            return raw_receipt, VerificationResult(
+            return receipt, VerificationResult(
                 verified=False,
                 expected_state=expected_target_state,
                 observed_state=observed,
-                error_message=f"Execution failed with status: {raw_receipt.status}",
+                error_message=f"Execution failed with status: {receipt.status}",
                 transaction_digest=tx_digest,
             )
 
@@ -107,37 +106,11 @@ class DeviceFabricRouter:
         )
 
         # 5. Rollback on Mismatch
-        if verification.verified:
-            final_status = ActuationStatus.VERIFIED.value
-            post_state = verification.observed_state
-        else:
-            rollback_receipt = await adapter.rollback(
+        if not verification.verified:
+            await adapter.rollback(
                 target_pre_state=pre_state,
                 lineage_digest=tx_digest,
             )
-            if rollback_receipt.status == ActuationStatus.ROLLED_BACK.value:
-                final_status = ActuationStatus.VERIFICATION_MISMATCH.value
-            else:
-                final_status = ActuationStatus.ROLLBACK_FAILED.value
 
-            post_state = await adapter.observe_state()
-
-        post_digest = post_state.state_digest
-        seq_num = self._next_sequence()
-
-        final_receipt = ActuationReceipt(
-            receipt_id=raw_receipt.receipt_id,
-            action_id=action_id,
-            device_id=device_id,
-            intent_digest=intent_digest,
-            status=final_status,
-            timestamp=time.time(),
-            transaction_digest=tx_digest,
-            capability_digest=cap_digest,
-            pre_state_digest=pre_digest,
-            post_state_digest=post_digest,
-            fabric_sequence=seq_num,
-        )
-
-        self._transaction_history[tx_digest] = final_receipt
-        return final_receipt, verification
+        self._transaction_history[tx_digest] = receipt
+        return receipt, verification
