@@ -1,40 +1,36 @@
-"""
-Signal Router Module for AQSS-36-OMEGA.
-Routes threat assessment outputs and acoustic perception envelopes to internal state processors.
-"""
-
-from dataclasses import dataclass, field
-from typing import Dict, Any, Optional
-from src.inference.threat_trajectory import TrajectoryState
-
+from dataclasses import dataclass
 
 @dataclass
-class RoutedSignal:
-    source_id: str
-    destination: str
-    payload: Dict[str, Any]
-    priority: int = 1
+class SignalState:
+    threat_probability: float
+    confidence: float
+    inference_level: str
+    recommended_policy: str
 
 
-class SignalRouter:
-    def __init__(self):
-        self.routing_table: Dict[str, str] = {
-            "CRITICAL": "safety_governor",
-            "ELEVATING": "haptic_engine",
-            "DEESCALATING": "omotenashi_learning",
-            "STABLE": "baseline_monitor",
-        }
-        self.dispatch_log: list = []
-
-    def route_trajectory_state(
-        self, state: TrajectoryState, payload: Optional[Dict[str, Any]] = None
-    ) -> RoutedSignal:
-        destination = self.routing_table.get(state.name, "baseline_monitor")
-        signal = RoutedSignal(
-            source_id="threat_inference",
-            destination=destination,
-            payload=payload or {"state": state.name},
-            priority=2 if state == TrajectoryState.CRITICAL else 1,
-        )
-        self.dispatch_log.append(signal)
-        return signal
+# Inside the SignalRouter class, append this method:
+def route(self, inference_result):
+    threat_prob = inference_result.threat_probability
+    
+    if threat_prob >= 0.8:
+        inference_level = "CRITICAL"
+    elif threat_prob >= 0.6:
+        inference_level = "HIGH"
+    elif threat_prob >= 0.4:
+        inference_level = "ELEVATED"
+    else:
+        inference_level = "UNKNOWN"
+        
+    policy_map = {
+        "CRITICAL": "IMMEDIATE_MITIGATION",
+        "HIGH": "ACTIVE_MONITORING",
+        "ELEVATED": "ELEVATED_MONITORING",
+        "UNKNOWN": "LOG_ONLY"
+    }
+    
+    return SignalState(
+        threat_probability=threat_prob,
+        confidence=0.95,
+        inference_level=inference_level,
+        recommended_policy=policy_map[inference_level]
+    )
