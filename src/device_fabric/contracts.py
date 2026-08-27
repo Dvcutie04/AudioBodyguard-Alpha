@@ -1,11 +1,26 @@
-from dataclasses import dataclass, field
-from enum import Enum, auto
-from typing import Any, Dict, Optional
 import hashlib
+import json
 import time
 import uuid
-import json
+from dataclasses import dataclass, field
+from enum import Enum, auto
+from typing import Any, Dict, List, Optional
 
+# --- LEGACY & BACKWARD COMPATIBILITY ENUMS ---
+class DeviceType(Enum):
+    TV = "TV"
+    SPEAKER = "SPEAKER"
+    LIGHT = "LIGHT"
+    THERMOSTAT = "THERMOSTAT"
+    UNKNOWN = "UNKNOWN"
+
+class ActuationStatus(Enum):
+    EXECUTED = "EXECUTED"
+    DUPLICATE_ABSORBED = "DUPLICATE_ABSORBED"
+    ROLLED_BACK = "ROLLED_BACK"
+    FAILED = "FAILED"
+
+# --- PHASE 2.5 ENUMS ---
 class TransactionState(Enum):
     PENDING = auto()
     LEASE_VALIDATED = auto()
@@ -31,19 +46,65 @@ class PreconditionStatus(Enum):
     MALFORMED = auto()
     UNAVAILABLE = auto()
 
+
+# --- DEVICE & STATE MODELS (MERGED) ---
+@dataclass(frozen=True)
+class DeviceIdentity:
+    device_id: str
+    device_type: DeviceType
+    manufacturer: str
+    model: str
+    firmware_version: str
+
+@dataclass(frozen=True)
+class DeviceCapabilities:
+    capability_digest: str
+    supported_commands: List[str] = field(default_factory=list)
+    properties: Dict[str, Any] = field(default_factory=dict)
+
 @dataclass(frozen=True)
 class DeviceState:
-    device_id: str
-    epoch: int
-    payload: Dict[str, Any]
+    # Legacy fields for MockTVAdapter and current integration tests
+    power: bool = False
+    volume: float = 0.0
+    muted: bool = False
+    input_source: str = ""
+    
+    # Phase 2.5 Fields
+    device_id: str = "unknown"
+    epoch: int = 0
+    payload: Dict[str, Any] = field(default_factory=dict)
     observed_at: float = field(default_factory=time.time)
     firmware_identity: str = "unknown"
     
     @property
+    def state_digest(self) -> str:
+        # Legacy digest method
+        data = f"{self.power}|{self.volume}|{self.muted}|{self.input_source}"
+        return hashlib.sha256(data.encode()).hexdigest()
+
+    @property
     def digest(self) -> str:
+        # Phase 2.5 cryptographic digest
         canonical_payload = json.dumps(self.payload, sort_keys=True)
         data = f"{self.device_id}|{self.epoch}|{self.firmware_identity}|{canonical_payload}"
         return hashlib.sha256(data.encode()).hexdigest()
+
+
+# --- TRANSACTION & LINEAGE MODELS ---
+@dataclass(frozen=True)
+class ActuationReceipt:
+    receipt_id: str
+    action_id: str
+    device_id: str
+    intent_digest: str
+    status: str
+    timestamp: float
+    transaction_digest: str
+    capability_digest: str
+    pre_state_digest: str
+    post_state_digest: str
+    fabric_sequence: int
 
 @dataclass(frozen=True)
 class CapabilityLease:
@@ -79,25 +140,45 @@ class AuthorizedActionIntent:
 
 @dataclass(frozen=True)
 class TransactionIdentity:
-    intent_id: str
-    device_id: str
-    intent_digest: str
-    capability_digest: str
+    # Phase 2.5 fields
+    intent_id: str = ""
+    device_id: str = ""
+    intent_digest: str = ""
+    capability_digest: str = ""
+    
+    # Legacy backward compatibility field
+    action_id: str = ""
     
     @property
     def tx_hash(self) -> str:
+        # Phase 2.5 identity hash
         data = f"{self.intent_id}|{self.device_id}|{self.intent_digest}|{self.capability_digest}"
+        return hashlib.sha256(data.encode()).hexdigest()
+
+    @property
+    def transaction_digest(self) -> str:
+        # Legacy backward compatibility for older router logic
+        data = f"{self.action_id}|{self.device_id}|{self.intent_digest}"
         return hashlib.sha256(data.encode()).hexdigest()
 
 @dataclass(frozen=True)
 class VerificationResult:
-    transaction_id: str
-    expected_state_digest: str
-    observed_state_digest: str
-    match: bool
-    observation_epoch: int
-    observed_at: float
-    device_id: str
-    verification_method: str
+    # Legacy fields
+    verified: bool = False
+    expected_state: Optional[DeviceState] = None
+    observed_state: Optional[DeviceState] = None
+    error_message: Optional[str] = None
+    transaction_digest: Optional[str] = None
+    verification_digest: Optional[str] = None
+    
+    # Phase 2.5 fields
+    transaction_id: str = ""
+    expected_state_digest: str = ""
+    observed_state_digest: str = ""
+    match: bool = False
+    observation_epoch: int = 0
+    observed_at: float = field(default_factory=time.time)
+    device_id: str = "unknown"
+    verification_method: str = "unknown"
     failure_code: Optional[str] = None
     lineage_digest: Optional[str] = None
