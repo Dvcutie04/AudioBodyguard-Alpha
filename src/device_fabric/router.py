@@ -111,8 +111,16 @@ class DeviceFabricRouter:
                 target_pre_state=pre_state,
                 lineage_digest=tx_digest,
             )
-            # Update verification to reflect post-rollback state
-            verification.observed_state = await adapter.observe_state()
+            post_rollback_state = await adapter.observe_state()
+            # Return a fresh immutable VerificationResult reflecting post-rollback observation
+            verification = VerificationResult(
+                verified=False,
+                expected_state=expected_target_state,
+                observed_state=post_rollback_state,
+                error_message=verification.error_message,
+                transaction_digest=tx_digest,
+                verification_digest=verification.verification_digest,
+            )
 
         self._transaction_history[tx_digest] = receipt
         return receipt, verification
