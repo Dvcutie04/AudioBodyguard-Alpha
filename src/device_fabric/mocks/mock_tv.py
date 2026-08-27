@@ -41,6 +41,11 @@ class MockTVAdapter(DeviceAdapter):
         # Idempotency cache: maps action_key (action_id:intent_digest) -> ActuationReceipt
         self._executed_actions: Dict[str, ActuationReceipt] = {}
 
+    @property
+    def state(self) -> DeviceState:
+        """Public property exposing state for test assertions."""
+        return self._state
+
     async def discover(self) -> DeviceIdentity:
         return self._identity
 
@@ -59,7 +64,6 @@ class MockTVAdapter(DeviceAdapter):
     ) -> ActuationReceipt:
         action_key = f"{action_id}:{intent_digest}"
 
-        # Check for duplicate submission
         if action_key in self._executed_actions:
             cached_receipt = self._executed_actions[action_key]
             return ActuationReceipt(
@@ -71,7 +75,6 @@ class MockTVAdapter(DeviceAdapter):
                 timestamp=time.time(),
             )
 
-        # Mutate state based on command logic
         if command == "REDUCE_VOLUME":
             delta = payload.get("delta_db", 0.0)
             new_vol = max(self._capabilities.min_volume_db, self._state.volume - delta)
@@ -110,7 +113,6 @@ class MockTVAdapter(DeviceAdapter):
             timestamp=time.time(),
         )
 
-        # Cache successful execution for idempotency tracking
         self._executed_actions[action_key] = receipt
         return receipt
 
@@ -154,7 +156,6 @@ class MockTVAdapter(DeviceAdapter):
         )
 
     def inject_fault_state(self, power: bool, volume: float, muted: bool):
-        """Helper to forcefully mutate state for fault-injection testing."""
         self._state = DeviceState(
             power=power,
             volume=volume,
