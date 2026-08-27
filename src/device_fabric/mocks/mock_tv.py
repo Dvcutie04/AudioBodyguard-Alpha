@@ -1,59 +1,60 @@
 import time
-from typing import Dict, Optional
+from typing import Optional
+
+from src.device_fabric.adapter import DeviceAdapter
 from src.device_fabric.contracts import (
-    DeviceIdentity,
+    ActuationReceipt,
+    ActuationStatus,
     DeviceCapabilities,
+    DeviceIdentity,
     DeviceState,
     DeviceType,
-    ActuationReceipt,
     VerificationResult,
-    ActuationStatus,
 )
-from src.device_fabric.adapter import DeviceAdapter
 
 
 class MockTVAdapter(DeviceAdapter):
     def __init__(self, device_id: str):
-        self._device_id = device_id
         self._identity = DeviceIdentity(
             device_id=device_id,
             device_type=DeviceType.TV,
             manufacturer="MockCorp",
             model="MockTV-2000",
+            firmware_version="1.0.0-mock",  # Added to satisfy the updated contract
         )
-        self._capabilities = DeviceCapabilities(
-            volume_absolute=True,
-            volume_delta=True,
-            mute=True,
-            power=True,
-            input_select=True,
-            max_volume_delta_db=15.0,
-            min_volume_db=0.0,
-            max_volume_db=100.0,
-        )
-        # Internal deterministic state
         self._state = DeviceState(
-            power=True,
-            volume=50.0,
-            muted=False,
-            input_source="HDMI_1",
+            power=True, volume=50.0, muted=False, input_source="HDMI_1"
         )
-        # Idempotency cache: maps action_key (action_id:intent_digest) -> ActuationReceipt
-        self._executed_actions: Dict[str, ActuationReceipt] = {}
+        self._execution_history = set()
+
+    @property
+    def identity(self) -> DeviceIdentity:
+        return self._identity
 
     @property
     def state(self) -> DeviceState:
-        """Public property exposing state for test assertions."""
         return self._state
+
+    def inject_fault_state(self, power: bool, volume: float, muted: bool) -> None:
+        """Test hook to simulate hardware state drifting outside of fabric control."""
+        self._state = DeviceState(
+            power=power,
+            volume=volume,
+            muted=muted,
+            input_source=self._state.input_source,
+        )
 
     async def discover(self) -> DeviceIdentity:
-        return self._identity
+        return self.identity
 
     async def capabilities(self) -> DeviceCapabilities:
-        return self._capabilities
+        return DeviceCapabilities(
+            capability_digest="mock_cap_sha256_001",
+            supported_commands=["SET_POWER", "SET_VOLUME", "REDUCE_VOLUME", "MUTE"],
+        )
 
     async def observe_state(self) -> DeviceState:
-        return self._state
+        return self.state
 
     async def execute(
         self,
@@ -62,59 +63,52 @@ class MockTVAdapter(DeviceAdapter):
         command: str,
         payload: dict,
     ) -> ActuationReceipt:
-        action_key = f"{action_id}:{intent_digest}"
-
-        if action_key in self._executed_actions:
-            cached_receipt = self._executed_actions[action_key]
+        
+        tx_digest = f"{action_id}|{self.identity.device_id}|{intent_digest}"
+        
+        if tx_digest in self._execution_history:
             return ActuationReceipt(
-                receipt_id=f"duplicate_{cached_receipt.receipt_id}",
+                receipt_id=f"rcpt_{time.time()}",
                 action_id=action_id,
-                device_id=self._device_id,
+                device_id=self.identity.device_id,
                 intent_digest=intent_digest,
                 status=ActuationStatus.DUPLICATE_ABSORBED.value,
                 timestamp=time.time(),
+                transaction_digest=tx_digest,
+                capability_digest="mock_cap_sha256_001",
+                pre_state_digest=self.state.state_digest,
+                post_state_digest=self.state.state_digest,
+                fabric_sequence=0,
             )
 
+        pre_state = self.state
+        
+        # Simulate execution
         if command == "REDUCE_VOLUME":
             delta = payload.get("delta_db", 0.0)
-            new_vol = max(self._capabilities.min_volume_db, self._state.volume - delta)
+            new_vol = max(0.0, self.state.volume - delta)
             self._state = DeviceState(
-                power=self._state.power,
+                power=self.state.power,
                 volume=new_vol,
-                muted=self._state.muted,
-                input_source=self._state.input_source,
-            )
-        elif command == "SET_VOLUME":
-            target = payload.get("volume", self._state.volume)
-            new_vol = max(
-                self._capabilities.min_volume_db,
-                min(self._capabilities.max_volume_db, target),
-            )
-            self._state = DeviceState(
-                power=self._state.power,
-                volume=new_vol,
-                muted=self._state.muted,
-                input_source=self._state.input_source,
-            )
-        elif command == "MUTE":
-            self._state = DeviceState(
-                power=self._state.power,
-                volume=self._state.volume,
-                muted=True,
-                input_source=self._state.input_source,
+                muted=self.state.muted,
+                input_source=self.state.input_source
             )
 
-        receipt = ActuationReceipt(
-            receipt_id=f"receipt_{action_id}",
+        self._execution_history.add(tx_digest)
+        
+        return ActuationReceipt(
+            receipt_id=f"rcpt_{time.time()}",
             action_id=action_id,
-            device_id=self._device_id,
+            device_id=self.identity.device_id,
             intent_digest=intent_digest,
             status=ActuationStatus.EXECUTED.value,
             timestamp=time.time(),
+            transaction_digest=tx_digest,
+            capability_digest="mock_cap_sha256_001",
+            pre_state_digest=pre_state.state_digest,
+            post_state_digest=self.state.state_digest,
+            fabric_sequence=0,
         )
-
-        self._executed_actions[action_key] = receipt
-        return receipt
 
     async def verify(
         self,
@@ -140,25 +134,21 @@ class MockTVAdapter(DeviceAdapter):
         )
 
     async def rollback(
-        self,
-        target_pre_state: DeviceState,
-        lineage_digest: str,
+        self, target_pre_state: DeviceState, lineage_digest: str
     ) -> ActuationReceipt:
+        pre_rollback_state = self.state
         self._state = target_pre_state
-
+        
         return ActuationReceipt(
-            receipt_id=f"rollback_{lineage_digest[:8]}",
+            receipt_id=f"rb_{time.time()}",
             action_id="ROLLBACK",
-            device_id=self._device_id,
+            device_id=self.identity.device_id,
             intent_digest=lineage_digest,
             status=ActuationStatus.ROLLED_BACK.value,
             timestamp=time.time(),
-        )
-
-    def inject_fault_state(self, power: bool, volume: float, muted: bool):
-        self._state = DeviceState(
-            power=power,
-            volume=volume,
-            muted=muted,
-            input_source=self._state.input_source,
+            transaction_digest=f"rb_{lineage_digest}",
+            capability_digest="mock_cap_sha256_001",
+            pre_state_digest=pre_rollback_state.state_digest,
+            post_state_digest=self.state.state_digest,
+            fabric_sequence=0,
         )
