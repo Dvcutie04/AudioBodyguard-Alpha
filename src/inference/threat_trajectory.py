@@ -1,9 +1,13 @@
 from dataclasses import dataclass
-from typing import List, Dict, Any
+from typing import List, Optional
 
 
 @dataclass
 class TrajectoryState:
+    current_probability: float = 0.0
+    probability_velocity: float = 0.0
+    probability_acceleration: float = 0.0
+    escalation_score: float = 0.0
     velocity: float = 0.0
     acceleration: float = 0.0
     predicted_threat: float = 0.0
@@ -14,7 +18,6 @@ class TrajectoryState:
 class TrajectoryPoint:
     timestamp: float
     threat_level: float
-    confidence: float
 
 
 class ThreatTrajectoryEngine:
@@ -22,8 +25,17 @@ class ThreatTrajectoryEngine:
         self.history_window = history_window
         self.history: List[TrajectoryPoint] = []
 
-    def update(self, threat_level: float, confidence: float, timestamp: float) -> TrajectoryState:
-        point = TrajectoryPoint(timestamp=timestamp, threat_level=threat_level, confidence=confidence)
+    def reset(self) -> None:
+        self.history.clear()
+
+    def update(self, timestamp: float, threat_level: float) -> TrajectoryState:
+        # Sanity check out-of-bounds or NaN inputs
+        if threat_level is None or threat_level != threat_level:  # Handles NaN
+            threat_level = self.history[-1].threat_level if self.history else 0.0
+
+        threat_level = min(1.0, max(0.0, float(threat_level)))
+
+        point = TrajectoryPoint(timestamp=timestamp, threat_level=threat_level)
         self.history.append(point)
         if len(self.history) > self.history_window:
             self.history.pop(0)
@@ -31,9 +43,15 @@ class ThreatTrajectoryEngine:
         velocity = self.calculate_velocity()
         acceleration = self.calculate_acceleration()
         predicted_threat = min(1.0, max(0.0, threat_level + velocity))
+        escalation_score = min(1.0, max(0.0, velocity + (0.5 * acceleration)))
+
         trend = "escalating" if velocity > 0.05 else ("de-escalating" if velocity < -0.05 else "stable")
 
         return TrajectoryState(
+            current_probability=threat_level,
+            probability_velocity=velocity,
+            probability_acceleration=acceleration,
+            escalation_score=escalation_score,
             velocity=velocity,
             acceleration=acceleration,
             predicted_threat=predicted_threat,
