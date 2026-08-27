@@ -22,7 +22,8 @@ class DeviceAdapter(ABC):
         pass
 
     @abstractmethod
-    async def observe_state(self) -> DeviceState:"""Read and return the physical device's current state."""
+    async def observe_state(self) -> DeviceState:
+        """Read and return the physical device's current state."""
         pass
 
     @abstractmethod
