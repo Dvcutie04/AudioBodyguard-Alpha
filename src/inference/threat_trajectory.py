@@ -1,40 +1,53 @@
-from dataclasses import dataclass, field
-from typing import List, Optional
+import numpy as np
+from dataclasses import dataclass
+from typing import List, Dict, Any
+
 
 @dataclass
-class TrajectoryState:
-    current_probability: float
-    probability_velocity: float
-    projected_probability: float
-
-    @property
-    def p_hat(self) -> float:
-        return self.current_probability
-
-    @property
-    def velocity(self) -> float:
-        return self.probability_velocity
+class TrajectoryPoint:
+    timestamp: float
+    threat_level: float
+    confidence: float
 
 
-class ThreatTrajectoryTracker:
-    def __init__(self, window_size: int = 5):
-        self.window_size = window_size
-        self.history: List[float] = []
+class ThreatTrajectoryEngine:
+    def __init__(self, history_window: int = 10):
+        self.history_window = history_window
+        self.history: List[TrajectoryPoint] = []
 
-    def update(self, current_p: float) -> TrajectoryState:
-        self.history.append(current_p)
-        if len(self.history) > self.window_size:
+    def update(self, threat_level: float, confidence: float, timestamp: float) -> Dict[str, Any]:
+        point = TrajectoryPoint(timestamp=timestamp, threat_level=threat_level, confidence=confidence)
+        self.history.append(point)
+        if len(self.history) > self.history_window:
             self.history.pop(0)
 
+        velocity = self.calculate_velocity()
+        acceleration = self.calculate_acceleration()
+        predicted_threat = min(1.0, max(0.0, threat_level + velocity))
+
+        return {
+            "trajectory_points": len(self.history),
+            "velocity": velocity,
+            "acceleration": acceleration,
+            "predicted_threat": predicted_threat,
+            "trend": "escalating" if velocity > 0.05 else ("de-escalating" if velocity < -0.05 else "stable")
+        }
+
+    def calculate_velocity(self) -> float:
         if len(self.history) < 2:
-            velocity = 0.0
-        else:
-            velocity = self.history[-1] - self.history[-2]
+            return 0.0
+        dt = self.history[-1].timestamp - self.history[-2].timestamp
+        if dt <= 0:
+            return 0.0
+        return (self.history[-1].threat_level - self.history[-2].threat_level) / dt
 
-        projected = max(0.0, min(1.0, current_p + velocity))
-
-        return TrajectoryState(
-            current_probability=current_p,
-            probability_velocity=velocity,
-            projected_probability=projected
-        )
+    def calculate_acceleration(self) -> float:
+        if len(self.history) < 3:
+            return 0.0
+        dt1 = self.history[-1].timestamp - self.history[-2].timestamp
+        dt2 = self.history[-2].timestamp - self.history[-3].timestamp
+        if dt1 <= 0 or dt2 <= 0:
+            return 0.0
+        v1 = (self.history[-1].threat_level - self.history[-2].threat_level) / dt1
+        v2 = (self.history[-2].threat_level - self.history[-3].threat_level) / dt2
+        return (v1 - v2) / dt1
