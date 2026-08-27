@@ -17,8 +17,13 @@ jobs:
         with:
           python-version: "3.13"
 
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install pytest
+
       - name: Run Deterministic Safety & Full Test Suite
         env:
           PYTHONPATH: .
         run: |
-          python -m unittest discover -s tests -p "test_*.py" -v
+          python -m pytest tests/ -v
