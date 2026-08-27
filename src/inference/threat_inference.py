@@ -5,6 +5,7 @@ from src.inference.sensor_gate import SensorQualityGate
 from src.inference.temporal_accumulator import TemporalEvidenceAccumulator
 from src.inference.threat_trajectory import ThreatTrajectoryEngine
 
+
 class ThreatInferenceEngine:
     def __init__(self, model_version: str = "v1.0.0-omega"):
         self.model_version = model_version
@@ -17,7 +18,11 @@ class ThreatInferenceEngine:
         if not self.sensor_gate.validate(raw_stats):
             traj = self.trajectory_engine.update(timestamp, 0.0)
             latency = (time.time_ns() - start_time) / 1000.0
-            return InferenceResult(event_id, timestamp, 0.0, 0.0, "UNKNOWN_SENSOR_DEGRADED", "UNKNOWN", {}, self.model_version, latency, False, trajectory=traj)
+            return InferenceResult(
+                event_id, timestamp, 0.0, 0.0, 
+                "UNKNOWN_SENSOR_DEGRADED", "UNKNOWN", 
+                {}, self.model_version, latency, False, trajectory=traj
+            )
         
         instant_p = min(1.0, max(0.0, (0.3 * ev.anomaly_score) + (0.3 * ev.impulsiveness) + (0.4 * ev.escalation)))
         smoothed_p = self.accumulator.update(instant_p)
@@ -37,8 +42,15 @@ class ThreatInferenceEngine:
             state = "THREAT"
             hypothesis = "High-confidence high-escalation threat signature detected"
             
-        summary = {"anomaly_score": ev.anomaly_score, "escalation": ev.escalation, "smoothed_probability": smoothed_p}
+        summary = {
+            "anomaly_score": ev.anomaly_score, 
+            "escalation": ev.escalation, 
+            "smoothed_probability": smoothed_p
+        }
         latency = (time.time_ns() - start_time) / 1000.0
         
-        return InferenceResult(event_id, timestamp, smoothed_p, confidence, hypothesis, state, summary, self.model_version, latency, True, trajectory=trajectory_state)
-
+        return InferenceResult(
+            event_id, timestamp, smoothed_p, confidence, 
+            hypothesis, state, summary, self.model_version, 
+            latency, True, trajectory=trajectory_state
+        )
