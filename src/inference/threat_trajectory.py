@@ -1,31 +1,40 @@
-from dataclasses import dataclass
-
+from dataclasses import dataclass, field
+from typing import List, Optional
 
 @dataclass
 class TrajectoryState:
-    timestamp: float
-    smoothed_p: float
-    dt: float
+    current_probability: float
+    probability_velocity: float
+    projected_probability: float
+
+    @property
+    def p_hat(self) -> float:
+        return self.current_probability
+
+    @property
+    def velocity(self) -> float:
+        return self.probability_velocity
 
 
-class ThreatTrajectoryEngine:
-    def __init__(self):
-        self.reset()
+class ThreatTrajectoryTracker:
+    def __init__(self, window_size: int = 5):
+        self.window_size = window_size
+        self.history: List[float] = []
 
-    def reset(self) -> None:
-        """Reset internal trajectory state."""
-        self._last_timestamp: float | None = None
-        self._state_history: list = []
+    def update(self, current_p: float) -> TrajectoryState:
+        self.history.append(current_p)
+        if len(self.history) > self.window_size:
+            self.history.pop(0)
 
-    def update(self, timestamp: float, smoothed_p: float) -> TrajectoryState:
-        """Update trajectory state observation."""
-        delta_t = 0.0 if self._last_timestamp is None else max(0.0, timestamp - self._last_timestamp)
-        self._last_timestamp = timestamp
-        
-        state = TrajectoryState(
-            timestamp=timestamp,
-            smoothed_p=smoothed_p,
-            dt=delta_t,
+        if len(self.history) < 2:
+            velocity = 0.0
+        else:
+            velocity = self.history[-1] - self.history[-2]
+
+        projected = max(0.0, min(1.0, current_p + velocity))
+
+        return TrajectoryState(
+            current_probability=current_p,
+            probability_velocity=velocity,
+            projected_probability=projected
         )
-        self._state_history.append(state)
-        return state
