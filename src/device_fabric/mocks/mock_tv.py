@@ -1,5 +1,5 @@
 import time
-from typing import Optional
+from typing import Dict, Optional
 from src.device_fabric.contracts import (
     DeviceIdentity,
     DeviceCapabilities,
@@ -38,6 +38,8 @@ class MockTVAdapter(DeviceAdapter):
             muted=False,
             input_source="HDMI_1",
         )
+        # Idempotency cache: maps action_key (action_id:intent_digest) -> ActuationReceipt
+        self._executed_actions: Dict[str, ActuationReceipt] = {}
 
     async def discover(self) -> DeviceIdentity:
         return self._identity
@@ -55,7 +57,21 @@ class MockTVAdapter(DeviceAdapter):
         command: str,
         payload: dict,
     ) -> ActuationReceipt:
-        # Simulate execution mutating internal hardware state
+        action_key = f"{action_id}:{intent_digest}"
+
+        # Check for duplicate submission
+        if action_key in self._executed_actions:
+            cached_receipt = self._executed_actions[action_key]
+            return ActuationReceipt(
+                receipt_id=f"duplicate_{cached_receipt.receipt_id}",
+                action_id=action_id,
+                device_id=self._device_id,
+                intent_digest=intent_digest,
+                status=ActuationStatus.DUPLICATE_ABSORBED.value,
+                timestamp=time.time(),
+            )
+
+        # Mutate state based on command logic
         if command == "REDUCE_VOLUME":
             delta = payload.get("delta_db", 0.0)
             new_vol = max(self._capabilities.min_volume_db, self._state.volume - delta)
@@ -85,7 +101,7 @@ class MockTVAdapter(DeviceAdapter):
                 input_source=self._state.input_source,
             )
 
-        return ActuationReceipt(
+        receipt = ActuationReceipt(
             receipt_id=f"receipt_{action_id}",
             action_id=action_id,
             device_id=self._device_id,
@@ -94,6 +110,10 @@ class MockTVAdapter(DeviceAdapter):
             timestamp=time.time(),
         )
 
+        # Cache successful execution for idempotency tracking
+        self._executed_actions[action_key] = receipt
+        return receipt
+
     async def verify(
         self,
         expected: DeviceState,
@@ -101,7 +121,6 @@ class MockTVAdapter(DeviceAdapter):
     ) -> VerificationResult:
         current = await self.observe_state()
 
-        # Allow minor float precision differences for volume
         vol_match = abs(current.volume - expected.volume) < 0.1
         match = (
             current.power == expected.power
@@ -123,7 +142,6 @@ class MockTVAdapter(DeviceAdapter):
         target_pre_state: DeviceState,
         lineage_digest: str,
     ) -> ActuationReceipt:
-        # Overwrite current state with the exact target pre-state observation
         self._state = target_pre_state
 
         return ActuationReceipt(
@@ -136,7 +154,7 @@ class MockTVAdapter(DeviceAdapter):
         )
 
     def inject_fault_state(self, power: bool, volume: float, muted: bool):
-        """Helper to forcefully mutate state for test fault-injection."""
+        """Helper to forcefully mutate state for fault-injection testing."""
         self._state = DeviceState(
             power=power,
             volume=volume,
