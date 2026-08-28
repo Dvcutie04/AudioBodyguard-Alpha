@@ -1,6 +1,6 @@
 """
 AQSS-36-OMEGA
-Physical Truth Runtime — Mock TV Device Implementation
+Physical Truth Runtime — Mock TV & Device Fabric Adapter
 """
 from __future__ import annotations
 from typing import Optional, Mapping
@@ -21,7 +21,7 @@ from src.device_fabric.contracts import (
 
 
 class MockTV:
-    """Mock implementation of a physical TV device for testing contract execution."""
+    """Mock implementation of a physical TV device simulating state and actuation."""
 
     def __init__(self, device_id: str):
         self._identity = DeviceIdentity(
@@ -66,27 +66,28 @@ class MockTV:
         capability_digest: Optional[str] = None,
     ) -> ActuationReceipt:
         """
-        Execute an authorized action intent and generate an ActuationReceipt.
+        Execute an authorized action intent directly on the mock physical device.
+        Generates a fully qualified ActuationReceipt.
         """
         if intent.device_id != self._identity.device_id:
             raise ContractViolation("Intent device_id mismatch with target device")
 
-        # Capture pre-actuation physical state digest
+        # Capture pre-actuation state digest
         pre_state_digest = self._state.state_digest
 
-        # Handle duplicate absorption or state mutation
+        # Handle execution history / duplicate absorption
         status = ActuationStatus.EXECUTED
         if intent.intent_id in self._execution_history:
             status = ActuationStatus.DUPLICATE_ABSORBED
         else:
             self._execution_history.add(intent.intent_id)
-            # Apply target state mutation
+            # Perform physical state mutation
             self._state = intent.target_state
 
         now = utc_now()
         post_state_digest = self._state.state_digest
 
-        # Derive fallbacks for transaction lineage if omitted by caller
+        # Construct or resolve missing cryptographic lineage items
         resolved_tx_digest = (
             transaction_digest
             or canonical_digest("TX_FALLBACK", intent.intent_id, now.isoformat())
@@ -110,4 +111,32 @@ class MockTV:
             post_state_digest=post_state_digest,
             physical_state_digest=post_state_digest,
             executed_at=now,
+        )
+
+
+class MockTVAdapter:
+    """
+    Adapter exposing MockTV through the Device Fabric interface boundary.
+    Translates asynchronous transaction-layer requests into physical simulation calls.
+    """
+
+    def __init__(self, device_id: str):
+        self._device = MockTV(device_id)
+
+    @property
+    def device(self) -> MockTV:
+        """Test/debug escape hatch accessing underlying device state."""
+        return self._device
+
+    async def execute_intent(
+        self,
+        intent: AuthorizedActionIntent,
+        transaction_digest: Optional[str] = None,
+        capability_digest: Optional[str] = None,
+    ) -> ActuationReceipt:
+        """Execute an authorized intent through the Device Fabric boundary."""
+        return self._device.execute_intent(
+            intent=intent,
+            transaction_digest=transaction_digest,
+            capability_digest=capability_digest,
         )
