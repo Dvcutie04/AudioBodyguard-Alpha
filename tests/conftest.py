@@ -1,4 +1,5 @@
 from datetime import datetime, timedelta, timezone
+from src.device_fabric.contracts import CapabilityLease
 
 def utc_now() -> datetime:
     return datetime.now(timezone.utc)
@@ -7,7 +8,7 @@ def utc_now() -> datetime:
 lease = CapabilityLease(
     lease_id="L_TEST_001",
     subject_id="gov_v1",
-    device_id="dev_test_01",  # Or whatever device_id conftest uses
+    device_id="dev_test_01",
     capabilities=frozenset(["SET_VOLUME", "SET_POWER"]),
     valid_from=utc_now(),
     expires_at=utc_now() + timedelta(minutes=5),
