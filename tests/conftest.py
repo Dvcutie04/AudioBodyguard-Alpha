@@ -1,47 +1,19 @@
-import time
-import pytest
+from datetime import datetime, timedelta, timezone
 
-from src.device_fabric.contracts import (
-    AuthorizedActionIntent, CapabilityLease, DeviceState
+def utc_now() -> datetime:
+    return datetime.now(timezone.utc)
+
+# Inside your fixture or setup function:
+lease = CapabilityLease(
+    lease_id="L_TEST_001",
+    subject_id="gov_v1",
+    device_id="dev_test_01",  # Or whatever device_id conftest uses
+    capabilities=frozenset(["SET_VOLUME", "SET_POWER"]),
+    valid_from=utc_now(),
+    expires_at=utc_now() + timedelta(minutes=5),
+    authorized_epoch=100,
+    max_world_state_age_ms=5000,
+    max_clock_skew_ms=1000,
+    nonce="nonce_999",
+    lease_digest="mock_digest"
 )
-from src.device_fabric.precondition import PreconditionEvaluator
-from src.device_fabric.digital_twin import DigitalTwin
-from src.device_fabric.transaction import PhysicalTransactionManager
-from src.device_fabric.mocks.mock_tv import MockTVAdapter
-
-@pytest.fixture
-def hil_env():
-    # Setup the physical commit layer ecosystem
-    adapter = MockTVAdapter("tv_hil_target")
-    evaluator = PreconditionEvaluator(staleness_threshold_seconds=2.0)
-    twin = DigitalTwin()
-    twin.register_constraint("tv_hil_target", lambda curr, target: target.volume <= 80.0)
-    
-    manager = PhysicalTransactionManager(adapter, evaluator, twin)
-    
-    # Establish baseline and target states
-    pre_state = DeviceState(power=True, volume=50.0, input_source="HDMI_1")
-    target = DeviceState(power=True, volume=44.0, input_source="HDMI_1", payload={"delta_db": 6.0})
-    
-    intent = AuthorizedActionIntent(
-        intent_id="capstone_act_001",
-        device_id="tv_hil_target",
-        operation="REDUCE_VOLUME",
-        target_state=target,
-        expected_pre_state=pre_state,
-        authorization_digest="auth_hash_capstone",
-        deadline_at=time.time() + 5.0
-    )
-    
-    lease = CapabilityLease(
-        device_id="tv_hil_target",
-        capability_digest="mock_cap_sha256_001",
-        firmware_identity="1.0.0-mock",
-        protocol_version="1.0",
-        issued_at=time.time(),
-        expires_at=time.time() + 30.0,
-        nonce="nonce_capstone",
-        issuer="gov_1"
-    )
-    
-    return manager, adapter, intent, lease
