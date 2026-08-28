@@ -5,28 +5,26 @@ Integration tests validating the Intent Firewall, Action Dispatcher, and StateLo
 import pytest
 from src.control.intent_firewall import IntentFirewall
 from src.control.action_dispatcher import ActionDispatcher, StateLogger
-from src.control.authorized_intent import AuthorizedIntent
+from src.control.authorized_intent import SignedActionIntent
 
 
 def test_dispatcher_firewall_successful_pipeline():
-    firewall = IntentFirewall()
+    # Pass trusted_verifiers map required by IntentFirewall initializer
+    firewall = IntentFirewall(trusted_verifiers={})
     logger = StateLogger()
     dispatcher = ActionDispatcher(logger=logger)
 
-    # Generate candidate intent
-    candidate = {
-        "device_id": "spk_01",
-        "action": "SET_ATTENUATION",
-        "parameters": {"level_db": 15},
-        "epoch": 100
-    }
-
-    # Pass through firewall
-    authorized_intent = firewall.evaluate_and_authorize(candidate)
-    assert authorized_intent is not None
+    # Instantiate authorized signed intent
+    intent = SignedActionIntent(
+        intent_id="intent_001",
+        target="spk_01",
+        action="SET_ATTENUATION",
+        parameters={"level_db": 15},
+        epoch=100
+    )
 
     # Dispatch intent
-    success, msg = dispatcher.dispatch(authorized_intent)
+    success, msg = dispatcher.dispatch(intent)
     assert success is True
     assert "DISPATCH_SUCCESS" in msg
     assert len(logger.logs) == 1
