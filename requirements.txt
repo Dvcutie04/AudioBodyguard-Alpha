@@ -3,3 +3,4 @@ numpy>=1.22.0
 scipy>=1.8.0
 pytest
 pytest-cov
+cryptography>=41.0.0
