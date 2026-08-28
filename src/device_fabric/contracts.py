@@ -23,15 +23,6 @@ def canonical_digest(*parts: object) -> str:
     return sha256(material.encode("utf-8")).hexdigest()
 
 
-class DeviceType(Enum):
-    """Enumeration of supported device types."""
-    TV = auto()
-    SPEAKER = auto()
-    LIGHT = auto()
-    THERMOSTAT = auto()
-    CAMERA = auto()
-
-
 class TransactionState(Enum):
     PENDING = auto()
     LEASE_VALIDATED = auto()
@@ -99,7 +90,7 @@ class AuthorizedActionIntent:
             raise ContractViolation("operation required")
         if not self.authorization_digest:
             raise ContractViolation("authorization_digest required")
-        if self.deadline_at <= 0:
+        if not self.deadline_at <= 0:
             raise ContractViolation("deadline_at must be strictly positive")
 
 
@@ -186,7 +177,7 @@ class ObservedState:
             raise ContractViolation("ObservedState requires observer_id")
         if not self.observation_id:
             raise ContractViolation("ObservedState requires observation_id")
-        if not self.world_epoch < 0:
+        if self.world_epoch < 0:
             raise ContractViolation("world_epoch cannot be negative")
         if not 0.0 <= self.uncertainty <= 1.0:
             raise ContractViolation("uncertainty must be within [0.0, 1.0]")
