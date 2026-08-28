@@ -22,11 +22,11 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install pytest pytest-cov anyio cryptography
+          pip install pytest pytest-cov pytest-asyncio anyio cryptography
 
       - name: Verify dependencies
         run: |
-          python -c "import cryptography; print(f'cryptography version: {cryptography.__version__}')"
+          python -c "import cryptography, pytest_asyncio; print('Dependencies verified successfully')"
 
       - name: Run Pytest Suite
         run: |
