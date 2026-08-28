@@ -2,6 +2,7 @@
 Integration tests validating the Intent Firewall, Action Dispatcher, and StateLogger pipeline.
 """
 
+import time
 import pytest
 from src.control.intent_firewall import IntentFirewall
 from src.control.action_dispatcher import ActionDispatcher, StateLogger
@@ -14,13 +15,23 @@ def test_dispatcher_firewall_successful_pipeline():
     logger = StateLogger()
     dispatcher = ActionDispatcher(logger=logger)
 
-    # Instantiate authorized signed intent
+    now = time.time()
+    
+    # Instantiate authorized signed intent matching full cryptographic schema
     intent = SignedActionIntent(
         intent_id="intent_001",
-        target="spk_01",
-        action="SET_ATTENUATION",
+        device_id="spk_01",
+        operation="SET_ATTENUATION",
         parameters={"level_db": 15},
-        epoch=100
+        issuer_id="governor_v1",
+        policy_digest="policy_test_digest",
+        capability_lease_digest="lease_test_digest",
+        created_at=now,
+        expires_at=now + 60.0,
+        nonce="nonce_001",
+        transaction_id="tx_001",
+        protocol_version="1.0",
+        signature=""
     )
 
     # Dispatch intent
