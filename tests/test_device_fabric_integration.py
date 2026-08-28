@@ -1,9 +1,11 @@
+import pytest
+
+from src.device_fabric.mocks.mock_tv import MockTVAdapter
+from src.device_fabric.router import DeviceFabricRouter
+from src.device_fabric.contracts import DeviceState
+
 @pytest.mark.asyncio
 async def test_device_fabric_execution_verification_and_idempotency():
-    from src.device_fabric.mocks.mock_tv import MockTVAdapter
-    from src.device_fabric.router import DeviceFabricRouter
-    from src.device_fabric.contracts import DeviceState
-
     adapter = MockTVAdapter("tv_living_room")
     router = DeviceFabricRouter()
     router.register_device("tv_living_room", adapter)
