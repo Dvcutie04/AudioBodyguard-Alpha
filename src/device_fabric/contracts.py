@@ -48,6 +48,13 @@ class PreconditionStatus(Enum):
     DRIFT = auto()
 
 
+class ActuationStatus(Enum):
+    """Status of command execution on a device."""
+    EXECUTED = auto()
+    DUPLICATE_ABSORBED = auto()
+    ROLLED_BACK = auto()
+
+
 @dataclass(frozen=True)
 class DeviceState:
     """Strongly typed representation of physical device state."""
@@ -170,7 +177,7 @@ class ObservedState:
             raise ContractViolation("ObservedState requires observer_id")
         if not self.observation_id:
             raise ContractViolation("ObservedState requires observation_id")
-        if self.world_epoch < 0:
+        if not self.world_epoch < 0:
             raise ContractViolation("world_epoch cannot be negative")
         if not 0.0 <= self.uncertainty <= 1.0:
             raise ContractViolation("uncertainty must be within [0.0, 1.0]")
