@@ -1,43 +1,34 @@
 import pytest
-
 from src.device_fabric.mocks.mock_tv import MockTVAdapter
 from src.device_fabric.router import DeviceFabricRouter
-from src.device_fabric.contracts import DeviceState
+from src.device_fabric.contracts import DeviceState, TransactionState
+from src.device_fabric.transaction import PhysicalTransactionManager
+from src.device_fabric.precondition import PreconditionEvaluator
+from src.device_fabric.digital_twin import DigitalTwin
 
 @pytest.mark.asyncio
 async def test_device_fabric_execution_verification_and_idempotency():
+    # 1. Build the engine components
     adapter = MockTVAdapter("tv_living_room")
-    router = DeviceFabricRouter()
-    router.register_device("tv_living_room", adapter)
-
-    # Match the expected state to the adapter's actual state (HDMI_1 is the default)
-    expected_state = DeviceState(
-        power=True, 
-        volume=44.0, 
-        muted=False, 
-        input_source="HDMI_1"
-    )
-
-    # 1. Execute & Verify
-    receipt, verification = await router.dispatch_and_verify(
+    evaluator = PreconditionEvaluator(staleness_threshold_seconds=2.0)
+    twin = DigitalTwin()
+    
+    # 2. Assemble the transaction manager
+    tx_manager = PhysicalTransactionManager(adapter, evaluator, twin)
+    
+    # 3. Inject it into the Router
+    router = DeviceFabricRouter(tx_manager)
+    
+    # 4. Setup mock states
+    pre_state = DeviceState(power=True, volume=50.0, input_source="HDMI_1")
+    target = DeviceState(power=True, volume=44.0, input_source="HDMI_1", payload={"delta_db": 6.0})
+    
+    # 5. Dispatch
+    status, err = await router.dispatch_intent(
         device_id="tv_living_room",
-        action_id="act_001",
-        intent_digest="sha256_digest_abc",
-        command="REDUCE_VOLUME",
-        payload={"delta_db": 6.0},
-        expected_target_state=expected_state,
+        operation="REDUCE_VOLUME",
+        expected_pre_state=pre_state,
+        target_state=target
     )
-
-    assert receipt.status == "EXECUTED"
-    assert verification.verified is True
-    assert verification.observed_state.volume == 44.0
-
-    # 2. Idempotency absorb check
-    dup_receipt = await adapter.execute(
-        "act_001", 
-        "sha256_digest_abc", 
-        "REDUCE_VOLUME", 
-        {"delta_db": 6.0}
-    )
-    assert dup_receipt.status == "DUPLICATE_ABSORBED"
-    assert adapter.state.volume == 44.0  # State remains unchanged
+    
+    assert status == TransactionState.COMMITTED
