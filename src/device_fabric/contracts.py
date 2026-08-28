@@ -39,6 +39,15 @@ class TransactionState(Enum):
     PHYSICAL_DIVERGENCE = auto()
 
 
+class PreconditionStatus(Enum):
+    """Status of precondition evaluation."""
+    MATCH = auto()
+    UNAVAILABLE = auto()
+    MALFORMED = auto()
+    STALE = auto()
+    DRIFT = auto()
+
+
 @dataclass(frozen=True)
 class DeviceState:
     """Strongly typed representation of physical device state."""
@@ -76,6 +85,48 @@ class AuthorizedActionIntent:
             raise ContractViolation("authorization_digest required")
         if self.deadline_at <= 0:
             raise ContractViolation("deadline_at must be strictly positive")
+
+
+@dataclass(frozen=True)
+class DeviceIdentity:
+    """Unique identifier and metadata for a physical device."""
+    device_id: str
+    device_type: str
+    vendor: str
+    model: str
+    firmware_version: str
+    
+    def __post_init__(self) -> None:
+        if not self.device_id:
+            raise ContractViolation("device_id required")
+        if not self.device_type:
+            raise ContractViolation("device_type required")
+
+
+@dataclass(frozen=True)
+class DeviceCapabilities:
+    """The set of operations a device can perform."""
+    device_id: str
+    capabilities: frozenset[str]
+    
+    def __post_init__(self) -> None:
+        if not self.device_id:
+            raise ContractViolation("device_id required")
+
+
+@dataclass(frozen=True)
+class ActuationReceipt:
+    """Receipt confirming command execution on the device."""
+    action_id: str
+    device_id: str
+    executed_at: datetime
+    physical_state_digest: str
+    
+    def __post_init__(self) -> None:
+        if not self.action_id:
+            raise ContractViolation("action_id required")
+        if not self.device_id:
+            raise ContractViolation("device_id required")
 
 
 @dataclass(frozen=True)
