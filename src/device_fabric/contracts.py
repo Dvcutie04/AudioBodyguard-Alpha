@@ -193,9 +193,7 @@ class DeviceCapabilities:
         if not self.device_id:
             raise ContractViolation("device_id required")
         if not isinstance(self.capabilities, frozenset):
-            raise ContractViolation(
-                "capabilities must be a frozenset"
-            )
+            raise ContractViolation("capabilities must be a frozenset")
 
 # ---------------------------------------------------------------------------
 # Actuation receipt
@@ -244,42 +242,26 @@ class ActuationReceipt:
             raise ContractViolation("physical_state_digest required")
         # Status must be strongly typed.
         if not isinstance(self.status, ActuationStatus):
-            raise ContractViolation(
-                "status must be an ActuationStatus"
-            )
+            raise ContractViolation("status must be an ActuationStatus")
         # Temporal invariants.
         if self.timestamp.tzinfo is None:
-            raise ContractViolation(
-                "timestamp must be timezone-aware"
-            )
+            raise ContractViolation("timestamp must be timezone-aware")
         if self.executed_at.tzinfo is None:
-            raise ContractViolation(
-                "executed_at must be timezone-aware"
-            )
+            raise ContractViolation("executed_at must be timezone-aware")
         # An actuation receipt cannot claim a future execution relative
         # to its own receipt timestamp.
         if self.executed_at > self.timestamp:
-            raise ContractViolation(
-                "executed_at cannot be later than receipt timestamp"
-            )
-        # A rolled-back action must still carry a physical post-state
-        # digest. This prevents rollback from becoming an unobservable
-        # side effect.
+            raise ContractViolation("executed_at cannot be later than receipt timestamp")
+        # A rolled-back action must still carry a physical post-state digest.
         if (
             self.status == ActuationStatus.ROLLED_BACK
             and not self.post_state_digest
         ):
-            raise ContractViolation(
-                "rolled-back actuation requires post_state_digest"
-            )
+            raise ContractViolation("rolled-back actuation requires post_state_digest")
 
     @property
     def receipt_digest(self) -> str:
-        """
-        Deterministic digest of the receipt's causal lineage.
-        This does not replace the Physical Commit Certificate. It provides
-        a stable identity for the actuation receipt itself.
-        """
+        """Deterministic digest of the receipt's causal lineage."""
         return canonical_digest(
             "ACTUATION_RECEIPT",
             self.receipt_id,
@@ -311,17 +293,11 @@ class PredictedState:
 
     def __post_init__(self) -> None:
         if not self.device_id:
-            raise ContractViolation(
-                "PredictedState requires device_id"
-            )
+            raise ContractViolation("PredictedState requires device_id")
         if not 0.0 <= self.confidence <= 1.0:
-            raise ContractViolation(
-                "confidence must be within [0.0, 1.0]"
-            )
+            raise ContractViolation("confidence must be within [0.0, 1.0]")
         if self.world_epoch_reference < 0:
-            raise ContractViolation(
-                "world_epoch_reference cannot be negative"
-            )
+            raise ContractViolation("world_epoch_reference cannot be negative")
 
     @property
     def epistemic_class(self) -> str:
@@ -340,29 +316,17 @@ class ObservedState:
 
     def __post_init__(self) -> None:
         if not self.device_id:
-            raise ContractViolation(
-                "ObservedState requires device_id"
-            )
+            raise ContractViolation("ObservedState requires device_id")
         if not self.observer_id:
-            raise ContractViolation(
-                "ObservedState requires observer_id"
-            )
+            raise ContractViolation("ObservedState requires observer_id")
         if not self.observation_id:
-            raise ContractViolation(
-                "ObservedState requires observation_id"
-            )
+            raise ContractViolation("ObservedState requires observation_id")
         if self.world_epoch < 0:
-            raise ContractViolation(
-                "world_epoch cannot be negative"
-            )
+            raise ContractViolation("world_epoch cannot be negative")
         if not 0.0 <= self.uncertainty <= 1.0:
-            raise ContractViolation(
-                "uncertainty must be within [0.0, 1.0]"
-            )
+            raise ContractViolation("uncertainty must be within [0.0, 1.0]")
         if not self.measurement_digest:
-            raise ContractViolation(
-                "ObservedState requires measurement_digest"
-            )
+            raise ContractViolation("ObservedState requires measurement_digest")
 
     @property
     def epistemic_class(self) -> str:
@@ -380,25 +344,15 @@ class CommittedState:
 
     def __post_init__(self) -> None:
         if not self.device_id:
-            raise ContractViolation(
-                "CommittedState requires device_id"
-            )
+            raise ContractViolation("CommittedState requires device_id")
         if not self.transaction_id:
-            raise ContractViolation(
-                "CommittedState requires transaction_id"
-            )
+            raise ContractViolation("CommittedState requires transaction_id")
         if self.authorized_epoch < 0:
-            raise ContractViolation(
-                "authorized_epoch cannot be negative"
-            )
+            raise ContractViolation("authorized_epoch cannot be negative")
         if not self.command_digest:
-            raise ContractViolation(
-                "CommittedState requires command_digest"
-            )
+            raise ContractViolation("CommittedState requires command_digest")
         if not self.authorization_digest:
-            raise ContractViolation(
-                "CommittedState requires authorization_digest"
-            )
+            raise ContractViolation("CommittedState requires authorization_digest")
 
     @property
     def epistemic_class(self) -> str:
@@ -416,22 +370,18 @@ class ReconciledState:
     reconciliation_digest: str = ""
 
     def __post_init__(self) -> None:
+        if not isinstance(self.committed_state, CommittedState):
+            raise ContractViolation("committed_state must be a CommittedState")
+        if not isinstance(self.observed_state, ObservedState):
+            raise ContractViolation("observed_state must be an ObservedState")
         if self.committed_state.device_id != self.device_id:
-            raise ContractViolation(
-                "CommittedState device mismatch"
-            )
+            raise ContractViolation("CommittedState device mismatch")
         if self.observed_state.device_id != self.device_id:
-            raise ContractViolation(
-                "ObservedState device mismatch"
-            )
+            raise ContractViolation("ObservedState device mismatch")
         if self.committed_state.transaction_id != self.transaction_id:
-            raise ContractViolation(
-                "Transaction ID mismatch"
-            )
+            raise ContractViolation("Transaction ID mismatch")
         if self.verified and self.divergence:
-            raise ContractViolation(
-                "A divergent state cannot be verified"
-            )
+            raise ContractViolation("A divergent state cannot be verified")
 
     @property
     def epistemic_class(self) -> str:
@@ -462,30 +412,17 @@ class CapabilityLease:
         if not self.device_id:
             raise ContractViolation("device_id required")
         if self.expires_at <= self.valid_from:
-            raise ContractViolation(
-                "expires_at must be later than valid_from"
-            )
+            raise ContractViolation("expires_at must be later than valid_from")
         if self.authorized_epoch < 0:
-            raise ContractViolation(
-                "authorized_epoch cannot be negative"
-            )
+            raise ContractViolation("authorized_epoch cannot be negative")
         if self.max_world_state_age_ms < 0:
-            raise ContractViolation(
-                "max_world_state_age_ms cannot be negative"
-            )
+            raise ContractViolation("max_world_state_age_ms cannot be negative")
         if self.max_clock_skew_ms < 0:
-            raise ContractViolation(
-                "max_clock_skew_ms cannot be negative"
-            )
+            raise ContractViolation("max_clock_skew_ms cannot be negative")
         if not self.nonce:
-            raise ContractViolation(
-                "CapabilityLease requires nonce"
-            )
+            raise ContractViolation("CapabilityLease requires nonce")
 
-    def is_temporally_valid(
-        self,
-        now: Optional[datetime] = None,
-    ) -> bool:
+    def is_temporally_valid(self, now: Optional[datetime] = None) -> bool:
         now = now or utc_now()
         return self.valid_from <= now < self.expires_at
 
@@ -508,29 +445,16 @@ class VerificationResult:
 
     def __post_init__(self) -> None:
         if self.authorized_epoch < 0:
-            raise ContractViolation(
-                "authorized_epoch cannot be negative"
-            )
+            raise ContractViolation("authorized_epoch cannot be negative")
         if self.observed_epoch is not None and self.observed_epoch < 0:
-            raise ContractViolation(
-                "observed_epoch cannot be negative"
-            )
+            raise ContractViolation("observed_epoch cannot be negative")
         if self.uncertainty_total < 0:
-            raise ContractViolation(
-                "uncertainty_total cannot be negative"
-            )
+            raise ContractViolation("uncertainty_total cannot be negative")
         if self.uncertainty_limit < 0:
-            raise ContractViolation(
-                "uncertainty_limit cannot be negative"
-            )
+            raise ContractViolation("uncertainty_limit cannot be negative")
 
     @property
     def allowed(self) -> bool:
-        """
-        Only an explicit VERIFIED result grants verification authority.
-        No probabilistic, predicted, stale, divergent, or unknown state
-        may implicitly become authorized.
-        """
         return self.status == VerificationStatus.VERIFIED
 
 # ---------------------------------------------------------------------------
@@ -558,41 +482,21 @@ class PhysicalCommitCertificate:
 
     def __post_init__(self) -> None:
         if not self.certificate_id:
-            raise ContractViolation(
-                "certificate_id required"
-            )
+            raise ContractViolation("certificate_id required")
         if not self.transaction_id:
-            raise ContractViolation(
-                "transaction_id required"
-            )
+            raise ContractViolation("transaction_id required")
         if not self.device_id:
-            raise ContractViolation(
-                "device_id required"
-            )
+            raise ContractViolation("device_id required")
         if self.authorized_epoch < 0:
-            raise ContractViolation(
-                "authorized_epoch cannot be negative"
-            )
+            raise ContractViolation("authorized_epoch cannot be negative")
         if self.verification.transaction_id != self.transaction_id:
-            raise ContractViolation(
-                "VerificationResult transaction mismatch"
-            )
-        # Critical Physical Truth invariant:
-        # VERIFIED means an actual observed physical state exists.
-        if (
-            self.verification.allowed
-            and self.observed_state_digest is None
-        ):
-            raise ContractViolation(
-                "Verified commit requires observed state digest"
-            )
+            raise ContractViolation("VerificationResult transaction mismatch")
+        if self.verification.allowed and self.observed_state_digest is None:
+            raise ContractViolation("Verified commit requires observed state digest")
 
     @property
     def physically_verified(self) -> bool:
-        return (
-            self.verification.status
-            == VerificationStatus.VERIFIED
-        )
+        return self.verification.status == VerificationStatus.VERIFIED
 
 # ---------------------------------------------------------------------------
 # Epoch verification
@@ -601,18 +505,10 @@ def verify_epoch_lock(
     authorized_epoch: int,
     observed_epoch: int,
 ) -> VerificationResult:
-    """
-    Verify that the physical world epoch observed at reconciliation
-    matches the epoch authorized at commit time.
-    """
     if authorized_epoch < 0:
-        raise ContractViolation(
-            "authorized_epoch cannot be negative"
-        )
+        raise ContractViolation("authorized_epoch cannot be negative")
     if observed_epoch < 0:
-        raise ContractViolation(
-            "observed_epoch cannot be negative"
-        )
+        raise ContractViolation("observed_epoch cannot be negative")
     if authorized_epoch != observed_epoch:
         return VerificationResult(
             status=VerificationStatus.STATE_EPOCH_MISMATCH,
@@ -621,10 +517,7 @@ def verify_epoch_lock(
             observed_epoch=observed_epoch,
             uncertainty_total=1.0,
             uncertainty_limit=0.0,
-            reason=(
-                "Authorized physical epoch differs from "
-                "observed physical epoch."
-            ),
+            reason="Authorized physical epoch differs from observed physical epoch.",
         )
     return VerificationResult(
         status=VerificationStatus.VERIFIED,
