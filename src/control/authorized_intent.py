@@ -6,6 +6,7 @@ from the Safety Governor to the Physical Commit Layer / Action Dispatcher.
 """
 
 import time
+import json
 import hashlib
 import hmac
 from dataclasses import dataclass, field
@@ -41,8 +42,9 @@ class SignedActionIntent:
     @property
     def canonical_bytes(self) -> bytes:
         """Returns the canonical payload string for cryptographic HMAC verification."""
+        params_str = json.dumps(self.parameters, sort_keys=True, separators=(',', ':'))
         payload = (
-            f"{self.intent_id}:{self.device_id}:{self.operation}:{self.epoch}:"
+            f"{self.intent_id}:{self.device_id}:{self.operation}:{params_str}:{self.epoch}:"
             f"{self.expires_at}:{self.nonce}:{self.transaction_id}"
         )
         return payload.encode("utf-8")
