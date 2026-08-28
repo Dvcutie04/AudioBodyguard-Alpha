@@ -1,6 +1,5 @@
-# AQSS-36-OMEGA Core Dependencies
 unittest2>=1.1.0; python_version < '3.4'
-# Optional scientific and quantum modeling extensions (future-proofing)
 numpy>=1.22.0
 scipy>=1.8.0
 pytest
+pytest-cov
