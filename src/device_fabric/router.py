@@ -8,9 +8,9 @@ from src.device_fabric.contracts import (
 from src.device_fabric.transaction import PhysicalTransactionManager
 
 
-class FabricRouter:
+class DeviceFabricRouter:
     """
-    The main routing gateway for the AQSS-36-OMEGA Physical Commit Layer.
+    The main routing gateway for the Physical Commit Layer.
     Translates raw commands into cryptographically bound intents.
     """
     def __init__(self, transaction_manager: PhysicalTransactionManager):
@@ -36,7 +36,7 @@ class FabricRouter:
             operation=operation,
             target_state=target_state,
             expected_pre_state=expected_pre_state,
-            authorization_digest="auth_sha256_placeholder", # Phase 3 IAM integration
+            authorization_digest="auth_sha256_placeholder",
             deadline_at=now + 10.0
         )
         
