@@ -55,6 +55,14 @@ class ActuationStatus(Enum):
     ROLLED_BACK = auto()
 
 
+class DeviceType(Enum):
+    """Enumeration of supported device types."""
+    TV = "TV"
+    SPEAKER = "SPEAKER"
+    AMPLIFIER = "AMPLIFIER"
+    MICROPHONE = "MICROPHONE"
+
+
 @dataclass(frozen=True)
 class DeviceState:
     """Strongly typed representation of physical device state."""
