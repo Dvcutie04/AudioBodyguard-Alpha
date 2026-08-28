@@ -1,31 +1,43 @@
-import time
-from typing import Optional
+"""
+AQSS-36-OMEGA
+Physical Truth Runtime — Mock TV Device Implementation
+"""
+from __future__ import annotations
+from typing import Optional, Mapping
+from datetime import datetime, timezone
 
-from src.device_fabric.adapter import DeviceAdapter
 from src.device_fabric.contracts import (
     ActuationReceipt,
     ActuationStatus,
+    AuthorizedActionIntent,
+    ContractViolation,
     DeviceCapabilities,
     DeviceIdentity,
     DeviceState,
     DeviceType,
-    VerificationResult,
+    canonical_digest,
+    utc_now,
 )
 
 
-class MockTVAdapter(DeviceAdapter):
+class MockTV:
+    """Mock implementation of a physical TV device for testing contract execution."""
+
     def __init__(self, device_id: str):
         self._identity = DeviceIdentity(
             device_id=device_id,
             device_type=DeviceType.TV,
-            manufacturer="MockCorp",
+            vendor="MockCorp",
             model="MockTV-2000",
-            firmware_version="1.0.0-mock",  # Added to satisfy the updated contract
+            firmware_version="1.0.0-mock",
         )
         self._state = DeviceState(
-            power=True, volume=50.0, muted=False, input_source="HDMI_1"
+            power=True,
+            volume=50.0,
+            muted=False,
+            input_source="HDMI_1",
         )
-        self._execution_history = set()
+        self._execution_history: set[str] = set()
 
     @property
     def identity(self) -> DeviceIdentity:
@@ -35,120 +47,67 @@ class MockTVAdapter(DeviceAdapter):
     def state(self) -> DeviceState:
         return self._state
 
-    def inject_fault_state(self, power: bool, volume: float, muted: bool) -> None:
-        """Test hook to simulate hardware state drifting outside of fabric control."""
-        self._state = DeviceState(
-            power=power,
-            volume=volume,
-            muted=muted,
-            input_source=self._state.input_source,
-        )
-
-    async def discover(self) -> DeviceIdentity:
-        return self.identity
-
-    async def capabilities(self) -> DeviceCapabilities:
+    @property
+    def capabilities(self) -> DeviceCapabilities:
         return DeviceCapabilities(
-            capability_digest="mock_cap_sha256_001",
-            supported_commands=["SET_POWER", "SET_VOLUME", "REDUCE_VOLUME", "MUTE"],
+            device_id=self._identity.device_id,
+            capabilities=frozenset({
+                "set_power",
+                "set_volume",
+                "set_muted",
+                "set_input_source",
+            }),
         )
 
-    async def observe_state(self) -> DeviceState:
-        return self.state
-
-    async def execute(
+    def execute_intent(
         self,
-        action_id: str,
-        intent_digest: str,
-        command: str,
-        payload: dict,
-    ) -> ActuationReceipt:
-        
-        tx_digest = f"{action_id}|{self.identity.device_id}|{intent_digest}"
-        
-        if tx_digest in self._execution_history:
-            return ActuationReceipt(
-                receipt_id=f"rcpt_{time.time()}",
-                action_id=action_id,
-                device_id=self.identity.device_id,
-                intent_digest=intent_digest,
-                status=ActuationStatus.DUPLICATE_ABSORBED.value,
-                timestamp=time.time(),
-                transaction_digest=tx_digest,
-                capability_digest="mock_cap_sha256_001",
-                pre_state_digest=self.state.state_digest,
-                post_state_digest=self.state.state_digest,
-                fabric_sequence=0,
-            )
-
-        pre_state = self.state
-        
-        # Simulate execution
-        if command == "REDUCE_VOLUME":
-            delta = payload.get("delta_db", 0.0)
-            new_vol = max(0.0, self.state.volume - delta)
-            self._state = DeviceState(
-                power=self.state.power,
-                volume=new_vol,
-                muted=self.state.muted,
-                input_source=self.state.input_source
-            )
-
-        self._execution_history.add(tx_digest)
-        
-        return ActuationReceipt(
-            receipt_id=f"rcpt_{time.time()}",
-            action_id=action_id,
-            device_id=self.identity.device_id,
-            intent_digest=intent_digest,
-            status=ActuationStatus.EXECUTED.value,
-            timestamp=time.time(),
-            transaction_digest=tx_digest,
-            capability_digest="mock_cap_sha256_001",
-            pre_state_digest=pre_state.state_digest,
-            post_state_digest=self.state.state_digest,
-            fabric_sequence=0,
-        )
-
-    async def verify(
-        self,
-        expected: DeviceState,
+        intent: AuthorizedActionIntent,
         transaction_digest: Optional[str] = None,
-    ) -> VerificationResult:
-        current = await self.observe_state()
-
-        vol_match = abs(current.volume - expected.volume) < 0.1
-        match = (
-            current.power == expected.power
-            and vol_match
-            and current.muted == expected.muted
-            and current.input_source == expected.input_source
-        )
-
-        return VerificationResult(
-            verified=match,
-            expected_state=expected,
-            observed_state=current,
-            error_message=None if match else "State mismatch",
-            transaction_digest=transaction_digest,
-        )
-
-    async def rollback(
-        self, target_pre_state: DeviceState, lineage_digest: str
+        capability_digest: Optional[str] = None,
     ) -> ActuationReceipt:
-        pre_rollback_state = self.state
-        self._state = target_pre_state
-        
+        """
+        Execute an authorized action intent and generate an ActuationReceipt.
+        """
+        if intent.device_id != self._identity.device_id:
+            raise ContractViolation("Intent device_id mismatch with target device")
+
+        # Capture pre-actuation physical state digest
+        pre_state_digest = self._state.state_digest
+
+        # Handle duplicate absorption or state mutation
+        status = ActuationStatus.EXECUTED
+        if intent.intent_id in self._execution_history:
+            status = ActuationStatus.DUPLICATE_ABSORBED
+        else:
+            self._execution_history.add(intent.intent_id)
+            # Apply target state mutation
+            self._state = intent.target_state
+
+        now = utc_now()
+        post_state_digest = self._state.state_digest
+
+        # Derive fallbacks for transaction lineage if omitted by caller
+        resolved_tx_digest = (
+            transaction_digest
+            or canonical_digest("TX_FALLBACK", intent.intent_id, now.isoformat())
+        )
+        resolved_cap_digest = (
+            capability_digest
+            or canonical_digest("CAP_FALLBACK", self._identity.device_id, intent.operation)
+        )
+        receipt_id = canonical_digest("RECEIPT", intent.intent_id, now.isoformat())
+
         return ActuationReceipt(
-            receipt_id=f"rb_{time.time()}",
-            action_id="ROLLBACK",
-            device_id=self.identity.device_id,
-            intent_digest=lineage_digest,
-            status=ActuationStatus.ROLLED_BACK.value,
-            timestamp=time.time(),
-            transaction_digest=f"rb_{lineage_digest}",
-            capability_digest="mock_cap_sha256_001",
-            pre_state_digest=pre_rollback_state.state_digest,
-            post_state_digest=self.state.state_digest,
-            fabric_sequence=0,
+            receipt_id=receipt_id,
+            action_id=intent.intent_id,
+            device_id=self._identity.device_id,
+            intent_digest=intent.authorization_digest,
+            status=status,
+            timestamp=now,
+            transaction_digest=resolved_tx_digest,
+            capability_digest=resolved_cap_digest,
+            pre_state_digest=pre_state_digest,
+            post_state_digest=post_state_digest,
+            physical_state_digest=post_state_digest,
+            executed_at=now,
         )
