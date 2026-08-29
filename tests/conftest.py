@@ -3,9 +3,11 @@ from unittest.mock import MagicMock
 from src.device_fabric.transaction import PhysicalTransactionManager
 from src.device_fabric.precondition import PreconditionEvaluator
 from src.device_fabric.digital_twin import DigitalTwin
-from src.control.authorized_intent import AuthorizedActionIntent
-from src.control.capability_lease import CapabilityLease
-from src.device_fabric.contracts import DeviceState
+from src.device_fabric.contracts import (
+    AuthorizedActionIntent,
+    CapabilityLease,
+    DeviceState,
+)
 
 
 @pytest.fixture
@@ -26,7 +28,7 @@ def hil_env():
         expected_pre_state=pre_state,
         target_state=target_state,
         authorization_digest="auth_digest_mock",
-        nonce="test-nonce-123"
+        nonce="test-nonce-123",
     )
 
     lease = CapabilityLease(
@@ -37,7 +39,7 @@ def hil_env():
         authorization_digest="auth_digest_mock",
         firmware_identity="omega-v1.0",
         protocol_version="1.0",
-        nonce="test-nonce-123"
+        nonce="test-nonce-123",
     )
 
     return manager, adapter, intent, lease
