@@ -1,97 +1,90 @@
 import time
-from typing import Tuple, Optional
-
+from typing import Optional, Tuple
 from src.device_fabric.contracts import (
-    AuthorizedActionIntent, 
-    CapabilityLease, 
-    TransactionState, 
-    PreconditionStatus, 
-    DeviceState
+    AuthorizedActionIntent,
+    CapabilityLease,
+    CommitCertificate,
+    ContractViolation,
+    DeviceState,
+    PreconditionStatus,
+    TransactionState,
+    VerificationResult,
+    VerificationStatus,
 )
-from src.device_fabric.precondition import PreconditionEvaluator
-from src.device_fabric.digital_twin import DigitalTwin
+
 
 class PhysicalTransactionManager:
-    """
-    Coordinates verifiable physical state transitions.
-    Guarantees: Idempotency, Precondition Drift Protection, and Verified Rollback.
-    """
-    def __init__(
-        self, 
-        adapter, 
-        precondition_evaluator: PreconditionEvaluator, 
-        digital_twin: DigitalTwin
-    ):
+    def __init__(self, adapter, precondition_evaluator, digital_twin):
         self.adapter = adapter
-        self.precondition = precondition_evaluator
+        self.evaluator = precondition_evaluator
         self.twin = digital_twin
+        self.state = TransactionState.PRECONDITION_CHECK
 
     async def execute_transaction(
-        self, 
-        intent: AuthorizedActionIntent, 
-        lease: CapabilityLease,
-        current_time: Optional[float] = None
-    ) -> Tuple[TransactionState, Optional[str]]:
-        
-        now = current_time or time.time()
-        tx_id = f"tx_{intent.intent_id}"
+        self, intent: AuthorizedActionIntent, lease: CapabilityLease
+    ) -> Tuple[str, Optional[CommitCertificate]]:
+        # 1. Capability Lease Check
+        if intent.operation not in lease.capabilities:
+            self.state = TransactionState.FAILED_CAPABILITY
+            return "FAILED_CAPABILITY", None
 
-        # 1. Cryptographic Lease Verification
-        if lease.expires_at < now:
-            return TransactionState.FAILED_VERIFICATION, "Capability lease expired."
-        if lease.device_id != intent.device_id:
-            return TransactionState.FAILED_CAPABILITY, "Lease device mismatch."
+        if lease.expires_at > 0 and time.time() > lease.expires_at:
+            self.state = TransactionState.FAILED_CAPABILITY
+            return "FAILED_CAPABILITY", None
 
-        # 2. Precondition / World-State Drift Check
-        observed_pre_state = await self.adapter.observe_state()
-        pre_status = self.precondition.evaluate(intent.expected_pre_state, observed_pre_state, now)
-        
-        if pre_status != PreconditionStatus.MATCH:
-            return TransactionState.FAILED_DRIFT, f"Precondition failed: {pre_status.name}"
+        # 2. Precondition Evaluation
+        self.state = TransactionState.PRECONDITION_CHECK
+        observed_state = await self.adapter.observe_state()
+        eval_result = self.evaluator.evaluate(observed_state, intent.expected_pre_state)
 
-        # 3. Digital Twin Predictive Constraint Check
-        if not self.twin.validate_transition(intent.device_id, observed_pre_state, intent.target_state):
-            return TransactionState.FAILED_VERIFICATION, "Digital Twin constraint violation."
+        if eval_result != PreconditionStatus.MATCH:
+            self.state = TransactionState.FAILED_PRECONDITION
+            return "FAILED_PRECONDITION", None
 
-        # 4. Physical Execution
-        try:
-            await self.adapter.execute(
-                action_id=intent.intent_id,
-                intent_digest=intent.intent_digest,
-                command=intent.operation,
-                payload=intent.target_state.payload 
-            )
-        except Exception as e:
-            return await self._attempt_rollback(tx_id, intent, observed_pre_state, f"Execution fault: {str(e)}")
+        # 3. Execution
+        self.state = TransactionState.EXECUTING
+        success, error = await self.adapter.apply_state(intent.target_state)
+        if not success:
+            self.state = TransactionState.FAILED_EXECUTION
+            return "FAILED_EXECUTION", None
 
-        # 5. Independent Post-State Observation & Verification (Physical Truth Invariant)
-        verification = await self.adapter.verify(intent.target_state, tx_id)
-        
-        if not verification.verified:
-            return await self._attempt_rollback(tx_id, intent, observed_pre_state, "Physical verification failed")
+        self.state = TransactionState.EXECUTED
 
-        return TransactionState.COMMITTED, None
+        # 4. Post-Execution Verification
+        self.state = TransactionState.VERIFYING
+        post_observed_state = await self.adapter.observe_state()
+        post_eval_result = self.evaluator.evaluate(post_observed_state, intent.target_state)
 
-    async def _attempt_rollback(
-        self, 
-        tx_id: str, 
-        intent: AuthorizedActionIntent, 
-        original_state: DeviceState,
-        reason: str
-    ) -> Tuple[TransactionState, str]:
-        """
-        Attempts to restore hardware to original state if a transaction fails.
-        Transitions to RECOVERY_REQUIRED if hardware state is indeterminate.
-        """
-        try:
-            await self.adapter.rollback(original_state, tx_id)
-            
-            # Verify the rollback actually worked
-            verification = await self.adapter.verify(original_state, f"rb_{tx_id}")
-            if verification.verified:
-                return TransactionState.ROLLED_BACK, f"{reason} | Rolled back successfully."
+        if post_eval_result != PreconditionStatus.MATCH:
+            self.state = TransactionState.FAILED_VERIFICATION
+            # Attempt Rollback
+            rollback_success, _ = await self.adapter.rollback(intent.expected_pre_state)
+            if rollback_success:
+                self.state = TransactionState.ROLLED_BACK
             else:
-                return TransactionState.RECOVERY_REQUIRED, f"{reason} | CRITICAL: Rollback failed. State unknown."
-                
-        except Exception as e:
-            return TransactionState.RECOVERY_REQUIRED, f"{reason} | CRITICAL: Exception during rollback. {str(e)}"
+                self.state = TransactionState.RECOVERY_REQUIRED
+
+            cert = CommitCertificate(
+                verification_result=VerificationResult(
+                    status=VerificationStatus.FAILED_VERIFICATION,
+                    details="Post-execution drift detected",
+                    verified=False,
+                ),
+                observed_state_digest=None,
+            )
+            return "FAILED_VERIFICATION", cert
+
+        # 5. Commit
+        self.state = TransactionState.VERIFIED
+        self.twin.update_state(intent.device_id, post_observed_state)
+        self.state = TransactionState.COMMITTED
+
+        cert = CommitCertificate(
+            verification_result=VerificationResult(
+                status=VerificationStatus.VERIFIED,
+                details="Transaction committed successfully",
+                verified=True,
+            ),
+            observed_state_digest=f"digest_{hash(str(post_observed_state))}",
+        )
+        return "COMMITTED", cert
