@@ -13,7 +13,6 @@ class MockTV:
         self.identity = DeviceIdentity(
             device_id=device_id,
             device_type="TV",
-            firmware_version="1.0.0",
         )
         self.capabilities = DeviceCapabilities(
             supported_operations=frozenset(["set_volume", "set_power", "set_muted", "REDUCE_VOLUME"]),
