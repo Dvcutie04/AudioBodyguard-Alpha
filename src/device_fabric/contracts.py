@@ -35,6 +35,21 @@ class PreconditionStatus(Enum):
     MISMATCH = auto()
 
 
+class TransactionState(Enum):
+    PRECONDITION_CHECK = auto()
+    EXECUTING = auto()
+    EXECUTED = auto()
+    VERIFYING = auto()
+    VERIFIED = auto()
+    COMMITTED = auto()
+    FAILED_CAPABILITY = auto()
+    FAILED_PRECONDITION = auto()
+    FAILED_EXECUTION = auto()
+    FAILED_VERIFICATION = auto()
+    ROLLED_BACK = auto()
+    RECOVERY_REQUIRED = auto()
+
+
 class ContractViolation(Exception):
     pass
 
