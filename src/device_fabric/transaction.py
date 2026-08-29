@@ -32,8 +32,10 @@ class TransactionReceipt:
 class PhysicalTransactionManager:
     """Manages execution and tracking of physical device transactions."""
 
-    def __init__(self, fabric_router=None):
-        self.fabric_router = fabric_router
+    def __init__(self, adapter=None, precondition_evaluator=None, digital_twin=None):
+        self.adapter = adapter
+        self.precondition_evaluator = precondition_evaluator
+        self.digital_twin = digital_twin
         self.active_transactions: Dict[str, Transaction] = {}
 
     def execute_transaction(self, transaction: Transaction) -> TransactionReceipt:
