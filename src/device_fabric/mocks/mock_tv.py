@@ -1,142 +1,28 @@
-"""
-AQSS-36-OMEGA
-Physical Truth Runtime — Mock TV & Device Fabric Adapter
-"""
-from __future__ import annotations
-from typing import Optional, Mapping
-from datetime import datetime, timezone
-
-from src.device_fabric.contracts import (
-    ActuationReceipt,
-    ActuationStatus,
-    AuthorizedActionIntent,
-    ContractViolation,
-    DeviceCapabilities,
-    DeviceIdentity,
-    DeviceState,
-    DeviceType,
-    canonical_digest,
-    utc_now,
-)
-
-
-class MockTV:
-    """Mock implementation of a physical TV device simulating state and actuation."""
-
-    def __init__(self, device_id: str):
-        self._identity = DeviceIdentity(
-            device_id=device_id,
-            device_type=DeviceType.TV,
-            vendor="MockCorp",
-            model="MockTV-2000",
-            firmware_version="1.0.0-mock",
-        )
-        self._state = DeviceState(
-            power=True,
-            volume=50.0,
-            muted=False,
-            input_source="HDMI_1",
-        )
-        self._execution_history: set[str] = set()
-
-    @property
-    def identity(self) -> DeviceIdentity:
-        return self._identity
-
-    @property
-    def state(self) -> DeviceState:
-        return self._state
-
-    @property
-    def capabilities(self) -> DeviceCapabilities:
-        return DeviceCapabilities(
-            device_id=self._identity.device_id,
-            capabilities=frozenset({
-                "set_power",
-                "set_volume",
-                "set_muted",
-                "set_input_source",
-            }),
-        )
-
-    def execute_intent(
-        self,
-        intent: AuthorizedActionIntent,
-        transaction_digest: Optional[str] = None,
-        capability_digest: Optional[str] = None,
-    ) -> ActuationReceipt:
-        """
-        Execute an authorized action intent directly on the mock physical device.
-        Generates a fully qualified ActuationReceipt.
-        """
-        if intent.device_id != self._identity.device_id:
-            raise ContractViolation("Intent device_id mismatch with target device")
-
-        # Capture pre-actuation state digest
-        pre_state_digest = self._state.state_digest
-
-        # Handle execution history / duplicate absorption
-        status = ActuationStatus.EXECUTED
-        if intent.intent_id in self._execution_history:
-            status = ActuationStatus.DUPLICATE_ABSORBED
-        else:
-            self._execution_history.add(intent.intent_id)
-            # Perform physical state mutation
-            self._state = intent.target_state
-
-        now = utc_now()
-        post_state_digest = self._state.state_digest
-
-        # Construct or resolve missing cryptographic lineage items
-        resolved_tx_digest = (
-            transaction_digest
-            or canonical_digest("TX_FALLBACK", intent.intent_id, now.isoformat())
-        )
-        resolved_cap_digest = (
-            capability_digest
-            or canonical_digest("CAP_FALLBACK", self._identity.device_id, intent.operation)
-        )
-        receipt_id = canonical_digest("RECEIPT", intent.intent_id, now.isoformat())
-
-        return ActuationReceipt(
-            receipt_id=receipt_id,
-            action_id=intent.intent_id,
-            device_id=self._identity.device_id,
-            intent_digest=intent.authorization_digest,
-            status=status,
-            timestamp=now,
-            transaction_digest=resolved_tx_digest,
-            capability_digest=resolved_cap_digest,
-            pre_state_digest=pre_state_digest,
-            post_state_digest=post_state_digest,
-            physical_state_digest=post_state_digest,
-            executed_at=now,
-        )
+from typing import Optional, Tuple
+from src.device_fabric.contracts import DeviceState
 
 
 class MockTVAdapter:
-    """
-    Adapter exposing MockTV through the Device Fabric interface boundary.
-    Translates asynchronous transaction-layer requests into physical simulation calls.
-    """
-
-    def __init__(self, device_id: str):
-        self._device = MockTV(device_id)
-
-    @property
-    def device(self) -> MockTV:
-        """Test/debug escape hatch accessing underlying device state."""
-        return self._device
-
-    async def execute_intent(
+    def __init__(
         self,
-        intent: AuthorizedActionIntent,
-        transaction_digest: Optional[str] = None,
-        capability_digest: Optional[str] = None,
-    ) -> ActuationReceipt:
-        """Execute an authorized intent through the Device Fabric boundary."""
-        return self._device.execute_intent(
-            intent=intent,
-            transaction_digest=transaction_digest,
-            capability_digest=capability_digest,
+        device_id: str = "tv_living_room",
+        initial_state: Optional[DeviceState] = None,
+    ):
+        self.device_id = device_id
+        self._current_state = initial_state or DeviceState(
+            power=True, volume=50.0, input_source="HDMI_1"
         )
+
+    async def observe_state(self) -> DeviceState:
+        """Observes and returns current device state."""
+        return self._current_state
+
+    async def apply_state(self, target_state: DeviceState) -> Tuple[bool, Optional[str]]:
+        """Applies a target state to the mock TV."""
+        self._current_state = target_state
+        return True, None
+
+    async def rollback(self, target_state: DeviceState) -> Tuple[bool, Optional[str]]:
+        """Rolls back state to target state."""
+        self._current_state = target_state
+        return True, None
