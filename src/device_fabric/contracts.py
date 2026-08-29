@@ -23,10 +23,16 @@ class DeviceType(Enum):
     GENERIC = "generic"
 
 
+class PreconditionStatus(Enum):
+    MATCH = auto()
+    MISMATCH = auto()
+
+
 class VerificationStatus(Enum):
     PENDING = auto()
     VERIFIED = auto()
     FAILED = auto()
+    FAILED_VERIFICATION = auto()
 
 
 class ContractViolation(Exception):
@@ -47,6 +53,8 @@ class CommitCertificate:
     lease_digest: str = ""
     timestamp: float = 0.0
     signature: str = ""
+    verification_result: Optional['VerificationResult'] = None
+    observed_state_digest: Optional[str] = None
 
 
 @dataclass
@@ -138,3 +146,10 @@ class AuthorizedActionIntent:
     expected_pre_state: Optional[DeviceState] = None
     authorization_digest: str = ""
     deadline_at: float = 0.0
+
+
+@dataclass
+class VerificationResult:
+    status: VerificationStatus = VerificationStatus.PENDING
+    details: str = ""
+    verified: bool = False
