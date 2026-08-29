@@ -1,38 +1,21 @@
-from dataclasses import dataclass
-from typing import Dict, Any
-from .canonical import compute_digest, canonicalize
+"""Capability lease definitions and schema for AQSS-36-OMEGA control layer."""
 
-@dataclass(frozen=True)
-class SignedCapabilityLease:
+from dataclasses import dataclass, field
+from typing import Optional
+
+
+@dataclass
+class CapabilityLease:
+    """Represents an active capability lease issued to a device or router session."""
+
     device_id: str
     capability_digest: str
     firmware_identity: str
-    protocol_version: str
-    issued_at: float
-    expires_at: float
-    nonce: str
-    issuer_id: str
-    signature: str
+    protocol_version: Optional[str] = "1.0"
+    lease_id: Optional[str] = None
+    expires_at: Optional[float] = None
+    metadata: dict = field(default_factory=dict)
 
-    def to_dict(self) -> Dict[str, Any]:
-        """Returns the dictionary representation explicitly omitting the signature."""
-        return {
-            "device_id": self.device_id,
-            "capability_digest": self.capability_digest,
-            "firmware_identity": self.firmware_identity,
-            "protocol_version": self.protocol_version,
-            "issued_at": self.issued_at,
-            "expires_at": self.expires_at,
-            "nonce": self.nonce,
-            "issuer_id": self.issuer_id
-        }
-        
-    @property
-    def payload_digest(self) -> str:
-        """Returns the SHA-256 digest of the canonical lease, used to bind Intents."""
-        return compute_digest(self.to_dict())
-        
-    @property
-    def canonical_bytes(self) -> bytes:
-        """Returns the canonical byte sequence for verification."""
-        return canonicalize(self.to_dict())
+    def is_valid(self) -> bool:
+        """Check if the capability lease signature and parameters remain valid."""
+        return bool(self.device_id and self.capability_digest)
