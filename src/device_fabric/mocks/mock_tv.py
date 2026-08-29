@@ -13,7 +13,6 @@ class MockTV:
         self.identity = DeviceIdentity(
             device_id=device_id,
             device_type="TV",
-            manufacturer="MockCorp",
             model="MockTV-v1",
             firmware_version="1.0.0",
         )
