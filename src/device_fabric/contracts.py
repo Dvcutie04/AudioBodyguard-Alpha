@@ -1,7 +1,13 @@
 import time
+from datetime import datetime, timezone
 from dataclasses import dataclass, field
 from enum import Enum
 from typing import FrozenSet, Optional, Dict, Any
+
+
+def utc_now() -> datetime:
+    """Returns the current UTC datetime with timezone info."""
+    return datetime.now(timezone.utc)
 
 
 class DeviceType(Enum):
