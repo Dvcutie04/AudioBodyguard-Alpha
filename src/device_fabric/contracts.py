@@ -3,6 +3,20 @@ from enum import Enum
 from typing import FrozenSet, Optional
 
 
+class TransactionState(Enum):
+    PRECONDITION_CHECK = 1
+    EXECUTING = 2
+    EXECUTED = 3
+    VERIFYING = 4
+    VERIFIED = 5
+    FAILED_PRECONDITION = 6
+    FAILED_EXECUTION = 7
+    FAILED_VERIFICATION = 8
+    FAILED_CAPABILITY = 9
+    ROLLED_BACK = 10
+    RECOVERY_REQUIRED = 11
+
+
 class VerificationStatus(Enum):
     VERIFIED = "VERIFIED"
     FAILED_VERIFICATION = "FAILED_VERIFICATION"
