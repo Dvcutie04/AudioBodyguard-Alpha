@@ -90,6 +90,14 @@ class CommittedState:
 
 
 @dataclass
+class ReconciledState:
+    state: DeviceState
+    reconciled_at: float = field(default_factory=time.time)
+    drift_corrected: bool = False
+    details: Optional[str] = None
+
+
+@dataclass
 class AuthorizedActionIntent:
     intent_id: str
     device_id: str
