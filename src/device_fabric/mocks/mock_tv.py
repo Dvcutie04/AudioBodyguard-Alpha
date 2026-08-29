@@ -13,7 +13,7 @@ from src.device_fabric.contracts import (
 
 
 class MockTV:
-    def __init__(self, device_id: str = "tv_mock_001", manufacturer: str = "Generic", model: str = "SmartTV"):
+    def __init__(self, device_id: str = "tv_mock_001", manufacturer: str = "MockCorp", model: str = "SmartTV"):
         self.identity = DeviceIdentity(
             device_id=device_id,
             device_type=DeviceType.TV,
@@ -64,6 +64,7 @@ class MockTVAdapter:
             return ActuationReceipt(
                 receipt_id=f"rcpt_{intent.intent_id}",
                 intent_id=intent.intent_id,
+                action_id=intent.action,
                 device_id=self.device.identity.device_id,
                 status=ActuationStatus.DUPLICATE_ABSORBED,
                 timestamp=datetime.now(timezone.utc).timestamp(),
@@ -77,6 +78,7 @@ class MockTVAdapter:
         return ActuationReceipt(
             receipt_id=f"rcpt_{intent.intent_id}",
             intent_id=intent.intent_id,
+            action_id=intent.action,
             device_id=self.device.identity.device_id,
             status=ActuationStatus.EXECUTED,
             timestamp=datetime.now(timezone.utc).timestamp(),
