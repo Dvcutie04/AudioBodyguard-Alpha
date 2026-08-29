@@ -86,6 +86,10 @@ class CommitCertificate:
     metadata: Dict[str, Any] = field(default_factory=dict)
 
 
+# Compatibility alias for physical commit cert references
+PhysicalCommitCertificate = CommitCertificate
+
+
 @dataclass(frozen=True)
 class CommittedState:
     power_state: str = "OFF"
