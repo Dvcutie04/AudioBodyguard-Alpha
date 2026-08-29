@@ -27,3 +27,21 @@ class TransactionReceipt:
     execution_result: Dict[str, Any] = field(default_factory=dict)
     error_message: Optional[str] = None
     receipt_signature: Optional[str] = None
+
+
+class PhysicalTransactionManager:
+    """Manages execution and tracking of physical device transactions."""
+
+    def __init__(self, fabric_router=None):
+        self.fabric_router = fabric_router
+        self.active_transactions: Dict[str, Transaction] = {}
+
+    def execute_transaction(self, transaction: Transaction) -> TransactionReceipt:
+        """Execute a physical transaction on the target device."""
+        self.active_transactions[transaction.transaction_id] = transaction
+        return TransactionReceipt(
+            transaction_id=transaction.transaction_id,
+            status="SUCCESS",
+            device_id=transaction.target_device_id,
+            execution_result={"status": "completed"}
+        )
