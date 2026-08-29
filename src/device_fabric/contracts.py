@@ -41,6 +41,14 @@ class LeaseExpiredError(Exception):
     pass
 
 
+@dataclass(frozen=True)
+class CommitCertificate:
+    transaction_id: str = ""
+    lease_digest: str = ""
+    timestamp: float = 0.0
+    signature: str = ""
+
+
 @dataclass
 class DeviceIdentity:
     device_id: str = ""
