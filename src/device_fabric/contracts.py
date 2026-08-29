@@ -220,6 +220,7 @@ class CapabilityLease:
     max_world_state_age_ms: int = 0
     max_clock_skew_ms: int = 0
     nonce: str = ""
+    capability_digest: str = ""
 
     def __post_init__(self):
         if not self.nonce or self.nonce.strip() == "":
