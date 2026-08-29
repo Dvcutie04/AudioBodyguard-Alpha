@@ -1,3 +1,4 @@
+import time
 from dataclasses import dataclass, field
 from enum import Enum
 from typing import FrozenSet, Optional, Dict, Any
@@ -9,6 +10,13 @@ class DeviceType(Enum):
     THERMOSTAT = "THERMOSTAT"
     LIGHT = "LIGHT"
     GENERIC = "GENERIC"
+
+
+class ActuationStatus(Enum):
+    SUCCESS = "SUCCESS"
+    FAILURE = "FAILURE"
+    PENDING = "PENDING"
+    REJECTED = "REJECTED"
 
 
 class TransactionState(Enum):
@@ -51,6 +59,13 @@ class DeviceState:
     power: bool = True
     volume: float = 50.0
     input_source: str = "HDMI_1"
+
+
+@dataclass
+class ObservedState:
+    state: DeviceState
+    timestamp: float = field(default_factory=time.time)
+    raw_payload: Optional[Dict[str, Any]] = None
 
 
 @dataclass
@@ -113,6 +128,17 @@ class ActuationReceipt:
     receipt_id: str
     device_id: str
     success: bool
+    status: ActuationStatus = ActuationStatus.SUCCESS
     applied_state: Optional[DeviceState] = None
     execution_time_ms: float = 0.0
     details: Optional[str] = None
+
+
+def verify_epoch_lock(epoch_lock: str, current_epoch: int) -> bool:
+    """Verifies that the provided epoch lock matches current system epoch."""
+    if not epoch_lock:
+        return False
+    try:
+        return int(epoch_lock) == current_epoch
+    except (ValueError, TypeError):
+        return str(epoch_lock) == str(current_epoch)
