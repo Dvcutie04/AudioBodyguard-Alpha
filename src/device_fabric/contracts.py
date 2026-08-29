@@ -28,6 +28,7 @@ class VerificationStatus(Enum):
     VERIFIED = auto()
     FAILED = auto()
     FAILED_VERIFICATION = auto()
+    STATE_EPOCH_MISMATCH = auto()
 
 
 class PreconditionStatus(Enum):
@@ -72,6 +73,7 @@ class VerificationResult:
     uncertainty_limit: float = 0.1
     details: str = ""
     verified: bool = False
+    allowed: bool = True
 
 
 @dataclass
@@ -154,6 +156,10 @@ class ReconciledState:
     divergence: bool = False
 
     def __post_init__(self):
+        if self.committed and not isinstance(self.committed, CommittedState):
+            raise AttributeError("committed must be CommittedState")
+        if self.observed and not isinstance(self.observed, ObservedState):
+            raise AttributeError("observed must be ObservedState")
         if self.verified and self.divergence:
             raise ContractViolation("divergent state cannot be verified")
         if self.observed and self.observed.device_id != self.device_id:
@@ -176,6 +182,7 @@ class DeviceState:
     input_source: str = ""
     channel: str = ""
     custom_state: Dict[str, Any] = field(default_factory=dict)
+    payload: Dict[str, Any] = field(default_factory=dict)
 
     @property
     def state_digest(self) -> str:
@@ -186,6 +193,7 @@ class DeviceState:
             "input_source": self.input_source,
             "channel": self.channel,
             "custom_state": self.custom_state,
+            "payload": self.payload,
         }
         return hashlib.sha256(json.dumps(data, sort_keys=True).encode()).hexdigest()
 
@@ -213,8 +221,21 @@ class CapabilityLease:
     max_clock_skew_ms: int = 0
     nonce: str = ""
 
+    def __post_init__(self):
+        if not self.nonce or self.nonce.strip() == "":
+            raise ContractViolation("Lease requires nonce for replay protection")
+
     def permits(self, action: str) -> bool:
         return action in self.capabilities or action in self.granted_actions
+
+    def is_temporally_valid(self, now: Optional[datetime] = None) -> bool:
+        if now is None:
+            now = utc_now()
+        if self.valid_from and now < self.valid_from:
+            return False
+        if self.expires_at and now > self.expires_at:
+            return False
+        return True
 
     @property
     def lease_digest(self) -> str:
@@ -233,6 +254,7 @@ class CapabilityLease:
 class ActuationReceipt:
     receipt_id: str = ""
     intent_id: str = ""
+    action_id: str = ""
     device_id: str = ""
     status: ActuationStatus = ActuationStatus.COMMITTED
     timestamp: float = 0.0
@@ -249,19 +271,22 @@ class AuthorizedActionIntent:
     expected_pre_state: Optional[DeviceState] = None
     authorization_digest: str = ""
     deadline_at: float = 0.0
+    nonce: str = ""
 
 
 def verify_epoch_lock(authorized_epoch: int, observed_epoch: int) -> VerificationResult:
     if authorized_epoch != observed_epoch:
         return VerificationResult(
-            status=VerificationStatus.FAILED_VERIFICATION,
+            status=VerificationStatus.STATE_EPOCH_MISMATCH,
             details="State epoch mismatch",
+            allowed=False,
         )
     return VerificationResult(
         status=VerificationStatus.VERIFIED,
         authorized_epoch=authorized_epoch,
         observed_epoch=observed_epoch,
         verified=True,
+        allowed=True,
     )
 
 
