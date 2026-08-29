@@ -1,6 +1,14 @@
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import FrozenSet, Optional
+from typing import FrozenSet, Optional, Dict, Any
+
+
+class DeviceType(Enum):
+    SMART_TV = "SMART_TV"
+    SPEAKER = "SPEAKER"
+    THERMOSTAT = "THERMOSTAT"
+    LIGHT = "LIGHT"
+    GENERIC = "GENERIC"
 
 
 class TransactionState(Enum):
@@ -43,6 +51,13 @@ class DeviceState:
     power: bool = True
     volume: float = 50.0
     input_source: str = "HDMI_1"
+
+
+@dataclass
+class PredictedState:
+    predicted_state: DeviceState
+    confidence: float = 1.0
+    timestamp: float = 0.0
 
 
 @dataclass
@@ -91,3 +106,13 @@ class CommitCertificate:
             and not self.observed_state_digest
         ):
             raise ContractViolation("Verified commit requires observed state digest")
+
+
+@dataclass
+class ActuationReceipt:
+    receipt_id: str
+    device_id: str
+    success: bool
+    applied_state: Optional[DeviceState] = None
+    execution_time_ms: float = 0.0
+    details: Optional[str] = None
