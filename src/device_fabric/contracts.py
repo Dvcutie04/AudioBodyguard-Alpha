@@ -145,6 +145,10 @@ class CommitCertificate:
             raise ContractViolation("Verified commit requires observed state digest")
 
 
+# Alias for test suite imports expecting PhysicalCommitCertificate
+PhysicalCommitCertificate = CommitCertificate
+
+
 @dataclass
 class ActuationReceipt:
     receipt_id: str
