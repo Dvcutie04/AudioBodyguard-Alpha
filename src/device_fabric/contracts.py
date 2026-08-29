@@ -23,16 +23,16 @@ class DeviceType(Enum):
     GENERIC = "generic"
 
 
-class PreconditionStatus(Enum):
-    MATCH = auto()
-    MISMATCH = auto()
-
-
 class VerificationStatus(Enum):
     PENDING = auto()
     VERIFIED = auto()
     FAILED = auto()
     FAILED_VERIFICATION = auto()
+
+
+class PreconditionStatus(Enum):
+    MATCH = auto()
+    MISMATCH = auto()
 
 
 class ContractViolation(Exception):
@@ -47,13 +47,20 @@ class LeaseExpiredError(Exception):
     pass
 
 
-@dataclass(frozen=True)
+@dataclass
+class VerificationResult:
+    status: VerificationStatus = VerificationStatus.PENDING
+    details: str = ""
+    verified: bool = False
+
+
+@dataclass
 class CommitCertificate:
     transaction_id: str = ""
     lease_digest: str = ""
     timestamp: float = 0.0
     signature: str = ""
-    verification_result: Optional['VerificationResult'] = None
+    verification_result: Optional[VerificationResult] = None
     observed_state_digest: Optional[str] = None
 
 
@@ -146,10 +153,3 @@ class AuthorizedActionIntent:
     expected_pre_state: Optional[DeviceState] = None
     authorization_digest: str = ""
     deadline_at: float = 0.0
-
-
-@dataclass
-class VerificationResult:
-    status: VerificationStatus = VerificationStatus.PENDING
-    details: str = ""
-    verified: bool = False
