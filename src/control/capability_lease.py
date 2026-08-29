@@ -1,7 +1,7 @@
 """Capability lease definition and validation logic."""
 
 from dataclasses import dataclass, field
-from typing import FrozenSet, Optional, Set
+from typing import Any, Dict, FrozenSet, Optional, Set
 
 
 @dataclass
@@ -22,3 +22,18 @@ class CapabilityLease:
     nonce: str = ""
     capability_digest: str = ""
     issuer: str = ""
+
+    def is_valid_at(self, current_time: float) -> bool:
+        """Check if the lease is valid at the given timestamp."""
+        skew_sec = self.max_clock_skew_ms / 1000.0
+        return (self.issued_at - skew_sec) <= current_time <= (self.expires_at + skew_sec)
+
+
+@dataclass
+class SignedCapabilityLease:
+    """Represents a capability lease bundled with cryptographic signature metadata."""
+
+    lease: CapabilityLease
+    signature: str = ""
+    signer_key_id: str = ""
+    metadata: Dict[str, Any] = field(default_factory=dict)
