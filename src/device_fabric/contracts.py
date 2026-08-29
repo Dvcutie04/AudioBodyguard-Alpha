@@ -87,6 +87,18 @@ class VerificationResult:
     details: Dict[str, Any] = field(default_factory=dict)
 
 
+@dataclass(frozen=True)
+class AuthorizedActionIntent:
+    intent_id: str
+    device_id: str
+    action: str
+    capability_lease: CapabilityLease
+    target_state: Dict[str, Any] = field(default_factory=dict)
+    authorized_epoch: int = 0
+    parameters: Dict[str, Any] = field(default_factory=dict)
+    created_at: float = field(default_factory=time.time)
+
+
 def verify_epoch_lock(
     authorized_epoch: int,
     observed_epoch: int,
