@@ -15,6 +15,8 @@ class TransactionState(Enum):
     FAILED_CAPABILITY = 9
     ROLLED_BACK = 10
     RECOVERY_REQUIRED = 11
+    FAILED_DRIFT = 12
+    COMMITTED = 13
 
 
 class VerificationStatus(Enum):
@@ -22,6 +24,13 @@ class VerificationStatus(Enum):
     FAILED_VERIFICATION = "FAILED_VERIFICATION"
     DRIFT_DETECTED = "DRIFT_DETECTED"
     RECOVERY_REQUIRED = "RECOVERY_REQUIRED"
+
+
+class PreconditionStatus(Enum):
+    MATCH = "MATCH"
+    MISMATCH = "MISMATCH"
+    DRIFT_DETECTED = "DRIFT_DETECTED"
+    TIMEOUT = "TIMEOUT"
 
 
 class ContractViolation(Exception):
@@ -57,6 +66,7 @@ class CapabilityLease:
     firmware_identity: str
     protocol_version: str
     nonce: str
+    expires_at: float = 0.0
 
     def __post_init__(self):
         if not self.nonce:
@@ -67,6 +77,7 @@ class CapabilityLease:
 class VerificationResult:
     status: VerificationStatus
     details: Optional[str] = None
+    verified: bool = False
 
 
 @dataclass
