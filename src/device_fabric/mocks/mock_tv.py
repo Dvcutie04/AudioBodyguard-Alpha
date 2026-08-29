@@ -1,38 +1,45 @@
-from typing import Optional, Tuple
-from src.device_fabric.contracts import DeviceState
+from __future__ import annotations
+
+from typing import Any, Dict, Optional
+from src.device_fabric.contracts import DeviceIdentity, DeviceState
 
 
 class MockTV:
-    """Base mock representation of a physical TV hardware device."""
-
-    def __init__(self, device_id: str = "tv_living_room", initial_state: Optional[DeviceState] = None):
+    def __init__(
+        self,
+        device_id: str = "tv_mock_001",
+        manufacturer: str = "Sony",
+        model: str = "Bravia-XR",
+        firmware_version: str = "v2.1.0",
+    ):
         self.device_id = device_id
-        self.state = initial_state or DeviceState(power=True, volume=50.0, input_source="HDMI_1")
+        self.identity = DeviceIdentity(
+            device_id=device_id,
+            manufacturer=manufacturer,
+            model=model,
+            firmware_version=firmware_version,
+        )
+        self.state = DeviceState()
 
-    def get_state(self) -> DeviceState:
+    async def get_state(self) -> DeviceState:
         return self.state
 
-    def set_state(self, new_state: DeviceState) -> None:
+    async def apply_state(self, new_state: DeviceState) -> tuple[bool, Optional[str]]:
         self.state = new_state
-
-
-class MockTVAdapter:
-    """Adapter bridging PhysicalTransactionManager to MockTV hardware calls."""
-
-    def __init__(self, device_id: str = "tv_living_room", initial_state: Optional[DeviceState] = None):
-        self.device_id = device_id
-        self.tv = MockTV(device_id=device_id, initial_state=initial_state)
-
-    async def observe_state(self) -> DeviceState:
-        """Observes and returns current device state."""
-        return self.tv.get_state()
-
-    async def apply_state(self, target_state: DeviceState) -> Tuple[bool, Optional[str]]:
-        """Applies a target state to the mock TV."""
-        self.tv.set_state(target_state)
         return True, None
 
-    async def rollback(self, target_state: DeviceState) -> Tuple[bool, Optional[str]]:
-        """Rolls back state to target state."""
-        self.tv.set_state(target_state)
-        return True, None
+    async def execute_intent(self, intent: Any) -> bool:
+        if hasattr(intent, "target_state") and isinstance(intent.target_state, dict):
+            power = intent.target_state.get("power_state", self.state.power_state)
+            vol = intent.target_state.get("volume", self.state.volume)
+            muted = intent.target_state.get("muted", self.state.muted)
+            chan = intent.target_state.get("channel", self.state.channel)
+            inp = intent.target_state.get("input_source", self.state.input_source)
+            self.state = DeviceState(
+                power_state=power,
+                volume=vol,
+                muted=muted,
+                channel=chan,
+                input_source=inp,
+            )
+        return True
