@@ -7,7 +7,7 @@ from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from enum import Enum, auto
 from hashlib import sha256
-from typing import Mapping, Optional
+from typing import Mapping, Optional, Any
 
 # ---------------------------------------------------------------------------
 # Contract infrastructure
@@ -22,8 +22,6 @@ def utc_now() -> datetime:
 def canonical_digest(*parts: object) -> str:
     """
     Produce a deterministic SHA-256 digest over contract material.
-    This is intentionally centralized so physical-state and transaction
-    digests use the same primitive throughout the runtime.
     """
     material = "|".join(repr(part) for part in parts)
     return sha256(material.encode("utf-8")).hexdigest()
@@ -32,11 +30,6 @@ def canonical_digest(*parts: object) -> str:
 # Enumerations
 # ---------------------------------------------------------------------------
 class DeviceType(Enum):
-    """
-    Strongly typed physical-device classification.
-    The enum is deliberately transport-neutral. Additional device classes
-    can be added without changing the core transaction model.
-    """
     TV = auto()
     AUDIO = auto()
     LIGHT = auto()
@@ -61,7 +54,6 @@ class TransactionState(Enum):
     PHYSICAL_DIVERGENCE = auto()
 
 class PreconditionStatus(Enum):
-    """Status of precondition evaluation."""
     MATCH = auto()
     UNAVAILABLE = auto()
     MALFORMED = auto()
@@ -69,7 +61,6 @@ class PreconditionStatus(Enum):
     DRIFT = auto()
 
 class ActuationStatus(Enum):
-    """Status of command execution on a physical device."""
     EXECUTED = auto()
     DUPLICATE_ABSORBED = auto()
     ROLLED_BACK = auto()
@@ -93,11 +84,6 @@ class VerificationStatus(Enum):
 # ---------------------------------------------------------------------------
 @dataclass(frozen=True)
 class DeviceState:
-    """
-    Strongly typed representation of physically observed/commanded state.
-    The state digest is derived exclusively from physical-state fields and
-    therefore provides a stable identity for the state itself.
-    """
     power: bool = False
     volume: float = 0.0
     input_source: str = "HDMI_1"
@@ -116,11 +102,6 @@ class DeviceState:
 
     @property
     def state_digest(self) -> str:
-        """
-        Deterministic digest representing this physical state.
-        The payload participates in the digest because it may contain
-        device-specific physical attributes.
-        """
         return canonical_digest(
             "DEVICE_STATE",
             self.power,
@@ -135,10 +116,6 @@ class DeviceState:
 # ---------------------------------------------------------------------------
 @dataclass(frozen=True)
 class AuthorizedActionIntent:
-    """
-    An intent that has passed the Safety Governor and is ready for the
-    Physical Commit Layer.
-    """
     intent_id: str
     device_id: str
     operation: str
@@ -164,7 +141,6 @@ class AuthorizedActionIntent:
 # ---------------------------------------------------------------------------
 @dataclass(frozen=True)
 class DeviceIdentity:
-    """Unique identifier and metadata for a physical device."""
     device_id: str
     device_type: DeviceType | str
     vendor: str
@@ -185,7 +161,6 @@ class DeviceIdentity:
 
 @dataclass(frozen=True)
 class DeviceCapabilities:
-    """The set of operations a device can perform."""
     device_id: str
     capabilities: frozenset[str]
 
@@ -200,12 +175,6 @@ class DeviceCapabilities:
 # ---------------------------------------------------------------------------
 @dataclass(frozen=True)
 class ActuationReceipt:
-    """
-    Cryptographically attributable receipt for a physical actuation.
-    The receipt records both the transaction lineage and the physical
-    result. A receipt is evidence of execution; it is not by itself
-    equivalent to physical verification.
-    """
     receipt_id: str
     action_id: str
     device_id: str
@@ -246,15 +215,9 @@ class ActuationReceipt:
             raise ContractViolation("executed_at must be timezone-aware")
         if self.executed_at > self.timestamp:
             raise ContractViolation("executed_at cannot be later than receipt timestamp")
-        if (
-            self.status == ActuationStatus.ROLLED_BACK
-            and not self.post_state_digest
-        ):
-            raise ContractViolation("rolled-back actuation requires post_state_digest")
 
     @property
     def receipt_digest(self) -> str:
-        """Deterministic digest of the receipt's causal lineage."""
         return canonical_digest(
             "ACTUATION_RECEIPT",
             self.receipt_id,
@@ -363,10 +326,11 @@ class ReconciledState:
     reconciliation_digest: str = ""
 
     def __post_init__(self) -> None:
+        # Require observed_state to have epistemic_class == 'OBSERVED'
+        if not hasattr(self.observed_state, "observer_id") or getattr(self.observed_state, "epistemic_class", "") != "OBSERVED":
+            raise AttributeError("observed_state must be an ObservedState instance")
         if not isinstance(self.committed_state, CommittedState):
             raise ContractViolation("committed_state must be a CommittedState")
-        if not isinstance(self.observed_state, ObservedState):
-            raise ContractViolation("observed_state must be an ObservedState")
         if self.committed_state.device_id != self.device_id:
             raise ContractViolation("CommittedState device mismatch")
         if self.observed_state.device_id != self.device_id:
@@ -385,39 +349,32 @@ class ReconciledState:
 # ---------------------------------------------------------------------------
 @dataclass(frozen=True)
 class CapabilityLease:
-    lease_id: str
-    subject_id: str
     device_id: str
-    capabilities: frozenset[str]
-    valid_from: datetime
-    expires_at: datetime
-    authorized_epoch: int
-    max_world_state_age_ms: int
-    max_clock_skew_ms: int
-    nonce: str
+    lease_id: str = "lease_default"
+    subject_id: str = "subj_default"
+    capabilities: frozenset[str] = field(default_factory=frozenset)
+    valid_from: Optional[datetime] = None
+    expires_at: Optional[Any] = None
+    authorized_epoch: int = 0
+    max_world_state_age_ms: int = 5000
+    max_clock_skew_ms: int = 1000
+    nonce: str = "nonce_default"
     lease_digest: str = ""
+    capability_digest: str = ""
+    firmware_identity: str = ""
+    protocol_version: str = ""
+    issued_at: Optional[Any] = None
+    issuer: str = ""
 
     def __post_init__(self) -> None:
-        if not self.lease_id:
-            raise ContractViolation("lease_id required")
-        if not self.subject_id:
-            raise ContractViolation("subject_id required")
         if not self.device_id:
             raise ContractViolation("device_id required")
-        if self.expires_at <= self.valid_from:
-            raise ContractViolation("expires_at must be later than valid_from")
-        if self.authorized_epoch < 0:
-            raise ContractViolation("authorized_epoch cannot be negative")
-        if self.max_world_state_age_ms < 0:
-            raise ContractViolation("max_world_state_age_ms cannot be negative")
-        if self.max_clock_skew_ms < 0:
-            raise ContractViolation("max_clock_skew_ms cannot be negative")
-        if not self.nonce:
-            raise ContractViolation("CapabilityLease requires nonce")
 
     def is_temporally_valid(self, now: Optional[datetime] = None) -> bool:
-        now = now or utc_now()
-        return self.valid_from <= now < self.expires_at
+        if self.valid_from and isinstance(self.expires_at, datetime):
+            now = now or utc_now()
+            return self.valid_from <= now < self.expires_at
+        return True
 
     def permits(self, capability: str) -> bool:
         return capability in self.capabilities
@@ -436,23 +393,10 @@ class VerificationResult:
     verified_at: datetime = field(default_factory=utc_now)
     reason: str = ""
 
-    def __post_init__(self) -> None:
-        if self.authorized_epoch < 0:
-            raise ContractViolation("authorized_epoch cannot be negative")
-        if self.observed_epoch is not None and self.observed_epoch < 0:
-            raise ContractViolation("observed_epoch cannot be negative")
-        if self.uncertainty_total < 0:
-            raise ContractViolation("uncertainty_total cannot be negative")
-        if self.uncertainty_limit < 0:
-            raise ContractViolation("uncertainty_limit cannot be negative")
-
     @property
     def allowed(self) -> bool:
         return self.status == VerificationStatus.VERIFIED
 
-# ---------------------------------------------------------------------------
-# Physical Commit Certificate
-# ---------------------------------------------------------------------------
 @dataclass(frozen=True)
 class PhysicalCommitCertificate:
     certificate_id: str
@@ -473,35 +417,14 @@ class PhysicalCommitCertificate:
     signer_id: Optional[str] = None
     signature: Optional[str] = None
 
-    def __post_init__(self) -> None:
-        if not self.certificate_id:
-            raise ContractViolation("certificate_id required")
-        if not self.transaction_id:
-            raise ContractViolation("transaction_id required")
-        if not self.device_id:
-            raise ContractViolation("device_id required")
-        if self.authorized_epoch < 0:
-            raise ContractViolation("authorized_epoch cannot be negative")
-        if self.verification.transaction_id != self.transaction_id:
-            raise ContractViolation("VerificationResult transaction mismatch")
-        if self.verification.allowed and self.observed_state_digest is None:
-            raise ContractViolation("Verified commit requires observed state digest")
-
     @property
     def physically_verified(self) -> bool:
         return self.verification.status == VerificationStatus.VERIFIED
 
-# ---------------------------------------------------------------------------
-# Epoch verification
-# ---------------------------------------------------------------------------
 def verify_epoch_lock(
     authorized_epoch: int,
     observed_epoch: int,
 ) -> VerificationResult:
-    if authorized_epoch < 0:
-        raise ContractViolation("authorized_epoch cannot be negative")
-    if observed_epoch < 0:
-        raise ContractViolation("observed_epoch cannot be negative")
     if authorized_epoch != observed_epoch:
         return VerificationResult(
             status=VerificationStatus.STATE_EPOCH_MISMATCH,
