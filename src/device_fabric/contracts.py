@@ -4,15 +4,12 @@ import time
 from dataclasses import dataclass, field
 from datetime import datetime
 from enum import Enum, auto
-from typing import Any, Dict, Optional
+from typing import Any, Dict, Mapping, Optional, Sequence
 
 
-class ActuationStatus(Enum):
-    PENDING = auto()
-    EXECUTING = auto()
-    COMMITTED = auto()
-    REJECTED = auto()
-    FAILED = auto()
+class ContractViolation(ValueError):
+    """Raised when a Physical Truth contract violates an invariant."""
+    pass
 
 
 class EpochLockError(Exception):
@@ -25,6 +22,27 @@ class LeaseExpiredError(Exception):
     pass
 
 
+class ActuationStatus(Enum):
+    PENDING = auto()
+    EXECUTING = auto()
+    COMMITTED = auto()
+    REJECTED = auto()
+    FAILED = auto()
+
+
+class DeviceType(Enum):
+    TV = "tv"
+    SMART_HOME = "smart_home"
+    AUDIO = "audio"
+    GENERIC = "generic"
+
+
+class VerificationStatus(Enum):
+    PENDING = auto()
+    VERIFIED = auto()
+    FAILED = auto()
+
+
 @dataclass(frozen=True)
 class DeviceIdentity:
     device_id: str
@@ -32,6 +50,12 @@ class DeviceIdentity:
     model: str
     firmware_version: str
     hardware_revision: Optional[str] = None
+
+
+@dataclass(frozen=True)
+class DeviceCapabilities:
+    supported_actions: Sequence[str] = field(default_factory=list)
+    metadata: Dict[str, Any] = field(default_factory=dict)
 
 
 @dataclass(frozen=True)
@@ -65,6 +89,11 @@ class DeviceState:
 
 
 @dataclass(frozen=True)
+class ObservedState(DeviceState):
+    observed_at: float = field(default_factory=time.time)
+
+
+@dataclass(frozen=True)
 class PredictedState:
     power_state: str = "OFF"
     volume: int = 0
@@ -86,7 +115,7 @@ class CommitCertificate:
     metadata: Dict[str, Any] = field(default_factory=dict)
 
 
-# Compatibility alias for physical commit cert references
+# Export both names to ensure multi-layer compatibility
 PhysicalCommitCertificate = CommitCertificate
 
 
@@ -103,12 +132,30 @@ class CommittedState:
 
 
 @dataclass(frozen=True)
+class ReconciledState:
+    committed_state: CommittedState
+    observed_state: ObservedState
+    reconciled_at: float = field(default_factory=time.time)
+    invariants_held: bool = True
+
+
+@dataclass(frozen=True)
 class VerificationResult:
     success: bool
     transaction_id: str = ""
     message: str = ""
+    status: VerificationStatus = VerificationStatus.VERIFIED
     verified_at: float = field(default_factory=time.time)
     details: Dict[str, Any] = field(default_factory=dict)
+
+
+@dataclass(frozen=True)
+class ActuationReceipt:
+    receipt_id: str
+    intent_id: str
+    status: ActuationStatus
+    execution_time: float = field(default_factory=time.time)
+    error_message: Optional[str] = None
 
 
 @dataclass(frozen=True)
