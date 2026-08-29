@@ -77,6 +77,16 @@ class PredictedState:
 
 
 @dataclass(frozen=True)
+class CommitCertificate:
+    certificate_id: str
+    transaction_id: str
+    device_id: str
+    committed_at: float = field(default_factory=time.time)
+    signature: str = ""
+    metadata: Dict[str, Any] = field(default_factory=dict)
+
+
+@dataclass(frozen=True)
 class CommittedState:
     power_state: str = "OFF"
     volume: int = 0
@@ -85,7 +95,7 @@ class CommittedState:
     input_source: str = "HDMI1"
     payload: Dict[str, Any] = field(default_factory=dict)
     committed_at: float = field(default_factory=time.time)
-    commit_certificate: Optional[str] = None
+    commit_certificate: Optional[Any] = None
 
 
 @dataclass(frozen=True)
