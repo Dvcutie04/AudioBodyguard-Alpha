@@ -55,6 +55,13 @@ class ContractViolation(Exception):
 
 
 @dataclass
+class DeviceIdentity:
+    device_id: str
+    device_type: DeviceType = DeviceType.SMART_TV
+    firmware_version: str = "1.0.0"
+
+
+@dataclass
 class DeviceState:
     power: bool = True
     volume: float = 50.0
@@ -73,6 +80,13 @@ class PredictedState:
     predicted_state: DeviceState
     confidence: float = 1.0
     timestamp: float = 0.0
+
+
+@dataclass
+class CommittedState:
+    state: DeviceState
+    commit_timestamp: float = field(default_factory=time.time)
+    commit_hash: Optional[str] = None
 
 
 @dataclass
