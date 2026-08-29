@@ -15,6 +15,16 @@ class ActuationStatus(Enum):
     FAILED = auto()
 
 
+class EpochLockError(Exception):
+    """Raised when an epoch lock validation fails."""
+    pass
+
+
+class LeaseExpiredError(Exception):
+    """Raised when a capability lease has expired or is invalid."""
+    pass
+
+
 @dataclass(frozen=True)
 class DeviceIdentity:
     device_id: str
@@ -100,8 +110,8 @@ class AuthorizedActionIntent:
 
 
 def verify_epoch_lock(
-    authorized_epoch: int,
-    observed_epoch: int,
+    authorized_epoch: int = 0,
+    observed_epoch: int = 0,
     *args,
     **kwargs,
 ) -> bool:
