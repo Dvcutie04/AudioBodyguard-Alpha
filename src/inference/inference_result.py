@@ -1,6 +1,5 @@
 from dataclasses import dataclass
-from typing import Dict, Optional
-from src.inference.threat_trajectory import TrajectoryState
+from typing import Dict
 
 @dataclass(frozen=True)
 class InferenceResult:
@@ -14,5 +13,3 @@ class InferenceResult:
     model_version: str
     inference_latency_us: float
     sensor_quality_ok: bool
-    trajectory: Optional[TrajectoryState] = None
-

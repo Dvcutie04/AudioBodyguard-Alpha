@@ -1,37 +1,74 @@
-name: CI Pipeline
+name: AQSS-36-OMEGA CI Pipeline
 
 on:
+  workflow_dispatch:
   push:
-    branches: [ main, master ]
+    branches: [ "main", "master", "aqss/**" ]
   pull_request:
-    branches: [ main, master ]
+    branches: [ "main", "master" ]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: aqss-ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   test:
+    name: Python contracts and regression suite
     runs-on: ubuntu-latest
-
+    timeout-minutes: 20
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
 
-      - name: Set up Python
+      - name: Set up Python 3.13
         uses: actions/setup-python@v5
         with:
-          python-version: "3.11"
+          python-version: "3.13"
+          cache: pip
+          cache-dependency-path: requirements.txt
 
-      - name: Install dependencies
-        run: |
-          python -m pip install --upgrade pip
-          pip install -r requirements.txt
+      - name: Install Python dependencies
+        run: python -m pip install -r requirements.txt
 
-      - name: Clean Python cache
-        run: |
-          find . -type d -name "__pycache__" -exec rm -rf {} + 2>/dev/null || true
-          find . -type f -name "*.pyc" -delete 2>/dev/null || true
-          find . -type f -name "*.pyo" -delete 2>/dev/null || true
+      - name: Verify generated native contracts
+        run: python tools/generate_native_feedback_contracts.py --check
 
-      - name: Run Pytest Suite
-        run: |
-          pytest --cache-clear --cov=src --cov-report=term-missing
+      - name: Run deterministic safety and full pytest suite
         env:
-          PYTHONPATH: ${{ github.workspace }}
+          PYTHONPATH: .
+        run: python -m pytest -q
+
+  native-swift:
+    name: Swift native contract conformance
+    runs-on: macos-14
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Compile and test Swift contract
+        run: swift test --package-path native/ios
+
+  native-android:
+    name: Android native contract conformance
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Set up Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+      - name: Set up Gradle 8.10.2
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: "8.10.2"
+      - name: Compile and test Android contract
+        run: gradle -p native/android testDebugUnitTest

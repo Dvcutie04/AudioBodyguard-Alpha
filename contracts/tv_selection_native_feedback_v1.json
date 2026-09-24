@@ -1,0 +1,151 @@
+{
+  "capability": "feedback_sync_only",
+  "cases": [
+    {
+      "authorized_profile_id": "profile_1",
+      "expected": {
+        "applied": [
+          "fixture_ios_001"
+        ],
+        "duplicates": [],
+        "ok": true,
+        "schema_version": 1
+      },
+      "name": "ios_applied",
+      "platform": "ios",
+      "request": {
+        "events": [
+          {
+            "approved": true,
+            "choice": "rating",
+            "device_id": "living-room-tv",
+            "event_id": "fixture_ios_001",
+            "profile_id": "profile_1",
+            "recorded_at": "2026-09-13T20:00:00Z",
+            "schema_version": 1
+          }
+        ]
+      }
+    },
+    {
+      "authorized_profile_id": "profile_1",
+      "expected": {
+        "applied": [
+          "fixture_android_001"
+        ],
+        "duplicates": [
+          "fixture_android_001"
+        ],
+        "ok": true,
+        "schema_version": 1
+      },
+      "name": "android_duplicate",
+      "platform": "android",
+      "request": {
+        "events": [
+          {
+            "approved": true,
+            "choice": "rating",
+            "device_id": "living-room-tv",
+            "event_id": "fixture_android_001",
+            "profile_id": "profile_1",
+            "recorded_at": "2026-09-13T20:00:00Z",
+            "schema_version": 1
+          },
+          {
+            "approved": true,
+            "choice": "rating",
+            "device_id": "living-room-tv",
+            "event_id": "fixture_android_001",
+            "profile_id": "profile_1",
+            "recorded_at": "2026-09-13T20:00:00Z",
+            "schema_version": 1
+          }
+        ]
+      }
+    },
+    {
+      "authorized_profile_id": "profile_1",
+      "expected": {
+        "error": {
+          "code": "PROFILE_NOT_AUTHORIZED"
+        },
+        "ok": false,
+        "schema_version": 1
+      },
+      "name": "ios_cross_profile",
+      "platform": "ios",
+      "request": {
+        "events": [
+          {
+            "approved": true,
+            "choice": "rating",
+            "device_id": "living-room-tv",
+            "event_id": "fixture_ios_cross_profile",
+            "profile_id": "profile_2",
+            "recorded_at": "2026-09-13T20:00:00Z",
+            "schema_version": 1
+          }
+        ]
+      }
+    },
+    {
+      "authorized_profile_id": "profile_1",
+      "expected": {
+        "error": {
+          "code": "INVALID_FEEDBACK"
+        },
+        "ok": false,
+        "schema_version": 1
+      },
+      "name": "android_invalid_feedback",
+      "platform": "android",
+      "request": {
+        "events": [
+          {
+            "approved": 1,
+            "choice": "rating",
+            "device_id": "living-room-tv",
+            "event_id": "fixture_android_invalid",
+            "profile_id": "profile_1",
+            "recorded_at": "2026-09-13T20:00:00Z",
+            "schema_version": 1
+          }
+        ]
+      }
+    }
+  ],
+  "choices": [
+    "rating",
+    "keep_this_tv",
+    "never_switch_automatically"
+  ],
+  "error_codes": [
+    "PROFILE_NOT_AUTHORIZED",
+    "INVALID_FEEDBACK"
+  ],
+  "event_fields": {
+    "approved": "boolean",
+    "choice": "choice",
+    "device_id": "string",
+    "event_id": "string",
+    "profile_id": "string",
+    "recorded_at": "string",
+    "schema_version": "integer"
+  },
+  "platforms": [
+    "ios",
+    "android"
+  ],
+  "request_fields": {
+    "events": "event_array"
+  },
+  "response_fields": {
+    "applied": "optional_string_array",
+    "duplicates": "optional_string_array",
+    "error": "optional_error",
+    "ok": "boolean",
+    "schema_version": "integer"
+  },
+  "schema_version": 1
+}

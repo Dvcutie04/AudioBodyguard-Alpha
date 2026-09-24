@@ -1,12 +1,6 @@
-import sys
-from pathlib import Path
-
-# Add project root to sys.path
-sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
-
+import pytest
 from src.inference.bayesian_adapter import BayesianAdapter, ChangePointEvidence
 
-
-def test_bayesian_adapter_initialization():
+def test_bayesian_adapter_init():
     adapter = BayesianAdapter()
     assert adapter is not None
