@@ -1,6 +1,6 @@
 # Repository restoration status
 
-Status: hosted Python, Swift, and Android software checks passed; review is still in progress and this branch is not ready to merge. No runtime permission or physical qualification is granted by this restoration.
+Status: the supplied a-Shell source baseline is synchronized and hosted Python, Swift, and Android software checks passed. Publication is tracked in [PR #2](https://github.com/Dvcutie04/AudioBodyguard-Alpha/pull/2). No runtime permission or physical qualification is granted by this restoration.
 
 ## Source provenance
 
@@ -17,6 +17,8 @@ Status: hosted Python, Swift, and Android software checks passed; review is stil
 
 The original archive's declared scope is source review, incomplete until dependencies are checked. It is not a full repository backup or a commit of the phone checkout. Its 423 source files and 17 usable supplement files were verified and overlaid onto this isolated branch. Of the 441 exported paths, 432 retain their original bytes, eight have explicit maintenance or compatibility changes (`.gitignore`, CI workflow, Python requirements, two Android fixture tests, two Python bridge imports, and one unused `pandas` import), and one nonparseable supplement file was retired as described below.
 
+The [file-by-file synchronization manifest](a-shell-sync-manifest.json) records every exported path, its original and repository SHA-256, and the reason for each modification or retirement. The scope is the two supplied exports; it cannot account for later edits on the phone. The README, restoration records, and this verification manifest are repository documentation added around that source baseline.
+
 ## Restored transfer gaps
 
 The initial export omitted the root `audio_engine` package, `state_logger.py`, `acoustic_engine.py`, `signal_router.py`, and `src/device_fabric/quarantine`. The supplement supplied matching phone files for all of these paths, including `manager_legacy.py` required by an existing safety test. Its parent archive hash matched the verified original and all 18 per-file hashes matched its manifest.
@@ -25,7 +27,7 @@ The initial exported snapshot could not collect 13 test modules because of the m
 
 The supplement's `audio_engine/mesh_fusion.py` is nonparseable Python with multiple corrupt tokens. Its bytes match the old GitHub version, and no current phone source or test imports it. It is retired from the active tree and listed in [the legacy inventory](retired-legacy-paths.md), with the historical copy in Git. No synthetic replacement implementation was introduced. The other 17 files passed syntax checking before import, and every Python source and test file in the final tree parsed successfully.
 
-## Prepared changes
+## Applied changes
 
 - Import the verified 423-file source snapshot, including its 18-vector synthetic endpoint contract and Swift/Kotlin fixture readers.
 - Restore 17 exact dependency and quarantine files from the verified 18-file supplement; retain the old nonparseable `mesh_fusion.py` in repository history only.
@@ -40,11 +42,11 @@ The retired paths include older physical transaction contracts and a `tests/conf
 
 ## Hosted verification
 
-[Actions run 36066439795](https://github.com/Dvcutie04/AudioBodyguard-Alpha/actions/runs/36066439795) passed the Python 3.13 suite (1,625 tests and generated contract check), Swift native contract tests, and Android native contract tests. The isolated review branch later removed obsolete root files and repaired imports; check the [latest PR checks](https://github.com/Dvcutie04/AudioBodyguard-Alpha/pull/2/checks) for the result on the final tree before review.
+[Actions run 36067699270](https://github.com/Dvcutie04/AudioBodyguard-Alpha/actions/runs/36067699270) passed the Python 3.13 suite (1,625 tests and generated contract check), Swift native contract tests, and Android native contract tests after the source cleanup and import repairs. Check the [workflow runs](https://github.com/Dvcutie04/AudioBodyguard-Alpha/actions/workflows/ci.yml) for verification of later documentation and merge commits.
 
-## Required next steps
+## Remaining development and historical risks
 
-1. Review any historical invariant worth migrating as a separate current-contract test, then review the final diff and evidence before merging.
+1. Review historical invariants from retired tests for migration as separate current-contract tests. The restoration reproduces the current phone suite and does not establish equivalence with every older test.
 2. Qualify a native physical output boundary and observe its behavior on real target devices before proposing any change to the closed production guard.
 
-The public base commit includes an SSH private key. Its removal from this proposed tree does not revoke it or remove earlier copies. The owner must revoke or replace the corresponding credential wherever it is authorized. No credential contents are reproduced here.
+The public base commit includes an SSH private key. Its removal from the current source tree does not revoke it or remove earlier copies. The owner must revoke or replace the corresponding credential wherever it is authorized. No credential contents are reproduced here.

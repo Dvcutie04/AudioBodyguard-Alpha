@@ -2,7 +2,7 @@
 
 The verified 423-file phone export includes every current source and test in `src` and `tests` except the deliberately excluded quarantine directory. The older GitHub main branch has the paths below that are absent from both phone exports, as well as one corrupt module present in the supplement. Older tests refer to incompatible APIs. The current snapshot has no static imports of the retired modules.
 
-These paths are removed from the proposed active tree so the repository runs the phone's current set of tests. Their contents remain available in Git history at commit `bb94b174e11ddbe09e11c05598f80aa9e7161be0`; this is a scoped migration, not a claim that each old test is covered by an equivalent new test. Reconsider any retired invariant as a separate future migration with an appropriate test against the current contract.
+These paths are removed from the current source tree so the repository runs the phone's current set of tests. Their contents remain available in Git history at commit `bb94b174e11ddbe09e11c05598f80aa9e7161be0`; this is a scoped migration, not a claim that each old test is covered by an equivalent new test. Reconsider any retired invariant as a separate future migration with an appropriate test against the current contract.
 
 ## Unused, preexisting corrupt module (1)
 
