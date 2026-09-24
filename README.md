@@ -8,7 +8,7 @@ The alpha includes simulations, mocks, and synthetic conformance tests. Passing 
 
 ## Current a-Shell baseline
 
-The source baseline comes from the verified a-Shell exports supplied on September 24, 2026: 423 original paths plus 18 supplement paths. Every exported file is accounted for in the [synchronization manifest](docs/a-shell-sync-manifest.json): 432 retain their exact bytes, eight have documented maintenance fixes, and one unused corrupt Python module was retired. This records the supplied snapshots; later edits on the phone require another synchronization.
+The source baseline comes from the verified a-Shell exports supplied on September 24, 2026: 423 original paths plus 18 supplement paths. Every exported file is accounted for in the [synchronization manifest](docs/a-shell-sync-manifest.json): 431 retain their exact bytes, nine have documented maintenance fixes, and one unused corrupt Python module was retired. This records the supplied snapshots; later edits on the phone require another synchronization.
 
 Older GitHub-only modules and tests, 20 stale root files, and machine-local artifacts were retired from the active tree. The [legacy inventory](docs/retired-legacy-paths.md) records the source and test retirements, and Git history preserves prior versions. [Hosted CI](https://github.com/Dvcutie04/AudioBodyguard-Alpha/actions/workflows/ci.yml) checks the full Python suite and both native contracts. The verified baseline passed **1,625 Python tests, Swift, and Android**. See [restoration status](docs/repository-restoration.md) and the [audit matrix](docs/audit_matrix.md) for provenance and evidence limits.
 
