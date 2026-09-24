@@ -14,6 +14,8 @@ Older GitHub-only modules and tests, 20 stale root files, and machine-local arti
 
 ## Current reference implementations
 
+Development continues from that restored baseline. The next verified increment adds eight behavioral native-work conformance tests, bringing the local Python suite to **1,633 passing tests**. See the [development roadmap](docs/development-roadmap.md) for the current N1 checkpoint, native build inventory, and next gates.
+
 | Area | Source and behavior |
 | --- | --- |
 | Controller authority | `src/control` contains controller leases, signed commands, fencing, intent admission, and reauthorization contracts. |
@@ -23,6 +25,7 @@ Older GitHub-only modules and tests, 20 stale root files, and machine-local arti
 | Selection and resources | `src/edge` and `src/interface` provide resource contracts, TV selection, user feedback, and reference interfaces. |
 | Extension admission | `src/extensions` validates and normalizes proposal-only extensions through deterministic admission checks. |
 | Native contracts | Swift and Kotlin models consume shared feedback fixtures and 18 synthetic endpoint-boundary vectors. |
+| Native work simulation | A bounded test-only endpoint tracks accepted, published, submitted, applied, observed, and settled work across one handoff; it cannot grant production readiness. |
 
 Rejection paths must fail before physical actuation; the tests check `adapter.calls == 0` where applicable. Physical success requires observed postconditions and matching lineage. New platform callbacks or inference results do not establish that protection is active.
 
