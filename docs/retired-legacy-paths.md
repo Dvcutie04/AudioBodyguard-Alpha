@@ -4,6 +4,10 @@ The verified 423-file phone export includes every current source and test in `sr
 
 These paths are removed from the proposed active tree so the repository runs the phone's current set of tests. Their contents remain available in Git history at commit `bb94b174e11ddbe09e11c05598f80aa9e7161be0`; this is a scoped migration, not a claim that each old test is covered by an equivalent new test. Reconsider any retired invariant as a separate future migration with an appropriate test against the current contract.
 
+## Unused, preexisting corrupt module (1)
+
+- `audio_engine/mesh_fusion.py` — byte-identical in the phone supplement and old GitHub commit, but contains multiple invalid Python tokens and is not imported by current source or tests. It was retired without introducing replacement logic; future mesh fusion work requires a qualified implementation and dedicated tests.
+
 ## Legacy source modules (39)
 
 - `src/acoustic/event_graph.py`
@@ -87,4 +91,3 @@ These paths are removed from the proposed active tree so the repository runs the
 - `src/engine/benchmark.py.pre-encoding-repair`
 - `src/research_loop/phase15/dataset.py.phase15-prehardening`
 - `tests/inference/tests/inference`
-

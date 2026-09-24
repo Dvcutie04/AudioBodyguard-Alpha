@@ -4,12 +4,12 @@ This matrix records evidence available during repository restoration. Software c
 
 | Area | Evidence available | Limit or remaining check |
 | --- | --- | --- |
-| Phone Python checkout | Owner-provided output: 1,625 passed on Python 3.13/iOS | Exact checkout is not yet fully transferred |
-| Uploaded source | 423 file hashes and sizes verified against its manifest | Root dependencies and quarantined legacy source omitted by the export |
+| Phone Python checkout | Owner-provided output: 1,625 passed on Python 3.13/iOS | Physical output remains unqualified |
+| Uploaded source and supplement | 423 original and 18 supplemental file hashes verified; 17 usable supplement files imported | One preexisting nonparseable, unimported module retired with history preserved |
 | Endpoint and fencing regression tests | 47 tests reproduced on Python 3.12/Linux | Software reference implementations and fixtures |
-| Full exported Python suite | Missing imports initially blocked collection | Required phone files must be supplied |
-| Diagnostic with older GitHub dependencies | 1,615 passed, 10 failed | Nine interface mismatches and one omitted quarantine file; not a validated restoration |
-| Generated feedback models | Generator and shared contract imported | Run drift check against the final restored checkout |
+| Full restored Python suite | 1,625 passed on local Python 3.12/Linux; all source/test files parse | Python 3.13 hosted CI pending |
+| Diagnostic with older GitHub dependencies | 1,615 passed, 10 failed before supplement | Older interface mismatches resolved with exact phone files |
+| Generated feedback models | Generator check reported `NATIVE_CONTRACTS_CURRENT` | Hosted CI independent check pending |
 | Swift contract conformance | Package and XCTest fixture readers imported | Compilation and tests pending for this branch |
 | Android contract conformance | Gradle library and Kotlin fixture readers imported | Compilation and tests pending for this branch |
 | Endpoint retirement and physical output | Synthetic test-only trace contract exists | No qualified native output boundary or acoustic observation established |

@@ -6,7 +6,7 @@ The alpha includes simulations, mocks, and synthetic conformance tests. Passing 
 
 ## Repository restoration
 
-This branch is restoring the newer phone checkout to GitHub. The uploaded source archive has been verified, but several required phone files were omitted from the export. Older GitHub-only modules and tests were retired from the active tree, with [each path recorded](docs/retired-legacy-paths.md) and its contents retained in Git history. Full-suite and native validation are pending. See [restoration status](docs/repository-restoration.md) for evidence and remaining work.
+This branch restores the newer phone checkout to GitHub. The main archive and its 18-file supplement have been verified. Older GitHub-only modules and tests, along with one unused and nonparseable legacy file, were retired from the active tree, with [each path recorded](docs/retired-legacy-paths.md) and its contents retained in Git history. The complete Python suite passes locally; native CI validation is pending. See [restoration status](docs/repository-restoration.md) for evidence and remaining work.
 
 ## Development checks
 
@@ -20,7 +20,7 @@ python tools/generate_native_feedback_contracts.py --check
 PYTHONPATH=. python -m pytest -q
 ```
 
-The test configuration includes both `src` and `tests`. Do not restrict collection or remove a failing safety test to make a restoration pass. These commands are the intended gates; the incomplete restoration currently has the blockers recorded in the status document.
+The test configuration includes both `src` and `tests`. Do not restrict collection or remove a failing safety test to make a restoration pass. The restored checkout passed the full Python suite on Linux/Python 3.12; CI independently checks Python 3.13.
 
 Native contract checks use the existing Swift package and Android library:
 
