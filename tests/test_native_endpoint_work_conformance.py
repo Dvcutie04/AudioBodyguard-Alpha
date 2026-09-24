@@ -1,5 +1,6 @@
 """Behavioral N1 simulation; no native or physical qualification."""
 from copy import deepcopy
+from dataclasses import replace
 import json
 
 import pytest
@@ -143,3 +144,106 @@ def test_conflicting_identity_and_invalid_generation_cannot_replace_work():
     assert endpoint.native_snapshot() == before
     endpoint.settle("work", disposition="discarded")
     assert endpoint.register_descendant("too-late", parent_id="work") is False
+
+
+def _activated_frame(endpoint, work_id="pending"):
+    assert endpoint.accept(work_id, generation=8)
+    assert endpoint.publish(work_id)
+    return endpoint.activate_candidate(
+        work_id, request_id="handoff-a-to-b", controller_id="phone-b",
+        fencing_token=9, activated_at=101, expires_at=130,
+    )
+
+
+def test_runtime_change_does_not_erase_submitted_native_work():
+    endpoint = UnqualifiedNativeEndpointFake()
+    submitted = _activated_frame(endpoint, "old-frame")
+    assert endpoint.submit("old-frame", candidate=submitted, at=102)
+    pending = _activated_frame(endpoint, "pending-frame")
+    assert endpoint.restart_runtime("runtime-two")
+    assert endpoint.app_queue_empty  # The app lost its queue, not the native work.
+    before = endpoint.trace
+    assert endpoint.submit("pending-frame", candidate=pending, at=103) is False
+    assert endpoint.submit("pending-frame", at=103) is False
+    assert endpoint.trace == before
+    assert endpoint.close_generation(8)
+    assert not endpoint.old_work_settled
+    assert endpoint.apply("old-frame")  # Already submitted work can still take effect.
+    assert not endpoint.old_work_settled
+    assert endpoint.production_ready is False
+
+
+def test_actual_route_switch_invalidates_activation_before_cached_notification():
+    endpoint = UnqualifiedNativeEndpointFake()
+    pending = _activated_frame(endpoint)
+    assert endpoint.switch_actual_route("wireless", route_epoch=2)
+    scope = endpoint.context_snapshot()
+    assert (scope["cached_route_id"], scope["cached_route_epoch"]) == ("built-in", 1)
+    assert (scope["actual_route_id"], scope["actual_route_epoch"]) == ("wireless", 2)
+    before = endpoint.trace
+    assert endpoint.submit("pending", candidate=pending, at=102) is False
+    assert endpoint.trace == before
+    assert endpoint.notify_route()
+    assert endpoint.submit("pending", candidate=pending, at=103) is False
+    assert endpoint.applied_work == ()
+    assert endpoint.production_ready is False
+
+
+def test_successor_change_invalidates_activation_at_final_submission():
+    endpoint = UnqualifiedNativeEndpointFake()
+    pending = _activated_frame(endpoint)
+    assert endpoint.replace_successor(
+        request_id="handoff-b-to-c", controller_id="phone-c", fencing_token=10,
+    )
+    before = endpoint.trace
+    assert endpoint.submit("pending", candidate=pending, at=102) is False
+    assert endpoint.trace == before
+    assert endpoint.production_ready is False
+
+
+def test_protection_revocation_cannot_revalidate_old_activation_on_restoration():
+    endpoint = UnqualifiedNativeEndpointFake()
+    pending = _activated_frame(endpoint)
+    assert endpoint.set_protection_active(False)
+    assert endpoint.submit("pending", candidate=pending, at=102) is False
+    assert endpoint.set_protection_active(True)
+    assert endpoint.submit("pending", candidate=pending, at=103) is False
+    assert endpoint.production_ready is False
+
+
+def test_submission_rechecks_expiry_and_accepts_only_the_current_synthetic_context():
+    endpoint = UnqualifiedNativeEndpointFake()
+    pending = _activated_frame(endpoint)
+    assert endpoint.submit("pending", candidate=pending, at=130) is False
+    assert endpoint.submit("pending", candidate=pending, at=100) is False
+    assert endpoint.submit("pending", at=102) is False
+    assert endpoint.submit("pending", candidate=replace(pending), at=102) is False
+    assert endpoint.submit("pending", candidate=pending, at=102)
+    assert endpoint.submit("pending", candidate=pending, at=102) is False
+    assert endpoint.applied_work == ()  # Synthetic submission is not a physical effect.
+    assert endpoint.production_ready is False
+
+
+@pytest.mark.parametrize("change", ["route", "protection"])
+def test_unbound_submission_cannot_bypass_changed_context(change):
+    endpoint = UnqualifiedNativeEndpointFake()
+    endpoint.accept("unbound", generation=8)
+    endpoint.publish("unbound")
+    if change == "route":
+        endpoint.switch_actual_route("wireless", route_epoch=2)
+    else:
+        endpoint.set_protection_active(False)
+    before = endpoint.trace
+    assert endpoint.submit("unbound") is False
+    assert endpoint.trace == before
+    assert endpoint.production_ready is False
+
+
+def test_new_candidate_after_route_notification_is_still_unqualified():
+    endpoint = UnqualifiedNativeEndpointFake()
+    endpoint.switch_actual_route("wireless", route_epoch=2)
+    endpoint.notify_route()
+    candidate = _activated_frame(endpoint)
+    assert endpoint.submit("pending", candidate=candidate, at=102)
+    assert endpoint.production_ready is False
+    assert endpoint.native_snapshot()["route_enforced"] is False
