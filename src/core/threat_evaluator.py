@@ -1,6 +1,5 @@
 import math
 from typing import Dict, Any
-
 class ThreatEvaluator:
     def __init__(self, safety_governor, prior: float = 0.1):
         self.safety_governor = safety_governor

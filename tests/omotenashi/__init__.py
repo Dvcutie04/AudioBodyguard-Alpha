@@ -1,1 +1,0 @@
-# omotenashi tests package

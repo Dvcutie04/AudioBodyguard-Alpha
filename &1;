@@ -1,1 +1,0 @@
-'=== AQSS REPO DISCOVERY ==='; pwd; echo '--- TOP LEVEL ---'; ls -la; echo '--- GIT ---'; git rev-parse --show-toplevel

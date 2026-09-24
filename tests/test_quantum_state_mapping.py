@@ -1,36 +1,43 @@
-import pytest
-from src.quantum.classifier import TwoQubitAnalyticalClassifier
+import sys, os
+sys.path.insert(0, os.path.abspath("."))
+import math
+import unittest
+from src.quantum.vqc_classifier import TwoQubitQuantumClassifier
 
+class TestQuantumStateMapping(unittest.TestCase):
+    def setUp(self):
+        self.classifier = TwoQubitQuantumClassifier(theta_bias=0.0)
 
-def test_two_qubit_analytical_classifier_invariants():
-    classifier = TwoQubitAnalyticalClassifier()
+    def test_probability_normalization_and_bounds(self):
+        test_cases = [(0.2, 0.8), (0.5, 0.5), (0.9, 0.1), (1.0, 1.0), (0.0, 0.0)]
+        for spl, flatness in test_cases:
+            _, probs = self.classifier.evaluate_acoustic_state(spl, flatness)
+            total_prob = sum(probs.values())
+            self.assertAlmostEqual(total_prob, 1.0, places=5)
+            for p in probs.values():
+                self.assertTrue(0.0 <= p <= 1.0)
 
-    # 1. 0 <= p_i <= 1 and Sum(p_i) == 1.0 (within float tolerance)
-    prob_dist = classifier.predict_probabilities(
-        spl_normalized=0.75, spectral_flatness=0.30, theta_bias=0.1
-    )
-    assert len(prob_dist) == 4
-    total_prob = sum(prob_dist.values())
-    assert pytest.approx(total_prob, abs=1e-4) == 1.0
-    for state, p in prob_dist.items():
-        assert 0.0 <= p <= 1.0
+    def test_argmax_classification(self):
+        state, probs = self.classifier.evaluate_acoustic_state(0.7, 0.3)
+        expected_state = max(probs, key=probs.get)
+        self.assertEqual(state, expected_state)
 
-    # 2. Deterministic probability vector for fixed inputs + theta_bias
-    p1 = classifier.predict_probabilities(
-        spl_normalized=0.5, spectral_flatness=0.5, theta_bias=0.2
-    )
-    p2 = classifier.predict_probabilities(
-        spl_normalized=0.5, spectral_flatness=0.5, theta_bias=0.2
-    )
-    assert p1 == p2
+    def test_boundary_conditions_zero(self):
+        state, probs = self.classifier.evaluate_acoustic_state(0.0, 0.0)
+        self.assertAlmostEqual(probs["PROGRAM_NORMAL"], 1.0, places=5)
+        self.assertEqual(state, "PROGRAM_NORMAL")
 
-    # 3. Out-of-bounds inputs (spl=0, spl=1, flatness=0, flatness=1) cleanly handled
-    zero_bounds = classifier.predict_probabilities(
-        spl_normalized=0.0, spectral_flatness=0.0, theta_bias=0.0
-    )
-    assert pytest.approx(sum(zero_bounds.values()), abs=1e-4) == 1.0
+    def test_boundary_conditions_one(self):
+        state, probs = self.classifier.evaluate_acoustic_state(1.0, 1.0)
+        self.assertAlmostEqual(probs["STREAMING_AD"], 1.0, places=5)
+        self.assertEqual(state, "STREAMING_AD")
 
-    one_bounds = classifier.predict_probabilities(
-        spl_normalized=1.0, spectral_flatness=1.0, theta_bias=1.0
-    )
-    assert pytest.approx(sum(one_bounds.values()), abs=1e-4) == 1.0
+    def test_determinism_with_bias(self):
+        biased_classifier = TwoQubitQuantumClassifier(theta_bias=math.pi / 4)
+        state_1, probs_1 = biased_classifier.evaluate_acoustic_state(0.5, 0.5)
+        state_2, probs_2 = biased_classifier.evaluate_acoustic_state(0.5, 0.5)
+        self.assertEqual(state_1, state_2)
+        self.assertEqual(probs_1, probs_2)
+
+if __name__ == "__main__":
+    unittest.main()

@@ -1,1 +1,0 @@
-THRESHOLD_DB = 84.5

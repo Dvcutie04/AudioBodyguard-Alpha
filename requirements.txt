@@ -1,7 +1,10 @@
 unittest2>=1.1.0; python_version < '3.4'
 numpy>=1.22.0
 scipy>=1.8.0
+scikit-learn
 pytest
+hypothesis==6.155.7; sys_platform == "ios"
+hypothesis>=6.155.7; sys_platform != "ios"
 pytest-cov
 pytest-asyncio
 cryptography>=41.0.0

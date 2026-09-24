@@ -1,114 +1,46 @@
-"""Mock implementation of TV device and TV adapter for testing."""
-
-import uuid
-from typing import Any, Dict, Optional, Union
-from src.device_fabric.contracts import DeviceCapabilities, DeviceIdentity, DeviceState, ActuationReceipt
-
+import threading
+from typing import Any, Dict, Optional, Set
+from src.device_fabric.contracts import ActuationReceipt, ActuationStatus, AuthorizedActionIntent, DeviceCapabilities, DeviceIdentity, DeviceState, DeviceType
 
 class MockTV:
-    """Mock TV unit simulating device state and physical response."""
-
-    def __init__(self, device_id: str = "tv_01", state: Optional[Union[Dict[str, Any], DeviceState]] = None):
-        self.device_id = device_id
-        self.identity = DeviceIdentity(
-            device_id=device_id,
-            device_type="TV",
-        )
-        self.capabilities = DeviceCapabilities(
-            supported_operations=frozenset(["set_volume", "set_power", "set_muted", "REDUCE_VOLUME"]),
-            max_volume=100.0,
-            min_volume=0.0,
-        )
-
-        if isinstance(state, DeviceState):
-            self.state = state
-        elif isinstance(state, dict):
-            self.state = DeviceState(
-                power=state.get("power", True),
-                volume=float(state.get("volume", 50.0)),
-                muted=state.get("muted", False),
-                input_source=state.get("input_source", "HDMI_1"),
-                channel=str(state.get("channel", "")),
-            )
-        else:
-            self.state = DeviceState(
-                power=True,
-                volume=50.0,
-                muted=False,
-                input_source="HDMI_1",
-                channel="",
-            )
-
-    def set_power(self, power: bool) -> None:
-        self.state.power = power
-
-    def set_volume(self, volume: float) -> None:
-        self.state.volume = volume
-
-    def set_muted(self, muted: bool) -> None:
-        self.state.muted = muted
-
-    def set_input_source(self, source: str) -> None:
-        self.state.input_source = source
-
+    def __init__(self, device_id: str = "tv_integration_node_1", name: str = "Living Room TV"):
+        self.identity = DeviceIdentity(device_id=device_id, device_type=DeviceType.TV, name=name, vendor="MockCorp")
+        self.capabilities = DeviceCapabilities(device_id=device_id, capabilities={"set_power", "set_volume", "set_muted", "set_input_source", "set_playback_position"})
+        self.state = DeviceState(power=False, volume=10.0, muted=False, input_source="HDMI_1")
 
 class MockTVAdapter:
-    """Adapter bridging MockTV to the Device Fabric execution pipeline."""
-
-    def __init__(self, tv_or_id: Optional[Union[MockTV, str]] = None):
-        if isinstance(tv_or_id, MockTV):
-            self.device = tv_or_id
-        elif isinstance(tv_or_id, str):
-            self.device = MockTV(device_id=tv_or_id)
+    def __init__(self, device_id_or_tv: Any = "tv_integration_node_1", *, fence_store=None):
+        if isinstance(device_id_or_tv, MockTV):
+            self.device = device_id_or_tv
         else:
-            self.device = MockTV()
+            self.device = MockTV(device_id=str(device_id_or_tv))
+        self._executed_intents: Set[str] = set()
+        self._fence_store = fence_store
+        self._highest_controller_fences: Dict[str, tuple[int, str]] = {} if fence_store is None else fence_store.snapshot()
+        self._fence_lock = threading.RLock()
 
-        self.tv = self.device
-        self._execution_history: Dict[str, ActuationReceipt] = {}
-
-    def get_state(self) -> DeviceState:
-        return self.device.state
-
-    async def execute_intent(
-        self,
-        intent: Any,
-        transaction_digest: str = "",
-        capability_digest: str = "",
-    ) -> ActuationReceipt:
-        """Executes an authorized intent on the underlying MockTV instance and returns an ActuationReceipt."""
-        intent_id = getattr(intent, "intent_id", "unknown_intent")
-
-        if intent_id in self._execution_history:
-            return self._execution_history[intent_id]
-
-        target_state = getattr(intent, "target_state", None)
-        if target_state and isinstance(target_state, DeviceState):
-            self.device.state = target_state
-
-        receipt = ActuationReceipt(
-            receipt_id=f"rcpt_{uuid.uuid4().hex[:8]}",
-            intent_id=intent_id,
-            device_id=self.device.device_id,
-            transaction_digest=transaction_digest,
-            capability_digest=capability_digest,
-            status="SUCCESS",
-            resulting_state=self.device.state,
-        )
-
-        self._execution_history[intent_id] = receipt
-        return receipt
-
-    def apply_action(self, action: str, **kwargs: Any) -> bool:
-        if action == "power_on":
-            self.device.set_power(True)
-        elif action == "power_off":
-            self.device.set_power(False)
-        elif action == "set_volume":
-            self.device.set_volume(kwargs.get("volume", 0.0))
-        elif action == "mute":
-            self.device.set_muted(True)
-        elif action == "unmute":
-            self.device.set_muted(False)
-        else:
-            return False
-        return True
+    async def execute_intent(self, intent: AuthorizedActionIntent, transaction_digest: Optional[str] = None, capability_digest: Optional[str] = None) -> ActuationReceipt:
+        with self._fence_lock:
+            resource_id=getattr(intent,"controller_resource_id","")
+            controller_id=getattr(intent,"controller_id","")
+            token=getattr(intent,"controller_fencing_token",0)
+            controller_bound=bool(resource_id or controller_id or token)
+            if controller_bound:
+                valid=type(resource_id) is str and bool(resource_id.strip()) and type(controller_id) is str and bool(controller_id.strip()) and type(token) is int and token>0
+                current=self._highest_controller_fences.get(resource_id) if valid else None
+                stale=not valid or (current is not None and (token<current[0] or (token==current[0] and controller_id!=current[1])))
+                if not stale and self._fence_store is not None:
+                    try:
+                        stale=self._fence_store.accept(resource_id,controller_id,token) is not True
+                    except Exception:
+                        stale=True
+                if stale:
+                    return ActuationReceipt(receipt_id=f"rcpt_{intent.intent_id}",intent_id=intent.intent_id,status=ActuationStatus.REJECTED,device_id=self.device.identity.device_id,transaction_id=transaction_digest or intent.transaction_id,capability_digest=capability_digest or intent.capability_digest)
+                if current is None or token>current[0]:
+                    self._highest_controller_fences[resource_id]=(token,controller_id)
+            if intent.intent_id in self._executed_intents:
+                return ActuationReceipt(receipt_id=f"rcpt_{intent.intent_id}", intent_id=intent.intent_id, status=ActuationStatus.DUPLICATE_ABSORBED, device_id=self.device.identity.device_id, transaction_id=transaction_digest or intent.transaction_id, capability_digest=capability_digest or intent.capability_digest)
+            self._executed_intents.add(intent.intent_id)
+            if intent.target_state:
+                self.device.state = intent.target_state
+            return ActuationReceipt(receipt_id=f"rcpt_{intent.intent_id}", intent_id=intent.intent_id, status=ActuationStatus.EXECUTED, device_id=self.device.identity.device_id, transaction_id=transaction_digest or intent.transaction_id, capability_digest=capability_digest or intent.capability_digest)

@@ -1,0 +1,3563 @@
+{
+  "archives": [
+    {
+      "exported_files": 423,
+      "name": "AQSS_CI_REVIEW_1625.zip",
+      "sha256": "38c25ea2e5c1ce761b3623f5266c4758e9c721160fe4da7c5230eb07eba768f7"
+    },
+    {
+      "exported_files": 18,
+      "name": "AQSS_CI_SUPPLEMENT_1625.zip",
+      "sha256": "b50a25f585e196fbfc008ea42a9010809c068634d1eb45681beec670cd78ae1f"
+    }
+  ],
+  "counts": {
+    "exact": 432,
+    "exported": 441,
+    "modified": 8,
+    "retired": 1
+  },
+  "files": {
+    ".github/workflows/ci.yml": {
+      "archive": "AQSS_CI_REVIEW_1625.zip",
+      "export_bytes": 1415,
+      "export_sha256": "646a4451aec11a25d1ab0068e7525d1ed9720853f6c3370afc17448c7ae53386",
+      "reason": "Restore all three hosted CI jobs with least-privilege workflow permissions and bounded runs.",
+      "repository_bytes": 1928,
+      "repository_sha256": "e4c20c027c78abd38d3ccf5a2593d53125bf3e4fea6ad07b2cba5cc6ebade8bb",
+      "status": "modified"
+    },
+    ".gitignore": {
+      "archive": "AQSS_CI_REVIEW_1625.zip",
+      "export_bytes": 220,
+      "export_sha256": "8026bd6de73aa838912c6f3726457119d26b588a2d7034614ba7112970571185",
+      "reason": "Exclude credentials, build output, local state, and source-transfer artifacts.",
+      "repository_bytes": 1023,
+      "repository_sha256": "c3d01c72882387b0b25293917dfb84be595f32301097e43ed9c0dd78e99aff55",
+      "status": "modified"
+    },
+    "acoustic_engine.py": {
+      "archive": "AQSS_CI_SUPPLEMENT_1625.zip",
+      "export_bytes": 711,
+      "export_sha256": "9c4ea2b7586ca8876d129765ce9ab44fa7dccbbbd0eba295323d1c93bd2485c4",
+      "repository_bytes": 711,
+      "repository_sha256": "9c4ea2b7586ca8876d129765ce9ab44fa7dccbbbd0eba295323d1c93bd2485c4",
+      "status": "exact"
+    },
+    "audio_engine/__init__.py": {
+      "archive": "AQSS_CI_SUPPLEMENT_1625.zip",
+      "export_bytes": 0,
+      "export_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "repository_bytes": 0,
+      "repository_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "status": "exact"
+    },
+    "audio_engine/action_dispatcher.py": {
+      "archive": "AQSS_CI_SUPPLEMENT_1625.zip",
+      "export_bytes": 1001,
+      "export_sha256": "b9cf44637c33386f7dafdccb936b76c933374c126b5dc789ad7033db0e0b9eee",
+      "repository_bytes": 1001,
+      "repository_sha256": "b9cf44637c33386f7dafdccb936b76c933374c126b5dc789ad7033db0e0b9eee",
+      "status": "exact"
+    },
+    "audio_engine/admission_pipeline.py": {
+      "archive": "AQSS_CI_SUPPLEMENT_1625.zip",
+      "export_bytes": 1246,
+      "export_sha256": "5e660131300c14d6e87d80319d90086d8bf572182d933fbed6a2881f707bb635",
+      "repository_bytes": 1246,
+      "repository_sha256": "5e660131300c14d6e87d80319d90086d8bf572182d933fbed6a2881f707bb635",
+      "status": "exact"
+    },
+    "audio_engine/dark_silicon_airgap.py": {
+      "archive": "AQSS_CI_SUPPLEMENT_1625.zip",
+      "export_bytes": 449,
+      "export_sha256": "09a0ec2378bfd1c5bd6ce2d398dcaac67646fbedda9dec35e7266fc9f5a9537f",
+      "repository_bytes": 449,
+      "repository_sha256": "09a0ec2378bfd1c5bd6ce2d398dcaac67646fbedda9dec35e7266fc9f5a9537f",
+      "status": "exact"
+    },
+    "audio_engine/decision_envelope.py": {
+      "archive": "AQSS_CI_SUPPLEMENT_1625.zip",
+      "export_bytes": 627,
+      "export_sha256": "e62f3288b28d7b5ae2e3c2d04141c04198000e40d79ae57a738106c547dfbe41",
+      "repository_bytes": 627,
+      "repository_sha256": "e62f3288b28d7b5ae2e3c2d04141c04198000e40d79ae57a738106c547dfbe41",
+      "status": "exact"
+    },
+    "audio_engine/fusion_router.py": {
+      "archive": "AQSS_CI_SUPPLEMENT_1625.zip",
+      "export_bytes": 1300,
+      "export_sha256": "c99f4186b4204c3271e1748d3d97d7a9ea7e3161e24ed9625b2bdc282e314d3d",
+      "repository_bytes": 1300,
+      "repository_sha256": "c99f4186b4204c3271e1748d3d97d7a9ea7e3161e24ed9625b2bdc282e314d3d",
+      "status": "exact"
+    },
+    "audio_engine/mesh_clock.py": {
+      "archive": "AQSS_CI_SUPPLEMENT_1625.zip",
+      "export_bytes": 385,
+      "export_sha256": "e61c63cb3482cf244a285cd12bda6471f374ef734c3d0d44b0634bca6fc6acd4",
+      "repository_bytes": 385,
+      "repository_sha256": "e61c63cb3482cf244a285cd12bda6471f374ef734c3d0d44b0634bca6fc6acd4",
+      "status": "exact"
+    },
+    "audio_engine/mesh_fusion.py": {
+      "archive": "AQSS_CI_SUPPLEMENT_1625.zip",
+      "export_bytes": 2858,
+      "export_sha256": "3a11435037a6be130826ae028c6b82fd2a716d3d66149229cd299fe20466c38b",
+      "reason": "Preexisting corrupt Python module with no current source or test imports; recorded in retired-legacy-paths.md.",
+      "repository_bytes": null,
+      "repository_sha256": null,
+      "status": "retired"
+    },
+    "audio_engine/node_simulator.py": {
+      "archive": "AQSS_CI_SUPPLEMENT_1625.zip",
+      "export_bytes": 1208,
+      "export_sha256": "5b8bac8526d4197c5f1221e0a20fbc38349bd2459353675258e49d20ff99abc9",
+      "repository_bytes": 1208,
+      "repository_sha256": "5b8bac8526d4197c5f1221e0a20fbc38349bd2459353675258e49d20ff99abc9",
+      "status": "exact"
+    },
+    "audio_engine/node_trust.py": {
+      "archive": "AQSS_CI_SUPPLEMENT_1625.zip",
+      "export_bytes": 2365,
+      "export_sha256": "6e146c30387a0aa3f093eabc673af66203551f4096a6cb3cc0148b205432ae06",
+      "repository_bytes": 2365,
+      "repository_sha256": "6e146c30387a0aa3f093eabc673af66203551f4096a6cb3cc0148b205432ae06",
+      "status": "exact"
+    },
+    "audio_engine/spatial.py": {
+      "archive": "AQSS_CI_SUPPLEMENT_1625.zip",
+      "export_bytes": 554,
+      "export_sha256": "04d5c9de513a76dda2c0d55e3790eac5e92a06071e10bc0ca23462e71dbfea73",
+      "repository_bytes": 554,
+      "repository_sha256": "04d5c9de513a76dda2c0d55e3790eac5e92a06071e10bc0ca23462e71dbfea73",
+      "status": "exact"
+    },
+    "audio_engine/symmetric_auth.py": {
+      "archive": "AQSS_CI_SUPPLEMENT_1625.zip",
+      "export_bytes": 4172,
+      "export_sha256": "50885fc0f5b8d3ac90286189db304c508be486552dfd3363ec0ba0f7be342779",
+      "repository_bytes": 4172,
+      "repository_sha256": "50885fc0f5b8d3ac90286189db304c508be486552dfd3363ec0ba0f7be342779",
+      "status": "exact"
+    },
+    "audio_engine/trust_model.py": {
+      "archive": "AQSS_CI_SUPPLEMENT_1625.zip",
+      "export_bytes": 720,
+      "export_sha256": "caf8b0e8128ca1b3840be91d00801614466ac653e88bc772a1ed6d98f13d04af",
+      "repository_bytes": 720,
+      "repository_sha256": "caf8b0e8128ca1b3840be91d00801614466ac653e88bc772a1ed6d98f13d04af",
+      "status": "exact"
+    },
+    "config/devices.json": {
+      "archive": "AQSS_CI_REVIEW_1625.zip",
+      "export_bytes": 249,
+      "export_sha256": "7ec199758158637dc60f1848076dd4a7b2eab1d6f8fed119c56d9d031805ea84",
+      "repository_bytes": 249,
+      "repository_sha256": "7ec199758158637dc60f1848076dd4a7b2eab1d6f8fed119c56d9d031805ea84",
+      "status": "exact"
+    },
+    "config/settings.json": {
+      "archive": "AQSS_CI_REVIEW_1625.zip",
+      "export_bytes": 150,
+      "export_sha256": "4cc9afc10cb45271d5b46a62f3459537be3e6f399ca725631f29454784512327",
+      "repository_bytes": 150,
+      "repository_sha256": "4cc9afc10cb45271d5b46a62f3459537be3e6f399ca725631f29454784512327",
+      "status": "exact"
+    },
+    "conftest.py": {
+      "archive": "AQSS_CI_REVIEW_1625.zip",
+      "export_bytes": 56,
+      "export_sha256": "32c34886322985713c27d36ac1824a76c1e1c2c96f06f83a2c5b73ee87d219c9",
+      "repository_bytes": 56,
+      "repository_sha256": "32c34886322985713c27d36ac1824a76c1e1c2c96f06f83a2c5b73ee87d219c9",
+      "status": "exact"
+    },
+    "contracts/endpoint_native_boundary_v1.json": {
+      "archive": "AQSS_CI_REVIEW_1625.zip",
+      "export_bytes": 6058,
+      "export_sha256": "cfd027361b5a4ce74283b798c0262de2b76028ad6f5a48202908c77bfa8e61ea",
+      "repository_bytes": 6058,
+      "repository_sha256": "cfd027361b5a4ce74283b798c0262de2b76028ad6f5a48202908c77bfa8e61ea",
+      "status": "exact"
+    },
+    "contracts/endpoint_native_boundary_v1.md": {
+      "archive": "AQSS_CI_REVIEW_1625.zip",
+      "export_bytes": 3075,
+      "export_sha256": "c1c16a41cab4ccad1f97074f205153b955971b46191aac2fb43cf5704055606a",
+      "repository_bytes": 3075,
+      "repository_sha256": "c1c16a41cab4ccad1f97074f205153b955971b46191aac2fb43cf5704055606a",
+      "status": "exact"
+    },
+    "contracts/tv_selection_native_feedback_v1.json": {
+      "archive": "AQSS_CI_REVIEW_1625.zip",
+      "export_bytes": 3626,
+      "export_sha256": "e7938ce03f5651e9776f348bbc3879da243e66a9c90f2252b102faad9a681904",
+      "repository_bytes": 3626,
+      "repository_sha256": "e7938ce03f5651e9776f348bbc3879da243e66a9c90f2252b102faad9a681904",
+      "status": "exact"
+    },
+    "native/android/build.gradle.kts": {
+      "archive": "AQSS_CI_REVIEW_1625.zip",
+      "export_bytes": 701,
+      "export_sha256": "d9f4cc3ea319a6378f4036a8739bbdc0201a868660089c98d99e1d22d8e73933",
+      "repository_bytes": 701,
+      "repository_sha256": "d9f4cc3ea319a6378f4036a8739bbdc0201a868660089c98d99e1d22d8e73933",
+      "status": "exact"
+    },
+    "native/android/settings.gradle.kts": {
+      "archive": "AQSS_CI_REVIEW_1625.zip",
+      "export_bytes": 322,
+      "export_sha256": "e1841b39aa8a9b0e52cea6dd03dc28767f5bf85daff29727193d4ed0bd6d57e7",
+      "repository_bytes": 322,
+      "repository_sha256": "e1841b39aa8a9b0e52cea6dd03dc28767f5bf85daff29727193d4ed0bd6d57e7",
+      "status": "exact"
+    },
+    "native/android/src/main/kotlin/com/aqss/nativefeedback/NativeFeedbackContract.kt": {
+      "archive": "AQSS_CI_REVIEW_1625.zip",
+      "export_bytes": 1569,
+      "export_sha256": "8b75e4cfbee6061fcb47018b6e320c659a93d32d64ca21c8f2aa4097dd6a32ba",
+      "repository_bytes": 1569,
+      "repository_sha256": "8b75e4cfbee6061fcb47018b6e320c659a93d32d64ca21c8f2aa4097dd6a32ba",
+      "status": "exact"
+    },
+    "native/android/src/test/kotlin/com/aqss/nativefeedback/EndpointNativeBoundaryFixtureTest.kt": {
+      "archive": "AQSS_CI_REVIEW_1625.zip",
+      "export_bytes": 4784,
+      "export_sha256": "d40eaef142a20f5b28c0f426d58e4a420f4961ebe4e57561e4864a50e538cbc1",
+      "reason": "Read the unchanged shared fixture through Files.readAllBytes and UTF-8 for Android test compilation.",
+      "repository_bytes": 4810,
+      "repository_sha256": "415412793dc2e57362dc6db8851fe5b036f0b96e70def456e7ecf0618aaf2a16",
+      "status": "modified"
+    },
+    "native/android/src/test/kotlin/com/aqss/nativefeedback/NativeFeedbackContractTest.kt": {
+      "archive": "AQSS_CI_REVIEW_1625.zip",
+      "export_bytes": 2793,
+      "export_sha256": "214822affcf0ec8be9121e306774fa1dfd9d1c269f3e4dcc36cfc76cf7ff1722",
+      "reason": "Read the unchanged shared fixture through Files.readAllBytes and UTF-8 for Android test compilation.",
+      "repository_bytes": 2819,
+      "repository_sha256": "698081f1853dcfde90c4789cd7d5e06a5d95e2b9b2339c331034234787f5889e",
+      "status": "modified"
+    },
+    "native/ios/Package.swift": {
+      "archive": "AQSS_CI_REVIEW_1625.zip",
+      "export_bytes": 588,
+      "export_sha256": "10a7c7b21341c9da022f1d187f44657c7261ce8e54fa05af1580f026cbd51e8d",
+      "repository_bytes": 588,
+      "repository_sha256": "10a7c7b21341c9da022f1d187f44657c7261ce8e54fa05af1580f026cbd51e8d",
+      "status": "exact"
+    },
+    "native/ios/Sources/AQSSNativeFeedback/NativeFeedbackContract.swift": {
+      "archive": "AQSS_CI_REVIEW_1625.zip",
+      "export_bytes": 2347,
+      "export_sha256": "171a9db4e73ea492ffd3bdc968aeb6e45acf4302068f901790c71fa54ae7120f",
+      "repository_bytes": 2347,
+      "repository_sha256": "171a9db4e73ea492ffd3bdc968aeb6e45acf4302068f901790c71fa54ae7120f",
+      "status": "exact"
+    },
+    "native/ios/Tests/AQSSNativeFeedbackTests/EndpointNativeBoundaryFixtureTests.swift": {
+      "archive": "AQSS_CI_REVIEW_1625.zip",
+      "export_bytes": 5125,
+      "export_sha256": "82997768d9f33c46bd06fa7e00d2a1f9cda3bfee83ceef265de9b2e537c42435",
+      "repository_bytes": 5125,
+      "repository_sha256": "82997768d9f33c46bd06fa7e00d2a1f9cda3bfee83ceef265de9b2e537c42435",
+      "status": "exact"
+    },
+    "native/ios/Tests/AQSSNativeFeedbackTests/NativeFeedbackContractTests.swift": {
+      "archive": "AQSS_CI_REVIEW_1625.zip",
+      "export_bytes": 2055,
+      "export_sha256": "1f015eb4b8c5c13c04ca3167e46779ab717fca7c9712307f9718dcf63e35072b",
+      "repository_bytes": 2055,
+      "repository_sha256": "1f015eb4b8c5c13c04ca3167e46779ab717fca7c9712307f9718dcf63e35072b",
+      "status": "exact"
+    },
+    "pytest.ini": {
+      "archive": "AQSS_CI_REVIEW_1625.zip",
+      "export_bytes": 134,
+      "export_sha256": "87912243d4239397fa80fc0d40bf849ecac83c42de4bcc03b9c1fb12aa587c8e",
+      "repository_bytes": 134,
+      "repository_sha256": "87912243d4239397fa80fc0d40bf849ecac83c42de4bcc03b9c1fb12aa587c8e",
+      "status": "exact"
+    },
+    "requirements.txt": {
+      "archive": "AQSS_CI_REVIEW_1625.zip",
+      "export_bytes": 208,
+      "export_sha256": "f025496cce90771bb61c170bf468fde41a8ba868c22616bed324ce38458ba5ce",
+      "reason": "Add scikit-learn required by existing collected Python modules.",
+      "repository_bytes": 221,
+      "repository_sha256": "2c41db06db6807ba4499d2d1ec6a64295a7c9daa6a8eebcd6c19395491864dc4",
+      "status": "modified"
+    },
+    "signal_router.py": {
+      "archive": "AQSS_CI_SUPPLEMENT_1625.zip",
+      "export_bytes": 1785,
+      "export_sha256": "cf3923753cbe3a954d804c32a74f0f37e66e0369306519b34d0256df89d1905b",
+      "repository_bytes": 1785,
+      "repository_sha256": "cf3923753cbe3a954d804c32a74f0f37e66e0369306519b34d0256df89d1905b",
+      "status": "exact"
+    },
+    "src/__init__.py": {
+      "archive": "AQSS_CI_REVIEW_1625.zip",
+      "export_bytes": 0,
+      "export_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "repository_bytes": 0,
+      "repository_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "status": "exact"
+    },
+    "src/actuation/__init__.py": {
+      "archive": "AQSS_CI_REVIEW_1625.zip",
+      "export_bytes": 0,
+      "export_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "repository_bytes": 0,
+      "repository_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "status": "exact"
+    },
+    "src/actuation/gateway.py": {
+      "archive": "AQSS_CI_REVIEW_1625.zip",
+      "export_bytes": 1610,
+      "export_sha256": "895d3edfebed1800e338f2853a7e143d0b654852e4c0268619935b3a3edbe5f4",
+      "repository_bytes": 1610,
+      "repository_sha256": "895d3edfebed1800e338f2853a7e143d0b654852e4c0268619935b3a3edbe5f4",
+      "status": "exact"
+    },
+    "src/audit/__init__.py": {
+      "archive": "AQSS_CI_REVIEW_1625.zip",
+      "export_bytes": 0,
+      "export_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "repository_bytes": 0,
+      "repository_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "status": "exact"
+    },
+    "src/audit/flight_recorder.py": {
+      "archive": "AQSS_CI_REVIEW_1625.zip",
+      "export_bytes": 1971,
+      "export_sha256": "b47cc8b082718ed09d2d6b6be923c60b6627c0f465f3d762b979376306868424",
+      "repository_bytes": 1971,
+      "repository_sha256": "b47cc8b082718ed09d2d6b6be923c60b6627c0f465f3d762b979376306868424",
+      "status": "exact"
+    },
+    "src/audit/policy_audit.py": {
+      "archive": "AQSS_CI_REVIEW_1625.zip",
+      "export_bytes": 1079,
+      "export_sha256": "38a2f868234721f7acc24ac030636fdfb08d8476fe8bb9e7b05109cc82cd01c1",
+      "repository_bytes": 1079,
+      "repository_sha256": "38a2f868234721f7acc24ac030636fdfb08d8476fe8bb9e7b05109cc82cd01c1",
+      "status": "exact"
+    },
+    "src/audit/replay_engine.py": {
+      "archive": "AQSS_CI_REVIEW_1625.zip",
+      "export_bytes": 515,
+      "export_sha256": "0f930c8d6ca634148d2aa05c04de9912e8435def90d069a707146ad3e6daf74a",
+      "repository_bytes": 515,
+      "repository_sha256": "0f930c8d6ca634148d2aa05c04de9912e8435def90d069a707146ad3e6daf74a",
+      "status": "exact"
+    },
+    "src/bridges/device_manager.py": {
+      "archive": "AQSS_CI_REVIEW_1625.zip",
+      "export_bytes": 1017,
+      "export_sha256": "d03bb8966fc038a8aa7ad6490e53a7413f97ef7a9577c3fce811fe0fc6c6facd",
+      "repository_bytes": 1017,
+      "repository_sha256": "d03bb8966fc038a8aa7ad6490e53a7413f97ef7a9577c3fce811fe0fc6c6facd",
+      "status": "exact"
+    },
+    "src/bridges/network_scanner.py": {
+      "archive": "AQSS_CI_REVIEW_1625.zip",
+      "export_bytes": 1242,
+      "export_sha256": "d696256230d4e79d599d6af1101a9bd74f44dfa7e390127801254a186848d116",
+      "repository_bytes": 1242,
+      "repository_sha256": "d696256230d4e79d599d6af1101a9bd74f44dfa7e390127801254a186848d116",
+      "status": "exact"
+    },
+    "src/bridges/scanner.py": {
+      "archive": "AQSS_CI_REVIEW_1625.zip",
+      "export_bytes": 1173,
+      "export_sha256": "d91604e8040d6e9ffe45a75c6e1747dabf364d001be4c0e117f0cddc2498a875",
+      "repository_bytes": 1173,
+      "repository_sha256": "d91604e8040d6e9ffe45a75c6e1747dabf364d001be4c0e117f0cddc2498a875",
+      "status": "exact"
+    },
+    "src/bridges/smart_home_core.py": {
+      "archive": "AQSS_CI_REVIEW_1625.zip",
+      "export_bytes": 896,
+      "export_sha256": "5e7acbdc45bab6b527c409981c32dc65fd44ba8459880e54ae8d54b9ae572736",
+      "repository_bytes": 896,
+      "repository_sha256": "5e7acbdc45bab6b527c409981c32dc65fd44ba8459880e54ae8d54b9ae572736",
+      "status": "exact"
+    },
+    "src/bridges/spatial_cinch_engine.py": {
+      "archive": "AQSS_CI_REVIEW_1625.zip",
+      "export_bytes": 1762,
+      "export_sha256": "ad51046c85c20634bbe562e50ed528bdd54a5e5bfab663aa917551c32b3dfdca",
+      "reason": "Resolve the existing quarantined controller using its current src.bridges module path.",
+      "repository_bytes": 1766,
+      "repository_sha256": "6e06c2afacf7440a4d10e0c0d634250554a0b3f534d54f215960fe25d0b2eb31",
+      "status": "modified"
+    },
+    "src/bridges/tv_controller.py": {
+      "archive": "AQSS_CI_REVIEW_1625.zip",
+      "export_bytes": 1655,
+      "export_sha256": "ac73d14f6b44b59cfac81c0e37f804eb0dc890018c3e6a536cd9299fd8015ed0",
+      "repository_bytes": 1655,
+      "repository_sha256": "ac73d14f6b44b59cfac81c0e37f804eb0dc890018c3e6a536cd9299fd8015ed0",
+      "status": "exact"
+    },
+    "src/bridges/tv_registry.py": {
+      "archive": "AQSS_CI_REVIEW_1625.zip",
+      "export_bytes": 735,
+      "export_sha256": "d05579ca265b29ec95930a4e9e8f850d779dd2324042ed2f5537b7f7f726cc22",
+      "reason": "Resolve the existing quarantined controller using its current src.bridges module path.",
+      "repository_bytes": 739,
+      "repository_sha256": "1d19568acd149a6d2c4b4c4373ebc2a1ffa6f7ceebc434a2a5fa1c2f80b9cb63",
+      "status": "modified"
+    },
+    "src/bridges/universal_dispatch.py": {
+      "archive": "AQSS_CI_REVIEW_1625.zip",
+      "export_bytes": 2648,
+      "export_sha256": "7bffd91259e0ca865d26e552b5031c0b34b41102ff384f0fd6f23a417283a063",
+      "repository_bytes": 2648,
+      "repository_sha256": "7bffd91259e0ca865d26e552b5031c0b34b41102ff384f0fd6f23a417283a063",
+      "status": "exact"
+    },
+    "src/bridges/webhook_logger.py": {
+      "archive": "AQSS_CI_REVIEW_1625.zip",
+      "export_bytes": 989,
+      "export_sha256": "e9c6d8ef7ad2f14a0b2fb883702e549ec9ccab3fe0c4846070c1064247a29754",
+      "repository_bytes": 989,
+      "repository_sha256": "e9c6d8ef7ad2f14a0b2fb883702e549ec9ccab3fe0c4846070c1064247a29754",
+      "status": "exact"
+    },
+    "src/control/__init__.py": {
+      "archive": "AQSS_CI_REVIEW_1625.zip",
+      "export_bytes": 0,
+      "export_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "repository_bytes": 0,
+      "repository_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "status": "exact"
+    },
+    "src/control/action_dispatcher.py": {
+      "archive": "AQSS_CI_REVIEW_1625.zip",
+      "export_bytes": 1776,
+      "export_sha256": "9eb71015c09c9e442d8c6b41d78b63c1cfc0369ff1aab2a11a31507b67aa93e3",
+      "repository_bytes": 1776,
+      "repository_sha256": "9eb71015c09c9e442d8c6b41d78b63c1cfc0369ff1aab2a11a31507b67aa93e3",
+      "status": "exact"
+    },
+    "src/control/action_envelope.py": {
+      "archive": "AQSS_CI_REVIEW_1625.zip",
+      "export_bytes": 941,
+      "export_sha256": "2e7c3e371a4362d740e4271c0c9aa3afb57bf49f35d23f050b3a1a97a34ce521",
+      "repository_bytes": 941,
+      "repository_sha256": "2e7c3e371a4362d740e4271c0c9aa3afb57bf49f35d23f050b3a1a97a34ce521",
+      "status": "exact"
+    },
+    "src/control/active_controller_lease.py": {
+      "archive": "AQSS_CI_REVIEW_1625.zip",
+      "export_bytes": 12636,
+      "export_sha256": "6680c904ab1ba54ece87e8c22249f4697055a377eb36690a0ff0bc69409493f8",
+      "repository_bytes": 12636,
+      "repository_sha256": "6680c904ab1ba54ece87e8c22249f4697055a377eb36690a0ff0bc69409493f8",
+      "status": "exact"
+    },
+    "src/control/authorized_intent.py": {
+      "archive": "AQSS_CI_REVIEW_1625.zip",
+      "export_bytes": 1119,
+      "export_sha256": "55f1027622df4481303493ff0cd521d4fe38dc328ff70f69e4cbd873cbd9c275",
+      "repository_bytes": 1119,
+      "repository_sha256": "55f1027622df4481303493ff0cd521d4fe38dc328ff70f69e4cbd873cbd9c275",
+      "status": "exact"
+    },
+    "src/control/capability_lease.py": {
+      "archive": "AQSS_CI_REVIEW_1625.zip",
+      "export_bytes": 939,
+      "export_sha256": "d0b68f47651d10fb6419a142340a2449a38e41c9df96714a2b417fbd0ba53d06",
+      "repository_bytes": 939,
+      "repository_sha256": "d0b68f47651d10fb6419a142340a2449a38e41c9df96714a2b417fbd0ba53d06",
+      "status": "exact"
+    },
+    "src/control/controller_authority_gate.py": {
+      "archive": "AQSS_CI_REVIEW_1625.zip",
+      "export_bytes": 8977,
+      "export_sha256": "fdabb1f5f660269612283c143f8b94222515a9bd3314dc51029f240f1a626203",
+      "repository_bytes": 8977,
+      "repository_sha256": "fdabb1f5f660269612283c143f8b94222515a9bd3314dc51029f240f1a626203",
+      "status": "exact"
+    },
+    "src/control/controller_bound_intent.py": {
+      "archive": "AQSS_CI_REVIEW_1625.zip",
+      "export_bytes": 3651,
+      "export_sha256": "d361f180b53d2c9bd0b24edc377bd2db49d855f37efd4873cb0694a69e96229d",
+      "repository_bytes": 3651,
+      "repository_sha256": "d361f180b53d2c9bd0b24edc377bd2db49d855f37efd4873cb0694a69e96229d",
+      "status": "exact"
+    },
+    "src/control/controller_bound_intent_firewall.py": {
+      "archive": "AQSS_CI_REVIEW_1625.zip",
+      "export_bytes": 5510,
+      "export_sha256": "1a56c17afc7fd21ce15a12f5ba975d7453903ce50bdef9a1b6638a6a19f26bb5",
+      "repository_bytes": 5510,
+      "repository_sha256": "1a56c17afc7fd21ce15a12f5ba975d7453903ce50bdef9a1b6638a6a19f26bb5",
+      "status": "exact"
+    },
+    "src/control/controller_bound_intent_issuer.py": {
+      "archive": "AQSS_CI_REVIEW_1625.zip",
+      "export_bytes": 5370,
+      "export_sha256": "eacf5b8a3d00804d8aaf89f4ddce0afa815b4a4d0fd902fbed3aee4b20770b7d",
+      "repository_bytes": 5370,
+      "repository_sha256": "eacf5b8a3d00804d8aaf89f4ddce0afa815b4a4d0fd902fbed3aee4b20770b7d",
+      "status": "exact"
+    },
+    "src/control/controller_command_proof.py": {
+      "archive": "AQSS_CI_REVIEW_1625.zip",
+      "export_bytes": 3953,
+      "export_sha256": "f27600c6fce8002002758ef38534c23a003ceb383228517ca54422d737d4994c",
+      "repository_bytes": 3953,
+      "repository_sha256": "f27600c6fce8002002758ef38534c23a003ceb383228517ca54422d737d4994c",
+      "status": "exact"
+    },
+    "src/control/controller_lease_evidence.py": {
+      "archive": "AQSS_CI_REVIEW_1625.zip",
+      "export_bytes": 4100,
+      "export_sha256": "6fbbe1313c2910a0883e8bfec94c7930dd1fdf80e9371d4b4f2745705eb69ed1",
+      "repository_bytes": 4100,
+      "repository_sha256": "6fbbe1313c2910a0883e8bfec94c7930dd1fdf80e9371d4b4f2745705eb69ed1",
+      "status": "exact"
+    },
+    "src/control/controller_lease_grant.py": {
+      "archive": "AQSS_CI_REVIEW_1625.zip",
+      "export_bytes": 4354,
+      "export_sha256": "f39201992f0f765a581757dcd7691c5cc1f6655aa49b9052ed0d092d64c29fa0",
+      "repository_bytes": 4354,
+      "repository_sha256": "f39201992f0f765a581757dcd7691c5cc1f6655aa49b9052ed0d092d64c29fa0",
+      "status": "exact"
+    },
+    "src/control/controller_reauthorization.py": {
+      "archive": "AQSS_CI_REVIEW_1625.zip",
+      "export_bytes": 2111,
+      "export_sha256": "73e14896697010f8504537ce7a9c96f3e2777332eb1a46e2bf6c8f7417d8967e",
+      "repository_bytes": 2111,
+      "repository_sha256": "73e14896697010f8504537ce7a9c96f3e2777332eb1a46e2bf6c8f7417d8967e",
+      "status": "exact"
+    },
+    "src/control/crypto_identity.py": {
+      "archive": "AQSS_CI_REVIEW_1625.zip",
+      "export_bytes": 885,
+      "export_sha256": "ac5bfe9dbabcd8448903c07086b756e1c7aa068ba9de26087476584266026773",
+      "repository_bytes": 885,
+      "repository_sha256": "ac5bfe9dbabcd8448903c07086b756e1c7aa068ba9de26087476584266026773",
+      "status": "exact"
+    },
+    "src/control/device_fabric_bridge.py": {
+      "archive": "AQSS_CI_REVIEW_1625.zip",
+      "export_bytes": 48635,
+      "export_sha256": "3fe0deb50338b61c84e09d070e1428886728085a2687f62f79277472a793627b",
+      "repository_bytes": 48635,
+      "repository_sha256": "3fe0deb50338b61c84e09d070e1428886728085a2687f62f79277472a793627b",
+      "status": "exact"
+    },
+    "src/control/fusion_router.py": {
+      "archive": "AQSS_CI_REVIEW_1625.zip",
+      "export_bytes": 1863,
+      "export_sha256": "1f5712d31fcbddd1d4e1d78dfe3ad0d668513b51de8d44bb1317782aa0e229eb",
+      "repository_bytes": 1863,
+      "repository_sha256": "1f5712d31fcbddd1d4e1d78dfe3ad0d668513b51de8d44bb1317782aa0e229eb",
+      "status": "exact"
+    },
+    "src/control/hysteretic_engine.py": {
+      "archive": "AQSS_CI_REVIEW_1625.zip",
+      "export_bytes": 1260,
+      "export_sha256": "0f1c73914fba3898c1d11b160c383639e7ab412034211de3703d099d0bfa69ea",
+      "repository_bytes": 1260,
+      "repository_sha256": "0f1c73914fba3898c1d11b160c383639e7ab412034211de3703d099d0bfa69ea",
+      "status": "exact"
+    },
+    "src/control/intent_firewall.py": {
+      "archive": "AQSS_CI_REVIEW_1625.zip",
+      "export_bytes": 1725,
+      "export_sha256": "f1f0968c4920d54fd7ed944dd552e02b56b9ec2a5c7b663362a45d4dbfc85d26",
+      "repository_bytes": 1725,
+      "repository_sha256": "f1f0968c4920d54fd7ed944dd552e02b56b9ec2a5c7b663362a45d4dbfc85d26",
+      "status": "exact"
+    },
+    "src/control/intent_issuer.py": {
+      "archive": "AQSS_CI_REVIEW_1625.zip",
+      "export_bytes": 3168,
+      "export_sha256": "ca4734d289f11f6438ac78923d68fdd566f60c8d93893c78396b69b211bd90a9",
+      "repository_bytes": 3168,
+      "repository_sha256": "ca4734d289f11f6438ac78923d68fdd566f60c8d93893c78396b69b211bd90a9",
+      "status": "exact"
+    },
+    "src/control/media_control_capabilities.py": {
+      "archive": "AQSS_CI_REVIEW_1625.zip",
+      "export_bytes": 16268,
+      "export_sha256": "ead6df05803e58972b74668775bc55ceea49059cb8e6aea2bbbbbb68a1f473e5",
+      "repository_bytes": 16268,
+      "repository_sha256": "ead6df05803e58972b74668775bc55ceea49059cb8e6aea2bbbbbb68a1f473e5",
+      "status": "exact"
+    },
+    "src/control/media_control_options.py": {
+      "archive": "AQSS_CI_REVIEW_1625.zip",
+      "export_bytes": 10250,
+      "export_sha256": "18133c12f79ce56bce466930e6589f165020ac1ce032b1b0abaaca98b49b1c2a",
+      "repository_bytes": 10250,
+      "repository_sha256": "18133c12f79ce56bce466930e6589f165020ac1ce032b1b0abaaca98b49b1c2a",
+      "status": "exact"
+    },
+    "src/control/media_control_options_page.py": {
+      "archive": "AQSS_CI_REVIEW_1625.zip",
+      "export_bytes": 7185,
+      "export_sha256": "6f0d62ccd170c7b42de0931362f9c8f54df5bfe2dfd04abcbeda2abffd04acdb",
+      "repository_bytes": 7185,
+      "repository_sha256": "6f0d62ccd170c7b42de0931362f9c8f54df5bfe2dfd04abcbeda2abffd04acdb",
+      "status": "exact"
+    },
+    "src/control/media_control_prior_state.py": {
+      "archive": "AQSS_CI_REVIEW_1625.zip",
+      "export_bytes": 9667,
+      "export_sha256": "8e219ab913dec1313252152f5759159a500f209b0550c5ddb76296a53210487e",
+      "repository_bytes": 9667,
+      "repository_sha256": "8e219ab913dec1313252152f5759159a500f209b0550c5ddb76296a53210487e",
+      "status": "exact"
+    },
+    "src/control/media_control_profiles.py": {
+      "archive": "AQSS_CI_REVIEW_1625.zip",
+      "export_bytes": 13208,
+      "export_sha256": "6b776b15996e0e4c091a5f5b5091f22d9e433141776ef2042c3ca7739280ee45",
+      "repository_bytes": 13208,
+      "repository_sha256": "6b776b15996e0e4c091a5f5b5091f22d9e433141776ef2042c3ca7739280ee45",
+      "status": "exact"
+    },
+    "src/control/media_control_undo_candidate.py": {
+      "archive": "AQSS_CI_REVIEW_1625.zip",
+      "export_bytes": 3368,
+      "export_sha256": "e3a4f1da6708e7af3f830305926ef288b361fff62df156e63c836e002dcd9e8a",
+      "repository_bytes": 3368,
+      "repository_sha256": "e3a4f1da6708e7af3f830305926ef288b361fff62df156e63c836e002dcd9e8a",
+      "status": "exact"
+    },
+    "src/control/media_control_verified_state.py": {
+      "archive": "AQSS_CI_REVIEW_1625.zip",
+      "export_bytes": 6940,
+      "export_sha256": "04b84fc30d82406f68de388edff9ff355bb8f665f2e2311785cafb6cf934c1ee",
+      "repository_bytes": 6940,
+      "repository_sha256": "04b84fc30d82406f68de388edff9ff355bb8f665f2e2311785cafb6cf934c1ee",
+      "status": "exact"
+    },
+    "src/control/optical_remote.py": {
+      "archive": "AQSS_CI_REVIEW_1625.zip",
+      "export_bytes": 2132,
+      "export_sha256": "12f6ce9f682f0fa76fd5699cf9010d76f145d11dc8865a0380e790c10363c9b9",
+      "repository_bytes": 2132,
+      "repository_sha256": "12f6ce9f682f0fa76fd5699cf9010d76f145d11dc8865a0380e790c10363c9b9",
+      "status": "exact"
+    },
+    "src/control/policy_governor.py": {
+      "archive": "AQSS_CI_REVIEW_1625.zip",
+      "export_bytes": 859,
+      "export_sha256": "112693f1daf4d4c0f92d0554bf5f22e5fa69e6cf563c00d17dc31997affddf75",
+      "repository_bytes": 859,
+      "repository_sha256": "112693f1daf4d4c0f92d0554bf5f22e5fa69e6cf563c00d17dc31997affddf75",
+      "status": "exact"
+    },
+    "src/control/protection_evidence.py": {
+      "archive": "AQSS_CI_REVIEW_1625.zip",
+      "export_bytes": 4039,
+      "export_sha256": "964994ee339d45ab626c8c0d95db60f8bef6291a8d9b51bc7263797ab333a408",
+      "repository_bytes": 4039,
+      "repository_sha256": "964994ee339d45ab626c8c0d95db60f8bef6291a8d9b51bc7263797ab333a408",
+      "status": "exact"
+    },
+    "src/control/protection_evidence_dispatcher.py": {
+      "archive": "AQSS_CI_REVIEW_1625.zip",
+      "export_bytes": 3958,
+      "export_sha256": "51ebf1fe01741c6ba1fb4a9d475ac89023d68adeadc317e4ddb5932b5ec0852e",
+      "repository_bytes": 3958,
+      "repository_sha256": "51ebf1fe01741c6ba1fb4a9d475ac89023d68adeadc317e4ddb5932b5ec0852e",
+      "status": "exact"
+    },
+    "src/control/protection_evidence_source.py": {
+      "archive": "AQSS_CI_REVIEW_1625.zip",
+      "export_bytes": 3086,
+      "export_sha256": "2c92b42515d3ad11e024136241b1c688c5ed1682f711c2cb9eccaf13c0b91c6e",
+      "repository_bytes": 3086,
+      "repository_sha256": "2c92b42515d3ad11e024136241b1c688c5ed1682f711c2cb9eccaf13c0b91c6e",
+      "status": "exact"
+    },
+    "src/control/protection_path_assessment.py": {
+      "archive": "AQSS_CI_REVIEW_1625.zip",
+      "export_bytes": 1812,
+      "export_sha256": "533ebe38685fab9d98f9f1b394a72e59296a54a6560ac9e9f46753905ecb4a91",
+      "repository_bytes": 1812,
+      "repository_sha256": "533ebe38685fab9d98f9f1b394a72e59296a54a6560ac9e9f46753905ecb4a91",
+      "status": "exact"
+    },
+    "src/control/protection_physical_recovery.py": {
+      "archive": "AQSS_CI_REVIEW_1625.zip",
+      "export_bytes": 10036,
+      "export_sha256": "114ef965c49bca26c5344f005cfe31e206e4ee933d006f9e87525bf37bfee764",
+      "repository_bytes": 10036,
+      "repository_sha256": "114ef965c49bca26c5344f005cfe31e206e4ee933d006f9e87525bf37bfee764",
+      "status": "exact"
+    },
+    "src/control/protection_platform_events.py": {
+      "archive": "AQSS_CI_REVIEW_1625.zip",
+      "export_bytes": 2113,
+      "export_sha256": "d3ca8c35535bcd7b333dc82a00e7ea3747db77c788a158a2257b62fb9cff3e9f",
+      "repository_bytes": 2113,
+      "repository_sha256": "d3ca8c35535bcd7b333dc82a00e7ea3747db77c788a158a2257b62fb9cff3e9f",
+      "status": "exact"
+    },
+    "src/control/protection_resource_assessment.py": {
+      "archive": "AQSS_CI_REVIEW_1625.zip",
+      "export_bytes": 2603,
+      "export_sha256": "c31a60c7493cff4ccecdba263a68c673ba6e7b40f51d1d516dbdb904a1d3fae5",
+      "repository_bytes": 2603,
+      "repository_sha256": "c31a60c7493cff4ccecdba263a68c673ba6e7b40f51d1d516dbdb904a1d3fae5",
+      "status": "exact"
+    },
+    "src/control/protection_storage_assessment.py": {
+      "archive": "AQSS_CI_REVIEW_1625.zip",
+      "export_bytes": 2210,
+      "export_sha256": "315225e6fd3ca23965b5459cc3572875f79ea8d297df704e3fbcf1ae7962900a",
+      "repository_bytes": 2210,
+      "repository_sha256": "315225e6fd3ca23965b5459cc3572875f79ea8d297df704e3fbcf1ae7962900a",
+      "status": "exact"
+    },
+    "src/control/protection_storage_recovery.py": {
+      "archive": "AQSS_CI_REVIEW_1625.zip",
+      "export_bytes": 8965,
+      "export_sha256": "62025510dbc7b9853d5371eeae089ba529964d1bc9ab6783ea6f176049661fcd",
+      "repository_bytes": 8965,
+      "repository_sha256": "62025510dbc7b9853d5371eeae089ba529964d1bc9ab6783ea6f176049661fcd",
+      "status": "exact"
+    },
+    "src/control/protection_supervisor.py": {
+      "archive": "AQSS_CI_REVIEW_1625.zip",
+      "export_bytes": 16536,
+      "export_sha256": "28340ba3d629248720c525e92040deee1f994c57fb07166660d329bd1f92c45d",
+      "repository_bytes": 16536,
+      "repository_sha256": "28340ba3d629248720c525e92040deee1f994c57fb07166660d329bd1f92c45d",
+      "status": "exact"
+    },
+    "src/control/protection_supervisor_checkpoint.py": {
+      "archive": "AQSS_CI_REVIEW_1625.zip",
+      "export_bytes": 31583,
+      "export_sha256": "e54c11335da638d36a4a29f37969f13526322e7e63109c7a4880019a0b9bb3ca",
+      "repository_bytes": 31583,
+      "repository_sha256": "e54c11335da638d36a4a29f37969f13526322e7e63109c7a4880019a0b9bb3ca",
+      "status": "exact"
+    },
+    "src/control/remote_atomic_controller_authority.py": {
+      "archive": "AQSS_CI_REVIEW_1625.zip",
+      "export_bytes": 25292,
+      "export_sha256": "9ea1de1c5529af198213a8297241dc361eec4f13f15b3aa28433ebb644731790",
+      "repository_bytes": 25292,
+      "repository_sha256": "9ea1de1c5529af198213a8297241dc361eec4f13f15b3aa28433ebb644731790",
+      "status": "exact"
+    },
+    "src/control/remote_controller_protocol.py": {
+      "archive": "AQSS_CI_REVIEW_1625.zip",
+      "export_bytes": 7862,
+      "export_sha256": "6c22a6fdb7e70c222ffdcbddf3bac12619e8a1fd71346034ebad5ad12a203ccb",
+      "repository_bytes": 7862,
+      "repository_sha256": "6c22a6fdb7e70c222ffdcbddf3bac12619e8a1fd71346034ebad5ad12a203ccb",
+      "status": "exact"
+    },
+    "src/control/voice_enrollment.py": {
+      "archive": "AQSS_CI_REVIEW_1625.zip",
+      "export_bytes": 1326,
+      "export_sha256": "5e1aa2a7b838d1086af7f779ff659d7043c35d945b2d3824cf78fb7aba9064ad",
+      "repository_bytes": 1326,
+      "repository_sha256": "5e1aa2a7b838d1086af7f779ff659d7043c35d945b2d3824cf78fb7aba9064ad",
+      "status": "exact"
+    },
+    "src/core/__init__.py": {
+      "archive": "AQSS_CI_REVIEW_1625.zip",
+      "export_bytes": 0,
+      "export_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "repository_bytes": 0,
+      "repository_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "status": "exact"
+    },
+    "src/core/causal_freshness.py": {
+      "archive": "AQSS_CI_REVIEW_1625.zip",
+      "export_bytes": 278,
+      "export_sha256": "d6f48111daf597dfe16f097ff88ce4411774b1c84e5b982e961b56b91ff3ce78",
+      "repository_bytes": 278,
+      "repository_sha256": "d6f48111daf597dfe16f097ff88ce4411774b1c84e5b982e961b56b91ff3ce78",
+      "status": "exact"
+    },
+    "src/core/monotonic_clock_domain.py": {
+      "archive": "AQSS_CI_REVIEW_1625.zip",
+      "export_bytes": 383,
+      "export_sha256": "a40c73030aad0e66a3eb92afa005af507b4ca2c29b1c9125d15ef092ebb1ccc7",
+      "repository_bytes": 383,
+      "repository_sha256": "a40c73030aad0e66a3eb92afa005af507b4ca2c29b1c9125d15ef092ebb1ccc7",
+      "status": "exact"
+    },
+    "src/core/sensor_trust/__init__.py": {
+      "archive": "AQSS_CI_REVIEW_1625.zip",
+      "export_bytes": 0,
+      "export_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "repository_bytes": 0,
+      "repository_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "status": "exact"
+    },
+    "src/core/sensor_trust/trust_model.py": {
+      "archive": "AQSS_CI_REVIEW_1625.zip",
+      "export_bytes": 1618,
+      "export_sha256": "759951e6a9bf1d0645cb5bc081ae648d614c142690e3c35987ea9eee92c35b11",
+      "repository_bytes": 1618,
+      "repository_sha256": "759951e6a9bf1d0645cb5bc081ae648d614c142690e3c35987ea9eee92c35b11",
+      "status": "exact"
+    },
+    "src/core/system_config.py": {
+      "archive": "AQSS_CI_REVIEW_1625.zip",
+      "export_bytes": 260,
+      "export_sha256": "f7bddfac6bd8d4adbb7d0b23f5df8c164ead41012c6fe952a8b33ea83fe456aa",
+      "repository_bytes": 260,
+      "repository_sha256": "f7bddfac6bd8d4adbb7d0b23f5df8c164ead41012c6fe952a8b33ea83fe456aa",
+      "status": "exact"
+    },
+    "src/core/test_threat_evaluator.py": {
+      "archive": "AQSS_CI_REVIEW_1625.zip",
+      "export_bytes": 565,
+      "export_sha256": "86bc38baf8c2b722e9b5a545ce73a3e942aa1c37ff271cd08643143b340b4d7d",
+      "repository_bytes": 565,
+      "repository_sha256": "86bc38baf8c2b722e9b5a545ce73a3e942aa1c37ff271cd08643143b340b4d7d",
+      "status": "exact"
+    },
+    "src/core/threat_evaluator.py": {
+      "archive": "AQSS_CI_REVIEW_1625.zip",
+      "export_bytes": 939,
+      "export_sha256": "b547138eeb027dae2300043b41d3aca28abebdc12d4866749a9616732b497aa7",
+      "repository_bytes": 939,
+      "repository_sha256": "b547138eeb027dae2300043b41d3aca28abebdc12d4866749a9616732b497aa7",
+      "status": "exact"
+    },
+    "src/crypto/__init__.py": {
+      "archive": "AQSS_CI_REVIEW_1625.zip",
+      "export_bytes": 0,
+      "export_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "repository_bytes": 0,
+      "repository_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "status": "exact"
+    },
+    "src/crypto/attestation.py": {
+      "archive": "AQSS_CI_REVIEW_1625.zip",
+      "export_bytes": 1574,
+      "export_sha256": "3d46742896208051974665208c72a29e55e769a8b20b50ca86afa7299c76b4ce",
+      "repository_bytes": 1574,
+      "repository_sha256": "3d46742896208051974665208c72a29e55e769a8b20b50ca86afa7299c76b4ce",
+      "status": "exact"
+    },
+    "src/device_fabric/__init__.py": {
+      "archive": "AQSS_CI_REVIEW_1625.zip",
+      "export_bytes": 1109,
+      "export_sha256": "2025d876dbaface3aa5da3d973935946b9cddc1d086768102aebfcc5332ad40b",
+      "repository_bytes": 1109,
+      "repository_sha256": "2025d876dbaface3aa5da3d973935946b9cddc1d086768102aebfcc5332ad40b",
+      "status": "exact"
+    },
+    "src/device_fabric/bus.py": {
+      "archive": "AQSS_CI_REVIEW_1625.zip",
+      "export_bytes": 731,
+      "export_sha256": "17f3293f2dcb10195964d4192dbdc811400a2849267daa2d6612c3baedbd0138",
+      "repository_bytes": 731,
+      "repository_sha256": "17f3293f2dcb10195964d4192dbdc811400a2849267daa2d6612c3baedbd0138",
+      "status": "exact"
+    },
+    "src/device_fabric/contracts.py": {
+      "archive": "AQSS_CI_REVIEW_1625.zip",
+      "export_bytes": 5193,
+      "export_sha256": "755e41f0d30d756382e1bcca442ec58a385af9d2b0a898ed7e63474bb1b3e924",
+      "repository_bytes": 5193,
+      "repository_sha256": "755e41f0d30d756382e1bcca442ec58a385af9d2b0a898ed7e63474bb1b3e924",
+      "status": "exact"
+    },
+    "src/device_fabric/controller_fence_store.py": {
+      "archive": "AQSS_CI_REVIEW_1625.zip",
+      "export_bytes": 7667,
+      "export_sha256": "f1534b76ade92647d714323ded33ac669ec091b8f4da8b0cc433ffff6f308bfd",
+      "repository_bytes": 7667,
+      "repository_sha256": "f1534b76ade92647d714323ded33ac669ec091b8f4da8b0cc433ffff6f308bfd",
+      "status": "exact"
+    },
+    "src/device_fabric/endpoint_action_admission.py": {
+      "archive": "AQSS_CI_REVIEW_1625.zip",
+      "export_bytes": 3761,
+      "export_sha256": "5b2ef45c1790a00c61b81a7df7992a3f3989b569f77144269f2f1d625b094a6c",
+      "repository_bytes": 3761,
+      "repository_sha256": "5b2ef45c1790a00c61b81a7df7992a3f3989b569f77144269f2f1d625b094a6c",
+      "status": "exact"
+    },
+    "src/device_fabric/endpoint_execution_ledger.py": {
+      "archive": "AQSS_CI_REVIEW_1625.zip",
+      "export_bytes": 6080,
+      "export_sha256": "2940b5b6baa54f19a450b83187360c94d23685970141d02c4b8a88cad49c5d79",
+      "repository_bytes": 6080,
+      "repository_sha256": "2940b5b6baa54f19a450b83187360c94d23685970141d02c4b8a88cad49c5d79",
+      "status": "exact"
+    },
+    "src/device_fabric/endpoint_handoff_barrier.py": {
+      "archive": "AQSS_CI_REVIEW_1625.zip",
+      "export_bytes": 9185,
+      "export_sha256": "40cc937a8cc7df8fad07a286e6b7d34d75c04d8b6f75998cc9eb4b78257852c0",
+      "repository_bytes": 9185,
+      "repository_sha256": "40cc937a8cc7df8fad07a286e6b7d34d75c04d8b6f75998cc9eb4b78257852c0",
+      "status": "exact"
+    },
+    "src/device_fabric/endpoint_handoff_fence.py": {
+      "archive": "AQSS_CI_REVIEW_1625.zip",
+      "export_bytes": 3937,
+      "export_sha256": "dd59bf724538d9a0660fd17037beca0244aa0b09669a89714aab3f4a40681a45",
+      "repository_bytes": 3937,
+      "repository_sha256": "dd59bf724538d9a0660fd17037beca0244aa0b09669a89714aab3f4a40681a45",
+      "status": "exact"
+    },
+    "src/device_fabric/endpoint_ledger_guarded_transport.py": {
+      "archive": "AQSS_CI_REVIEW_1625.zip",
+      "export_bytes": 5362,
+      "export_sha256": "4cbe1369ca68cf1f407adf8bda6493d15cf309b0bb113abab5c851d751fd9e50",
+      "repository_bytes": 5362,
+      "repository_sha256": "4cbe1369ca68cf1f407adf8bda6493d15cf309b0bb113abab5c851d751fd9e50",
+      "status": "exact"
+    },
+    "src/device_fabric/endpoint_transaction_finality_admission.py": {
+      "archive": "AQSS_CI_REVIEW_1625.zip",
+      "export_bytes": 2224,
+      "export_sha256": "686b795eadc8331c934acdaa98046fadc5d5bed24bed5f6fa0724a1e34d873f3",
+      "repository_bytes": 2224,
+      "repository_sha256": "686b795eadc8331c934acdaa98046fadc5d5bed24bed5f6fa0724a1e34d873f3",
+      "status": "exact"
+    },
+    "src/device_fabric/endpoint_transaction_finality_authority.py": {
+      "archive": "AQSS_CI_REVIEW_1625.zip",
+      "export_bytes": 4533,
+      "export_sha256": "35f440627ffbe75860b400d72dd8ceff8bca4623909fe67bd3a399549bb72823",
+      "repository_bytes": 4533,
+      "repository_sha256": "35f440627ffbe75860b400d72dd8ceff8bca4623909fe67bd3a399549bb72823",
+      "status": "exact"
+    },
+    "src/device_fabric/endpoint_transaction_finality_codec.py": {
+      "archive": "AQSS_CI_REVIEW_1625.zip",
+      "export_bytes": 8576,
+      "export_sha256": "9559976db6293d2d5e4af5e8242d3747d57f49b710d41b5e736cfd3668b868b3",
+      "repository_bytes": 8576,
+      "repository_sha256": "9559976db6293d2d5e4af5e8242d3747d57f49b710d41b5e736cfd3668b868b3",
+      "status": "exact"
+    },
+    "src/device_fabric/endpoint_transaction_finality_commitment.py": {
+      "archive": "AQSS_CI_REVIEW_1625.zip",
+      "export_bytes": 2367,
+      "export_sha256": "94ad7c4d4c2f0373cb6d8d52d70d74e5e0d04dc93bfec8330555c8160c9a511d",
+      "repository_bytes": 2367,
+      "repository_sha256": "94ad7c4d4c2f0373cb6d8d52d70d74e5e0d04dc93bfec8330555c8160c9a511d",
+      "status": "exact"
+    },
+    "src/device_fabric/endpoint_transaction_finality_envelope.py": {
+      "archive": "AQSS_CI_REVIEW_1625.zip",
+      "export_bytes": 4218,
+      "export_sha256": "1304196437930af035ae3d89833162f0bd7208306bffda4da732783a9e31d075",
+      "repository_bytes": 4218,
+      "repository_sha256": "1304196437930af035ae3d89833162f0bd7208306bffda4da732783a9e31d075",
+      "status": "exact"
+    },
+    "src/device_fabric/endpoint_transaction_finality_protocol.py": {
+      "archive": "AQSS_CI_REVIEW_1625.zip",
+      "export_bytes": 10280,
+      "export_sha256": "c4ed099f2f038e79ffc66cf36afc64600a9baa4179aef43a1e1790639feaad14",
+      "repository_bytes": 10280,
+      "repository_sha256": "c4ed099f2f038e79ffc66cf36afc64600a9baa4179aef43a1e1790639feaad14",
+      "status": "exact"
+    },
+    "src/device_fabric/endpoint_transaction_finality_store.py": {
+      "archive": "AQSS_CI_REVIEW_1625.zip",
+      "export_bytes": 14640,
+      "export_sha256": "31e4fc373b81054154f2f3e92d7950dac78e088abe488aba82fb95cae1436ff8",
+      "repository_bytes": 14640,
+      "repository_sha256": "31e4fc373b81054154f2f3e92d7950dac78e088abe488aba82fb95cae1436ff8",
+      "status": "exact"
+    },
+    "src/device_fabric/fenced_transport.py": {
+      "archive": "AQSS_CI_REVIEW_1625.zip",
+      "export_bytes": 5347,
+      "export_sha256": "49caf98c82ab9c13edde3a97a7bfc5191c7ab8cb0653240e4c06cf7ebefc0a21",
+      "repository_bytes": 5347,
+      "repository_sha256": "49caf98c82ab9c13edde3a97a7bfc5191c7ab8cb0653240e4c06cf7ebefc0a21",
+      "status": "exact"
+    },
+    "src/device_fabric/mocks/__init__.py": {
+      "archive": "AQSS_CI_REVIEW_1625.zip",
+      "export_bytes": 0,
+      "export_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "repository_bytes": 0,
+      "repository_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "status": "exact"
+    },
+    "src/device_fabric/mocks/mock_tv.py": {
+      "archive": "AQSS_CI_REVIEW_1625.zip",
+      "export_bytes": 3719,
+      "export_sha256": "674c85a85f8605e7b7fd00514a274875f0e7afec466895454d914be288c49924",
+      "repository_bytes": 3719,
+      "repository_sha256": "674c85a85f8605e7b7fd00514a274875f0e7afec466895454d914be288c49924",
+      "status": "exact"
+    },
+    "src/device_fabric/monotonic_fence_anchor.py": {
+      "archive": "AQSS_CI_REVIEW_1625.zip",
+      "export_bytes": 5783,
+      "export_sha256": "070b373940e5fc0cfdff825fc96c9e7137bdb01076401c91bf5602d300feea77",
+      "repository_bytes": 5783,
+      "repository_sha256": "070b373940e5fc0cfdff825fc96c9e7137bdb01076401c91bf5602d300feea77",
+      "status": "exact"
+    },
+    "src/device_fabric/physical_commit_gate.py": {
+      "archive": "AQSS_CI_REVIEW_1625.zip",
+      "export_bytes": 3945,
+      "export_sha256": "00e4863a34343b88d5602fab41a3e95c25341c2f1b159d9c65b096d40d9996aa",
+      "repository_bytes": 3945,
+      "repository_sha256": "00e4863a34343b88d5602fab41a3e95c25341c2f1b159d9c65b096d40d9996aa",
+      "status": "exact"
+    },
+    "src/device_fabric/physical_recovery_reconciler.py": {
+      "archive": "AQSS_CI_REVIEW_1625.zip",
+      "export_bytes": 1585,
+      "export_sha256": "fe70fcf6b119fdd9ee6e2c8d3c2a1a19a1d13d5fda4c34e6e9bf4e8561118888",
+      "repository_bytes": 1585,
+      "repository_sha256": "fe70fcf6b119fdd9ee6e2c8d3c2a1a19a1d13d5fda4c34e6e9bf4e8561118888",
+      "status": "exact"
+    },
+    "src/device_fabric/physical_recovery_store.py": {
+      "archive": "AQSS_CI_REVIEW_1625.zip",
+      "export_bytes": 21079,
+      "export_sha256": "c5ed889327aa5477336f17a8e1803af9de72c1159aeb801df3db7a9359737224",
+      "repository_bytes": 21079,
+      "repository_sha256": "c5ed889327aa5477336f17a8e1803af9de72c1159aeb801df3db7a9359737224",
+      "status": "exact"
+    },
+    "src/device_fabric/precondition_gate.py": {
+      "archive": "AQSS_CI_REVIEW_1625.zip",
+      "export_bytes": 2309,
+      "export_sha256": "741be9cb6535b51a842da5a12a781723c7f4e4a4371eccea55656b2fb4d5fff6",
+      "repository_bytes": 2309,
+      "repository_sha256": "741be9cb6535b51a842da5a12a781723c7f4e4a4371eccea55656b2fb4d5fff6",
+      "status": "exact"
+    },
+    "src/device_fabric/quarantine/manager_legacy.py": {
+      "archive": "AQSS_CI_SUPPLEMENT_1625.zip",
+      "export_bytes": 1947,
+      "export_sha256": "a0c0e2ce697a67007191da24448fe33bbc9ea7bed1c537a920eb15c29cdb5a49",
+      "repository_bytes": 1947,
+      "repository_sha256": "a0c0e2ce697a67007191da24448fe33bbc9ea7bed1c537a920eb15c29cdb5a49",
+      "status": "exact"
+    },
+    "src/device_fabric/quarantine/tv_controller_legacy.py.quarantined": {
+      "archive": "AQSS_CI_SUPPLEMENT_1625.zip",
+      "export_bytes": 4102,
+      "export_sha256": "b4629f232490a18b42f9e4b6a9b8032ab8a33873eb9008ef953ee4dae6ee3558",
+      "repository_bytes": 4102,
+      "repository_sha256": "b4629f232490a18b42f9e4b6a9b8032ab8a33873eb9008ef953ee4dae6ee3558",
+      "status": "exact"
+    },
+    "src/device_fabric/store.py": {
+      "archive": "AQSS_CI_REVIEW_1625.zip",
+      "export_bytes": 820,
+      "export_sha256": "51effb427964c6dd847b15a2ec5eafb1f2e9aabb6ee4283618610c9870734487",
+      "repository_bytes": 820,
+      "repository_sha256": "51effb427964c6dd847b15a2ec5eafb1f2e9aabb6ee4283618610c9870734487",
+      "status": "exact"
+    },
+    "src/device_fabric/transport.py": {
+      "archive": "AQSS_CI_REVIEW_1625.zip",
+      "export_bytes": 1742,
+      "export_sha256": "e54272b413e5713db221c4209047f0760e6f88b648dd5b4f77faeff35cb508bb",
+      "repository_bytes": 1742,
+      "repository_sha256": "e54272b413e5713db221c4209047f0760e6f88b648dd5b4f77faeff35cb508bb",
+      "status": "exact"
+    },
+    "src/edge/__init__.py": {
+      "archive": "AQSS_CI_REVIEW_1625.zip",
+      "export_bytes": 0,
+      "export_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "repository_bytes": 0,
+      "repository_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "status": "exact"
+    },
+    "src/edge/adaptive_directive_memory.py": {
+      "archive": "AQSS_CI_REVIEW_1625.zip",
+      "export_bytes": 19596,
+      "export_sha256": "bca21c2975db9d16632752c922abbb1e43d208fa48389d232c07fb7b96cdc201",
+      "repository_bytes": 19596,
+      "repository_sha256": "bca21c2975db9d16632752c922abbb1e43d208fa48389d232c07fb7b96cdc201",
+      "status": "exact"
+    },
+    "src/edge/media_segment_observation.py": {
+      "archive": "AQSS_CI_REVIEW_1625.zip",
+      "export_bytes": 10927,
+      "export_sha256": "d4a94399ded29367fbeea81f3ddaa87888658953a820e53920e0c992c8e8b2da",
+      "repository_bytes": 10927,
+      "repository_sha256": "d4a94399ded29367fbeea81f3ddaa87888658953a820e53920e0c992c8e8b2da",
+      "status": "exact"
+    },
+    "src/edge/model_cache.py": {
+      "archive": "AQSS_CI_REVIEW_1625.zip",
+      "export_bytes": 3307,
+      "export_sha256": "88f01ef67179a300124bb2fa4f95672915078a98b196ee4bd15a88cf614467d9",
+      "repository_bytes": 3307,
+      "repository_sha256": "88f01ef67179a300124bb2fa4f95672915078a98b196ee4bd15a88cf614467d9",
+      "status": "exact"
+    },
+    "src/edge/proximity_tv_selector.py": {
+      "archive": "AQSS_CI_REVIEW_1625.zip",
+      "export_bytes": 1939,
+      "export_sha256": "2130dcf370a626b73c2baf9b7b3925874825af1bea1b006bcbd7b66fb554545a",
+      "repository_bytes": 1939,
+      "repository_sha256": "2130dcf370a626b73c2baf9b7b3925874825af1bea1b006bcbd7b66fb554545a",
+      "status": "exact"
+    },
+    "src/edge/resource_contract.py": {
+      "archive": "AQSS_CI_REVIEW_1625.zip",
+      "export_bytes": 653,
+      "export_sha256": "713a594a1aeeb3d67278ce76f31e307908907135bb3b5fa2cabdca53ea781794",
+      "repository_bytes": 653,
+      "repository_sha256": "713a594a1aeeb3d67278ce76f31e307908907135bb3b5fa2cabdca53ea781794",
+      "status": "exact"
+    },
+    "src/edge/resource_governor.py": {
+      "archive": "AQSS_CI_REVIEW_1625.zip",
+      "export_bytes": 2441,
+      "export_sha256": "daffaa9f2019df8898d4508b4b2ed458e4a659e1c22011256b24d5380eba32e7",
+      "repository_bytes": 2441,
+      "repository_sha256": "daffaa9f2019df8898d4508b4b2ed458e4a659e1c22011256b24d5380eba32e7",
+      "status": "exact"
+    },
+    "src/edge/tv_selection_feedback_menu.py": {
+      "archive": "AQSS_CI_REVIEW_1625.zip",
+      "export_bytes": 1897,
+      "export_sha256": "675f125f376dd1e0f9c6eb06301bd47495356bab1cd97f482a47ae4d89ca6605",
+      "repository_bytes": 1897,
+      "repository_sha256": "675f125f376dd1e0f9c6eb06301bd47495356bab1cd97f482a47ae4d89ca6605",
+      "status": "exact"
+    },
+    "src/edge/tv_selection_preferences.py": {
+      "archive": "AQSS_CI_REVIEW_1625.zip",
+      "export_bytes": 12767,
+      "export_sha256": "b3c0e0f8ef2a32ed80c33785e8874239bd6507232ca1d710bfddd006eccfc51b",
+      "repository_bytes": 12767,
+      "repository_sha256": "b3c0e0f8ef2a32ed80c33785e8874239bd6507232ca1d710bfddd006eccfc51b",
+      "status": "exact"
+    },
+    "src/engine/benchmark.py": {
+      "archive": "AQSS_CI_REVIEW_1625.zip",
+      "export_bytes": 895,
+      "export_sha256": "d79e5c36bfaa8ce6d10c969cc136fa2ef1ee52f8b4cc678c4f2e4d188e79ff96",
+      "repository_bytes": 895,
+      "repository_sha256": "d79e5c36bfaa8ce6d10c969cc136fa2ef1ee52f8b4cc678c4f2e4d188e79ff96",
+      "status": "exact"
+    },
+    "src/engine/dispatch.py": {
+      "archive": "AQSS_CI_REVIEW_1625.zip",
+      "export_bytes": 1603,
+      "export_sha256": "3fcaf1cd4218026011fc860196d138e1db7ace9018e870465f7cb8388d902adf",
+      "repository_bytes": 1603,
+      "repository_sha256": "3fcaf1cd4218026011fc860196d138e1db7ace9018e870465f7cb8388d902adf",
+      "status": "exact"
+    },
+    "src/engine/hard_cases.py": {
+      "archive": "AQSS_CI_REVIEW_1625.zip",
+      "export_bytes": 1241,
+      "export_sha256": "b811b7577c667ee5e5b28f8b9fa89630d544753e23e80c9032024740d100cbfc",
+      "repository_bytes": 1241,
+      "repository_sha256": "b811b7577c667ee5e5b28f8b9fa89630d544753e23e80c9032024740d100cbfc",
+      "status": "exact"
+    },
+    "src/engine/pipeline.py": {
+      "archive": "AQSS_CI_REVIEW_1625.zip",
+      "export_bytes": 2029,
+      "export_sha256": "aa0be137fa885b868bdafac0efa2b0bfa265027fa7d94d4e84394a5dc1a3b38d",
+      "repository_bytes": 2029,
+      "repository_sha256": "aa0be137fa885b868bdafac0efa2b0bfa265027fa7d94d4e84394a5dc1a3b38d",
+      "status": "exact"
+    },
+    "src/engine/policy.py": {
+      "archive": "AQSS_CI_REVIEW_1625.zip",
+      "export_bytes": 990,
+      "export_sha256": "5333c6d884dbb12a3d387c8c7101a6f8743ad67d2931391cc2d1d297958863ce",
+      "repository_bytes": 990,
+      "repository_sha256": "5333c6d884dbb12a3d387c8c7101a6f8743ad67d2931391cc2d1d297958863ce",
+      "status": "exact"
+    },
+    "src/engine/quantum_worker.py": {
+      "archive": "AQSS_CI_REVIEW_1625.zip",
+      "export_bytes": 1297,
+      "export_sha256": "6e3ca6bd7e9d118ee14c771856cdc42a5d285c9876d092456639a10cfd6ee10d",
+      "repository_bytes": 1297,
+      "repository_sha256": "6e3ca6bd7e9d118ee14c771856cdc42a5d285c9876d092456639a10cfd6ee10d",
+      "status": "exact"
+    },
+    "src/engine/schemas.py": {
+      "archive": "AQSS_CI_REVIEW_1625.zip",
+      "export_bytes": 521,
+      "export_sha256": "71618243752b48fcdf583c2d12709cffae4e095ac9c8d8c4b53dcf3eea3ceeb2",
+      "repository_bytes": 521,
+      "repository_sha256": "71618243752b48fcdf583c2d12709cffae4e095ac9c8d8c4b53dcf3eea3ceeb2",
+      "status": "exact"
+    },
+    "src/engine/sensitivity.py": {
+      "archive": "AQSS_CI_REVIEW_1625.zip",
+      "export_bytes": 1221,
+      "export_sha256": "5a8675d9449b9890a09b3c3966421831726dc43062ed8bc093a9375a2652f26e",
+      "repository_bytes": 1221,
+      "repository_sha256": "5a8675d9449b9890a09b3c3966421831726dc43062ed8bc093a9375a2652f26e",
+      "status": "exact"
+    },
+    "src/engine/tv_drivers.py": {
+      "archive": "AQSS_CI_REVIEW_1625.zip",
+      "export_bytes": 137,
+      "export_sha256": "c9e93722f441e0953f709512b15b4838b20882cc1e8502deb9e5d6f69b110b22",
+      "repository_bytes": 137,
+      "repository_sha256": "c9e93722f441e0953f709512b15b4838b20882cc1e8502deb9e5d6f69b110b22",
+      "status": "exact"
+    },
+    "src/extensions/__init__.py": {
+      "archive": "AQSS_CI_REVIEW_1625.zip",
+      "export_bytes": 0,
+      "export_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "repository_bytes": 0,
+      "repository_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "status": "exact"
+    },
+    "src/extensions/compatibility.py": {
+      "archive": "AQSS_CI_REVIEW_1625.zip",
+      "export_bytes": 272,
+      "export_sha256": "0a40ee25b0e51816af9ad3f01672e6bdb356425b06d12fe19f16683777221a23",
+      "repository_bytes": 272,
+      "repository_sha256": "0a40ee25b0e51816af9ad3f01672e6bdb356425b06d12fe19f16683777221a23",
+      "status": "exact"
+    },
+    "src/extensions/contracts.py": {
+      "archive": "AQSS_CI_REVIEW_1625.zip",
+      "export_bytes": 1025,
+      "export_sha256": "02bf4dbbb5be788852ef9ccdd59c0c04f6df738ae0527e4c81b650b75efcd85e",
+      "repository_bytes": 1025,
+      "repository_sha256": "02bf4dbbb5be788852ef9ccdd59c0c04f6df738ae0527e4c81b650b75efcd85e",
+      "status": "exact"
+    },
+    "src/extensions/gateway.py": {
+      "archive": "AQSS_CI_REVIEW_1625.zip",
+      "export_bytes": 1008,
+      "export_sha256": "c26d144fd95144aca3460d3a7971c27c79758ac80b689eca6a56f0aea9f09756",
+      "repository_bytes": 1008,
+      "repository_sha256": "c26d144fd95144aca3460d3a7971c27c79758ac80b689eca6a56f0aea9f09756",
+      "status": "exact"
+    },
+    "src/extensions/normalization.py": {
+      "archive": "AQSS_CI_REVIEW_1625.zip",
+      "export_bytes": 5073,
+      "export_sha256": "57bdd16866488e332e27fec0a9364bf811d56fa730eab49485d46619a0fd2472",
+      "repository_bytes": 5073,
+      "repository_sha256": "57bdd16866488e332e27fec0a9364bf811d56fa730eab49485d46619a0fd2472",
+      "status": "exact"
+    },
+    "src/extensions/proposal.py": {
+      "archive": "AQSS_CI_REVIEW_1625.zip",
+      "export_bytes": 846,
+      "export_sha256": "351b93a1ba076aae8931c5ff5b26576057fd2dc44f10fb9274f2331bfc195ae9",
+      "repository_bytes": 846,
+      "repository_sha256": "351b93a1ba076aae8931c5ff5b26576057fd2dc44f10fb9274f2331bfc195ae9",
+      "status": "exact"
+    },
+    "src/extensions/registry.py": {
+      "archive": "AQSS_CI_REVIEW_1625.zip",
+      "export_bytes": 1377,
+      "export_sha256": "e9e5fa2acdeaac25834b90c009592c25f983a105623779f0b51244034f3d4e9a",
+      "repository_bytes": 1377,
+      "repository_sha256": "e9e5fa2acdeaac25834b90c009592c25f983a105623779f0b51244034f3d4e9a",
+      "status": "exact"
+    },
+    "src/fusion/__init__.py": {
+      "archive": "AQSS_CI_REVIEW_1625.zip",
+      "export_bytes": 0,
+      "export_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "repository_bytes": 0,
+      "repository_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "status": "exact"
+    },
+    "src/fusion/decision_envelope.py": {
+      "archive": "AQSS_CI_REVIEW_1625.zip",
+      "export_bytes": 467,
+      "export_sha256": "a7a91532a1f4797d806178efb9d169b1875e0b170f534a09a85dac833b5b46f3",
+      "repository_bytes": 467,
+      "repository_sha256": "a7a91532a1f4797d806178efb9d169b1875e0b170f534a09a85dac833b5b46f3",
+      "status": "exact"
+    },
+    "src/inference/__init__.py": {
+      "archive": "AQSS_CI_REVIEW_1625.zip",
+      "export_bytes": 0,
+      "export_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "repository_bytes": 0,
+      "repository_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "status": "exact"
+    },
+    "src/inference/bayesian_adapter.py": {
+      "archive": "AQSS_CI_REVIEW_1625.zip",
+      "export_bytes": 1792,
+      "export_sha256": "6d9974e13ca6ae56c7be28d69ccbb34aa9ca08b337f0cfd78b786eb2cf3b54d2",
+      "repository_bytes": 1792,
+      "repository_sha256": "6d9974e13ca6ae56c7be28d69ccbb34aa9ca08b337f0cfd78b786eb2cf3b54d2",
+      "status": "exact"
+    },
+    "src/inference/change_point.py": {
+      "archive": "AQSS_CI_REVIEW_1625.zip",
+      "export_bytes": 1611,
+      "export_sha256": "c79d714b0b420681936f957061c4d58d0f45bed167d3b610baf0b119c9d2bcee",
+      "repository_bytes": 1611,
+      "repository_sha256": "c79d714b0b420681936f957061c4d58d0f45bed167d3b610baf0b119c9d2bcee",
+      "status": "exact"
+    },
+    "src/inference/evidence_envelope.py": {
+      "archive": "AQSS_CI_REVIEW_1625.zip",
+      "export_bytes": 2535,
+      "export_sha256": "b191925f175140da95f7e0d99b4bfa5feefd02540c82cd4161161316fd94b475",
+      "repository_bytes": 2535,
+      "repository_sha256": "b191925f175140da95f7e0d99b4bfa5feefd02540c82cd4161161316fd94b475",
+      "status": "exact"
+    },
+    "src/inference/evidence_vector.py": {
+      "archive": "AQSS_CI_REVIEW_1625.zip",
+      "export_bytes": 279,
+      "export_sha256": "9da167b151c0fa10c7f5a83490083dd0dd6cf716bf64a659c3983dad00c8fcc3",
+      "repository_bytes": 279,
+      "repository_sha256": "9da167b151c0fa10c7f5a83490083dd0dd6cf716bf64a659c3983dad00c8fcc3",
+      "status": "exact"
+    },
+    "src/inference/hypothesis.py": {
+      "archive": "AQSS_CI_REVIEW_1625.zip",
+      "export_bytes": 301,
+      "export_sha256": "0a20e5a66c99ca6889ebcd6144fa5319e22b1332324999be7118d23603beb3d9",
+      "repository_bytes": 301,
+      "repository_sha256": "0a20e5a66c99ca6889ebcd6144fa5319e22b1332324999be7118d23603beb3d9",
+      "status": "exact"
+    },
+    "src/inference/hypothesis_reservoir.py": {
+      "archive": "AQSS_CI_REVIEW_1625.zip",
+      "export_bytes": 1049,
+      "export_sha256": "e579fdaf19be269759f761301f9aab434454d297b2ca4a6f744ac2dd054994b3",
+      "repository_bytes": 1049,
+      "repository_sha256": "e579fdaf19be269759f761301f9aab434454d297b2ca4a6f744ac2dd054994b3",
+      "status": "exact"
+    },
+    "src/inference/inference_result.py": {
+      "archive": "AQSS_CI_REVIEW_1625.zip",
+      "export_bytes": 362,
+      "export_sha256": "63a5ca12e7356258f81c3a17b9a498d6288ad4d9e82f2471bc8159f0ba4c5dd0",
+      "repository_bytes": 362,
+      "repository_sha256": "63a5ca12e7356258f81c3a17b9a498d6288ad4d9e82f2471bc8159f0ba4c5dd0",
+      "status": "exact"
+    },
+    "src/inference/sensor_gate.py": {
+      "archive": "AQSS_CI_REVIEW_1625.zip",
+      "export_bytes": 595,
+      "export_sha256": "e386ed663ef0a0b8184ef75ebca6bff735f87edbb34aa4a6c783f7a0abb8588c",
+      "repository_bytes": 595,
+      "repository_sha256": "e386ed663ef0a0b8184ef75ebca6bff735f87edbb34aa4a6c783f7a0abb8588c",
+      "status": "exact"
+    },
+    "src/inference/temporal_accumulator.py": {
+      "archive": "AQSS_CI_REVIEW_1625.zip",
+      "export_bytes": 476,
+      "export_sha256": "ac6049d22ea0758f0e048580c6b173af131e96bfad953db63ea6435df2474813",
+      "repository_bytes": 476,
+      "repository_sha256": "ac6049d22ea0758f0e048580c6b173af131e96bfad953db63ea6435df2474813",
+      "status": "exact"
+    },
+    "src/inference/threat_inference.py": {
+      "archive": "AQSS_CI_REVIEW_1625.zip",
+      "export_bytes": 1616,
+      "export_sha256": "29bc844a40b6fc52a20c9ed27ade96e71865997cb3f2e2f8a74c337bdca6360e",
+      "repository_bytes": 1616,
+      "repository_sha256": "29bc844a40b6fc52a20c9ed27ade96e71865997cb3f2e2f8a74c337bdca6360e",
+      "status": "exact"
+    },
+    "src/inference/threat_trajectory.py": {
+      "archive": "AQSS_CI_REVIEW_1625.zip",
+      "export_bytes": 1086,
+      "export_sha256": "844308f65946d664a21c015985b50d6b42aa48f3fd09bc1455ae20ecd7763bfa",
+      "repository_bytes": 1086,
+      "repository_sha256": "844308f65946d664a21c015985b50d6b42aa48f3fd09bc1455ae20ecd7763bfa",
+      "status": "exact"
+    },
+    "src/interface/__init__.py": {
+      "archive": "AQSS_CI_REVIEW_1625.zip",
+      "export_bytes": 0,
+      "export_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "repository_bytes": 0,
+      "repository_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "status": "exact"
+    },
+    "src/interface/tv_selection_mobile_feedback.py": {
+      "archive": "AQSS_CI_REVIEW_1625.zip",
+      "export_bytes": 3594,
+      "export_sha256": "d8635112b02cac33e1ea88f6f3b02de23cf987851930ad4ba72703fb4f555ae5",
+      "repository_bytes": 3594,
+      "repository_sha256": "d8635112b02cac33e1ea88f6f3b02de23cf987851930ad4ba72703fb4f555ae5",
+      "status": "exact"
+    },
+    "src/interface/tv_selection_native_adapter.py": {
+      "archive": "AQSS_CI_REVIEW_1625.zip",
+      "export_bytes": 1215,
+      "export_sha256": "d10ee7abd2c8be2e838d900a3344db664c06d8b2c431fa91290a7e17b0818fb1",
+      "repository_bytes": 1215,
+      "repository_sha256": "d10ee7abd2c8be2e838d900a3344db664c06d8b2c431fa91290a7e17b0818fb1",
+      "status": "exact"
+    },
+    "src/interface/tv_selection_web.py": {
+      "archive": "AQSS_CI_REVIEW_1625.zip",
+      "export_bytes": 8688,
+      "export_sha256": "dd7ce1b34e4f6708cc5eca81bcb59c69c29ecf53267f305b8fd3db2cfeb9d12b",
+      "repository_bytes": 8688,
+      "repository_sha256": "dd7ce1b34e4f6708cc5eca81bcb59c69c29ecf53267f305b8fd3db2cfeb9d12b",
+      "status": "exact"
+    },
+    "src/mitigation/predictive_mitigation.py": {
+      "archive": "AQSS_CI_REVIEW_1625.zip",
+      "export_bytes": 221,
+      "export_sha256": "db13e079ce1716baf30c20c9bf5ab95c870ae3215ae8de2f527810b21253f84f",
+      "repository_bytes": 221,
+      "repository_sha256": "db13e079ce1716baf30c20c9bf5ab95c870ae3215ae8de2f527810b21253f84f",
+      "status": "exact"
+    },
+    "src/mitilgation/predictive_mitigation.py": {
+      "archive": "AQSS_CI_REVIEW_1625.zip",
+      "export_bytes": 422,
+      "export_sha256": "9372dfd5278cf74a7cd9b2335cd803277d013eaf2add0b4f160ac7d05b114d62",
+      "repository_bytes": 422,
+      "repository_sha256": "9372dfd5278cf74a7cd9b2335cd803277d013eaf2add0b4f160ac7d05b114d62",
+      "status": "exact"
+    },
+    "src/mitilgation/predictive_mitigation.stub.py": {
+      "archive": "AQSS_CI_REVIEW_1625.zip",
+      "export_bytes": 422,
+      "export_sha256": "9372dfd5278cf74a7cd9b2335cd803277d013eaf2add0b4f160ac7d05b114d62",
+      "repository_bytes": 422,
+      "repository_sha256": "9372dfd5278cf74a7cd9b2335cd803277d013eaf2add0b4f160ac7d05b114d62",
+      "status": "exact"
+    },
+    "src/omotenashi/__init__.py": {
+      "archive": "AQSS_CI_REVIEW_1625.zip",
+      "export_bytes": 0,
+      "export_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "repository_bytes": 0,
+      "repository_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "status": "exact"
+    },
+    "src/omotenashi/environmental_memory.py": {
+      "archive": "AQSS_CI_REVIEW_1625.zip",
+      "export_bytes": 1389,
+      "export_sha256": "ee2ade25dfa249947b55ad77892b07015aebfe3c27451e7b1bb8914d0e491aca",
+      "repository_bytes": 1389,
+      "repository_sha256": "ee2ade25dfa249947b55ad77892b07015aebfe3c27451e7b1bb8914d0e491aca",
+      "status": "exact"
+    },
+    "src/omotenashi/graceful_degradation.py": {
+      "archive": "AQSS_CI_REVIEW_1625.zip",
+      "export_bytes": 1335,
+      "export_sha256": "ea35413839aa25f4916e173c2fdf2c51f3f01a35f2abefbdfccb50c95b9c1aa2",
+      "repository_bytes": 1335,
+      "repository_sha256": "ea35413839aa25f4916e173c2fdf2c51f3f01a35f2abefbdfccb50c95b9c1aa2",
+      "status": "exact"
+    },
+    "src/omotenashi/intent_continuity.py": {
+      "archive": "AQSS_CI_REVIEW_1625.zip",
+      "export_bytes": 3316,
+      "export_sha256": "5c9b5aa452e12d47673b99604032712f4c5db6777158ca2602c7a5d6efe8dc6b",
+      "repository_bytes": 3316,
+      "repository_sha256": "5c9b5aa452e12d47673b99604032712f4c5db6777158ca2602c7a5d6efe8dc6b",
+      "status": "exact"
+    },
+    "src/omotenashi/learning_engine.py": {
+      "archive": "AQSS_CI_REVIEW_1625.zip",
+      "export_bytes": 832,
+      "export_sha256": "78640096f0d703ba17bfdecc60adbf8addd98b928719617b5d162a856f88d671",
+      "repository_bytes": 832,
+      "repository_sha256": "78640096f0d703ba17bfdecc60adbf8addd98b928719617b5d162a856f88d671",
+      "status": "exact"
+    },
+    "src/policy/__init__.py": {
+      "archive": "AQSS_CI_REVIEW_1625.zip",
+      "export_bytes": 0,
+      "export_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "repository_bytes": 0,
+      "repository_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "status": "exact"
+    },
+    "src/policy/context_profiles.py": {
+      "archive": "AQSS_CI_REVIEW_1625.zip",
+      "export_bytes": 1389,
+      "export_sha256": "c188c55ff2ac6921edab51b42f4f363a229fdc61784f1f7f09ab7c5b52ec89dd",
+      "repository_bytes": 1389,
+      "repository_sha256": "c188c55ff2ac6921edab51b42f4f363a229fdc61784f1f7f09ab7c5b52ec89dd",
+      "status": "exact"
+    },
+    "src/policy/hysteresis.py": {
+      "archive": "AQSS_CI_REVIEW_1625.zip",
+      "export_bytes": 588,
+      "export_sha256": "8a1497a02c9b69b436a00a306b2c4e1b266820b92b2e53f0cdc0047ee4bfdf2d",
+      "repository_bytes": 588,
+      "repository_sha256": "8a1497a02c9b69b436a00a306b2c4e1b266820b92b2e53f0cdc0047ee4bfdf2d",
+      "status": "exact"
+    },
+    "src/policy/policy_vector.py": {
+      "archive": "AQSS_CI_REVIEW_1625.zip",
+      "export_bytes": 1354,
+      "export_sha256": "30387ecd584d15a1b616ac2281b53435ee30252c5710237d66db404ab2caac20",
+      "repository_bytes": 1354,
+      "repository_sha256": "30387ecd584d15a1b616ac2281b53435ee30252c5710237d66db404ab2caac20",
+      "status": "exact"
+    },
+    "src/policy/safety_governor.py": {
+      "archive": "AQSS_CI_REVIEW_1625.zip",
+      "export_bytes": 456,
+      "export_sha256": "de4d5ca6f6e1baf766c2bdd3ee207d21f069ac77cce7eddbfe177079dcafc826",
+      "repository_bytes": 456,
+      "repository_sha256": "de4d5ca6f6e1baf766c2bdd3ee207d21f069ac77cce7eddbfe177079dcafc826",
+      "status": "exact"
+    },
+    "src/policy/test_context_hysteresis.py": {
+      "archive": "AQSS_CI_REVIEW_1625.zip",
+      "export_bytes": 1022,
+      "export_sha256": "9e1b0aef6d9ebc848f6a68bdc1bacf2cad39e110ed50d0959d2b011a37a237f5",
+      "repository_bytes": 1022,
+      "repository_sha256": "9e1b0aef6d9ebc848f6a68bdc1bacf2cad39e110ed50d0959d2b011a37a237f5",
+      "status": "exact"
+    },
+    "src/policy/test_policy.py": {
+      "archive": "AQSS_CI_REVIEW_1625.zip",
+      "export_bytes": 471,
+      "export_sha256": "81e780e2b0c74e6f8118bda41dd68704cc3554eb59726cc3d10129e907bf4e42",
+      "repository_bytes": 471,
+      "repository_sha256": "81e780e2b0c74e6f8118bda41dd68704cc3554eb59726cc3d10129e907bf4e42",
+      "status": "exact"
+    },
+    "src/quantum/__init__.py": {
+      "archive": "AQSS_CI_REVIEW_1625.zip",
+      "export_bytes": 0,
+      "export_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "repository_bytes": 0,
+      "repository_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "status": "exact"
+    },
+    "src/quantum/bayesian_imputation.py": {
+      "archive": "AQSS_CI_REVIEW_1625.zip",
+      "export_bytes": 1011,
+      "export_sha256": "5f3c95fb08bf8af530fa7626241bfe5bcfc4af9d8826b0adcb186351c1ed86d0",
+      "repository_bytes": 1011,
+      "repository_sha256": "5f3c95fb08bf8af530fa7626241bfe5bcfc4af9d8826b0adcb186351c1ed86d0",
+      "status": "exact"
+    },
+    "src/quantum/handoff_controller.py": {
+      "archive": "AQSS_CI_REVIEW_1625.zip",
+      "export_bytes": 198,
+      "export_sha256": "eaa06831d7d1322c12cb69af422bb204bcb411e18f2dae37c57fbbe0fa5bb4a2",
+      "repository_bytes": 198,
+      "repository_sha256": "eaa06831d7d1322c12cb69af422bb204bcb411e18f2dae37c57fbbe0fa5bb4a2",
+      "status": "exact"
+    },
+    "src/quantum/ibm_client.py": {
+      "archive": "AQSS_CI_REVIEW_1625.zip",
+      "export_bytes": 789,
+      "export_sha256": "bf7c74511b5d05dba788d81eed97dfeb74d0a214c98574eb81480722c311ced6",
+      "repository_bytes": 789,
+      "repository_sha256": "bf7c74511b5d05dba788d81eed97dfeb74d0a214c98574eb81480722c311ced6",
+      "status": "exact"
+    },
+    "src/quantum/vqc_classifier.py": {
+      "archive": "AQSS_CI_REVIEW_1625.zip",
+      "export_bytes": 653,
+      "export_sha256": "04db27886e586f38e14d8b5ce7b507fe1376f4338e9508b6d04667ddf4181586",
+      "repository_bytes": 653,
+      "repository_sha256": "04db27886e586f38e14d8b5ce7b507fe1376f4338e9508b6d04667ddf4181586",
+      "status": "exact"
+    },
+    "src/reinforcement/feedback_event.py": {
+      "archive": "AQSS_CI_REVIEW_1625.zip",
+      "export_bytes": 489,
+      "export_sha256": "9a13a2f89455cabb2b0852a3bf530c2463d069aafcc411fea18d17d64b058ffa",
+      "repository_bytes": 489,
+      "repository_sha256": "9a13a2f89455cabb2b0852a3bf530c2463d069aafcc411fea18d17d64b058ffa",
+      "status": "exact"
+    },
+    "src/reinforcement/opportunistic_feedback.py": {
+      "archive": "AQSS_CI_REVIEW_1625.zip",
+      "export_bytes": 1083,
+      "export_sha256": "ff4881a17e4ade4a3bebc02d212bfd2dfb7ea507599fed030ddb8979dc921531",
+      "repository_bytes": 1083,
+      "repository_sha256": "ff4881a17e4ade4a3bebc02d212bfd2dfb7ea507599fed030ddb8979dc921531",
+      "status": "exact"
+    },
+    "src/reinforcement/reinforcement_engine.py": {
+      "archive": "AQSS_CI_REVIEW_1625.zip",
+      "export_bytes": 1560,
+      "export_sha256": "9833a47a91c65c2637440ba028b477ca4ad0e396ab217d4d7ca26582e51cdb9a",
+      "repository_bytes": 1560,
+      "repository_sha256": "9833a47a91c65c2637440ba028b477ca4ad0e396ab217d4d7ca26582e51cdb9a",
+      "status": "exact"
+    },
+    "src/reinforcement/test_end_to_end.py": {
+      "archive": "AQSS_CI_REVIEW_1625.zip",
+      "export_bytes": 1577,
+      "export_sha256": "923bdc75a5b769213694cfad15f2845102748f5ca799e0304af881c977fb10a4",
+      "repository_bytes": 1577,
+      "repository_sha256": "923bdc75a5b769213694cfad15f2845102748f5ca799e0304af881c977fb10a4",
+      "status": "exact"
+    },
+    "src/reinforcement/test_integration_reinforcement_policy.py": {
+      "archive": "AQSS_CI_REVIEW_1625.zip",
+      "export_bytes": 1625,
+      "export_sha256": "d7b288e87866f425e020e3955691ffbe661b5933f405ce061bcefca0a355cab3",
+      "repository_bytes": 1625,
+      "repository_sha256": "d7b288e87866f425e020e3955691ffbe661b5933f405ce061bcefca0a355cab3",
+      "status": "exact"
+    },
+    "src/reinforcement/test_opportunistic.py": {
+      "archive": "AQSS_CI_REVIEW_1625.zip",
+      "export_bytes": 1235,
+      "export_sha256": "620f3d41efa20906b62ebf4e8f986cec007f2babcb47558bbc34cb8e54075a0e",
+      "repository_bytes": 1235,
+      "repository_sha256": "620f3d41efa20906b62ebf4e8f986cec007f2babcb47558bbc34cb8e54075a0e",
+      "status": "exact"
+    },
+    "src/reinforcement/test_reinforcement.py": {
+      "archive": "AQSS_CI_REVIEW_1625.zip",
+      "export_bytes": 1251,
+      "export_sha256": "2cfc76a295673d419173d0dd047701ab41683126394be0c8467be9cab67cb7d8",
+      "repository_bytes": 1251,
+      "repository_sha256": "2cfc76a295673d419173d0dd047701ab41683126394be0c8467be9cab67cb7d8",
+      "status": "exact"
+    },
+    "src/research_loop/README.md": {
+      "archive": "AQSS_CI_REVIEW_1625.zip",
+      "export_bytes": 1374,
+      "export_sha256": "3f644928b1579a292ca56c211894385fb95ef404b19c79d8d7c9ad2fd64f5235",
+      "repository_bytes": 1374,
+      "repository_sha256": "3f644928b1579a292ca56c211894385fb95ef404b19c79d8d7c9ad2fd64f5235",
+      "status": "exact"
+    },
+    "src/research_loop/__init__.py": {
+      "archive": "AQSS_CI_REVIEW_1625.zip",
+      "export_bytes": 0,
+      "export_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "repository_bytes": 0,
+      "repository_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "status": "exact"
+    },
+    "src/research_loop/acoustic_feature_map.py": {
+      "archive": "AQSS_CI_REVIEW_1625.zip",
+      "export_bytes": 1522,
+      "export_sha256": "c4241b2aff33e4bc0f9c5303f9615d039243144dbee0621211c349269d460fc1",
+      "repository_bytes": 1522,
+      "repository_sha256": "c4241b2aff33e4bc0f9c5303f9615d039243144dbee0621211c349269d460fc1",
+      "status": "exact"
+    },
+    "src/research_loop/backend.py": {
+      "archive": "AQSS_CI_REVIEW_1625.zip",
+      "export_bytes": 504,
+      "export_sha256": "e16dee287c375911d1c61b8d31a8c41b611700d2101816dd0369cca9ef860b21",
+      "repository_bytes": 504,
+      "repository_sha256": "e16dee287c375911d1c61b8d31a8c41b611700d2101816dd0369cca9ef860b21",
+      "status": "exact"
+    },
+    "src/research_loop/benchmark_v1.py": {
+      "archive": "AQSS_CI_REVIEW_1625.zip",
+      "export_bytes": 2256,
+      "export_sha256": "71406b70c3b63016da5167294cfb0db424eb0cc13de14a3834450143bb3c60a7",
+      "repository_bytes": 2256,
+      "repository_sha256": "71406b70c3b63016da5167294cfb0db424eb0cc13de14a3834450143bb3c60a7",
+      "status": "exact"
+    },
+    "src/research_loop/classical_backend.py": {
+      "archive": "AQSS_CI_REVIEW_1625.zip",
+      "export_bytes": 652,
+      "export_sha256": "6ee4e9b2845bd5e7bfc554d48f7d880d8771d8d7b76b760255852dca20780044",
+      "repository_bytes": 652,
+      "repository_sha256": "6ee4e9b2845bd5e7bfc554d48f7d880d8771d8d7b76b760255852dca20780044",
+      "status": "exact"
+    },
+    "src/research_loop/executor.py": {
+      "archive": "AQSS_CI_REVIEW_1625.zip",
+      "export_bytes": 319,
+      "export_sha256": "5a409c35f2a808117fb62ac81ccf47f52dda9c51e6630dad950d6aaaa8256197",
+      "repository_bytes": 319,
+      "repository_sha256": "5a409c35f2a808117fb62ac81ccf47f52dda9c51e6630dad950d6aaaa8256197",
+      "status": "exact"
+    },
+    "src/research_loop/experiment_schema.py": {
+      "archive": "AQSS_CI_REVIEW_1625.zip",
+      "export_bytes": 840,
+      "export_sha256": "fe0fa1a8e06d364131786c4463a10de9dfae05d9233bd8abd59e8118aa631938",
+      "repository_bytes": 840,
+      "repository_sha256": "fe0fa1a8e06d364131786c4463a10de9dfae05d9233bd8abd59e8118aa631938",
+      "status": "exact"
+    },
+    "src/research_loop/generate_research_report.py": {
+      "archive": "AQSS_CI_REVIEW_1625.zip",
+      "export_bytes": 1959,
+      "export_sha256": "02f3e655cb46f62f2455759749a04ee004f10aec7113a587f8fce76edf499af8",
+      "repository_bytes": 1959,
+      "repository_sha256": "02f3e655cb46f62f2455759749a04ee004f10aec7113a587f8fce76edf499af8",
+      "status": "exact"
+    },
+    "src/research_loop/generate_synthetic_cases.py": {
+      "archive": "AQSS_CI_REVIEW_1625.zip",
+      "export_bytes": 703,
+      "export_sha256": "eb91d7b457ec662748584bbc1f6967a1d9709a12b505168432511d2d585b1db7",
+      "repository_bytes": 703,
+      "repository_sha256": "eb91d7b457ec662748584bbc1f6967a1d9709a12b505168432511d2d585b1db7",
+      "status": "exact"
+    },
+    "src/research_loop/hard_cases.py": {
+      "archive": "AQSS_CI_REVIEW_1625.zip",
+      "export_bytes": 820,
+      "export_sha256": "65849bb46ed5f22395324a9e37d3e1111f698c6d067bbeecfc7b329517c6c456",
+      "repository_bytes": 820,
+      "repository_sha256": "65849bb46ed5f22395324a9e37d3e1111f698c6d067bbeecfc7b329517c6c456",
+      "status": "exact"
+    },
+    "src/research_loop/ibm_hardware_phase2.py": {
+      "archive": "AQSS_CI_REVIEW_1625.zip",
+      "export_bytes": 976,
+      "export_sha256": "c9d8b4b7807cb25cc5c43c3dbfef5227a25265929cadf5b53aff68c8350f3454",
+      "repository_bytes": 976,
+      "repository_sha256": "c9d8b4b7807cb25cc5c43c3dbfef5227a25265929cadf5b53aff68c8350f3454",
+      "status": "exact"
+    },
+    "src/research_loop/metrics.py": {
+      "archive": "AQSS_CI_REVIEW_1625.zip",
+      "export_bytes": 245,
+      "export_sha256": "3bdeb8a4cfeb8932314551b01a241fa5c352b2ca6edf0ed8b12b424fbbb54c01",
+      "repository_bytes": 245,
+      "repository_sha256": "3bdeb8a4cfeb8932314551b01a241fa5c352b2ca6edf0ed8b12b424fbbb54c01",
+      "status": "exact"
+    },
+    "src/research_loop/mitigation.py": {
+      "archive": "AQSS_CI_REVIEW_1625.zip",
+      "export_bytes": 690,
+      "export_sha256": "9fbe2d65ef6c1a419d4679a9d9304c9e0edaf39f614fcf702dc42def2ebd007b",
+      "repository_bytes": 690,
+      "repository_sha256": "9fbe2d65ef6c1a419d4679a9d9304c9e0edaf39f614fcf702dc42def2ebd007b",
+      "status": "exact"
+    },
+    "src/research_loop/mock_backend.py": {
+      "archive": "AQSS_CI_REVIEW_1625.zip",
+      "export_bytes": 241,
+      "export_sha256": "5abdc429ae56a591cf3f31ff56c9e451ce501f1857422a14aa8965d8888dd781",
+      "repository_bytes": 241,
+      "repository_sha256": "5abdc429ae56a591cf3f31ff56c9e451ce501f1857422a14aa8965d8888dd781",
+      "status": "exact"
+    },
+    "src/research_loop/phase15/dataset.py": {
+      "archive": "AQSS_CI_REVIEW_1625.zip",
+      "export_bytes": 3523,
+      "export_sha256": "7ad62a09e179caf1bfec96fac0512fa6bd0ba27f5ff10ce49e235b37ddaec8ac",
+      "reason": "Remove unused pandas import to avoid an unlisted import dependency.",
+      "repository_bytes": 3503,
+      "repository_sha256": "e6f9a3ccdb1ef83cdb3110deca2d662107003a8b25a966596dd928a080d1a9b5",
+      "status": "modified"
+    },
+    "src/research_loop/phase15/validate_manifest.py": {
+      "archive": "AQSS_CI_REVIEW_1625.zip",
+      "export_bytes": 56,
+      "export_sha256": "8550d29f446e1b4b823c5f54b9f8b436e500fd10984c27500467f056738b86c9",
+      "repository_bytes": 56,
+      "repository_sha256": "8550d29f446e1b4b823c5f54b9f8b436e500fd10984c27500467f056738b86c9",
+      "status": "exact"
+    },
+    "src/research_loop/pipeline_integration.py": {
+      "archive": "AQSS_CI_REVIEW_1625.zip",
+      "export_bytes": 346,
+      "export_sha256": "3f8d9007f2d0fcd467a6c2dfcf70bb0aa6528d18d10b6aa4691e6540627f827a",
+      "repository_bytes": 346,
+      "repository_sha256": "3f8d9007f2d0fcd467a6c2dfcf70bb0aa6528d18d10b6aa4691e6540627f827a",
+      "status": "exact"
+    },
+    "src/research_loop/qkernel.py": {
+      "archive": "AQSS_CI_REVIEW_1625.zip",
+      "export_bytes": 1313,
+      "export_sha256": "9d6d4353c0811b57ba16d1496abdb742b951a17174bdf6be20472554c933068a",
+      "repository_bytes": 1313,
+      "repository_sha256": "9d6d4353c0811b57ba16d1496abdb742b951a17174bdf6be20472554c933068a",
+      "status": "exact"
+    },
+    "src/research_loop/qpu_adapter.py": {
+      "archive": "AQSS_CI_REVIEW_1625.zip",
+      "export_bytes": 467,
+      "export_sha256": "87e89d19eee39421f94b5d19759b893d3c22beff971e433d203e281ec19571d4",
+      "repository_bytes": 467,
+      "repository_sha256": "87e89d19eee39421f94b5d19759b893d3c22beff971e433d203e281ec19571d4",
+      "status": "exact"
+    },
+    "src/research_loop/quantum_work_item.py": {
+      "archive": "AQSS_CI_REVIEW_1625.zip",
+      "export_bytes": 795,
+      "export_sha256": "5fa46dfd4630e658a7bd3ce6972d169c6677610093fec6d9ab148d06ca607197",
+      "repository_bytes": 795,
+      "repository_sha256": "5fa46dfd4630e658a7bd3ce6972d169c6677610093fec6d9ab148d06ca607197",
+      "status": "exact"
+    },
+    "src/research_loop/research_loop_summary.md": {
+      "archive": "AQSS_CI_REVIEW_1625.zip",
+      "export_bytes": 535,
+      "export_sha256": "2faa440c88cce1db7136a483430433991e872858aad49509f046d56d3be82bab",
+      "repository_bytes": 535,
+      "repository_sha256": "2faa440c88cce1db7136a483430433991e872858aad49509f046d56d3be82bab",
+      "status": "exact"
+    },
+    "src/research_loop/runner.py": {
+      "archive": "AQSS_CI_REVIEW_1625.zip",
+      "export_bytes": 974,
+      "export_sha256": "b9d37fc627a86819b601b10e57cb7c3014bac2824a9333aef099fd112b871c4d",
+      "repository_bytes": 974,
+      "repository_sha256": "b9d37fc627a86819b601b10e57cb7c3014bac2824a9333aef099fd112b871c4d",
+      "status": "exact"
+    },
+    "src/research_loop/test_qsvm_integration.py": {
+      "archive": "AQSS_CI_REVIEW_1625.zip",
+      "export_bytes": 1191,
+      "export_sha256": "d018b0832616efe91da34210920498e91df391c9e7896f3fe8c16a530d4e8194",
+      "repository_bytes": 1191,
+      "repository_sha256": "d018b0832616efe91da34210920498e91df391c9e7896f3fe8c16a530d4e8194",
+      "status": "exact"
+    },
+    "src/research_loop/test_zne_benchmark.py": {
+      "archive": "AQSS_CI_REVIEW_1625.zip",
+      "export_bytes": 882,
+      "export_sha256": "c343be20826b79e30d1adf1ea8049845390a6086066f6b6553526a207880ace2",
+      "repository_bytes": 882,
+      "repository_sha256": "c343be20826b79e30d1adf1ea8049845390a6086066f6b6553526a207880ace2",
+      "status": "exact"
+    },
+    "src/safety/architecture_invariants.py": {
+      "archive": "AQSS_CI_REVIEW_1625.zip",
+      "export_bytes": 501,
+      "export_sha256": "c8ed837d328d18c1aedf0ca37b6af8d0d3bbe2dc7c622e7234508013ee4ef7b8",
+      "repository_bytes": 501,
+      "repository_sha256": "c8ed837d328d18c1aedf0ca37b6af8d0d3bbe2dc7c622e7234508013ee4ef7b8",
+      "status": "exact"
+    },
+    "src/safety/policy_stability_monitor.py": {
+      "archive": "AQSS_CI_REVIEW_1625.zip",
+      "export_bytes": 2653,
+      "export_sha256": "1bf3d6a695e9667f814878872ad2b879774cde78bfe36271ae65695868848f5a",
+      "repository_bytes": 2653,
+      "repository_sha256": "1bf3d6a695e9667f814878872ad2b879774cde78bfe36271ae65695868848f5a",
+      "status": "exact"
+    },
+    "src/security/causal_attestation.py": {
+      "archive": "AQSS_CI_REVIEW_1625.zip",
+      "export_bytes": 2316,
+      "export_sha256": "17f34203488fd97c918646c5b160ad0bdf55a17f9bfcf94b5ecbe4568fdc014a",
+      "repository_bytes": 2316,
+      "repository_sha256": "17f34203488fd97c918646c5b160ad0bdf55a17f9bfcf94b5ecbe4568fdc014a",
+      "status": "exact"
+    },
+    "src/security/causal_mesh.py": {
+      "archive": "AQSS_CI_REVIEW_1625.zip",
+      "export_bytes": 756,
+      "export_sha256": "2d237667bd55c506a79f348a062d0cc19fce4b658046ec435bf215ff08390d04",
+      "repository_bytes": 756,
+      "repository_sha256": "2d237667bd55c506a79f348a062d0cc19fce4b658046ec435bf215ff08390d04",
+      "status": "exact"
+    },
+    "src/security/causal_trust.py": {
+      "archive": "AQSS_CI_REVIEW_1625.zip",
+      "export_bytes": 587,
+      "export_sha256": "9f7a1fa021fdd7ddea9e480a28d7710549023cc04324f8eec8f924824f7c068b",
+      "repository_bytes": 587,
+      "repository_sha256": "9f7a1fa021fdd7ddea9e480a28d7710549023cc04324f8eec8f924824f7c068b",
+      "status": "exact"
+    },
+    "src/shadow/calibration_analytics.py": {
+      "archive": "AQSS_CI_REVIEW_1625.zip",
+      "export_bytes": 2158,
+      "export_sha256": "69158cfa4785af9d741d74c63bf6d2e57cee97214e3b1a60e1a0acb99e17ef02",
+      "repository_bytes": 2158,
+      "repository_sha256": "69158cfa4785af9d741d74c63bf6d2e57cee97214e3b1a60e1a0acb99e17ef02",
+      "status": "exact"
+    },
+    "src/shadow/rollback_manager.py": {
+      "archive": "AQSS_CI_REVIEW_1625.zip",
+      "export_bytes": 1608,
+      "export_sha256": "1c40857cca8100b2d6177afd1a4caf3a58202d5f9a6dd32d366196ec1e612eee",
+      "repository_bytes": 1608,
+      "repository_sha256": "1c40857cca8100b2d6177afd1a4caf3a58202d5f9a6dd32d366196ec1e612eee",
+      "status": "exact"
+    },
+    "src/shadow/shadow_policy.py": {
+      "archive": "AQSS_CI_REVIEW_1625.zip",
+      "export_bytes": 2870,
+      "export_sha256": "504be48cc6ac9ec7269ce91d50368f3d8757bc1b4c53924f2275e3643e765db5",
+      "repository_bytes": 2870,
+      "repository_sha256": "504be48cc6ac9ec7269ce91d50368f3d8757bc1b4c53924f2275e3643e765db5",
+      "status": "exact"
+    },
+    "src/sim/__init__.py": {
+      "archive": "AQSS_CI_REVIEW_1625.zip",
+      "export_bytes": 0,
+      "export_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "repository_bytes": 0,
+      "repository_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "status": "exact"
+    },
+    "src/sim/acoustic_environment.py": {
+      "archive": "AQSS_CI_REVIEW_1625.zip",
+      "export_bytes": 1104,
+      "export_sha256": "41c8dd23198dd5087e0a48d848ab4dde6693f29e815ea2415f980666b0eb4189",
+      "repository_bytes": 1104,
+      "repository_sha256": "41c8dd23198dd5087e0a48d848ab4dde6693f29e815ea2415f980666b0eb4189",
+      "status": "exact"
+    },
+    "src/utils/logger.py": {
+      "archive": "AQSS_CI_REVIEW_1625.zip",
+      "export_bytes": 725,
+      "export_sha256": "c8cd8d962cd3fbdb09f01e70495cce39086f3c3dd1031721e6b588db9523ce1f",
+      "repository_bytes": 725,
+      "repository_sha256": "c8cd8d962cd3fbdb09f01e70495cce39086f3c3dd1031721e6b588db9523ce1f",
+      "status": "exact"
+    },
+    "src/verification/__init__.py": {
+      "archive": "AQSS_CI_REVIEW_1625.zip",
+      "export_bytes": 0,
+      "export_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "repository_bytes": 0,
+      "repository_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "status": "exact"
+    },
+    "src/verification/world_state.py": {
+      "archive": "AQSS_CI_REVIEW_1625.zip",
+      "export_bytes": 3650,
+      "export_sha256": "09123eb6f5b3158e5f3a11db403440f3b021aab0875f12c88cae8e2736e14a3f",
+      "repository_bytes": 3650,
+      "repository_sha256": "09123eb6f5b3158e5f3a11db403440f3b021aab0875f12c88cae8e2736e14a3f",
+      "status": "exact"
+    },
+    "src/voice/async_stream.py": {
+      "archive": "AQSS_CI_REVIEW_1625.zip",
+      "export_bytes": 457,
+      "export_sha256": "858c7874d6b808e515813d43e0c1fdf17c24e6ef0c213131fc41b3975662a820",
+      "repository_bytes": 457,
+      "repository_sha256": "858c7874d6b808e515813d43e0c1fdf17c24e6ef0c213131fc41b3975662a820",
+      "status": "exact"
+    },
+    "src/voice/benchmarks.py": {
+      "archive": "AQSS_CI_REVIEW_1625.zip",
+      "export_bytes": 1006,
+      "export_sha256": "aed8033e082c774dea190655cd2e5d4508692f601537ce8c238036ff4c320144",
+      "repository_bytes": 1006,
+      "repository_sha256": "aed8033e082c774dea190655cd2e5d4508692f601537ce8c238036ff4c320144",
+      "status": "exact"
+    },
+    "src/voice/doa.py": {
+      "archive": "AQSS_CI_REVIEW_1625.zip",
+      "export_bytes": 2038,
+      "export_sha256": "f0b883c73ebf973b45bc127e9096d2bef7bae91b1f477cce69783aa101c10fca",
+      "repository_bytes": 2038,
+      "repository_sha256": "f0b883c73ebf973b45bc127e9096d2bef7bae91b1f477cce69783aa101c10fca",
+      "status": "exact"
+    },
+    "src/voice/feature_fabric.py": {
+      "archive": "AQSS_CI_REVIEW_1625.zip",
+      "export_bytes": 991,
+      "export_sha256": "adba6bf2de1cd7c1e133672b4dafeee21bc292376ddea633b639a67f0e87f42c",
+      "repository_bytes": 991,
+      "repository_sha256": "adba6bf2de1cd7c1e133672b4dafeee21bc292376ddea633b639a67f0e87f42c",
+      "status": "exact"
+    },
+    "src/voice/fusion.py": {
+      "archive": "AQSS_CI_REVIEW_1625.zip",
+      "export_bytes": 3214,
+      "export_sha256": "cb1291316ce06cbf7aabe2cb47ef4618ddd60bb28a9639afe41dad806cc3f146",
+      "repository_bytes": 3214,
+      "repository_sha256": "cb1291316ce06cbf7aabe2cb47ef4618ddd60bb28a9639afe41dad806cc3f146",
+      "status": "exact"
+    },
+    "src/voice/orchestrator.py": {
+      "archive": "AQSS_CI_REVIEW_1625.zip",
+      "export_bytes": 1326,
+      "export_sha256": "187117b379a1b5c1a7f91dc152ee0d759a8f7a876a1e39f294226d58ff14eead",
+      "repository_bytes": 1326,
+      "repository_sha256": "187117b379a1b5c1a7f91dc152ee0d759a8f7a876a1e39f294226d58ff14eead",
+      "status": "exact"
+    },
+    "src/voice/predictive_horizon.py": {
+      "archive": "AQSS_CI_REVIEW_1625.zip",
+      "export_bytes": 1028,
+      "export_sha256": "2acf18324720bb4cda7b585af4a7a0fc920d92b96534c7407bb8cfb88d90f357",
+      "repository_bytes": 1028,
+      "repository_sha256": "2acf18324720bb4cda7b585af4a7a0fc920d92b96534c7407bb8cfb88d90f357",
+      "status": "exact"
+    },
+    "src/voice/room.py": {
+      "archive": "AQSS_CI_REVIEW_1625.zip",
+      "export_bytes": 1277,
+      "export_sha256": "0d9083946a2df9ebec46bb71b432a002765b3387f9a1aed5975e132bca2c7ab2",
+      "repository_bytes": 1277,
+      "repository_sha256": "0d9083946a2df9ebec46bb71b432a002765b3387f9a1aed5975e132bca2c7ab2",
+      "status": "exact"
+    },
+    "src/voice/sensor_health.py": {
+      "archive": "AQSS_CI_REVIEW_1625.zip",
+      "export_bytes": 1314,
+      "export_sha256": "c13e46cd088950c9697da451cdce03638cf275168569339bcb64a4171fafa000",
+      "repository_bytes": 1314,
+      "repository_sha256": "c13e46cd088950c9697da451cdce03638cf275168569339bcb64a4171fafa000",
+      "status": "exact"
+    },
+    "src/voice/separator.py": {
+      "archive": "AQSS_CI_REVIEW_1625.zip",
+      "export_bytes": 657,
+      "export_sha256": "9fbd0380575e51f238889f70f2d1432c21e3b48fb396b8c9e85ca54577442465",
+      "repository_bytes": 657,
+      "repository_sha256": "9fbd0380575e51f238889f70f2d1432c21e3b48fb396b8c9e85ca54577442465",
+      "status": "exact"
+    },
+    "src/voice/speaker.py": {
+      "archive": "AQSS_CI_REVIEW_1625.zip",
+      "export_bytes": 1570,
+      "export_sha256": "35eda8b211e6d4b026ea4cc69edf9973b611a68ac60f4a9385ca98ed6675d702",
+      "repository_bytes": 1570,
+      "repository_sha256": "35eda8b211e6d4b026ea4cc69edf9973b611a68ac60f4a9385ca98ed6675d702",
+      "status": "exact"
+    },
+    "src/voice/temporal.py": {
+      "archive": "AQSS_CI_REVIEW_1625.zip",
+      "export_bytes": 1283,
+      "export_sha256": "8300a2186802a007585bf9f0bd08ee98327f296939f1d131391a88faa35294fd",
+      "repository_bytes": 1283,
+      "repository_sha256": "8300a2186802a007585bf9f0bd08ee98327f296939f1d131391a88faa35294fd",
+      "status": "exact"
+    },
+    "src/voice/trust_router.py": {
+      "archive": "AQSS_CI_REVIEW_1625.zip",
+      "export_bytes": 602,
+      "export_sha256": "6b7d8266629b72be10832bba805080ea7cccb6b7a7bb033f039e834098760428",
+      "repository_bytes": 602,
+      "repository_sha256": "6b7d8266629b72be10832bba805080ea7cccb6b7a7bb033f039e834098760428",
+      "status": "exact"
+    },
+    "src/voice/types.py": {
+      "archive": "AQSS_CI_REVIEW_1625.zip",
+      "export_bytes": 927,
+      "export_sha256": "76dfe18efddab5399a5dbc5936159c24d23d93133d753bfa9b2ed5a93109814d",
+      "repository_bytes": 927,
+      "repository_sha256": "76dfe18efddab5399a5dbc5936159c24d23d93133d753bfa9b2ed5a93109814d",
+      "status": "exact"
+    },
+    "state_logger.py": {
+      "archive": "AQSS_CI_SUPPLEMENT_1625.zip",
+      "export_bytes": 1025,
+      "export_sha256": "45952892029bf50e8555ec551c614dbaf41d903bfded43733109d59b240b1f6b",
+      "repository_bytes": 1025,
+      "repository_sha256": "45952892029bf50e8555ec551c614dbaf41d903bfded43733109d59b240b1f6b",
+      "status": "exact"
+    },
+    "tests/__init__.py": {
+      "archive": "AQSS_CI_REVIEW_1625.zip",
+      "export_bytes": 0,
+      "export_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "repository_bytes": 0,
+      "repository_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "status": "exact"
+    },
+    "tests/extensions/__init__.py": {
+      "archive": "AQSS_CI_REVIEW_1625.zip",
+      "export_bytes": 0,
+      "export_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "repository_bytes": 0,
+      "repository_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "status": "exact"
+    },
+    "tests/extensions/test_active_extension_has_no_physical_authority.py": {
+      "archive": "AQSS_CI_REVIEW_1625.zip",
+      "export_bytes": 1173,
+      "export_sha256": "b2b5b4a04e4b350e3d3501452f1ae24da23755591878d28ea190985fe6f89488",
+      "repository_bytes": 1173,
+      "repository_sha256": "b2b5b4a04e4b350e3d3501452f1ae24da23755591878d28ea190985fe6f89488",
+      "status": "exact"
+    },
+    "tests/extensions/test_adapter_contract.py": {
+      "archive": "AQSS_CI_REVIEW_1625.zip",
+      "export_bytes": 149,
+      "export_sha256": "249eea1854dca6806e2ba9ae841c5232db9ccee099d65483374985f64677545a",
+      "repository_bytes": 149,
+      "repository_sha256": "249eea1854dca6806e2ba9ae841c5232db9ccee099d65483374985f64677545a",
+      "status": "exact"
+    },
+    "tests/extensions/test_capability_is_not_authority.py": {
+      "archive": "AQSS_CI_REVIEW_1625.zip",
+      "export_bytes": 1542,
+      "export_sha256": "920a8c60c96d17e06aef03e9480b526b7929bc02f60b9caba7d6ac4704ba7f12",
+      "repository_bytes": 1542,
+      "repository_sha256": "920a8c60c96d17e06aef03e9480b526b7929bc02f60b9caba7d6ac4704ba7f12",
+      "status": "exact"
+    },
+    "tests/extensions/test_casefold_collision_scope_is_per_mapping.py": {
+      "archive": "AQSS_CI_REVIEW_1625.zip",
+      "export_bytes": 627,
+      "export_sha256": "eec84c4fcf2f73f68358e9c2bebde5be3a9f194d558be48988665276f8472fba",
+      "repository_bytes": 627,
+      "repository_sha256": "eec84c4fcf2f73f68358e9c2bebde5be3a9f194d558be48988665276f8472fba",
+      "status": "exact"
+    },
+    "tests/extensions/test_casefold_parameter_key_collision_atomicity.py": {
+      "archive": "AQSS_CI_REVIEW_1625.zip",
+      "export_bytes": 953,
+      "export_sha256": "a4efc8b2ad5439194c95fb11298f5ba366be6faf489afcc9122f085ae3022dfc",
+      "repository_bytes": 953,
+      "repository_sha256": "a4efc8b2ad5439194c95fb11298f5ba366be6faf489afcc9122f085ae3022dfc",
+      "status": "exact"
+    },
+    "tests/extensions/test_contract_compatibility.py": {
+      "archive": "AQSS_CI_REVIEW_1625.zip",
+      "export_bytes": 590,
+      "export_sha256": "e521dc0984101a44e9edc609b3010a94038d1fecdde3ea1fab83b4a125c53c80",
+      "repository_bytes": 590,
+      "repository_sha256": "e521dc0984101a44e9edc609b3010a94038d1fecdde3ea1fab83b4a125c53c80",
+      "status": "exact"
+    },
+    "tests/extensions/test_control_char_parameter_key_rejection_atomicity.py": {
+      "archive": "AQSS_CI_REVIEW_1625.zip",
+      "export_bytes": 940,
+      "export_sha256": "1b5905e2abf9600a35546a710373d2c475c8f9f34abeb063567617aa68126aab",
+      "repository_bytes": 940,
+      "repository_sha256": "1b5905e2abf9600a35546a710373d2c475c8f9f34abeb063567617aa68126aab",
+      "status": "exact"
+    },
+    "tests/extensions/test_control_char_semantic_rejection_atomicity.py": {
+      "archive": "AQSS_CI_REVIEW_1625.zip",
+      "export_bytes": 1202,
+      "export_sha256": "a489d6057a43c7936197e0607b27f5853a0d92490d20c6e80b4597513b289fa9",
+      "repository_bytes": 1202,
+      "repository_sha256": "a489d6057a43c7936197e0607b27f5853a0d92490d20c6e80b4597513b289fa9",
+      "status": "exact"
+    },
+    "tests/extensions/test_extension_gateway.py": {
+      "archive": "AQSS_CI_REVIEW_1625.zip",
+      "export_bytes": 2792,
+      "export_sha256": "c150288547febbb8a31846ce326c67956029d66a1a442046d3162ab3beb4beb1",
+      "repository_bytes": 2792,
+      "repository_sha256": "c150288547febbb8a31846ce326c67956029d66a1a442046d3162ab3beb4beb1",
+      "status": "exact"
+    },
+    "tests/extensions/test_extension_proposal_contract.py": {
+      "archive": "AQSS_CI_REVIEW_1625.zip",
+      "export_bytes": 1249,
+      "export_sha256": "52f1424cefdb06d7a81715c041f0fb7ad5514b6ef67621c1a71522fe64e9e17d",
+      "repository_bytes": 1249,
+      "repository_sha256": "52f1424cefdb06d7a81715c041f0fb7ad5514b6ef67621c1a71522fe64e9e17d",
+      "status": "exact"
+    },
+    "tests/extensions/test_extension_proposal_parameters_immutable.py": {
+      "archive": "AQSS_CI_REVIEW_1625.zip",
+      "export_bytes": 1375,
+      "export_sha256": "d8eb5c2be438375db1b8ec37c99dde133b00aa2d179c97f7504486ce5854de57",
+      "repository_bytes": 1375,
+      "repository_sha256": "d8eb5c2be438375db1b8ec37c99dde133b00aa2d179c97f7504486ce5854de57",
+      "status": "exact"
+    },
+    "tests/extensions/test_extension_sovereignty.py": {
+      "archive": "AQSS_CI_REVIEW_1625.zip",
+      "export_bytes": 1592,
+      "export_sha256": "d7292b356a5acbd4538e6e4500c80d7fa660cf045e20a03eb60f61c2675988d7",
+      "repository_bytes": 1592,
+      "repository_sha256": "d7292b356a5acbd4538e6e4500c80d7fa660cf045e20a03eb60f61c2675988d7",
+      "status": "exact"
+    },
+    "tests/extensions/test_gateway_cannot_mint_authority.py": {
+      "archive": "AQSS_CI_REVIEW_1625.zip",
+      "export_bytes": 1178,
+      "export_sha256": "c30c46268e83ed83fb513be27590dda847a6f44a4a77a7a4037d216e9ee4927f",
+      "repository_bytes": 1178,
+      "repository_sha256": "c30c46268e83ed83fb513be27590dda847a6f44a4a77a7a4037d216e9ee4927f",
+      "status": "exact"
+    },
+    "tests/extensions/test_invalid_extension_id_character_rejection_atomicity.py": {
+      "archive": "AQSS_CI_REVIEW_1625.zip",
+      "export_bytes": 932,
+      "export_sha256": "51f9d11caa8eba6f52d84f7532ca0502c26d353a31aa74e2362f178ba06aae1b",
+      "repository_bytes": 932,
+      "repository_sha256": "51f9d11caa8eba6f52d84f7532ca0502c26d353a31aa74e2362f178ba06aae1b",
+      "status": "exact"
+    },
+    "tests/extensions/test_nfkc_stable_unicode_parameter_keys_allowed.py": {
+      "archive": "AQSS_CI_REVIEW_1625.zip",
+      "export_bytes": 637,
+      "export_sha256": "b7234c063284007e5c482d4646d5e6c54b68fe5835264e0e1ab3c74c909d981c",
+      "repository_bytes": 637,
+      "repository_sha256": "b7234c063284007e5c482d4646d5e6c54b68fe5835264e0e1ab3c74c909d981c",
+      "status": "exact"
+    },
+    "tests/extensions/test_non_mapping_rejection_atomicity.py": {
+      "archive": "AQSS_CI_REVIEW_1625.zip",
+      "export_bytes": 926,
+      "export_sha256": "73311aaa6f7d9118b87ec42e7a40cd5167e85170ef54315dc83ecf5f72640bec",
+      "repository_bytes": 926,
+      "repository_sha256": "73311aaa6f7d9118b87ec42e7a40cd5167e85170ef54315dc83ecf5f72640bec",
+      "status": "exact"
+    },
+    "tests/extensions/test_non_nfkc_parameter_key_rejection_atomicity.py": {
+      "archive": "AQSS_CI_REVIEW_1625.zip",
+      "export_bytes": 939,
+      "export_sha256": "019eadfee3e2c81195b1e6190e974103ed9a3262c12727a2a11c97280bdae8d1",
+      "repository_bytes": 939,
+      "repository_sha256": "019eadfee3e2c81195b1e6190e974103ed9a3262c12727a2a11c97280bdae8d1",
+      "status": "exact"
+    },
+    "tests/extensions/test_non_nfkc_semantic_rejection_atomicity.py": {
+      "archive": "AQSS_CI_REVIEW_1625.zip",
+      "export_bytes": 936,
+      "export_sha256": "8451538406f092cded5fb01ad12b3ad8b03b3ee78cbc72b54d0e82bb361e49ac",
+      "repository_bytes": 936,
+      "repository_sha256": "8451538406f092cded5fb01ad12b3ad8b03b3ee78cbc72b54d0e82bb361e49ac",
+      "status": "exact"
+    },
+    "tests/extensions/test_noncanonical_semantic_case_rejection_atomicity.py": {
+      "archive": "AQSS_CI_REVIEW_1625.zip",
+      "export_bytes": 931,
+      "export_sha256": "e2f695759567b3bf4033bc3e8c9693cb1e24cbfe97bb3ae16b36aa08c45999c3",
+      "repository_bytes": 931,
+      "repository_sha256": "e2f695759567b3bf4033bc3e8c9693cb1e24cbfe97bb3ae16b36aa08c45999c3",
+      "status": "exact"
+    },
+    "tests/extensions/test_normalization_rejection_atomicity.py": {
+      "archive": "AQSS_CI_REVIEW_1625.zip",
+      "export_bytes": 2152,
+      "export_sha256": "9b445b78fe91de966080e98cbee5751190b40b1db4b88bae38c94259145d9d19",
+      "repository_bytes": 2152,
+      "repository_sha256": "9b445b78fe91de966080e98cbee5751190b40b1db4b88bae38c94259145d9d19",
+      "status": "exact"
+    },
+    "tests/extensions/test_normalization_rejects_authority_key_variants.py": {
+      "archive": "AQSS_CI_REVIEW_1625.zip",
+      "export_bytes": 749,
+      "export_sha256": "0b1e9c49430f598f6038c4492029a798ad7cc3cd3c52db76b29c6465916d46e6",
+      "repository_bytes": 749,
+      "repository_sha256": "0b1e9c49430f598f6038c4492029a798ad7cc3cd3c52db76b29c6465916d46e6",
+      "status": "exact"
+    },
+    "tests/extensions/test_normalization_rejects_authority_smuggling.py": {
+      "archive": "AQSS_CI_REVIEW_1625.zip",
+      "export_bytes": 1528,
+      "export_sha256": "090b8b2433476e9492927f2aebd3ca8d5361ed6a85c2ed5723f601d86cd4fa50",
+      "repository_bytes": 1528,
+      "repository_sha256": "090b8b2433476e9492927f2aebd3ca8d5361ed6a85c2ed5723f601d86cd4fa50",
+      "status": "exact"
+    },
+    "tests/extensions/test_normalization_rejects_blank_parameter_keys.py": {
+      "archive": "AQSS_CI_REVIEW_1625.zip",
+      "export_bytes": 744,
+      "export_sha256": "7623b28c3233248c2b642fa10e72074e8d4624a3acb13cd515f117db55766e24",
+      "repository_bytes": 744,
+      "repository_sha256": "7623b28c3233248c2b642fa10e72074e8d4624a3acb13cd515f117db55766e24",
+      "status": "exact"
+    },
+    "tests/extensions/test_normalization_rejects_blank_semantic_fields.py": {
+      "archive": "AQSS_CI_REVIEW_1625.zip",
+      "export_bytes": 837,
+      "export_sha256": "a6591f4d23b2b5ad60e814fcafb5708a8a50a8bf39c5dda73e0b5db9a8cacf9e",
+      "repository_bytes": 837,
+      "repository_sha256": "a6591f4d23b2b5ad60e814fcafb5708a8a50a8bf39c5dda73e0b5db9a8cacf9e",
+      "status": "exact"
+    },
+    "tests/extensions/test_normalization_rejects_casefold_parameter_key_collisions.py": {
+      "archive": "AQSS_CI_REVIEW_1625.zip",
+      "export_bytes": 784,
+      "export_sha256": "de181aa7625775599510a90dfb875d2661184e142d8d8c9473973e17610ad518",
+      "repository_bytes": 784,
+      "repository_sha256": "de181aa7625775599510a90dfb875d2661184e142d8d8c9473973e17610ad518",
+      "status": "exact"
+    },
+    "tests/extensions/test_normalization_rejects_container_nested_authority.py": {
+      "archive": "AQSS_CI_REVIEW_1625.zip",
+      "export_bytes": 793,
+      "export_sha256": "f1a6a73bd889bbebceb30d837dca47c1c9ade3a7b0351292ddf187f6ca03356f",
+      "repository_bytes": 793,
+      "repository_sha256": "f1a6a73bd889bbebceb30d837dca47c1c9ade3a7b0351292ddf187f6ca03356f",
+      "status": "exact"
+    },
+    "tests/extensions/test_normalization_rejects_control_char_parameter_keys.py": {
+      "archive": "AQSS_CI_REVIEW_1625.zip",
+      "export_bytes": 723,
+      "export_sha256": "4d0006ab1e6d41685a3f95de75758ec368a64eecef2aebd7df6f833ff029e154",
+      "repository_bytes": 723,
+      "repository_sha256": "4d0006ab1e6d41685a3f95de75758ec368a64eecef2aebd7df6f833ff029e154",
+      "status": "exact"
+    },
+    "tests/extensions/test_normalization_rejects_control_char_semantic_fields.py": {
+      "archive": "AQSS_CI_REVIEW_1625.zip",
+      "export_bytes": 854,
+      "export_sha256": "5362ea368da05c25129fbc6fb7b7ab5c0a022d6c02aaa70fbdb8d5fcbdba5295",
+      "repository_bytes": 854,
+      "repository_sha256": "5362ea368da05c25129fbc6fb7b7ab5c0a022d6c02aaa70fbdb8d5fcbdba5295",
+      "status": "exact"
+    },
+    "tests/extensions/test_normalization_rejects_invalid_extension_id_segment_characters.py": {
+      "archive": "AQSS_CI_REVIEW_1625.zip",
+      "export_bytes": 733,
+      "export_sha256": "efa99369af10a740932f40531172e1450d8f4d4247e858c2c39ebc1b9ac00e81",
+      "repository_bytes": 733,
+      "repository_sha256": "efa99369af10a740932f40531172e1450d8f4d4247e858c2c39ebc1b9ac00e81",
+      "status": "exact"
+    },
+    "tests/extensions/test_normalization_rejects_malformed_extension_id_segments.py": {
+      "archive": "AQSS_CI_REVIEW_1625.zip",
+      "export_bytes": 691,
+      "export_sha256": "58540f6f85488edb633ee541c5be54965a6152bee59a4a67d7515da281a3bd99",
+      "repository_bytes": 691,
+      "repository_sha256": "58540f6f85488edb633ee541c5be54965a6152bee59a4a67d7515da281a3bd99",
+      "status": "exact"
+    },
+    "tests/extensions/test_normalization_rejects_nested_control_char_parameter_keys.py": {
+      "archive": "AQSS_CI_REVIEW_1625.zip",
+      "export_bytes": 768,
+      "export_sha256": "9c201a59c60dacc4d1eb7208ebd7b559d4561a564f90b8c201c9e381959c5edf",
+      "repository_bytes": 768,
+      "repository_sha256": "9c201a59c60dacc4d1eb7208ebd7b559d4561a564f90b8c201c9e381959c5edf",
+      "status": "exact"
+    },
+    "tests/extensions/test_normalization_rejects_non_mapping_parameters.py": {
+      "archive": "AQSS_CI_REVIEW_1625.zip",
+      "export_bytes": 697,
+      "export_sha256": "5ea27c418c0458d9440e071d3be31cfaadf204dbc2cd2c562d11c31367b61cc2",
+      "repository_bytes": 697,
+      "repository_sha256": "5ea27c418c0458d9440e071d3be31cfaadf204dbc2cd2c562d11c31367b61cc2",
+      "status": "exact"
+    },
+    "tests/extensions/test_normalization_rejects_non_nfkc_parameter_keys.py": {
+      "archive": "AQSS_CI_REVIEW_1625.zip",
+      "export_bytes": 790,
+      "export_sha256": "12a24b5605ecb333c7f948a6c4105df52e73e5ed1edf711678068c7b1a71a9c0",
+      "repository_bytes": 790,
+      "repository_sha256": "12a24b5605ecb333c7f948a6c4105df52e73e5ed1edf711678068c7b1a71a9c0",
+      "status": "exact"
+    },
+    "tests/extensions/test_normalization_rejects_non_nfkc_semantic_fields.py": {
+      "archive": "AQSS_CI_REVIEW_1625.zip",
+      "export_bytes": 971,
+      "export_sha256": "f573cbcc9493dc0a54d561a0b0a52af474b9a55b07024ddb4688337f7f802e56",
+      "repository_bytes": 971,
+      "repository_sha256": "f573cbcc9493dc0a54d561a0b0a52af474b9a55b07024ddb4688337f7f802e56",
+      "status": "exact"
+    },
+    "tests/extensions/test_normalization_rejects_non_string_keys.py": {
+      "archive": "AQSS_CI_REVIEW_1625.zip",
+      "export_bytes": 672,
+      "export_sha256": "249234348e0ce9f9ecf9fc070a50f65a56d4030d838e89ca1112a499cbef8500",
+      "repository_bytes": 672,
+      "repository_sha256": "249234348e0ce9f9ecf9fc070a50f65a56d4030d838e89ca1112a499cbef8500",
+      "status": "exact"
+    },
+    "tests/extensions/test_normalization_rejects_non_string_semantic_fields.py": {
+      "archive": "AQSS_CI_REVIEW_1625.zip",
+      "export_bytes": 768,
+      "export_sha256": "77edbc1e5410c351501e5b013687f6a2847a78a14b9d5e83f69e10bea5b23cd7",
+      "repository_bytes": 768,
+      "repository_sha256": "77edbc1e5410c351501e5b013687f6a2847a78a14b9d5e83f69e10bea5b23cd7",
+      "status": "exact"
+    },
+    "tests/extensions/test_normalization_rejects_noncanonical_semantic_case.py": {
+      "archive": "AQSS_CI_REVIEW_1625.zip",
+      "export_bytes": 844,
+      "export_sha256": "76a0b7c2aa0113566bb682c3f1617f5b4d4e5e20f4f19db5bc333a7e50f1c2fc",
+      "repository_bytes": 844,
+      "repository_sha256": "76a0b7c2aa0113566bb682c3f1617f5b4d4e5e20f4f19db5bc333a7e50f1c2fc",
+      "status": "exact"
+    },
+    "tests/extensions/test_normalization_rejects_padded_parameter_keys.py": {
+      "archive": "AQSS_CI_REVIEW_1625.zip",
+      "export_bytes": 798,
+      "export_sha256": "fab08fb0b895139e0fea032c59ff5433bc455c1215a832370cd81f4646209530",
+      "repository_bytes": 798,
+      "repository_sha256": "fab08fb0b895139e0fea032c59ff5433bc455c1215a832370cd81f4646209530",
+      "status": "exact"
+    },
+    "tests/extensions/test_normalization_rejects_padded_semantic_fields.py": {
+      "archive": "AQSS_CI_REVIEW_1625.zip",
+      "export_bytes": 921,
+      "export_sha256": "7eaa17a97b2155fe8894ac6ab57000803b29612174a20971ff47fe126046d241",
+      "repository_bytes": 921,
+      "repository_sha256": "7eaa17a97b2155fe8894ac6ab57000803b29612174a20971ff47fe126046d241",
+      "status": "exact"
+    },
+    "tests/extensions/test_normalization_rejects_unicode_authority_key_variants.py": {
+      "archive": "AQSS_CI_REVIEW_1625.zip",
+      "export_bytes": 767,
+      "export_sha256": "4614c18178e92371d1043acc2ff860b39108e9a3df8f5027f17da518db8b3c2b",
+      "repository_bytes": 767,
+      "repository_sha256": "4614c18178e92371d1043acc2ff860b39108e9a3df8f5027f17da518db8b3c2b",
+      "status": "exact"
+    },
+    "tests/extensions/test_normalization_rejects_unicode_casefold_parameter_key_collisions.py": {
+      "archive": "AQSS_CI_REVIEW_1625.zip",
+      "export_bytes": 755,
+      "export_sha256": "a5d6fa8e9755a737b5b79c10251de5653c4895f989da423b6b725f278405ee8c",
+      "repository_bytes": 755,
+      "repository_sha256": "a5d6fa8e9755a737b5b79c10251de5653c4895f989da423b6b725f278405ee8c",
+      "status": "exact"
+    },
+    "tests/extensions/test_normalized_candidate_contract.py": {
+      "archive": "AQSS_CI_REVIEW_1625.zip",
+      "export_bytes": 1232,
+      "export_sha256": "3f515bb2d553909b1f685d7cf879e5457b76a92303d9a3af92d41edd232fdc8f",
+      "repository_bytes": 1232,
+      "repository_sha256": "3f515bb2d553909b1f685d7cf879e5457b76a92303d9a3af92d41edd232fdc8f",
+      "status": "exact"
+    },
+    "tests/extensions/test_padded_parameter_key_rejection_atomicity.py": {
+      "archive": "AQSS_CI_REVIEW_1625.zip",
+      "export_bytes": 927,
+      "export_sha256": "4e157a7486c7f78af349bd52865859fe9fb67e6ec28b92f79e2eaf49eae29d1c",
+      "repository_bytes": 927,
+      "repository_sha256": "4e157a7486c7f78af349bd52865859fe9fb67e6ec28b92f79e2eaf49eae29d1c",
+      "status": "exact"
+    },
+    "tests/extensions/test_padded_semantic_rejection_atomicity.py": {
+      "archive": "AQSS_CI_REVIEW_1625.zip",
+      "export_bytes": 1192,
+      "export_sha256": "ab060f232a88b47a3b840cc8e539e240b89eb48c333476dda4535bfbf9b19c5b",
+      "repository_bytes": 1192,
+      "repository_sha256": "ab060f232a88b47a3b840cc8e539e240b89eb48c333476dda4535bfbf9b19c5b",
+      "status": "exact"
+    },
+    "tests/extensions/test_proposal_normalization.py": {
+      "archive": "AQSS_CI_REVIEW_1625.zip",
+      "export_bytes": 924,
+      "export_sha256": "088bfc26a7e33df331d9bf7a676108bbbacb0d1e982cf58259bc57cf6c2eb621",
+      "repository_bytes": 924,
+      "repository_sha256": "088bfc26a7e33df331d9bf7a676108bbbacb0d1e982cf58259bc57cf6c2eb621",
+      "status": "exact"
+    },
+    "tests/extensions/test_registry_activation_gate.py": {
+      "archive": "AQSS_CI_REVIEW_1625.zip",
+      "export_bytes": 1386,
+      "export_sha256": "c8bf0da833df9c02981a0d88267b3dc80611ef6a43918c23db2d3f6a866d8cfa",
+      "repository_bytes": 1386,
+      "repository_sha256": "c8bf0da833df9c02981a0d88267b3dc80611ef6a43918c23db2d3f6a866d8cfa",
+      "status": "exact"
+    },
+    "tests/extensions/test_registry_contract_gate.py": {
+      "archive": "AQSS_CI_REVIEW_1625.zip",
+      "export_bytes": 1228,
+      "export_sha256": "cf89e455ac46a62b3e4da06ba8b21cc1c8251b756d696fdc1bac4befe63384a3",
+      "repository_bytes": 1228,
+      "repository_sha256": "cf89e455ac46a62b3e4da06ba8b21cc1c8251b756d696fdc1bac4befe63384a3",
+      "status": "exact"
+    },
+    "tests/extensions/test_registry_identity_collision.py": {
+      "archive": "AQSS_CI_REVIEW_1625.zip",
+      "export_bytes": 1012,
+      "export_sha256": "d7147601bcffc3c469df630c9d1bbeaf8af109d811c3121e97c46e7c432874b0",
+      "repository_bytes": 1012,
+      "repository_sha256": "d7147601bcffc3c469df630c9d1bbeaf8af109d811c3121e97c46e7c432874b0",
+      "status": "exact"
+    },
+    "tests/extensions/test_semantic_field_rejection_atomicity.py": {
+      "archive": "AQSS_CI_REVIEW_1625.zip",
+      "export_bytes": 1151,
+      "export_sha256": "b84fbabe022c92661c712db50783bc275baf3bad57e051ea9f649427cd46c470",
+      "repository_bytes": 1151,
+      "repository_sha256": "b84fbabe022c92661c712db50783bc275baf3bad57e051ea9f649427cd46c470",
+      "status": "exact"
+    },
+    "tests/inference/test_adversarial_perception.py": {
+      "archive": "AQSS_CI_REVIEW_1625.zip",
+      "export_bytes": 130,
+      "export_sha256": "b6a15db2d87f56d2ab5338ddaac9766e404869a50672b960d284609719afe6cf",
+      "repository_bytes": 130,
+      "repository_sha256": "b6a15db2d87f56d2ab5338ddaac9766e404869a50672b960d284609719afe6cf",
+      "status": "exact"
+    },
+    "tests/inference/test_change_point_bayesian_adapter.py": {
+      "archive": "AQSS_CI_REVIEW_1625.zip",
+      "export_bytes": 192,
+      "export_sha256": "ad24b7b177506949d08f4a29678d112db818a57306057e6cd463c396e528776e",
+      "repository_bytes": 192,
+      "repository_sha256": "ad24b7b177506949d08f4a29678d112db818a57306057e6cd463c396e528776e",
+      "status": "exact"
+    },
+    "tests/inference/test_evidence_and_hypothesis.py": {
+      "archive": "AQSS_CI_REVIEW_1625.zip",
+      "export_bytes": 590,
+      "export_sha256": "54d16f89cb8478f2cf923620913c631659b80adfcf9b0f27883ea1e98f5b096f",
+      "repository_bytes": 590,
+      "repository_sha256": "54d16f89cb8478f2cf923620913c631659b80adfcf9b0f27883ea1e98f5b096f",
+      "status": "exact"
+    },
+    "tests/inference/test_perception_invariants.py": {
+      "archive": "AQSS_CI_REVIEW_1625.zip",
+      "export_bytes": 1816,
+      "export_sha256": "15e020ec197a157d91f9f49fb8204f541a3332c4e1b08da3a589b7394f1a7fd3",
+      "repository_bytes": 1816,
+      "repository_sha256": "15e020ec197a157d91f9f49fb8204f541a3332c4e1b08da3a589b7394f1a7fd3",
+      "status": "exact"
+    },
+    "tests/inference/test_threat_inference.py": {
+      "archive": "AQSS_CI_REVIEW_1625.zip",
+      "export_bytes": 781,
+      "export_sha256": "09c995bfac3532bfbe76b55a96a2904440acc43f453ad073d210e83b331a4bd2",
+      "repository_bytes": 781,
+      "repository_sha256": "09c995bfac3532bfbe76b55a96a2904440acc43f453ad073d210e83b331a4bd2",
+      "status": "exact"
+    },
+    "tests/reinforcement/test_adaptive_resilience.py": {
+      "archive": "AQSS_CI_REVIEW_1625.zip",
+      "export_bytes": 1027,
+      "export_sha256": "a0ed7be067b6d14ab7dec37ab6b242a0309ed0d47b841c3e492393a522fbc9ce",
+      "repository_bytes": 1027,
+      "repository_sha256": "a0ed7be067b6d14ab7dec37ab6b242a0309ed0d47b841c3e492393a522fbc9ce",
+      "status": "exact"
+    },
+    "tests/reinforcement/test_adversarial_feedback.py": {
+      "archive": "AQSS_CI_REVIEW_1625.zip",
+      "export_bytes": 1625,
+      "export_sha256": "3d9739e7ea71ec345f7721b6563770379236f6ad2bac2956e6b6b595989c8813",
+      "repository_bytes": 1625,
+      "repository_sha256": "3d9739e7ea71ec345f7721b6563770379236f6ad2bac2956e6b6b595989c8813",
+      "status": "exact"
+    },
+    "tests/reinforcement/test_calibration_analytics.py": {
+      "archive": "AQSS_CI_REVIEW_1625.zip",
+      "export_bytes": 997,
+      "export_sha256": "dc323db200387f4fe23fcab5ed8e8627509ba31d002cc1cdb94d3956dba86924",
+      "repository_bytes": 997,
+      "repository_sha256": "dc323db200387f4fe23fcab5ed8e8627509ba31d002cc1cdb94d3956dba86924",
+      "status": "exact"
+    },
+    "tests/reinforcement/test_full_system_integration.py": {
+      "archive": "AQSS_CI_REVIEW_1625.zip",
+      "export_bytes": 2614,
+      "export_sha256": "6a0637af997febfaf131ed52fa3757c331f651a27231165fab6cf37dfb4573e3",
+      "repository_bytes": 2614,
+      "repository_sha256": "6a0637af997febfaf131ed52fa3757c331f651a27231165fab6cf37dfb4573e3",
+      "status": "exact"
+    },
+    "tests/reinforcement/test_shadow_and_rollback.py": {
+      "archive": "AQSS_CI_REVIEW_1625.zip",
+      "export_bytes": 1716,
+      "export_sha256": "44a6a7bed4ecd82931b204643dec8fb9e4853f77c8120cc45c5374c59f5450df",
+      "repository_bytes": 1716,
+      "repository_sha256": "44a6a7bed4ecd82931b204643dec8fb9e4853f77c8120cc45c5374c59f5450df",
+      "status": "exact"
+    },
+    "tests/security/test_causal_attestation.py": {
+      "archive": "AQSS_CI_REVIEW_1625.zip",
+      "export_bytes": 1860,
+      "export_sha256": "a50a8a299cb506e2a8c28af766868ff6309b4b650d5655942d1c053413264e89",
+      "repository_bytes": 1860,
+      "repository_sha256": "a50a8a299cb506e2a8c28af766868ff6309b4b650d5655942d1c053413264e89",
+      "status": "exact"
+    },
+    "tests/security/test_causal_mesh.py": {
+      "archive": "AQSS_CI_REVIEW_1625.zip",
+      "export_bytes": 695,
+      "export_sha256": "8b876e3274f5f678e6c8d4f36c9c04d36fa78c69b352302b90e2c57de73d1c10",
+      "repository_bytes": 695,
+      "repository_sha256": "8b876e3274f5f678e6c8d4f36c9c04d36fa78c69b352302b90e2c57de73d1c10",
+      "status": "exact"
+    },
+    "tests/security/test_causal_trust.py": {
+      "archive": "AQSS_CI_REVIEW_1625.zip",
+      "export_bytes": 702,
+      "export_sha256": "12a35c38487d44e3ebc459e0c15333afb94871913a2b7fa6b66df23d139d7584",
+      "repository_bytes": 702,
+      "repository_sha256": "12a35c38487d44e3ebc459e0c15333afb94871913a2b7fa6b66df23d139d7584",
+      "status": "exact"
+    },
+    "tests/test_active_controller_lease.py": {
+      "archive": "AQSS_CI_REVIEW_1625.zip",
+      "export_bytes": 20238,
+      "export_sha256": "f44b2640554502fb45850a5661cd6e0a76afc71ed69e3e89e93dfbf46c4ae349",
+      "repository_bytes": 20238,
+      "repository_sha256": "f44b2640554502fb45850a5661cd6e0a76afc71ed69e3e89e93dfbf46c4ae349",
+      "status": "exact"
+    },
+    "tests/test_admission_pipeline.py": {
+      "archive": "AQSS_CI_REVIEW_1625.zip",
+      "export_bytes": 6172,
+      "export_sha256": "ad60f01c0af764a1c221676ced26e16d1b242fc50b2d8a7e4ea8424e5e03d388",
+      "repository_bytes": 6172,
+      "repository_sha256": "ad60f01c0af764a1c221676ced26e16d1b242fc50b2d8a7e4ea8424e5e03d388",
+      "status": "exact"
+    },
+    "tests/test_capability_lease_digest.py": {
+      "archive": "AQSS_CI_REVIEW_1625.zip",
+      "export_bytes": 7753,
+      "export_sha256": "b89ae041201d5bbcb08ce58b34dfff9f4710a731209efb49be9457804f71e8c4",
+      "repository_bytes": 7753,
+      "repository_sha256": "b89ae041201d5bbcb08ce58b34dfff9f4710a731209efb49be9457804f71e8c4",
+      "status": "exact"
+    },
+    "tests/test_commit_gate_no_actuation.py": {
+      "archive": "AQSS_CI_REVIEW_1625.zip",
+      "export_bytes": 997,
+      "export_sha256": "67baad6cc6313eb3f1806b2b5c617d2c4ecb9d000ff24eefb41caee535f32bf3",
+      "repository_bytes": 997,
+      "repository_sha256": "67baad6cc6313eb3f1806b2b5c617d2c4ecb9d000ff24eefb41caee535f32bf3",
+      "status": "exact"
+    },
+    "tests/test_controller_authority_gate.py": {
+      "archive": "AQSS_CI_REVIEW_1625.zip",
+      "export_bytes": 10485,
+      "export_sha256": "6029d67e795984cebaf890ec6fc92dfc0e033215a472d0dbb31d590fb4e305c8",
+      "repository_bytes": 10485,
+      "repository_sha256": "6029d67e795984cebaf890ec6fc92dfc0e033215a472d0dbb31d590fb4e305c8",
+      "status": "exact"
+    },
+    "tests/test_controller_bound_bridge_integration.py": {
+      "archive": "AQSS_CI_REVIEW_1625.zip",
+      "export_bytes": 24770,
+      "export_sha256": "0a75dd6565ded52918b74b6c4d4b9401203ab6dd088fc8d9923b7b04fbd5330d",
+      "repository_bytes": 24770,
+      "repository_sha256": "0a75dd6565ded52918b74b6c4d4b9401203ab6dd088fc8d9923b7b04fbd5330d",
+      "status": "exact"
+    },
+    "tests/test_controller_bound_intent.py": {
+      "archive": "AQSS_CI_REVIEW_1625.zip",
+      "export_bytes": 4320,
+      "export_sha256": "e71a3c1fc5d19ba0a11bc2b188a3f193cf40533158d8a99e5ab4342b40ba4e78",
+      "repository_bytes": 4320,
+      "repository_sha256": "e71a3c1fc5d19ba0a11bc2b188a3f193cf40533158d8a99e5ab4342b40ba4e78",
+      "status": "exact"
+    },
+    "tests/test_controller_bound_intent_firewall.py": {
+      "archive": "AQSS_CI_REVIEW_1625.zip",
+      "export_bytes": 12566,
+      "export_sha256": "6693e74b495282c0b7ac6cbd680c92bfcf737e7ebcee9df1f91726e64062eff5",
+      "repository_bytes": 12566,
+      "repository_sha256": "6693e74b495282c0b7ac6cbd680c92bfcf737e7ebcee9df1f91726e64062eff5",
+      "status": "exact"
+    },
+    "tests/test_controller_bound_intent_issuer.py": {
+      "archive": "AQSS_CI_REVIEW_1625.zip",
+      "export_bytes": 17525,
+      "export_sha256": "aca48d5ab9a2381a8ebb54314016262450e8b9bbdf3baffe88550faeb660bc2c",
+      "repository_bytes": 17525,
+      "repository_sha256": "aca48d5ab9a2381a8ebb54314016262450e8b9bbdf3baffe88550faeb660bc2c",
+      "status": "exact"
+    },
+    "tests/test_controller_bridge_authority.py": {
+      "archive": "AQSS_CI_REVIEW_1625.zip",
+      "export_bytes": 18624,
+      "export_sha256": "06a8ba59e80afb9486385ca6a6867664fa229fe4eac2d48047cfe1a656731eb1",
+      "repository_bytes": 18624,
+      "repository_sha256": "06a8ba59e80afb9486385ca6a6867664fa229fe4eac2d48047cfe1a656731eb1",
+      "status": "exact"
+    },
+    "tests/test_controller_command_proof.py": {
+      "archive": "AQSS_CI_REVIEW_1625.zip",
+      "export_bytes": 3617,
+      "export_sha256": "b1b85092bf4641f05e4a6dfa61fe4d2b91b4e42ae7cf0b06b8f30c019b012f87",
+      "repository_bytes": 3617,
+      "repository_sha256": "b1b85092bf4641f05e4a6dfa61fe4d2b91b4e42ae7cf0b06b8f30c019b012f87",
+      "status": "exact"
+    },
+    "tests/test_controller_fence_store.py": {
+      "archive": "AQSS_CI_REVIEW_1625.zip",
+      "export_bytes": 15092,
+      "export_sha256": "49f1d9801bf62eb7e125b8a6a52619b3a68bfda30561cac130a677a56be9989b",
+      "repository_bytes": 15092,
+      "repository_sha256": "49f1d9801bf62eb7e125b8a6a52619b3a68bfda30561cac130a677a56be9989b",
+      "status": "exact"
+    },
+    "tests/test_controller_lease_evidence.py": {
+      "archive": "AQSS_CI_REVIEW_1625.zip",
+      "export_bytes": 6786,
+      "export_sha256": "b6edab05c4afaff05530ea2aa39bc0214a65e85ed15c135673573e2fee664270",
+      "repository_bytes": 6786,
+      "repository_sha256": "b6edab05c4afaff05530ea2aa39bc0214a65e85ed15c135673573e2fee664270",
+      "status": "exact"
+    },
+    "tests/test_controller_reauthorization.py": {
+      "archive": "AQSS_CI_REVIEW_1625.zip",
+      "export_bytes": 13929,
+      "export_sha256": "5a79539ec0f934b908ea7209360b27c64d3dffb77dbda845bbc127afa9364111",
+      "repository_bytes": 13929,
+      "repository_sha256": "5a79539ec0f934b908ea7209360b27c64d3dffb77dbda845bbc127afa9364111",
+      "status": "exact"
+    },
+    "tests/test_dark_silicon_airgap.py": {
+      "archive": "AQSS_CI_REVIEW_1625.zip",
+      "export_bytes": 655,
+      "export_sha256": "7978997a8224efa6345d0b8d093c7e97a8dc027ab575b57be1b04bbea9b8518b",
+      "repository_bytes": 655,
+      "repository_sha256": "7978997a8224efa6345d0b8d093c7e97a8dc027ab575b57be1b04bbea9b8518b",
+      "status": "exact"
+    },
+    "tests/test_decision_envelope.py": {
+      "archive": "AQSS_CI_REVIEW_1625.zip",
+      "export_bytes": 1164,
+      "export_sha256": "d882c93b46b3c31fbbab0979e61e6c5c66c23f78f22007dc58de7e58f8f7671f",
+      "repository_bytes": 1164,
+      "repository_sha256": "d882c93b46b3c31fbbab0979e61e6c5c66c23f78f22007dc58de7e58f8f7671f",
+      "status": "exact"
+    },
+    "tests/test_device_fabric_bridge.py": {
+      "archive": "AQSS_CI_REVIEW_1625.zip",
+      "export_bytes": 388386,
+      "export_sha256": "e7865fbfddc0dfdea82afbdb3a19372d2ee649b968289fa78bfad0988bcabc8f",
+      "repository_bytes": 388386,
+      "repository_sha256": "e7865fbfddc0dfdea82afbdb3a19372d2ee649b968289fa78bfad0988bcabc8f",
+      "status": "exact"
+    },
+    "tests/test_device_fabric_integration.py": {
+      "archive": "AQSS_CI_REVIEW_1625.zip",
+      "export_bytes": 3304,
+      "export_sha256": "45bd6de02f145736cd394079d0697da1e7f03c31f250843e36bd37ecbd7ae64b",
+      "repository_bytes": 3304,
+      "repository_sha256": "45bd6de02f145736cd394079d0697da1e7f03c31f250843e36bd37ecbd7ae64b",
+      "status": "exact"
+    },
+    "tests/test_dispatcher_firewall_integration.py": {
+      "archive": "AQSS_CI_REVIEW_1625.zip",
+      "export_bytes": 3804,
+      "export_sha256": "72b2fa1911a926da66e0df32ca307d4c3524a9a09ec6b7d1fac5811897a64cf3",
+      "repository_bytes": 3804,
+      "repository_sha256": "72b2fa1911a926da66e0df32ca307d4c3524a9a09ec6b7d1fac5811897a64cf3",
+      "status": "exact"
+    },
+    "tests/test_distributed_mesh.py": {
+      "archive": "AQSS_CI_REVIEW_1625.zip",
+      "export_bytes": 147,
+      "export_sha256": "a204f1adb6731f35f2ee9607d4983ff4154a5df6e121e93d6cae8b2621df8a42",
+      "repository_bytes": 147,
+      "repository_sha256": "a204f1adb6731f35f2ee9607d4983ff4154a5df6e121e93d6cae8b2621df8a42",
+      "status": "exact"
+    },
+    "tests/test_edge_adaptive_directive_memory.py": {
+      "archive": "AQSS_CI_REVIEW_1625.zip",
+      "export_bytes": 47314,
+      "export_sha256": "4b850f0b8aa365c50981b55e86f4530a99dd005792c909d4f704bade88a7285f",
+      "repository_bytes": 47314,
+      "repository_sha256": "4b850f0b8aa365c50981b55e86f4530a99dd005792c909d4f704bade88a7285f",
+      "status": "exact"
+    },
+    "tests/test_edge_model_cache.py": {
+      "archive": "AQSS_CI_REVIEW_1625.zip",
+      "export_bytes": 8196,
+      "export_sha256": "9d7bd2853816766e157e0c921e0f25a1681d413fdf3866cb4e7198387ca2992a",
+      "repository_bytes": 8196,
+      "repository_sha256": "9d7bd2853816766e157e0c921e0f25a1681d413fdf3866cb4e7198387ca2992a",
+      "status": "exact"
+    },
+    "tests/test_edge_resource_contract.py": {
+      "archive": "AQSS_CI_REVIEW_1625.zip",
+      "export_bytes": 791,
+      "export_sha256": "1cc6882390db481aa4affbfc9b631d96e0a2593da5e83b9c97affef7911d2744",
+      "repository_bytes": 791,
+      "repository_sha256": "1cc6882390db481aa4affbfc9b631d96e0a2593da5e83b9c97affef7911d2744",
+      "status": "exact"
+    },
+    "tests/test_edge_resource_governor.py": {
+      "archive": "AQSS_CI_REVIEW_1625.zip",
+      "export_bytes": 11411,
+      "export_sha256": "4663d97f3f856e3afed9fc387ba34828763e1fcaf337f970f47f3bac36d41929",
+      "repository_bytes": 11411,
+      "repository_sha256": "4663d97f3f856e3afed9fc387ba34828763e1fcaf337f970f47f3bac36d41929",
+      "status": "exact"
+    },
+    "tests/test_endpoint_execution_ledger.py": {
+      "archive": "AQSS_CI_REVIEW_1625.zip",
+      "export_bytes": 3353,
+      "export_sha256": "6b7e75e445b6a413221f58254b46cd4df0b65a4a84368a6eaa4204236017a924",
+      "repository_bytes": 3353,
+      "repository_sha256": "6b7e75e445b6a413221f58254b46cd4df0b65a4a84368a6eaa4204236017a924",
+      "status": "exact"
+    },
+    "tests/test_endpoint_handoff_fence.py": {
+      "archive": "AQSS_CI_REVIEW_1625.zip",
+      "export_bytes": 35798,
+      "export_sha256": "e72161d62a0fdccf8ff0132ec136db712457d4407dc4d5521d7f3ff9015f2d3a",
+      "repository_bytes": 35798,
+      "repository_sha256": "e72161d62a0fdccf8ff0132ec136db712457d4407dc4d5521d7f3ff9015f2d3a",
+      "status": "exact"
+    },
+    "tests/test_endpoint_ledger_guarded_transport.py": {
+      "archive": "AQSS_CI_REVIEW_1625.zip",
+      "export_bytes": 7620,
+      "export_sha256": "4339f35af331049d69d75ade95eabb3850ee11ad1f4a1dd0c97249fe45f65acf",
+      "repository_bytes": 7620,
+      "repository_sha256": "4339f35af331049d69d75ade95eabb3850ee11ad1f4a1dd0c97249fe45f65acf",
+      "status": "exact"
+    },
+    "tests/test_endpoint_native_boundary_contract.py": {
+      "archive": "AQSS_CI_REVIEW_1625.zip",
+      "export_bytes": 2217,
+      "export_sha256": "421ae7e0901af0bad9aee510cf42527d1320c8bea50e19d38af25022d813f690",
+      "repository_bytes": 2217,
+      "repository_sha256": "421ae7e0901af0bad9aee510cf42527d1320c8bea50e19d38af25022d813f690",
+      "status": "exact"
+    },
+    "tests/test_endpoint_transaction_finality_admission.py": {
+      "archive": "AQSS_CI_REVIEW_1625.zip",
+      "export_bytes": 2995,
+      "export_sha256": "a8f43e80adf620be481266ad928a2de3cb19c50c9a073bfddb23a7299f861d4f",
+      "repository_bytes": 2995,
+      "repository_sha256": "a8f43e80adf620be481266ad928a2de3cb19c50c9a073bfddb23a7299f861d4f",
+      "status": "exact"
+    },
+    "tests/test_endpoint_transaction_finality_authority.py": {
+      "archive": "AQSS_CI_REVIEW_1625.zip",
+      "export_bytes": 4971,
+      "export_sha256": "6a261c45723feda374ea58abea1f01964e5e6664fa11f6ba1b93ec34599d2710",
+      "repository_bytes": 4971,
+      "repository_sha256": "6a261c45723feda374ea58abea1f01964e5e6664fa11f6ba1b93ec34599d2710",
+      "status": "exact"
+    },
+    "tests/test_endpoint_transaction_finality_codec.py": {
+      "archive": "AQSS_CI_REVIEW_1625.zip",
+      "export_bytes": 14191,
+      "export_sha256": "1ae18d649daaa31f78d084794bd99a277ab266bf25166da0e412001a7f608acc",
+      "repository_bytes": 14191,
+      "repository_sha256": "1ae18d649daaa31f78d084794bd99a277ab266bf25166da0e412001a7f608acc",
+      "status": "exact"
+    },
+    "tests/test_endpoint_transaction_finality_commitment.py": {
+      "archive": "AQSS_CI_REVIEW_1625.zip",
+      "export_bytes": 6871,
+      "export_sha256": "e7829dd71fb06a951a922b9acb741c01a17f8c477bfc2ef4579f0b85d1802b82",
+      "repository_bytes": 6871,
+      "repository_sha256": "e7829dd71fb06a951a922b9acb741c01a17f8c477bfc2ef4579f0b85d1802b82",
+      "status": "exact"
+    },
+    "tests/test_endpoint_transaction_finality_envelope.py": {
+      "archive": "AQSS_CI_REVIEW_1625.zip",
+      "export_bytes": 6851,
+      "export_sha256": "ea9f67fca7fe01dffb73e1e3d371382a08b8b01cbc3b2d4047d690264472c576",
+      "repository_bytes": 6851,
+      "repository_sha256": "ea9f67fca7fe01dffb73e1e3d371382a08b8b01cbc3b2d4047d690264472c576",
+      "status": "exact"
+    },
+    "tests/test_endpoint_transaction_finality_protocol.py": {
+      "archive": "AQSS_CI_REVIEW_1625.zip",
+      "export_bytes": 47844,
+      "export_sha256": "ef8f434b64fba69b7602635ce5a5a56be93434c4657b314e2d1722d84d21e644",
+      "repository_bytes": 47844,
+      "repository_sha256": "ef8f434b64fba69b7602635ce5a5a56be93434c4657b314e2d1722d84d21e644",
+      "status": "exact"
+    },
+    "tests/test_endpoint_transaction_finality_store.py": {
+      "archive": "AQSS_CI_REVIEW_1625.zip",
+      "export_bytes": 8843,
+      "export_sha256": "921d8698b753ee2707a13fa96ed89f916bb3018bd1941832210d903e971d4719",
+      "repository_bytes": 8843,
+      "repository_sha256": "921d8698b753ee2707a13fa96ed89f916bb3018bd1941832210d903e971d4719",
+      "status": "exact"
+    },
+    "tests/test_fenced_physical_transport.py": {
+      "archive": "AQSS_CI_REVIEW_1625.zip",
+      "export_bytes": 28147,
+      "export_sha256": "096f658e07b4a0d48b1f9fef81dd8905b70ad33f472b566b35c85c05c03bea9e",
+      "repository_bytes": 28147,
+      "repository_sha256": "096f658e07b4a0d48b1f9fef81dd8905b70ad33f472b566b35c85c05c03bea9e",
+      "status": "exact"
+    },
+    "tests/test_fusion_router_extended.py": {
+      "archive": "AQSS_CI_REVIEW_1625.zip",
+      "export_bytes": 2261,
+      "export_sha256": "837da7cde44e52bf6810efd90269be53047235104d63b52a1e694dd150277cf9",
+      "repository_bytes": 2261,
+      "repository_sha256": "837da7cde44e52bf6810efd90269be53047235104d63b52a1e694dd150277cf9",
+      "status": "exact"
+    },
+    "tests/test_intent_firewall_crypto.py": {
+      "archive": "AQSS_CI_REVIEW_1625.zip",
+      "export_bytes": 5211,
+      "export_sha256": "22f3483fc54c4a08f88910734d13b06af3f7be6941eec930ad59da9f32fa579b",
+      "repository_bytes": 5211,
+      "repository_sha256": "22f3483fc54c4a08f88910734d13b06af3f7be6941eec930ad59da9f32fa579b",
+      "status": "exact"
+    },
+    "tests/test_media_control_capabilities.py": {
+      "archive": "AQSS_CI_REVIEW_1625.zip",
+      "export_bytes": 32300,
+      "export_sha256": "e8c4b0571c2d4b0aebf4a92f64d64b72ff558a862ca68778d292c0b235d74094",
+      "repository_bytes": 32300,
+      "repository_sha256": "e8c4b0571c2d4b0aebf4a92f64d64b72ff558a862ca68778d292c0b235d74094",
+      "status": "exact"
+    },
+    "tests/test_media_control_options.py": {
+      "archive": "AQSS_CI_REVIEW_1625.zip",
+      "export_bytes": 3859,
+      "export_sha256": "3a89fe597e806629f8cce94280af5a6f8dc61a35bb294b9f05dae394bc0d46b0",
+      "repository_bytes": 3859,
+      "repository_sha256": "3a89fe597e806629f8cce94280af5a6f8dc61a35bb294b9f05dae394bc0d46b0",
+      "status": "exact"
+    },
+    "tests/test_media_control_options_page.py": {
+      "archive": "AQSS_CI_REVIEW_1625.zip",
+      "export_bytes": 18997,
+      "export_sha256": "7695bb810081757b53a2a15765fff608135eb1203d628dfb1031118ee3e28c3b",
+      "repository_bytes": 18997,
+      "repository_sha256": "7695bb810081757b53a2a15765fff608135eb1203d628dfb1031118ee3e28c3b",
+      "status": "exact"
+    },
+    "tests/test_media_control_prior_state.py": {
+      "archive": "AQSS_CI_REVIEW_1625.zip",
+      "export_bytes": 17312,
+      "export_sha256": "c34ed77f3e877421d321ab20a9af53d433e26c2f6a0dfafb49482b6e3ffc6232",
+      "repository_bytes": 17312,
+      "repository_sha256": "c34ed77f3e877421d321ab20a9af53d433e26c2f6a0dfafb49482b6e3ffc6232",
+      "status": "exact"
+    },
+    "tests/test_media_control_profiles.py": {
+      "archive": "AQSS_CI_REVIEW_1625.zip",
+      "export_bytes": 3902,
+      "export_sha256": "fbcb9b2cd74b1643a943e9d3eb8ec703990c85535f1b782ac106ff7617f87486",
+      "repository_bytes": 3902,
+      "repository_sha256": "fbcb9b2cd74b1643a943e9d3eb8ec703990c85535f1b782ac106ff7617f87486",
+      "status": "exact"
+    },
+    "tests/test_media_control_undo_candidate.py": {
+      "archive": "AQSS_CI_REVIEW_1625.zip",
+      "export_bytes": 10978,
+      "export_sha256": "4d34d72bd52be3e711c693b62c49a04de5cf5a0095fb66a7de6f92e4b0fce0d1",
+      "repository_bytes": 10978,
+      "repository_sha256": "4d34d72bd52be3e711c693b62c49a04de5cf5a0095fb66a7de6f92e4b0fce0d1",
+      "status": "exact"
+    },
+    "tests/test_media_control_verified_state.py": {
+      "archive": "AQSS_CI_REVIEW_1625.zip",
+      "export_bytes": 23226,
+      "export_sha256": "6a62ce20e5e89e4663ce65f5da77ad96770ea86f26513c604fe6bd0319b733cc",
+      "repository_bytes": 23226,
+      "repository_sha256": "6a62ce20e5e89e4663ce65f5da77ad96770ea86f26513c604fe6bd0319b733cc",
+      "status": "exact"
+    },
+    "tests/test_media_playback_bridge_translation.py": {
+      "archive": "AQSS_CI_REVIEW_1625.zip",
+      "export_bytes": 3326,
+      "export_sha256": "ca5629761e7821d4e514df59ff93a3270969681a42b70ec7085f706f12252e0d",
+      "repository_bytes": 3326,
+      "repository_sha256": "ca5629761e7821d4e514df59ff93a3270969681a42b70ec7085f706f12252e0d",
+      "status": "exact"
+    },
+    "tests/test_media_playback_state.py": {
+      "archive": "AQSS_CI_REVIEW_1625.zip",
+      "export_bytes": 665,
+      "export_sha256": "51e168327fb14b4e0181322ea3a19fd59d5b4aa8ab9f574d07e26f4a54abc26d",
+      "repository_bytes": 665,
+      "repository_sha256": "51e168327fb14b4e0181322ea3a19fd59d5b4aa8ab9f574d07e26f4a54abc26d",
+      "status": "exact"
+    },
+    "tests/test_media_segment_observation.py": {
+      "archive": "AQSS_CI_REVIEW_1625.zip",
+      "export_bytes": 16411,
+      "export_sha256": "3982530b6f7a8e83fa5bcc6be824b8683889a34c5c3b178184df669fbc0c3a44",
+      "repository_bytes": 16411,
+      "repository_sha256": "3982530b6f7a8e83fa5bcc6be824b8683889a34c5c3b178184df669fbc0c3a44",
+      "status": "exact"
+    },
+    "tests/test_mock_tv_controller_fencing.py": {
+      "archive": "AQSS_CI_REVIEW_1625.zip",
+      "export_bytes": 4455,
+      "export_sha256": "adde487298d387535386ec7f29923318e34a8ddcc7867a1812867ccac1b8c4d0",
+      "repository_bytes": 4455,
+      "repository_sha256": "adde487298d387535386ec7f29923318e34a8ddcc7867a1812867ccac1b8c4d0",
+      "status": "exact"
+    },
+    "tests/test_monotonic_fence_anchor.py": {
+      "archive": "AQSS_CI_REVIEW_1625.zip",
+      "export_bytes": 3585,
+      "export_sha256": "f7e3529617aa0a9f9fa750e45384e7efc9122c68edcad0968ffc3905d1a1b9ae",
+      "repository_bytes": 3585,
+      "repository_sha256": "f7e3529617aa0a9f9fa750e45384e7efc9122c68edcad0968ffc3905d1a1b9ae",
+      "status": "exact"
+    },
+    "tests/test_node_simulator.py": {
+      "archive": "AQSS_CI_REVIEW_1625.zip",
+      "export_bytes": 1375,
+      "export_sha256": "43dee6bb879ea6680fe2183dd38d4c2f500e65c887d33cbae8645504fe17d128",
+      "repository_bytes": 1375,
+      "repository_sha256": "43dee6bb879ea6680fe2183dd38d4c2f500e65c887d33cbae8645504fe17d128",
+      "status": "exact"
+    },
+    "tests/test_node_trust.py": {
+      "archive": "AQSS_CI_REVIEW_1625.zip",
+      "export_bytes": 3394,
+      "export_sha256": "01a08e0cafbd2f5678b77efca065e2bb2d6f9f76dab1a8616a295465e83cd729",
+      "repository_bytes": 3394,
+      "repository_sha256": "01a08e0cafbd2f5678b77efca065e2bb2d6f9f76dab1a8616a295465e83cd729",
+      "status": "exact"
+    },
+    "tests/test_omotenashi_learning.py": {
+      "archive": "AQSS_CI_REVIEW_1625.zip",
+      "export_bytes": 2418,
+      "export_sha256": "686407b453f71ebdb3ae3dfd1c12e178a49c14a1d35ebb2b843238bbd6b85678",
+      "repository_bytes": 2418,
+      "repository_sha256": "686407b453f71ebdb3ae3dfd1c12e178a49c14a1d35ebb2b843238bbd6b85678",
+      "status": "exact"
+    },
+    "tests/test_physical_commit_allow.py": {
+      "archive": "AQSS_CI_REVIEW_1625.zip",
+      "export_bytes": 1370,
+      "export_sha256": "7722d0e27178249bc5425ef46ffd33fb28ce6d8f68afc9607480c1f50c9f18a7",
+      "repository_bytes": 1370,
+      "repository_sha256": "7722d0e27178249bc5425ef46ffd33fb28ce6d8f68afc9607480c1f50c9f18a7",
+      "status": "exact"
+    },
+    "tests/test_physical_commit_auth_not_yet_valid.py": {
+      "archive": "AQSS_CI_REVIEW_1625.zip",
+      "export_bytes": 1336,
+      "export_sha256": "d2b30bb3b4fde27a84ddd670c504eb6636d761744729fb2ff94bd89865e1eff1",
+      "repository_bytes": 1336,
+      "repository_sha256": "d2b30bb3b4fde27a84ddd670c504eb6636d761744729fb2ff94bd89865e1eff1",
+      "status": "exact"
+    },
+    "tests/test_physical_commit_contract.py": {
+      "archive": "AQSS_CI_REVIEW_1625.zip",
+      "export_bytes": 3431,
+      "export_sha256": "1ff61977c196cb95f4b736a8e3fa84af95b00fa1e628035a5c372e95729ae6c3",
+      "repository_bytes": 3431,
+      "repository_sha256": "1ff61977c196cb95f4b736a8e3fa84af95b00fa1e628035a5c372e95729ae6c3",
+      "status": "exact"
+    },
+    "tests/test_physical_commit_duplicate_absorbed_no_verification.py": {
+      "archive": "AQSS_CI_REVIEW_1625.zip",
+      "export_bytes": 2551,
+      "export_sha256": "c64f8a5b72281fb28fed5b38b38234cb1afc8e57c61f53765cd952023481ea4e",
+      "repository_bytes": 2551,
+      "repository_sha256": "c64f8a5b72281fb28fed5b38b38234cb1afc8e57c61f53765cd952023481ea4e",
+      "status": "exact"
+    },
+    "tests/test_physical_commit_failed_receipt_no_verification.py": {
+      "archive": "AQSS_CI_REVIEW_1625.zip",
+      "export_bytes": 2420,
+      "export_sha256": "d7421ac5c10230bac29b8209eb7a26bcc888dfd305bf75c38ea71363cecd2008",
+      "repository_bytes": 2420,
+      "repository_sha256": "d7421ac5c10230bac29b8209eb7a26bcc888dfd305bf75c38ea71363cecd2008",
+      "status": "exact"
+    },
+    "tests/test_physical_commit_gate_behavior.py": {
+      "archive": "AQSS_CI_REVIEW_1625.zip",
+      "export_bytes": 6851,
+      "export_sha256": "cf236c10b2bdba966b1628e2736076a2a9ca589e1f89f7b5ab0619f1eab9bd86",
+      "repository_bytes": 6851,
+      "repository_sha256": "cf236c10b2bdba966b1628e2736076a2a9ca589e1f89f7b5ab0619f1eab9bd86",
+      "status": "exact"
+    },
+    "tests/test_physical_commit_intent_expiry.py": {
+      "archive": "AQSS_CI_REVIEW_1625.zip",
+      "export_bytes": 1217,
+      "export_sha256": "0cf3db2cb0055ef568c4ea845b1f9f9505972e6dba260430190f813a358c10d7",
+      "repository_bytes": 1217,
+      "repository_sha256": "0cf3db2cb0055ef568c4ea845b1f9f9505972e6dba260430190f813a358c10d7",
+      "status": "exact"
+    },
+    "tests/test_physical_commit_post_state_mismatch.py": {
+      "archive": "AQSS_CI_REVIEW_1625.zip",
+      "export_bytes": 2737,
+      "export_sha256": "32becd5327667e155ff621b9f0f33a06ccbff1e30ceedc3b7930ba3e64d8af03",
+      "repository_bytes": 2737,
+      "repository_sha256": "32becd5327667e155ff621b9f0f33a06ccbff1e30ceedc3b7930ba3e64d8af03",
+      "status": "exact"
+    },
+    "tests/test_physical_commit_receipt_device_mismatch.py": {
+      "archive": "AQSS_CI_REVIEW_1625.zip",
+      "export_bytes": 2501,
+      "export_sha256": "c098b739bdf998e7e3287cca1305725aabcef90b187f770b6da886376be2c401",
+      "repository_bytes": 2501,
+      "repository_sha256": "c098b739bdf998e7e3287cca1305725aabcef90b187f770b6da886376be2c401",
+      "status": "exact"
+    },
+    "tests/test_physical_commit_receipt_intent_mismatch.py": {
+      "archive": "AQSS_CI_REVIEW_1625.zip",
+      "export_bytes": 2480,
+      "export_sha256": "52f4aed9e641383e88eeda337baf4aa7582e20c098f380578bded6244ecd1d3f",
+      "repository_bytes": 2480,
+      "repository_sha256": "52f4aed9e641383e88eeda337baf4aa7582e20c098f380578bded6244ecd1d3f",
+      "status": "exact"
+    },
+    "tests/test_physical_commit_rejected_receipt_no_verification.py": {
+      "archive": "AQSS_CI_REVIEW_1625.zip",
+      "export_bytes": 3269,
+      "export_sha256": "7a4e908d7edecff9068ac0f74fc7c43460b149e61687cbfd5ef0cc0f7fdda24e",
+      "repository_bytes": 3269,
+      "repository_sha256": "7a4e908d7edecff9068ac0f74fc7c43460b149e61687cbfd5ef0cc0f7fdda24e",
+      "status": "exact"
+    },
+    "tests/test_physical_io_authority_boundary.py": {
+      "archive": "AQSS_CI_REVIEW_1625.zip",
+      "export_bytes": 2710,
+      "export_sha256": "3248c82dcf6a787aba65bc8358bde2283f6f93ed557841bbeb867a6955407286",
+      "repository_bytes": 2710,
+      "repository_sha256": "3248c82dcf6a787aba65bc8358bde2283f6f93ed557841bbeb867a6955407286",
+      "status": "exact"
+    },
+    "tests/test_physical_recovery_reconciler.py": {
+      "archive": "AQSS_CI_REVIEW_1625.zip",
+      "export_bytes": 9686,
+      "export_sha256": "e2302d769c1c714c458c19b4b960b4ca57af26cf9448095077bbd0778a28e848",
+      "repository_bytes": 9686,
+      "repository_sha256": "e2302d769c1c714c458c19b4b960b4ca57af26cf9448095077bbd0778a28e848",
+      "status": "exact"
+    },
+    "tests/test_physical_recovery_store.py": {
+      "archive": "AQSS_CI_REVIEW_1625.zip",
+      "export_bytes": 15225,
+      "export_sha256": "24e419194f0816a635136e8484369495593c828607b894bb19177be7fec159ea",
+      "repository_bytes": 15225,
+      "repository_sha256": "24e419194f0816a635136e8484369495593c828607b894bb19177be7fec159ea",
+      "status": "exact"
+    },
+    "tests/test_physical_snapshot_contract.py": {
+      "archive": "AQSS_CI_REVIEW_1625.zip",
+      "export_bytes": 1228,
+      "export_sha256": "8f9b9c14cb0eba4e54211c875301a462e9d2f292053efc9f70e7c6f97fb91db1",
+      "repository_bytes": 1228,
+      "repository_sha256": "8f9b9c14cb0eba4e54211c875301a462e9d2f292053efc9f70e7c6f97fb91db1",
+      "status": "exact"
+    },
+    "tests/test_physical_transaction_contract.py": {
+      "archive": "AQSS_CI_REVIEW_1625.zip",
+      "export_bytes": 1045,
+      "export_sha256": "307c48b277a30b46e25b7a918a4571220aa5e00ee7c44c32bc3236898ef4159c",
+      "repository_bytes": 1045,
+      "repository_sha256": "307c48b277a30b46e25b7a918a4571220aa5e00ee7c44c32bc3236898ef4159c",
+      "status": "exact"
+    },
+    "tests/test_physical_transport_contract.py": {
+      "archive": "AQSS_CI_REVIEW_1625.zip",
+      "export_bytes": 7094,
+      "export_sha256": "a49bc2eff57ac11b7009cbb56c461972f24cb91f677384ad1eff98b57927f4b2",
+      "repository_bytes": 7094,
+      "repository_sha256": "a49bc2eff57ac11b7009cbb56c461972f24cb91f677384ad1eff98b57927f4b2",
+      "status": "exact"
+    },
+    "tests/test_physical_verification_lineage_exact.py": {
+      "archive": "AQSS_CI_REVIEW_1625.zip",
+      "export_bytes": 2680,
+      "export_sha256": "f4f85970be65237314127e813efc80189b362fdf8fc99f7f396132b941ca7a28",
+      "repository_bytes": 2680,
+      "repository_sha256": "f4f85970be65237314127e813efc80189b362fdf8fc99f7f396132b941ca7a28",
+      "status": "exact"
+    },
+    "tests/test_physical_verification_record_world_state_provenance.py": {
+      "archive": "AQSS_CI_REVIEW_1625.zip",
+      "export_bytes": 1710,
+      "export_sha256": "7b78f339b970ca9f89372a494ebd4ff07bbc829358e4f4b45e1d5e6819dfe338",
+      "repository_bytes": 1710,
+      "repository_sha256": "7b78f339b970ca9f89372a494ebd4ff07bbc829358e4f4b45e1d5e6819dfe338",
+      "status": "exact"
+    },
+    "tests/test_pipeline_integration.py": {
+      "archive": "AQSS_CI_REVIEW_1625.zip",
+      "export_bytes": 4458,
+      "export_sha256": "c1b5ca3afb985b8729c48c08b7e2ccb3291bd124bb8fd77d03dcc5dafb0f24f1",
+      "repository_bytes": 4458,
+      "repository_sha256": "c1b5ca3afb985b8729c48c08b7e2ccb3291bd124bb8fd77d03dcc5dafb0f24f1",
+      "status": "exact"
+    },
+    "tests/test_policy_and_envelope.py": {
+      "archive": "AQSS_CI_REVIEW_1625.zip",
+      "export_bytes": 2419,
+      "export_sha256": "d5162f0bed52887d4d9f911ee54ce241d0885ac52a47fa2d06547e631b842ee9",
+      "repository_bytes": 2419,
+      "repository_sha256": "d5162f0bed52887d4d9f911ee54ce241d0885ac52a47fa2d06547e631b842ee9",
+      "status": "exact"
+    },
+    "tests/test_precondition_gate.py": {
+      "archive": "AQSS_CI_REVIEW_1625.zip",
+      "export_bytes": 1388,
+      "export_sha256": "3ee15f72d9212e9e1bc9e40609b32915fb42e46b73ccf2186eedbb759cc92075",
+      "repository_bytes": 1388,
+      "repository_sha256": "3ee15f72d9212e9e1bc9e40609b32915fb42e46b73ccf2186eedbb759cc92075",
+      "status": "exact"
+    },
+    "tests/test_precondition_gate_behavior.py": {
+      "archive": "AQSS_CI_REVIEW_1625.zip",
+      "export_bytes": 3273,
+      "export_sha256": "8a2ea5f8430d96dbcd0d2e18e0eeed7b77661c28071ffee5ae90a72de233950e",
+      "repository_bytes": 3273,
+      "repository_sha256": "8a2ea5f8430d96dbcd0d2e18e0eeed7b77661c28071ffee5ae90a72de233950e",
+      "status": "exact"
+    },
+    "tests/test_precondition_gate_freshness.py": {
+      "archive": "AQSS_CI_REVIEW_1625.zip",
+      "export_bytes": 4922,
+      "export_sha256": "2c28eff3db539379503cd974adca62bffb0d231b1a66157d890b2ef17b8ae9b8",
+      "repository_bytes": 4922,
+      "repository_sha256": "2c28eff3db539379503cd974adca62bffb0d231b1a66157d890b2ef17b8ae9b8",
+      "status": "exact"
+    },
+    "tests/test_predictive_mitigation_contract.py": {
+      "archive": "AQSS_CI_REVIEW_1625.zip",
+      "export_bytes": 371,
+      "export_sha256": "f01d9310aab1b1a99bc3f7664adf24dc652e9748b2d97784331e065cd009f224",
+      "repository_bytes": 371,
+      "repository_sha256": "f01d9310aab1b1a99bc3f7664adf24dc652e9748b2d97784331e065cd009f224",
+      "status": "exact"
+    },
+    "tests/test_protection_evidence.py": {
+      "archive": "AQSS_CI_REVIEW_1625.zip",
+      "export_bytes": 14415,
+      "export_sha256": "f4ee52705487252c32454f65e5a4e99f8e648aa241c12d482695a3d6772b6d28",
+      "repository_bytes": 14415,
+      "repository_sha256": "f4ee52705487252c32454f65e5a4e99f8e648aa241c12d482695a3d6772b6d28",
+      "status": "exact"
+    },
+    "tests/test_protection_evidence_source.py": {
+      "archive": "AQSS_CI_REVIEW_1625.zip",
+      "export_bytes": 13470,
+      "export_sha256": "b8ded3ca83633babdac2f6fc4e3016c3459a32873bf846daf4a3c13a91593730",
+      "repository_bytes": 13470,
+      "repository_sha256": "b8ded3ca83633babdac2f6fc4e3016c3459a32873bf846daf4a3c13a91593730",
+      "status": "exact"
+    },
+    "tests/test_protection_path_assessment.py": {
+      "archive": "AQSS_CI_REVIEW_1625.zip",
+      "export_bytes": 2027,
+      "export_sha256": "1321f7f4bcd2b50fa5795e00c3ddfa9cd3c9581db6ffeb15fe9d8e45329c3515",
+      "repository_bytes": 2027,
+      "repository_sha256": "1321f7f4bcd2b50fa5795e00c3ddfa9cd3c9581db6ffeb15fe9d8e45329c3515",
+      "status": "exact"
+    },
+    "tests/test_protection_physical_recovery.py": {
+      "archive": "AQSS_CI_REVIEW_1625.zip",
+      "export_bytes": 30256,
+      "export_sha256": "4ee44a4f74df63a6e6f065016a604bb2f00752e6bcf9cf22b9681324a5f37daa",
+      "repository_bytes": 30256,
+      "repository_sha256": "4ee44a4f74df63a6e6f065016a604bb2f00752e6bcf9cf22b9681324a5f37daa",
+      "status": "exact"
+    },
+    "tests/test_protection_platform_events.py": {
+      "archive": "AQSS_CI_REVIEW_1625.zip",
+      "export_bytes": 17864,
+      "export_sha256": "87158bd2cccae4fb1e76ca1ea213a80a16d93b236b8f050b01b95ffc29646f2b",
+      "repository_bytes": 17864,
+      "repository_sha256": "87158bd2cccae4fb1e76ca1ea213a80a16d93b236b8f050b01b95ffc29646f2b",
+      "status": "exact"
+    },
+    "tests/test_protection_resource_assessment.py": {
+      "archive": "AQSS_CI_REVIEW_1625.zip",
+      "export_bytes": 3701,
+      "export_sha256": "12188ff6c065d34638a60eb1f43ae97018634934020d14e97d993945e9e477cd",
+      "repository_bytes": 3701,
+      "repository_sha256": "12188ff6c065d34638a60eb1f43ae97018634934020d14e97d993945e9e477cd",
+      "status": "exact"
+    },
+    "tests/test_protection_storage_assessment.py": {
+      "archive": "AQSS_CI_REVIEW_1625.zip",
+      "export_bytes": 3241,
+      "export_sha256": "8458822b77aa4d9e1e0e3325188c48c90dc5c3f967e256198c6e68589020e05b",
+      "repository_bytes": 3241,
+      "repository_sha256": "8458822b77aa4d9e1e0e3325188c48c90dc5c3f967e256198c6e68589020e05b",
+      "status": "exact"
+    },
+    "tests/test_protection_storage_recovery.py": {
+      "archive": "AQSS_CI_REVIEW_1625.zip",
+      "export_bytes": 12688,
+      "export_sha256": "398a726efbf493ad490a6f15f60ce867d697bec611334ef4e9a75c6582b8657a",
+      "repository_bytes": 12688,
+      "repository_sha256": "398a726efbf493ad490a6f15f60ce867d697bec611334ef4e9a75c6582b8657a",
+      "status": "exact"
+    },
+    "tests/test_protection_supervisor.py": {
+      "archive": "AQSS_CI_REVIEW_1625.zip",
+      "export_bytes": 26593,
+      "export_sha256": "f93ae9c6b6e425a437c4d8dcb9543f952de722753e4012998764c38042104c22",
+      "repository_bytes": 26593,
+      "repository_sha256": "f93ae9c6b6e425a437c4d8dcb9543f952de722753e4012998764c38042104c22",
+      "status": "exact"
+    },
+    "tests/test_protection_supervisor_checkpoint.py": {
+      "archive": "AQSS_CI_REVIEW_1625.zip",
+      "export_bytes": 38787,
+      "export_sha256": "b070943f8f12325240bda3843e18cbe4109e88323d294cda3903cddd90521b96",
+      "repository_bytes": 38787,
+      "repository_sha256": "b070943f8f12325240bda3843e18cbe4109e88323d294cda3903cddd90521b96",
+      "status": "exact"
+    },
+    "tests/test_proximity_tv_selector.py": {
+      "archive": "AQSS_CI_REVIEW_1625.zip",
+      "export_bytes": 1073,
+      "export_sha256": "917112735a7d7945156ff5300147353d426124be29d8e2534910cf1ce602c48c",
+      "repository_bytes": 1073,
+      "repository_sha256": "917112735a7d7945156ff5300147353d426124be29d8e2534910cf1ce602c48c",
+      "status": "exact"
+    },
+    "tests/test_quantum_handoff_controller.py": {
+      "archive": "AQSS_CI_REVIEW_1625.zip",
+      "export_bytes": 558,
+      "export_sha256": "32af3a981f8ccdf6ab2a60606bfd20bbf8d1ea1f5773d169c29a18cd93d84a93",
+      "repository_bytes": 558,
+      "repository_sha256": "32af3a981f8ccdf6ab2a60606bfd20bbf8d1ea1f5773d169c29a18cd93d84a93",
+      "status": "exact"
+    },
+    "tests/test_quantum_state_mapping.py": {
+      "archive": "AQSS_CI_REVIEW_1625.zip",
+      "export_bytes": 1844,
+      "export_sha256": "a7cfc4e986f5c040f0db6dc5c2481515bd5d93328929ef12241d4d2de4b59460",
+      "repository_bytes": 1844,
+      "repository_sha256": "a7cfc4e986f5c040f0db6dc5c2481515bd5d93328929ef12241d4d2de4b59460",
+      "status": "exact"
+    },
+    "tests/test_remote_atomic_controller_authority.py": {
+      "archive": "AQSS_CI_REVIEW_1625.zip",
+      "export_bytes": 29550,
+      "export_sha256": "7bafc4c013c82ed2c88506c93e9ed5509f82d5c06b4994abf563c2262aee430f",
+      "repository_bytes": 29550,
+      "repository_sha256": "7bafc4c013c82ed2c88506c93e9ed5509f82d5c06b4994abf563c2262aee430f",
+      "status": "exact"
+    },
+    "tests/test_remote_controller_protocol.py": {
+      "archive": "AQSS_CI_REVIEW_1625.zip",
+      "export_bytes": 9959,
+      "export_sha256": "dedf1adbf63e70725734de75ee82c79bc5ef28d39d5f7a71e335190099261d61",
+      "repository_bytes": 9959,
+      "repository_sha256": "dedf1adbf63e70725734de75ee82c79bc5ef28d39d5f7a71e335190099261d61",
+      "status": "exact"
+    },
+    "tests/test_replay_window.py": {
+      "archive": "AQSS_CI_REVIEW_1625.zip",
+      "export_bytes": 373,
+      "export_sha256": "6a8050262f3789d827907fa42bea6969e972d0bd68937df5e16c042c84e2b540",
+      "repository_bytes": 373,
+      "repository_sha256": "6a8050262f3789d827907fa42bea6969e972d0bd68937df5e16c042c84e2b540",
+      "status": "exact"
+    },
+    "tests/test_smart_home_core.py": {
+      "archive": "AQSS_CI_REVIEW_1625.zip",
+      "export_bytes": 921,
+      "export_sha256": "a77c4f5722f5a56da4f4f546de9cbbc783d66d4157c374a8c286fcd5b7d4bbb1",
+      "repository_bytes": 921,
+      "repository_sha256": "a77c4f5722f5a56da4f4f546de9cbbc783d66d4157c374a8c286fcd5b7d4bbb1",
+      "status": "exact"
+    },
+    "tests/test_symmetric_auth.py": {
+      "archive": "AQSS_CI_REVIEW_1625.zip",
+      "export_bytes": 729,
+      "export_sha256": "702a4c81636baaa498a7bea803c66a2b8c3c2db53cd1efa1a02e8c4761451200",
+      "repository_bytes": 729,
+      "repository_sha256": "702a4c81636baaa498a7bea803c66a2b8c3c2db53cd1efa1a02e8c4761451200",
+      "status": "exact"
+    },
+    "tests/test_system_config.py": {
+      "archive": "AQSS_CI_REVIEW_1625.zip",
+      "export_bytes": 490,
+      "export_sha256": "f92bd10def112b6c27961dcce80eba3608e72ef509ee7a3b9bd3eee750157c5b",
+      "repository_bytes": 490,
+      "repository_sha256": "f92bd10def112b6c27961dcce80eba3608e72ef509ee7a3b9bd3eee750157c5b",
+      "status": "exact"
+    },
+    "tests/test_threat_fusion.py": {
+      "archive": "AQSS_CI_REVIEW_1625.zip",
+      "export_bytes": 1313,
+      "export_sha256": "5a5f8182cf10e0a765a7e9c0f97224257843095c77ecfe8e49b7c55d0210db4a",
+      "repository_bytes": 1313,
+      "repository_sha256": "5a5f8182cf10e0a765a7e9c0f97224257843095c77ecfe8e49b7c55d0210db4a",
+      "status": "exact"
+    },
+    "tests/test_trust_model.py": {
+      "archive": "AQSS_CI_REVIEW_1625.zip",
+      "export_bytes": 668,
+      "export_sha256": "bff239cbc835bda87e997b986ae4d31667f136e8b0062b8873a68f85f1616ef3",
+      "repository_bytes": 668,
+      "repository_sha256": "bff239cbc835bda87e997b986ae4d31667f136e8b0062b8873a68f85f1616ef3",
+      "status": "exact"
+    },
+    "tests/test_trusted_intent_issuer.py": {
+      "archive": "AQSS_CI_REVIEW_1625.zip",
+      "export_bytes": 66293,
+      "export_sha256": "f9ea06389a68ffaf54d70534bcac58b2195ec924180c790d50bb8d7364ca8d7a",
+      "repository_bytes": 66293,
+      "repository_sha256": "f9ea06389a68ffaf54d70534bcac58b2195ec924180c790d50bb8d7364ca8d7a",
+      "status": "exact"
+    },
+    "tests/test_tv_selection_feedback_menu.py": {
+      "archive": "AQSS_CI_REVIEW_1625.zip",
+      "export_bytes": 2385,
+      "export_sha256": "0bc78c014231197c3d4de19df04eb3bcfbb01661973979cca92fd5d60b856cfc",
+      "repository_bytes": 2385,
+      "repository_sha256": "0bc78c014231197c3d4de19df04eb3bcfbb01661973979cca92fd5d60b856cfc",
+      "status": "exact"
+    },
+    "tests/test_tv_selection_mobile_feedback.py": {
+      "archive": "AQSS_CI_REVIEW_1625.zip",
+      "export_bytes": 3033,
+      "export_sha256": "b641b444aedeb3048ca6c26f12fe4f7f2f494412e6102e663f967ba3b1fa97a8",
+      "repository_bytes": 3033,
+      "repository_sha256": "b641b444aedeb3048ca6c26f12fe4f7f2f494412e6102e663f967ba3b1fa97a8",
+      "status": "exact"
+    },
+    "tests/test_tv_selection_native_adapter.py": {
+      "archive": "AQSS_CI_REVIEW_1625.zip",
+      "export_bytes": 4432,
+      "export_sha256": "64734992c801b0b100d2be0f9f9d14cbb537b104bdd8c4600ae4745c6c20ea2b",
+      "repository_bytes": 4432,
+      "repository_sha256": "64734992c801b0b100d2be0f9f9d14cbb537b104bdd8c4600ae4745c6c20ea2b",
+      "status": "exact"
+    },
+    "tests/test_tv_selection_native_contract.py": {
+      "archive": "AQSS_CI_REVIEW_1625.zip",
+      "export_bytes": 7032,
+      "export_sha256": "4fa49af4883aee07cd35b6bd5c6f6d5c3a9eb6cfd3023090c8f02d6279f6f937",
+      "repository_bytes": 7032,
+      "repository_sha256": "4fa49af4883aee07cd35b6bd5c6f6d5c3a9eb6cfd3023090c8f02d6279f6f937",
+      "status": "exact"
+    },
+    "tests/test_tv_selection_preferences.py": {
+      "archive": "AQSS_CI_REVIEW_1625.zip",
+      "export_bytes": 4622,
+      "export_sha256": "c7b09f2c528b8dbcd7d872e0f9ce701f223dbfe75dee4c7c057f83bd067a07b6",
+      "repository_bytes": 4622,
+      "repository_sha256": "c7b09f2c528b8dbcd7d872e0f9ce701f223dbfe75dee4c7c057f83bd067a07b6",
+      "status": "exact"
+    },
+    "tests/test_tv_selection_web.py": {
+      "archive": "AQSS_CI_REVIEW_1625.zip",
+      "export_bytes": 5616,
+      "export_sha256": "7f22db3baf944930a933c19e39b8bc9eae8b29ba292c5659683932be709ed4a9",
+      "repository_bytes": 5616,
+      "repository_sha256": "7f22db3baf944930a933c19e39b8bc9eae8b29ba292c5659683932be709ed4a9",
+      "status": "exact"
+    },
+    "tests/test_world_state_conversion_preserves_epoch_gate.py": {
+      "archive": "AQSS_CI_REVIEW_1625.zip",
+      "export_bytes": 1135,
+      "export_sha256": "d587409cc94efc13839748f1faa7a9ae1cf61e0d46ad4af8965c59b19332817b",
+      "repository_bytes": 1135,
+      "repository_sha256": "d587409cc94efc13839748f1faa7a9ae1cf61e0d46ad4af8965c59b19332817b",
+      "status": "exact"
+    },
+    "tests/test_world_state_conversion_preserves_precondition_gate.py": {
+      "archive": "AQSS_CI_REVIEW_1625.zip",
+      "export_bytes": 1426,
+      "export_sha256": "c167646a8a74d33c3b2816b28233eccf6d7f1392950d2a71ab70e21c1efcb36b",
+      "repository_bytes": 1426,
+      "repository_sha256": "c167646a8a74d33c3b2816b28233eccf6d7f1392950d2a71ab70e21c1efcb36b",
+      "status": "exact"
+    },
+    "tests/test_world_state_conversion_preserves_stale_gate.py": {
+      "archive": "AQSS_CI_REVIEW_1625.zip",
+      "export_bytes": 1313,
+      "export_sha256": "402593332468556cb48a6900d3887996ba4d40ab6fdeec1076c1facc42c8e435",
+      "repository_bytes": 1313,
+      "repository_sha256": "402593332468556cb48a6900d3887996ba4d40ab6fdeec1076c1facc42c8e435",
+      "status": "exact"
+    },
+    "tests/test_world_state_epoch_drift_gate.py": {
+      "archive": "AQSS_CI_REVIEW_1625.zip",
+      "export_bytes": 575,
+      "export_sha256": "adec3df5415867a756767d906f60faa91b37eafd8af242be2bc061de211e5c47",
+      "repository_bytes": 575,
+      "repository_sha256": "adec3df5415867a756767d906f60faa91b37eafd8af242be2bc061de211e5c47",
+      "status": "exact"
+    },
+    "tests/test_world_state_epoch_match_passes.py": {
+      "archive": "AQSS_CI_REVIEW_1625.zip",
+      "export_bytes": 538,
+      "export_sha256": "118ff19d922821e933f779b3207354f6f1c063e35de3e526fccc169a9804584c",
+      "repository_bytes": 538,
+      "repository_sha256": "118ff19d922821e933f779b3207354f6f1c063e35de3e526fccc169a9804584c",
+      "status": "exact"
+    },
+    "tests/test_world_state_freshness_boundary.py": {
+      "archive": "AQSS_CI_REVIEW_1625.zip",
+      "export_bytes": 895,
+      "export_sha256": "b280d840c87940b43cd2da2c065237a1ab070d7db11c569f4d4aec7a568a5913",
+      "repository_bytes": 895,
+      "repository_sha256": "b280d840c87940b43cd2da2c065237a1ab070d7db11c569f4d4aec7a568a5913",
+      "status": "exact"
+    },
+    "tests/test_world_state_physical_truth_gates_compose.py": {
+      "archive": "AQSS_CI_REVIEW_1625.zip",
+      "export_bytes": 924,
+      "export_sha256": "0735f5e24de4c5b839ea122fca1ad320e02b4b54b0c879d14f083ff022619e7c",
+      "repository_bytes": 924,
+      "repository_sha256": "0735f5e24de4c5b839ea122fca1ad320e02b4b54b0c879d14f083ff022619e7c",
+      "status": "exact"
+    },
+    "tests/test_world_state_precondition_drift_gate.py": {
+      "archive": "AQSS_CI_REVIEW_1625.zip",
+      "export_bytes": 673,
+      "export_sha256": "1e179f9ffb21a1fde9d2e55aec3e5d439559d1145c8bca6a390df77b2e14be8b",
+      "repository_bytes": 673,
+      "repository_sha256": "1e179f9ffb21a1fde9d2e55aec3e5d439559d1145c8bca6a390df77b2e14be8b",
+      "status": "exact"
+    },
+    "tests/test_world_state_precondition_match_passes.py": {
+      "archive": "AQSS_CI_REVIEW_1625.zip",
+      "export_bytes": 621,
+      "export_sha256": "5b5a1855d7021cebbb9fc84a45c9568587c17f3b426afbc3616cd802dd839a9c",
+      "repository_bytes": 621,
+      "repository_sha256": "5b5a1855d7021cebbb9fc84a45c9568587c17f3b426afbc3616cd802dd839a9c",
+      "status": "exact"
+    },
+    "tests/test_world_state_precondition_missing_key_fails.py": {
+      "archive": "AQSS_CI_REVIEW_1625.zip",
+      "export_bytes": 691,
+      "export_sha256": "1be125f4d14322f9d82ac778dee5d960f1bae6042bb6def9640c351c5afc3f1c",
+      "repository_bytes": 691,
+      "repository_sha256": "1be125f4d14322f9d82ac778dee5d960f1bae6042bb6def9640c351c5afc3f1c",
+      "status": "exact"
+    },
+    "tests/test_world_state_snapshot_contract.py": {
+      "archive": "AQSS_CI_REVIEW_1625.zip",
+      "export_bytes": 913,
+      "export_sha256": "7c9175a78303d92578661afdda2264082070c48aeab1794e82058717a0289dcb",
+      "repository_bytes": 913,
+      "repository_sha256": "7c9175a78303d92578661afdda2264082070c48aeab1794e82058717a0289dcb",
+      "status": "exact"
+    },
+    "tests/test_world_state_snapshot_recursive_immutability.py": {
+      "archive": "AQSS_CI_REVIEW_1625.zip",
+      "export_bytes": 971,
+      "export_sha256": "2e0a236cde2b6161ec8b85bdcaf0c714f3d1ecb0e1d26df94ec0b443d8027114",
+      "repository_bytes": 971,
+      "repository_sha256": "2e0a236cde2b6161ec8b85bdcaf0c714f3d1ecb0e1d26df94ec0b443d8027114",
+      "status": "exact"
+    },
+    "tests/test_world_state_snapshot_rejects_invalid_epoch_and_time.py": {
+      "archive": "AQSS_CI_REVIEW_1625.zip",
+      "export_bytes": 766,
+      "export_sha256": "056f7a323984eb48017c17c2f9f5d575433cbec30caee11c7839cf0916f3208d",
+      "repository_bytes": 766,
+      "repository_sha256": "056f7a323984eb48017c17c2f9f5d575433cbec30caee11c7839cf0916f3208d",
+      "status": "exact"
+    },
+    "tests/test_world_state_snapshot_rejects_invalid_evidence_envelope.py": {
+      "archive": "AQSS_CI_REVIEW_1625.zip",
+      "export_bytes": 1493,
+      "export_sha256": "4e91dcb7111a386991c0a1101e71a0c6a9ee31447acf471510a467671917749f",
+      "repository_bytes": 1493,
+      "repository_sha256": "4e91dcb7111a386991c0a1101e71a0c6a9ee31447acf471510a467671917749f",
+      "status": "exact"
+    },
+    "tests/test_world_state_stale_gate.py": {
+      "archive": "AQSS_CI_REVIEW_1625.zip",
+      "export_bytes": 701,
+      "export_sha256": "f221b51594fc6e1d84165a04326fda685f6106d4a0304f2cd48ecc4c05be9cf0",
+      "repository_bytes": 701,
+      "repository_sha256": "f221b51594fc6e1d84165a04326fda685f6106d4a0304f2cd48ecc4c05be9cf0",
+      "status": "exact"
+    },
+    "tests/test_world_state_to_physical_snapshot.py": {
+      "archive": "AQSS_CI_REVIEW_1625.zip",
+      "export_bytes": 1966,
+      "export_sha256": "c63b0fe74f67ee860794908aa6f1b26a4b9a542842bbbdad27e0d40c1966e6b8",
+      "repository_bytes": 1966,
+      "repository_sha256": "c63b0fe74f67ee860794908aa6f1b26a4b9a542842bbbdad27e0d40c1966e6b8",
+      "status": "exact"
+    },
+    "tools/generate_native_feedback_contracts.py": {
+      "archive": "AQSS_CI_REVIEW_1625.zip",
+      "export_bytes": 6606,
+      "export_sha256": "1a2c660a5ef6d37bf8fcc2d8c9f831853e7a7c2ce32c0cbe682fd569d2bc4a47",
+      "repository_bytes": 6606,
+      "repository_sha256": "1a2c660a5ef6d37bf8fcc2d8c9f831853e7a7c2ce32c0cbe682fd569d2bc4a47",
+      "status": "exact"
+    }
+  },
+  "format_version": 1,
+  "retired_legacy_inventory": "docs/retired-legacy-paths.md",
+  "scope": "Source synchronization with the supplied a-Shell exports; this does not inspect later edits on the phone or qualify physical device behavior.",
+  "verified_on": "2026-09-24"
+}
