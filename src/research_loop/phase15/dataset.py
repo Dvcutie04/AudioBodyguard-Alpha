@@ -2,7 +2,6 @@ from pathlib import Path
 import json
 import hashlib
 import numpy as np
-import pandas as pd
 
 
 class HardCaseDatasetFirewall:

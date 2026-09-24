@@ -6,7 +6,7 @@ The alpha includes simulations, mocks, and synthetic conformance tests. Passing 
 
 ## Repository restoration
 
-This branch restores the newer phone checkout to GitHub. The main archive and its 18-file supplement have been verified. Older GitHub-only modules and tests, along with one unused and nonparseable legacy file, were retired from the active tree, with [each path recorded](docs/retired-legacy-paths.md) and its contents retained in Git history. The complete Python suite passes locally; native CI validation is pending. See [restoration status](docs/repository-restoration.md) for evidence and remaining work.
+This branch restores the newer phone checkout to GitHub. The main archive and its 18-file supplement have been verified. Older GitHub-only modules and tests, 20 stale root files, and one unused nonparseable legacy file were retired from the active tree, with [each path recorded](docs/retired-legacy-paths.md) and its contents retained in Git history. The hosted [review checks](https://github.com/Dvcutie04/AudioBodyguard-Alpha/pull/2/checks) run 1,625 Python tests plus Swift and Android contract checks; earlier runs passed all three jobs. These checks verify software conformance only. See [restoration status](docs/repository-restoration.md) for evidence and remaining work.
 
 ## Development checks
 
@@ -20,7 +20,7 @@ python tools/generate_native_feedback_contracts.py --check
 PYTHONPATH=. python -m pytest -q
 ```
 
-The test configuration includes both `src` and `tests`. Do not restrict collection or remove a failing safety test to make a restoration pass. The restored checkout passed the full Python suite on Linux/Python 3.12; CI independently checks Python 3.13.
+The test configuration includes both `src` and `tests`. Do not restrict collection or remove a failing safety test to make a restoration pass. The restored checkout passed the full Python suite on Linux/Python 3.12; hosted CI independently passed it on Python 3.13.
 
 Native contract checks use the existing Swift package and Android library:
 
@@ -49,6 +49,6 @@ Change generated feedback models through their contract and generator, then chec
 
 ## Evidence and local data
 
-[The audit matrix](docs/audit_matrix.md) distinguishes reported phone results, reproduced software checks, and outstanding native or physical validation. Earlier benchmark and research reports are historical records, not qualification evidence for this branch.
+[The audit matrix](docs/audit_matrix.md) distinguishes reported phone results, reproduced software checks, and outstanding physical validation. Older benchmark and research reports remain in Git history as historical records, not qualification evidence for this branch.
 
 Keep credentials, local databases, caches, and phone recovery copies out of commits. The restoration removes previously tracked machine-local artifacts from its proposed tree. This does not erase them from older Git history.

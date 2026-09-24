@@ -1,6 +1,6 @@
 # Repository restoration status
 
-Status: work in progress, not ready to merge. No runtime permission or physical qualification is granted by this restoration.
+Status: hosted Python, Swift, and Android software checks passed; review is still in progress and this branch is not ready to merge. No runtime permission or physical qualification is granted by this restoration.
 
 ## Source provenance
 
@@ -15,7 +15,7 @@ Status: work in progress, not ready to merge. No runtime permission or physical 
 | Dependency supplement | `AQSS_CI_SUPPLEMENT_1625.zip`, 18 files, SHA-256 `b50a25f585e196fbfc008ea42a9010809c068634d1eb45681beec670cd78ae1f` |
 | Restored local Python suite | 1,625 passed on Linux/Python 3.12; generator check reported `NATIVE_CONTRACTS_CURRENT` |
 
-The original archive's declared scope is source review, incomplete until dependencies are checked. It is not a full repository backup or a commit of the phone checkout. Its 423 source files and 17 usable supplement files were verified and overlaid onto this isolated branch. All imported source and tests retain their original bytes; `.gitignore` and CI configuration are separately updated for repository maintenance. One nonparseable supplement file was retired as described below.
+The original archive's declared scope is source review, incomplete until dependencies are checked. It is not a full repository backup or a commit of the phone checkout. Its 423 source files and 17 usable supplement files were verified and overlaid onto this isolated branch. Of the 441 exported paths, 432 retain their original bytes, eight have explicit maintenance or compatibility changes (`.gitignore`, CI workflow, Python requirements, two Android fixture tests, two Python bridge imports, and one unused `pandas` import), and one nonparseable supplement file was retired as described below.
 
 ## Restored transfer gaps
 
@@ -29,17 +29,22 @@ The supplement's `audio_engine/mesh_fusion.py` is nonparseable Python with multi
 
 - Import the verified 423-file source snapshot, including its 18-vector synthetic endpoint contract and Swift/Kotlin fixture readers.
 - Restore 17 exact dependency and quarantine files from the verified 18-file supplement; retain the old nonparseable `mesh_fusion.py` in repository history only.
-- Remove 231 tracked machine-local, backup, recovery-conflict, credential, or shell-fragment artifacts from the proposed tree. Original history is retained.
+- Remove 231 tracked machine-local, backup, recovery-conflict, credential, or shell-fragment artifacts from the proposed tree, then retire 20 additional older root files absent from both phone exports. Original history is retained; see [legacy inventory](retired-legacy-paths.md).
 - Replace the broad `*token*` ignore pattern with specific credential and local-state patterns, and ignore native build output and review ZIPs.
 - Restore Python 3.13, Swift, and Android conformance jobs from the phone workflow. Add read-only workflow permissions, bounded job durations, pip caching, branch/manual triggers, and cancellation of superseded runs.
 - Record 74 older GitHub-only source, test, and backup paths absent from the current phone export, and retire them from the active tree. The [complete path inventory](retired-legacy-paths.md) points back to the base commit, where their contents remain available.
+- Resolve fresh-runner Python collection with the `scikit-learn` test dependency and compile the Android fixture tests using `Files.readAllBytes` with UTF-8 decoding. Fix the two phone bridge modules' obsolete `bridges.tv_controller` imports to use the existing quarantined controller at `src.bridges.tv_controller`, and drop an unused `pandas` import that would make a reference module unimportable without an unlisted dependency.
 - Document evidence limits and remaining restoration work.
 
-The retired paths include older physical transaction contracts and a `tests/conftest.py` fixture with an incompatible contract constructor. No phone source or test imports a retired module. Retirement removes incompatible historical code from the active test suite; it does not claim that every old invariant already has an equivalent current test.
+The retired paths include older physical transaction contracts and a `tests/conftest.py` fixture with an incompatible contract constructor. The additional root files include an incomplete encoded ADB script, a broken listener with a missing dependency, and an unqualified pairing script that disabled TLS certificate validation. No current phone source or test imports the retired root modules. Retirement removes incompatible historical code from the active test suite; it does not claim that every old invariant already has an equivalent current test.
+
+## Hosted verification
+
+[Actions run 36066439795](https://github.com/Dvcutie04/AudioBodyguard-Alpha/actions/runs/36066439795) passed the Python 3.13 suite (1,625 tests and generated contract check), Swift native contract tests, and Android native contract tests. The isolated review branch later removed obsolete root files and repaired imports; check the [latest PR checks](https://github.com/Dvcutie04/AudioBodyguard-Alpha/pull/2/checks) for the result on the final tree before review.
 
 ## Required next steps
 
-1. Run the hosted Python 3.13, Swift, and Android checks on the proposed branch and resolve any CI failures.
-2. Review any historical invariant worth migrating as a separate current-contract test, then review the final diff and evidence before merging.
+1. Review any historical invariant worth migrating as a separate current-contract test, then review the final diff and evidence before merging.
+2. Qualify a native physical output boundary and observe its behavior on real target devices before proposing any change to the closed production guard.
 
 The public base commit includes an SSH private key. Its removal from this proposed tree does not revoke it or remove earlier copies. The owner must revoke or replace the corresponding credential wherever it is authorized. No credential contents are reproduced here.

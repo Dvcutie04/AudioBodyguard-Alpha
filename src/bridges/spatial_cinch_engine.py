@@ -1,4 +1,4 @@
-from bridges.tv_controller import TVControllerFactory
+from src.bridges.tv_controller import TVControllerFactory
 
 ZONE_MAP = {
     "living_room": {"bounds": (0.0, 5.0, 0.0, 4.0), "brand": "tcl", "ip": "192.168.1.50"},

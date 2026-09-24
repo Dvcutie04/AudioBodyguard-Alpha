@@ -1,4 +1,4 @@
-from bridges.tv_controller import TVControllerFactory
+from src.bridges.tv_controller import TVControllerFactory
 
 # Multi-target configuration registry
 TV_REGISTRY = {

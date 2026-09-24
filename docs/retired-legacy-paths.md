@@ -1,6 +1,6 @@
 # Paths retired from the active phone snapshot
 
-The verified 423-file phone export includes every current source and test in `src` and `tests` except the deliberately excluded quarantine directory. The older GitHub main branch has the paths below that are absent from that export. Its versions of these tests refer to incompatible older APIs. The current snapshot has no static imports of the older modules.
+The verified 423-file phone export includes every current source and test in `src` and `tests` except the deliberately excluded quarantine directory. The older GitHub main branch has the paths below that are absent from both phone exports, as well as one corrupt module present in the supplement. Older tests refer to incompatible APIs. The current snapshot has no static imports of the retired modules.
 
 These paths are removed from the proposed active tree so the repository runs the phone's current set of tests. Their contents remain available in Git history at commit `bb94b174e11ddbe09e11c05598f80aa9e7161be0`; this is a scoped migration, not a claim that each old test is covered by an equivalent new test. Reconsider any retired invariant as a separate future migration with an appropriate test against the current contract.
 
@@ -50,7 +50,7 @@ These paths are removed from the proposed active tree so the repository runs the
 - `src/telemetry/telemetry_node.py`
 - `src/tv/tv_state_machine.py`
 
-## Legacy test modules and fixtures (31)
+## Legacy test modules and fixtures (30)
 
 - `src/src/security/test_causal_attestation.py`
 - `src/src/security/test_causal_mesh.py`
@@ -61,7 +61,6 @@ These paths are removed from the proposed active tree so the repository runs the
 - `tests/device_fabric/test_device_fabric_adversarial_hil.py`
 - `tests/inference/test_integrated_trajectory.py`
 - `tests/inference/test_threat_trajectory.py`
-- `tests/inference/tests/inference`
 - `tests/integration/test_full_pipeline_trace.py`
 - `tests/omotenashi/__init__.py`
 - `tests/omotenashi/test_acoustic_interaction_graph.py`
@@ -91,3 +90,28 @@ These paths are removed from the proposed active tree so the repository runs the
 - `src/engine/benchmark.py.pre-encoding-repair`
 - `src/research_loop/phase15/dataset.py.phase15-prehardening`
 - `tests/inference/tests/inference`
+
+## Older root files outside the current phone exports (20)
+
+The review branch retains the project README, credential-free `.env.example`, and restoration documentation. The other older root files below are absent from both verified phone exports and are not needed by current tests. Several are broken or misleading: the encoded text is incomplete, `audio/fingerprint.py` imports the missing `send_home`, the bare `bridges` file is not a Python package, and `scripts/pair_device.py` bypasses TLS certificate checks. The reports and example profiles below have not been revalidated against this snapshot. Their contents remain available in Git history.
+
+- `Claude’s response /text.txt`
+- `analyze_logs.py`
+- `aqss_instructor_report.md`
+- `aqss_phase1_core.py`
+- `aqss_trials.json`
+- `audio/fingerprint.py`
+- `bell_test.py`
+- `bridges`
+- `docs/bayesian_adapter_architecture.md`
+- `haptic_bridge.py`
+- `include/aqss_core.h`
+- `live_test_profile.json`
+- `make_report.py`
+- `mock_test_profile.json`
+- `omega_truth.py`
+- `research_loop_benchmark.json`
+- `scripts/benchmark_latency.py`
+- `scripts/pair_device.py`
+- `test_profile.json`
+- `test_router_profile.json`
