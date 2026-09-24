@@ -1,6 +1,6 @@
 # Repository restoration status
 
-Status: the supplied a-Shell source baseline is synchronized and hosted Python, Swift, and Android software checks passed. Publication is tracked in [PR #2](https://github.com/Dvcutie04/AudioBodyguard-Alpha/pull/2). No runtime permission or physical qualification is granted by this restoration.
+Status: the supplied a-Shell source baseline is synchronized and hosted Python, Swift, and Android software checks passed. The baseline was merged to `main` in [PR #2](https://github.com/Dvcutie04/AudioBodyguard-Alpha/pull/2). No runtime permission or physical qualification is granted by this restoration.
 
 ## Source provenance
 
@@ -15,7 +15,7 @@ Status: the supplied a-Shell source baseline is synchronized and hosted Python, 
 | Dependency supplement | `AQSS_CI_SUPPLEMENT_1625.zip`, 18 files, SHA-256 `b50a25f585e196fbfc008ea42a9010809c068634d1eb45681beec670cd78ae1f` |
 | Restored local Python suite | 1,625 passed on Linux/Python 3.12; generator check reported `NATIVE_CONTRACTS_CURRENT` |
 
-The original archive's declared scope is source review, incomplete until dependencies are checked. It is not a full repository backup or a commit of the phone checkout. Its 423 source files and 17 usable supplement files were verified and overlaid onto this isolated branch. Of the 441 exported paths, 432 retain their original bytes, eight have explicit maintenance or compatibility changes (`.gitignore`, CI workflow, Python requirements, two Android fixture tests, two Python bridge imports, and one unused `pandas` import), and one nonparseable supplement file was retired as described below.
+The original archive's declared scope is source review, incomplete until dependencies are checked. It is not a full repository backup or a commit of the phone checkout. Its 423 source files and 17 usable supplement files were verified and overlaid onto this isolated branch. Of the 441 exported paths, 431 retain their original bytes, nine have explicit maintenance or compatibility changes (`.gitignore`, CI workflow, Python requirements, two Android fixture tests, two Python bridge imports, one unused `pandas` import, and deterministic clock injection in one protection test module), and one nonparseable supplement file was retired as described below.
 
 The [file-by-file synchronization manifest](a-shell-sync-manifest.json) records every exported path, its original and repository SHA-256, and the reason for each modification or retirement. The scope is the two supplied exports; it cannot account for later edits on the phone. The README, restoration records, and this verification manifest are repository documentation added around that source baseline.
 
@@ -36,6 +36,7 @@ The supplement's `audio_engine/mesh_fusion.py` is nonparseable Python with multi
 - Restore Python 3.13, Swift, and Android conformance jobs from the phone workflow. Add read-only workflow permissions, bounded job durations, pip caching, branch/manual triggers, and cancellation of superseded runs.
 - Record 74 older GitHub-only source, test, and backup paths absent from the current phone export, and retire them from the active tree. The [complete path inventory](retired-legacy-paths.md) points back to the base commit, where their contents remain available.
 - Resolve fresh-runner Python collection with the `scikit-learn` test dependency and compile the Android fixture tests using `Files.readAllBytes` with UTF-8 decoding. Fix the two phone bridge modules' obsolete `bridges.tv_controller` imports to use the existing quarantined controller at `src.bridges.tv_controller`, and drop an unused `pandas` import that would make a reference module unimportable without an unlisted dependency.
+- Inject consistent synthetic clocks into two publication-failure tests in `tests/test_protection_evidence_source.py`; the dispatcher's default host clock had been mixed with simulated evidence times. Production monotonic guards and all existing assertions are preserved.
 - Document evidence limits and remaining restoration work.
 
 The retired paths include older physical transaction contracts and a `tests/conftest.py` fixture with an incompatible contract constructor. The additional root files include an incomplete encoded ADB script, a broken listener with a missing dependency, and an unqualified pairing script that disabled TLS certificate validation. No current phone source or test imports the retired root modules. Retirement removes incompatible historical code from the active test suite; it does not claim that every old invariant already has an equivalent current test.
@@ -43,6 +44,8 @@ The retired paths include older physical transaction contracts and a `tests/conf
 ## Hosted verification
 
 [Actions run 36067699270](https://github.com/Dvcutie04/AudioBodyguard-Alpha/actions/runs/36067699270) passed the Python 3.13 suite (1,625 tests and generated contract check), Swift native contract tests, and Android native contract tests after the source cleanup and import repairs. Check the [workflow runs](https://github.com/Dvcutie04/AudioBodyguard-Alpha/actions/workflows/ci.yml) for verification of later documentation and merge commits.
+
+The first post-merge run on `main` ([36069173686](https://github.com/Dvcutie04/AudioBodyguard-Alpha/actions/runs/36069173686)) exposed two uptime-dependent Python test failures while both native jobs passed. Both failures were reproduced with a simulated default host monotonic clock of 46 seconds, then corrected by supplying dispatcher clocks in the same domain as the test evidence. The short-uptime reproduction and the full local suite (1,625 tests) passed after the correction. The workflow link above records hosted verification of the follow-up revision.
 
 ## Remaining development and historical risks
 

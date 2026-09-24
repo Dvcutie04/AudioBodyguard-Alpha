@@ -81,7 +81,8 @@ def test_negative_event_pauses_before_failed_publication():
     source=FailingSource(initial)
     coordinator=ProtectionEvidenceCoordinator(supervisor,source.snapshot,wall_clock=lambda:1000.0,monotonic_clock=lambda:50.0)
     assert coordinator.refresh() is ProtectionState.ACTIVE
-    dispatcher=ProtectionEvidenceEventDispatcher(supervisor,source,coordinator)
+    # Failure handling must use the same synthetic clock domain as the evidence.
+    dispatcher=ProtectionEvidenceEventDispatcher(supervisor,source,coordinator,wall_clock=lambda:1001.0,monotonic_clock=lambda:51.0)
     assert dispatcher.apply(revoked) is ProtectionState.PAUSED
     assert source.calls==1
     assert supervisor.reason=="EVIDENCE_PUBLICATION_FAILURE"
@@ -188,7 +189,8 @@ def test_same_boundary_permission_restoration_cannot_reactivate():
         current[0]=next(clocks)
         return current[0][0]
     coordinator=ProtectionEvidenceCoordinator(supervisor,source.snapshot,wall_clock=wall_clock,monotonic_clock=lambda:current[0][1])
-    dispatcher=ProtectionEvidenceEventDispatcher(supervisor,source,coordinator)
+    # Failure handling must use the same synthetic clock domain as the evidence.
+    dispatcher=ProtectionEvidenceEventDispatcher(supervisor,source,coordinator,wall_clock=lambda:1002.0,monotonic_clock=lambda:52.0)
     assert coordinator.refresh() is ProtectionState.ACTIVE
     assert dispatcher.apply(revoked) is ProtectionState.PAUSED
     assert source.snapshot() is revoked

@@ -12,9 +12,9 @@
     }
   ],
   "counts": {
-    "exact": 432,
+    "exact": 431,
     "exported": 441,
-    "modified": 8,
+    "modified": 9,
     "retired": 1
   },
   "files": {
@@ -3207,9 +3207,10 @@
       "archive": "AQSS_CI_REVIEW_1625.zip",
       "export_bytes": 13470,
       "export_sha256": "b8ded3ca83633babdac2f6fc4e3016c3459a32873bf846daf4a3c13a91593730",
-      "repository_bytes": 13470,
-      "repository_sha256": "b8ded3ca83633babdac2f6fc4e3016c3459a32873bf846daf4a3c13a91593730",
-      "status": "exact"
+      "reason": "Inject deterministic dispatcher clocks for synthetic publication-failure tests; retain monotonic and fail-closed assertions.",
+      "repository_bytes": 13738,
+      "repository_sha256": "3c0c1a68a36bf4f7d956ff9d978531f88f7729d54ab0d889d48fe19491658e5c",
+      "status": "modified"
     },
     "tests/test_protection_path_assessment.py": {
       "archive": "AQSS_CI_REVIEW_1625.zip",
