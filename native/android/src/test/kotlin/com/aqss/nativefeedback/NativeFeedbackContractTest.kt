@@ -30,7 +30,7 @@ class NativeFeedbackContractTest {
 
     @Test
     fun sharedFixtureDecodesWithKotlinModels() {
-        val text = Files.readString(contractPath())
+        val text = String(Files.readAllBytes(contractPath()), Charsets.UTF_8)
         val root = Json.parseToJsonElement(text).jsonObject
         assertEquals(1, root.getValue("schema_version").jsonPrimitive.int)
         assertEquals("feedback_sync_only", root.getValue("capability").jsonPrimitive.content)

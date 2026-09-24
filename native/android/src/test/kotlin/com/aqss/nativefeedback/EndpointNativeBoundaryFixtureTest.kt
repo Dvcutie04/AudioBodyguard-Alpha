@@ -67,7 +67,7 @@ class EndpointNativeBoundaryFixtureTest {
 
     @Test
     fun sharedSyntheticBoundaryVectors() {
-        val document = Json.parseToJsonElement(Files.readString(fixturePath())).jsonObject
+        val document = Json.parseToJsonElement(String(Files.readAllBytes(fixturePath()), Charsets.UTF_8)).jsonObject
         assertEquals(1, document.getValue("schema_version").jsonPrimitive.int)
         assertEquals("AQSS/owned-pcm-gain-lab/v1", document.getValue("profile_id").jsonPrimitive.content)
         assertEquals("test_only_trace_conformance", document.getValue("capability").jsonPrimitive.content)
