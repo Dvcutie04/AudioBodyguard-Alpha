@@ -1,9 +1,9 @@
 # N2a owned-output lab
 
-This C11 harness implements the first portable native increment from the
-September 24–25 N2 partial-write and ownership research. It links only to a
-scripted backend in `test_owner.c`. It opens no audio device and is not linked
-into the Python, Swift, or Android production paths.
+This C11 harness implements portable native increments from the September 24–25
+N2 partial-write and ownership research. It links only to scripted test backends
+and callback bodies. It opens no audio device and is not linked into the Python,
+Swift, or Android production paths.
 
 ## Run
 
@@ -24,7 +24,7 @@ stops on compilation/test failure, and places generated files under ignored
 `build/`. No Python dependency, ALSA SDK, or hardware is required. These native
 checks are separate from pytest; the a-Shell Python command does not run them.
 
-## Contract and six deterministic cases
+## Owner contract and six deterministic cases
 
 One owner borrows one immutable mono S16 block with a nonzero work ID. A single
 test thread calls the API. The owner, source array, and backend context remain
@@ -59,6 +59,48 @@ closed admission on retry. Adding that check made it and the positive progress
 case pass. The remaining checks exercise the call-accounting and bounded-trace
 obligations. They are six C test cases, not six additional Python tests.
 
+## Callback lifetime and five deterministic cases
+
+`callbacks.c` adds one bounded scripted callback family attached to a live owner.
+Its delivery context and owner remain alive through all deliveries and replays.
+Each value ticket contains the context identity and a sequence; it never points
+into reclaimable metadata. There are eight slots, issued once each with no reuse.
+Every scripted producer must acquire a ticket before scheduling a delivery.
+
+Queueing takes a reference even when no callback is active. Delivery moves that
+reference into the active state before entering a body, then consumes it on
+return. Once the owner closes admission, a queued delivery only consumes its
+reference for cleanup; it does not access metadata or invoke the body. Invalid,
+foreign, active, or consumed tickets cannot consume another queued reference.
+
+`aqss_lab_take_callback_metadata()` transfers the borrowed metadata back to the
+caller only after the owner acknowledges its cut and both queued and active
+counts reach zero. The caller can then free the allocation. The stable context
+and consumed slots remain valid so a stale replay can reject before accessing
+freed storage. There is no API to reclaim or reuse that delivery context.
+
+| Case | Tested result |
+| --- | --- |
+| Queued delivery with zero active callbacks | Metadata stays retained after the hold; stale delivery consumes the queue reference without running the body; a replay after actual `free()` rejects |
+| Live callback and replay | The body reads the expected work metadata once; metadata remains retained until hold acknowledgement; replay cannot rerun the body |
+| Active callback requests a hold | A nested reclamation attempt fails until the body returns; reentrant replay and new acquisition also reject |
+| Foreign or invalid ticket | The valid queued reference remains retained; zero, unissued, and out-of-range sequences do not index or consume it |
+| Callback and owner-trace capacity | The ninth ticket inhibits new acquisition; all eight cleanup deliveries remain available with a full owner trace; history and physical uncertainty survive |
+
+The first callback regression failed because an active-count-only check released
+metadata with one queued reference. Adding the queued-count check made it pass.
+The tests allocate real heap metadata, return it through the gate, free it, and
+attempt stale delivery under the same normal and sanitizer runner. There are
+**11 native cases in total: six owner cases and five callback cases**. Both test
+executables run in the existing C11 CI job; Python collection remains unchanged.
+
+The context's closed acquisition and complete ticket registry cover only this
+scripted, single-thread family. They are not an OS callback-quiescence contract.
+Callback bodies must not free or retain/escape the borrowed metadata. A child
+reference API, context recycling, cross-runtime identity, actual producers, and
+native shutdown evidence remain separate obligations. Visible struct fields
+and ticket values are trusted lab inputs, not cryptographic authority.
+
 ## Evidence boundary and next work
 
 This is a deterministic, single-thread lab. Reentrant test hooks expose an
@@ -68,12 +110,14 @@ are not a tamper-resistant isolation boundary. There are no signing keys,
 controller leases, runtime/request acknowledgement transport, OS routes,
 physical observations, or native output handles here.
 
-The source and callback metadata remain live until the test ends. Queued
-callbacks, retained child references, safe reclamation, stale runtime/request
-acknowledgements, and actual process recovery remain subsequent researched
-increments. OS-specific EAGAIN/error classifications, gain arithmetic and format
-validation also remain open. The current conservative negative-return handling
-must not be relabeled an implemented ALSA recovery policy.
+The source, owner, backend context, and callback delivery context remain live
+until the test ends. Only the separate callback metadata allocation exercises
+reclamation. The next researched increment adds retained child references, so a
+parent callback's return cannot end a child's lifetime. Stale runtime/request
+acknowledgements and actual process recovery remain subsequent increments.
+OS-specific EAGAIN/error classifications, gain arithmetic, and format validation
+also remain open. The current conservative negative-return handling must not be
+relabeled an implemented ALSA recovery policy.
 
 An acknowledged owner cut never cancels already copied frames, establishes
 silence or `NOT_APPLIED`, or grants readiness. `outcome_unknown` becomes true
