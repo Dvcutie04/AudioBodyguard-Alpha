@@ -25,6 +25,7 @@ bool aqss_lab_owner_init(aqss_lab_owner *owner, uint64_t work_id,
     }
     *owner = (aqss_lab_owner){
         .work_id = work_id,
+        .admission_revision = 1,
         .frames = frames,
         .frame_count = frame_count,
         .write = write,
@@ -84,6 +85,7 @@ void aqss_lab_request_hold(aqss_lab_owner *owner)
 {
     if (owner != NULL && owner->initialized && !owner->admission_closed) {
         owner->admission_closed = true;
+        ++owner->admission_revision; /* One cut per fresh owner: 1 -> 2. */
         append_event(owner, AQSS_LAB_EVENT_HOLD_REQUESTED, 0);
     }
 }

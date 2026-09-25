@@ -46,12 +46,14 @@ typedef ptrdiff_t (*aqss_lab_scripted_write)(
 typedef struct {
     uint64_t work_id;
     const int16_t *frames;
+    uint64_t admission_revision;
     size_t frame_count;
     aqss_lab_scripted_write write;
     void *context;
     bool initialized;
     bool admission_closed;
     bool hold_acknowledged;
+    bool hold_control_bound;
     bool outcome_unknown;
     bool invalid_return;
     bool trace_exhausted;
