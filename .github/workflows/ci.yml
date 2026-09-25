@@ -42,6 +42,21 @@ jobs:
           PYTHONPATH: .
         run: python -m pytest -q
 
+  native-lab:
+    name: C11 owned-output lab (scripted backend)
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Compile and run deterministic owner checks
+        run: sh native/lab/owned_output/run_tests.sh
+      - name: Check owner memory and undefined behavior
+        env:
+          AQSS_LAB_SANITIZE: "1"
+        run: sh native/lab/owned_output/run_tests.sh
+
   native-swift:
     name: Swift native contract conformance
     runs-on: macos-14

@@ -1,6 +1,6 @@
 # AQSS development roadmap
 
-Checkpoint: September 24, 2026. Continue from the restored a-Shell baseline and the existing native endpoint qualification research. iPhone/iOS and Android remain equal product targets.
+Checkpoint: September 25, 2026. Continue from the restored a-Shell baseline and the existing native endpoint qualification research. iPhone/iOS and Android remain equal product targets.
 
 **INFERENCE IS NOT REALITY. AI proposes. Policy authorizes. Physical Commit verifies.**
 
@@ -12,6 +12,8 @@ N1 now includes a bounded, explicitly unqualified fake endpoint with eight work-
 
 The production factory guard and `EndpointHandoffBarrier.is_ready()` remain closed. No physical device was actuated by this increment.
 
+The first N2a increment now compiles a separate C11 lab with **six deterministic cases**. These are additional native test cases, not part of the 1,641-test Python count. Its scripted backend exercises no audio API or hardware. The [lab contract](../native/lab/owned_output/README.md) defines the call phases and remaining ownership debt; hosted CI has a separate native-lab job.
+
 ## N0 inventory
 
 | Target | Inspected repository configuration | Evidence boundary |
@@ -21,6 +23,7 @@ The production factory guard and `EndpointHandoffBarrier.is_ready()` remain clos
 | Android contract | `native/android/build.gradle.kts`: Android library, minSdk 26, compileSdk 35, Java 17 | Hosted Gradle unit tests; no application targetSdk, service, or measured phone output established |
 | Shared endpoint vectors | `contracts/endpoint_native_boundary_v1.json` and its Markdown contract | 18 synthetic vectors consumed by Python, Swift, and Kotlin |
 | Endpoint handoff | `src/device_fabric/endpoint_handoff_barrier.py`: schema-3 resource holds and pinned verifier identity | Reference ordering and admission inhibition; no qualified native retirement certificate |
+| Owned-output lab | `native/lab/owned_output`: standalone C11 owner and scripted backend, warning-clean compiler gate | Six deterministic software cases; no ALSA SDK, device, native application, or physical qualification |
 
 These are inspected build settings, not new supported-device or release recommendations.
 
@@ -52,20 +55,33 @@ Context candidates are immutable, in-memory test tokens. A synthetic runtime-inc
 
 Red-green evidence: the original eight tests first failed collection because the fake module did not exist. The eight context cases first failed at the missing candidate API, then exposed an unbound-submission bypass before that path was closed. The focused gate passed **35** checks and the full suite passed **1,641** tests locally. All original assertions and production modules were preserved. The historical 441-path manifest describes the earlier a-Shell export; the changed test-only files are additions outside it. No `.py.tmp` staging files remained.
 
+## N2a partial-write and owner-accounting increment
+
+The September 24 partial-write research and September 25 ownership continuation are complete for this bounded step. `native/lab/owned_output/` holds one borrowed mono S16 block and a stable scripted backend context on one test thread. It distinguishes `CALL_ENTERED`, `CALL_RETURNED`, and `RETURN_RECORDED`. Acknowledging a hold requires closed admission and an accounted return; already accepted frames remain possibly effective.
+
+The first regression compiled and failed at `backend.calls == 1`: an acknowledged hold had allowed the suffix into a second backend call. The minimal closed-admission check made that regression pass. The positive control transfers the exact remaining suffix without repeating its prefix. Four further cases check an in-flight hold, delayed recording, trace capacity, and invalid backend results. Eight call reservations plus two independent hold entries bound the trace; no history is evicted. Zero progress is recorded, and invalid results preserve prior accepted frames and inhibit new calls.
+
+The six C cases pass with warnings treated as errors. The local container's LeakSanitizer reports that it cannot operate under tracing; local address/undefined-behavior checking therefore uses `ASAN_OPTIONS=detect_leaks=0`. The separate hosted job keeps default sanitizer behavior. Consult the revision's CI result for hosted execution evidence.
+
+This is an in-memory, single-thread fixture with live test objects. It does not implement general callback reclamation, synchronized producer threads, persistence, scoped acknowledgement transport, gain processing, or OS-specific EAGAIN recovery. No production module or shared eligibility vector is changed. Compiled code and clean sanitizer runs do not qualify native physical containment.
+
 ## Remaining native gates
 
-The sequence follows `AQSS_Native_Endpoint_Qualification_Research_2026-09-24.md` and the master continuation handoff. That research already authorizes N0/N1 implementation; it does not qualify a real backend.
+The sequence follows the native qualification brief, `AQSS_N2_Owned_Output_Lab_Research_2026-09-24.md` with its September 25 ownership continuation, and the master handoff. The bounded N2a research authorizes the implementation steps below; it does not qualify a real backend.
 
 | Stage | Status and next work | Exit gate |
 | --- | --- | --- |
 | N0 — Inventory | Repository/native contract inventory complete; exact physical hardware and measurement setup still unselected | Pin real build hosts and device/route details before a hardware experiment |
 | N1 — Shared conformance | Shared 18-vector contract, bounded work sequencing, and test-only context invalidation implemented | Preserve the unresolved native and persistence questions; keep production readiness unavailable |
-| N2 — Owned native trace harness | Pending | Bounded gain path, explicit callback ownership/lifetime, one inspected real backend candidate, and no raw-handle bypass |
+| N2a — Portable owned-output lab | Partial-transfer, hold, accounting, and bounded-trace cases implemented | Continue queued-callback lifetime, retained children, stale request/runtime acknowledgements, recovery, exact gain arithmetic, and backend-specific zero-progress handling |
+| N2b — Real owned output | Pending; Linux/ALSA is the researched first lab candidate | Inventory available hardware, exact driver/route/format, independent capture, and instrumented native calls before physical experiments |
 | N3 — Exact output qualification | Pending | Named hardware/driver/route and reproducible output measurement, including residual buffered work |
 | N4 — Conditional evidence and activation | Pending, dependent on N3 | Authenticated native retirement evidence; reject stale, replayed, conflicting-successor, and invalid-at-submission evidence |
 | N5 — Both mobile products | Pending | Independently qualified iPhone/iOS and Android lifecycle/output paths, resource budgets, consent, and packaging |
 
-The next gate is to choose and instrument **one owned N2 output path** under the existing research charter, after checking the exact backend, route, driver, and measurement setup. That is a new substantive research and hardware-qualification step; the test-only fake must not be promoted into production. Independently model crash persistence, delayed native callbacks, and competing handoffs when the qualified boundary is specified.
+The next small increment is **queued-callback lifetime**: a queued callback must keep its metadata alive even when the active count is zero; stale entry must reject without accessing reclaimed memory. Then cover retained child references and acknowledgement identity. These are already researched N2a obligations, so they do not require another research warning. Inspect the current code and add one meaningful regression before extending the owner.
+
+N2b still requires available hardware and independent acquisition inventory. Refresh exact backend/driver/route questions before that physical implementation; no hardware purchase or native deployment follows from the C fixture. Keep real crash persistence and competing handoffs separate from deterministic in-memory sequencing.
 
 Later work completes native protection events on both platforms, supported device capabilities and truthful UI, one qualified sound/caption path, manual priority and Undo & Teach, then measured pilots and release evidence. There is no selected customer hub requirement or store-readiness claim.
 

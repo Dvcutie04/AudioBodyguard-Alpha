@@ -1,6 +1,6 @@
 # Audio Bodyguard Alpha
 
-Audio Bodyguard Alpha is the development repository for AQSS-36-OMEGA. It contains Python reference implementations and tests for acoustic inference, controller authority, protected device handoff, and physical verification, plus Swift and Kotlin feedback contracts.
+Audio Bodyguard Alpha is the development repository for AQSS-36-OMEGA. It contains Python reference implementations and tests for acoustic inference, controller authority, protected device handoff, and physical verification, plus Swift and Kotlin feedback contracts and a separate C11 scripted output lab.
 
 **INFERENCE IS NOT REALITY. AI proposes. Policy authorizes. Physical Commit verifies.**
 
@@ -14,7 +14,7 @@ Older GitHub-only modules and tests, 20 stale root files, and machine-local arti
 
 ## Current reference implementations
 
-Development continues from that restored baseline. N1 adds eight native-work and eight context-invalidation cases, bringing the local Python suite to **1,641 passing tests**. See the [development roadmap](docs/development-roadmap.md) for the current N1 checkpoint, native build inventory, and next gates.
+Development continues from that restored baseline. N1 adds eight native-work and eight context-invalidation cases, bringing the Python suite to **1,641 tests**. The first N2a compiled lab adds **six separate C cases** for partial writes, hold ordering, return accounting, and bounded traces. See the [development roadmap](docs/development-roadmap.md) for verification evidence, native build inventory, and next gates.
 
 | Area | Source and behavior |
 | --- | --- |
@@ -26,6 +26,7 @@ Development continues from that restored baseline. N1 adds eight native-work and
 | Extension admission | `src/extensions` validates and normalizes proposal-only extensions through deterministic admission checks. |
 | Native contracts | Swift and Kotlin models consume shared feedback fixtures and 18 synthetic endpoint-boundary vectors. |
 | Native work simulation | A bounded test-only endpoint tracks work across one handoff and rejects stale runtime, route, successor, protection, or expired synthetic submission context; it cannot grant production readiness. |
+| Owned-output lab | A single-thread C11 owner retains an accepted prefix and blocks suffix retries after admission closes; its scripted backend has no physical output or production authority. |
 
 Rejection paths must fail before physical actuation; the tests check `adapter.calls == 0` where applicable. Physical success requires observed postconditions and matching lineage. New platform callbacks or inference results do not establish that protection is active.
 
@@ -59,6 +60,15 @@ gradle -p native/android testDebugUnitTest
 
 The Android job uses Java 17 and Gradle 8.10.2 with the SDK required by `native/android/build.gradle.kts`. The Swift job runs on macOS. Neither command measures physical output on a phone or audio device.
 
+The [owned-output lab](native/lab/owned_output/README.md) uses a C11 compiler and a POSIX shell on the build host:
+
+```sh
+sh native/lab/owned_output/run_tests.sh
+AQSS_LAB_SANITIZE=1 sh native/lab/owned_output/run_tests.sh
+```
+
+The second command requires AddressSanitizer and UBSan support. A separate CI job runs both commands. These cases are not collected by pytest or run by the phone's Python command.
+
 ## Project map
 
 | Location | Purpose |
@@ -74,6 +84,7 @@ The Android job uses Java 17 and Gradle 8.10.2 with the SDK required by `native/
 | `tests`, tests within `src` | Python regression and invariant tests |
 | `contracts` | Shared JSON fixtures and documented contract boundaries |
 | `native/ios`, `native/android` | Feedback models and synthetic fixture conformance tests |
+| `native/lab/owned_output` | C11 partial-transfer and hold-accounting harness with a scripted backend |
 | `tools/generate_native_feedback_contracts.py` | Generator for the Swift and Kotlin feedback models |
 
 Change generated feedback models through their contract and generator, then check with `--check`. The [endpoint native boundary fixture](contracts/endpoint_native_boundary_v1.md) has capability `test_only_trace_conformance`; it cannot be used as a retirement certificate or execution authorization.
