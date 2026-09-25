@@ -12,7 +12,7 @@ N1 now includes a bounded, explicitly unqualified fake endpoint with eight work-
 
 The production factory guard and `EndpointHandoffBarrier.is_ready()` remain closed. No physical device was actuated by this increment.
 
-N2a now compiles a separate C11 lab with **11 deterministic cases**: six owner cases and five callback-lifetime cases. These are additional native test cases, not part of the 1,641-test Python count. Its scripted backend exercises no audio API or hardware. The [lab contract](../native/lab/owned_output/README.md) defines the call phases, bounded callback registry, and remaining ownership debt; hosted CI has a separate native-lab job.
+N2a now compiles a separate C11 lab with **15 deterministic cases**: six owner cases, five callback-lifetime cases, and four retained-child cases. These are additional native test cases, not part of the 1,641-test Python count. Its scripted backend exercises no audio API or hardware. The [lab contract](../native/lab/owned_output/README.md) defines the call phases, bounded callback and child registries, and remaining ownership debt; hosted CI has a separate native-lab job.
 
 ## N0 inventory
 
@@ -23,7 +23,7 @@ N2a now compiles a separate C11 lab with **11 deterministic cases**: six owner c
 | Android contract | `native/android/build.gradle.kts`: Android library, minSdk 26, compileSdk 35, Java 17 | Hosted Gradle unit tests; no application targetSdk, service, or measured phone output established |
 | Shared endpoint vectors | `contracts/endpoint_native_boundary_v1.json` and its Markdown contract | 18 synthetic vectors consumed by Python, Swift, and Kotlin |
 | Endpoint handoff | `src/device_fabric/endpoint_handoff_barrier.py`: schema-3 resource holds and pinned verifier identity | Reference ordering and admission inhibition; no qualified native retirement certificate |
-| Owned-output lab | `native/lab/owned_output`: standalone C11 owner, callback context, and scripted backends, warning-clean compiler gate | Six owner and five callback software cases; no ALSA SDK, device, native application, or physical qualification |
+| Owned-output lab | `native/lab/owned_output`: standalone C11 owner, callback/child context, and scripted backends, warning-clean compiler gate | Six owner, five callback, and four child software cases; no ALSA SDK, device, native application, or physical qualification |
 
 These are inspected build settings, not new supported-device or release recommendations.
 
@@ -69,9 +69,17 @@ This is an in-memory, single-thread fixture with live test objects. It does not 
 
 `callbacks.h`/`callbacks.c` add one stable delivery context for an owner's scripted callback family. Value tickets bind that context and a sequence, with eight slots and no reuse. Queueing retains metadata before callback entry. Delivery transfers the reference from queued to active before invoking a body. A held delivery is consumed as cleanup without touching metadata or running the body; invalid and replayed tickets consume nothing.
 
-Taking metadata for reclamation requires an acknowledged owner cut and zero queued and active references. The first regression failed when only active callbacks were checked: one queued callback still existed when metadata was released. The queued-count gate fixed it. Five tests cover that interval, live progress, an active callback's nested hold/reclaim attempt, foreign/invalid tickets, and cleanup with both callback capacity and the owner trace full. Tests actually free the released heap allocation and replay stale tickets under the sanitizer runner. The original six owner cases remain unchanged.
+This increment added the queued count to the active-reference reclamation gate. The first regression failed when only active callbacks were checked: one queued callback still existed when metadata was released. The queued-count gate fixed it. Five tests cover that interval, live progress, an active callback's nested hold/reclaim attempt, foreign/invalid tickets, and cleanup with both callback capacity and the owner trace full. Tests actually free the released heap allocation and replay stale tickets under the sanitizer runner. The original six owner cases remain unchanged.
 
-Only the metadata allocation is reclaimed; the owner, delivery context, and ticket states remain alive for the entire test. Every producer is the scripted queue API. This establishes the tested C lifetime ordering, not real-thread synchronization, native API quiescence, or reusable runtime identity. Callback bodies currently must not retain a child reference or let metadata escape. Reclamation leaves accepted-frame accounting, unknown physical outcome, and production denial unchanged.
+Only the metadata allocation is reclaimed; the owner, delivery context, and ticket states remain alive for the entire test. Every producer is the scripted queue API. This establishes the tested C lifetime ordering, not real-thread synchronization, native API quiescence, or reusable runtime identity. The retained-child increment below extends the original no-escape contract through explicit registration. Reclamation leaves accepted-frame accounting, unknown physical outcome, and production denial unchanged.
+
+## N2a retained-child increment
+
+An active callback can retain metadata for a child before handing it the pointer. The value reference binds context, child sequence, and parent callback sequence. The bounded eight-slot registry never reuses a slot. New references require open owner admission and an active parent; exhaustion closes admission. A child must stop accessing metadata before releasing its reference. Release works after closure but performs bookkeeping only, without dispatch, queueing, or reactivation.
+
+Reclamation now requires an acknowledged owner cut and zero queued, active, and retained-child references. The first regression failed because the old queued/active gate released metadata after the parent returned while a child still held it. Adding the child count fixed the failure. Four C cases verify this lifetime, acquisition before/after closure, invalid and repeated release, and cleanup with all child slots and the owner trace full. They free the allocation and reject stale releases through the still-live registry. The existing eleven C cases remain unchanged; all fifteen passed normally and with local address/undefined-behavior instrumentation.
+
+The test API registers one level of child references; it does not execute children or register grandchildren. The outer context and owner stay alive, and callers must not free or pass out untracked metadata. There is no cross-runtime retirement pool, real producer synchronization, or native shutdown certificate. A child's release does not erase an accepted prefix or resolve physical uncertainty.
 
 ## Remaining native gates
 
@@ -81,13 +89,13 @@ The sequence follows the native qualification brief, `AQSS_N2_Owned_Output_Lab_R
 | --- | --- | --- |
 | N0 — Inventory | Repository/native contract inventory complete; exact physical hardware and measurement setup still unselected | Pin real build hosts and device/route details before a hardware experiment |
 | N1 — Shared conformance | Shared 18-vector contract, bounded work sequencing, and test-only context invalidation implemented | Preserve the unresolved native and persistence questions; keep production readiness unavailable |
-| N2a — Portable owned-output lab | Partial-transfer/hold accounting and bounded queued/active callback metadata protection implemented | Continue retained children, stale request/runtime acknowledgements, metadata retirement capacity, recovery, exact gain arithmetic, and backend-specific zero-progress handling |
+| N2a — Portable owned-output lab | Partial-transfer/hold accounting and bounded queued/active/child metadata protection implemented | Continue stale request/runtime acknowledgements, metadata retirement capacity, recovery, exact gain arithmetic, and backend-specific zero-progress handling |
 | N2b — Real owned output | Pending; Linux/ALSA is the researched first lab candidate | Inventory available hardware, exact driver/route/format, independent capture, and instrumented native calls before physical experiments |
 | N3 — Exact output qualification | Pending | Named hardware/driver/route and reproducible output measurement, including residual buffered work |
 | N4 — Conditional evidence and activation | Pending, dependent on N3 | Authenticated native retirement evidence; reject stale, replayed, conflicting-successor, and invalid-at-submission evidence |
 | N5 — Both mobile products | Pending | Independently qualified iPhone/iOS and Android lifecycle/output paths, resource budgets, consent, and packaging |
 
-The next small increment is **retained child references**: a child scheduled by a callback must keep metadata retained after the parent returns. Cleanup after closure may release an existing reference but must not create new mutating work. Then cover acknowledgement identity and retirement capacity. These are already researched N2a obligations, so they do not require another research warning. Inspect the current code and add one meaningful regression before extending the owner.
+The next small increment is **runtime and request acknowledgement identity**: an acknowledgement from an older request or runtime must not satisfy a newer owner cut. Then cover metadata retirement capacity. These are already researched N2a obligations, so they do not require another research warning. Inspect the current code and add one meaningful regression before extending the owner. Cleanup after closure must continue to release existing references without creating new mutating work.
 
 N2b still requires available hardware and independent acquisition inventory. Refresh exact backend/driver/route questions before that physical implementation; no hardware purchase or native deployment follows from the C fixture. Keep real crash persistence and competing handoffs separate from deterministic in-memory sequencing.
 

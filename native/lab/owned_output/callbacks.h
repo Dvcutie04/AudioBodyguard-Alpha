@@ -4,10 +4,11 @@
 #include "owner.h"
 
 /* Scripted, single-thread callback family. The delivery context and its owner
- * outlive every ticket, including rejected replays. Only the borrowed metadata
- * can be taken for reclamation. No native quiescence or child references exist.
+ * outlive every ticket and child reference, including rejected replays. Only
+ * borrowed metadata can be reclaimed. No native quiescence is established here.
  */
 #define AQSS_LAB_MAX_CALLBACKS 8u
+#define AQSS_LAB_MAX_CHILD_REFERENCES 8u
 
 typedef enum {
     AQSS_LAB_CALLBACK_UNUSED,
@@ -24,6 +25,20 @@ typedef struct {
     size_t sequence;
 } aqss_lab_callback_ticket;
 
+/* One retained metadata reference, with the issuing callback's lineage.
+ * Only an active callback can acquire it while owner admission is open.
+ */
+typedef struct {
+    const aqss_lab_callbacks *context;
+    size_t sequence;
+    size_t parent_sequence;
+} aqss_lab_child_reference;
+
+typedef struct {
+    size_t parent_sequence;
+    bool retained;
+} aqss_lab_child_slot;
+
 typedef void (*aqss_lab_callback_body)(void *metadata);
 
 struct aqss_lab_callbacks {
@@ -36,10 +51,16 @@ struct aqss_lab_callbacks {
     bool initialized;
     bool capacity_exhausted;
     aqss_lab_callback_state slots[AQSS_LAB_MAX_CALLBACKS];
+    size_t children_issued;
+    size_t children_retained;
+    bool child_capacity_exhausted;
+    aqss_lab_child_slot children[AQSS_LAB_MAX_CHILD_REFERENCES];
 };
 
 /* Fresh context only, bound to one live owner and one borrowed metadata block.
- * Callback bodies must not retain/escape metadata or free it themselves.
+ * Metadata may outlive a body only under an explicit retained child reference.
+ * Each child must stop using the pointer before releasing its reference.
+ * No untracked references or direct frees by bodies/children are permitted.
  * Every scripted delivery must first acquire a ticket through this context.
  */
 bool aqss_lab_callbacks_init(aqss_lab_callbacks *callbacks,
@@ -52,6 +73,17 @@ aqss_lab_callback_ticket aqss_lab_queue_callback(aqss_lab_callbacks *callbacks);
  */
 bool aqss_lab_deliver_callback(aqss_lab_callbacks *callbacks,
                                aqss_lab_callback_ticket ticket);
+/* Register before handing metadata to a child. Rejected acquisition returns a
+ * zero/context-null value. These slots never reuse; this is not an executor.
+ */
+aqss_lab_child_reference aqss_lab_retain_child(
+    aqss_lab_callbacks *callbacks, aqss_lab_callback_ticket parent);
+/* Release after the child's last access, including during closed admission.
+ * Invalid/replayed releases return false and consume no other reference.
+ * This performs bookkeeping only; it cannot dispatch, enqueue, or reactivate.
+ */
+bool aqss_lab_release_child(aqss_lab_callbacks *callbacks,
+                             aqss_lab_child_reference reference);
 /* NULL means still retained or already taken. Caller may free a non-NULL result.
  * Taking metadata never clears owner history/uncertainty or releases the context.
  */
