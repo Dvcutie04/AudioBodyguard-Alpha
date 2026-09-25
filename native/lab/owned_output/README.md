@@ -74,8 +74,8 @@ reference for cleanup; it does not access metadata or invoke the body. Invalid,
 foreign, active, or consumed tickets cannot consume another queued reference.
 
 `aqss_lab_take_callback_metadata()` transfers the borrowed metadata back to the
-caller only after the owner acknowledges its cut and both queued and active
-counts reach zero. The caller can then free the allocation. The stable context
+caller only after the owner acknowledges its cut and queued, active, and retained
+child counts reach zero. The caller can then free the allocation. The stable context
 and consumed slots remain valid so a stale replay can reject before accessing
 freed storage. There is no API to reclaim or reuse that delivery context.
 
@@ -90,16 +90,46 @@ freed storage. There is no API to reclaim or reuse that delivery context.
 The first callback regression failed because an active-count-only check released
 metadata with one queued reference. Adding the queued-count check made it pass.
 The tests allocate real heap metadata, return it through the gate, free it, and
-attempt stale delivery under the same normal and sanitizer runner. There are
-**11 native cases in total: six owner cases and five callback cases**. Both test
-executables run in the existing C11 CI job; Python collection remains unchanged.
+attempt stale delivery under the same normal and sanitizer runner. The five
+callback cases and six owner cases remain unchanged by the child increment below.
 
 The context's closed acquisition and complete ticket registry cover only this
 scripted, single-thread family. They are not an OS callback-quiescence contract.
-Callback bodies must not free or retain/escape the borrowed metadata. A child
-reference API, context recycling, cross-runtime identity, actual producers, and
-native shutdown evidence remain separate obligations. Visible struct fields
-and ticket values are trusted lab inputs, not cryptographic authority.
+Callback bodies must not free metadata or pass out an unregistered reference.
+Context recycling, cross-runtime identity, actual producers, and native shutdown
+evidence remain separate obligations. Visible struct fields and ticket values
+are trusted lab inputs, not cryptographic authority.
+
+## Retained children and four deterministic cases
+
+An active callback may call `aqss_lab_retain_child()` before handing its metadata
+pointer to a child. The reference binds the stable context, a child sequence, and
+the parent callback sequence. Eight child slots are available for the entire
+context lifetime; they are never reused. A queued or returned parent, invalid
+ticket, or closed admission cannot acquire a child reference. Exhaustion closes
+owner admission while preserving all existing references.
+
+A retained child keeps metadata alive after its parent returns. Each child must
+finish its last pointer access before `aqss_lab_release_child()`. Release remains
+available after a hold and only changes reference bookkeeping: it invokes no
+callback, submits no output, and cannot reopen admission. Invalid or repeated
+release cannot consume another child. This API does not schedule child work or
+allow children to register grandchildren.
+
+| Case | Tested result |
+| --- | --- |
+| Child outlives its parent | Zero queued/active callbacks does not permit reclamation; a held child still reads live metadata; release allows actual `free()` while the accepted prefix and unknown outcome survive |
+| Acquisition around a hold | Queued, foreign, and invalid parents reject; an active parent cannot retain after closure; a queued peer continues to retain metadata after the child releases |
+| Invalid and repeated release | Foreign, out-of-range, and mismatched-parent references leave both children intact; releasing one twice cannot release the other; replay after actual `free()` rejects |
+| Child and owner-trace capacity | The ninth child closes admission; all eight releases remain available with a full owner trace; cleanup preserves history and makes no additional backend call |
+
+The first child regression compiled and failed at the reclamation assertion:
+the queued/active gate returned metadata while one child was still retained.
+Adding the retained-child count to that gate made it pass. There are now
+**15 native cases: six owner, five callback, and four child cases**. All three
+executables run in the existing normal and sanitizer CI steps; Python collection
+remains unchanged. This bounds child retention in one stable fixture context,
+not retirement across multiple runtime incarnations.
 
 ## Evidence boundary and next work
 
@@ -112,9 +142,10 @@ physical observations, or native output handles here.
 
 The source, owner, backend context, and callback delivery context remain live
 until the test ends. Only the separate callback metadata allocation exercises
-reclamation. The next researched increment adds retained child references, so a
-parent callback's return cannot end a child's lifetime. Stale runtime/request
-acknowledgements and actual process recovery remain subsequent increments.
+reclamation. The next researched increment binds hold acknowledgements to their
+runtime and request, so a stale acknowledgement cannot satisfy a newer cut.
+Metadata retirement capacity and actual process recovery remain subsequent
+increments.
 OS-specific EAGAIN/error classifications, gain arithmetic, and format validation
 also remain open. The current conservative negative-return handling must not be
 relabeled an implemented ALSA recovery policy.
