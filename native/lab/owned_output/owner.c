@@ -1,5 +1,7 @@
 #include "owner.h"
 
+#include <errno.h>
+
 static void append_event(aqss_lab_owner *owner, aqss_lab_event_kind kind,
                          ptrdiff_t returned_frames)
 {
@@ -59,6 +61,12 @@ bool aqss_lab_submit(aqss_lab_owner *owner)
         owner->context, owner->frames + owner->call_offset, owner->call_frames);
     owner->phase = AQSS_LAB_CALL_RETURNED;
     append_event(owner, AQSS_LAB_EVENT_CALL_RETURNED, owner->returned_frames);
+    owner->invalid_return = owner->returned_frames != -EAGAIN &&
+        (owner->returned_frames < 0 ||
+         (size_t)owner->returned_frames > owner->call_frames);
+    if (owner->invalid_return) {
+        aqss_lab_invalidate_runtime(owner, AQSS_LAB_FAULT_BACKEND_RESULT);
+    }
     return true;
 }
 
@@ -68,16 +76,11 @@ bool aqss_lab_record_return(aqss_lab_owner *owner)
         owner->phase != AQSS_LAB_CALL_RETURNED) {
         return false;
     }
-    owner->invalid_return = owner->returned_frames < 0 ||
-        (size_t)owner->returned_frames > owner->call_frames;
-    if (!owner->invalid_return) {
+    if (!owner->invalid_return && owner->returned_frames >= 0) {
         owner->accepted_frames += (size_t)owner->returned_frames;
     }
     owner->phase = AQSS_LAB_RETURN_RECORDED;
     append_event(owner, AQSS_LAB_EVENT_RETURN_RECORDED, owner->returned_frames);
-    if (owner->invalid_return) {
-        aqss_lab_request_hold(owner);
-    }
     return true;
 }
 
@@ -88,6 +91,33 @@ void aqss_lab_request_hold(aqss_lab_owner *owner)
         ++owner->admission_revision; /* One cut per fresh owner: 1 -> 2. */
         append_event(owner, AQSS_LAB_EVENT_HOLD_REQUESTED, 0);
     }
+}
+
+bool aqss_lab_invalidate_runtime(aqss_lab_owner *owner, aqss_lab_fault reason)
+{
+    if (owner == NULL || !owner->initialized) {
+        return false;
+    }
+    switch (reason) {
+    case AQSS_LAB_FAULT_BACKEND_RESULT:
+    case AQSS_LAB_FAULT_XRUN:
+    case AQSS_LAB_FAULT_SUSPENDED:
+    case AQSS_LAB_FAULT_DISCONNECTED:
+    case AQSS_LAB_FAULT_ROUTE_CHANGED:
+    case AQSS_LAB_FAULT_FORMAT_CHANGED:
+    case AQSS_LAB_FAULT_UNKNOWN:
+        break;
+    default:
+        reason = AQSS_LAB_FAULT_UNKNOWN;
+    }
+    if (owner->first_fault == AQSS_LAB_FAULT_NONE) {
+        owner->first_fault = reason;
+    }
+    /* Reuse the independently reserved hold path, even at trace capacity.
+     * A fault after the cut still latches its reason without rewriting history.
+     */
+    aqss_lab_request_hold(owner);
+    return true;
 }
 
 bool aqss_lab_acknowledge_hold(aqss_lab_owner *owner)

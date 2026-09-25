@@ -21,6 +21,17 @@ typedef enum {
 } aqss_lab_phase;
 
 typedef enum {
+    AQSS_LAB_FAULT_NONE,
+    AQSS_LAB_FAULT_BACKEND_RESULT,
+    AQSS_LAB_FAULT_XRUN,
+    AQSS_LAB_FAULT_SUSPENDED,
+    AQSS_LAB_FAULT_DISCONNECTED,
+    AQSS_LAB_FAULT_ROUTE_CHANGED,
+    AQSS_LAB_FAULT_FORMAT_CHANGED,
+    AQSS_LAB_FAULT_UNKNOWN
+} aqss_lab_fault;
+
+typedef enum {
     AQSS_LAB_EVENT_CALL_ENTERED,
     AQSS_LAB_EVENT_CALL_RETURNED,
     AQSS_LAB_EVENT_RETURN_RECORDED,
@@ -37,8 +48,10 @@ typedef struct {
     ptrdiff_t returned_frames;
 } aqss_lab_event;
 
-/* Returns the accepted prefix length. Other results retain uncertainty and
- * close admission; OS-specific error/EAGAIN handling is a later increment.
+/* Scripted errno-style contract: a nonnegative result is an accepted prefix
+ * length; -EAGAIN accepts no frames and may be retried explicitly after return
+ * accounting. All other negative or oversized results invalidate this owner.
+ * No OS adapter, wait/poll loop, or automatic recovery is provided here.
  */
 typedef ptrdiff_t (*aqss_lab_scripted_write)(
     void *context, const int16_t *frames, size_t frame_count);
@@ -57,6 +70,8 @@ typedef struct {
     bool outcome_unknown;
     bool invalid_return;
     bool trace_exhausted;
+    /* Sticky first invalidation cause, separate from physical outcome. */
+    aqss_lab_fault first_fault;
     aqss_lab_phase phase;
     size_t accepted_frames;
     size_t call_count;
@@ -78,6 +93,11 @@ bool aqss_lab_owner_init(aqss_lab_owner *owner, uint64_t work_id,
 bool aqss_lab_submit(aqss_lab_owner *owner);
 bool aqss_lab_record_return(aqss_lab_owner *owner);
 void aqss_lab_request_hold(aqss_lab_owner *owner);
+/* Permanently close this fixture incarnation without discarding calls, frame
+ * history, or references. Invalid/NONE reasons become UNKNOWN. Accounting and
+ * cleanup remain available; recovery never resets a live owner.
+ */
+bool aqss_lab_invalidate_runtime(aqss_lab_owner *owner, aqss_lab_fault reason);
 /* An owner cut only: never physical silence, NOT_APPLIED, or readiness. */
 bool aqss_lab_acknowledge_hold(aqss_lab_owner *owner);
 

@@ -28,3 +28,8 @@ fi
     "$lab_dir/retirement.c" "$lab_dir/test_retirement.c" \
     -o "$lab_dir/build/test_retirement"
 "$lab_dir/build/test_retirement"
+"${CC:-cc}" "$@" \
+    "$lab_dir/owner.c" "$lab_dir/callbacks.c" "$lab_dir/retirement.c" \
+    "$lab_dir/test_retry.c" \
+    -o "$lab_dir/build/test_retry"
+"$lab_dir/build/test_retry"
