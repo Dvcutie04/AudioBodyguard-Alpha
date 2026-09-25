@@ -22,9 +22,9 @@
       "archive": "AQSS_CI_REVIEW_1625.zip",
       "export_bytes": 1415,
       "export_sha256": "646a4451aec11a25d1ab0068e7525d1ed9720853f6c3370afc17448c7ae53386",
-      "reason": "Restore all three hosted CI jobs with least-privilege workflow permissions and bounded runs.",
-      "repository_bytes": 1928,
-      "repository_sha256": "e4c20c027c78abd38d3ccf5a2593d53125bf3e4fea6ad07b2cba5cc6ebade8bb",
+      "reason": "Restore Python, Swift, and Android CI with least-privilege permissions and bounded runs; add the separate N2a scripted C11 lab and sanitizer job.",
+      "repository_bytes": 2404,
+      "repository_sha256": "7ac22d51c6821bef71469c8f840339835c5398c96de4bfb0d9b033104df8f35a",
       "status": "modified"
     },
     ".gitignore": {
@@ -3560,5 +3560,5 @@
   "format_version": 1,
   "retired_legacy_inventory": "docs/retired-legacy-paths.md",
   "scope": "Source synchronization with the supplied a-Shell exports; this does not inspect later edits on the phone or qualify physical device behavior.",
-  "verified_on": "2026-09-24"
+  "verified_on": "2026-09-25"
 }
