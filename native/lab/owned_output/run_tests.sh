@@ -11,3 +11,7 @@ fi
     "$lab_dir/owner.c" "$lab_dir/test_owner.c" \
     -o "$lab_dir/build/test_owner"
 "$lab_dir/build/test_owner"
+"${CC:-cc}" "$@" \
+    "$lab_dir/owner.c" "$lab_dir/callbacks.c" "$lab_dir/test_callbacks.c" \
+    -o "$lab_dir/build/test_callbacks"
+"$lab_dir/build/test_callbacks"
