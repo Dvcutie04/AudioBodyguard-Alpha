@@ -125,11 +125,65 @@ allow children to register grandchildren.
 
 The first child regression compiled and failed at the reclamation assertion:
 the queued/active gate returned metadata while one child was still retained.
-Adding the retained-child count to that gate made it pass. There are now
-**15 native cases: six owner, five callback, and four child cases**. All three
-executables run in the existing normal and sanitizer CI steps; Python collection
-remains unchanged. This bounds child retention in one stable fixture context,
-not retirement across multiple runtime incarnations.
+Adding the retained-child count to that gate made it pass.
+The child checkpoint had **15 native cases: six owner, five callback, and four
+child cases**. The increments below bring the current total to **26 cases in
+five executables**, run in both normal and sanitizer CI steps. Python collection
+remains unchanged.
+
+## Scoped acknowledgements and six deterministic cases
+
+`hold.c` binds an owner-produced acknowledgement to endpoint, resource, runtime,
+request, admission revision, and accounted status. The owner's revision moves
+from 1 to 2 at its single admission cut. A zero-initialized control and an owner
+can each bind once. Repeating begin on either cannot extend an expired deadline.
+Caller-issued IDs are trusted fixture values and must be unique within their
+declared domain; this is internal matching, not authentication or secure identity
+issuance.
+
+The control uses an exclusive fixed deadline and explicit integer ticks in one
+injected monotonic clock domain. Wrong-scope acknowledgements and unrelated
+notifications remain false. Wrong-domain ticks are not compared. Expiry or clock
+rollback becomes terminal for the waiter; a later acknowledgement may still
+record owner completion for cleanup, but cannot restore the expired wait.
+Producing an acknowledgement still requires the entered call's return to be
+recorded. Neither production nor matching dispatches output or grants authority.
+
+Six cases cover old request/runtime identity; remaining scope/status and exact
+replay; returned-but-unrecorded work; fixed deadlines and rollback; malformed
+begin requests; and attempts to rebind the same cut with a later deadline. The
+old-request test failed before complete identity matching. A separate regression
+then exposed deadline refresh through begin; one-time control/owner binding
+closed that path.
+
+## Metadata retirement and five deterministic cases
+
+`retirement.c` contains a two-slot pool for one scripted endpoint/resource. A
+slot is free, reserved, current, or retiring. Reserve before allocating metadata
+or submitting work; only one reservation/current incarnation may exist. Bind a
+fresh callback context to the reservation before using the pool's submission
+API. Retiring closes its owner admission, while return accounting and reference
+cleanup remain available.
+
+Full capacity rejects a new incarnation without overwriting retained records.
+Reclamation delegates to the existing owner/queued/active/child lifetime gate.
+Only then may the caller free metadata and reuse that pool descriptor. Runtime
+ordinals strictly increase and never wrap or reset; cancellation and reclamation
+preserve the high-water mark. Handles include the pool, slot, and runtime ID, so
+a stale handle cannot access a later occupant of the same slot.
+
+The five cases cover full capacity with retained children; actual reclamation
+and same-slot reuse while rejecting old handles/acknowledgements; pending return
+accounting; reservation cancellation and ordinal exhaustion; and invalid handles
+against a current incarnation. The first test failed because an exhausted search
+selected an occupied slot. An explicit no-free-slot rejection fixed it.
+
+This bounds two registered metadata blocks, not their byte size, copied PCM,
+all runtime memory, or durable physical history. Owners and callback contexts
+remain externally owned and alive through all replays; only pool descriptors
+are reused. Callers must not reset these live objects or bypass pool submission
+and reclamation for registered work. This is a tested fixture contract, not a
+tamper-resistant allocator or a general asynchronous reclamation framework.
 
 ## Evidence boundary and next work
 
@@ -137,17 +191,16 @@ This is a deterministic, single-thread lab. Reentrant test hooks expose an
 in-flight phase; they do not establish real thread synchronization or callback
 quiescence. Struct fields are visible for stack allocation and inspection; they
 are not a tamper-resistant isolation boundary. There are no signing keys,
-controller leases, runtime/request acknowledgement transport, OS routes,
+controller leases, real acknowledgement transport, OS routes,
 physical observations, or native output handles here.
 
 The source, owner, backend context, and callback delivery context remain live
 until the test ends. Only the separate callback metadata allocation exercises
-reclamation. The next researched increment binds hold acknowledgements to their
-runtime and request, so a stale acknowledgement cannot satisfy a newer cut.
-Metadata retirement capacity and actual process recovery remain subsequent
-increments.
-OS-specific EAGAIN/error classifications, gain arithmetic, and format validation
-also remain open. The current conservative negative-return handling must not be
+reclamation. The next researched increment distinguishes backend zero progress,
+retry eligibility, and recovery invalidation; exact gain arithmetic and format
+validation follow. Actual process recovery, native clocks, durable incarnation
+identity, real producer synchronization, and native quiescence remain open.
+The current conservative negative-return handling must not be
 relabeled an implemented ALSA recovery policy.
 
 An acknowledged owner cut never cancels already copied frames, establishes

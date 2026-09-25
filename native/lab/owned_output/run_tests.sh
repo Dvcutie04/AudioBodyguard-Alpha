@@ -19,3 +19,12 @@ fi
     "$lab_dir/owner.c" "$lab_dir/callbacks.c" "$lab_dir/test_children.c" \
     -o "$lab_dir/build/test_children"
 "$lab_dir/build/test_children"
+"${CC:-cc}" "$@" \
+    "$lab_dir/owner.c" "$lab_dir/hold.c" "$lab_dir/test_hold.c" \
+    -o "$lab_dir/build/test_hold"
+"$lab_dir/build/test_hold"
+"${CC:-cc}" "$@" \
+    "$lab_dir/owner.c" "$lab_dir/callbacks.c" "$lab_dir/hold.c" \
+    "$lab_dir/retirement.c" "$lab_dir/test_retirement.c" \
+    -o "$lab_dir/build/test_retirement"
+"$lab_dir/build/test_retirement"

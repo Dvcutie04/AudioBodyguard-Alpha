@@ -12,7 +12,7 @@ N1 now includes a bounded, explicitly unqualified fake endpoint with eight work-
 
 The production factory guard and `EndpointHandoffBarrier.is_ready()` remain closed. No physical device was actuated by this increment.
 
-N2a now compiles a separate C11 lab with **15 deterministic cases**: six owner cases, five callback-lifetime cases, and four retained-child cases. These are additional native test cases, not part of the 1,641-test Python count. Its scripted backend exercises no audio API or hardware. The [lab contract](../native/lab/owned_output/README.md) defines the call phases, bounded callback and child registries, and remaining ownership debt; hosted CI has a separate native-lab job.
+N2a now compiles a separate C11 lab with **26 deterministic cases**: six owner, five callback, four child, six acknowledgement, and five retirement cases. These are additional native test cases, not part of the 1,641-test Python count. Its scripted backend exercises no audio API or hardware. The [lab contract](../native/lab/owned_output/README.md) defines the call phases, bounded registries, identity/deadline matching, and remaining ownership debt; hosted CI has a separate native-lab job.
 
 ## N0 inventory
 
@@ -23,7 +23,7 @@ N2a now compiles a separate C11 lab with **15 deterministic cases**: six owner c
 | Android contract | `native/android/build.gradle.kts`: Android library, minSdk 26, compileSdk 35, Java 17 | Hosted Gradle unit tests; no application targetSdk, service, or measured phone output established |
 | Shared endpoint vectors | `contracts/endpoint_native_boundary_v1.json` and its Markdown contract | 18 synthetic vectors consumed by Python, Swift, and Kotlin |
 | Endpoint handoff | `src/device_fabric/endpoint_handoff_barrier.py`: schema-3 resource holds and pinned verifier identity | Reference ordering and admission inhibition; no qualified native retirement certificate |
-| Owned-output lab | `native/lab/owned_output`: standalone C11 owner, callback/child context, and scripted backends, warning-clean compiler gate | Six owner, five callback, and four child software cases; no ALSA SDK, device, native application, or physical qualification |
+| Owned-output lab | `native/lab/owned_output`: standalone C11 owner, callback/child context, hold matching, retirement pool, and scripted backends | 26 software cases and warning-clean compiler gate; no ALSA SDK, device, native application, or physical qualification |
 
 These are inspected build settings, not new supported-device or release recommendations.
 
@@ -79,7 +79,21 @@ An active callback can retain metadata for a child before handing it the pointer
 
 Reclamation now requires an acknowledged owner cut and zero queued, active, and retained-child references. The first regression failed because the old queued/active gate released metadata after the parent returned while a child still held it. Adding the child count fixed the failure. Four C cases verify this lifetime, acquisition before/after closure, invalid and repeated release, and cleanup with all child slots and the owner trace full. They free the allocation and reject stale releases through the still-live registry. The existing eleven C cases remain unchanged; all fifteen passed normally and with local address/undefined-behavior instrumentation.
 
-The test API registers one level of child references; it does not execute children or register grandchildren. The outer context and owner stay alive, and callers must not free or pass out untracked metadata. There is no cross-runtime retirement pool, real producer synchronization, or native shutdown certificate. A child's release does not erase an accepted prefix or resolve physical uncertainty.
+The test API registers one level of child references; it does not execute children or register grandchildren. The outer context and owner stay alive, and callers must not free or pass out untracked metadata. The next increment below adds the bounded retirement pool; real producer synchronization and native shutdown evidence remain absent. A child's release does not erase an accepted prefix or resolve physical uncertainty.
+
+## N2a acknowledgement and retirement increments
+
+The user authorized both next steps and continuing research if needed. The existing September 24–25 ownership research already specifies these bounded obligations; no additional substantive research was required.
+
+`hold.c` binds acknowledgements to endpoint/resource, runtime, request, owner admission revision, and accounted status. Its injected clock domain and exclusive deadline remain fixed. Wrong identities and unrelated notifications do not satisfy the cut. Expiry and rollback are terminal for the wait; accounting may still complete for cleanup. One-time binding of both the control and owner prevents reinitialization from refreshing a deadline. IDs are trusted fixture inputs, not cryptographic or durable identities.
+
+The first acknowledgement case failed on a previous request ID; complete matching fixed it. A further regression failed when begin could refresh an expired deadline; rejecting repeated binding fixed that path. Six cases now cover identity/status, positive exact replay, call accounting, clock/deadline rejection, malformed inputs, and rebinding.
+
+`retirement.c` reserves one of two slots before metadata allocation or backend entry. It distinguishes reserved/current/retiring state, rejects further admission at capacity, and releases a retiring descriptor only after the existing metadata gate permits reclamation. Monotonically increasing runtime ordinals and exact handles reject stale use after slot reuse. External owners, contexts, and physical history remain alive; only metadata and the pool descriptor may be released.
+
+The first retirement case failed when a full pool selected an occupied slot. Explicit capacity rejection fixed it. Five cases cover retained-child capacity, safe same-slot reuse with old handle/ack rejection, pending accounting, reservation cancellation and ordinal exhaustion, and invalid handles. This is a two-block fixture bound, not a product byte budget, native shutdown proof, or durable restart implementation.
+
+The [a-Shell continuation guide](a-shell-continuation.md) creates a separate clone of public main, records its revision, and runs the existing generator/Python checks. It preserves the original Documents checkout and unexported phone edits. Cloud verification is not evidence that these commands have run on the phone.
 
 ## Remaining native gates
 
@@ -89,13 +103,13 @@ The sequence follows the native qualification brief, `AQSS_N2_Owned_Output_Lab_R
 | --- | --- | --- |
 | N0 — Inventory | Repository/native contract inventory complete; exact physical hardware and measurement setup still unselected | Pin real build hosts and device/route details before a hardware experiment |
 | N1 — Shared conformance | Shared 18-vector contract, bounded work sequencing, and test-only context invalidation implemented | Preserve the unresolved native and persistence questions; keep production readiness unavailable |
-| N2a — Portable owned-output lab | Partial-transfer/hold accounting and bounded queued/active/child metadata protection implemented | Continue stale request/runtime acknowledgements, metadata retirement capacity, recovery, exact gain arithmetic, and backend-specific zero-progress handling |
+| N2a — Portable owned-output lab | Partial-transfer/hold accounting, callback/child lifetime, scoped acknowledgement matching, and bounded metadata retirement implemented | Continue recovery invalidation, exact gain arithmetic, backend-specific zero-progress handling, format validation, and measured bounds |
 | N2b — Real owned output | Pending; Linux/ALSA is the researched first lab candidate | Inventory available hardware, exact driver/route/format, independent capture, and instrumented native calls before physical experiments |
 | N3 — Exact output qualification | Pending | Named hardware/driver/route and reproducible output measurement, including residual buffered work |
 | N4 — Conditional evidence and activation | Pending, dependent on N3 | Authenticated native retirement evidence; reject stale, replayed, conflicting-successor, and invalid-at-submission evidence |
 | N5 — Both mobile products | Pending | Independently qualified iPhone/iOS and Android lifecycle/output paths, resource budgets, consent, and packaging |
 
-The next small increment is **runtime and request acknowledgement identity**: an acknowledgement from an older request or runtime must not satisfy a newer owner cut. Then cover metadata retirement capacity. These are already researched N2a obligations, so they do not require another research warning. Inspect the current code and add one meaningful regression before extending the owner. Cleanup after closure must continue to release existing references without creating new mutating work.
+The next small increment is **backend zero-progress/retry classification and recovery invalidation**. A retry must recheck current eligibility and preserve the exact unsent suffix; recovery cannot silently replay old work. Exact attenuation arithmetic and format validation follow. These bounded N2a obligations are already researched. New native API, driver, real synchronization, or physical experiments still require the corresponding research review. Cleanup after closure must continue to release existing references without creating new mutating work.
 
 N2b still requires available hardware and independent acquisition inventory. Refresh exact backend/driver/route questions before that physical implementation; no hardware purchase or native deployment follows from the C fixture. Keep real crash persistence and competing handoffs separate from deterministic in-memory sequencing.
 
