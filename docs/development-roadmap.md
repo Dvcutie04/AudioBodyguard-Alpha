@@ -12,7 +12,9 @@ N1 now includes a bounded, explicitly unqualified fake endpoint with eight work-
 
 The production factory guard and `EndpointHandoffBarrier.is_ready()` remain closed. No physical device was actuated by this increment.
 
-N2a now compiles a separate C11 lab with **26 deterministic cases**: six owner, five callback, four child, six acknowledgement, and five retirement cases. These are additional native test cases, not part of the 1,641-test Python count. Its scripted backend exercises no audio API or hardware. The [lab contract](../native/lab/owned_output/README.md) defines the call phases, bounded registries, identity/deadline matching, and remaining ownership debt; hosted CI has a separate native-lab job.
+N2a now compiles a separate C11 lab with **35 deterministic cases**: six owner, five callback, four child, six acknowledgement, five retirement, and nine retry/invalidation cases. These are additional native test cases, not part of the 1,641-test Python count. Its scripted backend exercises no audio API or hardware. The [lab contract](../native/lab/owned_output/README.md) defines the call phases, bounded registries, identity/deadline matching, retry/fault rules, and remaining ownership debt; hosted CI has a separate native-lab job.
+
+The user verified the separate iPhone a-Shell clone at `38d273e1abec4b979950290ed1bac8cf640a8161`: generated contracts current, **1,641 passed with the existing dateutil warning in 7.50s**, and empty `lg2 status -s` output. This is the phone baseline before the retry/invalidation increment below; it is not evidence of phone execution of later changes or of the compiled C cases.
 
 ## N0 inventory
 
@@ -23,7 +25,7 @@ N2a now compiles a separate C11 lab with **26 deterministic cases**: six owner, 
 | Android contract | `native/android/build.gradle.kts`: Android library, minSdk 26, compileSdk 35, Java 17 | Hosted Gradle unit tests; no application targetSdk, service, or measured phone output established |
 | Shared endpoint vectors | `contracts/endpoint_native_boundary_v1.json` and its Markdown contract | 18 synthetic vectors consumed by Python, Swift, and Kotlin |
 | Endpoint handoff | `src/device_fabric/endpoint_handoff_barrier.py`: schema-3 resource holds and pinned verifier identity | Reference ordering and admission inhibition; no qualified native retirement certificate |
-| Owned-output lab | `native/lab/owned_output`: standalone C11 owner, callback/child context, hold matching, retirement pool, and scripted backends | 26 software cases and warning-clean compiler gate; no ALSA SDK, device, native application, or physical qualification |
+| Owned-output lab | `native/lab/owned_output`: standalone C11 owner, callback/child context, hold matching, retirement pool, retry/invalidation, and scripted backends | 35 software cases and warning-clean compiler gate; no ALSA SDK, device, native application, or physical qualification |
 
 These are inspected build settings, not new supported-device or release recommendations.
 
@@ -63,7 +65,7 @@ The first regression compiled and failed at `backend.calls == 1`: an acknowledge
 
 The six C cases pass with warnings treated as errors. The local container's LeakSanitizer reports that it cannot operate under tracing; local address/undefined-behavior checking therefore uses `ASAN_OPTIONS=detect_leaks=0`. The separate hosted job keeps default sanitizer behavior. Consult the revision's CI result for hosted execution evidence.
 
-This is an in-memory, single-thread fixture with live test objects. It does not implement general callback reclamation, synchronized producer threads, persistence, scoped acknowledgement transport, gain processing, or OS-specific EAGAIN recovery. No production module or shared eligibility vector is changed. Compiled code and clean sanitizer runs do not qualify native physical containment.
+This is an in-memory, single-thread fixture with live test objects. It does not implement general callback reclamation, synchronized producer threads, persistence, scoped acknowledgement transport, gain processing, or real backend recovery. The later increment below recognizes scripted errno-style EAGAIN returns. No production module or shared eligibility vector is changed. Compiled code and clean sanitizer runs do not qualify native physical containment.
 
 ## N2a queued-callback metadata increment
 
@@ -95,6 +97,16 @@ The first retirement case failed when a full pool selected an occupied slot. Exp
 
 The [a-Shell continuation guide](a-shell-continuation.md) creates a separate clone of public main, records its revision, and runs the existing generator/Python checks. It preserves the original Documents checkout and unexported phone edits. Cloud verification is not evidence that these commands have run on the phone.
 
+## N2a retry and runtime-invalidation increment
+
+The scripted owner now recognizes `-EAGAIN` separately from fatal/invalid returns. EAGAIN and zero advance no frames; both preserve the exact suffix, require accounting, and allow only a later explicit attempt through the existing admission checks. No retry loop or deadline refresh was added. Other negative or oversized results inhibit as soon as the backend returns, closing the callback-acquisition window before the caller performs bookkeeping.
+
+An explicit fault notification closes the owner and retains its first invalidation reason. XRUN, suspension, disconnect, route change, format change, and unknown state cannot revive old work when the backend becomes usable again. Entered/returned calls still require accounting; accepted prefixes and physical uncertainty survive. Cleanup may release queued/child references and retire metadata, but does not reset that runtime or replay its suffix.
+
+Nine new C cases cover positive retry progress, immediate fatal-return inhibition, recovery without old-work replay, hold after no progress, pre-dispatch faults, both call-accounting windows, full-trace fault retention, and callback/child retirement after invalidation. The EAGAIN and immediate-inhibition tests each exposed an actual failure before their fixes; the explicit invalidation test was initially red at the missing API. All original 26 C cases remain unchanged. Normal and local address/undefined-behavior runs pass 35 cases; hosted CI runs the same six executables. Python and shared mobile contracts are unchanged.
+
+This retains one sticky first reason rather than a complete fault-event history. It uses trusted fixture objects on one thread and does not implement an event scheduler, actual route monitoring, native cancellation/recovery, or fresh-work authorization. Exact OS/backend mapping remains a separate N2b obligation.
+
 ## Remaining native gates
 
 The sequence follows the native qualification brief, `AQSS_N2_Owned_Output_Lab_Research_2026-09-24.md` with its September 25 ownership continuation, and the master handoff. The bounded N2a research authorizes the implementation steps below; it does not qualify a real backend.
@@ -103,13 +115,13 @@ The sequence follows the native qualification brief, `AQSS_N2_Owned_Output_Lab_R
 | --- | --- | --- |
 | N0 — Inventory | Repository/native contract inventory complete; exact physical hardware and measurement setup still unselected | Pin real build hosts and device/route details before a hardware experiment |
 | N1 — Shared conformance | Shared 18-vector contract, bounded work sequencing, and test-only context invalidation implemented | Preserve the unresolved native and persistence questions; keep production readiness unavailable |
-| N2a — Portable owned-output lab | Partial-transfer/hold accounting, callback/child lifetime, scoped acknowledgement matching, and bounded metadata retirement implemented | Continue recovery invalidation, exact gain arithmetic, backend-specific zero-progress handling, format validation, and measured bounds |
+| N2a — Portable owned-output lab | Partial-transfer/hold accounting, callback/child lifetime, scoped acknowledgement matching, bounded metadata retirement, scripted zero/EAGAIN retries, and runtime invalidation implemented | Continue exact gain arithmetic, format validation, and bounded trace detail; real backend-specific recovery and scheduling belong to N2b |
 | N2b — Real owned output | Pending; Linux/ALSA is the researched first lab candidate | Inventory available hardware, exact driver/route/format, independent capture, and instrumented native calls before physical experiments |
 | N3 — Exact output qualification | Pending | Named hardware/driver/route and reproducible output measurement, including residual buffered work |
 | N4 — Conditional evidence and activation | Pending, dependent on N3 | Authenticated native retirement evidence; reject stale, replayed, conflicting-successor, and invalid-at-submission evidence |
 | N5 — Both mobile products | Pending | Independently qualified iPhone/iOS and Android lifecycle/output paths, resource budgets, consent, and packaging |
 
-The next small increment is **backend zero-progress/retry classification and recovery invalidation**. A retry must recheck current eligibility and preserve the exact unsent suffix; recovery cannot silently replay old work. Exact attenuation arithmetic and format validation follow. These bounded N2a obligations are already researched. New native API, driver, real synchronization, or physical experiments still require the corresponding research review. Cleanup after closure must continue to release existing references without creating new mutating work.
+The next small increment is **exact attenuation arithmetic and format validation**. Define the supported signed-16-bit format, range-checked integer gain, rounding, and intermediate width before applying gain to immutable work; preserve the original context of an already accepted prefix. These bounded N2a obligations are already researched. New native API, driver, real synchronization, or physical experiments still require the corresponding research review. Cleanup after closure must continue to release existing references without creating new mutating work.
 
 N2b still requires available hardware and independent acquisition inventory. Refresh exact backend/driver/route questions before that physical implementation; no hardware purchase or native deployment follows from the C fixture. Keep real crash persistence and competing handoffs separate from deterministic in-memory sequencing.
 

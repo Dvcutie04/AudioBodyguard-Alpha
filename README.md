@@ -14,7 +14,7 @@ Older GitHub-only modules and tests, 20 stale root files, and machine-local arti
 
 ## Current reference implementations
 
-Development continues from that restored baseline. N1 adds eight native-work and eight context-invalidation cases, bringing the Python suite to **1,641 tests**. The N2a compiled lab has **26 separate C cases**: six owner, five callback, four child, six acknowledgement, and five retirement cases. They cover bounded retention, stale identities, fixed deadlines, cleanup, and safe slot reuse in the scripted fixture. See the [development roadmap](docs/development-roadmap.md) for verification evidence, native build inventory, and next gates.
+Development continues from that restored baseline. N1 adds eight native-work and eight context-invalidation cases, bringing the Python suite to **1,641 tests**. The N2a compiled lab has **35 separate C cases**: six owner, five callback, four child, six acknowledgement, five retirement, and nine retry/invalidation cases. They cover bounded retention, stale identities, fixed deadlines, cleanup, safe slot reuse, exact suffix retries, and fault inhibition in the scripted fixture. See the [development roadmap](docs/development-roadmap.md) for verification evidence, native build inventory, and next gates.
 
 | Area | Source and behavior |
 | --- | --- |
@@ -26,7 +26,7 @@ Development continues from that restored baseline. N1 adds eight native-work and
 | Extension admission | `src/extensions` validates and normalizes proposal-only extensions through deterministic admission checks. |
 | Native contracts | Swift and Kotlin models consume shared feedback fixtures and 18 synthetic endpoint-boundary vectors. |
 | Native work simulation | A bounded test-only endpoint tracks work across one handoff and rejects stale runtime, route, successor, protection, or expired synthetic submission context; it cannot grant production readiness. |
-| Owned-output lab | A single-thread C11 owner blocks suffix retries after admission closes. Callback and child references retain metadata; acknowledgements match the exact cut within a fixed deadline; a two-slot retirement pool refuses new incarnations at capacity. Cleanup and slot reuse preserve physical uncertainty. The scripted lab has no physical output or production authority. |
+| Owned-output lab | A single-thread C11 owner preserves the unsent suffix across zero/EAGAIN returns and blocks retries after a hold or fault. Callback and child references retain metadata; acknowledgements match the exact cut within a fixed deadline; a two-slot retirement pool refuses new incarnations at capacity. Cleanup and slot reuse preserve physical uncertainty. The scripted lab has no physical output or production authority. |
 
 Rejection paths must fail before physical actuation; the tests check `adapter.calls == 0` where applicable. Physical success requires observed postconditions and matching lineage. New platform callbacks or inference results do not establish that protection is active.
 

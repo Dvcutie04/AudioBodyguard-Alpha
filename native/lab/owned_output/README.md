@@ -39,7 +39,7 @@ prefix; offset and remaining length travel together.
 | Hold requested inside an entered call | Reentrant submission, premature recording, and acknowledgement reject; the call may still return an accepted prefix |
 | Hold requested after return, before accounting | Admission closes immediately, but acknowledgement waits for explicit return recording |
 | Trace capacity exhausted | Eight calls retain their 24 records; the ninth cannot dispatch; two reserved hold records allow inhibition and acknowledgement without eviction |
-| Negative or oversized backend result | Previously accepted prefix survives; the result is recorded, subsequent calls are inhibited, and physical outcome stays unknown |
+| Negative result other than EAGAIN, or oversized backend result | Previously accepted prefix survives; admission closes on return, accounting remains required, and physical outcome stays unknown |
 
 Each call exposes `CALL_ENTERED`, `CALL_RETURNED`, and `RETURN_RECORDED`.
 `aqss_lab_submit()` returning true means a backend invocation occurred; inspect
@@ -127,8 +127,8 @@ The first child regression compiled and failed at the reclamation assertion:
 the queued/active gate returned metadata while one child was still retained.
 Adding the retained-child count to that gate made it pass.
 The child checkpoint had **15 native cases: six owner, five callback, and four
-child cases**. The increments below bring the current total to **26 cases in
-five executables**, run in both normal and sanitizer CI steps. Python collection
+child cases**. The increments below bring the current total to **35 cases in
+six executables**, run in both normal and sanitizer CI steps. Python collection
 remains unchanged.
 
 ## Scoped acknowledgements and six deterministic cases
@@ -185,6 +185,55 @@ are reused. Callers must not reset these live objects or bypass pool submission
 and reclamation for registered work. This is a tested fixture contract, not a
 tamper-resistant allocator or a general asynchronous reclamation framework.
 
+## Retry classification and nine deterministic cases
+
+The scripted writer uses an errno-style return contract. `0` means no frames
+accepted; `-EAGAIN` means would-block with no accepted frames. Both preserve the
+exact offset and suffix length, retain the raw return in the trace, and require
+explicit return accounting before another caller-driven attempt. Submission
+never loops, waits, invokes recovery, or extends a deadline. Each later call
+rechecks the owner's admission, call phase, remaining frames, and trace capacity.
+An event-driven retry scheduler and real backend timing remain unimplemented.
+
+Any other negative result or count beyond the requested suffix closes admission
+as soon as the call returns, before control returns to the caller. Queued bodies
+and new callback acquisition are then inhibited even before result accounting.
+The hold still cannot be acknowledged until the return is recorded. All accepted
+prefixes survive, and `outcome_unknown` stays set.
+
+`aqss_lab_invalidate_runtime()` also accepts explicit scripted XRUN, suspension,
+disconnect, route, format, or unknown-fault notifications. It closes admission
+and latches the first reason. A malformed/NONE reason fails closed as UNKNOWN;
+later notifications cannot replace the first cause or reopen the owner. The
+sticky reason can be set after an acknowledged hold even when the trace is full:
+it neither appends another hold nor overwrites history. This one reason is not a
+complete fault-event journal. A plain user hold remains distinct from a fault.
+
+| Case | Tested result |
+| --- | --- |
+| Prefix, EAGAIN, zero, then suffix | Four explicit calls copy exactly eight frames; both zero-progress outcomes preserve the same five-frame suffix and cannot retry before accounting |
+| Fault after a prefix | Negative/oversized results immediately close callback/output admission; accounting and owner acknowledgement remain separate |
+| Backend can accept again after invalidation | The old owner still rejects its suffix; only explicitly initialized fresh work makes progress |
+| Hold after EAGAIN or zero | Rechecking admission prevents another backend call and preserves the earlier prefix |
+| Fault before dispatch | All supported and malformed reasons inhibit before any backend call; the first cause is sticky |
+| Fault inside an entered call | The call may still accept a prefix; acknowledgement waits for its return and accounting |
+| Fault after return, before accounting | A valid accepted return is retained despite runtime invalidation; no premature acknowledgement |
+| Fault after trace capacity and hold | All call records survive; the reason latches without overflowing or refreshing the cut |
+| Fault with queued callbacks and retained children | Cleanup drains existing references before actual metadata reclamation; stale replay rejects and the old runtime cannot submit through a reused pool slot |
+
+The first test failed because EAGAIN closed admission. Recognizing only that
+negative value as retryable fixed the suffix path. The second test failed because
+a fatal return did not inhibit until `record_return()`; classifying it before
+returning from `submit()` fixed that window. The recovery test initially failed
+to compile because the invalidation API did not exist. The nine cases pass with
+the original 26 cases unchanged, normally and with address/UB instrumentation.
+
+This is a scripted errno contract, not a complete ALSA recovery policy. All
+unrecognized negative returns are conservative faults; real API-specific result
+mapping and scheduling need separate qualification. Initialization is for fresh
+fixture storage only. No recovery callback is allowed to reset a live owner,
+resubmit its suffix as fresh work, discard references, or resolve its history.
+
 ## Evidence boundary and next work
 
 This is a deterministic, single-thread lab. Reentrant test hooks expose an
@@ -196,12 +245,11 @@ physical observations, or native output handles here.
 
 The source, owner, backend context, and callback delivery context remain live
 until the test ends. Only the separate callback metadata allocation exercises
-reclamation. The next researched increment distinguishes backend zero progress,
-retry eligibility, and recovery invalidation; exact gain arithmetic and format
-validation follow. Actual process recovery, native clocks, durable incarnation
+reclamation. The next researched increment specifies exact gain arithmetic and
+format validation. Actual process recovery, native clocks, durable incarnation
 identity, real producer synchronization, and native quiescence remain open.
-The current conservative negative-return handling must not be
-relabeled an implemented ALSA recovery policy.
+The scripted retry and invalidation handling must not be relabeled an implemented
+ALSA recovery policy.
 
 An acknowledged owner cut never cancels already copied frames, establishes
 silence or `NOT_APPLIED`, or grants readiness. `outcome_unknown` becomes true
