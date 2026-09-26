@@ -1,12 +1,13 @@
 plugins {
-    id("com.android.library") version "8.7.3"
+    id("com.android.application") version "8.13.2" apply false
+    id("com.android.library") version "8.13.2"
     id("org.jetbrains.kotlin.android") version "2.1.0"
     id("org.jetbrains.kotlin.plugin.serialization") version "2.1.0"
 }
 
 android {
     namespace = "com.aqss.nativefeedback"
-    compileSdk = 35
+    compileSdk = 36
 
     defaultConfig {
         minSdk = 26

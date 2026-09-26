@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Audio Bodyguard — Simulation</string>
+    <string name="simulation">SIMULATION — no audio path connected</string>
+    <string name="coverage_title">Coverage</string>
+    <string name="coverage_unknown">Unknown physical state</string>
+    <string name="no_observation">No output observation. This screen does not monitor or protect audio.</string>
+    <string name="capability_title">Supported controls</string>
+    <string name="capability_unknown">Unknown. No player, route, permission, or physical observer is connected.</string>
+    <string name="caption_title">Captions</string>
+    <string name="caption_unknown">No authored caption track has been discovered or selected.</string>
+    <string name="history_title">Session history</string>
+    <string name="history_unknown">No observed session events. A missing history cannot establish continuous coverage.</string>
+    <string name="next_step_title">Next step</string>
+    <string name="next_step">A supported output and independent observation path must be qualified before this app can report an active listening session.</string>
+</resources>

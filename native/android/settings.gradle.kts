@@ -15,3 +15,4 @@ dependencyResolutionManagement {
 }
 
 rootProject.name = "AQSSNativeFeedback"
+include(":app")

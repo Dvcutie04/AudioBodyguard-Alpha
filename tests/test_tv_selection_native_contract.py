@@ -99,8 +99,8 @@ def test_ci_compiles_and_runs_both_native_contract_suites():
     assert "distribution: temurin" in workflow
     assert "java-version: \"17\"" in workflow
     assert "gradle/actions/setup-gradle@v4" in workflow
-    assert "gradle-version: \"8.10.2\"" in workflow
-    assert "gradle -p native/android testDebugUnitTest" in workflow
+    assert "gradle-version: \"8.13\"" in workflow
+    assert "gradle -p native/android testDebugUnitTest :app:assembleDebug" in workflow
 
 
 def test_shared_contract_declares_generator_schema():

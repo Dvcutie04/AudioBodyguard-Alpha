@@ -62,11 +62,13 @@ signed audit bundle or a promise of encrypted mobile storage. The caller
 chooses when and whether to save/share it. Delete/export UX and secure
 platform storage remain N5 work.
 
-`contracts/session_evidence_view_v1.json` contains 11 coverage and nine
+`contracts/session_evidence_view_v1.json` contains 12 coverage and nine
 capability vectors consumed by Python, Swift and Kotlin. The Swift package
 and Android library each implement a read-only projector; their tests also
 reject malformed local evidence. These are contract libraries, not app
-targets, native event adapters, or real-device qualifications. Cross-platform
+event adapters, or real-device qualifications. P1 adds buildable read-only
+app shells that consume no observation and cannot report ACTIVE. Their simulator
+or APK compilation does not qualify a physical output path. Cross-platform
 parity covers the defined synthetic vectors only.
 
 The authored finder accepts metadata from an **owned player**. A complete
@@ -82,8 +84,8 @@ expiry and runtime facts on both iOS and Android. An event received after an
 app resumes cannot backfill a time when the app was suspended. A durable event
 publisher must distinguish publication failure from observation failure and
 must not erase unresolved endpoint history when the user clears a recap.
-P1 can render these read-only views in accessible installed prototypes once
-actual app targets exist. P2–P4 require named endpoint and observer qualification
+P1 can render these read-only views in accessible installed prototypes after
+simulator/APK compilation and real-device accessibility testing. P2–P4 require named endpoint and observer qualification
 through N2b/N3; N4 handoff still needs future-effect exclusion. Both
 `EndpointHandoffBarrier.is_ready()` and the production factory guard stay
 closed. The existing [N2b qualification record](n2b-lab-qualification-record.md)
