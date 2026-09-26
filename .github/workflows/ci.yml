@@ -58,7 +58,7 @@ jobs:
         run: sh native/lab/owned_output/run_tests.sh
 
   native-swift:
-    name: Swift native contract conformance
+    name: Swift contracts and read-only iOS simulator app
     runs-on: macos-14
     timeout-minutes: 20
     steps:
@@ -67,9 +67,11 @@ jobs:
           persist-credentials: false
       - name: Compile and test Swift contract
         run: swift test --package-path native/ios
+      - name: Compile read-only iOS simulator application
+        run: xcodebuild -project native/ios-app/AQSSReadOnly.xcodeproj -scheme AQSSReadOnly -configuration Debug -sdk iphonesimulator -destination 'generic/platform=iOS Simulator' CODE_SIGNING_ALLOWED=NO build
 
   native-android:
-    name: Android native contract conformance
+    name: Android contracts and read-only APK
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
@@ -81,9 +83,11 @@ jobs:
         with:
           distribution: temurin
           java-version: "17"
-      - name: Set up Gradle 8.10.2
+      - name: Set up Gradle 8.13
         uses: gradle/actions/setup-gradle@v4
         with:
-          gradle-version: "8.10.2"
-      - name: Compile and test Android contract
-        run: gradle -p native/android testDebugUnitTest
+          gradle-version: "8.13"
+      - name: Install Android API 36
+        run: sdkmanager "platforms;android-36"
+      - name: Compile Android contract tests and read-only APK
+        run: gradle -p native/android testDebugUnitTest :app:assembleDebug

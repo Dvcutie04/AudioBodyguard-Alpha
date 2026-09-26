@@ -47,7 +47,7 @@ object SessionEvidenceView {
         "NON_MONOTONIC_CLOCK", "NON_MONOTONIC_EVIDENCE", "NOT_VALIDATED",
         "PERMISSION_DENIED", "PROTECTION_PATH_INELIGIBLE", "RUNTIME_INELIGIBLE",
         "SENSOR_UNAVAILABLE", "STALE_EVIDENCE", "VALIDATED", "USER_PAUSED",
-        "PATH_ELIGIBLE", "POST_CONDITION_UNOBSERVED",
+        "PATH_ELIGIBLE", "POST_CONDITION_UNOBSERVED", "REFERENCE_ONLY",
     )
 
     private fun identity(value: String): Boolean = value.isNotEmpty() && value == value.trim()

@@ -7,11 +7,18 @@ Checkpoint: September 26, 2026. Continue from the restored a-Shell baseline and 
 ## Current checkpoint
 
 The user fast-forwarded the separate a-Shell checkout to main
-`0997133cc8f8859a48943aacbdab579aa503224f` and reported
-`NATIVE_CONTRACTS_CURRENT`, **1,678 Python tests passed in 5.90 seconds**
+`8e4a5c15bdfad35ce7b82ae6092aab9735761bd9` and reported
+`NATIVE_CONTRACTS_CURRENT`, **1,685 Python tests passed in 6.06 seconds**
 with one external dateutil warning, and an empty `lg2 status -s`. This
-supersedes the older 1,652 and 1,641 phone checkpoints below; it does not
-establish phone execution of later branch work or any physical output.
+supersedes the older phone checkpoints below; it does not establish phone
+execution of later branch work or any physical output.
+
+P1 now develops equally scoped iPhone and Android **read-only simulation app
+shells**. The [prototype contract](read-only-native-prototypes.md) specifies
+what their builds prove and what must remain UNKNOWN. The repo's Swift and
+Kotlin package tests, iOS simulator build, Android debug APK build and a-Shell
+Python tests are distinct gates; no shell build implies installed real-device
+qualification or permission to open production execution.
 
 The merged product-software increment adds a bounded, read-only reference
 session journal, a separate pause latch, capability cards, scoped change
@@ -57,12 +64,12 @@ The user verified the separate iPhone a-Shell clone at `38d273e1abec4b979950290e
 | Target | Inspected repository configuration | Evidence boundary |
 | --- | --- | --- |
 | Python reference | `pytest.ini` collects `src` and `tests`; CI uses Python 3.13 | Local Python 3.12 and hosted Python regression execution |
-| iPhone/iOS contract | `native/ios/Package.swift`: Swift tools 5.9, iOS 15 declaration, library and test targets | Hosted macOS Swift package tests; no installed iPhone application or measured output path |
-| Android contract | `native/android/build.gradle.kts`: Android library, minSdk 26, compileSdk 35, Java 17 | Hosted Gradle unit tests; no application targetSdk, service, or measured phone output established |
+| iPhone/iOS prototype | `native/ios/Package.swift` retains the Swift contract library; `native/ios-app` adds a read-only SwiftUI app target with a provisional iOS 15 deployment setting | Hosted Swift contract tests and simulator compilation must pass; no signed iPhone install or measured output path |
+| Android prototype | `native/android` retains the contract library and adds an app module with target/compile SDK 36 and provisional minSdk 26 and application ID | Hosted Gradle contract tests and APK compilation must pass; no Android device install, native service or measured output path |
 | Shared endpoint vectors | `contracts/endpoint_native_boundary_v1.json` and its Markdown contract | 18 synthetic vectors consumed by Python, Swift, and Kotlin |
 | Endpoint handoff | `src/device_fabric/endpoint_handoff_barrier.py`: schema-3 resource holds and pinned verifier identity | Reference ordering and admission inhibition; no qualified native retirement certificate |
 | Owned-output lab | `native/lab/owned_output`: standalone C11 owner, callback/child context, hold matching, retirement pool, retry/invalidation, exact fixture PCM attenuation, typed trace, and scripted backends | 45 local software cases and warning-clean compiler gate; no ALSA SDK, device, native application, or physical qualification |
-| Read-only session views | `src/control/session_evidence_view.py`, authored-track finder, and Swift/Kotlin library projectors | Synthetic snapshots and product wording only; no installed application or continuous native observation |
+| Read-only session views | `src/control/session_evidence_view.py`, authored-track finder, Swift/Kotlin projectors and prototype app shells | Synthetic snapshots and product wording only; no installed real-device qualification or continuous native observation |
 
 These are inspected build settings, not new supported-device or release recommendations.
 
