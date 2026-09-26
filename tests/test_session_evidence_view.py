@@ -63,6 +63,13 @@ def test_new_runtime_restores_only_a_new_snapshot_and_preserves_history_gap():
     assert journal.current(runtime_id="run-b", clock_domain_id="clock-b", now_monotonic=3).state is ProtectionState.UNKNOWN_PHYSICAL_STATE
 
 
+def test_first_sample_with_a_skipped_sequence_reports_missing_history():
+    journal = ReadOnlySessionJournal("sensitive-session-id")
+    journal.append(sample(3))
+    assert journal.recap().missing_sequences == 2
+    assert journal.recap().coverage_percent is None
+
+
 def test_user_pause_remains_visible_after_evidence_expires():
     journal = ReadOnlySessionJournal("sensitive-session-id")
     journal.append(sample(state=ProtectionState.PAUSED, reason="USER_PAUSED", user_paused=True))

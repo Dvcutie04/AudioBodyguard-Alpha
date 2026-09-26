@@ -2,6 +2,7 @@ package com.aqss.nativefeedback
 
 import java.nio.file.Files
 import java.nio.file.Path
+import java.nio.charset.StandardCharsets
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonNull
 import kotlinx.serialization.json.JsonObject
@@ -25,7 +26,7 @@ class SessionEvidenceViewTest {
         )
         val path = candidates.firstOrNull(Files::isRegularFile)
             ?: error("session_evidence_view_v1.json not found")
-        return Json.parseToJsonElement(Files.readString(path)).jsonObject
+        return Json.parseToJsonElement(String(Files.readAllBytes(path), StandardCharsets.UTF_8)).jsonObject
     }
 
     private fun optionalBool(fields: JsonObject, name: String): Boolean? {

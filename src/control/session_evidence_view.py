@@ -139,6 +139,8 @@ class ReadOnlySessionJournal:
             else:
                 self._runtime_discontinuities += 1
             self._missing_sequences += event.sequence - prior.sequence - 1
+        else:
+            self._missing_sequences += event.sequence - 1
         if event.user_paused:
             self._user_pause_latched = True
         elif event.user_resumed:
