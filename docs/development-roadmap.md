@@ -20,9 +20,8 @@ consume 20 shared synthetic coverage/capability vectors. Neither these
 vectors nor player callbacks prove continuous capture, rendered captions,
 acoustic output or user perception. See the
 [session-view contract](session-evidence-reference.md) for the permitted
-wording and missing native integration. The final regression and hosted CI
-results for this branch must be tied to its exact commit, separately from the
-phone checkpoint.
+wording and missing native integration. The corrected software revision
+passed **1,678 local Python tests** and [all four hosted CI jobs](https://github.com/Dvcutie04/AudioBodyguard-Alpha/actions/runs/36276009479), including Swift and Android compilation. A later documentation-only commit still needs its own CI checkpoint. These are separate from the phone result and physical gates.
 
 The restoration merged into `main`, followed by the deterministic test-clock correction in [PR #3](https://github.com/Dvcutie04/AudioBodyguard-Alpha/pull/3). Its [main verification run](https://github.com/Dvcutie04/AudioBodyguard-Alpha/actions/runs/36070023701) passed 1,625 Python tests plus Swift and Android conformance. The [source manifest](a-shell-sync-manifest.json) accounts for the 441 exported a-Shell paths; additions in this development increment are outside that historical snapshot.
 

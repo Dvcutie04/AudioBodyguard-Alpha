@@ -18,7 +18,7 @@ Development continues from that restored baseline. N1 added eight native-work an
 
 This branch adds **read-only session evidence projections** for coverage snapshots, unknown gaps, capability prerequisites, and scoped change wording. A separate owned-player authored-track finder distinguishes availability, player selection, and presentation callbacks while preserving manual choice priority. Python, Swift and Kotlin consume a shared 20-case synthetic status/capability fixture. The privacy-side timeline is bounded, redacted for export, and deliberately does not report uninterrupted coverage durations. These are reference libraries, not installed iOS or Android app targets; see the [session evidence contract and limits](docs/session-evidence-reference.md).
 
-The product-software branch passed **1,678 Python tests locally** with the generated feedback contracts current and the 45 scripted C lab cases passing both normal and sanitizer runs. Swift/Android compilation and tests require the revision-specific hosted CI run; this result has not yet been reproduced in a-Shell.
+The product-software branch passed **1,678 Python tests locally** with the generated feedback contracts current and the 45 scripted C lab cases passing both normal and sanitizer runs. [Hosted CI for the corrected software revision](https://github.com/Dvcutie04/AudioBodyguard-Alpha/actions/runs/36276009479) passed Python, Swift, Android and the scripted C lab. This result has not yet been reproduced in a-Shell, and it does not qualify physical output.
 
 | Area | Source and behavior |
 | --- | --- |
