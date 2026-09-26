@@ -127,9 +127,9 @@ The first child regression compiled and failed at the reclamation assertion:
 the queued/active gate returned metadata while one child was still retained.
 Adding the retained-child count to that gate made it pass.
 The child checkpoint had **15 native cases: six owner, five callback, and four
-child cases**. The increments below bring the current total to **35 cases in
-six executables**, run in both normal and sanitizer CI steps. Python collection
-remains unchanged.
+child cases**. The earlier increments brought the suite to 35 cases; the PCM
+and trace increments below bring the local total to **45 cases in eight
+executables**. Python collection remains unchanged.
 
 ## Scoped acknowledgements and six deterministic cases
 
@@ -234,6 +234,39 @@ mapping and scheduling need separate qualification. Initialization is for fresh
 fixture storage only. No recovery callback is allowed to reset a live owner,
 resubmit its suffix as fresh work, discard references, or resolve its history.
 
+## Fixture PCM attenuation and six deterministic cases
+
+`pcm.c` prepares a fixed-format test block from borrowed mono S16LE input at
+48 kHz. It accepts 1–256 frames and integer gain from 0 through 1000 permille.
+Byte order is decoded explicitly; multiplication uses a signed 32-bit
+intermediate and division truncates toward zero. Format, range, size, work ID,
+and source/destination overlap are checked before output is written. The source
+remains unchanged. A prepared block holds its chosen gain through partial
+acceptance and retries when its caller keeps the exposed block unchanged and
+alive; preparing a later profile does not mutate it. The struct is not
+read-only or protected against a caller's write.
+
+Six cases check representative exact arithmetic and signed extremes, every
+signed-16 input across every allowed gain, invalid-format/range rejection,
+malformed and overlapping buffers, capacity and unaligned input, and prepared
+block stability. This profile is only a deterministic fixture transform. It
+does not provide negotiated-format support, perceptual loudness correction,
+production DSP, real-time scheduling, or acoustic quality evidence.
+
+## Typed bounded trace and four deterministic cases
+
+Trace schema version 2 classifies results as no result, accepted prefix, zero,
+would-block, or invalid. Each event includes a contiguous sequence number,
+backend-call index, owner admission revision, and accepted frame count, along
+with the existing return and offset fields. The count is software accounting,
+not a measurement of frames presented or heard. The fixed trace capacity never
+evicts earlier events.
+
+Four cases cover mixed result ordering, a fatal return after an accepted prefix,
+a hold that arrives during a call, and trace-capacity exhaustion with explicit
+call return/accounting records. None turns an acknowledgement into cancellation,
+physical finality, or permission for a successor.
+
 ## Evidence boundary and next work
 
 This is a deterministic, single-thread lab. Reentrant test hooks expose an
@@ -245,9 +278,10 @@ physical observations, or native output handles here.
 
 The source, owner, backend context, and callback delivery context remain live
 until the test ends. Only the separate callback metadata allocation exercises
-reclamation. The next researched increment specifies exact gain arithmetic and
-format validation. Actual process recovery, native clocks, durable incarnation
-identity, real producer synchronization, and native quiescence remain open.
+reclamation. Exact fixture attenuation and bounded typed trace are implemented.
+Actual process recovery, native clocks, durable incarnation identity, real
+producer synchronization, negotiated formats, and native quiescence remain
+open.
 The scripted retry and invalidation handling must not be relabeled an implemented
 ALSA recovery policy.
 

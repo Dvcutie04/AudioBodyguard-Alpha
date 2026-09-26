@@ -33,3 +33,11 @@ fi
     "$lab_dir/test_retry.c" \
     -o "$lab_dir/build/test_retry"
 "$lab_dir/build/test_retry"
+"${CC:-cc}" "$@" \
+    "$lab_dir/owner.c" "$lab_dir/pcm.c" "$lab_dir/test_pcm.c" \
+    -o "$lab_dir/build/test_pcm"
+"$lab_dir/build/test_pcm"
+"${CC:-cc}" "$@" \
+    "$lab_dir/owner.c" "$lab_dir/test_trace.c" \
+    -o "$lab_dir/build/test_trace"
+"$lab_dir/build/test_trace"

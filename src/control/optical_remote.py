@@ -2,7 +2,7 @@ import json
 from dataclasses import dataclass, asdict
 from typing import List, Dict, Optional, Any
 
-from ..omotenashi.graceful_degradation import TrustGradient, ActionVerdict
+from ..omotenashi.graceful_degradation import TrustGradient
 
 @dataclass
 class ButtonExtraction:
@@ -42,11 +42,13 @@ class OpticalRemoteMapper:
         )
 
     def verify_command(self, hypothesis: RemoteHypothesis) -> Dict[str, Any]:
+        """Classify an untrusted hypothesis; this does not verify or send a command."""
         verdict = self.trust_gradient.evaluate_confidence(hypothesis.confidence_score)
         return {
             "hypothesis": asdict(hypothesis),
             "trust_verdict": asdict(verdict),
-            "execution_status": "Testing Command" if not verdict.requires_confirmation else "Pending User Confirmation"
+            "execution_status": "NOT_EXECUTED",
+            "proposal_status": "REVIEW_REQUIRED" if verdict.action_type == "propose_for_review" else "INSUFFICIENT_EVIDENCE",
         }
 
 if __name__ == '__main__':
