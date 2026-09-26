@@ -14,6 +14,13 @@ permission, endpoint command, live session history, background service,
 automatic recovery, cross-platform handoff, or ability to actuate from these
 shells.
 
+Both shells also invoke their native read-only capability projector with six
+explicitly unknown prerequisites: hardware, qualification, permission, route,
+runtime and independent observation. The checklist therefore displays six
+unknowns and cannot offer a control. The move-session explanation says that
+no handoff path is available; it is a static statement about this disconnected
+prototype, not a live evaluation or opening of the endpoint handoff barrier.
+
 ## Read-only native hints
 
 | Shell | What can be displayed while the screen is active | What cannot be concluded |

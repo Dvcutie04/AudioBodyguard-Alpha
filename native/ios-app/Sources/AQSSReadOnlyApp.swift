@@ -16,12 +16,25 @@ private struct ReadOnlyHomeView: View {
     private let coverage = AQSSSessionEvidenceView.coverage(
         nil, runtimeId: "prototype", clockDomainId: "prototype", nowMonotonic: 0
     )
+    private let capability = AQSSSessionEvidenceView.capability(
+        AQSSCapabilityFacts(
+            hardware: nil, qualification: nil, permission: nil,
+            route: nil, runtime: nil, evidence: nil,
+            observedMonotonic: 0, expiresMonotonic: 0, clockDomainId: "prototype"
+        ), clockDomainId: "prototype", nowMonotonic: 0
+    )
 
     private var coverageTitle: String {
         guard coverage.state == .unknownPhysicalState, coverage.reason == "NO_OBSERVATION" else {
             return "Unknown physical state — app status unavailable"
         }
         return "Unknown physical state"
+    }
+
+    private var capabilityTitle: String {
+        guard capability.label == "UNKNOWN", !capability.canActuate,
+              capability.reasons.count == 6 else { return "Unavailable — checklist unconfirmed" }
+        return "Six setup checks unknown"
     }
 
     var body: some View {
@@ -31,14 +44,16 @@ private struct ReadOnlyHomeView: View {
                     .font(.headline)
                 section("Coverage", detail: coverageTitle, explanation:
                     "No output observation. This screen does not monitor or protect audio.")
-                section("Supported controls", detail: "Unknown", explanation:
-                    "No player, route, permission, or physical observer is connected.")
+                section("Supported controls", detail: capabilityTitle, explanation:
+                    "Output hardware, qualification, permission, route, runtime, and independent observation are unconfirmed. This simulation cannot offer a control.")
                 section("Captions", detail: "Not observed", explanation:
                     "No authored caption track has been discovered or selected.")
                 section("Session history", detail: "No observed events", explanation:
                     "A missing history cannot establish continuous coverage.")
                 section("Foreground OS hint", detail: audioHints.lastHint, explanation:
                     "Only this app's audio-session notifications while this screen is active. A notification cannot verify playback, another app's route, or physical output.")
+                section("Move this session", detail: "Unavailable", explanation:
+                    "No supported endpoint or verified transfer path is connected. Moving a session between phones is not available here.")
                 section("Next step", detail: "Qualify a supported path", explanation:
                     "A supported output and independent observation path must be qualified before this app can report an active listening session.")
             }

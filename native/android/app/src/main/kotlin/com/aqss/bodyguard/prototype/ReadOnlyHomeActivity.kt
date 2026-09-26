@@ -12,6 +12,7 @@ import android.view.ViewGroup
 import android.widget.LinearLayout
 import android.widget.ScrollView
 import android.widget.TextView
+import com.aqss.nativefeedback.CapabilityFacts
 import com.aqss.nativefeedback.SessionEvidenceView
 import com.aqss.nativefeedback.SessionState
 
@@ -27,6 +28,13 @@ class ReadOnlyHomeActivity : Activity() {
         // The native projector receives no observation. Never synthesize an ACTIVE sample.
         val coverage = SessionEvidenceView.coverage(null, "prototype", "prototype", 0.0)
         require(coverage.state == SessionState.UNKNOWN_PHYSICAL_STATE && coverage.reason == "NO_OBSERVATION")
+        val capability = SessionEvidenceView.capability(
+            CapabilityFacts(null, null, null, null, null, null, 0.0, 0.0, "prototype"),
+            "prototype", 0.0
+        )
+        val capabilitySummary = if (capability.label == "UNKNOWN" && !capability.canActuate &&
+            capability.reasons.size == 6
+        ) R.string.six_checks_unknown else R.string.checks_unconfirmed
 
         val scroll = ScrollView(this)
         val column = LinearLayout(this).apply {
@@ -52,7 +60,8 @@ class ReadOnlyHomeActivity : Activity() {
         line(getString(R.string.coverage_unknown), 20f, heading = true)
         line(getString(R.string.no_observation), 17f)
         line(getString(R.string.capability_title), 20f, heading = true)
-        line(getString(R.string.capability_unknown), 17f)
+        line(getString(capabilitySummary), 17f)
+        line(getString(R.string.capability_unknown), 15f)
         line(getString(R.string.caption_title), 20f, heading = true)
         line(getString(R.string.caption_unknown), 17f)
         line(getString(R.string.history_title), 20f, heading = true)
@@ -60,6 +69,8 @@ class ReadOnlyHomeActivity : Activity() {
         line(getString(R.string.hint_title), 20f, heading = true)
         hintView = line(getString(R.string.hint_waiting), 17f)
         line(getString(R.string.hint_scope), 15f)
+        line(getString(R.string.handoff_title), 20f, heading = true)
+        line(getString(R.string.handoff_unavailable), 17f)
         line(getString(R.string.next_step_title), 20f, heading = true)
         line(getString(R.string.next_step), 17f)
         setContentView(scroll)
