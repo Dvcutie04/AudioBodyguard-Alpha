@@ -31,6 +31,22 @@ protected authority/replay/finality journals. It is not a durable complete
 transition stream; a native product must supply one before offering historical
 duration claims.
 
+`src/control/session_event_producer.py` adds one **in-process reference
+producer** bound to a supervisor, journal, runtime and monotonic clock
+domain. It captures one supervisor snapshot at a supplied monotonic time and
+publishes it separately at receipt time. A newer capture supersedes the one
+pending slot; failed publication retains it for retry, and the next capture
+uses a new sequence so a known lost write remains visible. An append that
+actually completed before reporting an error cannot be retried as a second
+event. The producer caps sample expiry at the supervisor's configured age,
+rejects rollback within its runtime, and downgrades a changed snapshot to
+UNKNOWN before publication. It removes unrecognized reason codes before
+retention. **Every software ACTIVE result becomes UNKNOWN_PHYSICAL_STATE with
+REFERENCE_ONLY**: the Python supervisor has no native physical observer.
+No manual user-pause or resume is inferred from a status reason. This is a
+bounded sample publisher, not a complete OS callback feed, durable privacy
+journal, or proof of a functioning protection path.
+
 A separate in-memory user-pause latch survives later ACTIVE or unknown
 observations. A later ACTIVE report stays PAUSED for display until an explicit
 resume event; an unresolved physical state remains UNKNOWN with user pause as

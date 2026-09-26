@@ -20,13 +20,13 @@ The merged reference increment adds **read-only session evidence projections** f
 
 The merged increment passed **1,678 Python tests locally** with the generated feedback contracts current and the 45 scripted C lab cases passing both normal and sanitizer runs. [Hosted CI for the merged main revision](https://github.com/Dvcutie04/AudioBodyguard-Alpha/actions/runs/36276387177) passed Python, Swift, Android and the scripted C lab. The user then fast-forwarded the a-Shell checkout to `0997133` and reported **1,678 Python tests passed in 5.90 seconds**, `NATIVE_CONTRACTS_CURRENT` and a clean status. The warning is the existing external dateutil deprecation. Neither run qualifies physical output.
 
-The next reference hardening increment tests that an ACTIVE-to-stale status reports the same advanced admission generation as the supervisor, including the automation rejection path. The regression failed before the fix and **1,679 Python tests passed locally** after it. This increment has not been synced to the phone or qualified as a native event source.
+The supervisor generation consistency fix passed **1,679 Python tests locally** and all four hosted main CI jobs; it has not been rerun on the phone. A subsequent in-process reference event producer captures software status separately from publication, exposes known lost samples through sequence gaps, and projects any software ACTIVE status as unknown physical state. Six new checks bring the local Python suite to **1,685 passed**; the phone has not run this revision. This producer is neither a native event source nor physical qualification.
 
 | Area | Source and behavior |
 | --- | --- |
 | Controller authority | `src/control` contains controller leases, signed commands, fencing, intent admission, and reauthorization contracts. |
 | Protection state | The protection supervisor, evidence source, dispatcher, and platform event adapter preserve truthful paused, degraded, recovery, and unknown states. |
-| Session explanation | Read-only session snapshots, capability cards, scoped change wording and authored-track reports retain uncertainty and do not grant actuation. |
+| Session explanation | Read-only session snapshots, a bounded reference producer, capability cards, scoped change wording and authored-track reports retain uncertainty and do not grant actuation. |
 | Physical truth and finality | `src/device_fabric` contains world-state and physical contracts, execution journals, handoff gates, replay handling, and endpoint finality assertions. |
 | Verified media state | Media profiles, undo candidates, and verified settings bind to matching observation and verification evidence. |
 | Selection and resources | `src/edge` and `src/interface` provide resource contracts, TV selection, user feedback, and reference interfaces. |
