@@ -31,13 +31,14 @@ passed locally, and [main CI](https://github.com/Dvcutie04/AudioBodyguard-Alpha/
 passed its Python, Swift, Android and scripted C jobs. The phone has not yet
 run that revision or an installed native app.
 
-The next P0 increment is a **reference-only, in-process event producer**.
+A subsequent P0 increment added a **reference-only, in-process event producer**.
 Its capture and publication are distinct, with one pending sample and
 sequence gaps for known lost publications. A Python supervisor ACTIVE
 snapshot is projected as UNKNOWN_PHYSICAL_STATE, never as qualified physical
 coverage. Delayed changed snapshots, expired samples and rollback fail
 closed; user pause is not inferred. Six new tests brought the local Python
-suite to **1,685 passed**. Native iOS/Android event adapters, durable
+suite to **1,685 passed**. [Main CI](https://github.com/Dvcutie04/AudioBodyguard-Alpha/actions/runs/36278169070)
+passed all four jobs. Native iOS/Android event adapters, durable
 continuity and physical observers remain pending. The
 [session-view contract](session-evidence-reference.md) defines its scope.
 
