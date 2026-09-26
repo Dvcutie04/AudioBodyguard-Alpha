@@ -11,6 +11,13 @@
     <string name="caption_unknown">No authored caption track has been discovered or selected.</string>
     <string name="history_title">Session history</string>
     <string name="history_unknown">No observed session events. A missing history cannot establish continuous coverage.</string>
+    <string name="hint_title">Foreground OS hint</string>
+    <string name="hint_waiting">No Android device-inventory callback observed in this foreground visit.</string>
+    <string name="hint_added">Android delivered a connected-audio-device callback (added or initial inventory).</string>
+    <string name="hint_removed">Android reports a connected-audio-device inventory change (removed).</string>
+    <string name="hint_unavailable">Connected-device listener unavailable. Any changes are unknown.</string>
+    <string name="hint_paused">Foreground observation paused. Changes while hidden are unknown.</string>
+    <string name="hint_scope">Only system connected-device inventory changes while this screen is visible. A connected device is not proof that this app, or another app, routed audio to it or produced physical output.</string>
     <string name="next_step_title">Next step</string>
     <string name="next_step">A supported output and independent observation path must be qualified before this app can report an active listening session.</string>
 </resources>
