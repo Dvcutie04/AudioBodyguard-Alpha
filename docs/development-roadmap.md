@@ -13,15 +13,14 @@ dateutil warning**, and an empty `lg2 status -s`. This replaces the older
 1,641 phone checkpoint below as the latest **phone-executed** evidence; it
 does not establish execution of subsequent GitHub-branch work on the phone.
 
-The current product-software branch adds a bounded, read-only reference
+The merged product-software increment adds a bounded, read-only reference
 session journal, a separate pause latch, capability cards, scoped change
 wording, and owned-player authored-track reports. Python, Swift, and Kotlin
 consume 20 shared synthetic coverage/capability vectors. Neither these
 vectors nor player callbacks prove continuous capture, rendered captions,
 acoustic output or user perception. See the
 [session-view contract](session-evidence-reference.md) for the permitted
-wording and missing native integration. The corrected software revision
-passed **1,678 local Python tests** and [all four hosted CI jobs](https://github.com/Dvcutie04/AudioBodyguard-Alpha/actions/runs/36276009479), including Swift and Android compilation. A later documentation-only commit still needs its own CI checkpoint. These are separate from the phone result and physical gates.
+wording and missing native integration. The final PR revision passed **1,678 local Python tests** and [all four hosted CI jobs](https://github.com/Dvcutie04/AudioBodyguard-Alpha/actions/runs/36276197278), including Swift and Android compilation. These are separate from the phone result and physical gates.
 
 The restoration merged into `main`, followed by the deterministic test-clock correction in [PR #3](https://github.com/Dvcutie04/AudioBodyguard-Alpha/pull/3). Its [main verification run](https://github.com/Dvcutie04/AudioBodyguard-Alpha/actions/runs/36070023701) passed 1,625 Python tests plus Swift and Android conformance. The [source manifest](a-shell-sync-manifest.json) accounts for the 441 exported a-Shell paths; additions in this development increment are outside that historical snapshot.
 
