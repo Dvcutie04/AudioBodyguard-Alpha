@@ -1,5 +1,5 @@
 import math
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from enum import Enum
 from functools import wraps
 from threading import RLock
@@ -37,10 +37,13 @@ def _serialized(method):
             prior_state = self.state
             prior_generation = self._admission_generation
             try:
-                return method(self, *args, **kwargs)
+                result = method(self, *args, **kwargs)
             finally:
                 if prior_state is ProtectionState.ACTIVE and self.state is not ProtectionState.ACTIVE and self._admission_generation == prior_generation:
                     self._admission_generation += 1
+            if type(result) is ProtectionStatus and result.admission_generation != self._admission_generation:
+                return replace(result, admission_generation=self._admission_generation)
+            return result
     return locked
 
 

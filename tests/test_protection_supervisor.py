@@ -160,6 +160,35 @@ def test_status_snapshot_is_immutable_and_internally_consistent():
         raise AssertionError("status snapshot was mutable")
 
 
+def test_staleness_status_returns_the_generation_that_invalidated_admission():
+    supervisor = ProtectionSupervisor(max_evidence_age=2.0)
+    valid = dict(
+        permission_granted=True, runtime_eligible=True, sensor_available=True,
+        connected=True, authority_valid=True, protection_path_eligible=True,
+        observed_at=100.0, now=100.0,
+        observed_monotonic=10.0, monotonic_now=10.0,
+    )
+    supervisor.validate(**valid)
+    assert supervisor.status(monotonic_now=10.0).admission_generation == 0
+
+    stale = supervisor.status(monotonic_now=12.001)
+    assert stale.state is ProtectionState.DEGRADED
+    assert stale.reason == "STALE_EVIDENCE"
+    assert stale.automation_allowed is False
+    assert stale.admission_generation == 1
+    assert supervisor.status(monotonic_now=12.001).admission_generation == 1
+
+    gated = ProtectionSupervisor(max_evidence_age=2.0)
+    gated.validate(**valid)
+    try:
+        gated.require_automation(monotonic_now=12.001)
+    except ProtectionUnavailableError as error:
+        assert error.status.state is ProtectionState.DEGRADED
+        assert error.status.admission_generation == 1
+    else:
+        raise AssertionError("stale automation was admitted")
+
+
 def test_automation_gate_fails_closed_and_returns_active_status():
     supervisor = ProtectionSupervisor(max_evidence_age=2.0)
     try:

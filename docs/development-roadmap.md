@@ -6,12 +6,12 @@ Checkpoint: September 26, 2026. Continue from the restored a-Shell baseline and 
 
 ## Current checkpoint
 
-The user later fast-forwarded the separate a-Shell checkout to main
-`b70d47e3b26934972745bb24f4f6ef2c078e3766` and reported
-`NATIVE_CONTRACTS_CURRENT`, **1,652 Python tests passed with one external
-dateutil warning**, and an empty `lg2 status -s`. This replaces the older
-1,641 phone checkpoint below as the latest **phone-executed** evidence; it
-does not establish execution of subsequent GitHub-branch work on the phone.
+The user fast-forwarded the separate a-Shell checkout to main
+`0997133cc8f8859a48943aacbdab579aa503224f` and reported
+`NATIVE_CONTRACTS_CURRENT`, **1,678 Python tests passed in 5.90 seconds**
+with one external dateutil warning, and an empty `lg2 status -s`. This
+supersedes the older 1,652 and 1,641 phone checkpoints below; it does not
+establish phone execution of later branch work or any physical output.
 
 The merged product-software increment adds a bounded, read-only reference
 session journal, a separate pause latch, capability cards, scoped change
@@ -21,6 +21,14 @@ vectors nor player callbacks prove continuous capture, rendered captions,
 acoustic output or user perception. See the
 [session-view contract](session-evidence-reference.md) for the permitted
 wording and missing native integration. The final PR revision passed **1,678 local Python tests** and [all four hosted CI jobs](https://github.com/Dvcutie04/AudioBodyguard-Alpha/actions/runs/36276197278), including Swift and Android compilation. These are separate from the phone result and physical gates.
+
+Subsequent local P0 hardening found that an ACTIVE-to-stale `status()`
+returned an old admission generation while the supervisor advanced it on
+exit. A focused regression failed at that mismatch; the returned immutable
+status now reflects the advanced generation, including the rejection returned
+by `require_automation()`. The focused case and **1,679 full Python tests**
+passed locally. This branch has not yet been run in a-Shell or on an installed
+native app. It adds no event source or positive execution authority.
 
 The restoration merged into `main`, followed by the deterministic test-clock correction in [PR #3](https://github.com/Dvcutie04/AudioBodyguard-Alpha/pull/3). Its [main verification run](https://github.com/Dvcutie04/AudioBodyguard-Alpha/actions/runs/36070023701) passed 1,625 Python tests plus Swift and Android conformance. The [source manifest](a-shell-sync-manifest.json) accounts for the 441 exported a-Shell paths; additions in this development increment are outside that historical snapshot.
 
