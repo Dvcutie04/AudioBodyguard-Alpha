@@ -1,4 +1,4 @@
-import json
+import math
 from dataclasses import dataclass
 
 @dataclass
@@ -10,23 +10,26 @@ class ActionVerdict:
 
 class TrustGradient:
     def __init__(self):
-        # Thresholds defined by the 2030 Omotenashi vision
-        self.threshold_stone = 0.90   # Certain -> act silently
-        self.threshold_bamboo = 0.70  # Moderately certain -> act gently
-        self.threshold_silk = 0.40    # Uncertain -> ask
+        # Display-only confidence bands. They convey no execution authority.
+        self.threshold_stone = 0.90
+        self.threshold_bamboo = 0.70
+        self.threshold_silk = 0.40
         
     def evaluate_confidence(self, confidence_score: float) -> ActionVerdict:
+        if type(confidence_score) not in (int, float) or not math.isfinite(confidence_score) or not 0 <= confidence_score <= 1:
+            raise ValueError("invalid confidence")
         if confidence_score >= self.threshold_stone:
-            return ActionVerdict("Stone", confidence_score, "silent_execution", False)
+            band = "high_confidence"
         elif confidence_score >= self.threshold_bamboo:
-            return ActionVerdict("Bamboo", confidence_score, "gentle_execution", False)
+            band = "moderate_confidence"
         elif confidence_score >= self.threshold_silk:
-            return ActionVerdict("Silk", confidence_score, "prompt_user", True)
+            band = "low_confidence"
         else:
-            return ActionVerdict("Hard_Stop", confidence_score, "do_not_act", True)
+            return ActionVerdict("insufficient_evidence", confidence_score, "do_not_act", False)
+        return ActionVerdict(band, confidence_score, "propose_for_review", True)
 
 if __name__ == '__main__':
     gradient = TrustGradient()
-    # Simulate a 0.85 confidence signal (should be Bamboo)
+    # Simulate a 0.85 confidence proposal; no command is issued.
     verdict = gradient.evaluate_confidence(0.85)
     print(f"Omotenashi Trust Verdict: {verdict.material_state} - {verdict.action_type}")

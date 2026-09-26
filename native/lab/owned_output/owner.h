@@ -39,11 +39,26 @@ typedef enum {
     AQSS_LAB_EVENT_HOLD_ACKNOWLEDGED
 } aqss_lab_event_kind;
 
+typedef enum {
+    AQSS_LAB_RETURN_NONE,
+    AQSS_LAB_RETURN_PREFIX,
+    AQSS_LAB_RETURN_ZERO,
+    AQSS_LAB_RETURN_WOULD_BLOCK,
+    AQSS_LAB_RETURN_INVALID
+} aqss_lab_return_kind;
+
 typedef struct {
+    uint32_t schema_version;
+    size_t sequence;
     aqss_lab_event_kind kind;
     uint64_t work_id;
+    size_t call_index;
+    uint64_t admission_revision;
+    /* Accounted total at this event, not a physical observation. */
+    size_t accepted_frames;
     size_t offset;
     size_t requested_frames;
+    aqss_lab_return_kind return_kind;
     /* Meaningful only for CALL_RETURNED and RETURN_RECORDED. */
     ptrdiff_t returned_frames;
 } aqss_lab_event;

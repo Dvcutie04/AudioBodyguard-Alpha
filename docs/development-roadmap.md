@@ -1,6 +1,6 @@
 # AQSS development roadmap
 
-Checkpoint: September 25, 2026. Continue from the restored a-Shell baseline and the existing native endpoint qualification research. iPhone/iOS and Android remain equal product targets.
+Checkpoint: September 26, 2026. Continue from the restored a-Shell baseline and the existing native endpoint qualification research. iPhone/iOS and Android remain equal product targets.
 
 **INFERENCE IS NOT REALITY. AI proposes. Policy authorizes. Physical Commit verifies.**
 
@@ -12,7 +12,7 @@ N1 now includes a bounded, explicitly unqualified fake endpoint with eight work-
 
 The production factory guard and `EndpointHandoffBarrier.is_ready()` remain closed. No physical device was actuated by this increment.
 
-N2a now compiles a separate C11 lab with **35 deterministic cases**: six owner, five callback, four child, six acknowledgement, five retirement, and nine retry/invalidation cases. These are additional native test cases, not part of the 1,641-test Python count. Its scripted backend exercises no audio API or hardware. The [lab contract](../native/lab/owned_output/README.md) defines the call phases, bounded registries, identity/deadline matching, retry/fault rules, and remaining ownership debt; hosted CI has a separate native-lab job.
+N2a now compiles a separate C11 lab with **45 deterministic cases**: six owner, five callback, four child, six acknowledgement, five retirement, nine retry/invalidation, six PCM attenuation, and four trace cases. These are additional native test cases, not part of the current 1,652-test Python count. Its scripted backend exercises no audio API or hardware. Local normal and AddressSanitizer/UBSan runs passed all eight executables; local sanitizer used `ASAN_OPTIONS=detect_leaks=0` because LeakSanitizer is unsupported in this traced workspace. The [lab contract](../native/lab/owned_output/README.md) defines the call phases, bounded registries, identity/deadline matching, retry/fault rules, attenuation profile, typed event trace, and remaining ownership debt. Hosted CI has a separate native-lab job; inspect the published revision's result separately.
 
 The user verified the separate iPhone a-Shell clone at `38d273e1abec4b979950290ed1bac8cf640a8161`: generated contracts current, **1,641 passed with the existing dateutil warning in 7.50s**, and empty `lg2 status -s` output. This is the phone baseline before the retry/invalidation increment below; it is not evidence of phone execution of later changes or of the compiled C cases.
 
@@ -25,7 +25,7 @@ The user verified the separate iPhone a-Shell clone at `38d273e1abec4b979950290e
 | Android contract | `native/android/build.gradle.kts`: Android library, minSdk 26, compileSdk 35, Java 17 | Hosted Gradle unit tests; no application targetSdk, service, or measured phone output established |
 | Shared endpoint vectors | `contracts/endpoint_native_boundary_v1.json` and its Markdown contract | 18 synthetic vectors consumed by Python, Swift, and Kotlin |
 | Endpoint handoff | `src/device_fabric/endpoint_handoff_barrier.py`: schema-3 resource holds and pinned verifier identity | Reference ordering and admission inhibition; no qualified native retirement certificate |
-| Owned-output lab | `native/lab/owned_output`: standalone C11 owner, callback/child context, hold matching, retirement pool, retry/invalidation, and scripted backends | 35 software cases and warning-clean compiler gate; no ALSA SDK, device, native application, or physical qualification |
+| Owned-output lab | `native/lab/owned_output`: standalone C11 owner, callback/child context, hold matching, retirement pool, retry/invalidation, exact fixture PCM attenuation, typed trace, and scripted backends | 45 local software cases and warning-clean compiler gate; no ALSA SDK, device, native application, or physical qualification |
 
 These are inspected build settings, not new supported-device or release recommendations.
 
@@ -107,6 +107,16 @@ Nine new C cases cover positive retry progress, immediate fatal-return inhibitio
 
 This retains one sticky first reason rather than a complete fault-event history. It uses trusted fixture objects on one thread and does not implement an event scheduler, actual route monitoring, native cancellation/recovery, or fresh-work authorization. Exact OS/backend mapping remains a separate N2b obligation.
 
+## N2a exact attenuation and event trace increment
+
+The existing N2 research covers the bounded arithmetic and trace obligations in this step; no new physical API or platform behavior was introduced. `pcm.c` accepts only mono, signed 16-bit little-endian, 48 kHz fixture blocks with 1–256 frames and integer gain from 0 to 1000 permille. It decodes bytes explicitly, uses a signed 32-bit intermediate, divides toward zero, and rejects malformed format, size, gain, work identity, and overlapping buffers before writing output. The input is preserved. The caller must keep the prepared block unchanged and alive across partial acceptance and retries; a later profile preparation does not rewrite it. The exposed C struct does not enforce immutability.
+
+Six PCM cases cover exact representative rounding and extremes, exhaustive signed-16 input values across all supported gains, format and range rejection, malformed and aliased buffers, capacity and unaligned input, and retry stability. This is a deterministic fixture transform; it is not an equal-loudness algorithm, production DSP, negotiated device format, clipping-quality study, or live audio path.
+
+The owner trace now emits typed result kinds for no progress, accepted prefixes, zero, would-block, and invalid returns. Schema version 2 adds contiguous event sequence, call index, admission revision, and accepted frame count. Four tests cover mixed result ordering, fatal-return accounting after an accepted prefix, an in-flight hold cut, and bounded trace saturation. The accepted frame count is software accounting and must not be presented as proof of audible output.
+
+Local verification on September 26: after the optical proposal boundary correction, the full Python suite passed **1,652 tests in 3.71 seconds**, and the generator reported `NATIVE_CONTRACTS_CURRENT`. The normal and local ASan/UBSan C runners each passed **45 C cases**. The workspace has no Swift or Gradle executable, so those suites were not rerun here; hosted runs must be inspected after publication. No user phone execution of this increment has been reported.
+
 ## Remaining native gates
 
 The sequence follows the native qualification brief, `AQSS_N2_Owned_Output_Lab_Research_2026-09-24.md` with its September 25 ownership continuation, and the master handoff. The bounded N2a research authorizes the implementation steps below; it does not qualify a real backend.
@@ -115,13 +125,15 @@ The sequence follows the native qualification brief, `AQSS_N2_Owned_Output_Lab_R
 | --- | --- | --- |
 | N0 — Inventory | Repository/native contract inventory complete; exact physical hardware and measurement setup still unselected | Pin real build hosts and device/route details before a hardware experiment |
 | N1 — Shared conformance | Shared 18-vector contract, bounded work sequencing, and test-only context invalidation implemented | Preserve the unresolved native and persistence questions; keep production readiness unavailable |
-| N2a — Portable owned-output lab | Partial-transfer/hold accounting, callback/child lifetime, scoped acknowledgement matching, bounded metadata retirement, scripted zero/EAGAIN retries, and runtime invalidation implemented | Continue exact gain arithmetic, format validation, and bounded trace detail; real backend-specific recovery and scheduling belong to N2b |
+| N2a — Portable owned-output lab | Partial-transfer/hold accounting, callback/child lifetime, scoped acknowledgement matching, bounded metadata retirement, scripted zero/EAGAIN retries, runtime invalidation, fixture attenuation arithmetic, and typed trace implemented | Freeze these as fixture contracts; real backend-specific format negotiation, recovery, scheduling, and output observation belong to N2b |
 | N2b — Real owned output | Pending; Linux/ALSA is the researched first lab candidate | Inventory available hardware, exact driver/route/format, independent capture, and instrumented native calls before physical experiments |
 | N3 — Exact output qualification | Pending | Named hardware/driver/route and reproducible output measurement, including residual buffered work |
 | N4 — Conditional evidence and activation | Pending, dependent on N3 | Authenticated native retirement evidence; reject stale, replayed, conflicting-successor, and invalid-at-submission evidence |
 | N5 — Both mobile products | Pending | Independently qualified iPhone/iOS and Android lifecycle/output paths, resource budgets, consent, and packaging |
 
-The next small increment is **exact attenuation arithmetic and format validation**. Define the supported signed-16-bit format, range-checked integer gain, rounding, and intermediate width before applying gain to immutable work; preserve the original context of an already accepted prefix. These bounded N2a obligations are already researched. New native API, driver, real synchronization, or physical experiments still require the corresponding research review. Cleanup after closure must continue to release existing references without creating new mutating work.
+The next engineering gate is **N2b: inventory a real owned output path before implementing an adapter**. The [N2b qualification record](n2b-lab-qualification-record.md) supplies the scope, required inventory, event distinctions, and falsifiable trials. Fill its actual host/device/route/capture fields before any hardware claim. Do not purchase or require customer hardware by assumption. Before adding any new OS or driver API, refresh research under the charter. Cleanup after closure must continue to release existing references without creating new mutating work.
+
+The legacy optical remote mapper now reports a remote-button hypothesis as `NOT_EXECUTED` and requires review at every eligible confidence band; invalid confidence fails closed. An 11-case regression covers these proposal-only semantics. The mapper does not discover actual hardware capability, authenticate a command, invoke an adapter, or verify a physical result. It must not be used to infer current TV caption state from an unknown IR toggle.
 
 N2b still requires available hardware and independent acquisition inventory. Refresh exact backend/driver/route questions before that physical implementation; no hardware purchase or native deployment follows from the C fixture. Keep real crash persistence and competing handoffs separate from deterministic in-memory sequencing.
 

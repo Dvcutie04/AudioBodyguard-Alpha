@@ -14,7 +14,7 @@ Older GitHub-only modules and tests, 20 stale root files, and machine-local arti
 
 ## Current reference implementations
 
-Development continues from that restored baseline. N1 adds eight native-work and eight context-invalidation cases, bringing the Python suite to **1,641 tests**. The N2a compiled lab has **35 separate C cases**: six owner, five callback, four child, six acknowledgement, five retirement, and nine retry/invalidation cases. They cover bounded retention, stale identities, fixed deadlines, cleanup, safe slot reuse, exact suffix retries, and fault inhibition in the scripted fixture. See the [development roadmap](docs/development-roadmap.md) for verification evidence, native build inventory, and next gates.
+Development continues from that restored baseline. N1 added eight native-work and eight context-invalidation cases (1,641 Python tests at its checkpoint). The current local suite passed **1,652 Python tests**, including 11 proposal-only optical remote checks. The N2a compiled lab has **45 separate C cases**: six owner, five callback, four child, six acknowledgement, five retirement, nine retry/invalidation, six fixture PCM, and four typed-trace cases. The PCM profile exhaustively checks its bounded signed-16 arithmetic; the trace records typed backend outcomes and call ordering. These are scripted software fixtures, not sound processing or evidence of physical playback. This local increment passed normal and AddressSanitizer/UBSan runs; hosted results are revision-specific and phone execution of this increment is pending. See the [development roadmap](docs/development-roadmap.md) for verification evidence, native build inventory, and next gates.
 
 | Area | Source and behavior |
 | --- | --- |

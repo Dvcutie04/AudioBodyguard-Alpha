@@ -2,17 +2,34 @@
 
 #include <errno.h>
 
+static aqss_lab_return_kind classify_return(ptrdiff_t value, size_t requested)
+{
+    if (value == -EAGAIN) return AQSS_LAB_RETURN_WOULD_BLOCK;
+    if (value < 0 || (size_t)value > requested) return AQSS_LAB_RETURN_INVALID;
+    return value == 0 ? AQSS_LAB_RETURN_ZERO : AQSS_LAB_RETURN_PREFIX;
+}
+
 static void append_event(aqss_lab_owner *owner, aqss_lab_event_kind kind,
                          ptrdiff_t returned_frames)
 {
     /* Admission reserves three entries per call; the two hold entries are
      * independent of ordinary capacity. No record is overwritten or evicted.
      */
-    owner->events[owner->event_count++] = (aqss_lab_event){
+    size_t index = owner->event_count++;
+    bool has_return = kind == AQSS_LAB_EVENT_CALL_RETURNED ||
+                      kind == AQSS_LAB_EVENT_RETURN_RECORDED;
+    owner->events[index] = (aqss_lab_event){
+        .schema_version = 2,
+        .sequence = index + 1,
         .kind = kind,
         .work_id = owner->work_id,
+        .call_index = owner->call_count,
+        .admission_revision = owner->admission_revision,
+        .accepted_frames = owner->accepted_frames,
         .offset = owner->call_offset,
         .requested_frames = owner->call_frames,
+        .return_kind = has_return ? classify_return(returned_frames, owner->call_frames) :
+                                   AQSS_LAB_RETURN_NONE,
         .returned_frames = returned_frames
     };
 }
@@ -61,9 +78,8 @@ bool aqss_lab_submit(aqss_lab_owner *owner)
         owner->context, owner->frames + owner->call_offset, owner->call_frames);
     owner->phase = AQSS_LAB_CALL_RETURNED;
     append_event(owner, AQSS_LAB_EVENT_CALL_RETURNED, owner->returned_frames);
-    owner->invalid_return = owner->returned_frames != -EAGAIN &&
-        (owner->returned_frames < 0 ||
-         (size_t)owner->returned_frames > owner->call_frames);
+    owner->invalid_return = classify_return(owner->returned_frames, owner->call_frames) ==
+                            AQSS_LAB_RETURN_INVALID;
     if (owner->invalid_return) {
         aqss_lab_invalidate_runtime(owner, AQSS_LAB_FAULT_BACKEND_RESULT);
     }

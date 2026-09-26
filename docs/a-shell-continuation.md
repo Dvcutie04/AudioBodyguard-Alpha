@@ -92,13 +92,16 @@ PYTHONPATH=. python3 -m pytest -q --tb=short
 lg2 status -s
 ```
 
-At this checkpoint the expected software evidence is `NATIVE_CONTRACTS_CURRENT`
-and 1,641 Python tests. Report the actual output, including any error or warning;
+At the pending new publication checkpoint the expected software evidence is
+`NATIVE_CONTRACTS_CURRENT` and 1,652 Python tests; the prior phone baseline has
+1,641. Report the actual output, including any error or warning;
 hosted success is not confirmation of phone execution. If imports differ on the
 phone, inspect that difference before installing or replacing anything.
 
-The 35 scripted C cases run separately in hosted CI, normally and with memory/UB
-instrumentation. The Python command does not compile them. Swift and Android CI
+The previously published 35 scripted C cases run separately in hosted CI,
+normally and with memory/UB instrumentation. The current local N2a increment
+adds six PCM and four trace cases (45 total); check the hosted result of its
+published revision. This a-Shell checkout does not compile the C lab. Swift and Android CI
 checks are synthetic contract tests, not installed applications or physical
 qualification. Production readiness remains unavailable.
 
