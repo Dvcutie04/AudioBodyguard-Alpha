@@ -14,13 +14,13 @@ Older GitHub-only modules and tests, 20 stale root files, and machine-local arti
 
 ## Current reference implementations
 
-Development continues from that restored baseline. N1 added eight native-work and eight context-invalidation cases (1,641 Python tests at its checkpoint). The separate user-run a-Shell checkout at `b70d47e` passed **1,652 Python tests** with one external dateutil warning and a clean `lg2 status -s`; it predates the read-only session-view increment below. The N2a compiled lab has **45 separate C cases**: six owner, five callback, four child, six acknowledgement, five retirement, nine retry/invalidation, six fixture PCM, and four typed-trace cases. The PCM profile exhaustively checks its bounded signed-16 arithmetic; the trace records typed backend outcomes and call ordering. These are scripted software fixtures, not sound processing or evidence of physical playback. Local normal and AddressSanitizer/UBSan runs passed; hosted and phone results for each newer revision must be checked separately. See the [development roadmap](docs/development-roadmap.md) for verification evidence, native build inventory, and next gates.
+Development continues from that restored baseline. N1 added eight native-work and eight context-invalidation cases (1,641 Python tests at its checkpoint). The separate user-run a-Shell checkout at `8e4a5c1` passed **1,685 Python tests** with one external dateutil warning and a clean `lg2 status -s`; it predates the app shells below. The N2a compiled lab has **45 separate C cases**: six owner, five callback, four child, six acknowledgement, five retirement, nine retry/invalidation, six fixture PCM, and four typed-trace cases. The PCM profile exhaustively checks its bounded signed-16 arithmetic; the trace records typed backend outcomes and call ordering. These are scripted software fixtures, not sound processing or evidence of physical playback. Local normal and AddressSanitizer/UBSan runs passed; hosted and phone results for each newer revision must be checked separately. See the [development roadmap](docs/development-roadmap.md) for verification evidence, native build inventory, and next gates.
 
-The merged reference increment adds **read-only session evidence projections** for coverage snapshots, unknown gaps, capability prerequisites, and scoped change wording. A separate owned-player authored-track finder distinguishes availability, player selection, and presentation callbacks while preserving manual choice priority. Python, Swift and Kotlin consume a shared 20-case synthetic status/capability fixture. The privacy-side timeline is bounded, redacted for export, and deliberately does not report uninterrupted coverage durations. These are reference libraries, not installed iOS or Android app targets; see the [session evidence contract and limits](docs/session-evidence-reference.md).
+The merged reference increment adds **read-only session evidence projections** for coverage snapshots, unknown gaps, capability prerequisites, and scoped change wording. A separate owned-player authored-track finder distinguishes availability, player selection, and presentation callbacks while preserving manual choice priority. Python, Swift and Kotlin consume a shared 21-case synthetic status/capability fixture after the new REFERENCE_ONLY vector. The privacy-side timeline is bounded, redacted for export, and deliberately does not report uninterrupted coverage durations. P1 adds buildable read-only iOS and Android simulation shells that start with no observation; these are not installed or qualified real-device apps. See the [session evidence contract](docs/session-evidence-reference.md) and [prototype limits](docs/read-only-native-prototypes.md).
 
 The merged increment passed **1,678 Python tests locally** with the generated feedback contracts current and the 45 scripted C lab cases passing both normal and sanitizer runs. [Hosted CI for the merged main revision](https://github.com/Dvcutie04/AudioBodyguard-Alpha/actions/runs/36276387177) passed Python, Swift, Android and the scripted C lab. The user then fast-forwarded the a-Shell checkout to `0997133` and reported **1,678 Python tests passed in 5.90 seconds**, `NATIVE_CONTRACTS_CURRENT` and a clean status. The warning is the existing external dateutil deprecation. Neither run qualifies physical output.
 
-The supervisor generation consistency fix passed **1,679 Python tests locally** and all four hosted main CI jobs; it has not been rerun on the phone. The in-process reference event producer captures software status separately from publication, exposes known lost samples through sequence gaps, and projects any software ACTIVE status as unknown physical state. Six new checks bring the local Python suite to **1,685 passed**; [all four hosted main CI jobs](https://github.com/Dvcutie04/AudioBodyguard-Alpha/actions/runs/36278169070) passed. The phone has not run this revision. This producer is neither a native event source nor physical qualification.
+The supervisor generation consistency fix passed **1,679 Python tests locally** and all four hosted main CI jobs. The in-process reference event producer captures software status separately from publication, exposes known lost samples through sequence gaps, and projects any software ACTIVE status as unknown physical state. Six new checks brought the local Python suite to **1,685 passed**; [all four hosted main CI jobs](https://github.com/Dvcutie04/AudioBodyguard-Alpha/actions/runs/36278169070) passed, and the user subsequently ran the same count on the phone at `8e4a5c1`. This producer is neither a native event source nor physical qualification.
 
 | Area | Source and behavior |
 | --- | --- |
@@ -31,7 +31,7 @@ The supervisor generation consistency fix passed **1,679 Python tests locally** 
 | Verified media state | Media profiles, undo candidates, and verified settings bind to matching observation and verification evidence. |
 | Selection and resources | `src/edge` and `src/interface` provide resource contracts, TV selection, user feedback, and reference interfaces. |
 | Extension admission | `src/extensions` validates and normalizes proposal-only extensions through deterministic admission checks. |
-| Native contracts | Swift and Kotlin models consume shared feedback fixtures, 18 synthetic endpoint-boundary vectors, and 20 read-only session-view vectors. |
+| Native contracts | Swift and Kotlin models consume shared feedback fixtures, 18 synthetic endpoint-boundary vectors, and 21 read-only session-view vectors. |
 | Native work simulation | A bounded test-only endpoint tracks work across one handoff and rejects stale runtime, route, successor, protection, or expired synthetic submission context; it cannot grant production readiness. |
 | Owned-output lab | A single-thread C11 owner preserves the unsent suffix across zero/EAGAIN returns and blocks retries after a hold or fault. Callback and child references retain metadata; acknowledgements match the exact cut within a fixed deadline; a two-slot retirement pool refuses new incarnations at capacity. Cleanup and slot reuse preserve physical uncertainty. The scripted lab has no physical output or production authority. |
 
@@ -60,14 +60,15 @@ PYTHONPATH=. python3 -m pytest -q --tb=short
 
 The test configuration includes both `src` and `tests`. Do not restrict collection or remove a failing safety test to make a restoration pass. The restored checkout passed the full Python suite on Linux/Python 3.12; hosted CI independently passed it on Python 3.13.
 
-Native contract checks use the existing Swift package and Android library:
+Native contract checks and app prototype builds use:
 
 ```sh
 swift test --package-path native/ios
-gradle -p native/android testDebugUnitTest
+xcodebuild -project native/ios-app/AQSSReadOnly.xcodeproj -scheme AQSSReadOnly -configuration Debug -sdk iphonesimulator -destination 'generic/platform=iOS Simulator' CODE_SIGNING_ALLOWED=NO build
+gradle -p native/android testDebugUnitTest :app:assembleDebug
 ```
 
-The Android job uses Java 17 and Gradle 8.10.2 with the SDK required by `native/android/build.gradle.kts`. The Swift job runs on macOS. Neither command measures physical output on a phone or audio device.
+The Android job uses Java 17, Gradle 8.13 and the API 36 SDK required by `native/android/build.gradle.kts`. The Swift jobs run on macOS with Xcode. These commands do not measure physical output on a phone or audio device.
 
 The [owned-output lab](native/lab/owned_output/README.md) uses a C11 compiler and a POSIX shell on the build host:
 
@@ -92,7 +93,8 @@ The second command requires AddressSanitizer and UBSan support. A separate CI jo
 | `docs` | Source provenance, file verification, retirement inventory, and evidence limits |
 | `tests`, tests within `src` | Python regression and invariant tests |
 | `contracts` | Shared JSON fixtures and documented contract boundaries |
-| `native/ios`, `native/android` | Feedback models and synthetic fixture conformance tests |
+| `native/ios`, `native/android` | Feedback models, synthetic fixture conformance tests and an Android read-only app module |
+| `native/ios-app` | iOS SwiftUI read-only simulation app target; no audio path or signed-device install |
 | `native/lab/owned_output` | C11 owner, callback/child lifetime, scoped acknowledgement, and metadata-retirement harness with scripted backends |
 | `tools/generate_native_feedback_contracts.py` | Generator for the Swift and Kotlin feedback models |
 
