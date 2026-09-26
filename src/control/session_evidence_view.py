@@ -28,7 +28,7 @@ _EXPORT_REASONS = frozenset({
     "NON_MONOTONIC_CLOCK", "NON_MONOTONIC_EVIDENCE", "NOT_VALIDATED",
     "PERMISSION_DENIED", "PROTECTION_PATH_INELIGIBLE", "RUNTIME_INELIGIBLE",
     "SENSOR_UNAVAILABLE", "STALE_EVIDENCE", "VALIDATED", "USER_PAUSED",
-    "PATH_ELIGIBLE", "POST_CONDITION_UNOBSERVED",
+    "PATH_ELIGIBLE", "POST_CONDITION_UNOBSERVED", "REFERENCE_ONLY",
 })
 
 
@@ -122,6 +122,10 @@ class ReadOnlySessionJournal:
     @property
     def events(self) -> tuple[CoverageEvent, ...]:
         return tuple(self._events)
+
+    @property
+    def session_id(self) -> str:
+        return self._session_id
 
     def append(self, event: CoverageEvent) -> None:
         if type(event) is not CoverageEvent or event.session_id != self._session_id:

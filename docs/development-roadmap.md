@@ -22,13 +22,24 @@ acoustic output or user perception. See the
 [session-view contract](session-evidence-reference.md) for the permitted
 wording and missing native integration. The final PR revision passed **1,678 local Python tests** and [all four hosted CI jobs](https://github.com/Dvcutie04/AudioBodyguard-Alpha/actions/runs/36276197278), including Swift and Android compilation. These are separate from the phone result and physical gates.
 
-Subsequent local P0 hardening found that an ACTIVE-to-stale `status()`
+Subsequent P0 hardening found that an ACTIVE-to-stale `status()`
 returned an old admission generation while the supervisor advanced it on
 exit. A focused regression failed at that mismatch; the returned immutable
 status now reflects the advanced generation, including the rejection returned
 by `require_automation()`. The focused case and **1,679 full Python tests**
-passed locally. This branch has not yet been run in a-Shell or on an installed
-native app. It adds no event source or positive execution authority.
+passed locally, and [main CI](https://github.com/Dvcutie04/AudioBodyguard-Alpha/actions/runs/36277482304)
+passed its Python, Swift, Android and scripted C jobs. The phone has not yet
+run that revision or an installed native app.
+
+The next P0 increment is a **reference-only, in-process event producer**.
+Its capture and publication are distinct, with one pending sample and
+sequence gaps for known lost publications. A Python supervisor ACTIVE
+snapshot is projected as UNKNOWN_PHYSICAL_STATE, never as qualified physical
+coverage. Delayed changed snapshots, expired samples and rollback fail
+closed; user pause is not inferred. Six new tests brought the local Python
+suite to **1,685 passed**. Native iOS/Android event adapters, durable
+continuity and physical observers remain pending. The
+[session-view contract](session-evidence-reference.md) defines its scope.
 
 The restoration merged into `main`, followed by the deterministic test-clock correction in [PR #3](https://github.com/Dvcutie04/AudioBodyguard-Alpha/pull/3). Its [main verification run](https://github.com/Dvcutie04/AudioBodyguard-Alpha/actions/runs/36070023701) passed 1,625 Python tests plus Swift and Android conformance. The [source manifest](a-shell-sync-manifest.json) accounts for the 441 exported a-Shell paths; additions in this development increment are outside that historical snapshot.
 
