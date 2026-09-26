@@ -4,10 +4,31 @@ The iOS SwiftUI target in `native/ios-app` and Android Views app module in
 `native/android/app` display the same limited message at launch: **SIMULATION —
 no audio path connected**, **Unknown physical state**, and **No output
 observation**. Both use the existing native read-only session projector with
-no evidence sample. They show only explanatory coverage, capability, caption,
-history and next-step text. There is no player, OS audio capture, microphone
-permission, endpoint command, live history, background service, automatic
-recovery, cross-platform handoff, or ability to actuate from these shells.
+no evidence sample. They show explanatory coverage, capability, caption,
+history and next-step text. An additional foreground-only hint is sourced
+from this app's iOS audio-session notifications or Android's connected-device
+inventory callback. A notification can be missing, late, or unrelated to any
+owned player. The hint does not enter the session projector and cannot change
+**Unknown physical state**. There is no player, OS audio capture, microphone
+permission, endpoint command, live session history, background service,
+automatic recovery, cross-platform handoff, or ability to actuate from these
+shells.
+
+## Read-only native hints
+
+| Shell | What can be displayed while the screen is active | What cannot be concluded |
+| --- | --- | --- |
+| iOS | `AVAudioSession` route-change, interruption, or media-services-reset notification received in this app | Another app's route, playback, output level, physical effect, or uninterrupted notification delivery |
+| Android | `AudioDeviceCallback` delivers an added or removed connected-device callback while the Activity is visible; an added callback may contain an initial inventory | Which app is playing, the playback route, output level, physical effect, or uninterrupted notification delivery |
+
+Observers are removed when the iOS scene is inactive or leaves the screen, or
+when the Android Activity stops. A new foreground visit clears the previous
+hint; callbacks from a prior visit cannot repopulate it. At most one volatile
+hint is displayed, with no audio or device identifier stored. There is no
+assertion that an added callback is a new connection, no current-route
+assertion, background service, polling, mic permission, or claim of
+notification completeness. The iOS and Android
+events have different scopes, despite the shared uncertainty vocabulary.
 
 The shared `session_evidence_view_v1.json` adds a `REFERENCE_ONLY` case for a
 software-only report. This reason remains UNKNOWN on both platforms; a future
@@ -51,3 +72,17 @@ After a hosted build, install signed builds on real iPhone and Android devices
 and inspect VoiceOver/TalkBack, large text, contrast, lifecycle/background
 changes, startup/memory/battery and absence of misleading ACTIVE status.
 No coverage duration or percentage may be inferred from missing callbacks.
+
+Before using this as a product event source, test active/inactive transitions,
+headphone connect/disconnect, interruptions, media-service reset where
+available, screen rotation, process death, denied permissions, and OEM route
+behavior on installed devices. Compare event and UI timestamps to independent
+observations; measure latency distribution, missing and stale callback rates,
+battery and wakeups in each state. A physical route or acoustic claim still
+requires a separately qualified endpoint and observation path.
+
+Official API basis: [Apple route-change](https://developer.apple.com/documentation/avfaudio/responding-to-audio-route-changes),
+[Apple interruptions](https://developer.apple.com/documentation/avfaudio/handling-audio-interruptions),
+[Apple media reset](https://developer.apple.com/documentation/avfaudio/avaudiosession/mediaserviceswereresetnotification),
+[Android AudioManager](https://developer.android.com/reference/android/media/AudioManager#registerAudioDeviceCallback(android.media.AudioDeviceCallback,%20android.os.Handler)),
+and [Android Activity lifecycle](https://developer.android.com/guide/components/activities/activity-lifecycle).
