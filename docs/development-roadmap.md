@@ -6,6 +6,24 @@ Checkpoint: September 26, 2026. Continue from the restored a-Shell baseline and 
 
 ## Current checkpoint
 
+The user later fast-forwarded the separate a-Shell checkout to main
+`b70d47e3b26934972745bb24f4f6ef2c078e3766` and reported
+`NATIVE_CONTRACTS_CURRENT`, **1,652 Python tests passed with one external
+dateutil warning**, and an empty `lg2 status -s`. This replaces the older
+1,641 phone checkpoint below as the latest **phone-executed** evidence; it
+does not establish execution of subsequent GitHub-branch work on the phone.
+
+The current product-software branch adds a bounded, read-only reference
+session journal, a separate pause latch, capability cards, scoped change
+wording, and owned-player authored-track reports. Python, Swift, and Kotlin
+consume 20 shared synthetic coverage/capability vectors. Neither these
+vectors nor player callbacks prove continuous capture, rendered captions,
+acoustic output or user perception. See the
+[session-view contract](session-evidence-reference.md) for the permitted
+wording and missing native integration. The final regression and hosted CI
+results for this branch must be tied to its exact commit, separately from the
+phone checkpoint.
+
 The restoration merged into `main`, followed by the deterministic test-clock correction in [PR #3](https://github.com/Dvcutie04/AudioBodyguard-Alpha/pull/3). Its [main verification run](https://github.com/Dvcutie04/AudioBodyguard-Alpha/actions/runs/36070023701) passed 1,625 Python tests plus Swift and Android conformance. The [source manifest](a-shell-sync-manifest.json) accounts for the 441 exported a-Shell paths; additions in this development increment are outside that historical snapshot.
 
 N1 now includes a bounded, explicitly unqualified fake endpoint with eight work-ordering and eight context-invalidation behavioral cases. The local Python 3.12 suite passed **1,641 tests**, including **35** focused native-contract, work-ordering, context, and handoff checks. These counts overlap; do not sum them. [Hosted CI](https://github.com/Dvcutie04/AudioBodyguard-Alpha/actions/workflows/ci.yml) records the result for each published revision.
@@ -26,6 +44,7 @@ The user verified the separate iPhone a-Shell clone at `38d273e1abec4b979950290e
 | Shared endpoint vectors | `contracts/endpoint_native_boundary_v1.json` and its Markdown contract | 18 synthetic vectors consumed by Python, Swift, and Kotlin |
 | Endpoint handoff | `src/device_fabric/endpoint_handoff_barrier.py`: schema-3 resource holds and pinned verifier identity | Reference ordering and admission inhibition; no qualified native retirement certificate |
 | Owned-output lab | `native/lab/owned_output`: standalone C11 owner, callback/child context, hold matching, retirement pool, retry/invalidation, exact fixture PCM attenuation, typed trace, and scripted backends | 45 local software cases and warning-clean compiler gate; no ALSA SDK, device, native application, or physical qualification |
+| Read-only session views | `src/control/session_evidence_view.py`, authored-track finder, and Swift/Kotlin library projectors | Synthetic snapshots and product wording only; no installed application or continuous native observation |
 
 These are inspected build settings, not new supported-device or release recommendations.
 
