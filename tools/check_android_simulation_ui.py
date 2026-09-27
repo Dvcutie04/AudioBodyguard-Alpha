@@ -23,6 +23,8 @@ def main(paths: list[str]) -> None:
         "Six setup checks unknown",
         "Moving a session between phones is not available here",
     )
+    if any("Pixel Launcher isn't responding" in text for text in labels):
+        raise SystemExit("Android emulator Pixel Launcher ANR obscured the AQSS UI; inspect the saved screenshot")
     missing = [label for label in expected if not any(label in text for text in labels)]
     if missing:
         raise SystemExit(f"Android emulator UI missing expected labels: {missing}")
