@@ -53,24 +53,30 @@ capture_ui() {
         adb shell input tap "$x" "$y"
         adb shell am start -W -n com.aqss.bodyguard.prototype/.ReadOnlyHomeActivity
         if [[ "$label" == bottom ]]; then
-            adb shell input swipe 500 1600 500 250 350
-            adb shell input swipe 500 1600 500 250 350
+            adb shell input swipe 500 1600 500 250 900
+            adb shell input swipe 500 1600 500 250 900
         fi
     done
 }
 
 capture_ui top
 
-# The handoff explanation is below the initial viewport on a typical phone.
-adb shell input swipe 500 1600 500 250 350
-adb shell input swipe 500 1600 500 250 350
-capture_ui bottom
+# Inspect after each bounded gesture: a cold emulator may not process two
+# back-to-back short swipes reliably. Keep the required UI assertion unchanged.
+for attempt in 1 2 3 4 5 6; do
+    adb shell input swipe 500 2200 500 450 900
+    capture_ui bottom
+    if python3 tools/check_android_simulation_ui.py --assert-label \
+        "$artifact_dir/bottom.xml" "Moving a session between phones is not available here" 2>/dev/null; then
+        break
+    fi
+done
 
 python3 tools/check_android_simulation_ui.py "$artifact_dir/top.xml" "$artifact_dir/bottom.xml"
 
 # Inspect the user-opened menu separately so its extra rows cannot mask the
 # original coverage and handoff checks above.
-for _ in 1 2 3; do adb shell input swipe 500 300 500 1600 350; done
+for _ in 1 2 3; do adb shell input swipe 500 300 500 1600 900; done
 capture_ui options_start
 coordinates="$(python3 tools/check_android_simulation_ui.py --text-tap-coordinates "$artifact_dir/options_start.xml" "Options")"
 if [[ -z "$coordinates" ]]; then echo "Options button not visible" >&2; exit 1; fi
@@ -83,15 +89,15 @@ for attempt in 1 2 3 4 5 6; do
     capture_ui "options_middle_$attempt"
     coordinates="$(python3 tools/check_android_simulation_ui.py --text-tap-coordinates "$artifact_dir/options_middle_$attempt.xml" "Advanced options")"
     if [[ -n "$coordinates" ]]; then break; fi
-    adb shell input swipe 500 1600 500 250 350
+    adb shell input swipe 500 1600 500 250 900
 done
 if [[ -z "$coordinates" ]]; then echo "Advanced options button not visible" >&2; exit 1; fi
 read -r x y <<< "$coordinates"
 adb shell input tap "$x" "$y"
 capture_ui advanced_top
-adb shell input swipe 500 1600 500 250 350
+adb shell input swipe 500 1600 500 250 900
 capture_ui advanced_middle
-adb shell input swipe 500 1600 500 250 350
+adb shell input swipe 500 1600 500 250 900
 capture_ui advanced_bottom
 python3 tools/check_android_simulation_ui.py --options-menu \
     "$artifact_dir/options_top.xml" "$artifact_dir"/options_middle_*.xml \
