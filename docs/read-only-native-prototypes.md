@@ -73,6 +73,26 @@ launch found a missing bundle version, since fixed. Neither test exercises a
 physical phone, audio output, route changes, VoiceOver/TalkBack, or the
 installed-device trial protocol.
 
+## No-cost browser inspection after a passing UI smoke run
+
+The smoke workflow also packages the same read-only source as an unsigned ARM
+iOS Simulator `.app` inside `AQSSReadOnly-iOS-SIMULATION.app.zip`, and retains
+the Android `app-debug.apk`. Each is a separate seven-day GitHub Actions
+artifact named `aqss-ios-simulation-app-...` or
+`aqss-android-simulation-apk-...`. The iOS package is explicitly a simulator
+build; neither package is a signed iPhone installer, a TestFlight upload, or
+physical-output evidence. No CI job uploads the builds to another service.
+
+To inspect on an iPhone without a paid Apple Developer membership:
+
+1. Open the [read-only UI smoke workflow](https://github.com/Dvcutie04/AudioBodyguard-Alpha/actions/workflows/read-only-ui-smoke.yml) in Safari, choose a passing run, and download its app artifacts. GitHub requires you to be signed in to download workflow artifacts. The artifact download itself is a ZIP: extract it in Files, then use the **inner** iOS `.app.zip` for upload. For Android, extract the APK from its artifact ZIP.
+2. Sign up for Appetize's [limited Free plan](https://support.appetize.io/may-i-test-appetize.io-for-free-before-paying-for-an-account) without entering a payment card. Upload the iOS Simulator ZIP or Android APK via Appetize's browser upload page; [iOS](https://docs.appetize.io/platform/app-management/uploading-apps/ios) and [Android](https://docs.appetize.io/platform/app-management/uploading-apps/android) have separate supported formats. Open the resulting app link in Safari. Check the current free allowance before starting a session.
+3. Observe only the visible read-only SIMULATION screen and the six unknown setup checks. A streamed simulator cannot confirm physical audio, installed-device behavior, or protection. Do not record it as a P1 installed-device trial.
+
+The uploaded binaries leave GitHub for Appetize only when the account holder
+chooses to upload them. Review the target service's sharing settings before
+uploading any later build that might contain credentials or private data.
+
 ## Source notes and empirical debt
 
 Apple documents a SwiftUI `App`/`WindowGroup` application entry point and
