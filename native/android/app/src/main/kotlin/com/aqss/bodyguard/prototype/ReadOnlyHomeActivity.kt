@@ -5,11 +5,13 @@ import android.media.AudioDeviceCallback
 import android.media.AudioDeviceInfo
 import android.media.AudioManager
 import android.os.Bundle
+import android.os.Build
 import android.os.Handler
 import android.os.Looper
 import android.util.TypedValue
 import android.view.View
 import android.view.ViewGroup
+import android.view.WindowInsets
 import android.widget.Button
 import android.widget.LinearLayout
 import android.widget.ScrollView
@@ -22,6 +24,7 @@ import com.aqss.nativefeedback.SessionState
 class ReadOnlyHomeActivity : Activity() {
     private var optionsExpanded = false
     private var advancedExpanded = false
+    private lateinit var tutorial: TutorialGuide
     private var hintView: TextView? = null
     private var deviceCallback: AudioDeviceCallback? = null
     private var observationEpoch = 0
@@ -49,6 +52,7 @@ class ReadOnlyHomeActivity : Activity() {
             setPadding(padding, padding, padding, padding)
         }
         scroll.addView(column, ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT))
+        val tutorialTargets = mutableMapOf<String, View>()
 
         fun line(target: LinearLayout, text: String, size: Float, heading: Boolean = false): TextView {
             val view = TextView(this).apply {
@@ -61,8 +65,9 @@ class ReadOnlyHomeActivity : Activity() {
             return view
         }
 
-        fun menuSection(target: LinearLayout, title: Int, detail: Int) {
-            line(target, getString(title), 20f, heading = true)
+        fun menuSection(target: LinearLayout, title: Int, detail: Int, tutorialTarget: String? = null) {
+            val heading = line(target, getString(title), 20f, heading = true)
+            if (tutorialTarget != null) tutorialTargets[tutorialTarget] = heading
             line(target, getString(detail), 16f)
         }
 
@@ -74,15 +79,20 @@ class ReadOnlyHomeActivity : Activity() {
         val optionsButton = Button(this).apply { isAllCaps = false }
         optionsButton.setText(if (optionsExpanded) R.string.options_close else R.string.options_open)
         column.addView(optionsButton)
+        tutorialTargets["options"] = optionsButton
         column.addView(optionsContent)
         line(optionsContent, getString(R.string.options_scope), 17f)
-        menuSection(optionsContent, R.string.option_volume, R.string.option_volume_unavailable)
-        menuSection(optionsContent, R.string.option_captions, R.string.option_captions_unavailable)
-        menuSection(optionsContent, R.string.option_sound, R.string.option_sound_unavailable)
+        optionsContent.addView(Button(this).apply {
+            text = "Help with options"; isAllCaps = false
+            setOnClickListener { tutorial.start("sound") }
+        })
+        menuSection(optionsContent, R.string.option_volume, R.string.option_volume_unavailable, "volume")
+        menuSection(optionsContent, R.string.option_captions, R.string.option_captions_unavailable, "captionOption")
+        menuSection(optionsContent, R.string.option_sound, R.string.option_sound_unavailable, "sound")
         menuSection(optionsContent, R.string.option_dialogue, R.string.option_dialogue_unavailable)
         menuSection(optionsContent, R.string.option_night, R.string.option_night_unavailable)
-        menuSection(optionsContent, R.string.option_equalizer, R.string.option_equalizer_unavailable)
-        menuSection(optionsContent, R.string.option_defaults, R.string.option_defaults_unavailable)
+        menuSection(optionsContent, R.string.option_equalizer, R.string.option_equalizer_unavailable, "equalizer")
+        menuSection(optionsContent, R.string.option_defaults, R.string.option_defaults_unavailable, "defaults")
 
         val advancedContent = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
@@ -91,13 +101,19 @@ class ReadOnlyHomeActivity : Activity() {
         val advancedButton = Button(this).apply { isAllCaps = false }
         advancedButton.setText(if (advancedExpanded) R.string.advanced_close else R.string.advanced_open)
         optionsContent.addView(advancedButton)
+        tutorialTargets["advanced"] = advancedButton
         optionsContent.addView(advancedContent)
-        menuSection(advancedContent, R.string.advanced_route, R.string.advanced_route_unknown)
-        menuSection(advancedContent, R.string.advanced_physical, R.string.advanced_physical_unknown)
-        menuSection(advancedContent, R.string.advanced_background, R.string.advanced_background_unavailable)
-        menuSection(advancedContent, R.string.advanced_privacy, R.string.advanced_privacy_detail)
-        menuSection(advancedContent, R.string.advanced_handoff, R.string.advanced_handoff_unavailable)
+        advancedContent.addView(Button(this).apply {
+            text = "Help with advanced options"; isAllCaps = false
+            setOnClickListener { tutorial.start("advanced") }
+        })
+        menuSection(advancedContent, R.string.advanced_route, R.string.advanced_route_unknown, "route")
+        menuSection(advancedContent, R.string.advanced_physical, R.string.advanced_physical_unknown, "physical")
+        menuSection(advancedContent, R.string.advanced_background, R.string.advanced_background_unavailable, "background")
+        menuSection(advancedContent, R.string.advanced_privacy, R.string.advanced_privacy_detail, "privacy")
+        menuSection(advancedContent, R.string.advanced_handoff, R.string.advanced_handoff_unavailable, "handoffOption")
         optionsButton.setOnClickListener {
+            tutorial.close(restore = false)
             optionsExpanded = !optionsExpanded
             if (!optionsExpanded) {
                 advancedExpanded = false
@@ -108,39 +124,64 @@ class ReadOnlyHomeActivity : Activity() {
             optionsButton.setText(if (optionsExpanded) R.string.options_close else R.string.options_open)
         }
         advancedButton.setOnClickListener {
+            tutorial.close(restore = false)
             advancedExpanded = !advancedExpanded
             advancedContent.visibility = if (advancedExpanded) View.VISIBLE else View.GONE
             advancedButton.setText(if (advancedExpanded) R.string.advanced_close else R.string.advanced_open)
         }
 
-        line(column, getString(R.string.coverage_title), 24f, heading = true)
+        tutorialTargets["coverage"] = line(column, getString(R.string.coverage_title), 24f, heading = true)
         line(column, getString(R.string.coverage_unknown), 20f, heading = true)
         line(column, getString(R.string.no_observation), 17f)
-        line(column, getString(R.string.capability_title), 20f, heading = true)
+        tutorialTargets["capability"] = line(column, getString(R.string.capability_title), 20f, heading = true)
         line(column, getString(capabilitySummary), 17f)
         line(column, getString(R.string.capability_unknown), 15f)
-        line(column, getString(R.string.caption_title), 20f, heading = true)
+        tutorialTargets["captions"] = line(column, getString(R.string.caption_title), 20f, heading = true)
         line(column, getString(R.string.caption_unknown), 17f)
-        line(column, getString(R.string.history_title), 20f, heading = true)
+        tutorialTargets["history"] = line(column, getString(R.string.history_title), 20f, heading = true)
         line(column, getString(R.string.history_unknown), 17f)
-        line(column, getString(R.string.hint_title), 20f, heading = true)
+        tutorialTargets["hint"] = line(column, getString(R.string.hint_title), 20f, heading = true)
         hintView = line(column, getString(R.string.hint_waiting), 17f)
         line(column, getString(R.string.hint_scope), 15f)
-        line(column, getString(R.string.handoff_title), 20f, heading = true)
+        tutorialTargets["handoff"] = line(column, getString(R.string.handoff_title), 20f, heading = true)
         line(column, getString(R.string.handoff_unavailable), 17f)
         line(column, getString(R.string.next_step_title), 20f, heading = true)
         line(column, getString(R.string.next_step), 17f)
-        setContentView(scroll)
+        val root = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL }
+        root.addView(scroll, LinearLayout.LayoutParams(-1, 0, 1f))
+        tutorial = TutorialGuide(this, scroll, tutorialTargets,
+            expansion = { optionsExpanded to advancedExpanded },
+            setExpansion = { options, advanced ->
+                optionsExpanded = options
+                advancedExpanded = options && advanced
+                optionsContent.visibility = if (optionsExpanded) View.VISIBLE else View.GONE
+                advancedContent.visibility = if (advancedExpanded) View.VISIBLE else View.GONE
+                optionsButton.setText(if (optionsExpanded) R.string.options_close else R.string.options_open)
+                advancedButton.setText(if (advancedExpanded) R.string.advanced_close else R.string.advanced_open)
+            })
+        root.addView(tutorial.footer)
+        if (Build.VERSION.SDK_INT >= 30) {
+            window.setDecorFitsSystemWindows(false)
+            root.setOnApplyWindowInsetsListener { view, insets ->
+                val bars = insets.getInsets(WindowInsets.Type.systemBars() or WindowInsets.Type.displayCutout())
+                view.setPadding(bars.left, bars.top, bars.right, bars.bottom)
+                insets
+            }
+        }
+        setContentView(root)
+        tutorial.restore(savedInstanceState)
     }
 
     override fun onSaveInstanceState(outState: Bundle) {
         outState.putBoolean("optionsExpanded", optionsExpanded)
         outState.putBoolean("advancedExpanded", advancedExpanded)
+        tutorial.save(outState)
         super.onSaveInstanceState(outState)
     }
 
     override fun onStart() {
         super.onStart()
+        tutorial.resume()
         observationEpoch += 1
         val epoch = observationEpoch
         hintView?.setText(R.string.hint_waiting)
@@ -165,6 +206,7 @@ class ReadOnlyHomeActivity : Activity() {
     }
 
     override fun onStop() {
+        tutorial.pause()
         observationEpoch += 1
         observing = false
         deviceCallback?.let { callback ->
