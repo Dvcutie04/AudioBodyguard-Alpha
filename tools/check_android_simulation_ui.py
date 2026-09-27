@@ -6,6 +6,14 @@ import xml.etree.ElementTree as ET
 from pathlib import Path
 
 
+def valid_hierarchy(path: str) -> bool:
+    try:
+        root = ET.parse(Path(path)).getroot()
+    except (ET.ParseError, FileNotFoundError):
+        return False
+    return root.tag == "hierarchy" and any(node.tag == "node" for node in root.iter())
+
+
 def launcher_close_coordinates(path: str) -> None:
     nodes = list(ET.parse(Path(path)).getroot().iter())
     launcher_titles = {"Pixel Launcher isn't responding", "Quickstep isn't responding"}
@@ -48,6 +56,8 @@ def main(paths: list[str]) -> None:
 
 
 if __name__ == "__main__":
+    if len(sys.argv) == 3 and sys.argv[1] == "--valid-hierarchy":
+        raise SystemExit(0 if valid_hierarchy(sys.argv[2]) else 1)
     if len(sys.argv) == 3 and sys.argv[1] == "--launcher-close-coordinates":
         launcher_close_coordinates(sys.argv[2])
         raise SystemExit(0)

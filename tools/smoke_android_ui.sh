@@ -9,10 +9,24 @@ adb shell am start -W -n com.aqss.bodyguard.prototype/.ReadOnlyHomeActivity | te
 
 capture_ui() {
     local label="$1"
-    local attempt coordinates x y
+    local attempt dump_attempt coordinates x y
     for attempt in 1 2 3; do
-        adb shell uiautomator dump /sdcard/aqss-ui.xml
-        adb exec-out cat /sdcard/aqss-ui.xml > "$artifact_dir/$label.xml"
+        # UiAutomator can report a null root immediately after a cold launch.
+        # Never interpret its missing output as an AQSS screen observation.
+        for dump_attempt in 1 2 3 4; do
+            adb shell rm -f /sdcard/aqss-ui.xml
+            adb shell uiautomator dump /sdcard/aqss-ui.xml || true
+            adb exec-out cat /sdcard/aqss-ui.xml > "$artifact_dir/$label.xml" || true
+            if python3 tools/check_android_simulation_ui.py --valid-hierarchy "$artifact_dir/$label.xml"; then
+                break
+            fi
+            if [[ "$dump_attempt" -eq 4 ]]; then
+                adb exec-out screencap -p > "$artifact_dir/$label.png"
+                echo "Android UI hierarchy unavailable after four captures" >&2
+                return 1
+            fi
+            sleep 2
+        done
         adb exec-out screencap -p > "$artifact_dir/$label.png"
         coordinates="$(python3 tools/check_android_simulation_ui.py --launcher-close-coordinates "$artifact_dir/$label.xml")"
         if [[ -z "$coordinates" ]]; then return 0; fi
