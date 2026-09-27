@@ -29,12 +29,21 @@ def launcher_close_coordinates(path: str) -> None:
 
 
 def button_coordinates(path: str, label: str) -> None:
-    nodes = ET.parse(Path(path)).getroot().iter()
+    nodes = list(ET.parse(Path(path)).getroot().iter())
     button = next((node for node in nodes if node.get("text") == label and node.get("clickable") == "true"), None)
     bounds = re.fullmatch(r"\[(\d+),(\d+)\]\[(\d+),(\d+)\]", button.get("bounds", "")) if button is not None else None
     if bounds is not None:
         left, top, right, bottom = map(int, bounds.groups())
-        print((left + right) // 2, (top + bottom) // 2)
+        # A hierarchy can report a clickable row at the screen edge even
+        # when a tap there is intercepted by Android's system navigation.
+        screen_bottom = max(
+            (int(match.group(4)) for node in nodes
+             if (match := re.fullmatch(r"\[(\d+),(\d+)\]\[(\d+),(\d+)\]", node.get("bounds", "")))),
+            default=0,
+        )
+        center_y = (top + bottom) // 2
+        if center_y < screen_bottom * 0.85:
+            print((left + right) // 2, center_y)
 
 
 def main(paths: list[str], *, options: bool = False) -> None:
