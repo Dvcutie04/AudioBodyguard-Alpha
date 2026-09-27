@@ -9,13 +9,18 @@ mkdir -p "$artifact_dir"
 # input, output, live endpoint, third-party cloud account, or protection claim.
 sdkmanager "emulator" "system-images;android-35;google_apis;x86_64" > /dev/null
 printf 'no\n' | avdmanager create avd -n aqss_readonly -k "system-images;android-35;google_apis;x86_64" -f > /dev/null
+emulator_bin="${ANDROID_HOME:?Android SDK not configured}/emulator/emulator"
+if [[ ! -x "$emulator_bin" ]]; then
+    echo "Installed Android Emulator executable not found at $emulator_bin" >&2
+    exit 1
+fi
 
 if [[ ! -e /dev/kvm ]]; then
     echo "Android Emulator acceleration is unavailable on this CI runner" >&2
     exit 1
 fi
 sudo chmod a+rw /dev/kvm
-emulator -avd aqss_readonly -no-window -no-audio -no-snapshot -no-boot-anim -gpu swiftshader > "$artifact_dir/aqss-android-emulator-startup.log" 2>&1 &
+"$emulator_bin" -avd aqss_readonly -no-window -no-audio -no-snapshot -no-boot-anim -gpu swiftshader > "$artifact_dir/aqss-android-emulator-startup.log" 2>&1 &
 emulator_pid=$!
 cleanup() {
     adb emu kill > /dev/null 2>&1 || true
