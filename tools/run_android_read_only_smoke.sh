@@ -4,16 +4,24 @@ set -euo pipefail
 artifact_dir="${1:?pass an artifact directory}"
 repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 mkdir -p "$artifact_dir"
+export ANDROID_AVD_HOME="$artifact_dir/aqss-avd"
+mkdir -p "$ANDROID_AVD_HOME"
 
 # Run the existing unsigned debug APK in Google's Android Emulator. No audio
 # input, output, live endpoint, third-party cloud account, or protection claim.
 sdkmanager "emulator" "system-images;android-35;google_apis;x86_64" > /dev/null
-printf 'no\n' | avdmanager create avd -n aqss_readonly -k "system-images;android-35;google_apis;x86_64" -f > /dev/null
+printf 'no\n' | avdmanager create avd -n aqss_readonly -k "system-images;android-35;google_apis;x86_64" -f -p "$ANDROID_AVD_HOME/aqss_readonly.avd"
 emulator_bin="${ANDROID_HOME:?Android SDK not configured}/emulator/emulator"
 if [[ ! -x "$emulator_bin" ]]; then
     echo "Installed Android Emulator executable not found at $emulator_bin" >&2
     exit 1
 fi
+if [[ ! -f "$ANDROID_AVD_HOME/aqss_readonly.ini" ]]; then
+    echo "Android virtual device creation did not write $ANDROID_AVD_HOME/aqss_readonly.ini" >&2
+    avdmanager list avd >&2
+    exit 1
+fi
+"$emulator_bin" -list-avds
 
 if [[ ! -e /dev/kvm ]]; then
     echo "Android Emulator acceleration is unavailable on this CI runner" >&2
