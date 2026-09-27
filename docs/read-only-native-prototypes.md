@@ -14,6 +14,18 @@ permission, endpoint command, live session history, background service,
 automatic recovery, cross-platform handoff, or ability to actuate from these
 shells.
 
+Both shells now expose a collapsed **Options** section with Volume, Captions,
+Sound preset, Dialogue, Night, Custom Equalizer, and Defaults and Undo. A
+second **Advanced options** button shows device/route, physical-output,
+background-monitoring, privacy, and handoff explanations. Expanding or hiding
+these sections only changes local presentation. Every audio option explicitly
+says **Unavailable** and the physical state remains **Unknown physical state**.
+There are no sliders, audio commands, saved settings, new permissions, or
+background execution. The Python capability model also includes Dialogue and
+Night as extra preset choices, gated by semantic preset capability; those
+model choices do not connect or enable the native preview. The [options menu
+research and staged checks](options-menu-research.md) record the decision.
+
 Both shells also invoke their native read-only capability projector with six
 explicitly unknown prerequisites: hardware, qualification, permission, route,
 runtime and independent observation. The checklist therefore displays six
