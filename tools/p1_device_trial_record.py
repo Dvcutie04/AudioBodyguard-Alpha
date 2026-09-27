@@ -21,11 +21,42 @@ REQUIRED_CASES = (
 _SCOPES = {"ios": "app_session", "android": "connected_device_inventory"}
 _INSTALLS = {"ios": "xcode_signed_device", "android": "android_debug_apk"}
 _REVISION = re.compile(r"[0-9a-f]{40}\Z")
+_SHA256 = re.compile(r"[0-9a-f]{64}\Z")
+_VERSION = re.compile(r"(?:0|[1-9][0-9]*)(?:\.[0-9]+){1,2}\Z")
+_BUNDLE_ID = re.compile(r"[A-Za-z][A-Za-z0-9-]*(?:\.[A-Za-z][A-Za-z0-9-]*)+\Z")
+_POSITIVE_DECIMAL = re.compile(r"[1-9][0-9]*\Z")
 _PLACEHOLDERS = {"", "unknown", "not run", "pending", "todo", "tbd", "example"}
 
 
 def _filled(value):
     return isinstance(value, str) and value.strip().lower() not in _PLACEHOLDERS
+
+
+def _testflight_provenance_problems(value):
+    if not isinstance(value, dict):
+        return ["build_provenance must be an object for TestFlight"]
+    problems = []
+    for key in ("workflow_run_id", "workflow_attempt"):
+        if type(value.get(key)) is not int or value[key] <= 0:
+            problems.append(f"build_provenance.{key} must be a positive integer")
+    for key in ("xcode_version", "iphoneos_sdk_version"):
+        version = value.get(key)
+        if not isinstance(version, str) or not _VERSION.fullmatch(version) or int(version.split(".")[0]) < 26:
+            problems.append(f"build_provenance.{key} must name a version 26 or later")
+    bundle_id = value.get("bundle_id")
+    if not isinstance(bundle_id, str) or not _BUNDLE_ID.fullmatch(bundle_id):
+        problems.append("build_provenance.bundle_id must be a nonempty bundle identifier")
+    version = value.get("app_version")
+    if not isinstance(version, str) or not _VERSION.fullmatch(version):
+        problems.append("build_provenance.app_version must be a dotted version")
+    for key in ("build_number", "testflight_build_id"):
+        number = value.get(key)
+        if not isinstance(number, str) or not _POSITIVE_DECIMAL.fullmatch(number):
+            problems.append(f"build_provenance.{key} must be a positive decimal string")
+    digest = value.get("submitted_ipa_sha256")
+    if not isinstance(digest, str) or not _SHA256.fullmatch(digest):
+        problems.append("build_provenance.submitted_ipa_sha256 must be a lowercase SHA-256 digest")
+    return problems
 
 
 def assess(record, *, expected_revision=None):
@@ -34,8 +65,9 @@ def assess(record, *, expected_revision=None):
     unsafe = []
     if not isinstance(record, dict):
         return "INCOMPLETE_RECORD", ["record must be an object"]
-    if type(record.get("schema_version")) is not int or record["schema_version"] != 1:
-        incomplete.append("schema_version must be 1")
+    schema_version = record.get("schema_version")
+    if type(schema_version) is not int or schema_version not in (1, 2):
+        incomplete.append("schema_version must be 1 or 2")
     revision = record.get("revision")
     if not isinstance(revision, str) or not _REVISION.fullmatch(revision):
         incomplete.append("revision must be an exact lowercase 40-character commit SHA")
@@ -44,7 +76,11 @@ def assess(record, *, expected_revision=None):
     platform = record.get("platform")
     if not isinstance(platform, str) or platform not in _SCOPES:
         incomplete.append("platform must be ios or android")
-    if isinstance(platform, str) and platform in _INSTALLS and record.get("installation") != _INSTALLS[platform]:
+    if schema_version == 2:
+        if platform != "ios" or record.get("installation") != "testflight":
+            incomplete.append("schema_version 2 requires an iOS TestFlight installation")
+        incomplete.extend(_testflight_provenance_problems(record.get("build_provenance")))
+    elif isinstance(platform, str) and platform in _INSTALLS and record.get("installation") != _INSTALLS[platform]:
         incomplete.append("installation must name a physical-device install method")
     for key in ("device_model", "os_build"):
         if not _filled(record.get(key)):
