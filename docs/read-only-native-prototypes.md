@@ -26,6 +26,29 @@ Night as extra preset choices, gated by semantic preset capability; those
 model choices do not connect or enable the native preview. The [options menu
 research and staged checks](options-menu-research.md) record the decision.
 
+## Contextual tutorials
+
+**Help & tutorials** stays below the scrolling content in both shells. It
+opens six replayable topics: Home and coverage, Sound options, Captions,
+Defaults and undo, Advanced and privacy, and Session transfer. Options and
+Advanced options also have direct help buttons. A tour scrolls to and outlines
+the actual section, shows one explanation and labeled example at a time, and
+offers Back, Next, Close and Done. Closing restores the section expansion that
+was present before the tour; changing a menu directly ends the tour and keeps
+that navigation choice. Choosing a topic starts it from step one.
+
+Tutorial text is generated for both platforms from
+`contracts/tutorial_v1.json`; verify with
+`python tools/generate_tutorial_content.py --check`. The contract only admits
+presentation fields and known view targets. The guide never produces a
+control request, saves a profile, or supplies physical evidence. Progress is
+temporary; Android restores it across Activity recreation. No tutorial
+telemetry, video asset, repeated animation, polling, or new permission is
+introduced. SwiftUI Reduce Motion and Android's animator-enabled setting
+disable the optional transitions. The [research brief](tutorial-research.md)
+records sources, alternatives, and remaining installed-device accessibility
+and usability checks. Simulator walkthroughs are UI evidence only.
+
 Both shells also invoke their native read-only capability projector with six
 explicitly unknown prerequisites: hardware, qualification, permission, route,
 runtime and independent observation. The checklist therefore displays six
