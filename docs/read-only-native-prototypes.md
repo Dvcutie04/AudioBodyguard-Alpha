@@ -56,6 +56,14 @@ input and do not establish such a source.
 
 The simulator and APK builds establish that packages compile, not that they
 run on actual devices. Native app IDs and minimum OS values are provisional.
+The hosted CI also boots an iPhone Simulator and an Android Emulator and
+checks the visible read-only uncertainty labels. Its XCTest and Android
+UIAutomator checks establish only that the simulation screen appeared in
+those virtual environments. The CI run offers screenshots, an Android debug
+APK, and a zipped iOS Simulator `.app` for three days. Its artifact files are
+for reviewing the simulation; the unsigned iOS Simulator app cannot install
+on a physical iPhone. See [free simulation evidence](free-simulation-evidence.md)
+for exact steps and the remaining account and installed-device boundaries.
 No signing, store submission or mic/audio authorization occurs in CI. The
 repository's production endpoint factory still rejects, and
 `EndpointHandoffBarrier.is_ready()` still returns false. A functional release
