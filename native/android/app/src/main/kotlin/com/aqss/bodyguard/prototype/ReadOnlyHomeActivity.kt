@@ -12,7 +12,6 @@ import android.util.TypedValue
 import android.view.View
 import android.view.ViewGroup
 import android.view.WindowInsets
-import android.view.WindowInsetsController
 import android.widget.Button
 import android.widget.LinearLayout
 import android.widget.ScrollView
@@ -166,10 +165,6 @@ class ReadOnlyHomeActivity : Activity() {
             root.setOnApplyWindowInsetsListener { view, insets ->
                 val bars = insets.getInsets(WindowInsets.Type.systemBars() or WindowInsets.Type.displayCutout())
                 view.setPadding(bars.left, bars.top, bars.right, bars.bottom)
-                // Insets arrive after attachment; the Window's decor may not exist in onCreate.
-                val lightBars = WindowInsetsController.APPEARANCE_LIGHT_STATUS_BARS or
-                    WindowInsetsController.APPEARANCE_LIGHT_NAVIGATION_BARS
-                view.windowInsetsController?.setSystemBarsAppearance(lightBars, lightBars)
                 insets
             }
         }

@@ -80,9 +80,14 @@ The API 35 emulator caught a startup crash after a contrast adjustment called
 `Window.getInsetsController()` before the decor view existed. The retained
 crash stack in run 36358550980 identifies `PhoneWindow.getInsetsController`
 and `ReadOnlyHomeActivity.onCreate`; a successful compile had not caught it.
-The correction applies bar appearance through the attached view inside its
-insets callback. [Android's Window API](https://developer.android.com/reference/android/view/Window)
+An intermediate correction moved appearance updates into the view's insets
+callback; its next UI run launched but did not scroll to the handoff section.
+The final design uses declarative light-system-bar theme attributes and keeps
+appearance changes out of the insets callback entirely.
+[Android's Window API](https://developer.android.com/reference/android/view/Window)
 and [View API](https://developer.android.com/reference/android/view/View#getWindowInsetsController())
-describe the decor and view controller lifecycle. This is a directly reproduced
+describe the decor and view controller lifecycle; the theme attributes are
+documented in [Android's attribute reference](https://developer.android.com/reference/android/R.attr#windowLightStatusBar).
+This is a directly reproduced
 implementation failure, not a physical-output finding. Failure artifacts now
 also include crash logs and foreground-window/activity state.
