@@ -4,9 +4,13 @@ import android.animation.ValueAnimator
 import android.app.Activity
 import android.app.AlertDialog
 import android.graphics.Color
+import android.graphics.Typeface
 import android.graphics.drawable.Drawable
 import android.graphics.drawable.GradientDrawable
 import android.os.Bundle
+import android.text.SpannableString
+import android.text.Spanned
+import android.text.style.StyleSpan
 import android.view.View
 import android.view.ViewTreeObserver
 import android.widget.Button
@@ -29,9 +33,14 @@ class TutorialGuide(
         orientation = LinearLayout.VERTICAL
         visibility = View.GONE
         setPadding(dp(12), dp(8), dp(12), 0)
+        background = GradientDrawable().apply {
+            setColor(Color.rgb(238, 244, 250))
+            setStroke(dp(1), Color.rgb(196, 210, 225))
+        }
     }
     private val text = TextView(activity).apply {
         textSize = 16f
+        setTextColor(Color.rgb(34, 46, 62))
         accessibilityLiveRegion = View.ACCESSIBILITY_LIVE_REGION_POLITE
     }
     private val explanation = ScrollView(activity).apply { addView(text) }
@@ -45,7 +54,13 @@ class TutorialGuide(
     private var pendingLayout: ViewTreeObserver.OnGlobalLayoutListener? = null
 
     init {
-        panel.addView(explanation, LinearLayout.LayoutParams(-1, dp(150)))
+        val readingHeight = (activity.resources.configuration.screenHeightDp / 3).coerceIn(100, 220)
+        panel.addView(explanation, LinearLayout.LayoutParams(-1, dp(readingHeight)))
+        panel.addView(TextView(activity).apply {
+            text = "Scroll the explanation to read more."
+            textSize = 12f
+            setTextColor(Color.rgb(55, 70, 87))
+        })
         val navigation = LinearLayout(activity)
         for (item in listOf(back, next, button("Close tutorial") { close() })) {
             navigation.addView(item, LinearLayout.LayoutParams(0, -2, 1f))
@@ -101,7 +116,10 @@ class TutorialGuide(
         val target = targets[step.target] ?: run { close(); return }
         clearHighlight()
         setExpansion(step.area != "home", step.area == "advanced")
-        text.text = "Tutorial — ${selected.title}\nStep ${index + 1} of ${selected.steps.size} • Highlighted: ${step.title}\n\n${step.explanation}\n\n${step.example}"
+        val description = "Tutorial — ${selected.title}\nStep ${index + 1} of ${selected.steps.size} • Highlighted: ${step.title}\n\n${step.explanation}\n\n${step.example}"
+        text.text = SpannableString(description).apply {
+            setSpan(StyleSpan(Typeface.BOLD), 0, description.indexOf('\n'), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
+        }
         explanation.scrollTo(0, 0)
         back.isEnabled = index > 0
         next.text = if (index == selected.steps.lastIndex) "Done" else "Next"

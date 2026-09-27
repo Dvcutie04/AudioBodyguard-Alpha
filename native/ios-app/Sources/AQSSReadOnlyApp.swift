@@ -222,6 +222,7 @@ private struct ReadOnlyHomeView: View {
             }
             .id("\(topic.id)-\(tutorialIndex)")
             .frame(maxHeight: 160)
+            Text("Scroll the explanation to read more.").font(.caption)
             HStack {
                 Button { tutorialIndex -= 1; revealTutorialArea() } label: {
                     Text("Back").frame(maxWidth: .infinity, minHeight: 44)
