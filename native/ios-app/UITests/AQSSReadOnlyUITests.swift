@@ -22,6 +22,35 @@ final class AQSSReadOnlyUITests: XCTestCase {
         add(screenshot)
     }
 
+    func testOptionsAndAdvancedDetailsStayReadOnlyInSimulation() {
+        let app = XCUIApplication()
+        app.launch()
+        let scroll = app.scrollViews.firstMatch
+        XCTAssertTrue(scroll.waitForExistence(timeout: 10))
+        tapButton("Options", in: app, scrolling: scroll)
+        assertLabel("Options preview — controls are unavailable", in: app)
+        assertLabel("Dialogue preset", in: app)
+        assertLabel("Night preset", in: app)
+        assertLabel("No qualified device volume control", in: app)
+
+        tapButton("Advanced options", in: app, scrolling: scroll)
+        assertLabel("No independent observation is available", in: app)
+        assertLabel("changes while away are unknown", in: app)
+
+        let screenshot = XCTAttachment(screenshot: app.screenshot())
+        screenshot.name = "Read-only advanced options"
+        screenshot.lifetime = .keepAlways
+        add(screenshot)
+    }
+
+    private func tapButton(_ title: String, in app: XCUIApplication, scrolling scroll: XCUIElement) {
+        let button = app.buttons[title]
+        XCTAssertTrue(button.waitForExistence(timeout: 10), "Missing button: \(title)")
+        for _ in 0..<8 where !button.isHittable { scroll.swipeUp() }
+        XCTAssertTrue(button.isHittable, "Button outside the scroll view: \(title)")
+        button.tap()
+    }
+
     private func assertLabel(_ label: String, in app: XCUIApplication) {
         let element = app.descendants(matching: .any)
             .matching(NSPredicate(format: "label CONTAINS %@", label)).firstMatch
