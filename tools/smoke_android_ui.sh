@@ -4,7 +4,19 @@ set -euo pipefail
 artifact_dir="${AQSS_UI_ARTIFACT_DIR:-artifacts/ui/android}"
 mkdir -p "$artifact_dir"
 
+collect_failure_diagnostics() {
+    local status=$?
+    if [[ "$status" -ne 0 ]]; then
+        adb logcat -b crash -d > "$artifact_dir/crash-log.txt" 2>&1 || true
+        adb shell dumpsys activity activities > "$artifact_dir/activity-state.txt" 2>&1 || true
+        adb shell dumpsys window windows > "$artifact_dir/window-state.txt" 2>&1 || true
+    fi
+    return "$status"
+}
+trap collect_failure_diagnostics EXIT
+
 adb install -r native/android/app/build/outputs/apk/debug/app-debug.apk
+adb logcat -c
 adb shell am start -W -n com.aqss.bodyguard.prototype/.ReadOnlyHomeActivity | tee "$artifact_dir/launch.txt"
 
 capture_ui() {
