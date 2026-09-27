@@ -63,6 +63,16 @@ requires N2b physical endpoint/observer inventory, N3 qualification, N4
 future-effect exclusion for handoff, and N5 lifecycle, permissions, device,
 accessibility and store work for **both** iPhone and Android.
 
+The separate [read-only UI smoke workflow](../.github/workflows/read-only-ui-smoke.yml)
+checks a narrower next step after compilation: an iPhone Simulator XCUITest
+launches the app and checks the uncertainty and handoff wording; an API 35
+Android emulator installs and launches the APK and checks the corresponding
+UI hierarchy. [PR #22's passing run](https://github.com/Dvcutie04/AudioBodyguard-Alpha/actions/runs/36288934014)
+retains XCUITest results and Android screenshots/hierarchies. An earlier iOS
+launch found a missing bundle version, since fixed. Neither test exercises a
+physical phone, audio output, route changes, VoiceOver/TalkBack, or the
+installed-device trial protocol.
+
 ## Source notes and empirical debt
 
 Apple documents a SwiftUI `App`/`WindowGroup` application entry point and

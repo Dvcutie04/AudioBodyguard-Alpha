@@ -19,6 +19,7 @@ build/
 dist/
 DerivedData/
 local.properties
+artifacts/ui/
 
 # Local credentials and shell/editor state
 .env

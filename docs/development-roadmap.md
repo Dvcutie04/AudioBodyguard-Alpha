@@ -29,6 +29,19 @@ trial or independently observed sound path has been reported. PR #19's
 passed Python, scripted C, Swift simulator and Android APK jobs. A
 structurally complete self-reported trial still cannot qualify N2b–N5.
 
+PR #22 added a separate UI smoke workflow. Its first iOS simulator launch
+failed because the prototype app omitted `CFBundleVersion`, a defect that
+the prior compile-only job could not detect. After setting the app version,
+[both UI smoke jobs passed](https://github.com/Dvcutie04/AudioBodyguard-Alpha/actions/runs/36288934014):
+one XCUITest launched the iOS app in an iPhone Simulator and asserted the
+uncertainty/handoff labels; the Android API 35 emulator installed and launched
+the debug APK and checked its UI hierarchy. Screenshots and result artifacts
+were retained. [The existing four-job CI](https://github.com/Dvcutie04/AudioBodyguard-Alpha/actions/runs/36288934022)
+also passed at that branch revision. These observations establish bounded
+simulator behavior only. The separate a-Shell checkout remains at its last
+reported `b0ca6cf` checkpoint, and no installed-phone or physical-output
+trial is implied.
+
 The merged product-software increment adds a bounded, read-only reference
 session journal, a separate pause latch, capability cards, scoped change
 wording, and owned-player authored-track reports. Python, Swift, and Kotlin

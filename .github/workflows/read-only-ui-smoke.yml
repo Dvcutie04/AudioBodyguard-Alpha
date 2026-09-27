@@ -1,0 +1,81 @@
+name: AQSS read-only simulator UI smoke
+
+on:
+  workflow_dispatch:
+  pull_request:
+    branches: ["main"]
+
+permissions:
+  contents: read
+
+jobs:
+  ios-simulator:
+    name: Launch and inspect iOS simulation screen
+    runs-on: macos-14
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Run read-only XCUITest on an available iPhone Simulator
+        shell: bash
+        run: |
+          set -euo pipefail
+          simulator_udid="$(xcrun simctl list devices available -j | python3 -c 'import json,sys; devices=json.load(sys.stdin)["devices"]; print(next(d["udid"] for group in devices.values() for d in group if d["name"].startswith("iPhone") and d.get("isAvailable", True)))')"
+          xcodebuild -project native/ios-app/AQSSReadOnly.xcodeproj \
+            -scheme AQSSReadOnly -configuration Debug \
+            -destination "platform=iOS Simulator,id=$simulator_udid" \
+            -resultBundlePath "$RUNNER_TEMP/aqss-read-only-ui.xcresult" \
+            CODE_SIGNING_ALLOWED=NO test
+      - name: Keep XCUITest result and screenshot attachment
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: aqss-ios-simulator-ui
+          path: ${{ runner.temp }}/aqss-read-only-ui.xcresult
+          if-no-files-found: ignore
+          retention-days: 7
+
+  android-emulator:
+    name: Launch and inspect Android simulation screen
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Set up Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+      - name: Set up Gradle 8.13
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: "8.13"
+      - name: Set up Android SDK command-line tools
+        uses: android-actions/setup-android@v4
+      - name: Install Android compile SDK and build read-only APK
+        run: |
+          sdkmanager "platforms;android-36"
+          gradle -p native/android :app:assembleDebug
+      - name: Enable KVM on hosted Linux runner
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+      - name: Boot Android Emulator and inspect read-only UI
+        uses: reactivecircus/android-emulator-runner@a421e43855164a8197daf9d8d40fe71c6996bb0d # v2
+        with:
+          api-level: 35
+          arch: x86_64
+          profile: pixel_7_pro
+          script: bash tools/smoke_android_ui.sh
+      - name: Keep Android UI hierarchy and screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: aqss-android-emulator-ui
+          path: artifacts/ui/android/
+          if-no-files-found: ignore
+          retention-days: 7
