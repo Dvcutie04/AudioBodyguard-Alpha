@@ -15,7 +15,7 @@ if [[ ! -e /dev/kvm ]]; then
     exit 1
 fi
 sudo chmod a+rw /dev/kvm
-emulator -avd aqss_readonly -no-window -no-audio -no-snapshot -no-boot-anim -gpu swiftshader_indirect > "$artifact_dir/aqss-android-emulator-startup.log" 2>&1 &
+emulator -avd aqss_readonly -no-window -no-audio -no-snapshot -no-boot-anim -gpu swiftshader > "$artifact_dir/aqss-android-emulator-startup.log" 2>&1 &
 emulator_pid=$!
 cleanup() {
     adb emu kill > /dev/null 2>&1 || true
@@ -24,7 +24,24 @@ cleanup() {
 }
 trap cleanup EXIT
 
-timeout 240 adb wait-for-device
+connected=0
+for _ in $(seq 1 120); do
+    if ! kill -0 "$emulator_pid" 2>/dev/null; then
+        echo "Android Emulator exited before connecting to adb" >&2
+        tail -60 "$artifact_dir/aqss-android-emulator-startup.log" >&2
+        exit 1
+    fi
+    if adb devices | awk '$1 ~ /^emulator-/ && $2 == "device" {found = 1} END {exit !found}'; then
+        connected=1
+        break
+    fi
+    sleep 2
+done
+if [[ "$connected" != "1" ]]; then
+    echo "Android Emulator did not connect to adb" >&2
+    tail -60 "$artifact_dir/aqss-android-emulator-startup.log" >&2
+    exit 1
+fi
 for _ in $(seq 1 120); do
     if [[ "$(adb shell getprop sys.boot_completed 2>/dev/null | tr -d '\r')" == "1" ]]; then
         booted=1
@@ -34,6 +51,7 @@ for _ in $(seq 1 120); do
 done
 if [[ "${booted:-0}" != "1" ]]; then
     echo "Android Emulator did not finish booting" >&2
+    tail -60 "$artifact_dir/aqss-android-emulator-startup.log" >&2
     exit 1
 fi
 

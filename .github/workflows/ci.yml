@@ -115,5 +115,6 @@ jobs:
           path: |
             native/android/app/build/outputs/apk/debug/app-debug.apk
             ${{ runner.temp }}/aqss-android-simulation.png
+            ${{ runner.temp }}/aqss-android-emulator-startup.log
           if-no-files-found: warn
           retention-days: 3

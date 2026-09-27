@@ -21,7 +21,8 @@ are [free for public repositories](https://docs.github.com/en/actions/reference/
    `aqss-android-simulation`. These contain screenshots of virtual screens,
    and respectively a zipped unsigned iOS Simulator `.app` or Android debug
    APK. GitHub deletes these CI artifacts after **three days**. Screenshots
-   are software evidence; inspect the job logs if an artifact is missing.
+   are software evidence; an Android emulator startup log is also retained
+   to diagnose startup failures. Inspect the job logs if an artifact is missing.
 
 These artifact names and screens describe only read-only prototypes. An
 XCTest UI assertion or UIAutomator dump is a check of displayed text on a
