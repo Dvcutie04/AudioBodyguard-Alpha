@@ -11,6 +11,8 @@ struct AQSSReadOnlyApp: App {
 private struct ReadOnlyHomeView: View {
     @Environment(\.scenePhase) private var scenePhase
     @StateObject private var audioHints = ForegroundAudioHints()
+    @State private var optionsExpanded = false
+    @State private var advancedExpanded = false
 
     // No observation is supplied until a native source and output path qualify.
     private let coverage = AQSSSessionEvidenceView.coverage(
@@ -42,6 +44,7 @@ private struct ReadOnlyHomeView: View {
             VStack(alignment: .leading, spacing: 18) {
                 Text("SIMULATION — no audio path connected")
                     .font(.headline)
+                optionsMenu
                 section("Coverage", detail: coverageTitle, explanation:
                     "No output observation. This screen does not monitor or protect audio.")
                 section("Supported controls", detail: capabilityTitle, explanation:
@@ -66,6 +69,55 @@ private struct ReadOnlyHomeView: View {
         .onDisappear { audioHints.stop() }
         .onChange(of: scenePhase) { phase in
             if phase == .active { audioHints.start() } else { audioHints.stop() }
+        }
+    }
+
+    private var optionsMenu: some View {
+        VStack(alignment: .leading, spacing: 14) {
+            Button(optionsExpanded ? "Hide options" : "Options") {
+                optionsExpanded.toggle()
+                if !optionsExpanded { advancedExpanded = false }
+            }
+            .font(.title2.bold())
+            .frame(maxWidth: .infinity, minHeight: 44, alignment: .leading)
+
+            if optionsExpanded {
+                Text("Options preview — controls are unavailable until a supported output and observation path qualifies.")
+                    .font(.body)
+                section("Volume", detail: "Unavailable", explanation:
+                    "No qualified device volume control is connected.")
+                section("Captions option", detail: "Unavailable", explanation:
+                    "No authored caption track or selectable caption mode is connected.")
+                section("Sound preset", detail: "Unavailable", explanation:
+                    "A supported sound preset has not been confirmed for this device.")
+                section("Dialogue preset", detail: "Unavailable", explanation:
+                    "Dialogue requires a device capability for semantic sound presets.")
+                section("Night preset", detail: "Unavailable", explanation:
+                    "Night requires a device capability for semantic sound presets.")
+                section("Custom Equalizer", detail: "Unavailable", explanation:
+                    "Frequency bands require a qualified device capability.")
+                section("Defaults and Undo", detail: "Unavailable", explanation:
+                    "No confirmed device settings or verified change are available to save, restore, or undo.")
+
+                Button(advancedExpanded ? "Hide advanced options" : "Advanced options") {
+                    advancedExpanded.toggle()
+                }
+                .font(.title2.bold())
+                .frame(maxWidth: .infinity, minHeight: 44, alignment: .leading)
+
+                if advancedExpanded {
+                    section("Device and route", detail: "Unknown", explanation:
+                        "No qualified output hardware or route has been identified.")
+                    section("Physical output", detail: "Unknown physical state", explanation:
+                        "No independent observation is available. Options cannot verify audible output.")
+                    section("Background monitoring", detail: "Unavailable", explanation:
+                        "This screen receives only foreground hints; changes while away are unknown.")
+                    section("Privacy and storage", detail: "No audio recorded by this app", explanation:
+                        "This simulation menu stores no audio or personal settings.")
+                    section("Move this session option", detail: "Unavailable", explanation:
+                        "No authorized endpoint or verified transfer path is connected.")
+                }
+            }
         }
     }
 
