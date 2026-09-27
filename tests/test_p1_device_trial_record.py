@@ -90,3 +90,45 @@ def test_malformed_platform_does_not_crash_or_pass():
     assert assess(record)[0] == "INCOMPLETE_RECORD"
     record["qualified"] = "true"
     assert assess(record)[0] == "UNSAFE_REPORTED_UI"
+
+
+def _testflight_trial():
+    record = _reported_trial()
+    record["schema_version"] = 2
+    record["installation"] = "testflight"
+    record["build_provenance"] = {
+        "workflow_run_id": 123456,
+        "workflow_attempt": 1,
+        "xcode_version": "26.3",
+        "iphoneos_sdk_version": "26.2",
+        "bundle_id": "com.aqss.bodyguard.prototype",
+        "app_version": "0.1",
+        "build_number": "7",
+        "submitted_ipa_sha256": "b" * 64,
+        "testflight_build_id": "123456789",
+    }
+    return record
+
+
+def test_testflight_record_requires_build_and_delivery_provenance():
+    record = _testflight_trial()
+    assert assess(record, expected_revision="a" * 40) == (
+        "STRUCTURE_COMPLETE_PHYSICAL_UNVERIFIED", []
+    )
+
+    record["build_provenance"]["submitted_ipa_sha256"] = "missing"
+    assert assess(record)[0] == "INCOMPLETE_RECORD"
+
+
+def test_testflight_record_cannot_relabel_simulator_or_claim_physical_success():
+    record = _testflight_trial()
+    record["installation"] = "ios_simulator"
+    assert assess(record)[0] == "INCOMPLETE_RECORD"
+
+    record = _testflight_trial()
+    record["cases"][0]["coverage"] = "ACTIVE"
+    assert assess(record)[0] == "UNSAFE_REPORTED_UI"
+
+    record = _testflight_trial()
+    record["schema_version"] = 1
+    assert assess(record)[0] == "INCOMPLETE_RECORD"

@@ -1,0 +1,104 @@
+name: AQSS read-only iPhone device preflight
+
+on:
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - ".github/workflows/iphoneos-device-preflight.yml"
+      - "native/ios-app/**"
+
+permissions:
+  contents: read
+
+jobs:
+  unsigned-device-archive:
+    runs-on: macos-15
+    timeout-minutes: 25
+    env:
+      DEVELOPER_DIR: /Applications/Xcode_26.3.app/Contents/Developer
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - name: Verify device toolchain
+        shell: bash
+        run: |
+          test -d "$DEVELOPER_DIR"
+          xcodebuild -version
+          xcrun --sdk iphoneos --show-sdk-version
+          XCODE_VERSION="$(xcodebuild -version | awk '/^Xcode / {print $2}')"
+          SDK_VERSION="$(xcrun --sdk iphoneos --show-sdk-version)"
+          [[ "${XCODE_VERSION%%.*}" -ge 26 ]]
+          [[ "${SDK_VERSION%%.*}" -ge 26 ]]
+
+      - name: Archive the physical-device app without signing
+        shell: bash
+        run: |
+          xcodebuild \
+            -project native/ios-app/AQSSReadOnly.xcodeproj \
+            -scheme AQSSReadOnly \
+            -configuration Release \
+            -sdk iphoneos \
+            -destination 'generic/platform=iOS' \
+            -archivePath "$RUNNER_TEMP/AQSSReadOnly.xcarchive" \
+            CODE_SIGNING_ALLOWED=NO archive
+
+      - name: Check archive identity and record provenance
+        shell: bash
+        run: |
+          APP="$RUNNER_TEMP/AQSSReadOnly.xcarchive/Products/Applications/AQSSReadOnly.app"
+          test -d "$APP"
+          test -f "$APP/Assets.car"
+          lipo -verify_arch arm64 "$APP/AQSSReadOnly"
+          test "$(/usr/libexec/PlistBuddy -c 'Print :CFBundleIdentifier' "$APP/Info.plist")" = 'com.aqss.bodyguard.prototype'
+          test "$(/usr/libexec/PlistBuddy -c 'Print :CFBundleDisplayName' "$APP/Info.plist")" = 'AQSS Simulation'
+          test "$(/usr/libexec/PlistBuddy -c 'Print :CFBundleVersion' "$APP/Info.plist")" = '1'
+          if codesign -dv "$APP" >/dev/null 2>&1; then
+            echo 'Unexpected signature on unsigned device preflight' >&2
+            exit 1
+          fi
+          ditto -c -k --keepParent "$RUNNER_TEMP/AQSSReadOnly.xcarchive" "$RUNNER_TEMP/AQSSReadOnly-unsigned-device.xcarchive.zip"
+          python3 - <<'PY'
+          import hashlib
+          import json
+          import os
+          import pathlib
+          import plistlib
+          import subprocess
+
+          temporary = pathlib.Path(os.environ["RUNNER_TEMP"])
+          archive = temporary / "AQSSReadOnly-unsigned-device.xcarchive.zip"
+          app = temporary / "AQSSReadOnly.xcarchive/Products/Applications/AQSSReadOnly.app"
+          metadata = plistlib.loads((app / "Info.plist").read_bytes())
+          toolchain = subprocess.check_output(["xcodebuild", "-version"], text=True).splitlines()[0]
+          sdk = subprocess.check_output(["xcrun", "--sdk", "iphoneos", "--show-sdk-version"], text=True).strip()
+          digest = hashlib.sha256()
+          with archive.open("rb") as stream:
+              for chunk in iter(lambda: stream.read(1024 * 1024), b""):
+                  digest.update(chunk)
+          manifest = {
+              "evidence_scope": "UNSIGNED_DEVICE_BUILD_ONLY",
+              "source_revision": os.environ["GITHUB_SHA"],
+              "workflow_run_id": os.environ["GITHUB_RUN_ID"],
+              "workflow_attempt": os.environ["GITHUB_RUN_ATTEMPT"],
+              "xcode_version": toolchain.removeprefix("Xcode "),
+              "iphoneos_sdk_version": sdk,
+              "bundle_id": metadata["CFBundleIdentifier"],
+              "app_version": metadata["CFBundleShortVersionString"],
+              "build_number": metadata["CFBundleVersion"],
+              "archive_zip_sha256": digest.hexdigest(),
+          }
+          (temporary / "device-build-provenance.json").write_text(json.dumps(manifest, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+          print(json.dumps(manifest, indent=2, sort_keys=True))
+          PY
+
+      - name: Retain unsigned build and provenance for seven days
+        uses: actions/upload-artifact@v4
+        with:
+          name: aqss-unsigned-iphoneos-${{ github.run_id }}
+          path: |
+            ${{ runner.temp }}/AQSSReadOnly-unsigned-device.xcarchive.zip
+            ${{ runner.temp }}/device-build-provenance.json
+          if-no-files-found: error
+          retention-days: 7

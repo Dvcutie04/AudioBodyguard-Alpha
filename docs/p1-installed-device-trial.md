@@ -10,12 +10,32 @@ simulator or emulator run is useful for debugging but is not this device trial.
 
 ## Install without expanding app authority
 
-Use an Xcode host with a connected iPhone. Open
-`native/ios-app/AQSSReadOnly.xcodeproj`, select `AQSSReadOnly`, configure a
-development team and a non-conflicting prototype bundle identifier as needed,
-select the physical device, and Run. Preserve the checked-out git commit SHA in
-the trial record. The hosted simulator build is unsigned and cannot itself be
-installed on the iPhone from a-Shell.
+For the iPhone, choose one of two installation methods:
+
+- With a connected iPhone and an Xcode host, open
+  `native/ios-app/AQSSReadOnly.xcodeproj`, select `AQSSReadOnly`, configure a
+  development team and a non-conflicting prototype bundle identifier as
+  needed, select the physical device, and Run. Use the schema 1
+  `p1-device-trial.template.json` and `xcode_signed_device` installation.
+- With only the iPhone, use an **actual signed build delivered through internal
+  TestFlight** after an Apple Developer Program team configures signing and App
+  Store Connect. Use schema 2 `p1-testflight-trial.template.json` and
+  `testflight` installation. Keep the build's exact source revision, CI run ID
+  and attempt, Xcode and iPhoneOS SDK versions, bundle ID, version, build number,
+  SHA-256 of the *submitted signed IPA*, and App Store Connect/TestFlight build
+  ID. The CI run number and a screenshot of the TestFlight install are useful
+  independent references; the record checker cannot verify either. Never put
+  credentials, provisioning profiles, private keys or signing certificates in
+  a public artifact or trial record.
+
+The [iPhone device preflight](../.github/workflows/iphoneos-device-preflight.yml)
+archives an **unsigned** device app and records its build provenance without
+Apple credentials. A green preflight only establishes that the source compiled
+for `iphoneos` arm64 and passed the archive identity checks. Its archive ZIP
+hash is **not** the signed IPA hash required by the TestFlight record; it cannot
+be installed on the iPhone, uploaded to TestFlight or substituted for an
+observed device trial. The hosted simulator build is also unsigned and cannot
+itself be installed on the iPhone from a-Shell.
 
 Use a JDK 17 / Android API 36 build host with a connected test Android device:
 
@@ -34,10 +54,12 @@ access or claim control of another app during this read-only trial.
 
 ## Observe and record
 
-Copy `p1-device-trial.template.json` to a separate private trial directory for
-each platform. Fill fields with **observed** values, not expected values. Each
-case needs a reference to a separate, time-aligned screen recording or concise
-OS/event trace, with timestamps and an explanation of the external action.
+Copy `p1-device-trial.template.json` for an Xcode iPhone/Android trial, or
+`p1-testflight-trial.template.json` for a TestFlight iPhone trial, into a
+separate private trial directory. Fill fields with **observed** values, not
+expected values. Each case needs a reference to a separate, time-aligned
+screen recording or concise OS/event trace, with timestamps and an explanation
+of the external action.
 Leave absent callbacks absent: `callback_observed: false` is an important result.
 An Android added callback can be the initial connected-device inventory.
 The iOS hint refers only to this app's audio-session notifications; the Android
@@ -71,8 +93,11 @@ Run from the repository root, replacing the path and exact build revision:
 python3 tools/p1_device_trial_record.py /path/to/private/ios-trial.json --expected-revision=<exact-40-character-SHA>
 ```
 
-Run the same command on the Android record. The unfilled template should return
-`INCOMPLETE_RECORD`. The checker returns `UNSAFE_REPORTED_UI` for reported
+Run the same command on the Android or TestFlight record. Both unfilled
+templates should return `INCOMPLETE_RECORD`. For TestFlight, the structural
+check requires schema 2, a physical iOS install method and named signed build
+and delivery provenance. These fields must describe the **signed upload**, not
+the unsigned preflight. The checker returns `UNSAFE_REPORTED_UI` for reported
 positive coverage, lost simulation/no-observation labels, misattributed callback
 scope or a previous-visit hint reused after resume. A structurally complete
 manual record returns `STRUCTURE_COMPLETE_PHYSICAL_UNVERIFIED`; this is **not**
