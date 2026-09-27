@@ -73,3 +73,16 @@ Unknown/Unavailable, independent task completion, and successful replay.
 No software tour or successful simulation test establishes actual audio output
 or protection. The physical actuation and handoff gates remain prerequisites
 for future functional tutorials that propose device changes.
+
+## Implementation finding: Android window attachment
+
+The API 35 emulator caught a startup crash after a contrast adjustment called
+`Window.getInsetsController()` before the decor view existed. The retained
+crash stack in run 36358550980 identifies `PhoneWindow.getInsetsController`
+and `ReadOnlyHomeActivity.onCreate`; a successful compile had not caught it.
+The correction applies bar appearance through the attached view inside its
+insets callback. [Android's Window API](https://developer.android.com/reference/android/view/Window)
+and [View API](https://developer.android.com/reference/android/view/View#getWindowInsetsController())
+describe the decor and view controller lifecycle. This is a directly reproduced
+implementation failure, not a physical-output finding. Failure artifacts now
+also include crash logs and foreground-window/activity state.

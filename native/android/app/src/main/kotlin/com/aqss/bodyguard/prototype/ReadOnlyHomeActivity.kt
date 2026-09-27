@@ -163,12 +163,13 @@ class ReadOnlyHomeActivity : Activity() {
         root.addView(tutorial.footer)
         if (Build.VERSION.SDK_INT >= 30) {
             window.setDecorFitsSystemWindows(false)
-            val lightBars = WindowInsetsController.APPEARANCE_LIGHT_STATUS_BARS or
-                WindowInsetsController.APPEARANCE_LIGHT_NAVIGATION_BARS
-            window.insetsController?.setSystemBarsAppearance(lightBars, lightBars)
             root.setOnApplyWindowInsetsListener { view, insets ->
                 val bars = insets.getInsets(WindowInsets.Type.systemBars() or WindowInsets.Type.displayCutout())
                 view.setPadding(bars.left, bars.top, bars.right, bars.bottom)
+                // Insets arrive after attachment; the Window's decor may not exist in onCreate.
+                val lightBars = WindowInsetsController.APPEARANCE_LIGHT_STATUS_BARS or
+                    WindowInsetsController.APPEARANCE_LIGHT_NAVIGATION_BARS
+                view.windowInsetsController?.setSystemBarsAppearance(lightBars, lightBars)
                 insets
             }
         }
