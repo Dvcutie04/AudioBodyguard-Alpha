@@ -7,11 +7,14 @@ Checkpoint: September 26, 2026. Continue from the restored a-Shell baseline and 
 ## Current checkpoint
 
 The user fast-forwarded the separate a-Shell checkout to main
-`8e4a5c15bdfad35ce7b82ae6092aab9735761bd9` and reported
-`NATIVE_CONTRACTS_CURRENT`, **1,685 Python tests passed in 6.06 seconds**
-with one external dateutil warning, and an empty `lg2 status -s`. This
-supersedes the older phone checkpoints below; it does not establish phone
-execution of later branch work or any physical output.
+`b0ca6cfebdb51f4425b0980ac6b74b04112a6806` and reported
+`NATIVE_CONTRACTS_CURRENT`, **1,685 Python tests passed in 5.08 seconds**
+with one external dateutil warning, and an empty `lg2 status -s`.
+The first pytest invocation in that scrollback showed no result; the
+completed second invocation establishes the test count. This supersedes
+older phone checkpoints below. The repository's subsequent PR #19 merged
+as `22a3a5919cde9cc8f927f294a3564369f17b1333`; no phone execution
+at that later revision or physical output has been reported.
 
 P1 now develops equally scoped iPhone and Android **read-only simulation app
 shells**. The [prototype contract](read-only-native-prototypes.md) specifies
@@ -19,6 +22,12 @@ what their builds prove and what must remain UNKNOWN. The repo's Swift and
 Kotlin package tests, iOS simulator build, Android debug APK build and a-Shell
 Python tests are distinct gates; no shell build implies installed real-device
 qualification or permission to open production execution.
+The [P1 installed-device trial protocol](p1-installed-device-trial.md) and
+manual record checker are merged; no signed iPhone install, Android device
+trial or independently observed sound path has been reported. PR #19's
+[hosted run](https://github.com/Dvcutie04/AudioBodyguard-Alpha/actions/runs/36281531594)
+passed Python, scripted C, Swift simulator and Android APK jobs. A
+structurally complete self-reported trial still cannot qualify N2b–N5.
 
 The merged product-software increment adds a bounded, read-only reference
 session journal, a separate pause latch, capability cards, scoped change
