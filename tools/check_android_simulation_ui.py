@@ -30,7 +30,8 @@ def launcher_close_coordinates(path: str) -> None:
 
 def button_coordinates(path: str, label: str) -> None:
     nodes = list(ET.parse(Path(path)).getroot().iter())
-    button = next((node for node in nodes if node.get("text") == label and node.get("clickable") == "true"), None)
+    # Dialog topic rows receive clicks through their parent ListView.
+    button = next((node for node in nodes if node.get("text") == label and node.get("package") == "com.aqss.bodyguard.prototype"), None)
     bounds = re.fullmatch(r"\[(\d+),(\d+)\]\[(\d+),(\d+)\]", button.get("bounds", "")) if button is not None else None
     if bounds is not None:
         left, top, right, bottom = map(int, bounds.groups())
@@ -42,7 +43,9 @@ def button_coordinates(path: str, label: str) -> None:
             default=0,
         )
         center_y = (top + bottom) // 2
-        if center_y < screen_bottom * 0.85:
+        # Tutorial footer controls are laid out above consumed system insets.
+        footer_labels = {"Help & tutorials", "Back", "Next", "Done", "Close tutorial"}
+        if center_y < screen_bottom * 0.85 or label in footer_labels:
             print((left + right) // 2, center_y)
 
 
@@ -82,6 +85,11 @@ def main(paths: list[str], *, options: bool = False) -> None:
 
 
 if __name__ == "__main__":
+    if len(sys.argv) == 4 and sys.argv[1] == "--assert-label":
+        nodes = ET.parse(Path(sys.argv[2])).getroot().iter()
+        if not any(sys.argv[3] in (node.get("text", "") + node.get("content-desc", "")) for node in nodes):
+            raise SystemExit(f"Android tutorial missing label: {sys.argv[3]}")
+        raise SystemExit(0)
     if len(sys.argv) == 3 and sys.argv[1] == "--valid-hierarchy":
         raise SystemExit(0 if valid_hierarchy(sys.argv[2]) else 1)
     if len(sys.argv) == 3 and sys.argv[1] == "--launcher-close-coordinates":
