@@ -1,0 +1,43 @@
+{
+  "schema_version": 1,
+  "revision": null,
+  "platform": null,
+  "device_model": null,
+  "os_build": null,
+  "installation": null,
+  "qualified": false,
+  "production_ready": false,
+  "cases": [
+    {
+      "id": "fresh_launch", "performed": false, "coverage": null,
+      "simulation_label_visible": null, "no_output_observation_visible": null,
+      "hint_source": null, "independent_trace_ref": null
+    },
+    {
+      "id": "foreground_attach", "performed": false, "coverage": null,
+      "simulation_label_visible": null, "no_output_observation_visible": null,
+      "hint_source": null, "callback_observed": null, "independent_trace_ref": null
+    },
+    {
+      "id": "foreground_detach", "performed": false, "coverage": null,
+      "simulation_label_visible": null, "no_output_observation_visible": null,
+      "hint_source": null, "callback_observed": null, "independent_trace_ref": null
+    },
+    {
+      "id": "background_resume", "performed": false, "coverage": null,
+      "simulation_label_visible": null, "no_output_observation_visible": null,
+      "hint_source": null, "prior_visit_hint_reused": null, "independent_trace_ref": null
+    },
+    {
+      "id": "process_restart", "performed": false, "coverage": null,
+      "simulation_label_visible": null, "no_output_observation_visible": null,
+      "hint_source": null, "independent_trace_ref": null
+    },
+    {
+      "id": "accessible_large_text", "performed": false, "coverage": null,
+      "simulation_label_visible": null, "no_output_observation_visible": null,
+      "hint_source": null, "screen_reader_checked": null,
+      "large_text_checked": null, "independent_trace_ref": null
+    }
+  ]
+}

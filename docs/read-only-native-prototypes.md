@@ -79,6 +79,10 @@ After a hosted build, install signed builds on real iPhone and Android devices
 and inspect VoiceOver/TalkBack, large text, contrast, lifecycle/background
 changes, startup/memory/battery and absence of misleading ACTIVE status.
 No coverage duration or percentage may be inferred from missing callbacks.
+The [P1 installed-device trial](p1-installed-device-trial.md) gives a separate
+record for each platform and a checker that rejects incomplete or misleading
+manual status reports. Its structurally complete result does not qualify the
+native app or a physical output route.
 
 Before using this as a product event source, test active/inactive transitions,
 headphone connect/disconnect, interruptions, media-service reset where
