@@ -58,9 +58,9 @@ jobs:
         run: sh native/lab/owned_output/run_tests.sh
 
   native-swift:
-    name: Swift contracts and read-only iOS simulator app
+    name: Swift contracts and read-only iOS simulator screen
     runs-on: macos-14
-    timeout-minutes: 20
+    timeout-minutes: 35
     steps:
       - uses: actions/checkout@v4
         with:
@@ -69,11 +69,23 @@ jobs:
         run: swift test --package-path native/ios
       - name: Compile read-only iOS simulator application
         run: xcodebuild -project native/ios-app/AQSSReadOnly.xcodeproj -scheme AQSSReadOnly -configuration Debug -sdk iphonesimulator -destination 'generic/platform=iOS Simulator' CODE_SIGNING_ALLOWED=NO build
+      - name: Run read-only iPhone Simulator UI checks
+        run: bash tools/run_ios_read_only_smoke.sh "$RUNNER_TEMP"
+      - name: Keep iOS simulation evidence briefly
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: aqss-ios-simulation
+          path: |
+            ${{ runner.temp }}/aqss-ios-simulation.png
+            ${{ runner.temp }}/aqss-ios-simulator-app.zip
+          if-no-files-found: warn
+          retention-days: 3
 
   native-android:
-    name: Android contracts and read-only APK
+    name: Android contracts and read-only emulator screen
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 45
     steps:
       - uses: actions/checkout@v4
         with:
@@ -93,3 +105,15 @@ jobs:
         run: sdkmanager "platforms;android-36"
       - name: Compile Android contract tests and read-only APK
         run: gradle -p native/android testDebugUnitTest :app:assembleDebug
+      - name: Run read-only Android Emulator UI checks
+        run: bash tools/run_android_read_only_smoke.sh "$RUNNER_TEMP"
+      - name: Keep Android simulation evidence briefly
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: aqss-android-simulation
+          path: |
+            native/android/app/build/outputs/apk/debug/app-debug.apk
+            ${{ runner.temp }}/aqss-android-simulation.png
+          if-no-files-found: warn
+          retention-days: 3
