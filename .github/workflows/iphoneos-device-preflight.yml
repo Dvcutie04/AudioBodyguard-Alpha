@@ -50,7 +50,7 @@ jobs:
           APP="$RUNNER_TEMP/AQSSReadOnly.xcarchive/Products/Applications/AQSSReadOnly.app"
           test -d "$APP"
           test -f "$APP/Assets.car"
-          lipo -verify_arch arm64 "$APP/AQSSReadOnly"
+          lipo "$APP/AQSSReadOnly" -verify_arch arm64
           test "$(/usr/libexec/PlistBuddy -c 'Print :CFBundleIdentifier' "$APP/Info.plist")" = 'com.aqss.bodyguard.prototype'
           test "$(/usr/libexec/PlistBuddy -c 'Print :CFBundleDisplayName' "$APP/Info.plist")" = 'AQSS Simulation'
           test "$(/usr/libexec/PlistBuddy -c 'Print :CFBundleVersion' "$APP/Info.plist")" = '1'
