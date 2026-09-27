@@ -84,3 +84,52 @@ capture_ui advanced_bottom
 python3 tools/check_android_simulation_ui.py --options-menu \
     "$artifact_dir/options_top.xml" "$artifact_dir"/options_middle_*.xml \
     "$artifact_dir/advanced_top.xml" "$artifact_dir/advanced_middle.xml" "$artifact_dir/advanced_bottom.xml"
+
+tap_tutorial_label() {
+    local label="$1" capture="$2" coordinates x y
+    capture_ui "$capture"
+    coordinates="$(python3 tools/check_android_simulation_ui.py --text-tap-coordinates "$artifact_dir/$capture.xml" "$label")"
+    if [[ -z "$coordinates" ]]; then echo "Tutorial target not visible: $label" >&2; return 1; fi
+    read -r x y <<< "$coordinates"
+    adb shell input tap "$x" "$y"
+}
+
+assert_tutorial_label() {
+    python3 tools/check_android_simulation_ui.py --assert-label "$artifact_dir/$1.xml" "$2"
+}
+
+tap_tutorial_label "Help & tutorials" tutorial_help
+tap_tutorial_label "Sound options" tutorial_topics
+capture_ui tutorial_sound_first
+assert_tutorial_label tutorial_sound_first "Step 1 of 4"
+tap_tutorial_label "Next" tutorial_next
+capture_ui tutorial_sound_second
+assert_tutorial_label tutorial_sound_second "Step 2 of 4"
+assert_tutorial_label tutorial_sound_second "Volume needs a supported output"
+tap_tutorial_label "Back" tutorial_back
+capture_ui tutorial_sound_back
+assert_tutorial_label tutorial_sound_back "Step 1 of 4"
+tap_tutorial_label "Close tutorial" tutorial_close
+
+tap_tutorial_label "Help & tutorials" tutorial_help_again
+tap_tutorial_label "Advanced and privacy" tutorial_topics_again
+tap_tutorial_label "Next" tutorial_advanced_first
+tap_tutorial_label "Next" tutorial_advanced_second
+capture_ui tutorial_advanced_physical
+assert_tutorial_label tutorial_advanced_physical "Step 3 of 5"
+assert_tutorial_label tutorial_advanced_physical "Unknown physical state"
+tap_tutorial_label "Close tutorial" tutorial_advanced_close
+
+tap_tutorial_label "Help & tutorials" tutorial_help_captions
+tap_tutorial_label "Captions" tutorial_caption_topics
+tap_tutorial_label "Next" tutorial_captions_first
+capture_ui tutorial_captions_last
+assert_tutorial_label tutorial_captions_last "Step 2 of 2"
+tap_tutorial_label "Done" tutorial_captions_done
+
+tap_tutorial_label "Help & tutorials" tutorial_help_replay
+tap_tutorial_label "Sound options" tutorial_topics_replay
+capture_ui tutorial_replay
+assert_tutorial_label tutorial_replay "Step 1 of 4"
+tap_tutorial_label "Close tutorial" tutorial_finish
+echo "ANDROID_TUTORIAL_OBSERVED: manual navigation, close, completion and replay passed"
