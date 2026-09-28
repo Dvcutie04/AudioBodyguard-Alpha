@@ -4,7 +4,24 @@ set -euo pipefail
 artifact_dir="${AQSS_UI_ARTIFACT_DIR:-artifacts/ui/android}"
 mkdir -p "$artifact_dir"
 
+collect_failure_diagnostics() {
+    local status=$?
+    if [[ -n "${original_font_scale:-}" ]]; then
+        adb shell settings put system font_scale "$original_font_scale" || true
+        adb shell settings put system user_rotation "$original_rotation" || true
+        adb shell settings put system accelerometer_rotation "$original_auto_rotation" || true
+    fi
+    if [[ "$status" -ne 0 ]]; then
+        adb logcat -b crash -d > "$artifact_dir/crash-log.txt" 2>&1 || true
+        adb shell dumpsys activity activities > "$artifact_dir/activity-state.txt" 2>&1 || true
+        adb shell dumpsys window windows > "$artifact_dir/window-state.txt" 2>&1 || true
+    fi
+    return "$status"
+}
+trap collect_failure_diagnostics EXIT
+
 adb install -r native/android/app/build/outputs/apk/debug/app-debug.apk
+adb logcat -c
 adb shell am start -W -n com.aqss.bodyguard.prototype/.ReadOnlyHomeActivity | tee "$artifact_dir/launch.txt"
 
 capture_ui() {
@@ -41,17 +58,162 @@ capture_ui() {
         adb shell input tap "$x" "$y"
         adb shell am start -W -n com.aqss.bodyguard.prototype/.ReadOnlyHomeActivity
         if [[ "$label" == bottom ]]; then
-            adb shell input swipe 500 1600 500 250 350
-            adb shell input swipe 500 1600 500 250 350
+            adb shell input swipe 500 1600 500 250 900
+            adb shell input swipe 500 1600 500 250 900
         fi
     done
 }
 
-capture_ui top
+tap_tutorial_label() {
+    local label="$1" capture="$2" coordinates x y
+    capture_ui "$capture"
+    coordinates="$(python3 tools/check_android_simulation_ui.py --text-tap-coordinates "$artifact_dir/$capture.xml" "$label")"
+    if [[ -z "$coordinates" ]]; then echo "Tutorial target not visible: $label" >&2; return 1; fi
+    read -r x y <<< "$coordinates"
+    adb shell input tap "$x" "$y"
+}
 
-# The handoff explanation is below the initial viewport on a typical phone.
-adb shell input swipe 500 1600 500 250 350
-adb shell input swipe 500 1600 500 250 350
-capture_ui bottom
+assert_tutorial_label() {
+    python3 tools/check_android_simulation_ui.py --assert-label "$artifact_dir/$1.xml" "$2"
+}
 
-python3 tools/check_android_simulation_ui.py "$artifact_dir/top.xml" "$artifact_dir/bottom.xml"
+tap_scroll_label() {
+    local label="$1" capture="$2" coordinates x y
+    for attempt in 1 2 3 4 5 6; do
+        capture_ui "$capture"
+        coordinates="$(python3 tools/check_android_simulation_ui.py --text-tap-coordinates "$artifact_dir/$capture.xml" "$label")"
+        if [[ -n "$coordinates" ]]; then
+            read -r x y <<< "$coordinates"
+            adb shell input tap "$x" "$y"
+            return 0
+        fi
+        adb shell input swipe 500 1600 500 450 900
+    done
+    echo "Content target not reached: $label" >&2; return 1
+}
+
+assert_scroll_label() {
+    local label="$1" capture="$2"
+    for attempt in 1 2 3 4 5 6; do
+        capture_ui "$capture"
+        if python3 tools/check_android_simulation_ui.py --assert-label "$artifact_dir/$capture.xml" "$label" 2>/dev/null; then return 0; fi
+        adb shell input swipe 500 1600 500 450 900
+    done
+    echo "Content label not reached: $label" >&2; return 1
+}
+
+# Themed page navigation keeps all previous truth assertions, now on their
+# corresponding pages, and adds the synthetic-chart/appearance boundaries.
+capture_ui home
+assert_tutorial_label home "Unknown physical state"
+assert_tutorial_label home "No output observation"
+tap_tutorial_label "Sound" nav_sound
+capture_ui sound
+assert_tutorial_label sound "Sound, on your terms."
+tap_tutorial_label "Jump to" jump_volume_open
+tap_tutorial_label "Sound options" jump_volume
+capture_ui sound_options
+adb shell input swipe 500 1600 500 450 900
+capture_ui sound_presets
+assert_tutorial_label sound_presets "No qualified device volume control"
+assert_tutorial_label sound_presets "Dialogue preset"
+assert_tutorial_label sound_presets "Night preset"
+tap_tutorial_label "Devices" nav_devices
+capture_ui devices
+assert_tutorial_label devices "No qualified device connected"
+tap_tutorial_label "Jump to" jump_readiness_open
+tap_tutorial_label "Readiness checklist" jump_readiness
+capture_ui readiness
+assert_tutorial_label readiness "Six setup checks unknown"
+tap_tutorial_label "Help with readiness" readiness_help
+readiness_titles=("Output hardware" "Qualified path" "Permission and authority" "Output route" "Runtime eligibility" "Independent observation")
+for step in 1 2 3 4 5 6; do
+    capture_ui "readiness_step_$step"
+    assert_tutorial_label "readiness_step_$step" "Step $step of 6"
+    python3 tools/check_android_simulation_ui.py --assert-tutorial-target "$artifact_dir/readiness_step_$step.xml" "${readiness_titles[$((step - 1))]}"
+    if [[ "$step" -lt 6 ]]; then tap_tutorial_label "Next" readiness_next; fi
+done
+adb shell input keyevent KEYCODE_BACK
+capture_ui readiness_closed
+if python3 tools/check_android_simulation_ui.py --assert-label "$artifact_dir/readiness_closed.xml" "Close tutorial" 2>/dev/null; then exit 1; fi
+
+tap_tutorial_label "Jump to" handoff_open
+tap_tutorial_label "Session transfer" handoff_jump
+capture_ui handoff
+assert_tutorial_label handoff "No supported endpoint or verified transfer path"
+tap_tutorial_label "Insights" nav_insights
+capture_ui insights
+assert_tutorial_label insights "No measurements yet"
+tap_tutorial_label "Explore an example" example_open
+capture_ui example
+assert_tutorial_label example "EXAMPLE · synthetic data"
+assert_tutorial_label example "Relative level (0–100)"
+tap_scroll_label "Read chart values" values_open
+assert_scroll_label "Sample 4: 64 relative units" example_values
+adb shell input keyevent KEYCODE_BACK
+capture_ui example_closed
+assert_tutorial_label example_closed "No measurements yet"
+tap_tutorial_label "Settings" nav_settings
+capture_ui settings
+tap_tutorial_label "Daylight" theme_daylight
+capture_ui daylight_settings
+tap_tutorial_label "Home" theme_home
+capture_ui daylight_home
+assert_tutorial_label daylight_home "Unknown physical state"
+tap_tutorial_label "Settings" theme_settings
+tap_tutorial_label "Midnight" theme_midnight
+tap_scroll_label "Hide advanced options" advanced_close
+tap_scroll_label "Voice requests. Planned · proposal only" future_voice
+capture_ui future_voice_detail
+assert_tutorial_label future_voice_detail "This app is not listening for commands"
+tap_tutorial_label "Got it" future_voice_close
+tap_tutorial_label "Jump to" privacy_open
+tap_tutorial_label "Privacy and storage" privacy_jump
+capture_ui privacy
+assert_tutorial_label privacy "No audio recorded by this app"
+assert_tutorial_label privacy "Only your appearance choice is saved locally"
+
+tap_tutorial_label "Home" return_home
+tap_tutorial_label "Help & tutorials" guide_open
+tap_tutorial_label "Home and coverage" guide_choose
+capture_ui guide_1
+assert_tutorial_label guide_1 "Step 1 of 4"
+tap_tutorial_label "Next" guide_next_1
+capture_ui guide_2
+assert_tutorial_label guide_2 "Step 2 of 4"
+tap_tutorial_label "Next" guide_next_2
+capture_ui guide_3
+assert_tutorial_label guide_3 "Step 3 of 4"
+tap_tutorial_label "Back" guide_back
+adb shell input keyevent KEYCODE_HOME
+adb shell am start -W -n com.aqss.bodyguard.prototype/.ReadOnlyHomeActivity
+capture_ui guide_return
+assert_tutorial_label guide_return "Step 2 of 4"
+original_font_scale="$(adb shell settings get system font_scale | tr -d '\r')"
+original_rotation="$(adb shell settings get system user_rotation | tr -d '\r')"
+original_auto_rotation="$(adb shell settings get system accelerometer_rotation | tr -d '\r')"
+adb shell settings put system accelerometer_rotation 0
+adb shell settings put system user_rotation 1
+capture_ui landscape_tutorial
+assert_tutorial_label landscape_tutorial "Step 2 of 4"
+assert_tutorial_label landscape_tutorial "Close tutorial"
+python3 tools/check_android_simulation_ui.py --assert-tutorial-target "$artifact_dir/landscape_tutorial.xml" "Readiness checklist"
+adb shell settings put system user_rotation 0
+capture_ui portrait_tutorial
+tap_tutorial_label "Close tutorial" guide_close
+capture_ui restored_home
+assert_tutorial_label restored_home "Unknown physical state"
+
+adb shell settings put system font_scale 2.0
+capture_ui large_text_home
+tap_tutorial_label "Pages · Home" large_pages
+tap_tutorial_label "Devices" large_devices
+capture_ui large_text_devices
+tap_tutorial_label "Help & tutorials" large_help
+tap_scroll_label "Readiness checklist" large_topic
+capture_ui large_text_tutorial
+assert_tutorial_label large_text_tutorial "Step 1 of 6"
+tap_tutorial_label "Close tutorial" large_close
+capture_ui large_text_closed
+assert_tutorial_label large_text_closed "Pages · Devices"
+echo "ANDROID_THEME_UI_OBSERVED: five pages, unknown coverage, unavailable controls, six readiness steps, labeled example, themes, future explanation, tutorial routing, Back, lifecycle, rotation and large text passed"
