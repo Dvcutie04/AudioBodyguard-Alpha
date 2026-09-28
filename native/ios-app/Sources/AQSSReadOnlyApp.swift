@@ -343,7 +343,7 @@ private struct ReadOnlyHomeView: View {
             if textSize.isAccessibilitySize { closeTutorialButton }
         }
         .padding(.horizontal)
-        .padding(.top, 8)
+        .padding(.vertical, 8)
         .background(Color(.secondarySystemBackground))
         .accessibilityIdentifier("tutorial-panel")
     }
