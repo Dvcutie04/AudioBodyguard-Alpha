@@ -6,6 +6,13 @@ Checkpoint: September 26, 2026. Continue from the restored a-Shell baseline and 
 
 ## Current checkpoint
 
+September 28 interface increment (PR #28, following PR #27): five native pages
+share Midnight/Daylight/System presentation, contextual help, truthful empty
+insights and an explicitly synthetic example chart. Future feature cards
+explain prerequisites. Appearance is the only new stored preference. See the
+[interface design and source matrix](interface-design-research-2026-09-28.md)
+for research, acceptance checks and remaining device/usability measurements.
+
 September 27–28 native app review: the branch following options PR #25 and
 tutorial PR #26 adds direct section navigation, a six-prerequisite explanatory
 checklist, accessibility semantics/touch targets, and Android nested Back

@@ -1,8 +1,8 @@
 # P1 read-only native simulation shells
 
 The iOS SwiftUI target in `native/ios-app` and Android Views app module in
-`native/android/app` display the same limited message at launch: **SIMULATION —
-no audio path connected**, **Unknown physical state**, and **No output
+`native/android/app` display a **PREVIEW** label and the same limited message
+at launch: **Unknown physical state**, and **No output
 observation**. Both use the existing native read-only session projector with
 no evidence sample. They show explanatory coverage, capability, caption,
 history and next-step text. An additional foreground-only hint is sourced
@@ -14,13 +14,13 @@ permission, endpoint command, live session history, background service,
 automatic recovery, cross-platform handoff, or ability to actuate from these
 shells.
 
-Both shells now expose a collapsed **Options** section with Volume, Captions,
+Both shells expose an expandable **Sound options** section with Volume, Captions,
 Sound preset, Dialogue, Night, Custom Equalizer, and Defaults and Undo. A
 second **Advanced options** button shows device/route, physical-output,
 background-monitoring, privacy, and handoff explanations. Expanding or hiding
 these sections only changes local presentation. Every audio option explicitly
 says **Unavailable** and the physical state remains **Unknown physical state**.
-There are no sliders, audio commands, saved settings, new permissions, or
+There are no sliders, audio commands, saved audio settings, new permissions, or
 background execution. The Python capability model also includes Dialogue and
 Night as extra preset choices, gated by semantic preset capability; those
 model choices do not connect or enable the native preview. The [options menu
@@ -28,13 +28,13 @@ research and staged checks](options-menu-research.md) record the decision.
 
 ## Contextual tutorials
 
-**Help & tutorials** stays below the scrolling content in both shells. It
+**Help & tutorials** stays in the header above the scrolling content in both shells. It
 opens seven replayable topics: Home and coverage, Sound options, Captions,
 Defaults and undo, Advanced and privacy, Session transfer, and Readiness
 checklist. Options, Advanced options, and the checklist also have direct help
 buttons. A tour scrolls to and outlines
 the actual section, shows one explanation and labeled example at a time, and
-offers Back, Next, Close and Done. Closing restores the section expansion that
+offers Back, Next, Close and Done. Closing restores the page and section expansion that
 was present before the tour; changing a menu directly ends the tour and keeps
 that navigation choice. Choosing a topic starts it from step one.
 
@@ -67,6 +67,31 @@ then the nested menu/checklist, before using the system's root Back behavior.
 Swift button hit areas include their padding; both platforms expose section
 headings and expansion state for accessibility. See the [native app audit and
 research backlog](native-app-audit-2026-09-27.md) for scope and validation limits.
+
+## Five-page themed interface
+
+Home summarizes unknown coverage and opens readiness. Sound groups the
+unavailable audio options and captions. Devices explains the unqualified path,
+six prerequisites, foreground hints and session transfer. Insights shows
+missing measurements/history and an optional synthetic relative-level chart.
+Settings groups appearance, advanced details, privacy, future explanations and
+tutorials. Every page retains Help, Jump to, and a simulation footer. Labeled
+tabs become a native page picker at accessibility text sizes.
+
+Midnight, Daylight and System share `contracts/interface_v1.json`, generated
+into both platforms by `python tools/generate_interface_content.py --check`.
+Validation checks normal text contrast and bounds the example samples; it
+rejects measured-unit labels and action fields. The chart's values are invented
+and cannot enter a session projector. Its accessible description and optional
+text values expose the same eight samples. Closing it restores the empty state.
+
+Appearance is the only persisted preference: one local string, selected from
+the three appearance choices. Tutorial and example progress are temporary.
+Planned voice, profile, supervisor and support-report cards open explanations;
+they do not request permission, listen, discover devices, export data, or make
+control requests. Native vector decoration introduces no repeated animation,
+new dependency or media download. The [interface research brief](interface-design-research-2026-09-28.md)
+records source quality, alternatives and remaining measurements.
 
 ## Read-only native hints
 

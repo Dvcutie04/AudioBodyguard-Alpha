@@ -55,6 +55,7 @@ private struct ReadOnlyHomeView: View {
     @State private var navigationRequest = 0
     @State private var helpVisible = false
     @State private var showingExample = false
+    @State private var chartValuesVisible = false
     @State private var futureTitle = ""
     @State private var futureExplanation = ""
     @State private var futureVisible = false
@@ -208,6 +209,7 @@ private struct ReadOnlyHomeView: View {
                 Text("Sound options").font(.title2.bold()).accessibilityAddTraits(.isHeader)
                 Text("Explore each control. A qualified device and observed result are needed before audio can change.").foregroundColor(theme.muted)
                 action(optionsExpanded ? "Hide options" : "Options", icon: "slider.horizontal.3") { closeTutorial(restore: false); optionsExpanded.toggle() }
+                    .accessibilityValue(optionsExpanded ? "Expanded" : "Collapsed")
                 helpButton("Help with options", topic: "sound")
             }
             if optionsExpanded {
@@ -241,6 +243,7 @@ private struct ReadOnlyHomeView: View {
                 Text(capabilityTitle).foregroundColor(theme.warning)
                 Text("Hardware, qualification, permission, route, runtime and independent observation.").foregroundColor(theme.muted)
                 action(checklistExpanded ? "Hide readiness checklist" : "Show readiness checklist", icon: "checklist", primary: true) { closeTutorial(restore: false); checklistExpanded.toggle() }
+                    .accessibilityValue(checklistExpanded ? "Expanded" : "Collapsed")
                 helpButton("Help with readiness", topic: "readiness")
             }
             if checklistExpanded {
@@ -264,17 +267,19 @@ private struct ReadOnlyHomeView: View {
                     Text("Invented values for learning this graph. They are not microphone readings, dB measurements or proof of protection.").foregroundColor(theme.muted)
                     ExampleChart(theme: theme).frame(height: 180)
                     Text(AQSSInterfaceContent.exampleUnit).font(.caption).foregroundColor(theme.muted)
-                    DisclosureGroup("Read chart values") {
+                    action(chartValuesVisible ? "Hide chart values" : "Read chart values", icon: "list.bullet") { chartValuesVisible.toggle() }
+                        .accessibilityValue(chartValuesVisible ? "Expanded" : "Collapsed")
+                    if chartValuesVisible {
                         ForEach(Array(AQSSInterfaceContent.exampleValues.enumerated()), id: \.offset) { index, value in
                             Text("Sample \(index + 1): \(Int(value)) relative units").frame(maxWidth: .infinity, alignment: .leading).padding(.vertical, 3)
                         }
                     }
-                    action("Close example", icon: "xmark") { showingExample = false }
+                    action("Close example", icon: "xmark") { showingExample = false; chartValuesVisible = false }
                 } else {
                     Image(systemName: "waveform.path").font(.system(size: 42, weight: .light)).foregroundColor(theme.violet).padding(.vertical, 18).frame(maxWidth: .infinity).accessibilityHidden(true)
                     Text("No measurements yet").font(.title3.bold())
                     Text("A qualified observation source is needed before a real trend can appear. Missing measurements cannot establish safe audio.").foregroundColor(theme.muted)
-                    action("Explore an example", icon: "chart.xyaxis.line", primary: true) { showingExample = true }
+                    action("Explore an example", icon: "chart.xyaxis.line", primary: true) { chartValuesVisible = false; showingExample = true }
                 }
             }
             section("Session history", detail: "No observed events", explanation: "A missing history cannot establish continuous coverage. Requests and verified results will need distinct records.", target: "history", icon: "clock")
@@ -300,6 +305,7 @@ private struct ReadOnlyHomeView: View {
             card(target: "advanced") {
                 Text("Advanced options").font(.title2.bold()).accessibilityAddTraits(.isHeader)
                 action(advancedExpanded ? "Hide advanced options" : "Advanced options", icon: "gearshape.2") { closeTutorial(restore: false); advancedExpanded.toggle() }
+                    .accessibilityValue(advancedExpanded ? "Expanded" : "Collapsed")
                 helpButton("Help with advanced options", topic: "advanced")
             }
             if advancedExpanded {

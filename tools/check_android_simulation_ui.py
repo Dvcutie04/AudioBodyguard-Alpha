@@ -43,9 +43,12 @@ def button_coordinates(path: str, label: str) -> None:
             default=0,
         )
         center_y = (top + bottom) // 2
+        # A native dialog reports its own window bounds, not the full display.
+        # Its lower rows are still safely above system navigation.
+        native_dialog = any(node.get("resource-id") == "android:id/alertTitle" for node in nodes)
         # Tutorial footer controls are laid out above consumed system insets.
         footer_labels = {"Jump to", "Help & tutorials", "Back", "Next", "Done", "Close tutorial", "Help", "Home", "Sound", "Devices", "Insights", "Settings", "Pages · Home", "Pages · Devices", "Pages · Settings"}
-        if center_y < screen_bottom * 0.85 or label in footer_labels:
+        if center_y < screen_bottom * 0.85 or label in footer_labels or native_dialog:
             print((left + right) // 2, center_y)
 
 
@@ -61,19 +64,20 @@ def main(paths: list[str], *, options: bool = False) -> None:
         )
 
     expected = (
-        "SIMULATION — no audio path connected",
+        "SIMULATION · No audio path connected",
         "Unknown physical state",
         "No output observation",
         "Six setup checks unknown",
-        "Moving a session between phones is not available here",
+        "No supported endpoint or verified transfer path",
     ) if not options else (
-        "Options preview — controls are unavailable",
-        "Volume — Unavailable",
-        "Dialogue preset — Unavailable",
-        "Night preset — Unavailable",
-        "Physical output — Unknown physical state",
+        "Sound options",
+        "Volume",
+        "Unavailable",
+        "Dialogue preset",
+        "Night preset",
+        "Unknown physical state",
         "No independent observation is available",
-        "Background monitoring — Unavailable",
+        "Background monitoring",
     )
     launcher_titles = ("Pixel Launcher isn't responding", "Quickstep isn't responding")
     if any(title in text for text in labels for title in launcher_titles):
@@ -85,6 +89,18 @@ def main(paths: list[str], *, options: bool = False) -> None:
 
 
 if __name__ == "__main__":
+    if len(sys.argv) == 4 and sys.argv[1] == "--assert-tutorial-target":
+        nodes = list(ET.parse(Path(sys.argv[2])).getroot().iter())
+        def bounds(node):
+            match = re.fullmatch(r"\[(\d+),(\d+)\]\[(\d+),(\d+)\]", node.get("bounds", ""))
+            return tuple(map(int, match.groups())) if match else None
+        panels = [bounds(node) for node in nodes if node.get("text", "").startswith("Tutorial — ")]
+        panel_top = min((b[1] for b in panels if b), default=0)
+        target = next((node for node in nodes if node.get("text") == sys.argv[3]), None)
+        box = bounds(target) if target is not None else None
+        if box is None or box[3] <= box[1] or box[3] > panel_top:
+            raise SystemExit(f"Tutorial target is not visible above its guide: {sys.argv[3]}")
+        raise SystemExit(0)
     if len(sys.argv) == 4 and sys.argv[1] == "--assert-label":
         nodes = ET.parse(Path(sys.argv[2])).getroot().iter()
         if not any(sys.argv[3] in (node.get("text", "") + node.get("content-desc", "")) for node in nodes):

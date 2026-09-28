@@ -73,7 +73,7 @@ class ReadOnlyHomeActivity : Activity() {
         root = vertical().apply { setBackgroundColor(skin.background) }
         val header = LinearLayout(this).apply { gravity = Gravity.CENTER_VERTICAL; setPadding(dp(16), dp(4), dp(16), dp(4)) }
         header.addView(TextView(this).apply { text = "AQSS"; textSize = 16f; setTypeface(null, Typeface.BOLD); setTextColor(skin.accent); letterSpacing = .13f }, LinearLayout.LayoutParams(0, -2, 1f))
-        header.addView(button("Jump to") { tutorial.chooseSection() })
+        header.addView(button("Jump to") { tutorial.chooseSection() }, LinearLayout.LayoutParams(-2, -2).apply { marginEnd = dp(8) })
         help = button("Help") { tutorial.chooseTopic() }.apply { contentDescription = "Help & tutorials" }
         header.addView(help)
         root.addView(header)
@@ -133,8 +133,13 @@ class ReadOnlyHomeActivity : Activity() {
         target?.let { targets[it] = box }
         content(box); return box
     }
-    private fun action(parent: LinearLayout, title: String, primary: Boolean = false, onClick: () -> Unit) {
-        parent.addView(button(title, primary, onClick), LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(8) })
+    private fun action(parent: LinearLayout, title: String, primary: Boolean = false, expanded: Boolean? = null, onClick: () -> Unit) {
+        parent.addView(button(title, primary, onClick).apply {
+            expanded?.let { value ->
+                val state = if (value) "Expanded" else "Collapsed"
+                if (Build.VERSION.SDK_INT >= 30) stateDescription = state else contentDescription = "$title. $state"
+            }
+        }, LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(8) })
     }
     private fun section(title: String, detail: String, explanation: String, target: String) = card(target) { c ->
         label(c, title, 20f, bold = true)
@@ -147,6 +152,12 @@ class ReadOnlyHomeActivity : Activity() {
             label(c, subtitle, 14f, skin.muted)
         }
         c.isClickable = true; c.isFocusable = true; c.contentDescription = "$title. $subtitle"
+        c.accessibilityDelegate = object : View.AccessibilityDelegate() {
+            override fun onInitializeAccessibilityNodeInfo(host: View, info: android.view.accessibility.AccessibilityNodeInfo) {
+                super.onInitializeAccessibilityNodeInfo(host, info)
+                info.className = Button::class.java.name
+            }
+        }
         c.setOnClickListener { action() }
     }
 
@@ -167,7 +178,7 @@ class ReadOnlyHomeActivity : Activity() {
         }
         label(column, "SIMULATION · No audio path connected", 12f, skin.muted)
         renderNav(); syncBackCallback()
-        scroll.post { scroll.scrollTo(0, previousScroll) }
+        if (preserveScroll) scroll.post { scroll.scrollTo(0, previousScroll) }
     }
     private fun renderNav() {
         nav.removeAllViews()
@@ -224,7 +235,7 @@ class ReadOnlyHomeActivity : Activity() {
         card("options") { c ->
             label(c, "Sound options", 22f, bold = true)
             label(c, "Explore each control. A qualified device and observed result are needed before audio can change.", 16f, skin.muted)
-            action(c, if (optionsExpanded) "Hide options" else "Options") { tutorial.close(false); optionsExpanded = !optionsExpanded; renderPage() }
+            action(c, if (optionsExpanded) "Hide options" else "Options", expanded = optionsExpanded) { tutorial.close(false); optionsExpanded = !optionsExpanded; renderPage(true) }
             action(c, "Help with options") { tutorial.start("sound") }
         }
         if (optionsExpanded) {
@@ -256,7 +267,7 @@ class ReadOnlyHomeActivity : Activity() {
             label(c, "Readiness checklist", 22f, bold = true)
             label(c, if (capability.label == "UNKNOWN" && !capability.canActuate && capability.reasons.size == 6) "Six setup checks unknown" else "Unavailable — checklist unconfirmed", 17f, skin.warning)
             label(c, "Hardware, qualification, permission, route, runtime and independent observation.", 16f, skin.muted)
-            action(c, if (checklistExpanded) "Hide readiness checklist" else "Show readiness checklist", true) { tutorial.close(false); checklistExpanded = !checklistExpanded; renderPage() }
+            action(c, if (checklistExpanded) "Hide readiness checklist" else "Show readiness checklist", true, checklistExpanded) { tutorial.close(false); checklistExpanded = !checklistExpanded; renderPage(true) }
             action(c, "Help with readiness") { tutorial.start("readiness") }
         }
         if (checklistExpanded) TutorialContent.topics.single { it.id == "readiness" }.steps.forEach { section(it.title, "Unknown", it.explanation, it.target) }
@@ -317,7 +328,7 @@ class ReadOnlyHomeActivity : Activity() {
         }
         card("advanced") { c ->
             label(c, "Advanced options", 22f, bold = true)
-            action(c, if (advancedExpanded) "Hide advanced options" else "Advanced options") { tutorial.close(false); advancedExpanded = !advancedExpanded; renderPage() }
+            action(c, if (advancedExpanded) "Hide advanced options" else "Advanced options", expanded = advancedExpanded) { tutorial.close(false); advancedExpanded = !advancedExpanded; renderPage(true) }
             action(c, "Help with advanced options") { tutorial.start("advanced") }
         }
         if (advancedExpanded) {

@@ -92,6 +92,16 @@ tap_scroll_label() {
     echo "Content target not reached: $label" >&2; return 1
 }
 
+assert_scroll_label() {
+    local label="$1" capture="$2"
+    for attempt in 1 2 3 4 5 6; do
+        capture_ui "$capture"
+        if python3 tools/check_android_simulation_ui.py --assert-label "$artifact_dir/$capture.xml" "$label" 2>/dev/null; then return 0; fi
+        adb shell input swipe 500 1600 500 450 900
+    done
+    echo "Content label not reached: $label" >&2; return 1
+}
+
 # Themed page navigation keeps all previous truth assertions, now on their
 # corresponding pages, and adds the synthetic-chart/appearance boundaries.
 capture_ui home
@@ -116,9 +126,11 @@ tap_tutorial_label "Readiness checklist" jump_readiness
 capture_ui readiness
 assert_tutorial_label readiness "Six setup checks unknown"
 tap_tutorial_label "Help with readiness" readiness_help
+readiness_titles=("Output hardware" "Qualified path" "Permission and authority" "Output route" "Runtime eligibility" "Independent observation")
 for step in 1 2 3 4 5 6; do
     capture_ui "readiness_step_$step"
     assert_tutorial_label "readiness_step_$step" "Step $step of 6"
+    python3 tools/check_android_simulation_ui.py --assert-tutorial-target "$artifact_dir/readiness_step_$step.xml" "${readiness_titles[$((step - 1))]}"
     if [[ "$step" -lt 6 ]]; then tap_tutorial_label "Next" readiness_next; fi
 done
 adb shell input keyevent KEYCODE_BACK
@@ -137,8 +149,7 @@ capture_ui example
 assert_tutorial_label example "EXAMPLE · synthetic data"
 assert_tutorial_label example "Relative level (0–100)"
 tap_scroll_label "Read chart values" values_open
-capture_ui example_values
-assert_tutorial_label example_values "Sample 4: 64 relative units"
+assert_scroll_label "Sample 4: 64 relative units" example_values
 adb shell input keyevent KEYCODE_BACK
 capture_ui example_closed
 assert_tutorial_label example_closed "No measurements yet"
