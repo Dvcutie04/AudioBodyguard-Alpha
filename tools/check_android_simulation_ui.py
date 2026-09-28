@@ -95,11 +95,14 @@ if __name__ == "__main__":
             match = re.fullmatch(r"\[(\d+),(\d+)\]\[(\d+),(\d+)\]", node.get("bounds", ""))
             return tuple(map(int, match.groups())) if match else None
         panels = [bounds(node) for node in nodes if node.get("text", "").startswith("Tutorial — ")]
-        panel_top = min((b[1] for b in panels if b), default=0)
+        panel = next((b for b in panels if b), None)
         target = next((node for node in nodes if node.get("text") == sys.argv[3]), None)
         box = bounds(target) if target is not None else None
-        if box is None or box[3] <= box[1] or box[3] > panel_top:
-            raise SystemExit(f"Tutorial target is not visible above its guide: {sys.argv[3]}")
+        separated = box is not None and panel is not None and (box[3] <= panel[1] or box[2] <= panel[0])
+        # UiAutomator may retain a heading clipped to a single pixel. Such a
+        # sliver is not a readable highlighted target on this emulator matrix.
+        if box is None or box[3] - box[1] < 32 or box[2] - box[0] < 32 or not separated:
+            raise SystemExit(f"Tutorial target is not visible beside or above its guide: {sys.argv[3]}")
         raise SystemExit(0)
     if len(sys.argv) == 4 and sys.argv[1] == "--assert-label":
         nodes = ET.parse(Path(sys.argv[2])).getroot().iter()

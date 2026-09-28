@@ -36,7 +36,8 @@ class TutorialGuide(
     private val focusHelp: () -> Unit,
     private val stateChanged: () -> Unit,
 ) {
-    val footer = LinearLayout(activity).apply { orientation = LinearLayout.VERTICAL }
+    private val sideGuide = activity.resources.configuration.screenWidthDp >= 640 && activity.resources.configuration.screenWidthDp > activity.resources.configuration.screenHeightDp
+    val footer = LinearLayout(activity).apply { orientation = LinearLayout.VERTICAL; visibility = View.GONE }
     private val panel = LinearLayout(activity).apply {
         orientation = LinearLayout.VERTICAL; visibility = View.GONE
         setPadding(dp(14), dp(12), dp(14), dp(10)); background = skin.shape(skin.surface, 0, true)
@@ -58,15 +59,15 @@ class TutorialGuide(
 
     init {
         val readingHeight = (activity.resources.configuration.screenHeightDp / 3).coerceIn(80, 160)
-        panel.addView(explanation, LinearLayout.LayoutParams(-1, dp(readingHeight)))
+        panel.addView(explanation, if (sideGuide) LinearLayout.LayoutParams(-1, 0, 1f) else LinearLayout.LayoutParams(-1, dp(readingHeight)))
         panel.addView(TextView(activity).apply { text = "Scroll for details."; textSize = 12f; setTextColor(skin.muted); setPadding(0, dp(6), 0, dp(6)) })
         val controls = LinearLayout(activity)
-        val close = button("Close tutorial") { close() }
+        val close = button(if (sideGuide) "Close" else "Close tutorial") { close() }.apply { contentDescription = "Close tutorial" }
         for (item in listOf(back, next)) controls.addView(item, LinearLayout.LayoutParams(0, -2, 1f).apply { marginEnd = dp(4) })
-        if (activity.resources.configuration.fontScale < 1.5f) controls.addView(close, LinearLayout.LayoutParams(0, -2, 1f))
+        if (activity.resources.configuration.fontScale < 1.5f || sideGuide) controls.addView(close, LinearLayout.LayoutParams(0, -2, 1f))
         panel.addView(controls)
-        if (activity.resources.configuration.fontScale >= 1.5f) panel.addView(close, LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(6) })
-        footer.addView(panel)
+        if (activity.resources.configuration.fontScale >= 1.5f && !sideGuide) panel.addView(close, LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(6) })
+        footer.addView(panel, LinearLayout.LayoutParams(-1, if (sideGuide) -1 else -2))
         if (Build.VERSION.SDK_INT >= 28) panel.accessibilityPaneTitle = "Tutorial"
     }
     private fun dp(value: Int) = skin.dp(value)
@@ -107,7 +108,7 @@ class TutorialGuide(
         text.text = SpannableString(description).apply { setSpan(StyleSpan(Typeface.BOLD), 0, description.indexOf('\n'), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE) }
         explanation.scrollTo(0, 0); back.isEnabled = index > 0
         next.text = if (index == selected.steps.lastIndex) "Done" else "Next"
-        panel.visibility = View.VISIBLE; text.animate().cancel(); text.alpha = 1f
+        footer.visibility = View.VISIBLE; panel.visibility = View.VISIBLE; text.animate().cancel(); text.alpha = 1f
         if (ValueAnimator.areAnimatorsEnabled()) { text.alpha = .7f; text.animate().alpha(1f).setDuration(180).start() }
         revealTarget(target, true); stateChanged()
     }
@@ -132,7 +133,7 @@ class TutorialGuide(
     }
     fun close(restore: Boolean = true) {
         if (topic == null) return
-        detachTarget(); text.animate().cancel(); topic = null; index = 0; panel.visibility = View.GONE
+        detachTarget(); text.animate().cancel(); topic = null; index = 0; panel.visibility = View.GONE; footer.visibility = View.GONE
         if (restore) { setExpansion(previous.first, previous.second, previous.third); restorePage(previousPage); focusHelp() }
         stateChanged()
     }

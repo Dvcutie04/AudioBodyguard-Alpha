@@ -197,6 +197,7 @@ adb shell settings put system user_rotation 1
 capture_ui landscape_tutorial
 assert_tutorial_label landscape_tutorial "Step 2 of 4"
 assert_tutorial_label landscape_tutorial "Close tutorial"
+python3 tools/check_android_simulation_ui.py --assert-tutorial-target "$artifact_dir/landscape_tutorial.xml" "Readiness checklist"
 adb shell settings put system user_rotation 0
 capture_ui portrait_tutorial
 tap_tutorial_label "Close tutorial" guide_close

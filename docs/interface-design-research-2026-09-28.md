@@ -57,6 +57,13 @@ Daylight and System are available. Appearance is the only new persisted value
 art are native vector paths; no new rendering framework, media download,
 recording, telemetry, polling or repeating animation is introduced.
 
+Screenshot review found that a stacked Android tutorial left too little page
+content visible in landscape. Wide Android windows therefore place the guide
+beside the page, with independently scrollable explanations and a persistent
+exit. The runtime check requires the highlighted heading to remain visible
+beside or above the guide, including after rotation. This adaptation follows
+the layout guidance above; device-level screen-reader testing remains open.
+
 Alternatives: a poster-like all-in-one dashboard obscures priority; a hamburger
 only makes discovery harder; realistic fake metrics imply observation; a
 custom audio engine is outside this interface increment. The selected design

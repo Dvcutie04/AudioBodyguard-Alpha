@@ -77,6 +77,8 @@ missing measurements/history and an optional synthetic relative-level chart.
 Settings groups appearance, advanced details, privacy, future explanations and
 tutorials. Every page retains Help, Jump to, and a simulation footer. Labeled
 tabs become a native page picker at accessibility text sizes.
+On wide Android windows, the tutorial appears beside the page so its controls
+and the highlighted section can be viewed together.
 
 Midnight, Daylight and System share `contracts/interface_v1.json`, generated
 into both platforms by `python tools/generate_interface_content.py --check`.

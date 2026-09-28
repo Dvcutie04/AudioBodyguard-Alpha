@@ -77,10 +77,13 @@ class ReadOnlyHomeActivity : Activity() {
         help = button("Help") { tutorial.chooseTopic() }.apply { contentDescription = "Help & tutorials" }
         header.addView(help)
         root.addView(header)
+        val sideGuide = resources.configuration.screenWidthDp >= 640 && resources.configuration.screenWidthDp > resources.configuration.screenHeightDp
+        val body = LinearLayout(this).apply { orientation = if (sideGuide) LinearLayout.HORIZONTAL else LinearLayout.VERTICAL }
+        root.addView(body, LinearLayout.LayoutParams(-1, 0, 1f))
         scroll = ScrollView(this).apply { isFillViewport = false; clipToPadding = true }
         column = vertical().apply { setPadding(dp(20), dp(18), dp(20), dp(20)) }
         scroll.addView(column, ViewGroup.LayoutParams(-1, -2))
-        root.addView(scroll, LinearLayout.LayoutParams(-1, 0, 1f))
+        body.addView(scroll, LinearLayout.LayoutParams(if (sideGuide) 0 else -1, if (sideGuide) -1 else 0, 1f))
         tutorial = TutorialGuide(this, scroll, targets, skin,
             expansion = { Triple(optionsExpanded, advancedExpanded, checklistExpanded) },
             setExpansion = { options, advanced, checklist -> optionsExpanded = options; advancedExpanded = advanced; checklistExpanded = checklist },
@@ -96,7 +99,7 @@ class ReadOnlyHomeActivity : Activity() {
             restorePage = { previous -> page = previous; renderPage() },
             focusHelp = { help.requestFocus(); help.sendAccessibilityEvent(android.view.accessibility.AccessibilityEvent.TYPE_VIEW_FOCUSED) },
             stateChanged = { syncBackCallback() })
-        root.addView(tutorial.footer)
+        body.addView(tutorial.footer, LinearLayout.LayoutParams(if (sideGuide) dp((resources.configuration.screenWidthDp * .44f).toInt().coerceIn(300, 440)) else -1, if (sideGuide) -1 else -2))
         nav = LinearLayout(this).apply { setPadding(dp(8), dp(8), dp(8), dp(8)); setBackgroundColor(skin.surface) }
         root.addView(nav)
         if (Build.VERSION.SDK_INT >= 30) {
