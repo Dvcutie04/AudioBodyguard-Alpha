@@ -11,6 +11,7 @@ struct AQSSReadOnlyApp: App {
 private struct ReadOnlyHomeView: View {
     @Environment(\.scenePhase) private var scenePhase
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @Environment(\.dynamicTypeSize) private var textSize
     @StateObject private var audioHints = ForegroundAudioHints()
     @State private var optionsExpanded = false
     @State private var advancedExpanded = false
@@ -99,6 +100,7 @@ private struct ReadOnlyHomeView: View {
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .padding(24)
                 }
+                .clipped()
                 .accessibilityIdentifier("home-scroll")
                 Divider()
                 if let topic = tutorialTopic, let step = tutorialStep {
@@ -106,15 +108,21 @@ private struct ReadOnlyHomeView: View {
                 }
                 HStack {
                     Button { navigationVisible = true } label: {
-                        Text("Jump to").frame(maxWidth: .infinity, minHeight: 44)
+                        Text(textSize.isAccessibilitySize ? "Menu" : "Jump to")
+                            .fixedSize(horizontal: false, vertical: true)
+                            .frame(maxWidth: .infinity, minHeight: 44)
                             .contentShape(Rectangle())
                     }
                     .accessibilityIdentifier("section-navigation")
+                    .accessibilityLabel("Jump to")
                     Button { helpVisible = true } label: {
-                        Text("Help & tutorials").frame(maxWidth: .infinity, minHeight: 44)
+                        Text(textSize.isAccessibilitySize ? "Help" : "Help & tutorials")
+                            .fixedSize(horizontal: false, vertical: true)
+                            .frame(maxWidth: .infinity, minHeight: 44)
                             .contentShape(Rectangle())
                     }
                     .accessibilityIdentifier("tutorial-help")
+                    .accessibilityLabel("Help & tutorials")
                     .accessibilityFocused($focusedElement, equals: .help)
                 }
                 .padding(.horizontal)
@@ -312,11 +320,13 @@ private struct ReadOnlyHomeView: View {
                 }.frame(maxWidth: .infinity, alignment: .leading)
             }
             .id("\(topic.id)-\(tutorialIndex)")
-            .frame(maxHeight: 160)
-            Text("Scroll the explanation to read more.").font(.caption)
+            .frame(height: textSize.isAccessibilitySize ? 180 : 160)
+            Text("Scroll for details.").font(.caption)
+                .fixedSize(horizontal: false, vertical: true)
             HStack {
                 Button { tutorialIndex -= 1; revealTutorialArea() } label: {
-                    Text("Back").frame(maxWidth: .infinity, minHeight: 44)
+                    Text("Back").fixedSize(horizontal: false, vertical: true)
+                        .frame(maxWidth: .infinity, minHeight: 44)
                         .contentShape(Rectangle())
                 }.disabled(tutorialIndex == 0)
                 Button {
@@ -324,19 +334,27 @@ private struct ReadOnlyHomeView: View {
                     else { tutorialIndex += 1; revealTutorialArea() }
                 } label: {
                     Text(tutorialIndex == topic.steps.count - 1 ? "Done" : "Next")
+                        .fixedSize(horizontal: false, vertical: true)
                         .frame(maxWidth: .infinity, minHeight: 44)
                         .contentShape(Rectangle())
                 }
-                Button { closeTutorial() } label: {
-                    Text("Close tutorial").frame(maxWidth: .infinity, minHeight: 44)
-                        .contentShape(Rectangle())
-                }
+                if !textSize.isAccessibilitySize { closeTutorialButton }
             }.frame(minHeight: 44)
+            if textSize.isAccessibilitySize { closeTutorialButton }
         }
         .padding(.horizontal)
         .padding(.top, 8)
         .background(Color(.secondarySystemBackground))
         .accessibilityIdentifier("tutorial-panel")
+    }
+
+    private var closeTutorialButton: some View {
+        Button { closeTutorial() } label: {
+            Text(textSize.isAccessibilitySize ? "Close" : "Close tutorial")
+                .fixedSize(horizontal: false, vertical: true)
+                .frame(maxWidth: .infinity, minHeight: 44)
+                .contentShape(Rectangle())
+        }.accessibilityLabel("Close tutorial")
     }
 
     private func section(_ title: String, detail: String, explanation: String, target: String = "") -> some View {

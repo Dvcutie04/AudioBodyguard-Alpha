@@ -29,9 +29,10 @@ research and staged checks](options-menu-research.md) record the decision.
 ## Contextual tutorials
 
 **Help & tutorials** stays below the scrolling content in both shells. It
-opens six replayable topics: Home and coverage, Sound options, Captions,
-Defaults and undo, Advanced and privacy, and Session transfer. Options and
-Advanced options also have direct help buttons. A tour scrolls to and outlines
+opens seven replayable topics: Home and coverage, Sound options, Captions,
+Defaults and undo, Advanced and privacy, Session transfer, and Readiness
+checklist. Options, Advanced options, and the checklist also have direct help
+buttons. A tour scrolls to and outlines
 the actual section, shows one explanation and labeled example at a time, and
 offers Back, Next, Close and Done. Closing restores the section expansion that
 was present before the tour; changing a menu directly ends the tour and keeps
@@ -55,6 +56,17 @@ runtime and independent observation. The checklist therefore displays six
 unknowns and cannot offer a control. The move-session explanation says that
 no handoff path is available; it is a static statement about this disconnected
 prototype, not a live evaluation or opening of the endpoint handoff barrier.
+
+**Jump to** stays beside Help and opens a native section picker, including
+coverage, options, advanced, readiness, captions, history, hints, privacy, and
+session transfer. Navigation expands only the selected area and ends an active
+tour. The expandable readiness checklist explains each of the six unknown
+requirements using the same content as its tutorial. It cannot mark a check
+complete or request a permission. Android Back closes the tutorial first,
+then the nested menu/checklist, before using the system's root Back behavior.
+Swift button hit areas include their padding; both platforms expose section
+headings and expansion state for accessibility. See the [native app audit and
+research backlog](native-app-audit-2026-09-27.md) for scope and validation limits.
 
 ## Read-only native hints
 

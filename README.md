@@ -22,6 +22,13 @@ The [read-only UI smoke workflow](.github/workflows/read-only-ui-smoke.yml) now 
 
 The [iPhone device preflight](.github/workflows/iphoneos-device-preflight.yml) is a separate, unsigned arm64 archive check for the read-only shell; it does not make an installable build. The [P1 trial protocol](docs/p1-installed-device-trial.md) accepts an independently recorded TestFlight install with signed build provenance while keeping protection and physical-output claims unqualified.
 
+The native shells include Options, Advanced options, seven contextual tutorials,
+and persistent **Jump to** / **Help & tutorials** buttons. An expandable readiness
+checklist explains all six unknown prerequisites without enabling controls.
+The [native app audit](docs/native-app-audit-2026-09-27.md) records accessibility,
+navigation and read-only contract improvements, their tests, and the staged
+research required for future background and physical-output features.
+
 The merged increment passed **1,678 Python tests locally** with the generated feedback contracts current and the 45 scripted C lab cases passing both normal and sanitizer runs. [Hosted CI for the merged main revision](https://github.com/Dvcutie04/AudioBodyguard-Alpha/actions/runs/36276387177) passed Python, Swift, Android and the scripted C lab. The user then fast-forwarded the a-Shell checkout to `0997133` and reported **1,678 Python tests passed in 5.90 seconds**, `NATIVE_CONTRACTS_CURRENT` and a clean status. The warning is the existing external dateutil deprecation. Neither run qualifies physical output.
 
 The supervisor generation consistency fix passed **1,679 Python tests locally** and all four hosted main CI jobs. The in-process reference event producer captures software status separately from publication, exposes known lost samples through sequence gaps, and projects any software ACTIVE status as unknown physical state. Six new checks brought the local Python suite to **1,685 passed**; [all four hosted main CI jobs](https://github.com/Dvcutie04/AudioBodyguard-Alpha/actions/runs/36278169070) passed, and the user subsequently ran the same count on the phone at `8e4a5c1`. This producer is neither a native event source nor physical qualification.

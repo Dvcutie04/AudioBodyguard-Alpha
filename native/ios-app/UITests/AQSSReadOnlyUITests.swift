@@ -145,6 +145,10 @@ final class AQSSReadOnlyUITests: XCTestCase {
         readiness.tap()
         XCTAssertTrue(app.buttons["Close tutorial"].isHittable)
         XCTAssertGreaterThanOrEqual(app.buttons["Close tutorial"].frame.height, 44)
+        // At accessibility sizes Close has its own full-width row, so its
+        // visible title cannot be compressed into a third-width column.
+        XCTAssertGreaterThan(app.buttons["Close tutorial"].frame.width, app.frame.width * 0.8)
+        XCTAssertLessThan(app.buttons["Close tutorial"].frame.maxY, help.frame.minY)
         keepScreenshot("Largest text readiness tutorial", app: app)
         app.buttons["Close tutorial"].tap()
         XCTAssertTrue(help.isHittable)
