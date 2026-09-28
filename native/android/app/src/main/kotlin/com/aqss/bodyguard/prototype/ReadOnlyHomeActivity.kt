@@ -72,7 +72,7 @@ class ReadOnlyHomeActivity : Activity() {
         hintText = getString(R.string.hint_waiting)
         root = vertical().apply { setBackgroundColor(skin.background) }
         val header = LinearLayout(this).apply { gravity = Gravity.CENTER_VERTICAL; setPadding(dp(16), dp(4), dp(16), dp(4)) }
-        header.addView(TextView(this).apply { text = "AQSS"; textSize = 16f; setTypeface(null, Typeface.BOLD); setTextColor(skin.accent); letterSpacing = .13f }, LinearLayout.LayoutParams(0, -2, 1f))
+        header.addView(TextView(this).apply { text = if (resources.configuration.fontScale >= 1.5f) "AQSS" else "BODYGUARD"; textSize = 12f; setTypeface(null, Typeface.BOLD); setTextColor(skin.accent); letterSpacing = .13f }, LinearLayout.LayoutParams(0, -2, 1f))
         header.addView(button("Jump to") { tutorial.chooseSection() }, LinearLayout.LayoutParams(-2, -2).apply { marginEnd = dp(8) })
         help = button("Help") { tutorial.chooseTopic() }.apply { contentDescription = "Help & tutorials" }
         header.addView(help)
@@ -188,11 +188,12 @@ class ReadOnlyHomeActivity : Activity() {
                 AlertDialog.Builder(this).setTitle("Choose a page").setItems(InterfaceContent.pages.map { it.title }.toTypedArray()) { _, i -> openPage(InterfaceContent.pages[i].id) }.setNegativeButton("Cancel", null).show()
             }, LinearLayout.LayoutParams(-1, -2))
         } else {
-            val icons = listOf("◇", "≋", "▣", "↗", "⚙")
-            InterfaceContent.pages.forEachIndexed { i, item ->
-                nav.addView(button("${icons[i]}\n${item.title}") { openPage(item.id) }.apply {
+            InterfaceContent.pages.forEach { item ->
+                nav.addView(button(item.title) { openPage(item.id) }.apply {
                     textSize = 12f; minHeight = dp(58); setPadding(dp(1), dp(4), dp(1), dp(4))
                     setTextColor(if (page == item.id) skin.accent else skin.muted)
+                    setCompoundDrawablesWithIntrinsicBounds(null, InterfaceSymbol(skin, item.id, if (page == item.id) skin.accent else skin.muted), null, null)
+                    compoundDrawablePadding = dp(4)
                     background = skin.shape(if (page == item.id) skin.raised else skin.surface, 14)
                     contentDescription = item.title; isSelected = page == item.id
                     if (Build.VERSION.SDK_INT >= 30) stateDescription = if (isSelected) "Selected" else "Not selected"

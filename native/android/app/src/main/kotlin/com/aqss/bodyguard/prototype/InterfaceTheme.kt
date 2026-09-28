@@ -3,8 +3,11 @@ package com.aqss.bodyguard.prototype
 import android.app.Activity
 import android.content.res.ColorStateList
 import android.graphics.Canvas
+import android.graphics.ColorFilter
 import android.graphics.Paint
 import android.graphics.Path
+import android.graphics.PixelFormat
+import android.graphics.drawable.Drawable
 import android.graphics.drawable.GradientDrawable
 import android.graphics.drawable.RippleDrawable
 import android.view.View
@@ -80,4 +83,53 @@ class InterfaceGraphic(activity: Activity, private val skin: InterfaceTheme, pri
             }
         }
     }
+}
+
+/** Small, scalable navigation glyphs; button text supplies their accessible name. */
+class InterfaceSymbol(private val skin: InterfaceTheme, private val kind: String, color: Int) : Drawable() {
+    private val paint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+        this.color = color; style = Paint.Style.STROKE; strokeWidth = 1.6f
+        strokeCap = Paint.Cap.ROUND; strokeJoin = Paint.Join.ROUND
+    }
+    override fun getIntrinsicWidth() = skin.dp(23)
+    override fun getIntrinsicHeight() = skin.dp(23)
+    override fun draw(canvas: Canvas) {
+        val saved = canvas.save()
+        canvas.translate(bounds.left.toFloat(), bounds.top.toFloat())
+        canvas.scale(bounds.width() / 24f, bounds.height() / 24f)
+        when (kind) {
+            "home" -> {
+                val p = Path().apply { moveTo(12f, 2f); lineTo(20f, 5f); lineTo(20f, 12f); cubicTo(20f, 17f, 16f, 20f, 12f, 22f); cubicTo(8f, 20f, 4f, 17f, 4f, 12f); lineTo(4f, 5f); close() }
+                canvas.drawPath(p, paint); canvas.drawLine(12f, 5f, 12f, 19f, paint)
+            }
+            "sound" -> for ((x, y) in listOf(5f to 8f, 12f to 16f, 19f to 10f)) {
+                canvas.drawLine(x, 3f, x, y - 3, paint); canvas.drawLine(x, y + 3, x, 21f, paint)
+                canvas.drawRoundRect(x - 2, y - 3, x + 2, y + 3, 1f, 1f, paint)
+            }
+            "devices" -> {
+                canvas.drawRoundRect(3f, 3f, 11f, 21f, 2f, 2f, paint)
+                canvas.drawLine(6f, 18f, 8f, 18f, paint)
+                canvas.drawRoundRect(15f, 7f, 22f, 21f, 1.5f, 1.5f, paint)
+                canvas.drawCircle(18.5f, 15.5f, 2f, paint); canvas.drawPoint(18.5f, 10f, paint)
+            }
+            "insights" -> {
+                canvas.drawLine(3f, 3f, 3f, 21f, paint); canvas.drawLine(3f, 21f, 22f, 21f, paint)
+                val p = Path().apply { moveTo(6f, 15f); lineTo(11f, 10f); lineTo(15f, 13f); lineTo(21f, 5f) }
+                canvas.drawPath(p, paint)
+            }
+            else -> {
+                canvas.drawCircle(12f, 12f, 7f, paint); canvas.drawCircle(12f, 12f, 2.5f, paint)
+                repeat(8) {
+                    val angle = it * Math.PI / 4
+                    val x = kotlin.math.cos(angle).toFloat(); val y = kotlin.math.sin(angle).toFloat()
+                    canvas.drawLine(12 + x * 7, 12 + y * 7, 12 + x * 10, 12 + y * 10, paint)
+                }
+            }
+        }
+        canvas.restoreToCount(saved)
+    }
+    override fun setAlpha(alpha: Int) { paint.alpha = alpha; invalidateSelf() }
+    override fun setColorFilter(colorFilter: ColorFilter?) { paint.colorFilter = colorFilter; invalidateSelf() }
+    @Deprecated("Required Drawable compatibility override")
+    override fun getOpacity() = PixelFormat.TRANSLUCENT
 }

@@ -299,7 +299,7 @@ private struct ReadOnlyHomeView: View {
                 ForEach(["midnight", "daylight", "system"], id: \.self) { value in
                     Button { appearance = value } label: {
                         HStack { Image(systemName: value == "midnight" ? "moon.stars" : value == "daylight" ? "sun.max" : "circle.lefthalf.filled"); Text(value.capitalized); Spacer(); if appearance == value { Image(systemName: "checkmark") } }.frame(maxWidth: .infinity, minHeight: 44)
-                    }.buttonStyle(AppButtonStyle(theme: theme)).accessibilityValue(appearance == value ? "Selected" : "Not selected")
+                    }.buttonStyle(AppButtonStyle(theme: theme)).accessibilityLabel(value.capitalized).accessibilityValue(appearance == value ? "Selected" : "Not selected")
                 }
             }
             card(target: "advanced") {
