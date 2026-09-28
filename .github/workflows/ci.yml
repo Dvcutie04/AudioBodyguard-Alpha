@@ -37,6 +37,9 @@ jobs:
       - name: Verify generated native contracts
         run: python tools/generate_native_feedback_contracts.py --check
 
+      - name: Verify shared interface content and contrast
+        run: python tools/generate_interface_content.py --check
+
       - name: Run deterministic safety and full pytest suite
         env:
           PYTHONPATH: .

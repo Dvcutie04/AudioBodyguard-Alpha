@@ -64,50 +64,6 @@ capture_ui() {
     done
 }
 
-capture_ui top
-
-# Inspect after each bounded gesture: a cold emulator may not process two
-# back-to-back short swipes reliably. Keep the required UI assertion unchanged.
-for attempt in 1 2 3 4 5 6; do
-    adb shell input swipe 500 2200 500 450 900
-    capture_ui bottom
-    if python3 tools/check_android_simulation_ui.py --assert-label \
-        "$artifact_dir/bottom.xml" "Moving a session between phones is not available here" 2>/dev/null; then
-        break
-    fi
-done
-
-python3 tools/check_android_simulation_ui.py "$artifact_dir/top.xml" "$artifact_dir/bottom.xml"
-
-# Inspect the user-opened menu separately so its extra rows cannot mask the
-# original coverage and handoff checks above.
-for _ in 1 2 3; do adb shell input swipe 500 300 500 1600 900; done
-capture_ui options_start
-coordinates="$(python3 tools/check_android_simulation_ui.py --text-tap-coordinates "$artifact_dir/options_start.xml" "Options")"
-if [[ -z "$coordinates" ]]; then echo "Options button not visible" >&2; exit 1; fi
-read -r x y <<< "$coordinates"
-adb shell input tap "$x" "$y"
-capture_ui options_top
-
-coordinates=""
-for attempt in 1 2 3 4 5 6; do
-    capture_ui "options_middle_$attempt"
-    coordinates="$(python3 tools/check_android_simulation_ui.py --text-tap-coordinates "$artifact_dir/options_middle_$attempt.xml" "Advanced options")"
-    if [[ -n "$coordinates" ]]; then break; fi
-    adb shell input swipe 500 1600 500 250 900
-done
-if [[ -z "$coordinates" ]]; then echo "Advanced options button not visible" >&2; exit 1; fi
-read -r x y <<< "$coordinates"
-adb shell input tap "$x" "$y"
-capture_ui advanced_top
-adb shell input swipe 500 1600 500 250 900
-capture_ui advanced_middle
-adb shell input swipe 500 1600 500 250 900
-capture_ui advanced_bottom
-python3 tools/check_android_simulation_ui.py --options-menu \
-    "$artifact_dir/options_top.xml" "$artifact_dir"/options_middle_*.xml \
-    "$artifact_dir/advanced_top.xml" "$artifact_dir/advanced_middle.xml" "$artifact_dir/advanced_bottom.xml"
-
 tap_tutorial_label() {
     local label="$1" capture="$2" coordinates x y
     capture_ui "$capture"
@@ -136,113 +92,116 @@ tap_scroll_label() {
     echo "Content target not reached: $label" >&2; return 1
 }
 
-tap_tutorial_label "Help & tutorials" tutorial_help
-tap_tutorial_label "Sound options" tutorial_topics
-capture_ui tutorial_sound_first
-assert_tutorial_label tutorial_sound_first "Step 1 of 4"
-tap_tutorial_label "Next" tutorial_next
-capture_ui tutorial_sound_second
-assert_tutorial_label tutorial_sound_second "Step 2 of 4"
-assert_tutorial_label tutorial_sound_second "Volume needs a supported output"
-tap_tutorial_label "Back" tutorial_back
-capture_ui tutorial_sound_back
-assert_tutorial_label tutorial_sound_back "Step 1 of 4"
-tap_tutorial_label "Close tutorial" tutorial_close
-
-tap_tutorial_label "Help & tutorials" tutorial_help_again
-tap_tutorial_label "Advanced and privacy" tutorial_topics_again
-tap_tutorial_label "Next" tutorial_advanced_first
-tap_tutorial_label "Next" tutorial_advanced_second
-capture_ui tutorial_advanced_physical
-assert_tutorial_label tutorial_advanced_physical "Step 3 of 5"
-assert_tutorial_label tutorial_advanced_physical "Unknown physical state"
-tap_tutorial_label "Close tutorial" tutorial_advanced_close
-
-tap_tutorial_label "Help & tutorials" tutorial_help_captions
-tap_tutorial_label "Captions" tutorial_caption_topics
-tap_tutorial_label "Next" tutorial_captions_first
-capture_ui tutorial_captions_last
-assert_tutorial_label tutorial_captions_last "Step 2 of 2"
-tap_tutorial_label "Done" tutorial_captions_done
-
-tap_tutorial_label "Help & tutorials" tutorial_help_replay
-tap_tutorial_label "Sound options" tutorial_topics_replay
-capture_ui tutorial_replay
-assert_tutorial_label tutorial_replay "Step 1 of 4"
-tap_tutorial_label "Close tutorial" tutorial_finish
-echo "ANDROID_TUTORIAL_OBSERVED: manual navigation, close, completion and replay passed"
-
-# Direct navigation, explicit readiness, and Back behavior are presentation only.
-tap_tutorial_label "Jump to" jump_readiness
-tap_tutorial_label "Readiness checklist" jump_readiness_topics
-capture_ui readiness_top
-assert_tutorial_label readiness_top "These are unconfirmed requirements"
-assert_tutorial_label readiness_top "Output hardware — Unknown"
+# Themed page navigation keeps all previous truth assertions, now on their
+# corresponding pages, and adds the synthetic-chart/appearance boundaries.
+capture_ui home
+assert_tutorial_label home "Unknown physical state"
+assert_tutorial_label home "No output observation"
+tap_tutorial_label "Sound" nav_sound
+capture_ui sound
+assert_tutorial_label sound "Sound, on your terms."
+tap_tutorial_label "Jump to" jump_volume_open
+tap_tutorial_label "Sound options" jump_volume
+capture_ui sound_options
+adb shell input swipe 500 1600 500 450 900
+capture_ui sound_presets
+assert_tutorial_label sound_presets "No qualified device volume control"
+assert_tutorial_label sound_presets "Dialogue preset"
+assert_tutorial_label sound_presets "Night preset"
+tap_tutorial_label "Devices" nav_devices
+capture_ui devices
+assert_tutorial_label devices "No qualified device connected"
+tap_tutorial_label "Jump to" jump_readiness_open
+tap_tutorial_label "Readiness checklist" jump_readiness
+capture_ui readiness
+assert_tutorial_label readiness "Six setup checks unknown"
 tap_tutorial_label "Help with readiness" readiness_help
 for step in 1 2 3 4 5 6; do
     capture_ui "readiness_step_$step"
     assert_tutorial_label "readiness_step_$step" "Step $step of 6"
-    if [[ "$step" -lt 6 ]]; then tap_tutorial_label "Next" "readiness_next_$step"; fi
+    if [[ "$step" -lt 6 ]]; then tap_tutorial_label "Next" readiness_next; fi
 done
-assert_tutorial_label readiness_step_6 "Independent observation — Unknown"
 adb shell input keyevent KEYCODE_BACK
-capture_ui readiness_back
-if python3 tools/check_android_simulation_ui.py --assert-label "$artifact_dir/readiness_back.xml" "Close tutorial" 2>/dev/null; then
-    echo "Back did not close the tutorial" >&2; exit 1
-fi
-adb shell input keyevent KEYCODE_BACK
-capture_ui checklist_back
-if python3 tools/check_android_simulation_ui.py --assert-label "$artifact_dir/checklist_back.xml" "Hide readiness checklist" 2>/dev/null; then
-    echo "Back did not close the readiness checklist" >&2; exit 1
-fi
-tap_tutorial_label "Jump to" jump_advanced
-tap_tutorial_label "Advanced options" jump_advanced_topics
-capture_ui jumped_advanced
-assert_tutorial_label jumped_advanced "Hide advanced options"
-adb shell input keyevent KEYCODE_BACK
-capture_ui advanced_back
-assert_tutorial_label advanced_back "Advanced options"
-adb shell input keyevent KEYCODE_BACK
-tap_tutorial_label "Jump to" jump_privacy
-tap_tutorial_label "Privacy and storage" jump_privacy_topics
-capture_ui jumped_privacy
-assert_tutorial_label jumped_privacy "No audio recorded by this app"
+capture_ui readiness_closed
+if python3 tools/check_android_simulation_ui.py --assert-label "$artifact_dir/readiness_closed.xml" "Close tutorial" 2>/dev/null; then exit 1; fi
 
-# Keep the tutorial and truthful state through background/return and rotation.
-tap_tutorial_label "Help & tutorials" lifecycle_help
-tap_tutorial_label "Sound options" lifecycle_topics
-tap_tutorial_label "Next" lifecycle_first
+tap_tutorial_label "Jump to" handoff_open
+tap_tutorial_label "Session transfer" handoff_jump
+capture_ui handoff
+assert_tutorial_label handoff "No supported endpoint or verified transfer path"
+tap_tutorial_label "Insights" nav_insights
+capture_ui insights
+assert_tutorial_label insights "No measurements yet"
+tap_tutorial_label "Explore an example" example_open
+capture_ui example
+assert_tutorial_label example "EXAMPLE · synthetic data"
+assert_tutorial_label example "Relative level (0–100)"
+tap_scroll_label "Read chart values" values_open
+capture_ui example_values
+assert_tutorial_label example_values "Sample 4: 64 relative units"
+adb shell input keyevent KEYCODE_BACK
+capture_ui example_closed
+assert_tutorial_label example_closed "No measurements yet"
+tap_tutorial_label "Settings" nav_settings
+capture_ui settings
+tap_tutorial_label "Daylight" theme_daylight
+capture_ui daylight_settings
+tap_tutorial_label "Home" theme_home
+capture_ui daylight_home
+assert_tutorial_label daylight_home "Unknown physical state"
+tap_tutorial_label "Settings" theme_settings
+tap_tutorial_label "Midnight" theme_midnight
+tap_scroll_label "Hide advanced options" advanced_close
+tap_scroll_label "Voice requests. Planned · proposal only" future_voice
+capture_ui future_voice_detail
+assert_tutorial_label future_voice_detail "This app is not listening for commands"
+tap_tutorial_label "Got it" future_voice_close
+tap_tutorial_label "Jump to" privacy_open
+tap_tutorial_label "Privacy and storage" privacy_jump
+capture_ui privacy
+assert_tutorial_label privacy "No audio recorded by this app"
+assert_tutorial_label privacy "Only your appearance choice is saved locally"
+
+tap_tutorial_label "Home" return_home
+tap_tutorial_label "Help & tutorials" guide_open
+tap_tutorial_label "Home and coverage" guide_choose
+capture_ui guide_1
+assert_tutorial_label guide_1 "Step 1 of 4"
+tap_tutorial_label "Next" guide_next_1
+capture_ui guide_2
+assert_tutorial_label guide_2 "Step 2 of 4"
+tap_tutorial_label "Next" guide_next_2
+capture_ui guide_3
+assert_tutorial_label guide_3 "Step 3 of 4"
+tap_tutorial_label "Back" guide_back
 adb shell input keyevent KEYCODE_HOME
 adb shell am start -W -n com.aqss.bodyguard.prototype/.ReadOnlyHomeActivity
-capture_ui lifecycle_return
-assert_tutorial_label lifecycle_return "Step 2 of 4"
+capture_ui guide_return
+assert_tutorial_label guide_return "Step 2 of 4"
 original_font_scale="$(adb shell settings get system font_scale | tr -d '\r')"
 original_rotation="$(adb shell settings get system user_rotation | tr -d '\r')"
 original_auto_rotation="$(adb shell settings get system accelerometer_rotation | tr -d '\r')"
 adb shell settings put system accelerometer_rotation 0
 adb shell settings put system user_rotation 1
-capture_ui rotated_tutorial
-assert_tutorial_label rotated_tutorial "Step 2 of 4"
-assert_tutorial_label rotated_tutorial "Close tutorial"
+capture_ui landscape_tutorial
+assert_tutorial_label landscape_tutorial "Step 2 of 4"
+assert_tutorial_label landscape_tutorial "Close tutorial"
 adb shell settings put system user_rotation 0
-tap_tutorial_label "Close tutorial" lifecycle_finish
-tap_tutorial_label "Jump to" jump_coverage
-tap_tutorial_label "Coverage" jump_coverage_topics
-capture_ui returned_coverage
-assert_tutorial_label returned_coverage "Unknown physical state"
+capture_ui portrait_tutorial
+tap_tutorial_label "Close tutorial" guide_close
+capture_ui restored_home
+assert_tutorial_label restored_home "Unknown physical state"
 
-# Android supports up to 200% text scaling; no app-specific font override.
 adb shell settings put system font_scale 2.0
-tap_tutorial_label "Jump to" large_text_jump
-tap_tutorial_label "Readiness checklist" large_text_sections
-capture_ui large_text_readiness
-assert_tutorial_label large_text_readiness "Six setup checks unknown"
-tap_scroll_label "Help with readiness" large_text_help
+capture_ui large_text_home
+tap_tutorial_label "Pages · Home" large_pages
+tap_tutorial_label "Devices" large_devices
+capture_ui large_text_devices
+tap_tutorial_label "Help & tutorials" large_help
+tap_scroll_label "Readiness checklist" large_topic
 capture_ui large_text_tutorial
 assert_tutorial_label large_text_tutorial "Step 1 of 6"
-tap_tutorial_label "Close tutorial" large_text_close
-tap_tutorial_label "Jump to" large_text_exit
-tap_tutorial_label "Coverage" large_text_coverage
-capture_ui large_text_unknown
-assert_tutorial_label large_text_unknown "Unknown physical state"
-echo "ANDROID_AUDIT_UI_OBSERVED: readiness, navigation, Back, lifecycle, rotation and large text passed"
+tap_tutorial_label "Close tutorial" large_close
+capture_ui large_text_closed
+assert_tutorial_label large_text_closed "Pages · Devices"
+echo "ANDROID_THEME_UI_OBSERVED: five pages, unknown coverage, unavailable controls, six readiness steps, labeled example, themes, future explanation, tutorial routing, Back, lifecycle, rotation and large text passed"

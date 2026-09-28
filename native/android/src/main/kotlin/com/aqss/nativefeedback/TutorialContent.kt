@@ -11,25 +11,25 @@ object TutorialContent {
             TutorialStep("hint", "home", "Treat OS hints as clues", "Foreground hints describe a system notification. They cannot verify audible output or another app's playback.", "Example: A route-change notice is a clue to investigate, not an observation of sound."),
         )),
         TutorialTopic("sound", "Sound options", listOf(
-            TutorialStep("options", "options", "Find the Options menu", "This highlighted button opens or hides the available option descriptions. The tutorial has opened them for you.", "Example: Reopen Help whenever you need this walkthrough again."),
+            TutorialStep("options", "options", "Find the Options menu", "Sound groups the available option descriptions. The tutorial has opened the Sound page and its options for you.", "Example: Reopen Help whenever you need this walkthrough again."),
             TutorialStep("volume", "options", "Volume needs a supported output", "Volume is unavailable in this simulation. A future change needs an authorized device and verified physical result.", "Example: A requested volume of 40 percent would not prove the speaker reached that level."),
             TutorialStep("sound", "options", "Choose a compatible preset", "Dialogue and Night are preset choices for devices that support them. The current shell cannot apply a preset.", "Example: Dialogue would be a proposed speech-focused preset, not a promise that speech is clearer."),
             TutorialStep("equalizer", "options", "Custom EQ is device-specific", "Frequency-band controls require an explicitly supported device capability. They remain unavailable here.", "Example: A small 1 kHz adjustment is an illustrative setting, not a change this tutorial makes."),
         )),
         TutorialTopic("captions", "Captions", listOf(
             TutorialStep("captionOption", "options", "Find the captions option", "Captions depend on an available track or supported caption mode. This option is unavailable until one is connected.", "Example: A film's authored English caption track could be selectable on a supported player."),
-            TutorialStep("captions", "home", "Check caption evidence", "The Home section reports what has been observed. This shell has not discovered or selected a caption track.", "Example: A label describing captions does not mean captions are currently displayed."),
+            TutorialStep("captions", "home", "Check caption evidence", "The Sound page reports what has been observed. This shell has not discovered or selected a caption track.", "Example: A label describing captions does not mean captions are currently displayed."),
         )),
         TutorialTopic("defaults", "Defaults and undo", listOf(
             TutorialStep("defaults", "options", "Save only confirmed settings", "Save, restore and undo require suitable device settings and verification. This shell has no confirmed settings to use.", "Example: Undo would propose a return to a verified earlier setting; it cannot assume that return succeeded."),
             TutorialStep("history", "home", "Look for a verified change", "A requested change and an observed result are different events. Missing history cannot supply an undo result.", "Example: A successful button tap is not a verified audio change."),
         )),
         TutorialTopic("advanced", "Advanced and privacy", listOf(
-            TutorialStep("advanced", "advanced", "Open Advanced options", "The highlighted button expands device, evidence, background and privacy details. You can return here without repeating other tours.", "Example: Use Help with advanced options for a focused refresher."),
+            TutorialStep("advanced", "advanced", "Open Advanced options", "Settings contains device, evidence, background and privacy details. The tutorial has opened Advanced options for you.", "Example: Use Help with advanced options for a focused refresher."),
             TutorialStep("route", "advanced", "Identify the output path", "Device and route stay Unknown until qualified. A device name or connection notification cannot establish the path of sound.", "Example: A connected speaker may not be the speaker currently used by a player."),
             TutorialStep("physical", "advanced", "Require physical observation", "This area explains why physical output remains unknown. The tutorial supplies no measurement or observation.", "Example: An independent measurement would need to be tied to the authorized device transaction."),
             TutorialStep("background", "advanced", "Understand background limits", "This screen receives foreground hints only. Leaving the app does not establish continuing protection.", "Example: Events while the screen is hidden remain unknown."),
-            TutorialStep("privacy", "advanced", "Know what this tour stores", "The tutorial uses local text and temporary progress. It records no audio and sends no tutorial activity to a server.", "Example: Closing the tour lets you reopen any topic from its first step."),
+            TutorialStep("privacy", "advanced", "Know what this tour stores", "Only the appearance choice is saved locally. Tutorial progress is temporary. No audio or tutorial activity is uploaded.", "Example: Closing the tour lets you reopen any topic from its first step."),
         )),
         TutorialTopic("handoff", "Session transfer", listOf(
             TutorialStep("handoffOption", "advanced", "Check transfer eligibility", "Moving a session is unavailable. A transfer requires authorized endpoints and a verified path between them.", "Example: Two phones signed in to an account are not, by themselves, a qualified transfer path."),

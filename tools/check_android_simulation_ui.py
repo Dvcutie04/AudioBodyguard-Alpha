@@ -31,7 +31,7 @@ def launcher_close_coordinates(path: str) -> None:
 def button_coordinates(path: str, label: str) -> None:
     nodes = list(ET.parse(Path(path)).getroot().iter())
     # Dialog topic rows receive clicks through their parent ListView.
-    button = next((node for node in nodes if node.get("text") == label and node.get("package") == "com.aqss.bodyguard.prototype"), None)
+    button = next((node for node in nodes if (node.get("text", "").casefold() == label.casefold() or node.get("content-desc", "").casefold() == label.casefold()) and node.get("package") == "com.aqss.bodyguard.prototype"), None)
     bounds = re.fullmatch(r"\[(\d+),(\d+)\]\[(\d+),(\d+)\]", button.get("bounds", "")) if button is not None else None
     if bounds is not None:
         left, top, right, bottom = map(int, bounds.groups())
@@ -44,7 +44,7 @@ def button_coordinates(path: str, label: str) -> None:
         )
         center_y = (top + bottom) // 2
         # Tutorial footer controls are laid out above consumed system insets.
-        footer_labels = {"Jump to", "Help & tutorials", "Back", "Next", "Done", "Close tutorial"}
+        footer_labels = {"Jump to", "Help & tutorials", "Back", "Next", "Done", "Close tutorial", "Help", "Home", "Sound", "Devices", "Insights", "Settings", "Pages · Home", "Pages · Devices", "Pages · Settings"}
         if center_y < screen_bottom * 0.85 or label in footer_labels:
             print((left + right) // 2, center_y)
 
