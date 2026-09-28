@@ -19,7 +19,6 @@ import android.view.ViewTreeObserver
 import android.view.WindowInsets
 import android.widget.Button
 import android.widget.FrameLayout
-import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.ScrollView
 import android.widget.TextView
@@ -118,11 +117,8 @@ class ReadOnlyHomeActivity : Activity() {
             // The system splash is icon-sized on Android 12+. Show the complete supplied
             // artwork for the first drawn frame, then reveal the already-built page.
             val frame = FrameLayout(this)
-            val artwork = ImageView(this).apply {
-                setImageResource(R.drawable.startup_artwork)
-                scaleType = ImageView.ScaleType.FIT_CENTER
+            val artwork = StartupArtworkView(this).apply {
                 setBackgroundColor(Color.WHITE)
-                contentDescription = "Audio Bodyguard. Silicon Workforce."
             }
             frame.addView(root, FrameLayout.LayoutParams(-1, -1))
             frame.addView(artwork, FrameLayout.LayoutParams(-1, -1))
