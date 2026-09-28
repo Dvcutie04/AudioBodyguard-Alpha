@@ -36,6 +36,12 @@ empty state and an optional, explicitly synthetic example with text values;
 planned features open prerequisite explanations. Only appearance is saved
 locally. See the [interface research and design](docs/interface-design-research-2026-09-28.md).
 
+The native launch experience uses the owner's white Audio Bodyguard artwork,
+including its purple/black rose and Silicon Workforce credit. iOS displays it
+from a static launch storyboard; Android transitions from its required system
+splash to the full artwork during the first frame. There is no fixed loading
+delay. See the [launch-artwork evidence and test plan](docs/launch-artwork-research-2026-09-28.md).
+
 The merged increment passed **1,678 Python tests locally** with the generated feedback contracts current and the 45 scripted C lab cases passing both normal and sanitizer runs. [Hosted CI for the merged main revision](https://github.com/Dvcutie04/AudioBodyguard-Alpha/actions/runs/36276387177) passed Python, Swift, Android and the scripted C lab. The user then fast-forwarded the a-Shell checkout to `0997133` and reported **1,678 Python tests passed in 5.90 seconds**, `NATIVE_CONTRACTS_CURRENT` and a clean status. The warning is the existing external dateutil deprecation. Neither run qualifies physical output.
 
 The supervisor generation consistency fix passed **1,679 Python tests locally** and all four hosted main CI jobs. The in-process reference event producer captures software status separately from publication, exposes known lost samples through sequence gaps, and projects any software ACTIVE status as unknown physical state. Six new checks brought the local Python suite to **1,685 passed**; [all four hosted main CI jobs](https://github.com/Dvcutie04/AudioBodyguard-Alpha/actions/runs/36278169070) passed, and the user subsequently ran the same count on the phone at `8e4a5c1`. This producer is neither a native event source nor physical qualification.

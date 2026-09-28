@@ -3,6 +3,7 @@ package com.aqss.bodyguard.prototype
 import android.app.Activity
 import android.app.AlertDialog
 import android.content.res.Configuration
+import android.graphics.Color
 import android.graphics.Typeface
 import android.media.AudioDeviceCallback
 import android.media.AudioDeviceInfo
@@ -14,8 +15,11 @@ import android.os.Looper
 import android.view.Gravity
 import android.view.View
 import android.view.ViewGroup
+import android.view.ViewTreeObserver
 import android.view.WindowInsets
 import android.widget.Button
+import android.widget.FrameLayout
+import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.ScrollView
 import android.widget.TextView
@@ -110,14 +114,50 @@ class ReadOnlyHomeActivity : Activity() {
                 insets
             }
         }
-        setContentView(root)
-        @Suppress("DEPRECATION")
-        window.decorView.systemUiVisibility = if (dark) 0 else View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR or View.SYSTEM_UI_FLAG_LIGHT_NAVIGATION_BAR
-        @Suppress("DEPRECATION")
-        window.statusBarColor = skin.background
-        @Suppress("DEPRECATION")
-        window.navigationBarColor = skin.surface
+        if (saved == null) {
+            // The system splash is icon-sized on Android 12+. Show the complete supplied
+            // artwork for the first drawn frame, then reveal the already-built page.
+            val frame = FrameLayout(this)
+            val artwork = ImageView(this).apply {
+                setImageResource(R.drawable.startup_artwork)
+                scaleType = ImageView.ScaleType.FIT_CENTER
+                setBackgroundColor(Color.WHITE)
+                contentDescription = "Audio Bodyguard. Silicon Workforce."
+            }
+            frame.addView(root, FrameLayout.LayoutParams(-1, -1))
+            frame.addView(artwork, FrameLayout.LayoutParams(-1, -1))
+            setContentView(frame)
+            setSystemBars(false, true)
+            var firstFrameDrawn = false
+            val listener = object : ViewTreeObserver.OnDrawListener {
+                override fun onDraw() {
+                    if (firstFrameDrawn) return
+                    firstFrameDrawn = true
+                    artwork.postOnAnimation {
+                        if (artwork.viewTreeObserver.isAlive) artwork.viewTreeObserver.removeOnDrawListener(this)
+                        if (isFinishing || isDestroyed) return@postOnAnimation
+                        artwork.animate().alpha(0f).setDuration(120L).withEndAction {
+                            frame.removeView(artwork)
+                            setSystemBars(dark)
+                        }.start()
+                    }
+                }
+            }
+            artwork.viewTreeObserver.addOnDrawListener(listener)
+        } else {
+            setContentView(root)
+            setSystemBars(dark)
+        }
         renderPage(); tutorial.restore(saved); syncBackCallback()
+    }
+
+    private fun setSystemBars(dark: Boolean, launching: Boolean = false) {
+        @Suppress("DEPRECATION")
+        window.decorView.systemUiVisibility = if (launching || !dark) View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR or View.SYSTEM_UI_FLAG_LIGHT_NAVIGATION_BAR else 0
+        @Suppress("DEPRECATION")
+        window.statusBarColor = if (launching) Color.WHITE else skin.background
+        @Suppress("DEPRECATION")
+        window.navigationBarColor = if (launching) Color.WHITE else skin.surface
     }
 
     private fun dp(value: Int) = skin.dp(value)
