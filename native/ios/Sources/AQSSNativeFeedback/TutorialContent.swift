@@ -44,5 +44,13 @@ public enum AQSSTutorialContent {
             AQSSTutorialStep(target: "handoffOption", area: "advanced", title: "Check transfer eligibility", explanation: "Moving a session is unavailable. A transfer requires authorized endpoints and a verified path between them.", example: "Example: Two phones signed in to an account are not, by themselves, a qualified transfer path."),
             AQSSTutorialStep(target: "handoff", area: "home", title: "Keep the handoff state truthful", explanation: "The current screen reports that no transfer path is connected. Completing this tutorial does not change that state.", example: "Example: You can finish this lesson while session transfer remains unavailable."),
         ]),
+        AQSSTutorialTopic(id: "readiness", title: "Readiness checklist", steps: [
+            AQSSTutorialStep(target: "checkHardware", area: "checklist", title: "Output hardware", explanation: "Unknown: no supported output device has been identified and qualified for this app.", example: "Example: A connected Bluetooth speaker is a candidate, not proof that AQSS can control it."),
+            AQSSTutorialStep(target: "checkQualification", area: "checklist", title: "Qualified path", explanation: "Unknown: this exact device, driver and output path have not passed the required checks.", example: "Example: Passing an emulator test does not qualify a phone speaker."),
+            AQSSTutorialStep(target: "checkPermission", area: "checklist", title: "Permission and authority", explanation: "Unknown: permission and authority for a supported action have not been established. This checklist requests neither.", example: "Example: An OS permission alone cannot authorize a change to another device."),
+            AQSSTutorialStep(target: "checkRoute", area: "checklist", title: "Output route", explanation: "Unknown: there is no verified path from an authorized action to the intended output.", example: "Example: Headphones can be connected without being the active playback route."),
+            AQSSTutorialStep(target: "checkRuntime", area: "checklist", title: "Runtime eligibility", explanation: "Unknown: there is no qualified running protection path. This screen only receives foreground hints.", example: "Example: Leaving the app may suspend it; returning does not fill the gap in observation."),
+            AQSSTutorialStep(target: "checkEvidence", area: "checklist", title: "Independent observation", explanation: "Unknown: there is no independent observation tied to an authorized device transaction.", example: "Example: A device saying that a command succeeded is not independent evidence of audible output."),
+        ]),
     ]
 }

@@ -8,6 +8,7 @@ TARGETS = {
     "home": {"coverage", "capability", "captions", "history", "hint", "handoff"},
     "options": {"options", "volume", "captionOption", "sound", "equalizer", "defaults"},
     "advanced": {"advanced", "route", "physical", "background", "privacy", "handoffOption"},
+    "checklist": {"checkHardware", "checkQualification", "checkPermission", "checkRoute", "checkRuntime", "checkEvidence"},
 }
 
 

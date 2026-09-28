@@ -35,6 +35,9 @@
     <string name="coverage_unknown">Unknown physical state</string>
     <string name="no_observation">No output observation. This screen does not monitor or protect audio.</string>
     <string name="capability_title">Supported controls</string>
+    <string name="checklist_open">Show readiness checklist</string>
+    <string name="checklist_close">Hide readiness checklist</string>
+    <string name="checklist_scope">These are unconfirmed requirements, not settings you can enable. A tutorial cannot complete them.</string>
     <string name="six_checks_unknown">Six setup checks unknown</string>
     <string name="checks_unconfirmed">Unavailable — checklist unconfirmed</string>
     <string name="capability_unknown">Output hardware, qualification, permission, route, runtime, and independent observation are unconfirmed. This simulation cannot offer a control.</string>

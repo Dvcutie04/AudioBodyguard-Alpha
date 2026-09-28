@@ -98,4 +98,62 @@ final class AQSSReadOnlyUITests: XCTestCase {
             .matching(NSPredicate(format: "label CONTAINS %@", label)).firstMatch
         XCTAssertTrue(element.waitForExistence(timeout: 10), "Missing simulated UI label: \(label)")
     }
+
+    func testQuickNavigationReadinessAndReturnKeepCoverageUnknown() {
+        let app = XCUIApplication()
+        app.launch()
+        app.buttons["Jump to"].tap()
+        app.buttons["Readiness checklist"].tap()
+        assertLabel("These are unconfirmed requirements", in: app)
+        for title in ["Output hardware", "Qualified path", "Permission and authority",
+                      "Output route", "Runtime eligibility", "Independent observation"] {
+            assertLabel(title, in: app)
+        }
+        let scroll = app.scrollViews["home-scroll"]
+        tapButton("Help with readiness", in: app, scrolling: scroll)
+        assertLabel("Step 1 of 6", in: app)
+        app.buttons["Next"].tap()
+        assertLabel("Step 2 of 6", in: app)
+        app.buttons["Close tutorial"].tap()
+        XCTAssertTrue(app.buttons["Hide readiness checklist"].exists)
+        app.buttons["Jump to"].tap()
+        app.buttons["Privacy and storage"].tap()
+        assertLabel("No audio recorded by this app", in: app)
+        XCUIDevice.shared.press(.home)
+        app.activate()
+        app.buttons["Jump to"].tap()
+        app.buttons["Coverage"].tap()
+        assertLabel("Unknown physical state", in: app)
+        XCTAssertFalse(app.buttons["Hide options"].exists)
+        XCTAssertFalse(app.buttons["Hide readiness checklist"].exists)
+        keepScreenshot("Quick navigation and unknown coverage", app: app)
+    }
+
+    func testLargestTextKeepsNavigationAndTutorialExitReachable() {
+        let app = XCUIApplication()
+        app.launchArguments += ["-UIPreferredContentSizeCategoryName", "UICTContentSizeCategoryAccessibilityXXXL"]
+        app.launch()
+        let help = app.buttons["Help & tutorials"]
+        XCTAssertGreaterThanOrEqual(help.frame.height, 44)
+        XCTAssertTrue(help.isHittable)
+        app.buttons["Jump to"].tap()
+        app.buttons["Readiness checklist"].tap()
+        help.tap()
+        let readiness = app.buttons["Readiness checklist"]
+        for _ in 0..<4 where !readiness.isHittable { app.swipeUp() }
+        XCTAssertTrue(readiness.isHittable)
+        readiness.tap()
+        XCTAssertTrue(app.buttons["Close tutorial"].isHittable)
+        XCTAssertGreaterThanOrEqual(app.buttons["Close tutorial"].frame.height, 44)
+        keepScreenshot("Largest text readiness tutorial", app: app)
+        app.buttons["Close tutorial"].tap()
+        XCTAssertTrue(help.isHittable)
+    }
+
+    private func keepScreenshot(_ name: String, app: XCUIApplication) {
+        let attachment = XCTAttachment(screenshot: app.screenshot())
+        attachment.name = name
+        attachment.lifetime = .keepAlways
+        add(attachment)
+    }
 }

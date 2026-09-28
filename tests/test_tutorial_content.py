@@ -16,6 +16,17 @@ def test_native_tutorials_use_the_same_bounded_presentation_contract():
         assert path.read_text() == content
 
 
+def test_readiness_guidance_keeps_all_six_prerequisites_unknown():
+    readiness = next(topic for topic in validate(contract())["topics"] if topic["id"] == "readiness")
+    assert {step["target"] for step in readiness["steps"]} == {
+        "checkHardware", "checkQualification", "checkPermission", "checkRoute",
+        "checkRuntime", "checkEvidence",
+    }
+    for step in readiness["steps"]:
+        assert step["area"] == "checklist"
+        assert step["explanation"].startswith("Unknown:")
+
+
 @pytest.mark.parametrize("change", ["action", "target", "area", "example", "too_many"])
 def test_tutorial_rejects_commands_unknown_targets_and_unlabeled_examples(change):
     data = copy.deepcopy(contract())

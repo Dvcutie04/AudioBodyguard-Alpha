@@ -14,12 +14,18 @@ private struct ReadOnlyHomeView: View {
     @StateObject private var audioHints = ForegroundAudioHints()
     @State private var optionsExpanded = false
     @State private var advancedExpanded = false
+    @State private var checklistExpanded = false
+    @State private var navigationVisible = false
+    @State private var navigationTarget = "coverage"
+    @State private var navigationRequest = 0
     @State private var helpVisible = false
     @State private var tutorialTopicID: String?
     @State private var tutorialIndex = 0
     @State private var previousOptions = false
     @State private var previousAdvanced = false
-    @AccessibilityFocusState private var tutorialHeadingFocused: Bool
+    @State private var previousChecklist = false
+    private enum Focus: Hashable { case help, tutorial(String), destination(String) }
+    @AccessibilityFocusState private var focusedElement: Focus?
 
     private var tutorialTopic: AQSSTutorialTopic? {
         AQSSTutorialContent.topics.first { $0.id == tutorialTopicID }
@@ -28,6 +34,18 @@ private struct ReadOnlyHomeView: View {
         guard let topic = tutorialTopic, topic.steps.indices.contains(tutorialIndex) else { return nil }
         return topic.steps[tutorialIndex]
     }
+    private var tutorialStepKey: String { "\(tutorialTopicID ?? "")-\(tutorialIndex)" }
+    private let destinations: [(title: String, target: String, area: String)] = [
+        ("Coverage", "coverage", "home"),
+        ("Readiness checklist", "capability", "checklist"),
+        ("Sound options", "options", "options"),
+        ("Advanced options", "advanced", "advanced"),
+        ("Captions", "captions", "home"),
+        ("Session history", "history", "home"),
+        ("Foreground OS hint", "hint", "home"),
+        ("Privacy and storage", "privacy", "advanced"),
+        ("Session transfer", "handoff", "home"),
+    ]
 
     // No observation is supplied until a native source and output path qualify.
     private let coverage = AQSSSessionEvidenceView.coverage(
@@ -66,6 +84,7 @@ private struct ReadOnlyHomeView: View {
                             "No output observation. This screen does not monitor or protect audio.", target: "coverage")
                         section("Supported controls", detail: capabilityTitle, explanation:
                             "Output hardware, qualification, permission, route, runtime, and independent observation are unconfirmed. This simulation cannot offer a control.", target: "capability")
+                        readinessChecklist
                         section("Captions", detail: "Not observed", explanation:
                             "No authored caption track has been discovered or selected.", target: "captions")
                         section("Session history", detail: "No observed events", explanation:
@@ -85,24 +104,51 @@ private struct ReadOnlyHomeView: View {
                 if let topic = tutorialTopic, let step = tutorialStep {
                     tutorialPanel(topic: topic, step: step)
                 }
-                Button { helpVisible = true } label: {
-                    Label("Help & tutorials", systemImage: "questionmark.circle")
-                        .frame(maxWidth: .infinity, minHeight: 44)
-                        .contentShape(Rectangle())
+                HStack {
+                    Button { navigationVisible = true } label: {
+                        Text("Jump to").frame(maxWidth: .infinity, minHeight: 44)
+                            .contentShape(Rectangle())
+                    }
+                    .accessibilityIdentifier("section-navigation")
+                    Button { helpVisible = true } label: {
+                        Text("Help & tutorials").frame(maxWidth: .infinity, minHeight: 44)
+                            .contentShape(Rectangle())
+                    }
+                    .accessibilityIdentifier("tutorial-help")
+                    .accessibilityFocused($focusedElement, equals: .help)
                 }
-                .accessibilityIdentifier("tutorial-help")
                 .padding(.horizontal)
             }
-            .onChange(of: tutorialStep?.target) { target in
-                guard let target = target else { return }
+            .onChange(of: tutorialStepKey) { key in
+                guard let target = tutorialStep?.target else { return }
                 DispatchQueue.main.async {
+                    guard tutorialStepKey == key, scenePhase == .active else { return }
                     if reduceMotion {
                         proxy.scrollTo(target, anchor: .top)
                     } else {
                         withAnimation(.easeInOut(duration: 0.18)) { proxy.scrollTo(target, anchor: .top) }
                     }
-                    tutorialHeadingFocused = true
+                    focusedElement = .tutorial(key)
                 }
+            }
+            .onChange(of: navigationRequest) { request in
+                DispatchQueue.main.async {
+                    guard navigationRequest == request, scenePhase == .active else { return }
+                    // Direct navigation is immediate and also works with Reduce Motion.
+                    proxy.scrollTo(navigationTarget, anchor: .top)
+                    focusedElement = .destination(navigationTarget)
+                }
+            }
+            .confirmationDialog("Jump to a section", isPresented: $navigationVisible, titleVisibility: .visible) {
+                ForEach(destinations, id: \.target) { destination in
+                    Button(destination.title) {
+                        closeTutorial(restore: false)
+                        revealArea(destination.area)
+                        navigationTarget = destination.target
+                        navigationRequest += 1
+                    }
+                }
+                Button("Cancel", role: .cancel) {}
             }
             .confirmationDialog("Choose a tutorial", isPresented: $helpVisible, titleVisibility: .visible) {
                 ForEach(AQSSTutorialContent.topics, id: \.id) { topic in
@@ -122,21 +168,25 @@ private struct ReadOnlyHomeView: View {
 
     private var optionsMenu: some View {
         VStack(alignment: .leading, spacing: 14) {
-            Button(optionsExpanded ? "Hide options" : "Options") {
+            Button {
                 closeTutorial(restore: false)
                 optionsExpanded.toggle()
                 if !optionsExpanded { advancedExpanded = false }
+            } label: {
+                Text(optionsExpanded ? "Hide options" : "Options")
+                    .frame(maxWidth: .infinity, minHeight: 44, alignment: .leading)
+                    .contentShape(Rectangle())
             }
             .font(.title2.bold())
-            .frame(maxWidth: .infinity, minHeight: 44, alignment: .leading)
             .modifier(TutorialHighlight(active: tutorialStep?.target == "options"))
+            .accessibilityValue(optionsExpanded ? "Expanded" : "Collapsed")
+            .accessibilityFocused($focusedElement, equals: .destination("options"))
             .id("options")
 
             if optionsExpanded {
                 Text("Options preview — controls are unavailable until a supported output and observation path qualifies.")
                     .font(.body)
-                Button("Help with options") { startTutorial("sound") }
-                    .frame(minHeight: 44)
+                helpButton("Help with options", topic: "sound")
                 Group {
                     section("Volume", detail: "Unavailable", explanation:
                         "No qualified device volume control is connected.", target: "volume")
@@ -154,18 +204,22 @@ private struct ReadOnlyHomeView: View {
                         "No confirmed device settings or verified change are available to save, restore, or undo.", target: "defaults")
                 }
 
-                Button(advancedExpanded ? "Hide advanced options" : "Advanced options") {
+                Button {
                     closeTutorial(restore: false)
                     advancedExpanded.toggle()
+                } label: {
+                    Text(advancedExpanded ? "Hide advanced options" : "Advanced options")
+                        .frame(maxWidth: .infinity, minHeight: 44, alignment: .leading)
+                        .contentShape(Rectangle())
                 }
                 .font(.title2.bold())
-                .frame(maxWidth: .infinity, minHeight: 44, alignment: .leading)
                 .modifier(TutorialHighlight(active: tutorialStep?.target == "advanced"))
+                .accessibilityValue(advancedExpanded ? "Expanded" : "Collapsed")
+                .accessibilityFocused($focusedElement, equals: .destination("advanced"))
                 .id("advanced")
 
                 if advancedExpanded {
-                    Button("Help with advanced options") { startTutorial("advanced") }
-                        .frame(minHeight: 44)
+                    helpButton("Help with advanced options", topic: "advanced")
                     section("Device and route", detail: "Unknown", explanation:
                         "No qualified output hardware or route has been identified.", target: "route")
                     section("Physical output", detail: "Unknown physical state", explanation:
@@ -181,11 +235,46 @@ private struct ReadOnlyHomeView: View {
         }
     }
 
+    private var readinessChecklist: some View {
+        VStack(alignment: .leading, spacing: 14) {
+            Button {
+                closeTutorial(restore: false)
+                checklistExpanded.toggle()
+            } label: {
+                Text(checklistExpanded ? "Hide readiness checklist" : "Show readiness checklist")
+                    .frame(maxWidth: .infinity, minHeight: 44, alignment: .leading)
+                    .contentShape(Rectangle())
+            }
+            .accessibilityValue(checklistExpanded ? "Expanded" : "Collapsed")
+            if checklistExpanded {
+                Text("These are unconfirmed requirements, not settings you can enable. A tutorial cannot complete them.")
+                helpButton("Help with readiness", topic: "readiness")
+                ForEach(AQSSTutorialContent.topics.first { $0.id == "readiness" }?.steps ?? [], id: \.target) { step in
+                    section(step.title, detail: "Unknown", explanation: step.explanation, target: step.target)
+                }
+            }
+        }
+    }
+
+    private func helpButton(_ title: String, topic: String) -> some View {
+        Button { startTutorial(topic) } label: {
+            Text(title).frame(maxWidth: .infinity, minHeight: 44, alignment: .leading)
+                .contentShape(Rectangle())
+        }
+    }
+
+    private func revealArea(_ area: String) {
+        optionsExpanded = area == "options" || area == "advanced"
+        advancedExpanded = area == "advanced"
+        checklistExpanded = area == "checklist"
+    }
+
     private func startTutorial(_ id: String) {
         guard AQSSTutorialContent.topics.contains(where: { $0.id == id }) else { return }
         if tutorialTopicID == nil {
             previousOptions = optionsExpanded
             previousAdvanced = advancedExpanded
+            previousChecklist = checklistExpanded
         }
         tutorialTopicID = id
         tutorialIndex = 0
@@ -194,8 +283,7 @@ private struct ReadOnlyHomeView: View {
 
     private func revealTutorialArea() {
         guard let step = tutorialStep else { return }
-        optionsExpanded = step.area != "home"
-        advancedExpanded = step.area == "advanced"
+        revealArea(step.area)
     }
 
     private func closeTutorial(restore: Bool = true) {
@@ -205,6 +293,8 @@ private struct ReadOnlyHomeView: View {
         if restore {
             optionsExpanded = previousOptions
             advancedExpanded = previousAdvanced
+            checklistExpanded = previousChecklist
+            focusedElement = .help
         }
     }
 
@@ -213,7 +303,8 @@ private struct ReadOnlyHomeView: View {
             ScrollView {
                 VStack(alignment: .leading, spacing: 6) {
                     Text("Tutorial — \(topic.title)").font(.headline)
-                        .accessibilityFocused($tutorialHeadingFocused)
+                        .accessibilityAddTraits(.isHeader)
+                        .accessibilityFocused($focusedElement, equals: .tutorial(tutorialStepKey))
                     Text("Step \(tutorialIndex + 1) of \(topic.steps.count) • Highlighted: \(step.title)")
                         .font(.subheadline.bold())
                     Text(step.explanation)
@@ -255,6 +346,8 @@ private struct ReadOnlyHomeView: View {
             Text(explanation).font(.body)
         }
         .accessibilityElement(children: .combine)
+        .accessibilityAddTraits(.isHeader)
+        .accessibilityFocused($focusedElement, equals: .destination(target))
         .modifier(TutorialHighlight(active: tutorialStep?.target == target))
         .id(target.isEmpty ? title : target)
     }

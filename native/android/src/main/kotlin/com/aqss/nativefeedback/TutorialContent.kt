@@ -35,5 +35,13 @@ object TutorialContent {
             TutorialStep("handoffOption", "advanced", "Check transfer eligibility", "Moving a session is unavailable. A transfer requires authorized endpoints and a verified path between them.", "Example: Two phones signed in to an account are not, by themselves, a qualified transfer path."),
             TutorialStep("handoff", "home", "Keep the handoff state truthful", "The current screen reports that no transfer path is connected. Completing this tutorial does not change that state.", "Example: You can finish this lesson while session transfer remains unavailable."),
         )),
+        TutorialTopic("readiness", "Readiness checklist", listOf(
+            TutorialStep("checkHardware", "checklist", "Output hardware", "Unknown: no supported output device has been identified and qualified for this app.", "Example: A connected Bluetooth speaker is a candidate, not proof that AQSS can control it."),
+            TutorialStep("checkQualification", "checklist", "Qualified path", "Unknown: this exact device, driver and output path have not passed the required checks.", "Example: Passing an emulator test does not qualify a phone speaker."),
+            TutorialStep("checkPermission", "checklist", "Permission and authority", "Unknown: permission and authority for a supported action have not been established. This checklist requests neither.", "Example: An OS permission alone cannot authorize a change to another device."),
+            TutorialStep("checkRoute", "checklist", "Output route", "Unknown: there is no verified path from an authorized action to the intended output.", "Example: Headphones can be connected without being the active playback route."),
+            TutorialStep("checkRuntime", "checklist", "Runtime eligibility", "Unknown: there is no qualified running protection path. This screen only receives foreground hints.", "Example: Leaving the app may suspend it; returning does not fill the gap in observation."),
+            TutorialStep("checkEvidence", "checklist", "Independent observation", "Unknown: there is no independent observation tied to an authorized device transaction.", "Example: A device saying that a command succeeded is not independent evidence of audible output."),
+        )),
     )
 }

@@ -6,6 +6,11 @@ mkdir -p "$artifact_dir"
 
 collect_failure_diagnostics() {
     local status=$?
+    if [[ -n "${original_font_scale:-}" ]]; then
+        adb shell settings put system font_scale "$original_font_scale" || true
+        adb shell settings put system user_rotation "$original_rotation" || true
+        adb shell settings put system accelerometer_rotation "$original_auto_rotation" || true
+    fi
     if [[ "$status" -ne 0 ]]; then
         adb logcat -b crash -d > "$artifact_dir/crash-log.txt" 2>&1 || true
         adb shell dumpsys activity activities > "$artifact_dir/activity-state.txt" 2>&1 || true
@@ -116,6 +121,21 @@ assert_tutorial_label() {
     python3 tools/check_android_simulation_ui.py --assert-label "$artifact_dir/$1.xml" "$2"
 }
 
+tap_scroll_label() {
+    local label="$1" capture="$2" coordinates x y
+    for attempt in 1 2 3 4 5 6; do
+        capture_ui "$capture"
+        coordinates="$(python3 tools/check_android_simulation_ui.py --text-tap-coordinates "$artifact_dir/$capture.xml" "$label")"
+        if [[ -n "$coordinates" ]]; then
+            read -r x y <<< "$coordinates"
+            adb shell input tap "$x" "$y"
+            return 0
+        fi
+        adb shell input swipe 500 1600 500 450 900
+    done
+    echo "Content target not reached: $label" >&2; return 1
+}
+
 tap_tutorial_label "Help & tutorials" tutorial_help
 tap_tutorial_label "Sound options" tutorial_topics
 capture_ui tutorial_sound_first
@@ -151,3 +171,78 @@ capture_ui tutorial_replay
 assert_tutorial_label tutorial_replay "Step 1 of 4"
 tap_tutorial_label "Close tutorial" tutorial_finish
 echo "ANDROID_TUTORIAL_OBSERVED: manual navigation, close, completion and replay passed"
+
+# Direct navigation, explicit readiness, and Back behavior are presentation only.
+tap_tutorial_label "Jump to" jump_readiness
+tap_tutorial_label "Readiness checklist" jump_readiness_topics
+capture_ui readiness_top
+assert_tutorial_label readiness_top "These are unconfirmed requirements"
+assert_tutorial_label readiness_top "Output hardware — Unknown"
+tap_tutorial_label "Help with readiness" readiness_help
+for step in 1 2 3 4 5 6; do
+    capture_ui "readiness_step_$step"
+    assert_tutorial_label "readiness_step_$step" "Step $step of 6"
+    if [[ "$step" -lt 6 ]]; then tap_tutorial_label "Next" "readiness_next_$step"; fi
+done
+assert_tutorial_label readiness_step_6 "Independent observation — Unknown"
+adb shell input keyevent KEYCODE_BACK
+capture_ui readiness_back
+if python3 tools/check_android_simulation_ui.py --assert-label "$artifact_dir/readiness_back.xml" "Close tutorial" 2>/dev/null; then
+    echo "Back did not close the tutorial" >&2; exit 1
+fi
+adb shell input keyevent KEYCODE_BACK
+capture_ui checklist_back
+if python3 tools/check_android_simulation_ui.py --assert-label "$artifact_dir/checklist_back.xml" "Hide readiness checklist" 2>/dev/null; then
+    echo "Back did not close the readiness checklist" >&2; exit 1
+fi
+tap_tutorial_label "Jump to" jump_advanced
+tap_tutorial_label "Advanced options" jump_advanced_topics
+capture_ui jumped_advanced
+assert_tutorial_label jumped_advanced "Hide advanced options"
+adb shell input keyevent KEYCODE_BACK
+capture_ui advanced_back
+assert_tutorial_label advanced_back "Advanced options"
+adb shell input keyevent KEYCODE_BACK
+tap_tutorial_label "Jump to" jump_privacy
+tap_tutorial_label "Privacy and storage" jump_privacy_topics
+capture_ui jumped_privacy
+assert_tutorial_label jumped_privacy "No audio recorded by this app"
+
+# Keep the tutorial and truthful state through background/return and rotation.
+tap_tutorial_label "Help & tutorials" lifecycle_help
+tap_tutorial_label "Sound options" lifecycle_topics
+tap_tutorial_label "Next" lifecycle_first
+adb shell input keyevent KEYCODE_HOME
+adb shell am start -W -n com.aqss.bodyguard.prototype/.ReadOnlyHomeActivity
+capture_ui lifecycle_return
+assert_tutorial_label lifecycle_return "Step 2 of 4"
+original_font_scale="$(adb shell settings get system font_scale | tr -d '\r')"
+original_rotation="$(adb shell settings get system user_rotation | tr -d '\r')"
+original_auto_rotation="$(adb shell settings get system accelerometer_rotation | tr -d '\r')"
+adb shell settings put system accelerometer_rotation 0
+adb shell settings put system user_rotation 1
+capture_ui rotated_tutorial
+assert_tutorial_label rotated_tutorial "Step 2 of 4"
+assert_tutorial_label rotated_tutorial "Close tutorial"
+adb shell settings put system user_rotation 0
+tap_tutorial_label "Close tutorial" lifecycle_finish
+tap_tutorial_label "Jump to" jump_coverage
+tap_tutorial_label "Coverage" jump_coverage_topics
+capture_ui returned_coverage
+assert_tutorial_label returned_coverage "Unknown physical state"
+
+# Android supports up to 200% text scaling; no app-specific font override.
+adb shell settings put system font_scale 2.0
+tap_tutorial_label "Jump to" large_text_jump
+tap_tutorial_label "Readiness checklist" large_text_sections
+capture_ui large_text_readiness
+assert_tutorial_label large_text_readiness "Six setup checks unknown"
+tap_scroll_label "Help with readiness" large_text_help
+capture_ui large_text_tutorial
+assert_tutorial_label large_text_tutorial "Step 1 of 6"
+tap_tutorial_label "Close tutorial" large_text_close
+tap_tutorial_label "Jump to" large_text_exit
+tap_tutorial_label "Coverage" large_text_coverage
+capture_ui large_text_unknown
+assert_tutorial_label large_text_unknown "Unknown physical state"
+echo "ANDROID_AUDIT_UI_OBSERVED: readiness, navigation, Back, lifecycle, rotation and large text passed"

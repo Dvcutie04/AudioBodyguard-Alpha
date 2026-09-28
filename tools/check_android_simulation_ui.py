@@ -44,7 +44,7 @@ def button_coordinates(path: str, label: str) -> None:
         )
         center_y = (top + bottom) // 2
         # Tutorial footer controls are laid out above consumed system insets.
-        footer_labels = {"Help & tutorials", "Back", "Next", "Done", "Close tutorial"}
+        footer_labels = {"Jump to", "Help & tutorials", "Back", "Next", "Done", "Close tutorial"}
         if center_y < screen_bottom * 0.85 or label in footer_labels:
             print((left + right) // 2, center_y)
 

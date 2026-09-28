@@ -8,11 +8,13 @@ import android.graphics.Typeface
 import android.graphics.drawable.Drawable
 import android.graphics.drawable.GradientDrawable
 import android.os.Bundle
+import android.os.Build
 import android.text.SpannableString
 import android.text.Spanned
 import android.text.style.StyleSpan
 import android.view.View
 import android.view.ViewTreeObserver
+import android.view.accessibility.AccessibilityNodeInfo
 import android.widget.Button
 import android.widget.LinearLayout
 import android.widget.ScrollView
@@ -25,8 +27,9 @@ class TutorialGuide(
     private val activity: Activity,
     private val scroll: ScrollView,
     private val targets: Map<String, View>,
-    private val expansion: () -> Pair<Boolean, Boolean>,
-    private val setExpansion: (Boolean, Boolean) -> Unit,
+    private val expansion: () -> Triple<Boolean, Boolean, Boolean>,
+    private val setExpansion: (Boolean, Boolean, Boolean) -> Unit,
+    private val stateChanged: () -> Unit,
 ) {
     val footer = LinearLayout(activity).apply { orientation = LinearLayout.VERTICAL }
     private val panel = LinearLayout(activity).apply {
@@ -46,9 +49,11 @@ class TutorialGuide(
     private val explanation = ScrollView(activity).apply { addView(text) }
     private val back = button("Back") { move(-1) }
     private val next = button("Next") { move(1) }
+    private val help = button("Help & tutorials") { chooseTopic() }
     private var topic: TutorialTopic? = null
+    val isActive: Boolean get() = topic != null
     private var index = 0
-    private var previous = false to false
+    private var previous = Triple(false, false, false)
     private var highlighted: View? = null
     private var originalForeground: Drawable? = null
     private var pendingLayout: ViewTreeObserver.OnGlobalLayoutListener? = null
@@ -67,7 +72,11 @@ class TutorialGuide(
         }
         panel.addView(navigation)
         footer.addView(panel)
-        footer.addView(button("Help & tutorials") { chooseTopic() })
+        val shortcuts = LinearLayout(activity)
+        shortcuts.addView(button("Jump to") { chooseSection() }, LinearLayout.LayoutParams(0, -2, 1f))
+        shortcuts.addView(help, LinearLayout.LayoutParams(0, -2, 1f))
+        footer.addView(shortcuts)
+        if (Build.VERSION.SDK_INT >= 28) panel.accessibilityPaneTitle = "Tutorial"
     }
 
     private fun dp(value: Int) = (value * activity.resources.displayMetrics.density).toInt()
@@ -84,6 +93,31 @@ class TutorialGuide(
             .setItems(TutorialContent.topics.map { it.title }.toTypedArray()) { _, which ->
                 start(TutorialContent.topics[which].id)
             }.setNegativeButton("Cancel", null).show()
+    }
+
+    private fun chooseSection() {
+        val entries = listOf(
+            Triple("Coverage", "coverage", "home"),
+            Triple("Readiness checklist", "capability", "checklist"),
+            Triple("Sound options", "options", "options"),
+            Triple("Advanced options", "advanced", "advanced"),
+            Triple("Captions", "captions", "home"),
+            Triple("Session history", "history", "home"),
+            Triple("Foreground OS hint", "hint", "home"),
+            Triple("Privacy and storage", "privacy", "advanced"),
+            Triple("Session transfer", "handoff", "home"),
+        )
+        AlertDialog.Builder(activity).setTitle("Jump to a section")
+            .setItems(entries.map { it.first }.toTypedArray()) { _, which ->
+                val entry = entries[which]
+                close(restore = false)
+                revealArea(entry.third)
+                targets[entry.second]?.let { revealTarget(it, highlight = false) }
+            }.setNegativeButton("Cancel", null).show()
+    }
+
+    private fun revealArea(area: String) {
+        setExpansion(area == "options" || area == "advanced", area == "advanced", area == "checklist")
     }
 
     fun start(id: String) {
@@ -115,7 +149,7 @@ class TutorialGuide(
         val step = selected.steps.getOrNull(index) ?: return
         val target = targets[step.target] ?: run { close(); return }
         clearHighlight()
-        setExpansion(step.area != "home", step.area == "advanced")
+        revealArea(step.area)
         val description = "Tutorial — ${selected.title}\nStep ${index + 1} of ${selected.steps.size} • Highlighted: ${step.title}\n\n${step.explanation}\n\n${step.example}"
         text.text = SpannableString(description).apply {
             setSpan(StyleSpan(Typeface.BOLD), 0, description.indexOf('\n'), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
@@ -130,21 +164,30 @@ class TutorialGuide(
             text.alpha = 0.7f
             text.animate().alpha(1f).setDuration(180).start()
         }
+        revealTarget(target, highlight = true)
+        stateChanged()
+    }
+
+    private fun revealTarget(target: View, highlight: Boolean) {
+        clearHighlight()
         val listener = object : ViewTreeObserver.OnGlobalLayoutListener {
             override fun onGlobalLayout() {
                 if (scroll.viewTreeObserver.isAlive) scroll.viewTreeObserver.removeOnGlobalLayoutListener(this)
                 pendingLayout = null
-                highlighted = target
-                originalForeground = target.foreground
-                target.foreground = GradientDrawable().apply {
-                    setColor(Color.TRANSPARENT)
-                    setStroke(dp(3), Color.rgb(0, 96, 180))
-                    cornerRadius = dp(6).toFloat()
+                if (highlight) {
+                    highlighted = target
+                    originalForeground = target.foreground
+                    target.foreground = GradientDrawable().apply {
+                        setColor(Color.TRANSPARENT)
+                        setStroke(dp(3), Color.rgb(0, 96, 180))
+                        cornerRadius = dp(6).toFloat()
+                    }
                 }
                 var y = target.top
                 var parent = target.parent as? View
                 while (parent != null && parent !== scroll) { y += parent.top; parent = parent.parent as? View }
-                if (ValueAnimator.areAnimatorsEnabled()) scroll.smoothScrollTo(0, y) else scroll.scrollTo(0, y)
+                if (highlight && ValueAnimator.areAnimatorsEnabled()) scroll.smoothScrollTo(0, y) else scroll.scrollTo(0, y)
+                if (!highlight) target.performAccessibilityAction(AccessibilityNodeInfo.ACTION_ACCESSIBILITY_FOCUS, null)
             }
         }
         pendingLayout = listener
@@ -159,7 +202,11 @@ class TutorialGuide(
         topic = null
         index = 0
         panel.visibility = View.GONE
-        if (restore) setExpansion(previous.first, previous.second)
+        if (restore) {
+            setExpansion(previous.first, previous.second, previous.third)
+            help.performAccessibilityAction(AccessibilityNodeInfo.ACTION_ACCESSIBILITY_FOCUS, null)
+        }
+        stateChanged()
     }
 
     fun pause() { text.animate().cancel(); clearHighlight() }
@@ -171,6 +218,7 @@ class TutorialGuide(
             bundle.putInt("tutorialIndex", index)
             bundle.putBoolean("tutorialPreviousOptions", previous.first)
             bundle.putBoolean("tutorialPreviousAdvanced", previous.second)
+            bundle.putBoolean("tutorialPreviousChecklist", previous.third)
         }
     }
 
@@ -181,7 +229,8 @@ class TutorialGuide(
         if (position !in selected.steps.indices) return
         topic = selected
         index = position
-        previous = bundle.getBoolean("tutorialPreviousOptions") to bundle.getBoolean("tutorialPreviousAdvanced")
+        previous = Triple(bundle.getBoolean("tutorialPreviousOptions"), bundle.getBoolean("tutorialPreviousAdvanced"),
+            bundle.getBoolean("tutorialPreviousChecklist"))
         render()
     }
 }
