@@ -38,8 +38,10 @@ class InputAssistanceActivity : Activity() {
     private val isVoice get() = intent.getStringExtra("mode") == "voice"
 
     override fun onCreate(savedInstanceState: Bundle?) {
+        val dark = intent.getBooleanExtra("dark", true)
+        setTheme(if (dark) R.style.AQSSMidnightTheme else R.style.AQSSReadOnlyTheme)
         super.onCreate(savedInstanceState)
-        skin = InterfaceTheme(this, intent.getBooleanExtra("dark", true))
+        skin = InterfaceTheme(this, dark)
         val root = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; setPadding(skin.dp(16), skin.dp(28), skin.dp(16), skin.dp(16)); setBackgroundColor(skin.background) }
         val header = LinearLayout(this)
         header.addView(TextView(this).apply { text = if (isVoice) "Voice check" else "TV photo setup"; textSize = 24f; setTextColor(skin.text) }, LinearLayout.LayoutParams(0, -2, 1f))
