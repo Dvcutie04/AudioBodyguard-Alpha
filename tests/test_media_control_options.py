@@ -8,6 +8,7 @@ from src.control.media_control_capabilities import (
 )
 from src.control.media_control_options import (
     DeviceDisplayMetadata,
+    MediaControlAdvancedOptionKey,
     MediaControlOptionKey,
     MediaControlOptionsMenu,
     MediaControlRecoveryActionKey,
@@ -50,6 +51,8 @@ def test_options_menu_identifies_device_and_explains_every_control():
         MediaControlOptionKey.VOLUME,
         MediaControlOptionKey.CAPTIONS,
         MediaControlOptionKey.EQ_PRESET,
+        MediaControlOptionKey.DIALOGUE_PRESET,
+        MediaControlOptionKey.NIGHT_PRESET,
         MediaControlOptionKey.EQ_BANDS,
     )
     assert all(item.description.strip() for item in menu.items)
@@ -57,7 +60,13 @@ def test_options_menu_identifies_device_and_explains_every_control():
     assert menu.item(MediaControlOptionKey.VOLUME).available is True
     assert menu.item(MediaControlOptionKey.CAPTIONS).available is True
     assert menu.item(MediaControlOptionKey.EQ_PRESET).available is False
+    assert menu.item(MediaControlOptionKey.DIALOGUE_PRESET).available is False
+    assert menu.item(MediaControlOptionKey.NIGHT_PRESET).available is False
     assert menu.item(MediaControlOptionKey.EQ_BANDS).available is True
+    assert tuple(detail.key for detail in menu.advanced_items) == tuple(MediaControlAdvancedOptionKey)
+    assert "BANDS" in menu.advanced(MediaControlAdvancedOptionKey.CAPABILITY_DETAILS).detail
+    assert menu.advanced(MediaControlAdvancedOptionKey.PHYSICAL_STATE).detail == "Unknown physical state"
+    assert menu.advanced(MediaControlAdvancedOptionKey.BACKGROUND_MONITORING).detail == "Unavailable"
     assert tuple(action.label for action in menu.recovery_actions) == (
         "Apply Recommended",
         "Save Current as My Default",
@@ -100,3 +109,26 @@ def test_options_menu_rejects_metadata_for_another_device():
 
     with pytest.raises(ValueError, match="device metadata mismatch"):
         MediaControlOptionsMenu.for_manifest(manifest, device=metadata)
+
+
+def test_preset_choices_require_semantic_capability_and_advanced_details_never_upgrade_state():
+    base = MediaControlCapabilityManifest(
+        device_id="test-device", adapter_id="test-adapter", playback_session_id="s1",
+        content_generation=1, caption_capability=CaptionCapability.NONE,
+        eq_capability=EqCapability.SEMANTIC_PRESETS,
+        verification_strength=VerificationStrength.OBSERVED,
+        issued_monotonic=10.0, expires_monotonic=20.0, clock_domain_id="test-clock",
+    )
+    device = DeviceDisplayMetadata(device_id="test-device", display_name="Test device")
+    menu = MediaControlOptionsMenu.for_manifest(base, device=device)
+    assert menu.item(MediaControlOptionKey.DIALOGUE_PRESET).available is True
+    assert menu.item(MediaControlOptionKey.NIGHT_PRESET).available is True
+    assert menu.advanced(MediaControlAdvancedOptionKey.PHYSICAL_STATE).detail == "Unknown physical state"
+
+    from dataclasses import replace
+    unsupported = MediaControlOptionsMenu.for_manifest(
+        replace(base, eq_capability=EqCapability.NONE), device=device
+    )
+    assert all(not item.available for item in unsupported.items)
+    assert all(item.unavailable_reason for item in unsupported.items)
+    assert unsupported.advanced(MediaControlAdvancedOptionKey.CAPABILITY_DETAILS).detail.endswith("NONE")

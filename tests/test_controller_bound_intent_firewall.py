@@ -154,3 +154,25 @@ def test_endpoint_admission_binds_signed_volume_to_physical_request():
     with pytest.raises(ValueError,match="endpoint action"):
         admit(replace(signed,parameters={"volume":99}),action)
     assert admit(signed,action)==action
+
+
+def test_controller_firewall_rejects_nonfinite_capability_windows():
+    from dataclasses import replace
+    for field in ('issued_at', 'expires_at'):
+        for value in (float('nan'), float('inf'), True, 'future', None):
+            firewall, intent, capability, controller, key, _ = _environment()
+            invalid = replace(capability, **{field: value}, signature='')
+            invalid.signature = key.sign(invalid.canonical_bytes)
+            bound = replace(intent, capability_lease_digest=invalid.payload_digest, signature='')
+            bound = replace(bound, signature=key.sign(bound.canonical_bytes))
+            assert firewall.validate(bound, invalid, controller, now=110.0) is ControllerBoundRejectionCode.INVALID_INPUT
+            assert firewall._seen_nonces == set()
+
+
+def test_controller_firewall_rejects_mismatched_capability_protocol():
+    from dataclasses import replace
+    firewall, intent, capability, controller, key, _ = _environment()
+    invalid = replace(intent, protocol_version='unknown', signature='')
+    invalid = replace(invalid, signature=key.sign(invalid.canonical_bytes))
+    assert firewall.validate(invalid, capability, controller, now=110.0) is ControllerBoundRejectionCode.CAPABILITY_MISMATCH
+    assert firewall._seen_nonces == set()
