@@ -78,6 +78,7 @@ private struct ReadOnlyHomeView: View {
     }
     private var tutorialStepKey: String { "\(tutorialTopicID ?? "")-\(tutorialIndex)" }
     private var beginnerTour: AQSSTutorialTopic { AQSSTutorialContent.topics.first { $0.id == "getting_started" }! }
+    private var showTourFinished: Bool { beginnerTourFinished && tutorialTopicID != "getting_started" }
     private let destinations: [(String, String)] = [
         ("Start here", "welcome"), ("Coverage", "coverage"), ("Readiness checklist", "capability"), ("Sound options", "options"),
         ("Advanced options", "advanced"), ("Captions", "captions"), ("Session history", "history"),
@@ -179,11 +180,15 @@ private struct ReadOnlyHomeView: View {
     private var homePage: some View {
         VStack(spacing: 20) {
             card(target: "welcome") {
-                badge(beginnerTourFinished ? "TOUR FINISHED" : "START HERE · 5 STEPS", color: theme.violet)
-                Text(beginnerTourFinished ? "Explore at your pace." : "Meet Audio Bodyguard.").font(.title2.bold()).accessibilityAddTraits(.isHeader)
+                badge(showTourFinished ? "TOUR FINISHED" : "START HERE · 5 STEPS", color: theme.violet)
+                Text(showTourFinished ? "Explore at your pace." : "Meet Audio Bodyguard.").font(.title2.bold()).accessibilityAddTraits(.isHeader)
                 Text("This is a read-only preview. It does not monitor or change audio.").foregroundColor(theme.muted)
-                action(beginnerTourFinished ? "Replay 5-step tour" : "Start 5-step tour", icon: "arrow.right.circle", primary: true) { startTutorial("getting_started") }
-                    .accessibilityIdentifier("start-beginner-tour")
+                if tutorialTopicID == "getting_started" {
+                    Text("Use Next in the guide below to continue.").font(.headline).foregroundColor(theme.accent)
+                } else {
+                    action(beginnerTourFinished ? "Replay 5-step tour" : "Start 5-step tour", icon: "arrow.right.circle", primary: true) { startTutorial("getting_started") }
+                        .accessibilityIdentifier("start-beginner-tour")
+                }
                 Text("No setup needed to explore. Help is always at the top.").font(.subheadline).foregroundColor(theme.muted)
             }
             card {

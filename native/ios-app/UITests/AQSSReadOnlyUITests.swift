@@ -7,8 +7,18 @@ final class AQSSReadOnlyUITests: XCTestCase {
     private func tap(_ title: String, _ app: XCUIApplication) {
         let button = app.buttons.matching(NSPredicate(format: "label CONTAINS %@", title)).firstMatch
         XCTAssertTrue(button.waitForExistence(timeout: 10), "Missing button: \(title)")
-        for _ in 0..<10 where !button.isHittable { app.scrollViews["home-scroll"].swipeUp() }
+        let scroll = app.scrollViews["home-scroll"]
+        // isHittable can be true for a sliver of a button whose center lies
+        // under the fixed page bar or tutorial footer. Bring the whole control
+        // into the content viewport before XCTest taps its center.
+        func insideViewport() -> Bool {
+            let visible = button.frame.intersection(scroll.frame)
+            return !visible.isNull && visible.height >= min(44, button.frame.height)
+                && scroll.frame.contains(CGPoint(x: button.frame.midX, y: button.frame.midY))
+        }
+        for _ in 0..<10 where !button.isHittable || !insideViewport() { scroll.swipeUp() }
         XCTAssertTrue(button.isHittable, "Unreachable button: \(title)")
+        XCTAssertTrue(insideViewport(), "Button center outside content viewport: \(title)")
         button.tap()
     }
     private func tab(_ id: String, _ app: XCUIApplication) { app.buttons["tab-\(id)"].tap() }
@@ -47,6 +57,8 @@ final class AQSSReadOnlyUITests: XCTestCase {
         app.buttons["Next"].tap(); label("Step 4 of 5", app)
         tap("Explore an example", app); label("EXAMPLE · synthetic data", app)
         screenshot("Beginner 4 Example", app)
+        tap("Read chart values", app); label("Sample 4: 64 relative units", app)
+        label("Step 4 of 5", app)
         app.buttons["Next"].tap(); label("Step 5 of 5", app)
         tap("Daylight", app); label("Step 5 of 5", app)
         screenshot("Beginner 5 Daylight", app)

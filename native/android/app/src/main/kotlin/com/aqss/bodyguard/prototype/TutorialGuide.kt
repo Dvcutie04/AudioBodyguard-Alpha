@@ -52,6 +52,7 @@ class TutorialGuide(
     private val next = button("Next") { move(1) }
     private var topic: TutorialTopic? = null
     val isActive: Boolean get() = topic != null
+    val isBeginner: Boolean get() = topic?.id == "getting_started"
     private var index = 0
     private var previous = Triple(true, true, false)
     private var previousPage = "home"
@@ -105,7 +106,14 @@ class TutorialGuide(
     }
     fun refreshHighlight() {
         val step = topic?.steps?.getOrNull(index) ?: return
-        targets[step.target]?.let { revealTarget(it, true) }
+        // A local card redraw must not scroll away from the example values the
+        // user just opened. Only a deliberate tour step change moves the page.
+        val target = targets[step.target] ?: return
+        detachTarget(); highlightTarget(target)
+    }
+    private fun highlightTarget(target: View) {
+        highlighted = target; originalForeground = target.foreground
+        target.foreground = GradientDrawable().apply { setColor(Color.TRANSPARENT); setStroke(dp(3), skin.accent); cornerRadius = dp(22).toFloat() }
     }
     private fun render() {
         val selected = topic ?: return
@@ -138,8 +146,7 @@ class TutorialGuide(
                 pendingLayout = null
                 if (!target.isAttachedToWindow || (highlight && !isActive)) return
                 if (highlight) {
-                    highlighted = target; originalForeground = target.foreground
-                    target.foreground = GradientDrawable().apply { setColor(Color.TRANSPARENT); setStroke(dp(3), skin.accent); cornerRadius = dp(22).toFloat() }
+                    highlightTarget(target)
                 }
                 var y = target.top; var parent = target.parent as? View
                 while (parent != null && parent !== scroll) { y += parent.top; parent = parent.parent as? View }

@@ -255,10 +255,12 @@ class ReadOnlyHomeActivity : Activity() {
 
     private fun homePage() {
         card("welcome") { c ->
-            label(c, if (beginnerTourFinished) "TOUR FINISHED" else "START HERE · 5 STEPS", 12f, skin.violet, true)
-            label(c, if (beginnerTourFinished) "Explore at your pace." else "Meet Audio Bodyguard.", 23f, bold = true)
+            val showFinished = beginnerTourFinished && !tutorial.isBeginner
+            label(c, if (showFinished) "TOUR FINISHED" else "START HERE · 5 STEPS", 12f, skin.violet, true)
+            label(c, if (showFinished) "Explore at your pace." else "Meet Audio Bodyguard.", 23f, bold = true)
             label(c, "This is a read-only preview. It does not monitor or change audio.", 16f, skin.muted)
-            action(c, if (beginnerTourFinished) "Replay 5-step tour" else "Start 5-step tour", true) { tutorial.start("getting_started") }
+            if (tutorial.isBeginner) label(c, "Use Next in the guide below to continue.", 17f, skin.accent, true)
+            else action(c, if (beginnerTourFinished) "Replay 5-step tour" else "Start 5-step tour", true) { tutorial.start("getting_started") }
             label(c, "No setup needed to explore. Help is always at the top.", 15f, skin.muted)
         }
         card { c ->

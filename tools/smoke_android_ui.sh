@@ -124,6 +124,9 @@ for step in 1 2 3 4 5; do
         capture_ui beginner_example
         assert_tutorial_label beginner_example "EXAMPLE · synthetic data"
         assert_tutorial_label beginner_example "Step 4 of 5"
+        tap_scroll_label "Read chart values" beginner_values_open
+        assert_scroll_label "Sample 4: 64 relative units" beginner_values
+        assert_tutorial_label beginner_values "Step 4 of 5"
     fi
     if [[ "$step" -lt 5 ]]; then tap_tutorial_label "Next" beginner_next; fi
 done
