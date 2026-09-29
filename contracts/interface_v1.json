@@ -89,7 +89,7 @@
       "id": "voice",
       "title": "Voice requests",
       "detail": "Planned · proposal only",
-      "explanation": "A future voice request could suggest a change. Device authority and independent verification would still be required. This app is not listening for commands."
+      "explanation": "Sound now offers a foreground Voice check with input activity and provisional words. Executing voice commands is still planned: device authority and independent verification are required. No command is sent by Voice check."
     },
     {
       "id": "profiles",

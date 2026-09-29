@@ -6,7 +6,7 @@ struct AQSSReadOnlyApp: App {
     var body: some Scene { WindowGroup { ReadOnlyHomeView() } }
 }
 
-private struct AppTheme {
+struct AppTheme {
     let dark: Bool
     private var tokens: [String: UInt32] { AQSSInterfaceContent.palettes[dark ? "midnight" : "daylight"]! }
     func color(_ key: String) -> Color {
@@ -27,7 +27,7 @@ private struct AppTheme {
     var controlBorder: Color { color("controlBorder") }
 }
 
-private struct AppButtonStyle: ButtonStyle {
+struct AppButtonStyle: ButtonStyle {
     let theme: AppTheme
     var primary = false
     func makeBody(configuration: Configuration) -> some View {
@@ -50,6 +50,8 @@ private struct ReadOnlyHomeView: View {
     @AppStorage("aqssAppearance") private var appearance = "midnight"
     @StateObject private var audioHints = ForegroundAudioHints()
     @State private var page = "home"
+    @State private var voiceCheckVisible = false
+    @State private var photoCheckVisible = false
     @State private var pagesVisible = false
     @State private var optionsExpanded = true
     @State private var advancedExpanded = true
@@ -123,6 +125,8 @@ private struct ReadOnlyHomeView: View {
                     focusedElement = .destination(navigationTarget)
                 }
             }
+            .sheet(isPresented: $voiceCheckVisible) { VoiceCheckView(theme: theme) }
+            .sheet(isPresented: $photoCheckVisible) { TVPhotoView(theme: theme) }
             .sheet(isPresented: $navigationVisible) {
                 menuSheet("Jump to a section") {
                     ForEach(destinations, id: \.1) { title, target in action(title, icon: "arrow.right") { navigationVisible = false; jump(target) } }
@@ -187,7 +191,7 @@ private struct ReadOnlyHomeView: View {
             card(target: "welcome") {
                 badge(showTourFinished ? "TOUR FINISHED" : "YOUR TV & SMART HOME", color: theme.violet)
                 Text(showTourFinished ? "Explore at your pace." : "Meet Audio Bodyguard.").font(.title2.bold()).accessibilityAddTraits(.isHeader)
-                Text("This is a read-only preview. It does not monitor or change audio.").foregroundColor(theme.muted)
+                Text("This is a read-only preview. It does not monitor or change TV audio.").foregroundColor(theme.muted)
                 if tutorialTopicID == "getting_started" {
                     Text("Use Next in the guide below to continue.").font(.headline).foregroundColor(theme.accent)
                 } else {
@@ -232,6 +236,7 @@ private struct ReadOnlyHomeView: View {
 
     private var soundPage: some View {
         VStack(alignment: .leading, spacing: 18) {
+            destinationCard("Voice check", subtitle: "See microphone activity and recognized words", icon: "waveform") { voiceCheckVisible = true }
             card(target: "options") {
                 Text("Sound options").font(.title2.bold()).accessibilityAddTraits(.isHeader)
                 Text("Explore each control. A qualified device and observed result are needed before audio can change.").foregroundColor(theme.muted)
@@ -259,6 +264,7 @@ private struct ReadOnlyHomeView: View {
 
     private var devicesPage: some View {
         VStack(alignment: .leading, spacing: 18) {
+            destinationCard("TV photo setup", subtitle: "Read a model label or Network settings photo", icon: "camera") { photoCheckVisible = true }
             helpButton("TV & smart-home guide", topic: "getting_started")
             card {
                 badge("PATH NOT QUALIFIED", color: theme.warning)
@@ -340,7 +346,7 @@ private struct ReadOnlyHomeView: View {
                 section("Device and route", detail: "Unknown", explanation: "No qualified output hardware or route has been identified.", target: "route", icon: "hifispeaker")
                 section("Physical output", detail: "Unknown physical state", explanation: "No independent observation is available. Options cannot verify audible output.", target: "physical", icon: "waveform.path")
                 section("Background monitoring", detail: "Unavailable", explanation: "Only foreground hints are received; changes while away are unknown.", target: "background", icon: "moon")
-                section("Privacy and storage", detail: "No audio recorded by this app", explanation: "Your appearance and guide dismissal are saved locally. TV choices and tutorial progress are temporary. No audio or tutorial analytics are uploaded.", target: "privacy", icon: "lock.shield")
+                section("Privacy and storage", detail: "No audio files saved by this app", explanation: "Appearance and guide dismissal stay on this phone. Voice check uses the microphone only after you start it. Audio, recognized words and photo details are not saved by AQSS or uploaded. Closing the tool clears its details.", target: "privacy", icon: "lock.shield")
                 section("Move this session option", detail: "Unavailable", explanation: "No authorized endpoint or verified transfer path is connected.", target: "handoffOption", icon: "arrow.left.arrow.right")
             }
             Text("On the horizon").font(.title2.bold()).accessibilityAddTraits(.isHeader)

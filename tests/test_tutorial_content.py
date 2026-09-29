@@ -35,7 +35,7 @@ def test_beginner_guide_has_one_ordered_connection_path_and_no_actuation():
         "welcome", "chooseTV", "chooseHome", "connectionPlan",
         "connectionCheck", "featureExample", "guideFinish",
     ]
-    assert "does not monitor or change audio" in topic["steps"][0]["explanation"]
+    assert "does not monitor or change TV audio" in topic["steps"][0]["explanation"]
     assert "not connected" in topic["steps"][4]["explanation"]
     assert "Help" in topic["steps"][-1]["explanation"]
     assert {c["id"] for c in data["choices"]["chooseHome"]} == {"alexa", "google", "both", "neither"}

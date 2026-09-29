@@ -27,7 +27,7 @@
     <string name="advanced_physical_unknown">No independent observation is available. Options cannot verify audible output.</string>
     <string name="advanced_background">Background monitoring — Unavailable</string>
     <string name="advanced_background_unavailable">This screen receives only foreground hints; changes while away are unknown.</string>
-    <string name="advanced_privacy">Privacy and storage — No audio recorded by this app</string>
+    <string name="advanced_privacy">Privacy and storage — No audio files saved by this app</string>
     <string name="advanced_privacy_detail">This simulation menu stores no audio or personal settings.</string>
     <string name="advanced_handoff">Move this session option — Unavailable</string>
     <string name="advanced_handoff_unavailable">No authorized endpoint or verified transfer path is connected.</string>

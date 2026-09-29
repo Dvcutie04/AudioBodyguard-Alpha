@@ -53,10 +53,26 @@ final class AQSSReadOnlyUITests: XCTestCase {
         let shot = XCTAttachment(screenshot: app.screenshot()); shot.name = name; shot.lifetime = .keepAlways; add(shot)
     }
 
+    func testInputToolsStartIdleAndNeverClaimAConnection() {
+        let app = launch()
+        tab("sound", app); tap("Voice check", app)
+        label("Microphone off", app); label("No words recognized yet", app)
+        XCTAssertTrue(app.buttons["voice-start-stop"].exists)
+        XCTAssertFalse(app.alerts.firstMatch.exists)
+        screenshot("Voice check idle", app)
+        app.buttons["Close"].firstMatch.tap()
+        tab("devices", app); tap("TV photo setup", app)
+        label("No photo selected", app); label("Brand: Not identified", app)
+        XCTAssertFalse(app.alerts.firstMatch.exists)
+        screenshot("TV photo setup idle", app)
+        app.buttons["Close"].firstMatch.tap()
+        tab("home", app); label("Unknown physical state", app)
+    }
+
     func testAllFivePagesKeepHelpAndTruthfulEmptyStates() {
         let app = launch()
         XCTAssertTrue(app.buttons["start-beginner-tour"].isHittable)
-        label("does not monitor or change audio", app)
+        label("does not monitor or change TV audio", app)
         screenshot("00 Beginner welcome", app)
         jump("Coverage", app)
         label("Unknown physical state", app); label("No output observation", app)
@@ -111,8 +127,8 @@ final class AQSSReadOnlyUITests: XCTestCase {
         jump("Advanced options", app)
         label("No independent observation is available", app)
         jump("Privacy and storage", app)
-        label("No audio recorded by this app", app)
-        label("Your appearance and guide dismissal are saved locally", app)
+        label("No audio files saved by this app", app)
+        label("Appearance and guide dismissal stay on this phone", app)
         screenshot("Advanced privacy", app)
     }
 
@@ -127,7 +143,7 @@ final class AQSSReadOnlyUITests: XCTestCase {
         app.buttons["Back"].tap(); label("Step 2 of 4", app)
         XCUIDevice.shared.press(.home); app.activate(); label("Step 2 of 4", app)
         exit(app); label("Make space for you.", app)
-        jump("Privacy and storage", app); label("No audio recorded by this app", app)
+        jump("Privacy and storage", app); label("No audio files saved by this app", app)
         app.buttons["Help & tutorials"].tap(); tap("Sound options", app)
         next(app); label("Step 2 of 4", app); screenshot("Contextual Sound guide", app)
         exit(app); XCTAssertTrue(app.buttons["Help & tutorials"].isHittable)
@@ -145,7 +161,7 @@ final class AQSSReadOnlyUITests: XCTestCase {
         screenshot("Daylight Settings", app)
         tab("home", app); screenshot("Daylight Home", app); label("Unknown physical state", app)
         tab("settings", app); tap("Midnight", app); tap("Hide advanced options", app)
-        tap("Voice requests", app); label("This app is not listening for commands", app); app.buttons["Got it"].tap()
+        tap("Voice requests", app); label("No command is sent by Voice check", app); app.buttons["Got it"].tap()
         tab("home", app); label("Unknown physical state", app)
     }
 

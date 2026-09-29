@@ -11,7 +11,7 @@ object InterfaceContent {
         InterfacePage("settings", "Settings", "gearshape", "Make space for you.", "Choose your theme, find help and read about planned features."),
     )
     val future = listOf(
-        InterfaceFeature("voice", "Voice requests", "Planned · proposal only", "A future voice request could suggest a change. Device authority and independent verification would still be required. This app is not listening for commands."),
+        InterfaceFeature("voice", "Voice requests", "Planned · proposal only", "Sound now offers a foreground Voice check with input activity and provisional words. Executing voice commands is still planned: device authority and independent verification are required. No command is sent by Voice check."),
         InterfaceFeature("profiles", "Personal sound profiles", "Planned · verified settings", "Future profiles could restore confirmed preferences on supported devices. No profile is being learned, saved or applied here."),
         InterfaceFeature("supervisor", "Background protection", "Research · device trials needed", "Continuous availability depends on platform limits and a qualified path. Leaving this app does not establish continuing protection."),
         InterfaceFeature("support", "Private support report", "Planned · review before sharing", "A future report could let you inspect a small, redacted record before sharing. No export or upload occurs here."),

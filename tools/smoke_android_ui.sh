@@ -212,19 +212,32 @@ tap_tutorial_label "Daylight" theme_daylight
 capture_ui daylight_settings
 tap_tutorial_label "Home" theme_home
 capture_ui daylight_home
-assert_tutorial_label daylight_home "does not monitor or change audio"
+assert_tutorial_label daylight_home "does not monitor or change TV audio"
 tap_tutorial_label "Settings" theme_settings
 tap_tutorial_label "Midnight" theme_midnight
 tap_scroll_label "Hide advanced options" advanced_close
 tap_scroll_label "Voice requests. Planned · proposal only" future_voice
 capture_ui future_voice_detail
-assert_tutorial_label future_voice_detail "This app is not listening for commands"
+assert_tutorial_label future_voice_detail "No command is sent by Voice check"
 tap_tutorial_label "Got it" future_voice_close
 tap_tutorial_label "Jump to" privacy_open
 tap_tutorial_label "Privacy and storage" privacy_jump
 capture_ui privacy
-assert_tutorial_label privacy "No audio recorded by this app"
-assert_tutorial_label privacy "Your appearance and guide dismissal are saved locally"
+assert_tutorial_label privacy "No audio files saved by this app"
+assert_tutorial_label privacy "Appearance and guide dismissal stay on this phone"
+
+tap_tutorial_label "Sound" input_sound
+ tap_scroll_label "Voice check. See microphone activity and recognized words" input_voice
+capture_ui voice_idle
+assert_tutorial_label voice_idle "Microphone off"
+assert_tutorial_label voice_idle "No words recognized yet"
+tap_tutorial_label "Close" voice_close
+tap_tutorial_label "Devices" input_devices
+tap_scroll_label "TV photo setup. Read a model label or Network settings photo" input_photo
+capture_ui photo_idle
+assert_tutorial_label photo_idle "No photo selected"
+assert_tutorial_label photo_idle "Brand: Not identified"
+tap_tutorial_label "Close" photo_close
 
 tap_tutorial_label "Home" return_home
 tap_tutorial_label "Help & tutorials" guide_open
@@ -255,7 +268,7 @@ adb shell settings put system user_rotation 0
 capture_ui portrait_tutorial
 tap_tutorial_label "Exit tutorial" guide_close
 capture_ui restored_home
-assert_tutorial_label restored_home "does not monitor or change audio"
+assert_tutorial_label restored_home "does not monitor or change TV audio"
 
 adb shell settings put system font_scale 2.0
 capture_ui large_text_home

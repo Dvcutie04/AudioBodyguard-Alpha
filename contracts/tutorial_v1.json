@@ -10,7 +10,7 @@
           "target": "welcome",
           "area": "overview",
           "title": "Start with your TV",
-          "explanation": "Audio Bodyguard is being built to help with sudden loud sound. This preview does not monitor or change audio. We will show one step at a time. You can leave whenever you like.",
+          "explanation": "Audio Bodyguard is being built to help with sudden loud sound. This preview does not monitor or change TV audio. We will show one step at a time. You can leave whenever you like.",
           "example": "Example: a film is quiet, then an advert is much louder. Reducing that jump is a planned feature, not something this preview can do."
         },
         {

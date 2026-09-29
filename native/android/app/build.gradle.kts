@@ -27,4 +27,5 @@ android {
 
 dependencies {
     implementation(project(":"))
+    implementation("com.google.mlkit:text-recognition:16.0.1")
 }

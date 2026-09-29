@@ -21,7 +21,7 @@ public enum AQSSInterfaceContent {
         AQSSInterfacePage(id: "settings", title: "Settings", icon: "gearshape", headline: "Make space for you.", subtitle: "Choose your theme, find help and read about planned features."),
     ]
     public static let future: [AQSSInterfaceFeature] = [
-        AQSSInterfaceFeature(id: "voice", title: "Voice requests", detail: "Planned · proposal only", explanation: "A future voice request could suggest a change. Device authority and independent verification would still be required. This app is not listening for commands."),
+        AQSSInterfaceFeature(id: "voice", title: "Voice requests", detail: "Planned · proposal only", explanation: "Sound now offers a foreground Voice check with input activity and provisional words. Executing voice commands is still planned: device authority and independent verification are required. No command is sent by Voice check."),
         AQSSInterfaceFeature(id: "profiles", title: "Personal sound profiles", detail: "Planned · verified settings", explanation: "Future profiles could restore confirmed preferences on supported devices. No profile is being learned, saved or applied here."),
         AQSSInterfaceFeature(id: "supervisor", title: "Background protection", detail: "Research · device trials needed", explanation: "Continuous availability depends on platform limits and a qualified path. Leaving this app does not establish continuing protection."),
         AQSSInterfaceFeature(id: "support", title: "Private support report", detail: "Planned · review before sharing", explanation: "A future report could let you inspect a small, redacted record before sharing. No export or upload occurs here."),

@@ -254,7 +254,7 @@ class ReadOnlyHomeActivity : Activity() {
             val showFinished = beginnerTourFinished && !tutorial.isBeginner
             label(c, if (showFinished) "TOUR FINISHED" else "YOUR TV & SMART HOME", 12f, skin.violet, true)
             label(c, if (showFinished) "Explore at your pace." else "Meet Audio Bodyguard.", 23f, bold = true)
-            label(c, "This is a read-only preview. It does not monitor or change audio.", 16f, skin.muted)
+            label(c, "This is a read-only preview. It does not monitor or change TV audio.", 16f, skin.muted)
             if (tutorial.isBeginner) label(c, "Use Next in the guide below to continue.", 17f, skin.accent, true)
             else action(c, if (beginnerTourFinished) "Replay connection guide" else "TV & smart-home guide", true) { tutorial.start("getting_started") }
             label(c, "No setup needed to explore. Help is always at the top.", 15f, skin.muted)
@@ -284,7 +284,12 @@ class ReadOnlyHomeActivity : Activity() {
         destination("Sound controls", "Presets, captions & equalizer") { openPage("sound") }
         destination("Insights", "Trends, evidence & examples") { openPage("insights") }
     }
+    private fun openInputTool(mode: String) {
+        startActivity(android.content.Intent(this, InputAssistanceActivity::class.java).putExtra("mode", mode).putExtra("dark", skin.dark))
+    }
+
     private fun soundPage() {
+        destination("Voice check", "See microphone activity and recognized words") { openInputTool("voice") }
         card("options") { c ->
             label(c, "Sound options", 22f, bold = true)
             label(c, "Explore each control. A qualified device and observed result are needed before audio can change.", 16f, skin.muted)
@@ -310,6 +315,7 @@ class ReadOnlyHomeActivity : Activity() {
         destination("Advanced options", "Device, privacy & background details") { jump("advanced") }
     }
     private fun devicesPage() {
+        destination("TV photo setup", "Read a model label or Network settings photo") { openInputTool("photo") }
         action(column, "TV & smart-home guide") { tutorial.start("getting_started") }
         card { c ->
             label(c, "PATH NOT QUALIFIED", 12f, skin.warning, true)
@@ -389,7 +395,7 @@ class ReadOnlyHomeActivity : Activity() {
             section("Device and route", "Unknown", "No qualified output hardware or route has been identified.", "route")
             section("Physical output", "Unknown physical state", "No independent observation is available. Options cannot verify audible output.", "physical")
             section("Background monitoring", "Unavailable", "Only foreground hints are received; changes while away are unknown.", "background")
-            section("Privacy and storage", "No audio recorded by this app", "Your appearance and guide dismissal are saved locally. TV choices and tutorial progress are temporary. No audio or tutorial analytics are uploaded.", "privacy")
+            section("Privacy and storage", "No audio files saved by this app", "Appearance and guide dismissal stay on this phone. Voice check uses the microphone only after you start it. Audio, recognized words and photo details are not saved by AQSS or uploaded. Closing the tool clears its details.", "privacy")
             section("Move this session option", "Unavailable", "No authorized endpoint or verified transfer path is connected.", "handoffOption")
         }
         label(column, "On the horizon", 22f, bold = true)
