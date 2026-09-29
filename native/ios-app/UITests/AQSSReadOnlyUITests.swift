@@ -176,6 +176,10 @@ final class AQSSReadOnlyUITests: XCTestCase {
         XCTAssertTrue(app.buttons["guide-next"].isHittable)
         exit(app)
         app.buttons["page-picker"].tap(); tap("Devices", app)
+        // A page sheet can still be dismissing after the navigation tap.
+        // Assert reachability after the transition, not during its animation.
+        let helpReady = XCTNSPredicateExpectation(predicate: NSPredicate(format: "hittable == true"), object: app.buttons["Help & tutorials"])
+        XCTAssertEqual(XCTWaiter.wait(for: [helpReady], timeout: 5), .completed)
         XCTAssertTrue(app.buttons["Help & tutorials"].isHittable)
         app.buttons["Help & tutorials"].tap(); tap("Readiness checklist", app)
         label("Step 1 of 6", app); assertOnlyGuide(app)
