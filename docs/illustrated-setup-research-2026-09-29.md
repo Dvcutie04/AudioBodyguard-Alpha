@@ -46,8 +46,8 @@ Cloud discovery or OAuth completion cannot establish a sub-200 ms protection pat
 
 - `contracts/setup_guides_v1.json` is the presentation-only source of truth. Its generator emits identical Swift and Kotlin catalogs. Validation bounds steps and text, requires a visible highlight and official HTTPS evidence, rejects unexpected action/authority fields and detects missing group routes.
 - Native views draw every picture locally; there is no image download, TV socket, embedded login, credential collection, OCR endpoint use or automatic permission request. Official documentation opens only on the user’s link tap.
-- Voice Help clears/stops capture before opening. No guide resumes microphone capture. A photo brand can preselect a guide group only; it cannot identify or connect a TV.
-- Deterministic coverage test first failed for the missing generator/catalog, then passed. Full local regression result before native CI: 1,796 passed plus 14 subtests.
+- Voice Help clears/stops capture before opening. No guide resumes microphone capture. The voice walkthrough ends with an explicit Open Voice check button; it opens the tool idle. A photo brand can preselect a guide group only; it cannot identify or connect a TV.
+- Deterministic coverage test first failed for the missing generator/catalog, then passed. Full local regression result before native CI: 1,797 passed plus 14 subtests.
 - Native walkthrough additions cover the TCL/Google selection from first-visit step 4, Samsung TV approval and guide completion, Google/Alexa account screens, the new Voice requests help, return from a menu mismatch, Android recreation/rotation, and large-text control reachability. Native build and screenshot results are recorded in the PR after completion.
 
 Remaining empirical debt: physical-model pairing, app/firmware/country variants, multilingual usability, VoiceOver/TalkBack user trials, denied/expired real provider approvals, and live microphone/OCR accuracy on installed phones. Simulator illustrations do not close these gaps.

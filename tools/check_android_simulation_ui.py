@@ -30,8 +30,19 @@ def launcher_close_coordinates(path: str) -> None:
 
 def button_coordinates(path: str, label: str) -> None:
     nodes = list(ET.parse(Path(path)).getroot().iter())
-    # Dialog topic rows receive clicks through their parent ListView.
-    button = next((node for node in nodes if (node.get("text", "").casefold() == label.casefold() or node.get("content-desc", "").casefold() == label.casefold()) and node.get("package") == "com.aqss.bodyguard.prototype"), None)
+    parents = {child: parent for parent in nodes for child in parent}
+    def actionable(node):
+        # Illustration labels can say Next/Close too. Only a real control or
+        # a label inside a clickable row may receive the navigation tap.
+        current = node
+        while current is not None:
+            if current.get("enabled") == "false":
+                return False
+            if current.get("clickable") == "true" or current.get("class", "").endswith("Button"):
+                return True
+            current = parents.get(current)
+        return False
+    button = next((node for node in nodes if (node.get("text", "").casefold() == label.casefold() or node.get("content-desc", "").casefold() == label.casefold()) and node.get("package") == "com.aqss.bodyguard.prototype" and actionable(node)), None)
     bounds = re.fullmatch(r"\[(\d+),(\d+)\]\[(\d+),(\d+)\]", button.get("bounds", "")) if button is not None else None
     if bounds is not None:
         left, top, right, bottom = map(int, bounds.groups())

@@ -197,7 +197,7 @@ class SetupGuideActivity : Activity() {
             box.addView(View(this).apply { setBackgroundColor(skin.outline) }, LinearLayout.LayoutParams(dp(14), dp(12)).apply { gravity = Gravity.CENTER })
             box.addView(View(this).apply { background = skin.shape(skin.outline, 4) }, LinearLayout.LayoutParams(dp(90), dp(4)).apply { gravity = Gravity.CENTER })
         } else screen.addView(View(this).apply { background = skin.shape(skin.muted, 4) }, LinearLayout.LayoutParams(dp(70), dp(4)).apply { gravity = Gravity.CENTER; topMargin = dp(8) })
-        box.addView(SetupActionPicture(this, skin, step.surface, step.action), LinearLayout.LayoutParams(-1, dp(80)).apply { topMargin = dp(8) })
+        box.addView(SetupActionPicture(this, skin, if (step.surface == "both") "phone" else step.surface, step.action), LinearLayout.LayoutParams(-1, dp(80)).apply { topMargin = dp(8) })
         return box
     }
     private fun back() {

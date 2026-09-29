@@ -194,7 +194,7 @@ assert_tutorial_label sound_presets "Dialogue preset"
 assert_tutorial_label sound_presets "Night preset"
 tap_tutorial_label "Devices" nav_devices
 capture_ui devices
-assert_tutorial_label devices "No qualified device connected"
+assert_scroll_label "No qualified device connected" devices
 tap_tutorial_label "Jump to" jump_readiness_open
 tap_tutorial_label "Readiness checklist" jump_readiness
 capture_ui readiness
