@@ -34,6 +34,7 @@ class InputAssistanceActivity : Activity() {
     private var photoGeneration = 0
     private val worker = Executors.newSingleThreadExecutor()
     private var instructions: TextView? = null
+    private var photoBrand: String? = null
     private val expiry = Runnable { stopVoice("30-second limit reached. Tap Start to try again.") }
     private val isVoice get() = intent.getStringExtra("mode") == "voice"
 
@@ -66,8 +67,13 @@ class InputAssistanceActivity : Activity() {
     private fun action(value: String, block: () -> Unit): Button = Button(this).apply {
         text = value; skin.style(this); setOnClickListener { block() }; column.addView(this, LinearLayout.LayoutParams(-1, -2).apply { bottomMargin = skin.dp(10) })
     }
+    private fun openSetup(group: String = "") {
+        if (isVoice) { stopVoice(); details.text = "No words recognized yet" }
+        startActivity(Intent(this, SetupGuideActivity::class.java).putExtra("group", group).putExtra("dark", skin.dark))
+    }
     private fun voicePage() {
         label("See what your phone hears", true)
+        action("Help · show voice steps") { openSetup("voice") }
         label("Tap Start, then say: ‘Make the TV quieter.’ The bars show incoming sound. The text shows the words the phone thinks you said. This check does not send a command.")
         status = label("Microphone off", true)
         meter = InputMeter(this, skin.violet)
@@ -147,13 +153,14 @@ class InputAssistanceActivity : Activity() {
         status = label("No photo selected", true)
         details = label("Brand: Not identified\nModel: Not identified\nTV IP hint: Not identified")
         label("These are unverified hints. Only a clearly labeled private IPv4 address is shown. We never use a photo as permission to control your TV.")
+        action("Illustrated setup guides") { openSetup(photoBrand?.lowercase() ?: "") }
         action("Show connection instructions") { instructions?.visibility = if (instructions?.visibility == View.VISIBLE) View.GONE else View.VISIBLE }
         instructions = label("1. Open Settings on the TV. Look for About, Support or Device information to find its model. Menu names differ.\n\n2. Look for Network, Connection or Network status, then IP settings. Photograph the IP address row — not Gateway or DNS. The back label usually does not show the current IP.\n\n3. Put the phone and TV on the same home Wi-Fi. Avoid a guest network. IP addresses can change and do not prove TV identity.\n\n4. Supported Samsung models use SmartThings and may ask for approval on the TV. For Alexa or Google Home, add/link a supported TV inside that app and follow its approval steps. Compatibility varies by model.\n\nAQSS pairing is not available yet. This tool reads a photo and helps you prepare; it does not connect or change the TV.").apply { visibility = View.GONE }
         action("Clear photo details") { clearPhoto() }
         label("Text recognition runs on this phone. AQSS does not save or upload the image, serial number or password. Your camera/gallery may keep the original outside AQSS. Details clear on close. Camera previews can be too small for text: choose the original photo if needed.")
     }
     private fun clearPhoto() {
-        photoGeneration++; status.text = "No photo selected"; details.text = "Brand: Not identified\nModel: Not identified\nTV IP hint: Not identified"
+        photoBrand = null; photoGeneration++; status.text = "No photo selected"; details.text = "Brand: Not identified\nModel: Not identified\nTV IP hint: Not identified"
     }
     @Deprecated("Platform callback retained for API 26 compatibility")
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
@@ -203,6 +210,7 @@ class InputAssistanceActivity : Activity() {
                             val text = result.textBlocks.flatMap { it.lines }.take(100).joinToString("\n") { it.text }
                             val hints = TVPhotoHints(text)
                             details.text = "Brand: ${hints.brand ?: "Not identified"}\nModel: ${hints.model ?: "Not identified"}\nTV IP hint: ${hints.address ?: "Not identified"}"
+                            photoBrand = hints.brand
                             status.text = "Check these details. Text recognition can make mistakes. Nothing is connected."
                         }
                     }

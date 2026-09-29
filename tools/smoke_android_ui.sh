@@ -131,6 +131,27 @@ tap_tutorial_label "Amazon Alexa" beginner_home_choice
 tap_tutorial_label "Next" beginner_to_plan
 capture_ui beginner_step_4
 assert_tutorial_label beginner_step_4 "Your connection checklist"
+tap_scroll_label "Show Samsung steps" setup_from_plan
+tap_scroll_label "Samsung — TV shows OK approval" setup_samsung_route
+tap_tutorial_label "Start guide" setup_samsung_begin
+capture_ui setup_pair_step_1
+assert_tutorial_label setup_pair_step_1 "Step 1 of 16"
+for step in {2..14}; do tap_tutorial_label "Next" "setup_samsung_next_$step"; done
+capture_ui setup_tv_approval
+assert_tutorial_label setup_tv_approval "Approve on the television"
+tap_scroll_label "My screen looks different" setup_mismatch_open
+capture_ui setup_mismatch
+assert_tutorial_label setup_mismatch "Pause at this step"
+tap_tutorial_label "Return to step" setup_mismatch_return
+capture_ui setup_approval_retained
+assert_tutorial_label setup_approval_retained "Step 14 of 16"
+tap_tutorial_label "Next" setup_after_approval
+tap_tutorial_label "Next" setup_result
+capture_ui setup_last
+assert_tutorial_label setup_last "Check the actual result"
+tap_tutorial_label "Finish guide" setup_finish
+capture_ui setup_plan_return
+assert_tutorial_label setup_plan_return "Step 4 of 7"
 assert_scroll_label "Amazon Alexa" beginner_tailored_plan
 tap_tutorial_label "Back" beginner_plan_back
 capture_ui beginner_home_retained
@@ -219,7 +240,13 @@ tap_scroll_label "Hide advanced options" advanced_close
 tap_scroll_label "Voice requests. Planned · proposal only" future_voice
 capture_ui future_voice_detail
 assert_tutorial_label future_voice_detail "No command is sent by Voice check"
-tap_tutorial_label "Got it" future_voice_close
+tap_tutorial_label "Show voice steps" future_voice_help
+capture_ui setup_voice_first
+assert_tutorial_label setup_voice_first "Step 1 of 9"
+for step in 2 3 4 5; do tap_tutorial_label "Next" "setup_voice_next_$step"; done
+capture_ui setup_voice_meter
+assert_tutorial_label setup_voice_meter "Speak and watch the meter"
+tap_tutorial_label "Close" setup_voice_close
 tap_tutorial_label "Jump to" privacy_open
 tap_tutorial_label "Privacy and storage" privacy_jump
 capture_ui privacy
@@ -280,6 +307,19 @@ tap_tutorial_label "Exit tutorial" large_beginner_close
 tap_tutorial_label "Pages · Home" large_pages
 tap_tutorial_label "Devices" large_devices
 capture_ui large_text_devices
+tap_scroll_label "Illustrated setup guides. TV pairing, Google Home & Alexa · one picture at a time" setup_large_open
+tap_scroll_label "TCL" setup_large_tcl
+tap_scroll_label "TCL QM851G / Q651G / QM891G — first setup" setup_large_route
+tap_tutorial_label "Start guide" setup_large_start
+capture_ui setup_large_step
+assert_tutorial_label setup_large_step "Step 1 of 12"
+assert_tutorial_label setup_large_step "Close"
+assert_tutorial_label setup_large_step "Next"
+adb shell settings put system user_rotation 1
+capture_ui setup_large_landscape
+assert_tutorial_label setup_large_landscape "Step 1 of 12"
+adb shell settings put system user_rotation 0
+tap_tutorial_label "Close" setup_large_close
 tap_tutorial_label "Help & tutorials" large_help
 tap_scroll_label "Readiness checklist" large_topic
 capture_ui large_text_tutorial

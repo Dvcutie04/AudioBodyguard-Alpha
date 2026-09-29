@@ -52,6 +52,10 @@ private struct ReadOnlyHomeView: View {
     @State private var page = "home"
     @State private var voiceCheckVisible = false
     @State private var photoCheckVisible = false
+    @State private var setupVisible = false
+    @State private var setupGroup = ""
+    @State private var pendingSetupGroup: String?
+    @State private var futureID = ""
     @State private var pagesVisible = false
     @State private var optionsExpanded = true
     @State private var advancedExpanded = true
@@ -127,6 +131,7 @@ private struct ReadOnlyHomeView: View {
             }
             .sheet(isPresented: $voiceCheckVisible) { VoiceCheckView(theme: theme) }
             .sheet(isPresented: $photoCheckVisible) { TVPhotoView(theme: theme) }
+            .sheet(isPresented: $setupVisible) { SetupGuidesView(theme: theme, initialGroup: setupGroup) }
             .sheet(isPresented: $navigationVisible) {
                 menuSheet("Jump to a section") {
                     ForEach(destinations, id: \.1) { title, target in action(title, icon: "arrow.right") { navigationVisible = false; jump(target) } }
@@ -139,13 +144,20 @@ private struct ReadOnlyHomeView: View {
                     action("Cancel", icon: "xmark") { pagesVisible = false }
                 }
             }
-            .sheet(isPresented: $helpVisible) {
+            .sheet(isPresented: $helpVisible, onDismiss: {
+                if let group = pendingSetupGroup { pendingSetupGroup = nil; showSetup(group) }
+            }) {
                 menuSheet("Choose a tutorial") {
+                    action("Illustrated setup guides", icon: "rectangle.stack") { pendingSetupGroup = ""; helpVisible = false }
+                    action("Voice check — step by step", icon: "mic") { pendingSetupGroup = "voice"; helpVisible = false }
                     ForEach(AQSSTutorialContent.topics, id: \.id) { topic in action(topic.title, icon: "questionmark.circle") { helpVisible = false; startTutorial(topic.id) } }
                     action("Cancel", icon: "xmark") { helpVisible = false }
                 }
             }
-            .alert(futureTitle, isPresented: $futureVisible) { Button("Got it", role: .cancel) {} } message: { Text(futureExplanation) }
+            .alert(futureTitle, isPresented: $futureVisible) {
+                if futureID == "voice" { Button("Show voice steps") { showSetup("voice") } }
+                Button("Got it", role: .cancel) {}
+            } message: { Text(futureExplanation) }
         }
         .preferredColorScheme(appearance == "system" ? nil : appearance == "daylight" ? .light : .dark)
         .onAppear {
@@ -155,6 +167,8 @@ private struct ReadOnlyHomeView: View {
         .onDisappear { audioHints.stop() }
         .onChange(of: scenePhase) { phase in if phase == .active { audioHints.start() } else { audioHints.stop() } }
     }
+
+    private func showSetup(_ group: String = "") { setupGroup = group; setupVisible = true }
 
     private var header: some View {
         HStack(spacing: 10) {
@@ -265,6 +279,7 @@ private struct ReadOnlyHomeView: View {
     private var devicesPage: some View {
         VStack(alignment: .leading, spacing: 18) {
             destinationCard("TV photo setup", subtitle: "Read a model label or Network settings photo", icon: "camera") { photoCheckVisible = true }
+            destinationCard("Illustrated setup guides", subtitle: "TV pairing, Google Home & Alexa · one picture at a time", icon: "rectangle.stack") { showSetup() }
             helpButton("TV & smart-home guide", topic: "getting_started")
             card {
                 badge("PATH NOT QUALIFIED", color: theme.warning)
@@ -353,7 +368,7 @@ private struct ReadOnlyHomeView: View {
             Text("Explore the direction. These features are not active.").foregroundColor(theme.muted)
             ForEach(AQSSInterfaceContent.future, id: \.id) { feature in
                 destinationCard(feature.title, subtitle: feature.detail, icon: feature.id == "voice" ? "mic" : feature.id == "profiles" ? "person.crop.circle" : feature.id == "supervisor" ? "moon" : "doc.text") {
-                    futureTitle = feature.title; futureExplanation = feature.explanation; futureVisible = true
+                    futureID = feature.id; futureTitle = feature.title; futureExplanation = feature.explanation; futureVisible = true
                 }
             }
             Button("Browse all tutorials") { helpVisible = true }.buttonStyle(AppButtonStyle(theme: theme))
@@ -487,6 +502,8 @@ private struct ReadOnlyHomeView: View {
                                 VStack(alignment: .leading, spacing: 10) {
                                     Text(selected.title).font(.title3.bold())
                                     Text(selected.detail).foregroundColor(theme.muted)
+                                    action("Show \(selected.title) steps", icon: "rectangle.stack") { showSetup(selected.id) }
+                                        .accessibilityIdentifier("setup-from-\(selected.id)")
                                 }.padding(18).frame(maxWidth: .infinity, alignment: .leading).background(theme.surface).clipShape(RoundedRectangle(cornerRadius: 18))
                             }
                         }

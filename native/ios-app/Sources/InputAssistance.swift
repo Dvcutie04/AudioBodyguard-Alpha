@@ -101,12 +101,14 @@ struct VoiceCheckView: View {
     @Environment(\.dismiss) private var dismiss
     @Environment(\.scenePhase) private var phase
     @StateObject private var voice = VoiceCheck()
+    @State private var setupVisible = false
     var body: some View {
         VStack(spacing: 12) {
             HStack { Text("Voice check").font(.title2.bold()); Spacer(); Button("Close") { voice.clear(); dismiss() }.buttonStyle(AppButtonStyle(theme: theme)) }.padding()
             ScrollView {
                 VStack(alignment: .leading, spacing: 18) {
                     Text("See what your phone hears").font(.title.bold())
+                    Button("Help · show voice steps") { voice.clear(); setupVisible = true }.buttonStyle(AppButtonStyle(theme: theme))
                     Text("Tap Start, then say: ‘Make the TV quieter.’ The bars show incoming sound. The text shows the words the phone thinks you said. This check does not send a command.")
                     Text(voice.status).font(.headline).accessibilityIdentifier("voice-status")
                     GeometryReader { box in
@@ -132,6 +134,7 @@ struct VoiceCheckView: View {
                 Button("Clear words") { voice.clear() }.buttonStyle(AppButtonStyle(theme: theme))
             }.padding()
         }.background(theme.background.ignoresSafeArea()).foregroundColor(theme.text)
+            .sheet(isPresented: $setupVisible) { SetupGuidesView(theme: theme, initialGroup: "voice") }
             .onChange(of: phase) { if $0 == .background { voice.clear() } }
             .onReceive(NotificationCenter.default.publisher(for: AVAudioSession.interruptionNotification)) { _ in voice.stop("Audio interrupted — tap Start to try again.") }
             .onDisappear { voice.clear() }
@@ -181,6 +184,8 @@ struct TVPhotoView: View {
     @State private var gallery = false
     @State private var camera = false
     @State private var instructions = false
+    @State private var setupVisible = false
+    @State private var setupGroup = ""
     @State private var cameraNotice = ""
     var body: some View {
         VStack {
@@ -203,6 +208,7 @@ struct TVPhotoView: View {
                     Text("Model: \(photo.hints.model ?? "Not identified")")
                     Text("TV IP hint: \(photo.hints.address ?? "Not identified")")
                     Text("These are unverified hints. Only a clearly labeled, private IPv4 address is shown. We never use a photo as permission to control your TV.").font(.caption).foregroundColor(theme.muted)
+                    Button("Illustrated setup guides") { setupGroup = photo.hints.brand?.lowercased() ?? ""; setupVisible = true }.buttonStyle(AppButtonStyle(theme: theme))
                     Button(instructions ? "Hide connection instructions" : "Show connection instructions") { instructions.toggle() }.buttonStyle(AppButtonStyle(theme: theme))
                     if instructions {
                         Text("1. On your TV, open Settings. Look for About, Support or Device information to find the model. Menu names differ by TV.")
@@ -216,6 +222,7 @@ struct TVPhotoView: View {
                 }.padding()
             }
         }.background(theme.background.ignoresSafeArea()).foregroundColor(theme.text)
+            .sheet(isPresented: $setupVisible) { SetupGuidesView(theme: theme, initialGroup: setupGroup) }
             .sheet(isPresented: $gallery) { LocalPhotoPicker { image in gallery = false; if let image = image { photo.scan(image) } } }
             .sheet(isPresented: $camera) { LocalCameraPicker { image in camera = false; if let image = image { photo.scan(image) } } }
             .onDisappear { photo.clear() }

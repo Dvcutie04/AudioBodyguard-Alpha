@@ -21,6 +21,7 @@ class TutorialGuide(
     private val skin: InterfaceTheme,
     private val setExpansion: (Boolean, Boolean, Boolean) -> Unit,
     private val currentPage: () -> String,
+    private val openSetup: (String) -> Unit,
     private val navigate: (String, String?) -> Unit,
     private val restorePage: (String) -> Unit,
     private val focusHelp: () -> Unit,
@@ -55,7 +56,7 @@ class TutorialGuide(
         parent.addView(view, LinearLayout.LayoutParams(-1, -2)); return view
     }
     private fun button(label: String, action: () -> Unit) = Button(activity).apply { text = label; skin.style(this); setOnClickListener { action() } }
-    fun chooseTopic() = skin.menu("Choose a tutorial", TutorialContent.topics.map { it.title to { start(it.id) } })
+    fun chooseTopic() = skin.menu("Choose a tutorial", listOf("Illustrated setup guides" to { openSetup("") }, "Voice check — step by step" to { openSetup("voice") }) + TutorialContent.topics.map { it.title to { start(it.id) } })
     fun chooseSection() {
         val entries = listOf("Start here" to "welcome", "Coverage" to "coverage", "Readiness checklist" to "capability", "Sound options" to "options", "Advanced options" to "advanced", "Captions" to "captions", "Session history" to "history", "Foreground OS hint" to "hint", "Privacy and storage" to "privacy", "Session transfer" to "handoff")
         skin.menu("Jump to a section", entries.map { it.first to { jump(it.second) } })
@@ -105,6 +106,7 @@ class TutorialGuide(
             guide.selected(target)?.let { selected ->
                 val box = column().apply { setPadding(dp(16), dp(16), dp(16), dp(6)); background = skin.shape(skin.surface) }
                 text(box, selected.title, 20f, bold = true); text(box, selected.detail, color = skin.muted)
+                box.addView(button("Show ${selected.title} steps") { openSetup(selected.id) }, LinearLayout.LayoutParams(-1, -2).apply { bottomMargin = dp(12) })
                 content.addView(box, LinearLayout.LayoutParams(-1, -2).apply { bottomMargin = dp(16) })
             }
         }

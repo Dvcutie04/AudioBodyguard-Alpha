@@ -7,7 +7,7 @@ final class AQSSReadOnlyUITests: XCTestCase {
     private func tap(_ title: String, _ app: XCUIApplication) {
         // Match within the active surface. A sheet can coexist with an
         // identically named button on the page underneath it.
-        let scroll = app.scrollViews["menu-scroll"].exists ? app.scrollViews["menu-scroll"] : app.scrollViews["guide-scroll"].exists ? app.scrollViews["guide-scroll"] : app.scrollViews["home-scroll"]
+        let scroll = app.scrollViews["setup-scroll"].exists ? app.scrollViews["setup-scroll"] : app.scrollViews["menu-scroll"].exists ? app.scrollViews["menu-scroll"] : app.scrollViews["guide-scroll"].exists ? app.scrollViews["guide-scroll"] : app.scrollViews["home-scroll"]
         let button = scroll.buttons.matching(NSPredicate(format: "label CONTAINS %@", title)).firstMatch
         guard button.waitForExistence(timeout: 10) else { XCTFail("Missing button: \(title)"); return }
         // isHittable can be true for a sliver of a button whose center lies
@@ -165,6 +165,57 @@ final class AQSSReadOnlyUITests: XCTestCase {
         tab("home", app); label("Unknown physical state", app)
     }
 
+    func testIllustratedGuideFromTCLPlanAndVoiceHelp() {
+        let app = launch(true)
+        next(app); tap("TCL", app); next(app); tap("Google Home", app); next(app)
+        tap("Show TCL steps", app)
+        tap("TCL QM851G", app); label("85QM851G", app)
+        app.buttons["setup-next"].tap(); label("Step 1 of 12", app)
+        screenshot("TCL illustrated TV first setup", app)
+        app.buttons["setup-next"].tap(); app.buttons["setup-next"].tap()
+        label("Step 3 of 12", app)
+        XCTAssertTrue(app.otherElements["setup-illustration"].exists)
+        tap("My screen looks different", app)
+        label("Pause at this step", app)
+        app.buttons["setup-back"].tap(); label("Step 3 of 12", app)
+        app.buttons["setup-close"].tap(); label("Step 4 of 7", app)
+        tap("Show Google Home steps", app); tap("SmartThings → Google Home", app)
+        app.buttons["setup-next"].tap()
+        for _ in 0..<4 { app.buttons["setup-next"].tap() }
+        label("Choose the provider path", app)
+        screenshot("Google Home illustrated provider linking", app)
+        app.buttons["setup-close"].tap(); exit(app)
+        tab("settings", app); tap("Hide advanced options", app); tap("Voice requests", app)
+        app.alerts.buttons["Show voice steps"].tap()
+        label("Step 1 of 9", app)
+        for _ in 0..<4 { app.buttons["setup-next"].tap() }
+        label("Speak and watch the meter", app)
+        XCTAssertFalse(app.alerts.firstMatch.exists)
+        screenshot("Voice help illustrated steps", app)
+        app.buttons["setup-close"].tap()
+        tab("home", app); label("Unknown physical state", app)
+    }
+
+    func testIllustratedApprovalFinishesWithoutClaimingConnection() {
+        let app = launch()
+        tab("devices", app); tap("Illustrated setup guides", app); tap("Samsung", app)
+        tap("Samsung — TV shows OK approval", app); app.buttons["setup-next"].tap()
+        for _ in 0..<13 { app.buttons["setup-next"].tap() }
+        label("Approve on the television", app)
+        screenshot("Samsung illustrated TV approval", app)
+        app.buttons["setup-next"].tap(); app.buttons["setup-next"].tap()
+        label("Check the actual result", app)
+        app.buttons["setup-next"].tap()
+        label("No qualified device connected", app)
+        tap("Illustrated setup guides", app); tap("Amazon Alexa", app); tap("Roku TV → Alexa", app)
+        app.buttons["setup-next"].tap()
+        for _ in 0..<6 { app.buttons["setup-next"].tap() }
+        label("Review Roku approval", app)
+        screenshot("Alexa illustrated account approval", app)
+        app.buttons["setup-close"].tap()
+        tab("home", app); label("Unknown physical state", app)
+    }
+
     func testLargestTextKeepsExitAndNextReachable() {
         let app = XCUIApplication()
         app.launchArguments = ["-aqssGuideDismissedV1", "NO", "-UIPreferredContentSizeCategoryName", "UICTContentSizeCategoryAccessibilityXXXL"]
@@ -185,5 +236,13 @@ final class AQSSReadOnlyUITests: XCTestCase {
         label("Step 1 of 6", app); assertOnlyGuide(app)
         screenshot("Largest text contextual guide", app)
         exit(app); XCTAssertTrue(app.buttons["page-picker"].isHittable)
+        tap("Illustrated setup guides", app); tap("Samsung", app)
+        tap("Samsung — TV shows OK approval", app); app.buttons["setup-next"].tap()
+        label("Step 1 of 16", app)
+        XCTAssertTrue(app.buttons["setup-close"].isHittable)
+        XCTAssertTrue(app.buttons["setup-next"].isHittable)
+        XCTAssertGreaterThanOrEqual(app.buttons["setup-next"].frame.height, 44)
+        screenshot("Largest text illustrated setup", app)
+        app.buttons["setup-close"].tap()
     }
 }

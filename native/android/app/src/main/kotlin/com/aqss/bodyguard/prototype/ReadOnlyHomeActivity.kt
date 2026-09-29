@@ -91,6 +91,7 @@ class ReadOnlyHomeActivity : Activity() {
         tutorial = TutorialGuide(this, scroll, targets, skin,
             setExpansion = { options, advanced, checklist -> optionsExpanded = options; advancedExpanded = advanced; checklistExpanded = checklist },
             currentPage = { page },
+            openSetup = { group -> openSetup(group) },
             navigate = { target, area ->
                 showingExample = false
                 chartValuesVisible = false
@@ -284,6 +285,9 @@ class ReadOnlyHomeActivity : Activity() {
         destination("Sound controls", "Presets, captions & equalizer") { openPage("sound") }
         destination("Insights", "Trends, evidence & examples") { openPage("insights") }
     }
+    private fun openSetup(group: String = "") {
+        startActivity(android.content.Intent(this, SetupGuideActivity::class.java).putExtra("group", group).putExtra("dark", skin.dark))
+    }
     private fun openInputTool(mode: String) {
         startActivity(android.content.Intent(this, InputAssistanceActivity::class.java).putExtra("mode", mode).putExtra("dark", skin.dark))
     }
@@ -316,6 +320,7 @@ class ReadOnlyHomeActivity : Activity() {
     }
     private fun devicesPage() {
         destination("TV photo setup", "Read a model label or Network settings photo") { openInputTool("photo") }
+        destination("Illustrated setup guides", "TV pairing, Google Home & Alexa · one picture at a time") { openSetup() }
         action(column, "TV & smart-home guide") { tutorial.start("getting_started") }
         card { c ->
             label(c, "PATH NOT QUALIFIED", 12f, skin.warning, true)
@@ -401,7 +406,11 @@ class ReadOnlyHomeActivity : Activity() {
         label(column, "On the horizon", 22f, bold = true)
         label(column, "Explore the direction. These features are not active.", 16f, skin.muted)
         InterfaceContent.future.forEach { f ->
-            destination(f.title, f.detail) { AlertDialog.Builder(this).setTitle(f.title).setMessage(f.explanation).setPositiveButton("Got it", null).show() }
+            destination(f.title, f.detail) {
+                val dialog = AlertDialog.Builder(this).setTitle(f.title).setMessage(f.explanation).setPositiveButton("Got it", null)
+                if (f.id == "voice") dialog.setNeutralButton("Show voice steps") { _, _ -> openSetup("voice") }
+                dialog.show()
+            }
         }
         action(column, "Browse all tutorials") { tutorial.chooseTopic() }
     }
