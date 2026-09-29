@@ -1,0 +1,113 @@
+{
+  "schema_version": 1,
+  "mode": "presentation_only",
+  "pages": [
+    {
+      "id": "home",
+      "title": "Home",
+      "icon": "shield.lefthalf.filled",
+      "headline": "Your listening space.",
+      "subtitle": "New here? Start with the five-step tour below."
+    },
+    {
+      "id": "sound",
+      "title": "Sound",
+      "icon": "slider.horizontal.3",
+      "headline": "Sound, on your terms.",
+      "subtitle": "Preview volume, presets, equalizer and captions. Audio controls are not connected."
+    },
+    {
+      "id": "devices",
+      "title": "Devices",
+      "icon": "hifispeaker",
+      "headline": "A clear path to sound.",
+      "subtitle": "See what a future device connection will need. Pairing is not available in this preview."
+    },
+    {
+      "id": "insights",
+      "title": "Insights",
+      "icon": "chart.xyaxis.line",
+      "headline": "Know what happened.",
+      "subtitle": "Learn how graphs work with labeled examples. No real audio has been measured."
+    },
+    {
+      "id": "settings",
+      "title": "Settings",
+      "icon": "gearshape",
+      "headline": "Make space for you.",
+      "subtitle": "Choose your theme, find help and read about planned features."
+    }
+  ],
+  "palettes": {
+    "midnight": {
+      "background": "080F20",
+      "surface": "121D33",
+      "raised": "1A2842",
+      "text": "F1F5FF",
+      "muted": "ADBDD7",
+      "accent": "64DAE8",
+      "violet": "B4A0FF",
+      "warning": "F9CB80",
+      "outline": "536A91",
+      "control": "64DAE8",
+      "controlText": "080F20",
+      "controlBorder": "006774"
+    },
+    "daylight": {
+      "background": "F2F5FC",
+      "surface": "FFFFFF",
+      "raised": "E5ECF8",
+      "text": "132238",
+      "muted": "42546F",
+      "accent": "006774",
+      "violet": "6543AD",
+      "warning": "855000",
+      "outline": "667D9C",
+      "control": "64DAE8",
+      "controlText": "080F20",
+      "controlBorder": "006774"
+    }
+  },
+  "example": {
+    "kind": "synthetic_example",
+    "label": "EXAMPLE · synthetic data",
+    "title": "Illustrative signal trend",
+    "unit": "Relative level (0–100)",
+    "values": [
+      18,
+      24,
+      21,
+      64,
+      40,
+      30,
+      45,
+      25
+    ]
+  },
+  "future": [
+    {
+      "id": "voice",
+      "title": "Voice requests",
+      "detail": "Planned · proposal only",
+      "explanation": "A future voice request could suggest a change. Device authority and independent verification would still be required. This app is not listening for commands."
+    },
+    {
+      "id": "profiles",
+      "title": "Personal sound profiles",
+      "detail": "Planned · verified settings",
+      "explanation": "Future profiles could restore confirmed preferences on supported devices. No profile is being learned, saved or applied here."
+    },
+    {
+      "id": "supervisor",
+      "title": "Background protection",
+      "detail": "Research · device trials needed",
+      "explanation": "Continuous availability depends on platform limits and a qualified path. Leaving this app does not establish continuing protection."
+    },
+    {
+      "id": "support",
+      "title": "Private support report",
+      "detail": "Planned · review before sharing",
+      "explanation": "A future report could let you inspect a small, redacted record before sharing. No export or upload occurs here."
+    }
+  ]
+}
