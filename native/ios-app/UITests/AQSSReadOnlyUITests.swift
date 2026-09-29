@@ -6,7 +6,7 @@ final class AQSSReadOnlyUITests: XCTestCase {
     }
     private func tap(_ title: String, _ app: XCUIApplication) {
         let button = app.buttons.matching(NSPredicate(format: "label CONTAINS %@", title)).firstMatch
-        XCTAssertTrue(button.waitForExistence(timeout: 10), "Missing button: \(title)")
+        guard button.waitForExistence(timeout: 10) else { XCTFail("Missing button: \(title)"); return }
         let scroll = app.scrollViews["home-scroll"]
         // isHittable can be true for a sliver of a button whose center lies
         // under the fixed page bar or tutorial footer. Bring the whole control
@@ -16,9 +16,19 @@ final class AQSSReadOnlyUITests: XCTestCase {
             return !visible.isNull && visible.height >= min(44, button.frame.height)
                 && scroll.frame.contains(CGPoint(x: button.frame.midX, y: button.frame.midY))
         }
-        for _ in 0..<10 where !button.isHittable || !insideViewport() { scroll.swipeUp() }
-        XCTAssertTrue(button.isHittable, "Unreachable button: \(title)")
-        XCTAssertTrue(insideViewport(), "Button center outside content viewport: \(title)")
+        for _ in 0..<16 {
+            if button.isHittable && insideViewport() { break }
+            // A fast swipe can pass the target completely. Use a short drag
+            // without momentum, and recover in either direction if necessary.
+            let below = button.frame.midY >= scroll.frame.midY
+            let start = scroll.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: below ? 0.75 : 0.35))
+            let end = scroll.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: below ? 0.35 : 0.75))
+            start.press(forDuration: 0.1, thenDragTo: end, withVelocity: .slow, thenHoldForDuration: 0.1)
+        }
+        guard button.isHittable && insideViewport() else {
+            screenshot("Unreachable \(title)", app)
+            XCTFail("Unreachable button within content viewport: \(title)"); return
+        }
         button.tap()
     }
     private func tab(_ id: String, _ app: XCUIApplication) { app.buttons["tab-\(id)"].tap() }
