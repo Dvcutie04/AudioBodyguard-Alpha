@@ -505,7 +505,7 @@ private struct ReadOnlyHomeView: View {
                     }
                 }
             }.padding(16).background(theme.surface)
-        }.accessibilityIdentifier("tutorial-panel")
+        }
     }
 
 }

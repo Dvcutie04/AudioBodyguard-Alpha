@@ -5,9 +5,11 @@ final class AQSSReadOnlyUITests: XCTestCase {
         XCTAssertTrue(app.staticTexts.containing(NSPredicate(format: "label CONTAINS %@", text)).firstMatch.waitForExistence(timeout: 10), "Missing: \(text)")
     }
     private func tap(_ title: String, _ app: XCUIApplication) {
-        let button = app.buttons.matching(NSPredicate(format: "label CONTAINS %@", title)).firstMatch
-        guard button.waitForExistence(timeout: 10) else { XCTFail("Missing button: \(title)"); return }
+        // Match within the active surface. A sheet can coexist with an
+        // identically named button on the page underneath it.
         let scroll = app.scrollViews["menu-scroll"].exists ? app.scrollViews["menu-scroll"] : app.scrollViews["guide-scroll"].exists ? app.scrollViews["guide-scroll"] : app.scrollViews["home-scroll"]
+        let button = scroll.buttons.matching(NSPredicate(format: "label CONTAINS %@", title)).firstMatch
+        guard button.waitForExistence(timeout: 10) else { XCTFail("Missing button: \(title)"); return }
         // isHittable can be true for a sliver of a button whose center lies
         // under the fixed page bar or tutorial footer. Bring the whole control
         // into the content viewport before XCTest taps its center.
