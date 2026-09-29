@@ -246,6 +246,10 @@ assert_tutorial_label setup_voice_first "Step 1 of 9"
 for step in 2 3 4 5; do tap_tutorial_label "Next" "setup_voice_next_$step"; done
 capture_ui setup_voice_meter
 assert_tutorial_label setup_voice_meter "Speak and watch the meter"
+for step in 6 7 8 9; do tap_tutorial_label "Next" "setup_voice_next_$step"; done
+tap_tutorial_label "Open Voice check" setup_voice_try
+capture_ui setup_voice_ready
+assert_tutorial_label setup_voice_ready "Microphone off"
 tap_tutorial_label "Close" setup_voice_close
 tap_tutorial_label "Jump to" privacy_open
 tap_tutorial_label "Privacy and storage" privacy_jump

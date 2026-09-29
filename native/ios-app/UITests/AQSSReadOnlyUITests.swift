@@ -192,7 +192,10 @@ final class AQSSReadOnlyUITests: XCTestCase {
         label("Speak and watch the meter", app)
         XCTAssertFalse(app.alerts.firstMatch.exists)
         screenshot("Voice help illustrated steps", app)
-        app.buttons["setup-close"].tap()
+        for _ in 0..<4 { app.buttons["setup-next"].tap() }
+        app.buttons["setup-next"].tap()
+        label("Microphone off", app); label("No words recognized yet", app)
+        app.buttons["Close"].firstMatch.tap()
         tab("home", app); label("Unknown physical state", app)
     }
 

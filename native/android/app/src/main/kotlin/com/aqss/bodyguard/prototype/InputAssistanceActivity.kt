@@ -69,7 +69,7 @@ class InputAssistanceActivity : Activity() {
     }
     private fun openSetup(group: String = "") {
         if (isVoice) { stopVoice(); details.text = "No words recognized yet" }
-        startActivity(Intent(this, SetupGuideActivity::class.java).putExtra("group", group).putExtra("dark", skin.dark))
+        startActivity(Intent(this, SetupGuideActivity::class.java).putExtra("group", group).putExtra("dark", skin.dark).putExtra("returnToVoice", isVoice))
     }
     private fun voicePage() {
         label("See what your phone hears", true)

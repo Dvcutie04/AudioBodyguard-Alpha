@@ -134,8 +134,11 @@ class SetupGuideActivity : Activity() {
         }
         val footer = LinearLayout(this)
         if (group != null || route != null) footer.addView(button(if (mismatch) "Return to step" else "Back") { back() }, LinearLayout.LayoutParams(-2, -2).apply { marginEnd = dp(12) })
-        if (route != null && !mismatch) footer.addView(button(if (index < 0) "Start guide" else if (index == route.steps.lastIndex) "Finish guide" else "Next") {
-            if (index == route.steps.lastIndex) finish() else { index++; render() }
+        if (route != null && !mismatch) footer.addView(button(if (index < 0) "Start guide" else if (index == route.steps.lastIndex) { if (route.id == "voice") "Open Voice check" else "Finish guide" } else "Next") {
+            if (index == route.steps.lastIndex) {
+                if (route.id == "voice" && !intent.getBooleanExtra("returnToVoice", false)) startActivity(Intent(this, InputAssistanceActivity::class.java).putExtra("mode", "voice").putExtra("dark", skin.dark))
+                finish()
+            } else { index++; render() }
         }, LinearLayout.LayoutParams(0, -2, 1f))
         controls.addView(footer)
         scroll.post { scroll.scrollTo(0, 0); heading.sendAccessibilityEvent(android.view.accessibility.AccessibilityEvent.TYPE_VIEW_FOCUSED) }

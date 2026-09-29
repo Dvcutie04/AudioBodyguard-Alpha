@@ -4264,7 +4264,7 @@
       "steps": [
         {
           "title": "Open Sound",
-          "instruction": "Close this guide and open Sound on the bottom bar when you are ready to try it.",
+          "instruction": "From the full app, choose Sound on the bottom bar. You can read this walkthrough first, then use Open Voice check at the end.",
           "surface": "phone",
           "screen": "Audio Bodyguard",
           "items": [
@@ -4366,7 +4366,7 @@
         },
         {
           "title": "Choose the next task",
-          "instruction": "Return to Voice check to try it, or open Illustrated setup guides for TV/account setup.",
+          "instruction": "Choose Open Voice check below to try it. For TV/account setup, use Illustrated setup guides on the Devices page.",
           "surface": "phone",
           "screen": "Next task",
           "items": [

@@ -4,6 +4,7 @@ import SwiftUI
 struct SetupGuidesView: View {
     let theme: AppTheme
     let initialGroup: String
+    var onVoiceCheck: (() -> Void)? = nil
     @Environment(\.dismiss) private var dismiss
     @State private var groupID = ""
     @State private var routeID: String?
@@ -128,9 +129,12 @@ struct SetupGuidesView: View {
             }
             if let route = route, !mismatch {
                 Button {
-                    if index == route.steps.count - 1 { dismiss() } else { index += 1 }
+                    if index == route.steps.count - 1 {
+                        if route.id == "voice" { onVoiceCheck?() }
+                        dismiss()
+                    } else { index += 1 }
                 } label: {
-                    Label(index < 0 ? "Start guide" : index == route.steps.count - 1 ? "Finish guide" : "Next", systemImage: index == route.steps.count - 1 ? "checkmark" : "arrow.right")
+                    Label(index < 0 ? "Start guide" : index == route.steps.count - 1 ? (route.id == "voice" && onVoiceCheck != nil ? "Open Voice check" : "Finish guide") : "Next", systemImage: index == route.steps.count - 1 ? "checkmark" : "arrow.right")
                         .frame(maxWidth: .infinity, minHeight: 44)
                 }.buttonStyle(AppButtonStyle(theme: theme)).accessibilityIdentifier("setup-next")
             }

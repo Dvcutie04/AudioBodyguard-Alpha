@@ -134,7 +134,7 @@ struct VoiceCheckView: View {
                 Button("Clear words") { voice.clear() }.buttonStyle(AppButtonStyle(theme: theme))
             }.padding()
         }.background(theme.background.ignoresSafeArea()).foregroundColor(theme.text)
-            .sheet(isPresented: $setupVisible) { SetupGuidesView(theme: theme, initialGroup: "voice") }
+            .sheet(isPresented: $setupVisible) { SetupGuidesView(theme: theme, initialGroup: "voice", onVoiceCheck: {}) }
             .onChange(of: phase) { if $0 == .background { voice.clear() } }
             .onReceive(NotificationCenter.default.publisher(for: AVAudioSession.interruptionNotification)) { _ in voice.stop("Audio interrupted — tap Start to try again.") }
             .onDisappear { voice.clear() }

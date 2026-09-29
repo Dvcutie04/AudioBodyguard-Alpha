@@ -54,6 +54,7 @@ private struct ReadOnlyHomeView: View {
     @State private var photoCheckVisible = false
     @State private var setupVisible = false
     @State private var setupGroup = ""
+    @State private var voiceAfterGuide = false
     @State private var pendingSetupGroup: String?
     @State private var futureID = ""
     @State private var pagesVisible = false
@@ -131,7 +132,9 @@ private struct ReadOnlyHomeView: View {
             }
             .sheet(isPresented: $voiceCheckVisible) { VoiceCheckView(theme: theme) }
             .sheet(isPresented: $photoCheckVisible) { TVPhotoView(theme: theme) }
-            .sheet(isPresented: $setupVisible) { SetupGuidesView(theme: theme, initialGroup: setupGroup) }
+            .sheet(isPresented: $setupVisible, onDismiss: {
+                if voiceAfterGuide { voiceAfterGuide = false; voiceCheckVisible = true }
+            }) { SetupGuidesView(theme: theme, initialGroup: setupGroup, onVoiceCheck: { voiceAfterGuide = true }) }
             .sheet(isPresented: $navigationVisible) {
                 menuSheet("Jump to a section") {
                     ForEach(destinations, id: \.1) { title, target in action(title, icon: "arrow.right") { navigationVisible = false; jump(target) } }
