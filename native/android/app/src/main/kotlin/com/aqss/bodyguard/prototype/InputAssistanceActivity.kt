@@ -72,7 +72,7 @@ class InputAssistanceActivity : Activity() {
         column.addView(meter, LinearLayout.LayoutParams(-1, skin.dp(120)))
         levelText = label("No microphone samples yet")
         label("Sound-level history, oldest to newest. Levels come from the speech recognizer; some phones do not supply them. This is not room loudness, a hearing-safety measurement, frequency bands or a syllable count.")
-        label("Recognized words · may change", true)
+        label("Recent recognized words · may change", true)
         details = label("No words recognized yet")
         startButton = action("Start voice check") { if (running) stopVoice() else startVoice() }
         val clear = action("Clear words") { stopVoice(); details.text = "No words recognized yet" }
@@ -108,7 +108,7 @@ class InputAssistanceActivity : Activity() {
                 override fun onBufferReceived(buffer: ByteArray?) { /* No raw audio retained. */ }
                 override fun onEndOfSpeech() { if (valid()) { status.text = "Finishing recognition…"; meter.clear(); levelText.text = "No live microphone samples" } }
                 override fun onError(error: Int) { if (valid()) stopVoice("Recognition stopped or unavailable (code $error). Words may be incomplete. Tap Start to retry.") }
-                private fun words(results: Bundle?) { results?.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION)?.firstOrNull()?.let { details.text = it.take(500) } }
+                private fun words(results: Bundle?) { results?.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION)?.firstOrNull()?.let { details.text = it.takeLast(500) } }
                 override fun onResults(results: Bundle?) { if (valid()) { words(results); stopVoice("Finished — review the words. Nothing was sent to a TV.") } }
                 override fun onPartialResults(partialResults: Bundle?) { if (valid()) words(partialResults) }
                 override fun onEvent(eventType: Int, params: Bundle?) {}
@@ -177,7 +177,21 @@ class InputAssistanceActivity : Activity() {
                         contentResolver.openInputStream(uri).use { BitmapFactory.decodeStream(it, null, bounds) }
                         var sample = 1
                         while (maxOf(bounds.outWidth, bounds.outHeight) / sample > 2048) sample *= 2
-                        contentResolver.openInputStream(uri).use { BitmapFactory.decodeStream(it, null, BitmapFactory.Options().apply { inSampleSize = sample }) } ?: throw IllegalArgumentException("Unreadable photo")
+                        val decoded = contentResolver.openInputStream(uri).use { BitmapFactory.decodeStream(it, null, BitmapFactory.Options().apply { inSampleSize = sample }) } ?: throw IllegalArgumentException("Unreadable photo")
+                        val orientation = try { contentResolver.openInputStream(uri).use { stream ->
+                            if (stream == null) 1 else android.media.ExifInterface(stream).getAttributeInt(android.media.ExifInterface.TAG_ORIENTATION, 1)
+                        } } catch (_: Exception) { 1 }
+                        val transform = Matrix()
+                        when (orientation) {
+                            2 -> transform.setScale(-1f, 1f)
+                            3 -> transform.setRotate(180f)
+                            4 -> transform.setScale(1f, -1f)
+                            5 -> { transform.setRotate(90f); transform.postScale(-1f, 1f) }
+                            6 -> transform.setRotate(90f)
+                            7 -> { transform.setRotate(-90f); transform.postScale(-1f, 1f) }
+                            8 -> transform.setRotate(270f)
+                        }
+                        if (transform.isIdentity) decoded else Bitmap.createBitmap(decoded, 0, 0, decoded.width, decoded.height, transform, true).also { decoded.recycle() }
                     }
                 }
                 val scanner = TextRecognition.getClient(TextRecognizerOptions.DEFAULT_OPTIONS)

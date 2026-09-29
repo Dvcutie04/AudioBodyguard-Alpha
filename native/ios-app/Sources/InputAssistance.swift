@@ -72,7 +72,7 @@ final class VoiceCheck: ObservableObject {
             task = recognizer.recognitionTask(with: req) { [weak self] result, error in
                 DispatchQueue.main.async {
                     guard let self = self, self.generation == token, self.running else { return }
-                    if let result = result { self.transcript = String(result.bestTranscription.formattedString.prefix(500)) }
+                    if let result = result { self.transcript = String(result.bestTranscription.formattedString.suffix(500)) }
                     if result?.isFinal == true { self.stop("Finished — review the recognized words. Nothing was sent to a TV.") }
                     else if error != nil { self.stop("Speech recognition stopped. The words shown may be incomplete.") }
                 }
@@ -121,7 +121,7 @@ struct VoiceCheckView: View {
                     }.frame(height: 120).accessibilityHidden(true)
                     Text(voice.levelText).foregroundColor(theme.muted)
                     Text("Sound-level history, oldest to newest. dBFS is a digital input level, not room loudness or a hearing-safety measurement. Bars are not frequency bands or a syllable count.").font(.caption).foregroundColor(theme.muted)
-                    Text("Recognized words · may change").font(.headline)
+                    Text("Recent recognized words · may change").font(.headline)
                     Text(voice.transcript.isEmpty ? "No words recognized yet" : voice.transcript).accessibilityIdentifier("voice-transcript")
                     Text("Noise, accents and overlapping voices can cause missing or incorrect words. A moving meter does not prove every word or sound was understood.").foregroundColor(theme.muted)
                     Text("On-device recognition only. No audio file is saved. Closing this screen clears the words. Listening stops when you leave the app. Camera, microphone and speech features may be unavailable in browser simulators.").font(.caption).foregroundColor(theme.muted)
