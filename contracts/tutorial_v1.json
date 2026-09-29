@@ -4,42 +4,56 @@
   "topics": [
     {
       "id": "getting_started",
-      "title": "Start here · 5-step tour",
+      "title": "TV & smart-home guide",
       "steps": [
         {
           "target": "welcome",
           "area": "overview",
-          "title": "Meet your preview",
-          "explanation": "This preview lets you explore pages, examples and themes. It does not monitor or change audio. Use Next to follow the tour, or Close tutorial to explore on your own.",
-          "example": "Example: You can change the theme today. A volume control marked Unavailable cannot change a speaker."
+          "title": "Start with your TV",
+          "explanation": "Audio Bodyguard is being built to help with sudden loud sound. This preview does not monitor or change audio. We will show one step at a time. You can leave whenever you like.",
+          "example": "Example: a film is quiet, then an advert is much louder. Reducing that jump is a planned feature, not something this preview can do."
         },
         {
-          "target": "capability",
-          "area": "home",
-          "title": "Understand device checks",
-          "explanation": "Devices explains what a future connection needs. The six checks are unknown, not tasks you can complete here. There is no pairing or activation step in this preview.",
-          "example": "Example: Seeing your phone in a browser simulator does not connect your headphones or verify sound."
+          "target": "chooseTV",
+          "area": "connection",
+          "title": "Which TV do you use?",
+          "explanation": "Choose the name on the front of your TV or on its remote. This changes the explanation only. It does not search for or connect to your TV.",
+          "example": "Example: if the remote says Samsung, choose Samsung. If you cannot find a name, choose Not sure / no TV."
         },
         {
-          "target": "options",
-          "area": "options",
-          "title": "Explore sound features",
-          "explanation": "Sound introduces volume, Dialogue and Night presets, equalizer and captions. These controls are preview only. Scroll to read them; Next takes you to example graphs.",
-          "example": "Example: Night describes a possible quieter preset. Opening its description does not lower volume."
+          "target": "chooseHome",
+          "area": "connection",
+          "title": "Do you use a smart-home app?",
+          "explanation": "Choose the app you already use to manage devices at home. If you use neither app, that is fine. No account sign-in is needed for this guide.",
+          "example": "Example: if you say “Alexa” to an Echo speaker, choose Amazon Alexa. If you manage devices in the Google Home app, choose Google Home."
         },
         {
-          "target": "trends",
-          "area": "overview",
-          "title": "Read an example graph",
-          "explanation": "Insights has no real measurements yet. Tap Explore an example to see an invented graph, then Read chart values for its numbers. Next opens Settings.",
-          "example": "Example: 64 relative units is an invented chart value, not a sound level in decibels."
+          "target": "connectionPlan",
+          "area": "connection",
+          "title": "Your connection checklist",
+          "explanation": "These are preparation notes for your setup. Pairing is not available in Audio Bodyguard yet. Your TV model and the features it supports must be checked before an integration can be built.",
+          "example": "Example: finding a Samsung TV in Alexa does not let this preview control it. Audio Bodyguard would still need its own supported connection and your permission."
         },
         {
-          "target": "appearance",
-          "area": "overview",
-          "title": "Make it yours and find help",
-          "explanation": "Settings lets you choose a theme. Planned features are explained below. Help stays at the top of every page: replay this tour or choose a specific topic. Done ends the tour.",
-          "example": "Example: Choose Daylight for a lighter screen. For a refresher on captions, open Help and choose Captions."
+          "target": "connectionCheck",
+          "area": "connection",
+          "title": "What does connected mean?",
+          "explanation": "Your TV is not connected to Audio Bodyguard by this guide. A name in a list only identifies a device. Changing sound would also need your permission and a separate check of what actually comes from the speakers.",
+          "example": "Example: a TV appears online, but sound is coming from a soundbar. Seeing the TV online does not prove the soundbar volume changed."
+        },
+        {
+          "target": "featureExample",
+          "area": "connection",
+          "title": "A simple sound example",
+          "explanation": "Planned sound presets would help with different listening needs. For now, Sound explains those controls. Insights can show an invented graph so you can learn to read it.",
+          "example": "Example: people speak quietly in a film, then an advert starts loudly. A future Night preset could request a smaller jump. This preview does not lower either sound."
+        },
+        {
+          "target": "guideFinish",
+          "area": "connection",
+          "title": "You know where to start",
+          "explanation": "Open the full app to explore. Devices explains connection requirements. Sound explains planned controls. Insights has an example graph. Settings has appearance choices. Help can replay this guide from any page.",
+          "example": "Example: to look at the sample graph, open Insights, then Explore an example. Its values are made up; they are not measurements from your phone."
         }
       ]
     },
@@ -187,7 +201,7 @@
           "target": "privacy",
           "area": "advanced",
           "title": "Know what this tour stores",
-          "explanation": "Only the appearance choice is saved locally. Tutorial progress is temporary. No audio or tutorial activity is uploaded.",
+          "explanation": "Only appearance and whether you left the beginner guide are saved locally. TV choices and tutorial progress are temporary. No audio or tutorial analytics are uploaded.",
           "example": "Example: Closing the tour lets you reopen any topic from its first step."
         }
       ]
@@ -260,5 +274,83 @@
         }
       ]
     }
-  ]
+  ],
+  "choices": {
+    "chooseTV": [
+      {
+        "id": "samsung",
+        "title": "Samsung",
+        "icon": "tv",
+        "detail": "Find the exact Samsung model on its label or in its About menu. Check that model in the manufacturer’s instructions; a brand name alone does not tell us what it supports."
+      },
+      {
+        "id": "lg",
+        "title": "LG",
+        "icon": "tv",
+        "detail": "Find the exact LG model on its label or in its About menu. Check that model in the manufacturer’s instructions; a brand name alone does not tell us what it supports."
+      },
+      {
+        "id": "sony",
+        "title": "Sony",
+        "icon": "tv",
+        "detail": "Find the exact Sony model on its label or in its About menu. Check that model in the manufacturer’s instructions; a brand name alone does not tell us what it supports."
+      },
+      {
+        "id": "tcl",
+        "title": "TCL",
+        "icon": "tv",
+        "detail": "Find the exact TCL model on its label or in its About menu. Check that model in the manufacturer’s instructions; a brand name alone does not tell us what it supports."
+      },
+      {
+        "id": "hisense",
+        "title": "Hisense",
+        "icon": "tv",
+        "detail": "Find the exact Hisense model on its label or in its About menu. Check that model in the manufacturer’s instructions; a brand name alone does not tell us what it supports."
+      },
+      {
+        "id": "vizio",
+        "title": "Vizio",
+        "icon": "tv",
+        "detail": "Find the exact Vizio model on its label or in its About menu. Check that model in the manufacturer’s instructions; a brand name alone does not tell us what it supports."
+      },
+      {
+        "id": "other",
+        "title": "Another brand",
+        "icon": "tv",
+        "detail": "Find the TV brand and model on its label or in its About menu. Use the manufacturer’s instructions to check which phone or smart-home connections it supports."
+      },
+      {
+        "id": "unsure",
+        "title": "Not sure / no TV",
+        "icon": "tv",
+        "detail": "You can explore without a TV. Later, look for the brand and model on the TV label or ask someone to help you find it in the About menu."
+      }
+    ],
+    "chooseHome": [
+      {
+        "id": "alexa",
+        "title": "Amazon Alexa",
+        "icon": "speaker",
+        "detail": "In the Alexa app, check whether your TV maker offers a compatible skill. Follow that maker’s account-linking instructions. Seeing a TV there does not connect it to Audio Bodyguard."
+      },
+      {
+        "id": "google",
+        "title": "Google Home",
+        "icon": "house",
+        "detail": "In Google Home, check whether your exact TV model can be added. Follow its maker’s setup instructions and review any requested permissions. This preview does not access your Google Home."
+      },
+      {
+        "id": "both",
+        "title": "Both apps",
+        "icon": "house",
+        "detail": "Check the TV maker’s instructions for each app separately. Support in Alexa does not prove support in Google Home. This preview does not access either account."
+      },
+      {
+        "id": "neither",
+        "title": "Neither / not sure",
+        "icon": "questionmark.circle",
+        "detail": "No smart-home account is needed to explore. Keep using your TV remote. A future direct TV connection would still need a supported model and your permission."
+      }
+    ]
+  }
 }

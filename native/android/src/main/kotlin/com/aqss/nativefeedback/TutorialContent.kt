@@ -4,12 +4,14 @@ data class TutorialStep(val target: String, val area: String, val title: String,
 data class TutorialTopic(val id: String, val title: String, val steps: List<TutorialStep>)
 object TutorialContent {
     val topics: List<TutorialTopic> = listOf(
-        TutorialTopic("getting_started", "Start here · 5-step tour", listOf(
-            TutorialStep("welcome", "overview", "Meet your preview", "This preview lets you explore pages, examples and themes. It does not monitor or change audio. Use Next to follow the tour, or Close tutorial to explore on your own.", "Example: You can change the theme today. A volume control marked Unavailable cannot change a speaker."),
-            TutorialStep("capability", "home", "Understand device checks", "Devices explains what a future connection needs. The six checks are unknown, not tasks you can complete here. There is no pairing or activation step in this preview.", "Example: Seeing your phone in a browser simulator does not connect your headphones or verify sound."),
-            TutorialStep("options", "options", "Explore sound features", "Sound introduces volume, Dialogue and Night presets, equalizer and captions. These controls are preview only. Scroll to read them; Next takes you to example graphs.", "Example: Night describes a possible quieter preset. Opening its description does not lower volume."),
-            TutorialStep("trends", "overview", "Read an example graph", "Insights has no real measurements yet. Tap Explore an example to see an invented graph, then Read chart values for its numbers. Next opens Settings.", "Example: 64 relative units is an invented chart value, not a sound level in decibels."),
-            TutorialStep("appearance", "overview", "Make it yours and find help", "Settings lets you choose a theme. Planned features are explained below. Help stays at the top of every page: replay this tour or choose a specific topic. Done ends the tour.", "Example: Choose Daylight for a lighter screen. For a refresher on captions, open Help and choose Captions."),
+        TutorialTopic("getting_started", "TV & smart-home guide", listOf(
+            TutorialStep("welcome", "overview", "Start with your TV", "Audio Bodyguard is being built to help with sudden loud sound. This preview does not monitor or change audio. We will show one step at a time. You can leave whenever you like.", "Example: a film is quiet, then an advert is much louder. Reducing that jump is a planned feature, not something this preview can do."),
+            TutorialStep("chooseTV", "connection", "Which TV do you use?", "Choose the name on the front of your TV or on its remote. This changes the explanation only. It does not search for or connect to your TV.", "Example: if the remote says Samsung, choose Samsung. If you cannot find a name, choose Not sure / no TV."),
+            TutorialStep("chooseHome", "connection", "Do you use a smart-home app?", "Choose the app you already use to manage devices at home. If you use neither app, that is fine. No account sign-in is needed for this guide.", "Example: if you say “Alexa” to an Echo speaker, choose Amazon Alexa. If you manage devices in the Google Home app, choose Google Home."),
+            TutorialStep("connectionPlan", "connection", "Your connection checklist", "These are preparation notes for your setup. Pairing is not available in Audio Bodyguard yet. Your TV model and the features it supports must be checked before an integration can be built.", "Example: finding a Samsung TV in Alexa does not let this preview control it. Audio Bodyguard would still need its own supported connection and your permission."),
+            TutorialStep("connectionCheck", "connection", "What does connected mean?", "Your TV is not connected to Audio Bodyguard by this guide. A name in a list only identifies a device. Changing sound would also need your permission and a separate check of what actually comes from the speakers.", "Example: a TV appears online, but sound is coming from a soundbar. Seeing the TV online does not prove the soundbar volume changed."),
+            TutorialStep("featureExample", "connection", "A simple sound example", "Planned sound presets would help with different listening needs. For now, Sound explains those controls. Insights can show an invented graph so you can learn to read it.", "Example: people speak quietly in a film, then an advert starts loudly. A future Night preset could request a smaller jump. This preview does not lower either sound."),
+            TutorialStep("guideFinish", "connection", "You know where to start", "Open the full app to explore. Devices explains connection requirements. Sound explains planned controls. Insights has an example graph. Settings has appearance choices. Help can replay this guide from any page.", "Example: to look at the sample graph, open Insights, then Explore an example. Its values are made up; they are not measurements from your phone."),
         )),
         TutorialTopic("home", "Home and coverage", listOf(
             TutorialStep("coverage", "home", "Read the coverage state", "Unknown physical state means there is no independent observation of audio output. This simulation does not provide protection.", "Example: A green build result cannot tell you whether a speaker produced sound."),
@@ -36,7 +38,7 @@ object TutorialContent {
             TutorialStep("route", "advanced", "Identify the output path", "Device and route stay Unknown until qualified. A device name or connection notification cannot establish the path of sound.", "Example: A connected speaker may not be the speaker currently used by a player."),
             TutorialStep("physical", "advanced", "Require physical observation", "This area explains why physical output remains unknown. The tutorial supplies no measurement or observation.", "Example: An independent measurement would need to be tied to the authorized device transaction."),
             TutorialStep("background", "advanced", "Understand background limits", "This screen receives foreground hints only. Leaving the app does not establish continuing protection.", "Example: Events while the screen is hidden remain unknown."),
-            TutorialStep("privacy", "advanced", "Know what this tour stores", "Only the appearance choice is saved locally. Tutorial progress is temporary. No audio or tutorial activity is uploaded.", "Example: Closing the tour lets you reopen any topic from its first step."),
+            TutorialStep("privacy", "advanced", "Know what this tour stores", "Only appearance and whether you left the beginner guide are saved locally. TV choices and tutorial progress are temporary. No audio or tutorial analytics are uploaded.", "Example: Closing the tour lets you reopen any topic from its first step."),
         )),
         TutorialTopic("handoff", "Session transfer", listOf(
             TutorialStep("handoffOption", "advanced", "Check transfer eligibility", "Moving a session is unavailable. A transfer requires authorized endpoints and a verified path between them.", "Example: Two phones signed in to an account are not, by themselves, a qualified transfer path."),
@@ -51,4 +53,23 @@ object TutorialContent {
             TutorialStep("checkEvidence", "checklist", "Independent observation", "Unknown: there is no independent observation tied to an authorized device transaction.", "Example: A device saying that a command succeeded is not independent evidence of audible output."),
         )),
     )
+    val choices: Map<String, List<TutorialChoice>> = mapOf(
+        "chooseTV" to listOf(
+            TutorialChoice("samsung", "Samsung", "tv", "Find the exact Samsung model on its label or in its About menu. Check that model in the manufacturer’s instructions; a brand name alone does not tell us what it supports."),
+            TutorialChoice("lg", "LG", "tv", "Find the exact LG model on its label or in its About menu. Check that model in the manufacturer’s instructions; a brand name alone does not tell us what it supports."),
+            TutorialChoice("sony", "Sony", "tv", "Find the exact Sony model on its label or in its About menu. Check that model in the manufacturer’s instructions; a brand name alone does not tell us what it supports."),
+            TutorialChoice("tcl", "TCL", "tv", "Find the exact TCL model on its label or in its About menu. Check that model in the manufacturer’s instructions; a brand name alone does not tell us what it supports."),
+            TutorialChoice("hisense", "Hisense", "tv", "Find the exact Hisense model on its label or in its About menu. Check that model in the manufacturer’s instructions; a brand name alone does not tell us what it supports."),
+            TutorialChoice("vizio", "Vizio", "tv", "Find the exact Vizio model on its label or in its About menu. Check that model in the manufacturer’s instructions; a brand name alone does not tell us what it supports."),
+            TutorialChoice("other", "Another brand", "tv", "Find the TV brand and model on its label or in its About menu. Use the manufacturer’s instructions to check which phone or smart-home connections it supports."),
+            TutorialChoice("unsure", "Not sure / no TV", "tv", "You can explore without a TV. Later, look for the brand and model on the TV label or ask someone to help you find it in the About menu."),
+        ),
+        "chooseHome" to listOf(
+            TutorialChoice("alexa", "Amazon Alexa", "speaker", "In the Alexa app, check whether your TV maker offers a compatible skill. Follow that maker’s account-linking instructions. Seeing a TV there does not connect it to Audio Bodyguard."),
+            TutorialChoice("google", "Google Home", "house", "In Google Home, check whether your exact TV model can be added. Follow its maker’s setup instructions and review any requested permissions. This preview does not access your Google Home."),
+            TutorialChoice("both", "Both apps", "house", "Check the TV maker’s instructions for each app separately. Support in Alexa does not prove support in Google Home. This preview does not access either account."),
+            TutorialChoice("neither", "Neither / not sure", "questionmark.circle", "No smart-home account is needed to explore. Keep using your TV remote. A future direct TV connection would still need a supported model and your permission."),
+        ),
+    )
 }
+data class TutorialChoice(val id: String, val title: String, val icon: String, val detail: String)

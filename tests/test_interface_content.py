@@ -41,6 +41,18 @@ class InterfaceContentTests(unittest.TestCase):
                 with self.assertRaisesRegex(ValueError, "contrast"):
                     validate(data)
 
+    def test_controls_use_the_same_cyan_and_reject_low_contrast(self):
+        self.assertEqual(self.data["palettes"]["midnight"]["control"], "64DAE8")
+        self.assertEqual(self.data["palettes"]["daylight"]["control"], "64DAE8")
+        for key in ("controlText", "controlBorder"):
+            data = copy.deepcopy(self.data)
+            if key == "controlText":
+                data["palettes"]["daylight"][key] = "64DAE8"
+            else:
+                data["palettes"]["daylight"][key] = "FFFFFF"
+            with self.assertRaisesRegex(ValueError, "contrast"):
+                validate(data)
+
     def test_presentation_contract_rejects_actuation_fields(self):
         for change in ("mode", "feature"):
             with self.subTest(change=change):

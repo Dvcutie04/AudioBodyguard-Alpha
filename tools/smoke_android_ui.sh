@@ -21,6 +21,7 @@ collect_failure_diagnostics() {
 trap collect_failure_diagnostics EXIT
 
 adb install -r native/android/app/build/outputs/apk/debug/app-debug.apk
+adb shell pm clear com.aqss.bodyguard.prototype
 adb logcat -c
 adb shell am start -W -n com.aqss.bodyguard.prototype/.ReadOnlyHomeActivity | tee "$artifact_dir/launch.txt"
 
@@ -102,56 +103,58 @@ assert_scroll_label() {
     echo "Content label not reached: $label" >&2; return 1
 }
 
-# Themed page navigation keeps all previous truth assertions, now on their
-# corresponding pages, and adds the synthetic-chart/appearance boundaries.
-capture_ui home
-assert_tutorial_label home "Start 5-step tour"
-assert_tutorial_label home "does not monitor or change audio"
-tap_tutorial_label "Start 5-step tour" beginner_open
-beginner_titles=("Meet Audio Bodyguard." "Readiness checklist" "Sound options" "Audio trends" "Appearance")
-for step in 1 2 3 4 5; do
-    capture_ui "beginner_step_$step"
-    assert_tutorial_label "beginner_step_$step" "Step $step of 5"
-    python3 tools/check_android_simulation_ui.py --assert-tutorial-target "$artifact_dir/beginner_step_$step.xml" "${beginner_titles[$((step - 1))]}"
-    if [[ "$step" -eq 2 ]]; then
-        tap_tutorial_label "Back" beginner_back
-        capture_ui beginner_back_1
-        assert_tutorial_label beginner_back_1 "Step 1 of 5"
-        tap_tutorial_label "Next" beginner_forward
-    fi
-    if [[ "$step" -eq 4 ]]; then
-        tap_scroll_label "Explore an example" beginner_example_open
-        capture_ui beginner_example
-        assert_tutorial_label beginner_example "EXAMPLE · synthetic data"
-        assert_tutorial_label beginner_example "Step 4 of 5"
-        tap_scroll_label "Read chart values" beginner_values_open
-        assert_scroll_label "Sample 4: 64 relative units" beginner_values
-        assert_tutorial_label beginner_values "Step 4 of 5"
-    fi
-    if [[ "$step" -lt 5 ]]; then tap_tutorial_label "Next" beginner_next; fi
-done
-tap_scroll_label "Daylight" beginner_theme
-capture_ui beginner_daylight
-assert_tutorial_label beginner_daylight "Step 5 of 5"
-tap_tutorial_label "Done" beginner_done
+# A fresh install starts with only the current learning task.
+assert_only_guide() {
+    python3 - "$artifact_dir/$1.xml" <<'CHECK'
+import sys, xml.etree.ElementTree as ET
+root = ET.parse(sys.argv[1]).getroot()
+labels = {n.get("content-desc") or n.get("text") for n in root.iter("node") if n.get("class") == "android.widget.Button"}
+assert "Exit tutorial" in labels, labels
+assert not labels.intersection({"Home", "Sound", "Devices", "Insights", "Settings", "Help & tutorials", "Jump to"}), labels
+CHECK
+}
+capture_ui beginner_step_1
+assert_tutorial_label beginner_step_1 "Step 1 of 7"
+assert_only_guide beginner_step_1
+tap_tutorial_label "Begin" beginner_begin
+capture_ui beginner_step_2
+assert_only_guide beginner_step_2
+if python3 tools/check_android_simulation_ui.py --text-tap-coordinates "$artifact_dir/beginner_step_2.xml" "Next" | grep -q '[0-9]'; then exit 1; fi
+tap_tutorial_label "Samsung" beginner_tv
+capture_ui beginner_tv_selected
+assert_tutorial_label beginner_tv_selected "Selected: Samsung"
+tap_tutorial_label "Next" beginner_to_home
+capture_ui beginner_step_3
+assert_only_guide beginner_step_3
+if python3 tools/check_android_simulation_ui.py --text-tap-coordinates "$artifact_dir/beginner_step_3.xml" "Next" | grep -q '[0-9]'; then exit 1; fi
+tap_tutorial_label "Amazon Alexa" beginner_home_choice
+tap_tutorial_label "Next" beginner_to_plan
+capture_ui beginner_step_4
+assert_tutorial_label beginner_step_4 "Your connection checklist"
+assert_scroll_label "Amazon Alexa" beginner_tailored_plan
+tap_tutorial_label "Back" beginner_plan_back
+capture_ui beginner_home_retained
+assert_tutorial_label beginner_home_retained "Selected: Amazon Alexa"
+tap_tutorial_label "Next" beginner_plan_again
+tap_tutorial_label "Next" beginner_connection_truth
+capture_ui beginner_step_5
+assert_tutorial_label beginner_step_5 "not connected to Audio Bodyguard"
+tap_tutorial_label "Next" beginner_feature_example
+tap_tutorial_label "Next" beginner_last
+capture_ui beginner_step_7
+assert_only_guide beginner_step_7
+tap_tutorial_label "Open full app" beginner_finish
 capture_ui beginner_finished
 assert_tutorial_label beginner_finished "TOUR FINISHED"
-tap_tutorial_label "Replay 5-step tour" beginner_replay
+tap_tutorial_label "Replay connection guide" beginner_replay
 capture_ui beginner_replayed
-assert_tutorial_label beginner_replayed "Step 1 of 5"
-tap_tutorial_label "Close tutorial" beginner_close
-tap_scroll_label "Step 3. Explore sound features" beginner_shortcut
-capture_ui beginner_direct_step
-assert_tutorial_label beginner_direct_step "Step 3 of 5"
-adb shell input keyevent KEYCODE_BACK
-tap_tutorial_label "Settings" beginner_settings
-tap_tutorial_label "Midnight" beginner_reset_theme
-tap_tutorial_label "Help & tutorials" beginner_help
-tap_tutorial_label "Start here · 5-step tour" beginner_help_replay
-tap_tutorial_label "Next" beginner_help_next
-tap_tutorial_label "Close tutorial" beginner_help_exit
-capture_ui beginner_origin
-assert_tutorial_label beginner_origin "Make space for you."
+assert_tutorial_label beginner_replayed "Step 1 of 7"
+tap_tutorial_label "Exit tutorial" beginner_exit
+adb shell am force-stop com.aqss.bodyguard.prototype
+adb shell am start -W -n com.aqss.bodyguard.prototype/.ReadOnlyHomeActivity
+capture_ui beginner_dismissal_persisted
+assert_tutorial_label beginner_dismissal_persisted "Help & tutorials"
+if python3 tools/check_android_simulation_ui.py --assert-label "$artifact_dir/beginner_dismissal_persisted.xml" "Exit tutorial" 2>/dev/null; then exit 1; fi
 tap_tutorial_label "Jump to" initial_coverage_open
 tap_tutorial_label "Coverage" initial_coverage
 capture_ui coverage
@@ -180,12 +183,12 @@ readiness_titles=("Output hardware" "Qualified path" "Permission and authority" 
 for step in 1 2 3 4 5 6; do
     capture_ui "readiness_step_$step"
     assert_tutorial_label "readiness_step_$step" "Step $step of 6"
-    python3 tools/check_android_simulation_ui.py --assert-tutorial-target "$artifact_dir/readiness_step_$step.xml" "${readiness_titles[$((step - 1))]}"
-    if [[ "$step" -lt 6 ]]; then tap_tutorial_label "Next" readiness_next; fi
+    assert_tutorial_label "readiness_step_$step" "${readiness_titles[$((step - 1))]}"
+    if [[ "$step" -eq 1 ]]; then tap_tutorial_label "Begin" readiness_begin; elif [[ "$step" -lt 6 ]]; then tap_tutorial_label "Next" readiness_next; fi
 done
 adb shell input keyevent KEYCODE_BACK
 capture_ui readiness_closed
-if python3 tools/check_android_simulation_ui.py --assert-label "$artifact_dir/readiness_closed.xml" "Close tutorial" 2>/dev/null; then exit 1; fi
+if python3 tools/check_android_simulation_ui.py --assert-label "$artifact_dir/readiness_closed.xml" "Exit tutorial" 2>/dev/null; then exit 1; fi
 
 tap_tutorial_label "Jump to" handoff_open
 tap_tutorial_label "Session transfer" handoff_jump
@@ -213,7 +216,7 @@ assert_tutorial_label daylight_home "does not monitor or change audio"
 tap_tutorial_label "Settings" theme_settings
 tap_tutorial_label "Midnight" theme_midnight
 tap_scroll_label "Hide advanced options" advanced_close
-tap_scroll_label "Voice requests. Planned · proposal only" future_voice
+tap_scroll_label "Voice requests" future_voice
 capture_ui future_voice_detail
 assert_tutorial_label future_voice_detail "This app is not listening for commands"
 tap_tutorial_label "Got it" future_voice_close
@@ -221,14 +224,14 @@ tap_tutorial_label "Jump to" privacy_open
 tap_tutorial_label "Privacy and storage" privacy_jump
 capture_ui privacy
 assert_tutorial_label privacy "No audio recorded by this app"
-assert_tutorial_label privacy "Only your appearance choice is saved locally"
+assert_tutorial_label privacy "Your appearance and guide dismissal are saved locally"
 
 tap_tutorial_label "Home" return_home
 tap_tutorial_label "Help & tutorials" guide_open
 tap_tutorial_label "Home and coverage" guide_choose
 capture_ui guide_1
 assert_tutorial_label guide_1 "Step 1 of 4"
-tap_tutorial_label "Next" guide_next_1
+tap_tutorial_label "Begin" guide_next_1
 capture_ui guide_2
 assert_tutorial_label guide_2 "Step 2 of 4"
 tap_tutorial_label "Next" guide_next_2
@@ -246,21 +249,21 @@ adb shell settings put system accelerometer_rotation 0
 adb shell settings put system user_rotation 1
 capture_ui landscape_tutorial
 assert_tutorial_label landscape_tutorial "Step 2 of 4"
-assert_tutorial_label landscape_tutorial "Close tutorial"
-python3 tools/check_android_simulation_ui.py --assert-tutorial-target "$artifact_dir/landscape_tutorial.xml" "Readiness checklist"
+assert_tutorial_label landscape_tutorial "Exit tutorial"
+assert_only_guide landscape_tutorial
 adb shell settings put system user_rotation 0
 capture_ui portrait_tutorial
-tap_tutorial_label "Close tutorial" guide_close
+tap_tutorial_label "Exit tutorial" guide_close
 capture_ui restored_home
 assert_tutorial_label restored_home "does not monitor or change audio"
 
 adb shell settings put system font_scale 2.0
 capture_ui large_text_home
-tap_scroll_label "Replay 5-step tour" large_beginner_open
+tap_scroll_label "TV & smart-home guide" large_beginner_open
 capture_ui large_beginner
-assert_tutorial_label large_beginner "Step 1 of 5"
-tap_tutorial_label "Next" large_beginner_next
-tap_tutorial_label "Close tutorial" large_beginner_close
+assert_tutorial_label large_beginner "Step 1 of 7"
+tap_tutorial_label "Begin" large_beginner_next
+tap_tutorial_label "Exit tutorial" large_beginner_close
 tap_tutorial_label "Pages · Home" large_pages
 tap_tutorial_label "Devices" large_devices
 capture_ui large_text_devices
@@ -268,7 +271,7 @@ tap_tutorial_label "Help & tutorials" large_help
 tap_scroll_label "Readiness checklist" large_topic
 capture_ui large_text_tutorial
 assert_tutorial_label large_text_tutorial "Step 1 of 6"
-tap_tutorial_label "Close tutorial" large_close
+tap_tutorial_label "Exit tutorial" large_close
 capture_ui large_text_closed
 assert_tutorial_label large_text_closed "Pages · Devices"
-echo "ANDROID_THEME_UI_OBSERVED: five-step beginner tour, completion, replay, shortcuts, interactive example and theme, five pages, unknown coverage, unavailable controls, six readiness steps, labeled example, themes, future explanation, tutorial routing, Back, lifecycle, rotation and large text passed"
+echo "ANDROID_THEME_UI_OBSERVED: sequential seven-step guide, hidden later controls, choice gating, tailored plan, completion, replay, persisted exit, five pages, unknown coverage, unavailable controls, six readiness steps, labeled example, themes, future explanation, tutorial routing, Back, lifecycle, rotation and large text passed"

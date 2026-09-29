@@ -7,6 +7,8 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 TARGET_PAGES = {
+    **{key: "devices" for key in ("chooseTV", "chooseHome", "connectionPlan", "connectionCheck")},
+    "featureExample": "sound", "guideFinish": "home",
     "welcome": "home", "trends": "insights", "appearance": "settings",
     "coverage": "home", "capability": "devices", "captions": "sound",
     "history": "insights", "hint": "devices", "handoff": "devices",
@@ -36,12 +38,17 @@ def validate(data):
     if set(data["palettes"]) != {"midnight", "daylight"}:
         raise ValueError("invalid palettes")
     for palette in data["palettes"].values():
-        if set(palette) != {"background", "surface", "raised", "text", "muted", "accent", "violet", "warning", "outline"} or any(not isinstance(v, str) or not re.fullmatch(r"[0-9A-F]{6}", v) for v in palette.values()):
+        if set(palette) != {"background", "surface", "raised", "text", "muted", "accent", "violet", "warning", "outline", "control", "controlText", "controlBorder"} or any(not isinstance(v, str) or not re.fullmatch(r"[0-9A-F]{6}", v) for v in palette.values()):
             raise ValueError("invalid palette")
         for foreground in ("text", "muted", "accent", "violet", "warning"):
             for background in ("background", "surface", "raised"):
                 if contrast(palette[foreground], palette[background]) < 4.5:
                     raise ValueError(f"insufficient contrast: {foreground} on {background}")
+        if contrast(palette["control"], palette["controlText"]) < 4.5:
+            raise ValueError("insufficient button text contrast")
+        for background in ("background", "surface", "raised"):
+            if max(contrast(palette["control"], palette[background]), contrast(palette["controlBorder"], palette[background])) < 3:
+                raise ValueError("insufficient control boundary contrast")
     example = data["example"]
     if set(example) != {"kind", "label", "title", "unit", "values"} or example["kind"] != "synthetic_example" or example["label"] != "EXAMPLE · synthetic data":
         raise ValueError("chart must retain synthetic example label")

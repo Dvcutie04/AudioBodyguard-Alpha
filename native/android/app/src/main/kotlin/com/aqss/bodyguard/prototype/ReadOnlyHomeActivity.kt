@@ -82,15 +82,13 @@ class ReadOnlyHomeActivity : Activity() {
         help = button("Help") { tutorial.chooseTopic() }.apply { contentDescription = "Help & tutorials" }
         header.addView(help)
         root.addView(header)
-        val sideGuide = resources.configuration.screenWidthDp >= 640 && resources.configuration.screenWidthDp > resources.configuration.screenHeightDp
-        val body = LinearLayout(this).apply { orientation = if (sideGuide) LinearLayout.HORIZONTAL else LinearLayout.VERTICAL }
+        val body = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL }
         root.addView(body, LinearLayout.LayoutParams(-1, 0, 1f))
         scroll = ScrollView(this).apply { isFillViewport = false; clipToPadding = true }
         column = vertical().apply { setPadding(dp(20), dp(18), dp(20), dp(20)) }
         scroll.addView(column, ViewGroup.LayoutParams(-1, -2))
-        body.addView(scroll, LinearLayout.LayoutParams(if (sideGuide) 0 else -1, if (sideGuide) -1 else 0, 1f))
+        body.addView(scroll, LinearLayout.LayoutParams(-1, 0, 1f))
         tutorial = TutorialGuide(this, scroll, targets, skin,
-            expansion = { Triple(optionsExpanded, advancedExpanded, checklistExpanded) },
             setExpansion = { options, advanced, checklist -> optionsExpanded = options; advancedExpanded = advanced; checklistExpanded = checklist },
             currentPage = { page },
             navigate = { target, area ->
@@ -105,8 +103,14 @@ class ReadOnlyHomeActivity : Activity() {
             restorePage = { previous -> page = previous; renderPage() },
             focusHelp = { help.requestFocus(); help.sendAccessibilityEvent(android.view.accessibility.AccessibilityEvent.TYPE_VIEW_FOCUSED) },
             finished = { id -> if (id == "getting_started") beginnerTourFinished = true },
-            stateChanged = { syncBackCallback() })
-        body.addView(tutorial.footer, LinearLayout.LayoutParams(if (sideGuide) dp((resources.configuration.screenWidthDp * .44f).toInt().coerceIn(300, 440)) else -1, if (sideGuide) -1 else -2))
+            stateChanged = {
+                val visible = if (tutorial.isActive) View.GONE else View.VISIBLE
+                header.visibility = visible; scroll.visibility = visible
+                if (::nav.isInitialized) nav.visibility = visible
+                if (!tutorial.isActive) getSharedPreferences("aqss-presentation", MODE_PRIVATE).edit().putBoolean("guideDismissedV1", true).apply()
+                syncBackCallback()
+            })
+        body.addView(tutorial.footer, LinearLayout.LayoutParams(-1, -1))
         nav = LinearLayout(this).apply { setPadding(dp(8), dp(8), dp(8), dp(8)); setBackgroundColor(skin.surface) }
         root.addView(nav)
         if (Build.VERSION.SDK_INT >= 30) {
@@ -148,7 +152,9 @@ class ReadOnlyHomeActivity : Activity() {
             setContentView(root)
             setSystemBars(dark)
         }
-        renderPage(); tutorial.restore(saved); syncBackCallback()
+        renderPage(); tutorial.restore(saved)
+        if (!tutorial.isActive && !getSharedPreferences("aqss-presentation", MODE_PRIVATE).getBoolean("guideDismissedV1", false)) tutorial.start("getting_started")
+        syncBackCallback()
     }
 
     private fun setSystemBars(dark: Boolean, launching: Boolean = false) {
@@ -190,18 +196,7 @@ class ReadOnlyHomeActivity : Activity() {
         label(c, explanation, 15f, skin.muted)
     }
     private fun destination(title: String, subtitle: String, action: () -> Unit) {
-        val c = card { c ->
-            label(c, "$title  ›", 19f, skin.accent, true)
-            label(c, subtitle, 14f, skin.muted)
-        }
-        c.isClickable = true; c.isFocusable = true; c.contentDescription = "$title. $subtitle"
-        c.accessibilityDelegate = object : View.AccessibilityDelegate() {
-            override fun onInitializeAccessibilityNodeInfo(host: View, info: android.view.accessibility.AccessibilityNodeInfo) {
-                super.onInitializeAccessibilityNodeInfo(host, info)
-                info.className = Button::class.java.name
-            }
-        }
-        c.setOnClickListener { action() }
+        column.addView(button("$title\n$subtitle    ›", action = action).apply { gravity = Gravity.START or Gravity.CENTER_VERTICAL }, LinearLayout.LayoutParams(-1, -2).apply { bottomMargin = dp(16) })
     }
 
     private fun renderPage(preserveScroll: Boolean = false) {
@@ -229,19 +224,20 @@ class ReadOnlyHomeActivity : Activity() {
         if (resources.configuration.fontScale >= 1.5f) {
             val title = InterfaceContent.pages.single { it.id == page }.title
             nav.addView(button("Pages · $title") {
-                AlertDialog.Builder(this).setTitle("Choose a page").setItems(InterfaceContent.pages.map { it.title }.toTypedArray()) { _, i -> openPage(InterfaceContent.pages[i].id) }.setNegativeButton("Cancel", null).show()
+                skin.menu("Choose a page", InterfaceContent.pages.map { it.title to { openPage(it.id) } })
             }, LinearLayout.LayoutParams(-1, -2))
         } else {
             InterfaceContent.pages.forEach { item ->
                 nav.addView(button(item.title) { openPage(item.id) }.apply {
                     textSize = 12f; minHeight = dp(58); setPadding(dp(1), dp(4), dp(1), dp(4))
-                    setTextColor(if (page == item.id) skin.accent else skin.muted)
-                    setCompoundDrawablesWithIntrinsicBounds(null, InterfaceSymbol(skin, item.id, if (page == item.id) skin.accent else skin.muted), null, null)
+                    setTextColor(skin.controlText)
+                    setCompoundDrawablesWithIntrinsicBounds(null, InterfaceSymbol(skin, item.id, skin.controlText), null, null)
                     compoundDrawablePadding = dp(4)
-                    background = skin.shape(if (page == item.id) skin.raised else skin.surface, 14)
+                    background = skin.shape(skin.control, 14).apply { setStroke(dp(if (page == item.id) 3 else 1), skin.controlBorder) }
+                    if (page == item.id) text = "• ${item.title}"
                     contentDescription = item.title; isSelected = page == item.id
                     if (Build.VERSION.SDK_INT >= 30) stateDescription = if (isSelected) "Selected" else "Not selected"
-                }, LinearLayout.LayoutParams(0, -2, 1f))
+                }, LinearLayout.LayoutParams(0, -2, 1f).apply { marginEnd = dp(4) })
             }
         }
     }
@@ -256,11 +252,11 @@ class ReadOnlyHomeActivity : Activity() {
     private fun homePage() {
         card("welcome") { c ->
             val showFinished = beginnerTourFinished && !tutorial.isBeginner
-            label(c, if (showFinished) "TOUR FINISHED" else "START HERE · 5 STEPS", 12f, skin.violet, true)
+            label(c, if (showFinished) "TOUR FINISHED" else "YOUR TV & SMART HOME", 12f, skin.violet, true)
             label(c, if (showFinished) "Explore at your pace." else "Meet Audio Bodyguard.", 23f, bold = true)
             label(c, "This is a read-only preview. It does not monitor or change audio.", 16f, skin.muted)
             if (tutorial.isBeginner) label(c, "Use Next in the guide below to continue.", 17f, skin.accent, true)
-            else action(c, if (beginnerTourFinished) "Replay 5-step tour" else "Start 5-step tour", true) { tutorial.start("getting_started") }
+            else action(c, if (beginnerTourFinished) "Replay connection guide" else "TV & smart-home guide", true) { tutorial.start("getting_started") }
             label(c, "No setup needed to explore. Help is always at the top.", 15f, skin.muted)
         }
         card { c ->
@@ -271,18 +267,6 @@ class ReadOnlyHomeActivity : Activity() {
             label(c, "Sound controls and device checks are explanations. Audio protection is not active.", 15f, skin.muted)
             label(c, "Planned", 17f, skin.violet, true)
             label(c, "Voice requests, personal profiles and background protection. Read more in Settings.", 15f, skin.muted)
-        }
-        card { c ->
-            label(c, "Your route through the app", 20f, bold = true)
-            label(c, "Follow 1–5, or revisit any step.", 16f, skin.muted)
-            TutorialContent.topics.single { it.id == "getting_started" }.steps.forEachIndexed { index, step ->
-                c.addView(button("${index + 1}. ${step.title}") { tutorial.start("getting_started", index) }.apply {
-                    contentDescription = "Step ${index + 1}. ${step.title}"
-                    gravity = Gravity.START or Gravity.CENTER_VERTICAL
-                    setCompoundDrawablesWithIntrinsicBounds(null, null, InterfaceSymbol(skin, InterfaceContent.targetPages.getValue(step.target), skin.violet), null)
-                    compoundDrawablePadding = dp(10)
-                }, LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(8) })
-            }
         }
         card("coverage") { c ->
             label(c, "COVERAGE", 12f, skin.muted, true)
@@ -326,6 +310,7 @@ class ReadOnlyHomeActivity : Activity() {
         destination("Advanced options", "Device, privacy & background details") { jump("advanced") }
     }
     private fun devicesPage() {
+        action(column, "TV & smart-home guide") { tutorial.start("getting_started") }
         card { c ->
             label(c, "PATH NOT QUALIFIED", 12f, skin.warning, true)
             label(c, "This app   ···   Output needed", 21f, skin.accent, true)
@@ -404,7 +389,7 @@ class ReadOnlyHomeActivity : Activity() {
             section("Device and route", "Unknown", "No qualified output hardware or route has been identified.", "route")
             section("Physical output", "Unknown physical state", "No independent observation is available. Options cannot verify audible output.", "physical")
             section("Background monitoring", "Unavailable", "Only foreground hints are received; changes while away are unknown.", "background")
-            section("Privacy and storage", "No audio recorded by this app", "Only your appearance choice is saved locally. Tutorial and example progress are temporary. No tutorial analytics or audio uploads.", "privacy")
+            section("Privacy and storage", "No audio recorded by this app", "Your appearance and guide dismissal are saved locally. TV choices and tutorial progress are temporary. No audio or tutorial analytics are uploaded.", "privacy")
             section("Move this session option", "Unavailable", "No authorized endpoint or verified transfer path is connected.", "handoffOption")
         }
         label(column, "On the horizon", 22f, bold = true)

@@ -6,6 +6,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 TARGETS = {
     "overview": {"welcome", "trends", "appearance"},
+    "connection": {"chooseTV", "chooseHome", "connectionPlan", "connectionCheck", "featureExample", "guideFinish"},
     "home": {"coverage", "capability", "captions", "history", "hint", "handoff"},
     "options": {"options", "volume", "captionOption", "sound", "equalizer", "defaults"},
     "advanced": {"advanced", "route", "physical", "background", "privacy", "handoffOption"},
@@ -14,8 +15,20 @@ TARGETS = {
 
 
 def validate(data):
-    if set(data) != {"schema_version", "mode", "topics"} or data["schema_version"] != 1 or data["mode"] != "read_only_guidance":
+    if set(data) != {"schema_version", "mode", "topics", "choices"} or data["schema_version"] != 1 or data["mode"] != "read_only_guidance":
         raise ValueError("invalid presentation-only tutorial contract")
+    if not isinstance(data["choices"], dict) or set(data["choices"]) != {"chooseTV", "chooseHome"}:
+        raise ValueError("invalid guide choice groups")
+    for choices in data["choices"].values():
+        if not isinstance(choices, list) or not 1 <= len(choices) <= 10:
+            raise ValueError("invalid choice count")
+        ids = set()
+        for choice in choices:
+            if set(choice) != {"id", "title", "icon", "detail"} or any(not isinstance(v, str) or not v.strip() or len(v) > 320 for v in choice.values()):
+                raise ValueError("presentation-only choices required")
+            if not choice["id"].isidentifier() or choice["id"] in ids or choice["icon"] not in {"tv", "speaker", "house", "questionmark.circle"}:
+                raise ValueError("ambiguous choice or unsupported local icon")
+            ids.add(choice["id"])
     topics = data["topics"]
     if not isinstance(topics, list) or not 1 <= len(topics) <= 12:
         raise ValueError("invalid tutorial topics")
@@ -58,8 +71,18 @@ def sources(data):
             kotlin += ["            TutorialStep(" + ", ".join(q(step[k]).replace("$", r"\$") for k in keys) + "),"]
         swift += ["        ]),"]
         kotlin += ["        )),"]
-    swift += ["    ]", "}", ""]
-    kotlin += ["    )", "}", ""]
+    swift += ["    ]", "    public static let choices: [String: [AQSSTutorialChoice]] = ["]
+    kotlin += ["    )", "    val choices: Map<String, List<TutorialChoice>> = mapOf("]
+    for group, choices in data["choices"].items():
+        swift += [f"        {q(group)}: ["]
+        kotlin += [f"        {q(group)} to listOf("]
+        for choice in choices:
+            swift += ["            AQSSTutorialChoice(" + ", ".join(f"{k}: {q(choice[k])}" for k in ("id", "title", "icon", "detail")) + "),"]
+            kotlin += ["            TutorialChoice(" + ", ".join(q(choice[k]).replace("$", r"\$") for k in ("id", "title", "icon", "detail")) + "),"]
+        swift += ["        ],"]
+        kotlin += ["        ),"]
+    swift += ["    ]", "}", "public struct AQSSTutorialChoice: Equatable, Sendable {", "    public let id, title, icon, detail: String", "}", ""]
+    kotlin += ["    )", "}", "data class TutorialChoice(val id: String, val title: String, val icon: String, val detail: String)", ""]
     return {
         ROOT / "native/ios/Sources/AQSSNativeFeedback/TutorialContent.swift": "\n".join(swift),
         ROOT / "native/android/src/main/kotlin/com/aqss/nativefeedback/TutorialContent.kt": "\n".join(kotlin),

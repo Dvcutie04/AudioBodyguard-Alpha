@@ -1,34 +1,24 @@
 package com.aqss.bodyguard.prototype
 
-import android.animation.ValueAnimator
 import android.app.Activity
-import android.app.AlertDialog
-import android.graphics.Color
 import android.graphics.Typeface
-import android.graphics.drawable.Drawable
-import android.graphics.drawable.GradientDrawable
-import android.os.Bundle
 import android.os.Build
-import android.text.SpannableString
-import android.text.Spanned
-import android.text.style.StyleSpan
+import android.os.Bundle
+import android.view.Gravity
 import android.view.View
-import android.view.ViewTreeObserver
-import android.view.accessibility.AccessibilityNodeInfo
 import android.widget.Button
 import android.widget.LinearLayout
 import android.widget.ScrollView
 import android.widget.TextView
+import com.aqss.nativefeedback.GuideProgress
 import com.aqss.nativefeedback.TutorialContent
-import com.aqss.nativefeedback.TutorialTopic
 
-/** Only page navigation, highlighting and temporary guide state. */
+/** A dedicated, one-task screen. Choices are explanations, never device commands. */
 class TutorialGuide(
     private val activity: Activity,
     private val scroll: ScrollView,
     private val targets: Map<String, View>,
     private val skin: InterfaceTheme,
-    private val expansion: () -> Triple<Boolean, Boolean, Boolean>,
     private val setExpansion: (Boolean, Boolean, Boolean) -> Unit,
     private val currentPage: () -> String,
     private val navigate: (String, String?) -> Unit,
@@ -37,143 +27,127 @@ class TutorialGuide(
     private val finished: (String) -> Unit,
     private val stateChanged: () -> Unit,
 ) {
-    private val sideGuide = activity.resources.configuration.screenWidthDp >= 640 && activity.resources.configuration.screenWidthDp > activity.resources.configuration.screenHeightDp
+    private val guide = GuideProgress()
     val footer = LinearLayout(activity).apply { orientation = LinearLayout.VERTICAL; visibility = View.GONE }
-    private val panel = LinearLayout(activity).apply {
-        orientation = LinearLayout.VERTICAL; visibility = View.GONE
-        setPadding(dp(14), dp(12), dp(14), dp(10)); background = skin.shape(skin.surface, 0, true)
-    }
-    private val text = TextView(activity).apply {
-        textSize = 16f; setTextColor(skin.text); accessibilityLiveRegion = View.ACCESSIBILITY_LIVE_REGION_POLITE
-    }
-    private val explanation = ScrollView(activity).apply { addView(text) }
-    private val progress = LinearLayout(activity).apply { importantForAccessibility = View.IMPORTANT_FOR_ACCESSIBILITY_NO_HIDE_DESCENDANTS }
-    private val back = button("Back") { move(-1) }
-    private val next = button("Next") { move(1) }
-    private var topic: TutorialTopic? = null
-    val isActive: Boolean get() = topic != null
-    val isBeginner: Boolean get() = topic?.id == "getting_started"
-    private var index = 0
-    private var previous = Triple(true, true, false)
+    private val header = column()
+    private val reading = ScrollView(activity)
+    private val content = column()
+    private val controls = column()
     private var previousPage = "home"
-    private var highlighted: View? = null
-    private var originalForeground: Drawable? = null
-    private var pendingLayout: ViewTreeObserver.OnGlobalLayoutListener? = null
-
+    val isActive get() = guide.topicId != null
+    val isBeginner get() = guide.topicId == "getting_started"
     init {
-        val readingHeight = (activity.resources.configuration.screenHeightDp / 3).coerceIn(80, 160)
-        panel.addView(progress)
-        panel.addView(explanation, if (sideGuide) LinearLayout.LayoutParams(-1, 0, 1f) else LinearLayout.LayoutParams(-1, dp(readingHeight)))
-        panel.addView(TextView(activity).apply { text = "Scroll for details."; textSize = 12f; setTextColor(skin.muted); setPadding(0, dp(6), 0, dp(6)) })
-        val controls = LinearLayout(activity)
-        val close = button(if (sideGuide) "Close" else "Close tutorial") { close() }.apply { contentDescription = "Close tutorial" }
-        for (item in listOf(back, next)) controls.addView(item, LinearLayout.LayoutParams(0, -2, 1f).apply { marginEnd = dp(4) })
-        if (activity.resources.configuration.fontScale < 1.5f || sideGuide) controls.addView(close, LinearLayout.LayoutParams(0, -2, 1f))
-        panel.addView(controls)
-        if (activity.resources.configuration.fontScale >= 1.5f && !sideGuide) panel.addView(close, LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(6) })
-        footer.addView(panel, LinearLayout.LayoutParams(-1, if (sideGuide) -1 else -2))
-        if (Build.VERSION.SDK_INT >= 28) panel.accessibilityPaneTitle = "Tutorial"
+        for (box in listOf(header, content, controls)) box.setPadding(dp(20), dp(12), dp(20), dp(12))
+        controls.setBackgroundColor(skin.surface)
+        footer.addView(header)
+        reading.addView(content)
+        footer.addView(reading, LinearLayout.LayoutParams(-1, 0, 1f))
+        footer.addView(controls)
+        if (Build.VERSION.SDK_INT >= 28) footer.accessibilityPaneTitle = "Tutorial"
     }
-    private fun dp(value: Int) = skin.dp(value)
+    private fun dp(n: Int) = skin.dp(n)
+    private fun column() = LinearLayout(activity).apply { orientation = LinearLayout.VERTICAL }
+    private fun text(parent: LinearLayout, value: String, size: Float = 16f, color: Int = skin.text, bold: Boolean = false): TextView {
+        val view = TextView(activity).apply {
+            text = value; textSize = size; setTextColor(color); setPadding(0, 0, 0, dp(14))
+            if (bold) setTypeface(null, Typeface.BOLD)
+        }
+        parent.addView(view, LinearLayout.LayoutParams(-1, -2)); return view
+    }
     private fun button(label: String, action: () -> Unit) = Button(activity).apply { text = label; skin.style(this); setOnClickListener { action() } }
-    fun chooseTopic() {
-        AlertDialog.Builder(activity).setTitle("Choose a tutorial").setItems(TutorialContent.topics.map { it.title }.toTypedArray()) { _, i -> start(TutorialContent.topics[i].id) }.setNegativeButton("Cancel", null).show()
-    }
+    fun chooseTopic() = skin.menu("Choose a tutorial", TutorialContent.topics.map { it.title to { start(it.id) } })
     fun chooseSection() {
         val entries = listOf("Start here" to "welcome", "Coverage" to "coverage", "Readiness checklist" to "capability", "Sound options" to "options", "Advanced options" to "advanced", "Captions" to "captions", "Session history" to "history", "Foreground OS hint" to "hint", "Privacy and storage" to "privacy", "Session transfer" to "handoff")
-        AlertDialog.Builder(activity).setTitle("Jump to a section").setItems(entries.map { it.first }.toTypedArray()) { _, i -> jump(entries[i].second) }.setNegativeButton("Cancel", null).show()
+        skin.menu("Jump to a section", entries.map { it.first to { jump(it.second) } })
     }
     fun jump(target: String) {
         close(false); navigate(target, null)
-        targets[target]?.let { revealTarget(it, false) }
-    }
-    fun start(id: String, position: Int = 0) {
-        val selected = TutorialContent.topics.firstOrNull { it.id == id } ?: return
-        if (position !in selected.steps.indices) return
-        if (topic == null) { previous = expansion(); previousPage = currentPage() }
-        topic = selected; index = position; render()
-    }
-    private fun move(delta: Int) {
-        val selected = topic ?: return
-        val position = index + delta
-        if (position >= selected.steps.size) { finished(selected.id); close(); return }
-        if (position < 0) return
-        index = position; render()
-    }
-    fun detachTarget() {
-        pendingLayout?.let { if (scroll.viewTreeObserver.isAlive) scroll.viewTreeObserver.removeOnGlobalLayoutListener(it) }
-        pendingLayout = null; highlighted?.foreground = originalForeground; highlighted = null
-    }
-    fun refreshHighlight() {
-        val step = topic?.steps?.getOrNull(index) ?: return
-        // A local card redraw must not scroll away from the example values the
-        // user just opened. Only a deliberate tour step change moves the page.
-        val target = targets[step.target] ?: return
-        detachTarget(); highlightTarget(target)
-    }
-    private fun highlightTarget(target: View) {
-        highlighted = target; originalForeground = target.foreground
-        target.foreground = GradientDrawable().apply { setColor(Color.TRANSPARENT); setStroke(dp(3), skin.accent); cornerRadius = dp(22).toFloat() }
-    }
-    private fun render() {
-        val selected = topic ?: return
-        val step = selected.steps.getOrNull(index) ?: return
-        detachTarget(); navigate(step.target, step.area)
-        val target = targets[step.target] ?: run { close(); return }
-        progress.removeAllViews()
-        progress.visibility = if (selected.id == "getting_started" && activity.resources.configuration.fontScale < 1.5f) View.VISIBLE else View.GONE
-        if (progress.visibility == View.VISIBLE) selected.steps.indices.forEach { number ->
-            progress.addView(TextView(activity).apply {
-                text = "${number + 1}"; textSize = 13f; gravity = android.view.Gravity.CENTER
-                setTypeface(null, Typeface.BOLD)
-                setTextColor(if (number == index) skin.background else skin.muted)
-                background = skin.shape(if (number == index) skin.accent else skin.raised, 13)
-            }, LinearLayout.LayoutParams(dp(26), dp(26)).apply { marginEnd = dp(8); bottomMargin = dp(8) })
-        }
-        val description = "Tutorial — ${selected.title}\nStep ${index + 1} of ${selected.steps.size} • Highlighted: ${step.title}\n\n${step.explanation}\n\n${step.example}"
-        text.text = SpannableString(description).apply { setSpan(StyleSpan(Typeface.BOLD), 0, description.indexOf('\n'), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE) }
-        explanation.scrollTo(0, 0); back.isEnabled = index > 0
-        next.text = if (index == selected.steps.lastIndex) "Done" else "Next"
-        footer.visibility = View.VISIBLE; panel.visibility = View.VISIBLE; text.animate().cancel(); text.alpha = 1f
-        if (ValueAnimator.areAnimatorsEnabled()) { text.alpha = .7f; text.animate().alpha(1f).setDuration(180).start() }
-        revealTarget(target, true); stateChanged()
-    }
-    private fun revealTarget(target: View, highlight: Boolean) {
-        detachTarget()
-        val listener = object : ViewTreeObserver.OnGlobalLayoutListener {
-            override fun onGlobalLayout() {
-                if (scroll.viewTreeObserver.isAlive) scroll.viewTreeObserver.removeOnGlobalLayoutListener(this)
-                pendingLayout = null
-                if (!target.isAttachedToWindow || (highlight && !isActive)) return
-                if (highlight) {
-                    highlightTarget(target)
-                }
-                var y = target.top; var parent = target.parent as? View
+        scroll.post {
+            targets[target]?.let { view ->
+                var y = view.top; var parent = view.parent as? View
                 while (parent != null && parent !== scroll) { y += parent.top; parent = parent.parent as? View }
-                if (highlight && ValueAnimator.areAnimatorsEnabled()) scroll.smoothScrollTo(0, y) else scroll.scrollTo(0, y)
-                if (!highlight) target.performAccessibilityAction(AccessibilityNodeInfo.ACTION_ACCESSIBILITY_FOCUS, null)
+                scroll.scrollTo(0, y)
             }
         }
-        pendingLayout = listener; scroll.viewTreeObserver.addOnGlobalLayoutListener(listener); scroll.requestLayout()
     }
+    fun start(id: String) {
+        if (!isActive) previousPage = currentPage()
+        if (guide.start(id)) render()
+    }
+    private fun render(preserveScroll: Boolean = false) {
+        val topic = guide.topic ?: return
+        val step = guide.step ?: return
+        val oldScroll = if (preserveScroll) reading.scrollY else 0
+        header.removeAllViews(); content.removeAllViews(); controls.removeAllViews()
+        text(header, "Step ${guide.index + 1} of ${topic.steps.size}", 15f, skin.muted, true)
+        header.addView(button("Exit tutorial") { close() }, LinearLayout.LayoutParams(-1, -2))
+        content.addView(TextView(activity).apply {
+            setCompoundDrawablesWithIntrinsicBounds(InterfaceSymbol(skin, if (step.target == "chooseHome") "house" else "tv", skin.violet), null, null, null)
+            importantForAccessibility = View.IMPORTANT_FOR_ACCESSIBILITY_NO
+            setPadding(0, dp(6), 0, dp(12))
+        }, LinearLayout.LayoutParams(-1, dp(52)))
+        text(content, step.title, 30f, bold = true).apply {
+            if (Build.VERSION.SDK_INT >= 28) isAccessibilityHeading = true
+            accessibilityLiveRegion = View.ACCESSIBILITY_LIVE_REGION_POLITE
+        }
+        text(content, step.explanation)
+        guide.choices.forEach { choice ->
+            val selected = guide.selected(step.target)?.id == choice.id
+            content.addView(button(choice.title + if (selected) "  ✓" else "") { guide.select(choice.id); render(true) }.apply {
+                gravity = Gravity.START or Gravity.CENTER_VERTICAL
+                minHeight = dp(60); compoundDrawablePadding = dp(14)
+                setCompoundDrawablesWithIntrinsicBounds(InterfaceSymbol(skin, choice.icon, skin.controlText), null, null, null)
+                contentDescription = choice.title; isSelected = selected
+                if (Build.VERSION.SDK_INT >= 30) stateDescription = if (selected) "Selected" else "Not selected"
+            }, LinearLayout.LayoutParams(-1, -2).apply { bottomMargin = dp(10) })
+        }
+        if (step.target == "connectionPlan") for (target in listOf("chooseTV", "chooseHome")) {
+            guide.selected(target)?.let { selected ->
+                val box = column().apply { setPadding(dp(16), dp(16), dp(16), dp(6)); background = skin.shape(skin.surface) }
+                text(box, selected.title, 20f, bold = true); text(box, selected.detail, color = skin.muted)
+                content.addView(box, LinearLayout.LayoutParams(-1, -2).apply { bottomMargin = dp(16) })
+            }
+        }
+        val example = column().apply { setPadding(dp(16), dp(16), dp(16), dp(6)); background = skin.shape(skin.surface) }
+        text(example, step.example, color = skin.muted); content.addView(example)
+        if (step.target == "connectionCheck") text(content, "Not connected · Audio protection is not active", 18f, skin.warning, true)
+        if (!guide.canContinue) text(controls, "Choose one option above to continue.", 15f, skin.muted)
+        guide.selected(step.target)?.let { text(controls, "Selected: ${it.title}", 15f, skin.muted) }
+        val row = LinearLayout(activity)
+        if (guide.index > 0) row.addView(button("Back") { guide.back(); render() }, LinearLayout.LayoutParams(-2, -2).apply { marginEnd = dp(12) })
+        if (guide.canContinue) {
+            val label = if (guide.isLast) { if (isBeginner) "Open full app" else "Done" } else if (guide.index == 0) "Begin" else "Next"
+            row.addView(button(label) {
+                if (guide.isLast) { finished(topic.id); close() } else { guide.next(); render() }
+            }, LinearLayout.LayoutParams(0, -2, 1f))
+        }
+        controls.addView(row)
+        footer.visibility = View.VISIBLE; stateChanged()
+        reading.post { reading.scrollTo(0, oldScroll) }
+    }
+    fun detachTarget() { /* Guide never overlays a page. */ }
+    fun refreshHighlight() { /* Full app and guide have separate view trees. */ }
     fun close(restore: Boolean = true) {
-        if (topic == null) return
-        detachTarget(); text.animate().cancel(); topic = null; index = 0; panel.visibility = View.GONE; footer.visibility = View.GONE
-        if (restore) { setExpansion(previous.first, previous.second, previous.third); restorePage(previousPage); focusHelp() }
+        if (!isActive) return
+        guide.close(); footer.visibility = View.GONE
+        setExpansion(true, true, true)
         stateChanged()
+        if (restore) { restorePage(previousPage); focusHelp() }
     }
-    fun pause() { text.animate().cancel(); detachTarget() }
-    fun resume() { if (topic != null) render() }
+    fun pause() { /* No animation or timer to stop. */ }
+    fun resume() { if (isActive) render(true) }
     fun save(bundle: Bundle) {
-        topic?.let { bundle.putString("tutorialTopic", it.id); bundle.putInt("tutorialIndex", index); bundle.putString("tutorialPreviousPage", previousPage); bundle.putBoolean("tutorialPreviousOptions", previous.first); bundle.putBoolean("tutorialPreviousAdvanced", previous.second); bundle.putBoolean("tutorialPreviousChecklist", previous.third) }
+        guide.topicId?.let { id ->
+            bundle.putString("tutorialTopic", id); bundle.putInt("tutorialIndex", guide.index)
+            bundle.putString("tutorialPreviousPage", previousPage)
+            guide.snapshot().forEach { (key, value) -> bundle.putString("guide-$key", value) }
+        }
     }
     fun restore(bundle: Bundle?) {
         val id = bundle?.getString("tutorialTopic") ?: return
-        val selected = TutorialContent.topics.firstOrNull { it.id == id } ?: return
-        val position = bundle.getInt("tutorialIndex")
-        if (position !in selected.steps.indices) return
-        topic = selected; index = position
-        previous = Triple(bundle.getBoolean("tutorialPreviousOptions"), bundle.getBoolean("tutorialPreviousAdvanced"), bundle.getBoolean("tutorialPreviousChecklist"))
-        previousPage = bundle.getString("tutorialPreviousPage") ?: "home"; render()
+        val saved = TutorialContent.choices.keys.mapNotNull { key -> bundle.getString("guide-$key")?.let { key to it } }.toMap()
+        guide.restore(id, bundle.getInt("tutorialIndex"), saved)
+        previousPage = bundle.getString("tutorialPreviousPage") ?: "home"
+        if (isActive) render()
     }
 }

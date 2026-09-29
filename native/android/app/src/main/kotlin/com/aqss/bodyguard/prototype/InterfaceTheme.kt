@@ -1,6 +1,9 @@
 package com.aqss.bodyguard.prototype
 
 import android.app.Activity
+import android.app.AlertDialog
+import android.widget.LinearLayout
+import android.widget.ScrollView
 import android.content.res.ColorStateList
 import android.graphics.Canvas
 import android.graphics.ColorFilter
@@ -27,6 +30,9 @@ class InterfaceTheme(val activity: Activity, val dark: Boolean) {
     val violet get() = color("violet")
     val warning get() = color("warning")
     val outline get() = color("outline")
+    val control get() = color("control")
+    val controlText get() = color("controlText")
+    val controlBorder get() = color("controlBorder")
     fun dp(value: Int) = (value * activity.resources.displayMetrics.density).toInt()
     fun shape(fill: Int, radius: Int = 18, border: Boolean = false) = GradientDrawable().apply {
         setColor(fill); cornerRadius = dp(radius).toFloat()
@@ -38,10 +44,22 @@ class InterfaceTheme(val activity: Activity, val dark: Boolean) {
     fun style(button: Button, primary: Boolean = false) {
         button.isAllCaps = false; button.minHeight = dp(48); button.minimumWidth = 0
         button.setPadding(dp(12), dp(9), dp(12), dp(9)); button.textSize = 15f
-        button.setTextColor(ColorStateList(arrayOf(intArrayOf(-android.R.attr.state_enabled), intArrayOf()), intArrayOf(muted, if (primary) background else accent)))
-        button.background = RippleDrawable(ColorStateList.valueOf(outline), shape(if (primary) accent else raised, 14), null)
+        button.setTextColor(ColorStateList(arrayOf(intArrayOf(-android.R.attr.state_enabled), intArrayOf()), intArrayOf(muted, controlText)))
+        button.background = RippleDrawable(ColorStateList.valueOf(outline), shape(control, 14).apply { setStroke(dp(1), controlBorder) }, null)
         button.stateListAnimator = null
     }
+    fun menu(title: String, items: List<Pair<String, () -> Unit>>) {
+        val list = LinearLayout(activity).apply { orientation = LinearLayout.VERTICAL; setPadding(dp(20), dp(10), dp(20), dp(10)) }
+        val scroll = ScrollView(activity).apply { addView(list); setBackgroundColor(background) }
+        val dialog = AlertDialog.Builder(activity).setTitle(title).setView(scroll).create()
+        for ((label, action) in items + ("Cancel" to {})) {
+            list.addView(Button(activity).apply {
+                text = label; style(this); setOnClickListener { dialog.dismiss(); action() }
+            }, LinearLayout.LayoutParams(-1, -2).apply { bottomMargin = dp(10) })
+        }
+        dialog.show()
+    }
+
 }
 
 /** Static vector decoration or an explicitly synthetic example; never a live signal. */
@@ -98,6 +116,23 @@ class InterfaceSymbol(private val skin: InterfaceTheme, private val kind: String
         canvas.translate(bounds.left.toFloat(), bounds.top.toFloat())
         canvas.scale(bounds.width() / 24f, bounds.height() / 24f)
         when (kind) {
+            "tv" -> {
+                canvas.drawRoundRect(2f, 3f, 22f, 17f, 2f, 2f, paint)
+                canvas.drawLine(12f, 17f, 12f, 21f, paint); canvas.drawLine(7f, 21f, 17f, 21f, paint)
+            }
+            "speaker" -> {
+                canvas.drawRoundRect(5f, 2f, 19f, 22f, 5f, 5f, paint)
+                canvas.drawOval(5f, 2f, 19f, 7f, paint); canvas.drawCircle(12f, 14f, 3f, paint)
+            }
+            "house" -> {
+                val p = Path().apply { moveTo(2f, 11f); lineTo(12f, 2f); lineTo(22f, 11f); moveTo(5f, 9f); lineTo(5f, 21f); lineTo(19f, 21f); lineTo(19f, 9f) }
+                canvas.drawPath(p, paint); canvas.drawRect(10f, 14f, 14f, 21f, paint)
+            }
+            "questionmark.circle" -> {
+                canvas.drawCircle(12f, 12f, 10f, paint)
+                canvas.drawArc(8f, 5f, 16f, 13f, 180f, 240f, false, paint)
+                canvas.drawLine(12f, 12f, 12f, 14f, paint); canvas.drawPoint(12f, 18f, paint)
+            }
             "home" -> {
                 val p = Path().apply { moveTo(12f, 2f); lineTo(20f, 5f); lineTo(20f, 12f); cubicTo(20f, 17f, 16f, 20f, 12f, 22f); cubicTo(8f, 20f, 4f, 17f, 4f, 12f); lineTo(4f, 5f); close() }
                 canvas.drawPath(p, paint); canvas.drawLine(12f, 5f, 12f, 19f, paint)

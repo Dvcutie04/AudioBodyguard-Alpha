@@ -22,6 +22,9 @@ private struct AppTheme {
     var violet: Color { color("violet") }
     var warning: Color { color("warning") }
     var outline: Color { color("outline") }
+    var control: Color { color("control") }
+    var controlText: Color { color("controlText") }
+    var controlBorder: Color { color("controlBorder") }
 }
 
 private struct AppButtonStyle: ButtonStyle {
@@ -31,9 +34,10 @@ private struct AppButtonStyle: ButtonStyle {
         configuration.label.font(.body.weight(.semibold))
             .padding(.horizontal, 14).padding(.vertical, 8)
             .frame(minHeight: 44)
-            .foregroundColor(primary ? theme.background : theme.accent)
-            .background(primary ? theme.accent : theme.raised)
+            .foregroundColor(theme.controlText)
+            .background(theme.control)
             .clipShape(RoundedRectangle(cornerRadius: 14))
+            .overlay(RoundedRectangle(cornerRadius: 14).stroke(theme.controlBorder, lineWidth: 1))
             .opacity(configuration.isPressed ? 0.75 : 1)
     }
 }
@@ -59,13 +63,13 @@ private struct ReadOnlyHomeView: View {
     @State private var futureTitle = ""
     @State private var futureExplanation = ""
     @State private var futureVisible = false
-    @State private var tutorialTopicID: String?
-    @State private var tutorialIndex = 0
+    @AppStorage("aqssGuideDismissedV1") private var guideDismissed = false
+    @State private var checkedFirstVisit = false
+    @State private var guide = AQSSGuideProgress()
+    private var tutorialTopicID: String? { guide.topicID }
+    private var tutorialIndex: Int { guide.index }
     @State private var beginnerTourFinished = false
     @State private var previousPage = "home"
-    @State private var previousOptions = true
-    @State private var previousAdvanced = true
-    @State private var previousChecklist = false
     private enum Focus: Hashable { case help, tutorial(String), destination(String) }
     @AccessibilityFocusState private var focusedElement: Focus?
 
@@ -93,32 +97,24 @@ private struct ReadOnlyHomeView: View {
     var body: some View {
         ScrollViewReader { proxy in
             VStack(spacing: 0) {
-                header
-                ScrollView {
-                    VStack(alignment: .leading, spacing: 22) {
-                        pageHeading
-                        pageContent
-                        Text("SIMULATION · No audio path connected")
-                            .font(.caption).foregroundColor(theme.muted)
-                            .padding(.top, 4)
-                    }
-                    .frame(maxWidth: 680, alignment: .leading)
-                    .padding(20).frame(maxWidth: .infinity)
+                if let topic = tutorialTopic, let step = tutorialStep {
+                    tutorialPanel(topic: topic, step: step)
+                } else {
+                    header
+                    ScrollView {
+                        VStack(alignment: .leading, spacing: 22) {
+                            pageHeading
+                            pageContent
+                            Text("SIMULATION · No audio path connected").font(.caption).foregroundColor(theme.muted)
+                        }.frame(maxWidth: 680, alignment: .leading).padding(20).frame(maxWidth: .infinity)
+                    }.clipped().id(page).accessibilityIdentifier("home-scroll")
+                    navigationBar
                 }
-                .clipped().id(page).accessibilityIdentifier("home-scroll")
-                if let topic = tutorialTopic, let step = tutorialStep { tutorialPanel(topic: topic, step: step) }
-                navigationBar
             }
             .background(theme.background.ignoresSafeArea())
             .foregroundColor(theme.text).accentColor(theme.accent)
             .onChange(of: tutorialStepKey) { key in
-                guard let target = tutorialStep?.target else { return }
-                DispatchQueue.main.async {
-                    guard key == tutorialStepKey, scenePhase == .active else { return }
-                    if reduceMotion { proxy.scrollTo(target, anchor: .top) }
-                    else { withAnimation(.easeInOut(duration: 0.18)) { proxy.scrollTo(target, anchor: .top) } }
-                    focusedElement = .tutorial(key)
-                }
+                DispatchQueue.main.async { if key == tutorialStepKey && scenePhase == .active { focusedElement = .tutorial(key) } }
             }
             .onChange(of: navigationRequest) { request in
                 DispatchQueue.main.async {
@@ -127,22 +123,31 @@ private struct ReadOnlyHomeView: View {
                     focusedElement = .destination(navigationTarget)
                 }
             }
-            .confirmationDialog("Jump to a section", isPresented: $navigationVisible, titleVisibility: .visible) {
-                ForEach(destinations, id: \.1) { title, target in Button(title) { jump(target) } }
-                Button("Cancel", role: .cancel) {}
+            .sheet(isPresented: $navigationVisible) {
+                menuSheet("Jump to a section") {
+                    ForEach(destinations, id: \.1) { title, target in action(title, icon: "arrow.right") { navigationVisible = false; jump(target) } }
+                    action("Cancel", icon: "xmark") { navigationVisible = false }
+                }
             }
-            .confirmationDialog("Choose a page", isPresented: $pagesVisible, titleVisibility: .visible) {
-                ForEach(AQSSInterfaceContent.pages, id: \.id) { item in Button(item.title) { openPage(item.id) } }
-                Button("Cancel", role: .cancel) {}
+            .sheet(isPresented: $pagesVisible) {
+                menuSheet("Choose a page") {
+                    ForEach(AQSSInterfaceContent.pages, id: \.id) { item in action(item.title, icon: item.icon) { pagesVisible = false; openPage(item.id) } }
+                    action("Cancel", icon: "xmark") { pagesVisible = false }
+                }
             }
-            .confirmationDialog("Choose a tutorial", isPresented: $helpVisible, titleVisibility: .visible) {
-                ForEach(AQSSTutorialContent.topics, id: \.id) { topic in Button(topic.title) { startTutorial(topic.id) } }
-                Button("Cancel", role: .cancel) {}
+            .sheet(isPresented: $helpVisible) {
+                menuSheet("Choose a tutorial") {
+                    ForEach(AQSSTutorialContent.topics, id: \.id) { topic in action(topic.title, icon: "questionmark.circle") { helpVisible = false; startTutorial(topic.id) } }
+                    action("Cancel", icon: "xmark") { helpVisible = false }
+                }
             }
             .alert(futureTitle, isPresented: $futureVisible) { Button("Got it", role: .cancel) {} } message: { Text(futureExplanation) }
         }
         .preferredColorScheme(appearance == "system" ? nil : appearance == "daylight" ? .light : .dark)
-        .onAppear { if scenePhase == .active { audioHints.start() } }
+        .onAppear {
+            if !checkedFirstVisit { checkedFirstVisit = true; if !guideDismissed { startTutorial("getting_started") } }
+            if scenePhase == .active { audioHints.start() }
+        }
         .onDisappear { audioHints.stop() }
         .onChange(of: scenePhase) { phase in if phase == .active { audioHints.start() } else { audioHints.stop() } }
     }
@@ -156,7 +161,7 @@ private struct ReadOnlyHomeView: View {
                 .accessibilityLabel("Jump to").accessibilityIdentifier("section-navigation")
             Button { helpVisible = true } label: { Label("Help", systemImage: "questionmark.circle").font(.subheadline.weight(.semibold)).frame(minWidth: 44, minHeight: 44).contentShape(Rectangle()) }
                 .accessibilityLabel("Help & tutorials").accessibilityIdentifier("tutorial-help").accessibilityFocused($focusedElement, equals: .help)
-        }.padding(.horizontal, 20).padding(.vertical, 4).foregroundColor(theme.accent).background(theme.background)
+        }.buttonStyle(AppButtonStyle(theme: theme)).padding(.horizontal, 20).padding(.vertical, 4).foregroundColor(theme.accent).background(theme.background)
     }
 
     private var pageHeading: some View {
@@ -180,13 +185,13 @@ private struct ReadOnlyHomeView: View {
     private var homePage: some View {
         VStack(spacing: 20) {
             card(target: "welcome") {
-                badge(showTourFinished ? "TOUR FINISHED" : "START HERE · 5 STEPS", color: theme.violet)
+                badge(showTourFinished ? "TOUR FINISHED" : "YOUR TV & SMART HOME", color: theme.violet)
                 Text(showTourFinished ? "Explore at your pace." : "Meet Audio Bodyguard.").font(.title2.bold()).accessibilityAddTraits(.isHeader)
                 Text("This is a read-only preview. It does not monitor or change audio.").foregroundColor(theme.muted)
                 if tutorialTopicID == "getting_started" {
                     Text("Use Next in the guide below to continue.").font(.headline).foregroundColor(theme.accent)
                 } else {
-                    action(beginnerTourFinished ? "Replay 5-step tour" : "Start 5-step tour", icon: "arrow.right.circle", primary: true) { startTutorial("getting_started") }
+                    action(beginnerTourFinished ? "Replay connection guide" : "TV & smart-home guide", icon: "arrow.right.circle", primary: true) { startTutorial("getting_started") }
                         .accessibilityIdentifier("start-beginner-tour")
                 }
                 Text("No setup needed to explore. Help is always at the top.").font(.subheadline).foregroundColor(theme.muted)
@@ -196,21 +201,6 @@ private struct ReadOnlyHomeView: View {
                 featureSummary("Available now", detail: "Explore pages, example graphs, themes and tutorials.", color: theme.accent)
                 featureSummary("Preview only", detail: "Sound controls and device checks are explanations. Audio protection is not active.", color: theme.warning)
                 featureSummary("Planned", detail: "Voice requests, personal profiles and background protection. Read more in Settings.", color: theme.violet)
-            }
-            card {
-                Text("Your route through the app").font(.title3.bold()).accessibilityAddTraits(.isHeader)
-                Text("Follow 1–5, or revisit any step.").foregroundColor(theme.muted)
-                ForEach(Array(beginnerTour.steps.enumerated()), id: \.offset) { index, step in
-                    let item = AQSSInterfaceContent.pages.first { $0.id == AQSSInterfaceContent.targetPages[step.target] }!
-                    Button { startTutorial("getting_started", at: index) } label: {
-                        HStack(spacing: 12) {
-                            Text("\(index + 1)").font(.headline).frame(width: 30, height: 30).background(theme.surface).clipShape(Circle()).accessibilityHidden(true)
-                            Text(step.title).fixedSize(horizontal: false, vertical: true)
-                            Spacer(minLength: 0)
-                            Image(systemName: item.icon).accessibilityHidden(true)
-                        }.frame(maxWidth: .infinity, alignment: .leading)
-                    }.buttonStyle(AppButtonStyle(theme: theme)).accessibilityLabel("Step \(index + 1). \(step.title)")
-                }
             }
             card(target: "coverage") {
                 HStack(alignment: .top) {
@@ -349,7 +339,7 @@ private struct ReadOnlyHomeView: View {
                 section("Device and route", detail: "Unknown", explanation: "No qualified output hardware or route has been identified.", target: "route", icon: "hifispeaker")
                 section("Physical output", detail: "Unknown physical state", explanation: "No independent observation is available. Options cannot verify audible output.", target: "physical", icon: "waveform.path")
                 section("Background monitoring", detail: "Unavailable", explanation: "Only foreground hints are received; changes while away are unknown.", target: "background", icon: "moon")
-                section("Privacy and storage", detail: "No audio recorded by this app", explanation: "Only your appearance choice is saved locally. Tutorial and example progress are temporary. No tutorial analytics or audio uploads.", target: "privacy", icon: "lock.shield")
+                section("Privacy and storage", detail: "No audio recorded by this app", explanation: "Your appearance and guide dismissal are saved locally. TV choices and tutorial progress are temporary. No audio or tutorial analytics are uploaded.", target: "privacy", icon: "lock.shield")
                 section("Move this session option", detail: "Unavailable", explanation: "No authorized endpoint or verified transfer path is connected.", target: "handoffOption", icon: "arrow.left.arrow.right")
             }
             Text("On the horizon").font(.title2.bold()).accessibilityAddTraits(.isHeader)
@@ -369,13 +359,15 @@ private struct ReadOnlyHomeView: View {
                 Button { pagesVisible = true } label: { Label("Pages · \(currentPage.title)", systemImage: currentPage.icon).frame(maxWidth: .infinity, minHeight: 44) }
                     .buttonStyle(AppButtonStyle(theme: theme)).padding(12).accessibilityIdentifier("page-picker")
             } else {
-                HStack(spacing: 0) {
+                HStack(spacing: 5) {
                     ForEach(AQSSInterfaceContent.pages, id: \.id) { item in
                         Button { openPage(item.id) } label: {
                             VStack(spacing: 5) { Image(systemName: item.icon).font(.system(size: 20)); Text(item.title).font(.caption.weight(.semibold)) }
                                 .frame(maxWidth: .infinity, minHeight: 56).contentShape(Rectangle())
-                                .foregroundColor(page == item.id ? theme.accent : theme.muted)
-                                .background(page == item.id ? theme.raised : Color.clear).clipShape(RoundedRectangle(cornerRadius: 14))
+                                .foregroundColor(theme.controlText)
+                                .background(theme.control).clipShape(RoundedRectangle(cornerRadius: 14))
+                                .overlay(RoundedRectangle(cornerRadius: 14).stroke(theme.controlBorder, lineWidth: page == item.id ? 3 : 1))
+                                .overlay(alignment: .top) { if page == item.id { Capsule().fill(theme.controlText).frame(width: 18, height: 3).padding(.top, 3) } }
                         }.accessibilityIdentifier("tab-\(item.id)").accessibilityLabel(item.title).accessibilityValue(page == item.id ? "Selected" : "Not selected")
                     }
                 }.padding(.horizontal, 10).padding(.vertical, 8)
@@ -414,12 +406,17 @@ private struct ReadOnlyHomeView: View {
     }
     private func destinationCard(_ title: String, subtitle: String, icon: String, perform: @escaping () -> Void) -> some View {
         Button(action: perform) {
-            HStack(alignment: .center, spacing: 14) {
-                Image(systemName: icon).font(.title2).foregroundColor(theme.violet).frame(width: 32).accessibilityHidden(true)
-                VStack(alignment: .leading, spacing: 5) { Text(title).font(.headline).foregroundColor(theme.text); Text(subtitle).font(.subheadline).foregroundColor(theme.muted) }
-                Spacer(minLength: 0); Image(systemName: "chevron.right").font(.caption.bold()).foregroundColor(theme.accent).accessibilityHidden(true)
-            }.frame(maxWidth: .infinity, minHeight: 52, alignment: .leading).padding(18).background(theme.surface).clipShape(RoundedRectangle(cornerRadius: 18)).overlay(RoundedRectangle(cornerRadius: 18).stroke(theme.outline.opacity(0.5), lineWidth: 1))
-        }.buttonStyle(.plain)
+            HStack(spacing: 14) {
+                Image(systemName: icon).font(.title2).accessibilityHidden(true)
+                VStack(alignment: .leading, spacing: 5) { Text(title).font(.headline); Text(subtitle).font(.subheadline) }
+                Spacer(minLength: 0)
+                Image(systemName: "chevron.right").accessibilityHidden(true)
+            }.frame(maxWidth: .infinity, minHeight: 52, alignment: .leading)
+        }.buttonStyle(AppButtonStyle(theme: theme))
+    }
+    private func menuSheet<Content: View>(_ title: String, @ViewBuilder content: () -> Content) -> some View {
+        ScrollView { VStack(alignment: .leading, spacing: 16) { Text(title).font(.title2.bold()); content() }.padding(20) }
+            .background(theme.background).foregroundColor(theme.text).accessibilityIdentifier("menu-scroll")
     }
 
     private func openPage(_ id: String) {
@@ -437,50 +434,79 @@ private struct ReadOnlyHomeView: View {
         closeTutorial(restore: false); showingExample = false; reveal(target)
         navigationTarget = target; navigationRequest += 1
     }
-    private func startTutorial(_ id: String, at index: Int = 0) {
-        guard let topic = AQSSTutorialContent.topics.first(where: { $0.id == id }), topic.steps.indices.contains(index) else { return }
-        if tutorialTopicID == nil { previousPage = page; previousOptions = optionsExpanded; previousAdvanced = advancedExpanded; previousChecklist = checklistExpanded }
-        showingExample = false; chartValuesVisible = false; tutorialTopicID = id; tutorialIndex = index; revealTutorialArea()
+    private func startTutorial(_ id: String) {
+        if tutorialTopicID == nil { previousPage = page }
+        guard guide.start(id) else { return }
+        showingExample = false; chartValuesVisible = false
     }
-    private func revealTutorialArea() { showingExample = false; chartValuesVisible = false; if let step = tutorialStep { reveal(step.target, area: step.area) } }
     private func closeTutorial(restore: Bool = true) {
         guard tutorialTopicID != nil else { return }
-        tutorialTopicID = nil; tutorialIndex = 0
-        if restore { page = previousPage; optionsExpanded = previousOptions; advancedExpanded = previousAdvanced; checklistExpanded = previousChecklist; focusedElement = .help }
+        if tutorialTopicID == "getting_started" { guideDismissed = true }
+        guide.close()
+        // Leaving guidance reveals the complete interface, including collapsed groups.
+        optionsExpanded = true; advancedExpanded = true; checklistExpanded = true
+        if restore { page = previousPage; focusedElement = .help }
     }
     private func tutorialPanel(topic: AQSSTutorialTopic, step: AQSSTutorialStep) -> some View {
-        VStack(alignment: .leading, spacing: 8) {
-            if topic.id == "getting_started" && !textSize.isAccessibilitySize {
-                HStack(spacing: 8) {
-                    ForEach(topic.steps.indices, id: \.self) { index in
-                        Text("\(index + 1)").font(.caption.bold()).frame(width: 26, height: 26)
-                            .foregroundColor(index == tutorialIndex ? theme.background : theme.muted)
-                            .background(index == tutorialIndex ? theme.accent : theme.raised).clipShape(Circle())
-                    }
-                    Spacer()
-                    Image(systemName: currentPage.icon).foregroundColor(theme.violet)
-                }.accessibilityHidden(true)
-            }
+        VStack(spacing: 0) {
+            VStack(alignment: .leading, spacing: 10) {
+                Text("Step \(tutorialIndex + 1) of \(topic.steps.count)").font(.subheadline.weight(.semibold)).foregroundColor(theme.muted)
+                action("Exit tutorial", icon: "xmark") { closeTutorial() }.accessibilityIdentifier("exit-tutorial")
+            }.padding(.horizontal, 20).padding(.vertical, 10)
             ScrollView {
-                VStack(alignment: .leading, spacing: 8) {
-                    Text("Tutorial — \(topic.title)").font(.headline).foregroundColor(theme.accent).accessibilityAddTraits(.isHeader).accessibilityFocused($focusedElement, equals: .tutorial(tutorialStepKey))
-                    Text("Step \(tutorialIndex + 1) of \(topic.steps.count) • Highlighted: \(step.title)").font(.subheadline.bold())
-                    Text(step.explanation)
-                    Text(step.example).font(.callout).foregroundColor(theme.muted)
-                }.frame(maxWidth: .infinity, alignment: .leading)
-            }.id(tutorialStepKey).frame(height: textSize.isAccessibilitySize ? 150 : 140).clipped()
-            Text("Scroll for details.").font(.caption).foregroundColor(theme.muted)
-            HStack {
-                Button { tutorialIndex -= 1; revealTutorialArea() } label: { Text("Back").frame(maxWidth: .infinity, minHeight: 44) }.disabled(tutorialIndex == 0)
-                Button { if tutorialIndex == topic.steps.count - 1 { if topic.id == "getting_started" { beginnerTourFinished = true }; closeTutorial() } else { tutorialIndex += 1; revealTutorialArea() } } label: { Text(tutorialIndex == topic.steps.count - 1 ? "Done" : "Next").frame(maxWidth: .infinity, minHeight: 44) }
-                if !textSize.isAccessibilitySize { closeTutorialButton }
-            }
-            if textSize.isAccessibilitySize { closeTutorialButton }
-        }.padding(16).background(theme.surface).overlay(Rectangle().fill(theme.accent).frame(height: 2), alignment: .top).accessibilityIdentifier("tutorial-panel")
+                VStack(alignment: .leading, spacing: 20) {
+                    HStack(spacing: 18) {
+                        Image(systemName: "iphone")
+                        Image(systemName: step.target == "chooseHome" ? "house" : "tv")
+                        if step.target == "welcome" { Image(systemName: "hifispeaker") }
+                    }.font(.system(size: 40, weight: .light)).foregroundColor(theme.violet).accessibilityHidden(true)
+                    Text(step.title).font(.largeTitle.bold()).fixedSize(horizontal: false, vertical: true)
+                        .accessibilityAddTraits(.isHeader).accessibilityFocused($focusedElement, equals: .tutorial(tutorialStepKey))
+                    Text(step.explanation).font(.body).fixedSize(horizontal: false, vertical: true)
+                    ForEach(guide.choices, id: \.id) { choice in
+                        Button { _ = guide.select(choice.id) } label: {
+                            HStack(spacing: 14) {
+                                Image(systemName: choice.icon == "speaker" ? "hifispeaker" : choice.icon).font(.title2).accessibilityHidden(true)
+                                Text(choice.title).fixedSize(horizontal: false, vertical: true)
+                                Spacer(minLength: 0)
+                                if guide.selected(step.target)?.id == choice.id { Image(systemName: "checkmark.circle.fill").accessibilityHidden(true) }
+                            }.frame(maxWidth: .infinity, minHeight: 44, alignment: .leading)
+                        }.buttonStyle(AppButtonStyle(theme: theme)).accessibilityIdentifier("choice-\(choice.id)")
+                            .accessibilityLabel(choice.title).accessibilityValue(guide.selected(step.target)?.id == choice.id ? "Selected" : "Not selected")
+                    }
+                    if step.target == "connectionPlan" {
+                        ForEach(["chooseTV", "chooseHome"], id: \.self) { target in
+                            if let selected = guide.selected(target) {
+                                VStack(alignment: .leading, spacing: 10) {
+                                    Text(selected.title).font(.title3.bold())
+                                    Text(selected.detail).foregroundColor(theme.muted)
+                                }.padding(18).frame(maxWidth: .infinity, alignment: .leading).background(theme.surface).clipShape(RoundedRectangle(cornerRadius: 18))
+                            }
+                        }
+                    }
+                    Text(step.example).font(.callout).foregroundColor(theme.muted).fixedSize(horizontal: false, vertical: true)
+                        .padding(18).frame(maxWidth: .infinity, alignment: .leading).background(theme.surface).clipShape(RoundedRectangle(cornerRadius: 18))
+                    if step.target == "connectionCheck" {
+                        Text("Not connected · Audio protection is not active").font(.headline).foregroundColor(theme.warning)
+                    }
+                }.frame(maxWidth: 640, alignment: .leading).padding(20).frame(maxWidth: .infinity)
+            }.id(tutorialStepKey).accessibilityIdentifier("guide-scroll")
+            VStack(spacing: 8) {
+                if !guide.canContinue { Text("Choose one option above to continue.").font(.subheadline).foregroundColor(theme.muted) }
+                if let selected = guide.selected(step.target) { Text("Selected: \(selected.title)").font(.subheadline).foregroundColor(theme.muted) }
+                HStack(spacing: 12) {
+                    if tutorialIndex > 0 { Button("Back") { guide.back() }.buttonStyle(AppButtonStyle(theme: theme)) }
+                    if guide.canContinue {
+                        action(guide.isLast ? (topic.id == "getting_started" ? "Open full app" : "Done") : (tutorialIndex == 0 ? "Begin" : "Next"), icon: "arrow.right", primary: true) {
+                            if guide.isLast { if topic.id == "getting_started" { beginnerTourFinished = true }; closeTutorial() }
+                            else { _ = guide.next() }
+                        }.accessibilityIdentifier("guide-next")
+                    }
+                }
+            }.padding(16).background(theme.surface)
+        }.accessibilityIdentifier("tutorial-panel")
     }
-    private var closeTutorialButton: some View {
-        Button { closeTutorial() } label: { Text(textSize.isAccessibilitySize ? "Close" : "Close tutorial").fixedSize(horizontal: false, vertical: true).frame(maxWidth: .infinity, minHeight: 44).contentShape(Rectangle()) }.accessibilityLabel("Close tutorial")
-    }
+
 }
 
 private struct SectionAnchor: ViewModifier {
