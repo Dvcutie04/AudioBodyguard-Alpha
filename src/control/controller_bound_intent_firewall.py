@@ -41,6 +41,11 @@ class ControllerBoundIntentFirewall:
             return ControllerBoundRejectionCode.INVALID_INPUT
         if isinstance(now, bool) or not isinstance(now, (int, float)) or not math.isfinite(now):
             return ControllerBoundRejectionCode.INVALID_INPUT
+        if any(type(value) not in (int, float) or not math.isfinite(value)
+               for value in (capability_lease.issued_at, capability_lease.expires_at)):
+            return ControllerBoundRejectionCode.INVALID_INPUT
+        if capability_lease.issued_at >= capability_lease.expires_at:
+            return ControllerBoundRejectionCode.INVALID_INPUT
         policy_verifier = self.policy_verifiers.get(intent.issuer_id)
         if policy_verifier is None:
             return ControllerBoundRejectionCode.POLICY_ISSUER_UNKNOWN
@@ -53,6 +58,8 @@ class ControllerBoundIntentFirewall:
         if intent.device_id != capability_lease.device_id:
             return ControllerBoundRejectionCode.DEVICE_MISMATCH
         if intent.capability_lease_digest != capability_lease.payload_digest:
+            return ControllerBoundRejectionCode.CAPABILITY_MISMATCH
+        if intent.protocol_version != capability_lease.protocol_version:
             return ControllerBoundRejectionCode.CAPABILITY_MISMATCH
         controller_verifier = self.controller_verifiers.get(controller_evidence.issuer_id)
         if controller_verifier is None:
