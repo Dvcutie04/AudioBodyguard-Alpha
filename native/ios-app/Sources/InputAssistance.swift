@@ -184,8 +184,7 @@ struct TVPhotoView: View {
     @State private var gallery = false
     @State private var camera = false
     @State private var instructions = false
-    @State private var setupVisible = false
-    @State private var setupGroup = ""
+    @State private var setupRequest: SetupGuideRequest?
     @State private var cameraNotice = ""
     var body: some View {
         VStack {
@@ -208,7 +207,7 @@ struct TVPhotoView: View {
                     Text("Model: \(photo.hints.model ?? "Not identified")")
                     Text("TV IP hint: \(photo.hints.address ?? "Not identified")")
                     Text("These are unverified hints. Only a clearly labeled, private IPv4 address is shown. We never use a photo as permission to control your TV.").font(.caption).foregroundColor(theme.muted)
-                    Button("Illustrated setup guides") { setupGroup = photo.hints.brand?.lowercased() ?? ""; setupVisible = true }.buttonStyle(AppButtonStyle(theme: theme))
+                    Button("Illustrated setup guides") { setupRequest = SetupGuideRequest(group: photo.hints.brand?.lowercased() ?? "") }.buttonStyle(AppButtonStyle(theme: theme))
                     Button(instructions ? "Hide connection instructions" : "Show connection instructions") { instructions.toggle() }.buttonStyle(AppButtonStyle(theme: theme))
                     if instructions {
                         Text("1. On your TV, open Settings. Look for About, Support or Device information to find the model. Menu names differ by TV.")
@@ -222,7 +221,7 @@ struct TVPhotoView: View {
                 }.padding()
             }
         }.background(theme.background.ignoresSafeArea()).foregroundColor(theme.text)
-            .sheet(isPresented: $setupVisible) { SetupGuidesView(theme: theme, initialGroup: setupGroup) }
+            .sheet(item: $setupRequest) { request in SetupGuidesView(theme: theme, initialGroup: request.group) }
             .sheet(isPresented: $gallery) { LocalPhotoPicker { image in gallery = false; if let image = image { photo.scan(image) } } }
             .sheet(isPresented: $camera) { LocalCameraPicker { image in camera = false; if let image = image { photo.scan(image) } } }
             .onDisappear { photo.clear() }

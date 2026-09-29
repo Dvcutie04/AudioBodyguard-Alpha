@@ -9,14 +9,15 @@ final class AQSSReadOnlyUITests: XCTestCase {
         // identically named button on the page underneath it.
         let scroll = app.scrollViews["setup-scroll"].exists ? app.scrollViews["setup-scroll"] : app.scrollViews["menu-scroll"].exists ? app.scrollViews["menu-scroll"] : app.scrollViews["guide-scroll"].exists ? app.scrollViews["guide-scroll"] : app.scrollViews["home-scroll"]
         let button = scroll.buttons.matching(NSPredicate(format: "label CONTAINS %@", title)).firstMatch
-        guard button.waitForExistence(timeout: 10) else { XCTFail("Missing button: \(title)"); return }
+        guard button.waitForExistence(timeout: 10) else { screenshot("Missing \(title)", app); XCTFail("Missing button: \(title)"); return }
         // isHittable can be true for a sliver of a button whose center lies
         // under the fixed page bar or tutorial footer. Bring the whole control
         // into the content viewport before XCTest taps its center.
         func insideViewport() -> Bool {
-            let visible = button.frame.intersection(scroll.frame)
+            let viewport = scroll.frame.intersection(app.frame).insetBy(dx: 0, dy: 24)
+            let visible = button.frame.intersection(viewport)
             return !visible.isNull && visible.height >= min(44, button.frame.height)
-                && scroll.frame.contains(CGPoint(x: button.frame.midX, y: button.frame.midY))
+                && viewport.contains(CGPoint(x: button.frame.midX, y: button.frame.midY))
         }
         for _ in 0..<16 {
             if button.isHittable && insideViewport() { break }
@@ -31,7 +32,8 @@ final class AQSSReadOnlyUITests: XCTestCase {
             screenshot("Unreachable \(title)", app)
             XCTFail("Unreachable button within content viewport: \(title)"); return
         }
-        button.tap()
+        let visible = button.frame.intersection(scroll.frame.intersection(app.frame).insetBy(dx: 0, dy: 24))
+        app.coordinate(withNormalizedOffset: .zero).withOffset(CGVector(dx: visible.midX, dy: visible.midY)).tap()
     }
     private func launch(_ firstVisit: Bool = false) -> XCUIApplication {
         let app = XCUIApplication()

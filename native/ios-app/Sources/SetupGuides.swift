@@ -1,5 +1,10 @@
 import SwiftUI
 
+struct SetupGuideRequest: Identifiable {
+    let id = UUID()
+    let group: String
+}
+
 /// Local, illustrative instructions. No device session, credentials or control API.
 struct SetupGuidesView: View {
     let theme: AppTheme
