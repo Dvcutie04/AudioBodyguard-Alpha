@@ -19,6 +19,10 @@ final class AQSSReadOnlyUITests: XCTestCase {
 
     func testAllFivePagesKeepHelpAndTruthfulEmptyStates() {
         let app = XCUIApplication(); app.launch()
+        XCTAssertTrue(app.buttons["start-beginner-tour"].isHittable)
+        label("does not monitor or change audio", app)
+        screenshot("00 Beginner welcome", app)
+        jump("Coverage", app)
         label("Unknown physical state", app); label("No output observation", app)
         screenshot("01 Midnight Home", app)
         for (id, title) in [("sound", "Sound, on your terms."), ("devices", "A clear path to sound."), ("insights", "Know what happened."), ("settings", "Make space for you.")] {
@@ -29,6 +33,36 @@ final class AQSSReadOnlyUITests: XCTestCase {
         jump("Readiness checklist", app); label("Six setup checks unknown", app)
         jump("Session transfer", app); label("No supported endpoint or verified transfer path", app)
         tab("home", app); label("Unknown physical state", app)
+    }
+
+    func testBeginnerTourOrderInteractiveExampleThemeExitAndReplay() {
+        let app = XCUIApplication(); app.launch()
+        app.buttons["start-beginner-tour"].tap()
+        label("Step 1 of 5", app); XCTAssertFalse(app.buttons["Back"].isEnabled)
+        screenshot("Beginner 1 Welcome", app)
+        app.buttons["Next"].tap(); label("Step 2 of 5", app); label("Six setup checks unknown", app)
+        app.buttons["Back"].tap(); label("Step 1 of 5", app)
+        app.buttons["Next"].tap(); app.buttons["Next"].tap()
+        label("Step 3 of 5", app); label("Sound options", app)
+        app.buttons["Next"].tap(); label("Step 4 of 5", app)
+        tap("Explore an example", app); label("EXAMPLE · synthetic data", app)
+        screenshot("Beginner 4 Example", app)
+        app.buttons["Next"].tap(); label("Step 5 of 5", app)
+        tap("Daylight", app); label("Step 5 of 5", app)
+        screenshot("Beginner 5 Daylight", app)
+        app.buttons["Done"].tap(); label("TOUR FINISHED", app)
+        XCTAssertFalse(app.buttons["Close tutorial"].exists)
+        XCTAssertTrue(app.buttons["start-beginner-tour"].isHittable)
+        app.buttons["start-beginner-tour"].tap(); label("Step 1 of 5", app)
+        app.buttons["Close tutorial"].tap()
+        jump("Coverage", app); label("Unknown physical state", app)
+        tab("settings", app); tap("Midnight", app)
+        app.buttons["Help & tutorials"].tap(); app.buttons["Start here · 5-step tour"].tap()
+        app.buttons["Next"].tap(); app.buttons["Close tutorial"].tap()
+        label("Make space for you.", app)
+        tab("home", app)
+        tap("Step 3. Explore sound features", app); label("Step 3 of 5", app)
+        app.buttons["Close tutorial"].tap()
     }
 
     func testOptionsAndAdvancedRemainUnavailable() {
@@ -84,6 +118,11 @@ final class AQSSReadOnlyUITests: XCTestCase {
         app.launch()
         let help = app.buttons["Help & tutorials"]
         XCTAssertTrue(help.isHittable); XCTAssertGreaterThanOrEqual(help.frame.height, 44)
+        tap("Start 5-step tour", app); label("Step 1 of 5", app)
+        XCTAssertTrue(app.buttons["Next"].isHittable)
+        XCTAssertTrue(app.buttons["Close tutorial"].isHittable)
+        screenshot("Largest text beginner tutorial", app)
+        app.buttons["Close tutorial"].tap()
         app.buttons["page-picker"].tap(); app.buttons["Devices"].tap()
         help.tap()
         let readiness = app.buttons["Readiness checklist"]

@@ -4,6 +4,13 @@ data class TutorialStep(val target: String, val area: String, val title: String,
 data class TutorialTopic(val id: String, val title: String, val steps: List<TutorialStep>)
 object TutorialContent {
     val topics: List<TutorialTopic> = listOf(
+        TutorialTopic("getting_started", "Start here · 5-step tour", listOf(
+            TutorialStep("welcome", "overview", "Meet your preview", "This preview lets you explore pages, examples and themes. It does not monitor or change audio. Use Next to follow the tour, or Close tutorial to explore on your own.", "Example: You can change the theme today. A volume control marked Unavailable cannot change a speaker."),
+            TutorialStep("capability", "home", "Understand device checks", "Devices explains what a future connection needs. The six checks are unknown, not tasks you can complete here. There is no pairing or activation step in this preview.", "Example: Seeing your phone in a browser simulator does not connect your headphones or verify sound."),
+            TutorialStep("options", "options", "Explore sound features", "Sound introduces volume, Dialogue and Night presets, equalizer and captions. These controls are preview only. Scroll to read them; Next takes you to example graphs.", "Example: Night describes a possible quieter preset. Opening its description does not lower volume."),
+            TutorialStep("trends", "overview", "Read an example graph", "Insights has no real measurements yet. Tap Explore an example to see an invented graph, then Read chart values for its numbers. Next opens Settings.", "Example: 64 relative units is an invented chart value, not a sound level in decibels."),
+            TutorialStep("appearance", "overview", "Make it yours and find help", "Settings lets you choose a theme. Planned features are explained below. Help stays at the top of every page: replay this tour or choose a specific topic. Done ends the tour.", "Example: Choose Daylight for a lighter screen. For a refresher on captions, open Help and choose Captions."),
+        )),
         TutorialTopic("home", "Home and coverage", listOf(
             TutorialStep("coverage", "home", "Read the coverage state", "Unknown physical state means there is no independent observation of audio output. This simulation does not provide protection.", "Example: A green build result cannot tell you whether a speaker produced sound."),
             TutorialStep("capability", "home", "Check what is supported", "The six setup checks must be established before a control can become eligible. A connected device alone is insufficient.", "Example: Bluetooth may report headphones connected while the actual playback route is still unknown."),

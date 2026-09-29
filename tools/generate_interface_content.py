@@ -7,6 +7,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 TARGET_PAGES = {
+    "welcome": "home", "trends": "insights", "appearance": "settings",
     "coverage": "home", "capability": "devices", "captions": "sound",
     "history": "insights", "hint": "devices", "handoff": "devices",
     **{key: "sound" for key in ("options", "volume", "captionOption", "sound", "equalizer", "defaults")},

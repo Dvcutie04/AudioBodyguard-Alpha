@@ -105,8 +105,55 @@ assert_scroll_label() {
 # Themed page navigation keeps all previous truth assertions, now on their
 # corresponding pages, and adds the synthetic-chart/appearance boundaries.
 capture_ui home
-assert_tutorial_label home "Unknown physical state"
-assert_tutorial_label home "No output observation"
+assert_tutorial_label home "Start 5-step tour"
+assert_tutorial_label home "does not monitor or change audio"
+tap_tutorial_label "Start 5-step tour" beginner_open
+beginner_titles=("Meet Audio Bodyguard." "Readiness checklist" "Sound options" "Audio trends" "Appearance")
+for step in 1 2 3 4 5; do
+    capture_ui "beginner_step_$step"
+    assert_tutorial_label "beginner_step_$step" "Step $step of 5"
+    python3 tools/check_android_simulation_ui.py --assert-tutorial-target "$artifact_dir/beginner_step_$step.xml" "${beginner_titles[$((step - 1))]}"
+    if [[ "$step" -eq 2 ]]; then
+        tap_tutorial_label "Back" beginner_back
+        capture_ui beginner_back_1
+        assert_tutorial_label beginner_back_1 "Step 1 of 5"
+        tap_tutorial_label "Next" beginner_forward
+    fi
+    if [[ "$step" -eq 4 ]]; then
+        tap_scroll_label "Explore an example" beginner_example_open
+        capture_ui beginner_example
+        assert_tutorial_label beginner_example "EXAMPLE · synthetic data"
+        assert_tutorial_label beginner_example "Step 4 of 5"
+    fi
+    if [[ "$step" -lt 5 ]]; then tap_tutorial_label "Next" beginner_next; fi
+done
+tap_scroll_label "Daylight" beginner_theme
+capture_ui beginner_daylight
+assert_tutorial_label beginner_daylight "Step 5 of 5"
+tap_tutorial_label "Done" beginner_done
+capture_ui beginner_finished
+assert_tutorial_label beginner_finished "TOUR FINISHED"
+tap_tutorial_label "Replay 5-step tour" beginner_replay
+capture_ui beginner_replayed
+assert_tutorial_label beginner_replayed "Step 1 of 5"
+tap_tutorial_label "Close tutorial" beginner_close
+tap_scroll_label "Step 3. Explore sound features" beginner_shortcut
+capture_ui beginner_direct_step
+assert_tutorial_label beginner_direct_step "Step 3 of 5"
+adb shell input keyevent KEYCODE_BACK
+tap_tutorial_label "Settings" beginner_settings
+tap_tutorial_label "Midnight" beginner_reset_theme
+tap_tutorial_label "Help & tutorials" beginner_help
+tap_tutorial_label "Start here · 5-step tour" beginner_help_replay
+tap_tutorial_label "Next" beginner_help_next
+tap_tutorial_label "Close tutorial" beginner_help_exit
+capture_ui beginner_origin
+assert_tutorial_label beginner_origin "Make space for you."
+tap_tutorial_label "Jump to" initial_coverage_open
+tap_tutorial_label "Coverage" initial_coverage
+capture_ui coverage
+assert_tutorial_label coverage "Unknown physical state"
+assert_tutorial_label coverage "No output observation"
 tap_tutorial_label "Sound" nav_sound
 capture_ui sound
 assert_tutorial_label sound "Sound, on your terms."
@@ -159,7 +206,7 @@ tap_tutorial_label "Daylight" theme_daylight
 capture_ui daylight_settings
 tap_tutorial_label "Home" theme_home
 capture_ui daylight_home
-assert_tutorial_label daylight_home "Unknown physical state"
+assert_tutorial_label daylight_home "does not monitor or change audio"
 tap_tutorial_label "Settings" theme_settings
 tap_tutorial_label "Midnight" theme_midnight
 tap_scroll_label "Hide advanced options" advanced_close
@@ -202,10 +249,15 @@ adb shell settings put system user_rotation 0
 capture_ui portrait_tutorial
 tap_tutorial_label "Close tutorial" guide_close
 capture_ui restored_home
-assert_tutorial_label restored_home "Unknown physical state"
+assert_tutorial_label restored_home "does not monitor or change audio"
 
 adb shell settings put system font_scale 2.0
 capture_ui large_text_home
+tap_scroll_label "Replay 5-step tour" large_beginner_open
+capture_ui large_beginner
+assert_tutorial_label large_beginner "Step 1 of 5"
+tap_tutorial_label "Next" large_beginner_next
+tap_tutorial_label "Close tutorial" large_beginner_close
 tap_tutorial_label "Pages · Home" large_pages
 tap_tutorial_label "Devices" large_devices
 capture_ui large_text_devices
@@ -216,4 +268,4 @@ assert_tutorial_label large_text_tutorial "Step 1 of 6"
 tap_tutorial_label "Close tutorial" large_close
 capture_ui large_text_closed
 assert_tutorial_label large_text_closed "Pages · Devices"
-echo "ANDROID_THEME_UI_OBSERVED: five pages, unknown coverage, unavailable controls, six readiness steps, labeled example, themes, future explanation, tutorial routing, Back, lifecycle, rotation and large text passed"
+echo "ANDROID_THEME_UI_OBSERVED: five-step beginner tour, completion, replay, shortcuts, interactive example and theme, five pages, unknown coverage, unavailable controls, six readiness steps, labeled example, themes, future explanation, tutorial routing, Back, lifecycle, rotation and large text passed"

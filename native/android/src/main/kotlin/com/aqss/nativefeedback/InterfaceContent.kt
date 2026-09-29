@@ -4,11 +4,11 @@ data class InterfacePage(val id: String, val title: String, val icon: String, va
 data class InterfaceFeature(val id: String, val title: String, val detail: String, val explanation: String)
 object InterfaceContent {
     val pages = listOf(
-        InterfacePage("home", "Home", "shield.lefthalf.filled", "Your listening space.", "Understand your coverage. Explore what comes next."),
-        InterfacePage("sound", "Sound", "slider.horizontal.3", "Sound, on your terms.", "Explore the controls a qualified output could support."),
-        InterfacePage("devices", "Devices", "hifispeaker", "A clear path to sound.", "Hardware, authority and observation belong together."),
-        InterfacePage("insights", "Insights", "chart.xyaxis.line", "Know what happened.", "Observed results and gaps will belong here."),
-        InterfacePage("settings", "Settings", "gearshape", "Make space for you.", "Appearance, guidance and your privacy in one place."),
+        InterfacePage("home", "Home", "shield.lefthalf.filled", "Your listening space.", "New here? Start with the five-step tour below."),
+        InterfacePage("sound", "Sound", "slider.horizontal.3", "Sound, on your terms.", "Preview volume, presets, equalizer and captions. Audio controls are not connected."),
+        InterfacePage("devices", "Devices", "hifispeaker", "A clear path to sound.", "See what a future device connection will need. Pairing is not available in this preview."),
+        InterfacePage("insights", "Insights", "chart.xyaxis.line", "Know what happened.", "Learn how graphs work with labeled examples. No real audio has been measured."),
+        InterfacePage("settings", "Settings", "gearshape", "Make space for you.", "Choose your theme, find help and read about planned features."),
     )
     val future = listOf(
         InterfaceFeature("voice", "Voice requests", "Planned · proposal only", "A future voice request could suggest a change. Device authority and independent verification would still be required. This app is not listening for commands."),
@@ -20,7 +20,7 @@ object InterfaceContent {
         "midnight" to mapOf("background" to 0xFF080F20.toInt(), "surface" to 0xFF121D33.toInt(), "raised" to 0xFF1A2842.toInt(), "text" to 0xFFF1F5FF.toInt(), "muted" to 0xFFADBDD7.toInt(), "accent" to 0xFF64DAE8.toInt(), "violet" to 0xFFB4A0FF.toInt(), "warning" to 0xFFF9CB80.toInt(), "outline" to 0xFF536A91.toInt()),
         "daylight" to mapOf("background" to 0xFFF2F5FC.toInt(), "surface" to 0xFFFFFFFF.toInt(), "raised" to 0xFFE5ECF8.toInt(), "text" to 0xFF132238.toInt(), "muted" to 0xFF42546F.toInt(), "accent" to 0xFF006774.toInt(), "violet" to 0xFF6543AD.toInt(), "warning" to 0xFF855000.toInt(), "outline" to 0xFF667D9C.toInt()),
     )
-    val targetPages = mapOf("coverage" to "home", "capability" to "devices", "captions" to "sound", "history" to "insights", "hint" to "devices", "handoff" to "devices", "options" to "sound", "volume" to "sound", "captionOption" to "sound", "sound" to "sound", "equalizer" to "sound", "defaults" to "sound", "advanced" to "settings", "route" to "settings", "physical" to "settings", "background" to "settings", "privacy" to "settings", "handoffOption" to "settings", "checkHardware" to "devices", "checkQualification" to "devices", "checkPermission" to "devices", "checkRoute" to "devices", "checkRuntime" to "devices", "checkEvidence" to "devices")
+    val targetPages = mapOf("welcome" to "home", "trends" to "insights", "appearance" to "settings", "coverage" to "home", "capability" to "devices", "captions" to "sound", "history" to "insights", "hint" to "devices", "handoff" to "devices", "options" to "sound", "volume" to "sound", "captionOption" to "sound", "sound" to "sound", "equalizer" to "sound", "defaults" to "sound", "advanced" to "settings", "route" to "settings", "physical" to "settings", "background" to "settings", "privacy" to "settings", "handoffOption" to "settings", "checkHardware" to "devices", "checkQualification" to "devices", "checkPermission" to "devices", "checkRoute" to "devices", "checkRuntime" to "devices", "checkEvidence" to "devices")
     const val exampleLabel = "EXAMPLE · synthetic data"
     const val exampleTitle = "Illustrative signal trend"
     const val exampleUnit = "Relative level (0–100)"

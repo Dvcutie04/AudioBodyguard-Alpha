@@ -5,6 +5,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 TARGETS = {
+    "overview": {"welcome", "trends", "appearance"},
     "home": {"coverage", "capability", "captions", "history", "hint", "handoff"},
     "options": {"options", "volume", "captionOption", "sound", "equalizer", "defaults"},
     "advanced": {"advanced", "route", "physical", "background", "privacy", "handoffOption"},

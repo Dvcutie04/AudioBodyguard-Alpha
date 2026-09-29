@@ -61,6 +61,7 @@ private struct ReadOnlyHomeView: View {
     @State private var futureVisible = false
     @State private var tutorialTopicID: String?
     @State private var tutorialIndex = 0
+    @State private var beginnerTourFinished = false
     @State private var previousPage = "home"
     @State private var previousOptions = true
     @State private var previousAdvanced = true
@@ -76,8 +77,9 @@ private struct ReadOnlyHomeView: View {
         return topic.steps[tutorialIndex]
     }
     private var tutorialStepKey: String { "\(tutorialTopicID ?? "")-\(tutorialIndex)" }
+    private var beginnerTour: AQSSTutorialTopic { AQSSTutorialContent.topics.first { $0.id == "getting_started" }! }
     private let destinations: [(String, String)] = [
-        ("Coverage", "coverage"), ("Readiness checklist", "capability"), ("Sound options", "options"),
+        ("Start here", "welcome"), ("Coverage", "coverage"), ("Readiness checklist", "capability"), ("Sound options", "options"),
         ("Advanced options", "advanced"), ("Captions", "captions"), ("Session history", "history"),
         ("Foreground OS hint", "hint"), ("Privacy and storage", "privacy"), ("Session transfer", "handoff")
     ]
@@ -176,6 +178,35 @@ private struct ReadOnlyHomeView: View {
 
     private var homePage: some View {
         VStack(spacing: 20) {
+            card(target: "welcome") {
+                badge(beginnerTourFinished ? "TOUR FINISHED" : "START HERE · 5 STEPS", color: theme.violet)
+                Text(beginnerTourFinished ? "Explore at your pace." : "Meet Audio Bodyguard.").font(.title2.bold()).accessibilityAddTraits(.isHeader)
+                Text("This is a read-only preview. It does not monitor or change audio.").foregroundColor(theme.muted)
+                action(beginnerTourFinished ? "Replay 5-step tour" : "Start 5-step tour", icon: "arrow.right.circle", primary: true) { startTutorial("getting_started") }
+                    .accessibilityIdentifier("start-beginner-tour")
+                Text("No setup needed to explore. Help is always at the top.").font(.subheadline).foregroundColor(theme.muted)
+            }
+            card {
+                Text("What can I do here?").font(.title3.bold()).accessibilityAddTraits(.isHeader)
+                featureSummary("Available now", detail: "Explore pages, example graphs, themes and tutorials.", color: theme.accent)
+                featureSummary("Preview only", detail: "Sound controls and device checks are explanations. Audio protection is not active.", color: theme.warning)
+                featureSummary("Planned", detail: "Voice requests, personal profiles and background protection. Read more in Settings.", color: theme.violet)
+            }
+            card {
+                Text("Your route through the app").font(.title3.bold()).accessibilityAddTraits(.isHeader)
+                Text("Follow 1–5, or revisit any step.").foregroundColor(theme.muted)
+                ForEach(Array(beginnerTour.steps.enumerated()), id: \.offset) { index, step in
+                    let item = AQSSInterfaceContent.pages.first { $0.id == AQSSInterfaceContent.targetPages[step.target] }!
+                    Button { startTutorial("getting_started", at: index) } label: {
+                        HStack(spacing: 12) {
+                            Text("\(index + 1)").font(.headline).frame(width: 30, height: 30).background(theme.surface).clipShape(Circle()).accessibilityHidden(true)
+                            Text(step.title).fixedSize(horizontal: false, vertical: true)
+                            Spacer(minLength: 0)
+                            Image(systemName: item.icon).accessibilityHidden(true)
+                        }.frame(maxWidth: .infinity, alignment: .leading)
+                    }.buttonStyle(AppButtonStyle(theme: theme)).accessibilityLabel("Step \(index + 1). \(step.title)")
+                }
+            }
             card(target: "coverage") {
                 HStack(alignment: .top) {
                     VStack(alignment: .leading, spacing: 12) {
@@ -194,12 +225,13 @@ private struct ReadOnlyHomeView: View {
                 destinationCard("Sound controls", subtitle: "Presets, captions & equalizer", icon: "slider.horizontal.3") { openPage("sound") }
                 destinationCard("Insights", subtitle: "Trends, evidence & examples", icon: "chart.xyaxis.line") { openPage("insights") }
             }
-            card {
-                badge("START HERE", color: theme.violet)
-                Text("A little guidance.\nA clearer picture.").font(.title2.bold())
-                Text("Short walkthroughs explain each area, one step at a time. Return to Help whenever you need it.").foregroundColor(theme.muted)
-                action("Show me around", icon: "sparkles") { startTutorial("home") }
-            }
+        }
+    }
+
+    private func featureSummary(_ title: String, detail: String, color: Color) -> some View {
+        VStack(alignment: .leading, spacing: 4) {
+            Text(title).font(.headline).foregroundColor(color)
+            Text(detail).font(.subheadline).foregroundColor(theme.muted)
         }
     }
 
@@ -259,7 +291,7 @@ private struct ReadOnlyHomeView: View {
 
     private var insightsPage: some View {
         VStack(alignment: .leading, spacing: 18) {
-            card {
+            card(target: "trends") {
                 HStack { Text("Audio trends").font(.title2.bold()); Spacer(); Image(systemName: "chart.xyaxis.line").foregroundColor(theme.violet).accessibilityHidden(true) }
                 if showingExample {
                     badge(AQSSInterfaceContent.exampleLabel, color: theme.warning)
@@ -293,7 +325,7 @@ private struct ReadOnlyHomeView: View {
 
     private var settingsPage: some View {
         VStack(alignment: .leading, spacing: 18) {
-            card {
+            card(target: "appearance") {
                 Text("Appearance").font(.title2.bold()).accessibilityAddTraits(.isHeader)
                 Text("One visual language, in the light that suits you.").foregroundColor(theme.muted)
                 ForEach(["midnight", "daylight", "system"], id: \.self) { value in
@@ -400,12 +432,12 @@ private struct ReadOnlyHomeView: View {
         closeTutorial(restore: false); showingExample = false; reveal(target)
         navigationTarget = target; navigationRequest += 1
     }
-    private func startTutorial(_ id: String) {
-        guard AQSSTutorialContent.topics.contains(where: { $0.id == id }) else { return }
+    private func startTutorial(_ id: String, at index: Int = 0) {
+        guard let topic = AQSSTutorialContent.topics.first(where: { $0.id == id }), topic.steps.indices.contains(index) else { return }
         if tutorialTopicID == nil { previousPage = page; previousOptions = optionsExpanded; previousAdvanced = advancedExpanded; previousChecklist = checklistExpanded }
-        showingExample = false; tutorialTopicID = id; tutorialIndex = 0; revealTutorialArea()
+        showingExample = false; chartValuesVisible = false; tutorialTopicID = id; tutorialIndex = index; revealTutorialArea()
     }
-    private func revealTutorialArea() { if let step = tutorialStep { reveal(step.target, area: step.area) } }
+    private func revealTutorialArea() { showingExample = false; chartValuesVisible = false; if let step = tutorialStep { reveal(step.target, area: step.area) } }
     private func closeTutorial(restore: Bool = true) {
         guard tutorialTopicID != nil else { return }
         tutorialTopicID = nil; tutorialIndex = 0
@@ -413,6 +445,17 @@ private struct ReadOnlyHomeView: View {
     }
     private func tutorialPanel(topic: AQSSTutorialTopic, step: AQSSTutorialStep) -> some View {
         VStack(alignment: .leading, spacing: 8) {
+            if topic.id == "getting_started" && !textSize.isAccessibilitySize {
+                HStack(spacing: 8) {
+                    ForEach(topic.steps.indices, id: \.self) { index in
+                        Text("\(index + 1)").font(.caption.bold()).frame(width: 26, height: 26)
+                            .foregroundColor(index == tutorialIndex ? theme.background : theme.muted)
+                            .background(index == tutorialIndex ? theme.accent : theme.raised).clipShape(Circle())
+                    }
+                    Spacer()
+                    Image(systemName: currentPage.icon).foregroundColor(theme.violet)
+                }.accessibilityHidden(true)
+            }
             ScrollView {
                 VStack(alignment: .leading, spacing: 8) {
                     Text("Tutorial — \(topic.title)").font(.headline).foregroundColor(theme.accent).accessibilityAddTraits(.isHeader).accessibilityFocused($focusedElement, equals: .tutorial(tutorialStepKey))
@@ -424,7 +467,7 @@ private struct ReadOnlyHomeView: View {
             Text("Scroll for details.").font(.caption).foregroundColor(theme.muted)
             HStack {
                 Button { tutorialIndex -= 1; revealTutorialArea() } label: { Text("Back").frame(maxWidth: .infinity, minHeight: 44) }.disabled(tutorialIndex == 0)
-                Button { if tutorialIndex == topic.steps.count - 1 { closeTutorial() } else { tutorialIndex += 1; revealTutorialArea() } } label: { Text(tutorialIndex == topic.steps.count - 1 ? "Done" : "Next").frame(maxWidth: .infinity, minHeight: 44) }
+                Button { if tutorialIndex == topic.steps.count - 1 { if topic.id == "getting_started" { beginnerTourFinished = true }; closeTutorial() } else { tutorialIndex += 1; revealTutorialArea() } } label: { Text(tutorialIndex == topic.steps.count - 1 ? "Done" : "Next").frame(maxWidth: .infinity, minHeight: 44) }
                 if !textSize.isAccessibilitySize { closeTutorialButton }
             }
             if textSize.isAccessibilitySize { closeTutorialButton }

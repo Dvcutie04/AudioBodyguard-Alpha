@@ -3,6 +3,47 @@
   "mode": "read_only_guidance",
   "topics": [
     {
+      "id": "getting_started",
+      "title": "Start here · 5-step tour",
+      "steps": [
+        {
+          "target": "welcome",
+          "area": "overview",
+          "title": "Meet your preview",
+          "explanation": "This preview lets you explore pages, examples and themes. It does not monitor or change audio. Use Next to follow the tour, or Close tutorial to explore on your own.",
+          "example": "Example: You can change the theme today. A volume control marked Unavailable cannot change a speaker."
+        },
+        {
+          "target": "capability",
+          "area": "home",
+          "title": "Understand device checks",
+          "explanation": "Devices explains what a future connection needs. The six checks are unknown, not tasks you can complete here. There is no pairing or activation step in this preview.",
+          "example": "Example: Seeing your phone in a browser simulator does not connect your headphones or verify sound."
+        },
+        {
+          "target": "options",
+          "area": "options",
+          "title": "Explore sound features",
+          "explanation": "Sound introduces volume, Dialogue and Night presets, equalizer and captions. These controls are preview only. Scroll to read them; Next takes you to example graphs.",
+          "example": "Example: Night describes a possible quieter preset. Opening its description does not lower volume."
+        },
+        {
+          "target": "trends",
+          "area": "overview",
+          "title": "Read an example graph",
+          "explanation": "Insights has no real measurements yet. Tap Explore an example to see an invented graph, then Read chart values for its numbers. Next opens Settings.",
+          "example": "Example: 64 relative units is an invented chart value, not a sound level in decibels."
+        },
+        {
+          "target": "appearance",
+          "area": "overview",
+          "title": "Make it yours and find help",
+          "explanation": "Settings lets you choose a theme. Planned features are explained below. Help stays at the top of every page: replay this tour or choose a specific topic. Done ends the tour.",
+          "example": "Example: Choose Daylight for a lighter screen. For a refresher on captions, open Help and choose Captions."
+        }
+      ]
+    },
+    {
       "id": "home",
       "title": "Home and coverage",
       "steps": [

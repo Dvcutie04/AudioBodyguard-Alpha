@@ -34,6 +34,7 @@ class TutorialGuide(
     private val navigate: (String, String?) -> Unit,
     private val restorePage: (String) -> Unit,
     private val focusHelp: () -> Unit,
+    private val finished: (String) -> Unit,
     private val stateChanged: () -> Unit,
 ) {
     private val sideGuide = activity.resources.configuration.screenWidthDp >= 640 && activity.resources.configuration.screenWidthDp > activity.resources.configuration.screenHeightDp
@@ -46,6 +47,7 @@ class TutorialGuide(
         textSize = 16f; setTextColor(skin.text); accessibilityLiveRegion = View.ACCESSIBILITY_LIVE_REGION_POLITE
     }
     private val explanation = ScrollView(activity).apply { addView(text) }
+    private val progress = LinearLayout(activity).apply { importantForAccessibility = View.IMPORTANT_FOR_ACCESSIBILITY_NO_HIDE_DESCENDANTS }
     private val back = button("Back") { move(-1) }
     private val next = button("Next") { move(1) }
     private var topic: TutorialTopic? = null
@@ -59,6 +61,7 @@ class TutorialGuide(
 
     init {
         val readingHeight = (activity.resources.configuration.screenHeightDp / 3).coerceIn(80, 160)
+        panel.addView(progress)
         panel.addView(explanation, if (sideGuide) LinearLayout.LayoutParams(-1, 0, 1f) else LinearLayout.LayoutParams(-1, dp(readingHeight)))
         panel.addView(TextView(activity).apply { text = "Scroll for details."; textSize = 12f; setTextColor(skin.muted); setPadding(0, dp(6), 0, dp(6)) })
         val controls = LinearLayout(activity)
@@ -76,22 +79,23 @@ class TutorialGuide(
         AlertDialog.Builder(activity).setTitle("Choose a tutorial").setItems(TutorialContent.topics.map { it.title }.toTypedArray()) { _, i -> start(TutorialContent.topics[i].id) }.setNegativeButton("Cancel", null).show()
     }
     fun chooseSection() {
-        val entries = listOf("Coverage" to "coverage", "Readiness checklist" to "capability", "Sound options" to "options", "Advanced options" to "advanced", "Captions" to "captions", "Session history" to "history", "Foreground OS hint" to "hint", "Privacy and storage" to "privacy", "Session transfer" to "handoff")
+        val entries = listOf("Start here" to "welcome", "Coverage" to "coverage", "Readiness checklist" to "capability", "Sound options" to "options", "Advanced options" to "advanced", "Captions" to "captions", "Session history" to "history", "Foreground OS hint" to "hint", "Privacy and storage" to "privacy", "Session transfer" to "handoff")
         AlertDialog.Builder(activity).setTitle("Jump to a section").setItems(entries.map { it.first }.toTypedArray()) { _, i -> jump(entries[i].second) }.setNegativeButton("Cancel", null).show()
     }
     fun jump(target: String) {
         close(false); navigate(target, null)
         targets[target]?.let { revealTarget(it, false) }
     }
-    fun start(id: String) {
+    fun start(id: String, position: Int = 0) {
         val selected = TutorialContent.topics.firstOrNull { it.id == id } ?: return
+        if (position !in selected.steps.indices) return
         if (topic == null) { previous = expansion(); previousPage = currentPage() }
-        topic = selected; index = 0; render()
+        topic = selected; index = position; render()
     }
     private fun move(delta: Int) {
         val selected = topic ?: return
         val position = index + delta
-        if (position >= selected.steps.size) { close(); return }
+        if (position >= selected.steps.size) { finished(selected.id); close(); return }
         if (position < 0) return
         index = position; render()
     }
@@ -99,11 +103,25 @@ class TutorialGuide(
         pendingLayout?.let { if (scroll.viewTreeObserver.isAlive) scroll.viewTreeObserver.removeOnGlobalLayoutListener(it) }
         pendingLayout = null; highlighted?.foreground = originalForeground; highlighted = null
     }
+    fun refreshHighlight() {
+        val step = topic?.steps?.getOrNull(index) ?: return
+        targets[step.target]?.let { revealTarget(it, true) }
+    }
     private fun render() {
         val selected = topic ?: return
         val step = selected.steps.getOrNull(index) ?: return
         detachTarget(); navigate(step.target, step.area)
         val target = targets[step.target] ?: run { close(); return }
+        progress.removeAllViews()
+        progress.visibility = if (selected.id == "getting_started" && activity.resources.configuration.fontScale < 1.5f) View.VISIBLE else View.GONE
+        if (progress.visibility == View.VISIBLE) selected.steps.indices.forEach { number ->
+            progress.addView(TextView(activity).apply {
+                text = "${number + 1}"; textSize = 13f; gravity = android.view.Gravity.CENTER
+                setTypeface(null, Typeface.BOLD)
+                setTextColor(if (number == index) skin.background else skin.muted)
+                background = skin.shape(if (number == index) skin.accent else skin.raised, 13)
+            }, LinearLayout.LayoutParams(dp(26), dp(26)).apply { marginEnd = dp(8); bottomMargin = dp(8) })
+        }
         val description = "Tutorial — ${selected.title}\nStep ${index + 1} of ${selected.steps.size} • Highlighted: ${step.title}\n\n${step.explanation}\n\n${step.example}"
         text.text = SpannableString(description).apply { setSpan(StyleSpan(Typeface.BOLD), 0, description.indexOf('\n'), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE) }
         explanation.scrollTo(0, 0); back.isEnabled = index > 0

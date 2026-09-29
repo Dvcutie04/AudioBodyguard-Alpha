@@ -14,11 +14,11 @@ public struct AQSSInterfaceFeature: Equatable, Sendable {
 }
 public enum AQSSInterfaceContent {
     public static let pages: [AQSSInterfacePage] = [
-        AQSSInterfacePage(id: "home", title: "Home", icon: "shield.lefthalf.filled", headline: "Your listening space.", subtitle: "Understand your coverage. Explore what comes next."),
-        AQSSInterfacePage(id: "sound", title: "Sound", icon: "slider.horizontal.3", headline: "Sound, on your terms.", subtitle: "Explore the controls a qualified output could support."),
-        AQSSInterfacePage(id: "devices", title: "Devices", icon: "hifispeaker", headline: "A clear path to sound.", subtitle: "Hardware, authority and observation belong together."),
-        AQSSInterfacePage(id: "insights", title: "Insights", icon: "chart.xyaxis.line", headline: "Know what happened.", subtitle: "Observed results and gaps will belong here."),
-        AQSSInterfacePage(id: "settings", title: "Settings", icon: "gearshape", headline: "Make space for you.", subtitle: "Appearance, guidance and your privacy in one place."),
+        AQSSInterfacePage(id: "home", title: "Home", icon: "shield.lefthalf.filled", headline: "Your listening space.", subtitle: "New here? Start with the five-step tour below."),
+        AQSSInterfacePage(id: "sound", title: "Sound", icon: "slider.horizontal.3", headline: "Sound, on your terms.", subtitle: "Preview volume, presets, equalizer and captions. Audio controls are not connected."),
+        AQSSInterfacePage(id: "devices", title: "Devices", icon: "hifispeaker", headline: "A clear path to sound.", subtitle: "See what a future device connection will need. Pairing is not available in this preview."),
+        AQSSInterfacePage(id: "insights", title: "Insights", icon: "chart.xyaxis.line", headline: "Know what happened.", subtitle: "Learn how graphs work with labeled examples. No real audio has been measured."),
+        AQSSInterfacePage(id: "settings", title: "Settings", icon: "gearshape", headline: "Make space for you.", subtitle: "Choose your theme, find help and read about planned features."),
     ]
     public static let future: [AQSSInterfaceFeature] = [
         AQSSInterfaceFeature(id: "voice", title: "Voice requests", detail: "Planned · proposal only", explanation: "A future voice request could suggest a change. Device authority and independent verification would still be required. This app is not listening for commands."),
@@ -30,7 +30,7 @@ public enum AQSSInterfaceContent {
         "midnight": ["background": 0x080F20, "surface": 0x121D33, "raised": 0x1A2842, "text": 0xF1F5FF, "muted": 0xADBDD7, "accent": 0x64DAE8, "violet": 0xB4A0FF, "warning": 0xF9CB80, "outline": 0x536A91],
         "daylight": ["background": 0xF2F5FC, "surface": 0xFFFFFF, "raised": 0xE5ECF8, "text": 0x132238, "muted": 0x42546F, "accent": 0x006774, "violet": 0x6543AD, "warning": 0x855000, "outline": 0x667D9C],
     ]
-    public static let targetPages: [String: String] = ["coverage": "home", "capability": "devices", "captions": "sound", "history": "insights", "hint": "devices", "handoff": "devices", "options": "sound", "volume": "sound", "captionOption": "sound", "sound": "sound", "equalizer": "sound", "defaults": "sound", "advanced": "settings", "route": "settings", "physical": "settings", "background": "settings", "privacy": "settings", "handoffOption": "settings", "checkHardware": "devices", "checkQualification": "devices", "checkPermission": "devices", "checkRoute": "devices", "checkRuntime": "devices", "checkEvidence": "devices"]
+    public static let targetPages: [String: String] = ["welcome": "home", "trends": "insights", "appearance": "settings", "coverage": "home", "capability": "devices", "captions": "sound", "history": "insights", "hint": "devices", "handoff": "devices", "options": "sound", "volume": "sound", "captionOption": "sound", "sound": "sound", "equalizer": "sound", "defaults": "sound", "advanced": "settings", "route": "settings", "physical": "settings", "background": "settings", "privacy": "settings", "handoffOption": "settings", "checkHardware": "devices", "checkQualification": "devices", "checkPermission": "devices", "checkRoute": "devices", "checkRuntime": "devices", "checkEvidence": "devices"]
     public static let exampleLabel = "EXAMPLE · synthetic data"
     public static let exampleTitle = "Illustrative signal trend"
     public static let exampleUnit = "Relative level (0–100)"

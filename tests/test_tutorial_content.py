@@ -27,6 +27,22 @@ def test_readiness_guidance_keeps_all_six_prerequisites_unknown():
         assert step["explanation"].startswith("Unknown:")
 
 
+def test_beginner_tour_is_first_and_visits_each_page_in_learning_order():
+    from tools.generate_interface_content import TARGET_PAGES
+
+    topic = validate(contract())["topics"][0]
+    assert topic["id"] == "getting_started"
+    assert [step["target"] for step in topic["steps"]] == [
+        "welcome", "capability", "options", "trends", "appearance",
+    ]
+    assert [TARGET_PAGES[step["target"]] for step in topic["steps"]] == [
+        "home", "devices", "sound", "insights", "settings",
+    ]
+    assert "does not monitor or change audio" in topic["steps"][0]["explanation"]
+    assert "invented" in topic["steps"][3]["explanation"]
+    assert "Help" in topic["steps"][-1]["explanation"]
+
+
 @pytest.mark.parametrize("change", ["action", "target", "area", "example", "too_many"])
 def test_tutorial_rejects_commands_unknown_targets_and_unlabeled_examples(change):
     data = copy.deepcopy(contract())

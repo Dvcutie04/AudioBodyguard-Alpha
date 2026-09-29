@@ -38,6 +38,7 @@ class ReadOnlyHomeActivity : Activity() {
     private var checklistExpanded = false
     private var showingExample = false
     private var chartValuesVisible = false
+    private var beginnerTourFinished = false
     private lateinit var skin: InterfaceTheme
     private lateinit var root: LinearLayout
     private lateinit var column: LinearLayout
@@ -64,6 +65,7 @@ class ReadOnlyHomeActivity : Activity() {
         optionsExpanded = savedInstanceState?.getBoolean("optionsExpanded", true) ?: true
         advancedExpanded = savedInstanceState?.getBoolean("advancedExpanded", true) ?: true
         checklistExpanded = savedInstanceState?.getBoolean("checklistExpanded") ?: false
+        beginnerTourFinished = savedInstanceState?.getBoolean("beginnerTourFinished") ?: false
         require(coverage.state == SessionState.UNKNOWN_PHYSICAL_STATE && coverage.reason == "NO_OBSERVATION")
         build(savedInstanceState)
     }
@@ -93,6 +95,7 @@ class ReadOnlyHomeActivity : Activity() {
             currentPage = { page },
             navigate = { target, area ->
                 showingExample = false
+                chartValuesVisible = false
                 page = InterfaceContent.targetPages[target] ?: "home"
                 if (page == "sound") optionsExpanded = true
                 if (page == "settings") advancedExpanded = true
@@ -101,6 +104,7 @@ class ReadOnlyHomeActivity : Activity() {
             },
             restorePage = { previous -> page = previous; renderPage() },
             focusHelp = { help.requestFocus(); help.sendAccessibilityEvent(android.view.accessibility.AccessibilityEvent.TYPE_VIEW_FOCUSED) },
+            finished = { id -> if (id == "getting_started") beginnerTourFinished = true },
             stateChanged = { syncBackCallback() })
         body.addView(tutorial.footer, LinearLayout.LayoutParams(if (sideGuide) dp((resources.configuration.screenWidthDp * .44f).toInt().coerceIn(300, 440)) else -1, if (sideGuide) -1 else -2))
         nav = LinearLayout(this).apply { setPadding(dp(8), dp(8), dp(8), dp(8)); setBackgroundColor(skin.surface) }
@@ -217,6 +221,7 @@ class ReadOnlyHomeActivity : Activity() {
         }
         label(column, "SIMULATION · No audio path connected", 12f, skin.muted)
         renderNav(); syncBackCallback()
+        tutorial.refreshHighlight()
         if (preserveScroll) scroll.post { scroll.scrollTo(0, previousScroll) }
     }
     private fun renderNav() {
@@ -249,6 +254,34 @@ class ReadOnlyHomeActivity : Activity() {
     private fun jump(target: String) { tutorial.jump(target) }
 
     private fun homePage() {
+        card("welcome") { c ->
+            label(c, if (beginnerTourFinished) "TOUR FINISHED" else "START HERE · 5 STEPS", 12f, skin.violet, true)
+            label(c, if (beginnerTourFinished) "Explore at your pace." else "Meet Audio Bodyguard.", 23f, bold = true)
+            label(c, "This is a read-only preview. It does not monitor or change audio.", 16f, skin.muted)
+            action(c, if (beginnerTourFinished) "Replay 5-step tour" else "Start 5-step tour", true) { tutorial.start("getting_started") }
+            label(c, "No setup needed to explore. Help is always at the top.", 15f, skin.muted)
+        }
+        card { c ->
+            label(c, "What can I do here?", 20f, bold = true)
+            label(c, "Available now", 17f, skin.accent, true)
+            label(c, "Explore pages, example graphs, themes and tutorials.", 15f, skin.muted)
+            label(c, "Preview only", 17f, skin.warning, true)
+            label(c, "Sound controls and device checks are explanations. Audio protection is not active.", 15f, skin.muted)
+            label(c, "Planned", 17f, skin.violet, true)
+            label(c, "Voice requests, personal profiles and background protection. Read more in Settings.", 15f, skin.muted)
+        }
+        card { c ->
+            label(c, "Your route through the app", 20f, bold = true)
+            label(c, "Follow 1–5, or revisit any step.", 16f, skin.muted)
+            TutorialContent.topics.single { it.id == "getting_started" }.steps.forEachIndexed { index, step ->
+                c.addView(button("${index + 1}. ${step.title}") { tutorial.start("getting_started", index) }.apply {
+                    contentDescription = "Step ${index + 1}. ${step.title}"
+                    gravity = Gravity.START or Gravity.CENTER_VERTICAL
+                    setCompoundDrawablesWithIntrinsicBounds(null, null, InterfaceSymbol(skin, InterfaceContent.targetPages.getValue(step.target), skin.violet), null)
+                    compoundDrawablePadding = dp(10)
+                }, LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(8) })
+            }
+        }
         card("coverage") { c ->
             label(c, "COVERAGE", 12f, skin.muted, true)
             val row = LinearLayout(this).apply { gravity = Gravity.CENTER_VERTICAL }
@@ -264,12 +297,6 @@ class ReadOnlyHomeActivity : Activity() {
         label(column, "Explore your space", 20f, bold = true)
         destination("Sound controls", "Presets, captions & equalizer") { openPage("sound") }
         destination("Insights", "Trends, evidence & examples") { openPage("insights") }
-        card { c ->
-            label(c, "START HERE", 12f, skin.violet, true)
-            label(c, "A little guidance.\nA clearer picture.", 23f, bold = true)
-            label(c, "Short walkthroughs explain each area, one step at a time. Return to Help whenever you need it.", 16f, skin.muted)
-            action(c, "Show me around") { tutorial.start("home") }
-        }
     }
     private fun soundPage() {
         card("options") { c ->
@@ -320,7 +347,7 @@ class ReadOnlyHomeActivity : Activity() {
         action(column, "Help with session transfer") { tutorial.start("handoff") }
     }
     private fun insightsPage() {
-        card { c ->
+        card("trends") { c ->
             label(c, "Audio trends", 22f, bold = true)
             if (showingExample) {
                 label(c, InterfaceContent.exampleLabel, 13f, skin.warning, true)
@@ -357,7 +384,7 @@ class ReadOnlyHomeActivity : Activity() {
         }
     }
     private fun settingsPage() {
-        card { c ->
+        card("appearance") { c ->
             label(c, "Appearance", 22f, bold = true)
             label(c, "One visual language, in the light that suits you.", 16f, skin.muted)
             for (value in listOf("midnight", "daylight", "system")) {
@@ -413,6 +440,7 @@ class ReadOnlyHomeActivity : Activity() {
     }
     private fun savePresentation(outState: Bundle) {
         outState.putString("page", page)
+        outState.putBoolean("beginnerTourFinished", beginnerTourFinished)
         outState.putBoolean("optionsExpanded", optionsExpanded); outState.putBoolean("advancedExpanded", advancedExpanded); outState.putBoolean("checklistExpanded", checklistExpanded)
         tutorial.save(outState)
     }

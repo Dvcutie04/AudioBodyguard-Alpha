@@ -2,11 +2,11 @@
   "schema_version": 1,
   "mode": "presentation_only",
   "pages": [
-    {"id":"home", "title":"Home", "icon":"shield.lefthalf.filled", "headline":"Your listening space.", "subtitle":"Understand your coverage. Explore what comes next."},
-    {"id":"sound", "title":"Sound", "icon":"slider.horizontal.3", "headline":"Sound, on your terms.", "subtitle":"Explore the controls a qualified output could support."},
-    {"id":"devices", "title":"Devices", "icon":"hifispeaker", "headline":"A clear path to sound.", "subtitle":"Hardware, authority and observation belong together."},
-    {"id":"insights", "title":"Insights", "icon":"chart.xyaxis.line", "headline":"Know what happened.", "subtitle":"Observed results and gaps will belong here."},
-    {"id":"settings", "title":"Settings", "icon":"gearshape", "headline":"Make space for you.", "subtitle":"Appearance, guidance and your privacy in one place."}
+    {"id":"home", "title":"Home", "icon":"shield.lefthalf.filled", "headline":"Your listening space.", "subtitle":"New here? Start with the five-step tour below."},
+    {"id":"sound", "title":"Sound", "icon":"slider.horizontal.3", "headline":"Sound, on your terms.", "subtitle":"Preview volume, presets, equalizer and captions. Audio controls are not connected."},
+    {"id":"devices", "title":"Devices", "icon":"hifispeaker", "headline":"A clear path to sound.", "subtitle":"See what a future device connection will need. Pairing is not available in this preview."},
+    {"id":"insights", "title":"Insights", "icon":"chart.xyaxis.line", "headline":"Know what happened.", "subtitle":"Learn how graphs work with labeled examples. No real audio has been measured."},
+    {"id":"settings", "title":"Settings", "icon":"gearshape", "headline":"Make space for you.", "subtitle":"Choose your theme, find help and read about planned features."}
   ],
   "palettes": {
     "midnight": {"background":"080F20", "surface":"121D33", "raised":"1A2842", "text":"F1F5FF", "muted":"ADBDD7", "accent":"64DAE8", "violet":"B4A0FF", "warning":"F9CB80", "outline":"536A91"},
