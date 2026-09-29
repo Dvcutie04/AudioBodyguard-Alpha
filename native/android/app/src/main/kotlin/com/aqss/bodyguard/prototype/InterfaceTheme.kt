@@ -50,7 +50,7 @@ class InterfaceTheme(val activity: Activity, val dark: Boolean) {
     }
     fun menu(title: String, items: List<Pair<String, () -> Unit>>) {
         val list = LinearLayout(activity).apply { orientation = LinearLayout.VERTICAL; setPadding(dp(20), dp(10), dp(20), dp(10)) }
-        val scroll = ScrollView(activity).apply { addView(list); setBackgroundColor(background) }
+        val scroll = ScrollView(activity).apply { addView(list); setBackgroundColor(this@InterfaceTheme.background) }
         val dialog = AlertDialog.Builder(activity).setTitle(title).setView(scroll).create()
         for ((label, action) in items + ("Cancel" to {})) {
             list.addView(Button(activity).apply {

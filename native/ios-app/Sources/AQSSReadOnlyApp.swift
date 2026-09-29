@@ -259,6 +259,7 @@ private struct ReadOnlyHomeView: View {
 
     private var devicesPage: some View {
         VStack(alignment: .leading, spacing: 18) {
+            helpButton("TV & smart-home guide", topic: "getting_started")
             card {
                 badge("PATH NOT QUALIFIED", color: theme.warning)
                 HStack { pathNode("iphone", title: "This app"); Image(systemName: "ellipsis").foregroundColor(theme.muted); pathNode("hifispeaker", title: "Output needed") }.accessibilityElement(children: .combine)
