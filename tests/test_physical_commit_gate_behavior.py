@@ -141,3 +141,24 @@ async def test_incomplete_controller_fence_context_never_reaches_adapter():
     assert result is PreconditionResult.CONTROLLER_FENCE_STALE
     assert adapter.calls==0
     assert adapter.adapter.device.state.volume==10.0
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("deadline", [float("nan"), float("inf"), True, "future", None])
+async def test_invalid_deadline_never_reaches_adapter(deadline):
+    adapter, intent, lease, snapshot = make_valid_case()
+    intent.deadline_at = deadline
+    result = await PhysicalCommitGate().commit(intent, lease, snapshot, adapter)
+    assert result is PreconditionResult.INTENT_EXPIRED
+    assert adapter.calls == 0
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("field", ["max_world_state_age_ms", "max_clock_skew_ms"])
+@pytest.mark.parametrize("value", [float("nan"), float("inf"), -1, True])
+async def test_invalid_freshness_limits_never_reach_adapter(field, value):
+    adapter, intent, lease, snapshot = make_valid_case()
+    setattr(lease, field, value)
+    result = await PhysicalCommitGate().commit(intent, lease, snapshot, adapter)
+    assert result is PreconditionResult.WORLD_STATE_STALE
+    assert adapter.calls == 0
