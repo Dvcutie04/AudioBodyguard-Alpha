@@ -7,7 +7,7 @@ public struct TVPhotoHints {
     public let address: String?
     public init(_ text: String) {
         guard text.utf8.count <= 8192 else { brand = nil; model = nil; address = nil; return }
-        let upper = text.uppercased()
+        let upper = text.uppercased().replacingOccurrences(of: "(?m)^(MODEL(?: CODE| NUMBER| NO\\.?)?|IP(?:V4)?(?: ADDRESS)?)[ \\t]*[:=]?[ \\t]*\\r?\\n[ \\t]*", with: "$1: ", options: .regularExpression)
         func matches(_ pattern: String) -> [String] {
             guard let re = try? NSRegularExpression(pattern: pattern, options: [.anchorsMatchLines]) else { return [] }
             let ns = upper as NSString
@@ -15,9 +15,9 @@ public struct TVPhotoHints {
         }
         let brands = Set(matches("\\b(SAMSUNG|LG|SONY|TCL|HISENSE|VIZIO|PANASONIC|PHILIPS)\\b"))
         brand = brands.count == 1 ? brands.first : nil
-        let models = Set(matches("^[ \\t]*MODEL(?: CODE| NUMBER| NO\\.?)?[ \\t]*[:=]?[ \\t]+([A-Z0-9][A-Z0-9._-]{1,39})[ \\t]*$"))
+        let models = Set(matches("^[ \\t]*MODEL(?: CODE| NUMBER| NO\\.?)?(?:[ \\t]*[:=][ \\t]*|[ \\t]+)([A-Z0-9][A-Z0-9._-]{1,39})[ \\t]*$"))
         model = models.count == 1 && models.first!.rangeOfCharacter(from: .decimalDigits) != nil ? models.first : nil
-        let addresses = Set(matches("^[ \\t]*IP(?:V4)?(?: ADDRESS)?[ \\t]*[:=]?[ \\t]+([0-9.]+)[ \\t]*$"))
+        let addresses = Set(matches("^[ \\t]*IP(?:V4)?(?: ADDRESS)?(?:[ \\t]*[:=][ \\t]*|[ \\t]+)([0-9.]+)[ \\t]*$"))
         address = addresses.count == 1 && Self.isPrivateIPv4(addresses.first!) ? addresses.first : nil
     }
     public static func isPrivateIPv4(_ value: String) -> Bool {

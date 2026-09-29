@@ -8,11 +8,11 @@ class TVPhotoHints(text: String) {
     val model: String?
     val address: String?
     init {
-        val upper = if (text.toByteArray(Charsets.UTF_8).size <= 8192) text.uppercase(Locale.ROOT) else ""
+        val upper = if (text.toByteArray(Charsets.UTF_8).size <= 8192) text.uppercase(Locale.ROOT).replace(Regex("(?m)^(MODEL(?: CODE| NUMBER| NO\\.?)?|IP(?:V4)?(?: ADDRESS)?)[ \\t]*[:=]?[ \\t]*\\r?\\n[ \\t]*"), "$1: ") else ""
         fun matches(pattern: String) = Regex(pattern, RegexOption.MULTILINE).findAll(upper).map { it.groupValues[1] }.toSet()
         brand = matches("\\b(SAMSUNG|LG|SONY|TCL|HISENSE|VIZIO|PANASONIC|PHILIPS)\\b").singleOrNull()
-        model = matches("^[ \\t]*MODEL(?: CODE| NUMBER| NO\\.?)?[ \\t]*[:=]?[ \\t]+([A-Z0-9][A-Z0-9._-]{1,39})[ \\t]*$").singleOrNull()?.takeIf { it.any(Char::isDigit) }
-        address = matches("^[ \\t]*IP(?:V4)?(?: ADDRESS)?[ \\t]*[:=]?[ \\t]+([0-9.]+)[ \\t]*$").singleOrNull()?.takeIf(::isPrivateIPv4)
+        model = matches("^[ \\t]*MODEL(?: CODE| NUMBER| NO\\.?)?(?:[ \\t]*[:=][ \\t]*|[ \\t]+)([A-Z0-9][A-Z0-9._-]{1,39})[ \\t]*$").singleOrNull()?.takeIf { it.any(Char::isDigit) }
+        address = matches("^[ \\t]*IP(?:V4)?(?: ADDRESS)?(?:[ \\t]*[:=][ \\t]*|[ \\t]+)([0-9.]+)[ \\t]*$").singleOrNull()?.takeIf(::isPrivateIPv4)
     }
     companion object {
         fun isPrivateIPv4(value: String): Boolean {
