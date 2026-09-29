@@ -124,11 +124,13 @@ struct VoiceCheckView: View {
                     Text("Recognized words · may change").font(.headline)
                     Text(voice.transcript.isEmpty ? "No words recognized yet" : voice.transcript).accessibilityIdentifier("voice-transcript")
                     Text("Noise, accents and overlapping voices can cause missing or incorrect words. A moving meter does not prove every word or sound was understood.").foregroundColor(theme.muted)
-                    Button(voice.running ? "Stop listening" : "Start voice check") { if voice.running { voice.stop() } else { voice.start() } }.buttonStyle(AppButtonStyle(theme: theme)).accessibilityIdentifier("voice-start-stop")
-                    Button("Clear words") { voice.clear() }.buttonStyle(AppButtonStyle(theme: theme))
                     Text("On-device recognition only. No audio file is saved. Closing this screen clears the words. Listening stops when you leave the app. Camera, microphone and speech features may be unavailable in browser simulators.").font(.caption).foregroundColor(theme.muted)
                 }.padding()
             }
+            HStack {
+                Button(voice.running ? "Stop listening" : "Start voice check") { if voice.running { voice.stop() } else { voice.start() } }.buttonStyle(AppButtonStyle(theme: theme)).accessibilityIdentifier("voice-start-stop")
+                Button("Clear words") { voice.clear() }.buttonStyle(AppButtonStyle(theme: theme))
+            }.padding()
         }.background(theme.background.ignoresSafeArea()).foregroundColor(theme.text)
             .onChange(of: phase) { if $0 == .background { voice.clear() } }
             .onReceive(NotificationCenter.default.publisher(for: AVAudioSession.interruptionNotification)) { _ in voice.stop("Audio interrupted — tap Start to try again.") }

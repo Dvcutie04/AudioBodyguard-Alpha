@@ -230,13 +230,13 @@ tap_tutorial_label "Sound" input_sound
  tap_scroll_label "Voice check. See microphone activity and recognized words" input_voice
 capture_ui voice_idle
 assert_tutorial_label voice_idle "Microphone off"
-assert_tutorial_label voice_idle "No words recognized yet"
+assert_scroll_label "No words recognized yet" voice_words
 tap_tutorial_label "Close" voice_close
 tap_tutorial_label "Devices" input_devices
 tap_scroll_label "TV photo setup. Read a model label or Network settings photo" input_photo
 capture_ui photo_idle
 assert_tutorial_label photo_idle "No photo selected"
-assert_tutorial_label photo_idle "Brand: Not identified"
+assert_scroll_label "Brand: Not identified" photo_hints
 tap_tutorial_label "Close" photo_close
 
 tap_tutorial_label "Home" return_home

@@ -25,6 +25,7 @@ class InputAssistanceActivity : Activity() {
     private lateinit var startButton: Button
     private lateinit var meter: InputMeter
     private lateinit var column: LinearLayout
+    private lateinit var footer: LinearLayout
     private val handler = Handler(Looper.getMainLooper())
     private var recognizer: SpeechRecognizer? = null
     private var generation = 0
@@ -46,6 +47,8 @@ class InputAssistanceActivity : Activity() {
         root.addView(header)
         column = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; setPadding(0, skin.dp(12), 0, 0) }
         root.addView(ScrollView(this).apply { addView(column) }, LinearLayout.LayoutParams(-1, 0, 1f))
+        footer = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL }
+        root.addView(footer)
         setContentView(root)
         // Use the same insets behavior on Android 15+ as the main shell.
         root.setOnApplyWindowInsetsListener { view, insets ->
@@ -72,7 +75,10 @@ class InputAssistanceActivity : Activity() {
         label("Recognized words · may change", true)
         details = label("No words recognized yet")
         startButton = action("Start voice check") { if (running) stopVoice() else startVoice() }
-        action("Clear words") { stopVoice(); details.text = "No words recognized yet" }
+        val clear = action("Clear words") { stopVoice(); details.text = "No words recognized yet" }
+        column.removeView(startButton); column.removeView(clear)
+        footer.addView(startButton, LinearLayout.LayoutParams(-1, -2))
+        footer.addView(clear, LinearLayout.LayoutParams(-1, -2))
         label("On-device recognition only, Android 12 or later with a supported local recognizer. No cloud fallback. No audio file is saved. Closing or leaving the app stops listening and clears words. Noise, accents and overlapping voices can cause errors; a moving meter does not prove every word or sound was understood.")
     }
     private fun startVoice() {
