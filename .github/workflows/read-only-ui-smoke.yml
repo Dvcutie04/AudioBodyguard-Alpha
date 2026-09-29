@@ -35,6 +35,27 @@ jobs:
           path: ${{ runner.temp }}/aqss-read-only-ui.xcresult
           if-no-files-found: ignore
           retention-days: 7
+      - name: Build and package ARM iOS Simulator app for browser inspection
+        shell: bash
+        run: |
+          set -euo pipefail
+          xcodebuild -project native/ios-app/AQSSReadOnly.xcodeproj \
+            -scheme AQSSReadOnly -configuration Debug -sdk iphonesimulator \
+            -destination 'generic/platform=iOS Simulator' \
+            -derivedDataPath "$RUNNER_TEMP/aqss-browser-derived" \
+            ARCHS=arm64 ONLY_ACTIVE_ARCH=NO CODE_SIGNING_ALLOWED=NO build
+          app="$RUNNER_TEMP/aqss-browser-derived/Build/Products/Debug-iphonesimulator/AQSSReadOnly.app"
+          test -f "$app/Info.plist"
+          lipo "$app/AQSSReadOnly" -verify_arch arm64
+          test "$(/usr/libexec/PlistBuddy -c 'Print :CFBundleIdentifier' "$app/Info.plist")" = 'com.aqss.bodyguard.prototype'
+          ditto -c -k --keepParent "$app" "$RUNNER_TEMP/AQSSReadOnly-iOS-SIMULATION.app.zip"
+      - name: Keep unsigned iOS Simulator app for browser inspection
+        uses: actions/upload-artifact@v4
+        with:
+          name: aqss-ios-simulation-app-${{ github.run_id }}
+          path: ${{ runner.temp }}/AQSSReadOnly-iOS-SIMULATION.app.zip
+          if-no-files-found: error
+          retention-days: 7
 
   android-emulator:
     name: Launch and inspect Android simulation screen
