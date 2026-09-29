@@ -11,6 +11,7 @@ struct SetupGuidesView: View {
     let initialGroup: String
     var onVoiceCheck: (() -> Void)? = nil
     @Environment(\.dismiss) private var dismiss
+    @Environment(\.dynamicTypeSize) private var textSize
     @State private var groupID = ""
     @State private var routeID: String?
     @State private var index = -1
@@ -28,10 +29,11 @@ struct SetupGuidesView: View {
             VStack(spacing: 10) {
                 HStack {
                     if let route = route, index >= 0 {
-                        Text("Step \(index + 1) of \(route.steps.count)").font(.headline).accessibilityIdentifier("setup-progress")
+                        Text(textSize.isAccessibilitySize ? "\(index + 1) / \(route.steps.count)" : "Step \(index + 1) of \(route.steps.count)")
+                            .font(.headline).accessibilityLabel("Step \(index + 1) of \(route.steps.count)").accessibilityIdentifier("setup-progress")
                     } else { Label("Illustrated setup", systemImage: "rectangle.stack").font(.headline) }
                     Spacer(minLength: 8)
-                    Button { dismiss() } label: { Label("Close", systemImage: "xmark") }
+                    Button { dismiss() } label: { navigationLabel("Close", icon: "xmark") }
                         .buttonStyle(AppButtonStyle(theme: theme)).accessibilityIdentifier("setup-close")
                 }
                 if let route = route, index >= 0 {
@@ -83,12 +85,18 @@ struct SetupGuidesView: View {
     private func control(_ title: String, icon: String, id: String, action: @escaping () -> Void) -> some View {
         Button(action: action) {
             HStack(alignment: .center, spacing: 12) {
-                Image(systemName: icon).accessibilityHidden(true)
+                if !textSize.isAccessibilitySize { Image(systemName: icon).accessibilityHidden(true) }
                 Text(title).fixedSize(horizontal: false, vertical: true)
                 Spacer(minLength: 0)
-                Image(systemName: "chevron.right").accessibilityHidden(true)
+                if !textSize.isAccessibilitySize { Image(systemName: "chevron.right").accessibilityHidden(true) }
             }.frame(maxWidth: .infinity, minHeight: 44, alignment: .leading)
         }.buttonStyle(AppButtonStyle(theme: theme)).accessibilityIdentifier(id)
+    }
+    @ViewBuilder private func navigationLabel(_ title: String, icon: String) -> some View {
+        if textSize.isAccessibilitySize {
+            Image(systemName: icon).font(.system(size: 28, weight: .semibold))
+                .frame(minWidth: 44, minHeight: 44).accessibilityLabel(title)
+        } else { Label(title, systemImage: icon) }
     }
     @ViewBuilder private func introduction(_ route: AQSSSetupRoute) -> some View {
         HStack(spacing: 20) { Image(systemName: "tv"); Image(systemName: "arrow.right"); Image(systemName: "iphone") }
@@ -129,7 +137,7 @@ struct SetupGuidesView: View {
     private var footer: some View {
         HStack(spacing: 12) {
             if group != nil || route != nil {
-                Button { goBack() } label: { Label(mismatch ? "Return to step" : "Back", systemImage: "arrow.left") }
+                Button { goBack() } label: { navigationLabel(mismatch ? "Return to step" : "Back", icon: "arrow.left") }
                     .buttonStyle(AppButtonStyle(theme: theme)).accessibilityIdentifier("setup-back")
             }
             if let route = route, !mismatch {
@@ -139,7 +147,7 @@ struct SetupGuidesView: View {
                         dismiss()
                     } else { index += 1 }
                 } label: {
-                    Label(index < 0 ? "Start guide" : index == route.steps.count - 1 ? (route.id == "voice" && onVoiceCheck != nil ? "Open Voice check" : "Finish guide") : "Next", systemImage: index == route.steps.count - 1 ? "checkmark" : "arrow.right")
+                    navigationLabel(index < 0 ? "Start guide" : index == route.steps.count - 1 ? (route.id == "voice" && onVoiceCheck != nil ? "Open Voice check" : "Finish guide") : "Next", icon: index == route.steps.count - 1 ? (route.id == "voice" && onVoiceCheck != nil ? "mic" : "checkmark") : "arrow.right")
                         .frame(maxWidth: .infinity, minHeight: 44)
                 }.buttonStyle(AppButtonStyle(theme: theme)).accessibilityIdentifier("setup-next")
             }
