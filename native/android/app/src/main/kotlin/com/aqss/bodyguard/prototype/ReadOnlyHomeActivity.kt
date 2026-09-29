@@ -196,7 +196,7 @@ class ReadOnlyHomeActivity : Activity() {
         label(c, explanation, 15f, skin.muted)
     }
     private fun destination(title: String, subtitle: String, action: () -> Unit) {
-        column.addView(button("$title\n$subtitle    ›", action = action).apply { gravity = Gravity.START or Gravity.CENTER_VERTICAL }, LinearLayout.LayoutParams(-1, -2).apply { bottomMargin = dp(16) })
+        column.addView(button("$title\n$subtitle    ›", action = action).apply { gravity = Gravity.START or Gravity.CENTER_VERTICAL; contentDescription = "$title. $subtitle" }, LinearLayout.LayoutParams(-1, -2).apply { bottomMargin = dp(16) })
     }
 
     private fun renderPage(preserveScroll: Boolean = false) {

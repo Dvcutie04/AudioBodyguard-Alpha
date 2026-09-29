@@ -216,7 +216,7 @@ assert_tutorial_label daylight_home "does not monitor or change audio"
 tap_tutorial_label "Settings" theme_settings
 tap_tutorial_label "Midnight" theme_midnight
 tap_scroll_label "Hide advanced options" advanced_close
-tap_scroll_label "Voice requests" future_voice
+tap_scroll_label "Voice requests. Planned · proposal only" future_voice
 capture_ui future_voice_detail
 assert_tutorial_label future_voice_detail "This app is not listening for commands"
 tap_tutorial_label "Got it" future_voice_close

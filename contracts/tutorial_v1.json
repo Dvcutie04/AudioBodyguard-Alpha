@@ -65,8 +65,8 @@
           "target": "coverage",
           "area": "home",
           "title": "Read the coverage state",
-          "explanation": "Unknown physical state means there is no independent observation of audio output. This simulation does not provide protection.",
-          "example": "Example: A green build result cannot tell you whether a speaker produced sound."
+          "explanation": "Unknown physical state means the app has not independently checked the sound coming from the speakers. This preview does not provide audio protection.",
+          "example": "Example: a phone can show a TV as connected while the room is using a separate soundbar. The app must check the actual sound output."
         },
         {
           "target": "capability",
@@ -99,8 +99,8 @@
           "target": "options",
           "area": "options",
           "title": "Find the Options menu",
-          "explanation": "Sound groups the available option descriptions. The tutorial has opened the Sound page and its options for you.",
-          "example": "Example: Reopen Help whenever you need this walkthrough again."
+          "explanation": "After leaving this guide, choose Sound to see the option descriptions. All controls there are explanations until a supported device is connected and checked.",
+          "example": "Example: to learn about quieter evening listening, open Sound and read the Night preset description."
         },
         {
           "target": "volume",
@@ -113,15 +113,15 @@
           "target": "sound",
           "area": "options",
           "title": "Choose a compatible preset",
-          "explanation": "Dialogue and Night are preset choices for devices that support them. The current shell cannot apply a preset.",
-          "example": "Example: Dialogue would be a proposed speech-focused preset, not a promise that speech is clearer."
+          "explanation": "A Dialogue preset is intended for speech. A Night preset is intended for quieter evening listening. They are planned settings and cannot be applied in this preview.",
+          "example": "Example: you might want speech to be easier to follow without making loud adverts louder. A future preset would still need to be tested on your speakers."
         },
         {
           "target": "equalizer",
           "area": "options",
           "title": "Custom EQ is device-specific",
-          "explanation": "Frequency-band controls require an explicitly supported device capability. They remain unavailable here.",
-          "example": "Example: A small 1 kHz adjustment is an illustrative setting, not a change this tutorial makes."
+          "explanation": "An equalizer changes the balance of low, middle and high sounds. A compatible device would be needed to apply it. This preview cannot change those sounds.",
+          "example": "Example: reducing bass would make low, rumbling sounds less strong. Reading this description does not change your TV bass."
         }
       ]
     },
@@ -173,8 +173,8 @@
           "target": "advanced",
           "area": "advanced",
           "title": "Open Advanced options",
-          "explanation": "Settings contains device, evidence, background and privacy details. The tutorial has opened Advanced options for you.",
-          "example": "Example: Use Help with advanced options for a focused refresher."
+          "explanation": "After leaving this guide, choose Settings. Advanced options explains device checks, background limits and privacy. These descriptions do not change sound.",
+          "example": "Example: to learn what is stored on your phone, open Settings and read Privacy and storage."
         },
         {
           "target": "route",
@@ -187,8 +187,8 @@
           "target": "physical",
           "area": "advanced",
           "title": "Require physical observation",
-          "explanation": "This area explains why physical output remains unknown. The tutorial supplies no measurement or observation.",
-          "example": "Example: An independent measurement would need to be tied to the authorized device transaction."
+          "explanation": "The app needs a check of what actually comes from the speakers, separate from its own command messages. This preview has no such observation.",
+          "example": "Example: sending “lower the volume” is only a request. A separate check must confirm the intended speaker really became quieter."
         },
         {
           "target": "background",
