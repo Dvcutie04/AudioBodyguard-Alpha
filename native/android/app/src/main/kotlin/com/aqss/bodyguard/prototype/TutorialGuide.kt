@@ -35,6 +35,7 @@ class TutorialGuide(
     private val content = column()
     private val controls = column()
     private var previousPage = "home"
+    private val choiceButtons = mutableMapOf<String, Button>()
     val isActive get() = guide.topicId != null
     val isBeginner get() = guide.topicId == "getting_started"
     init {
@@ -92,9 +93,11 @@ class TutorialGuide(
             accessibilityLiveRegion = View.ACCESSIBILITY_LIVE_REGION_POLITE
         }
         text(content, step.explanation)
+        choiceButtons.clear()
         guide.choices.forEach { choice ->
             val selected = guide.selected(step.target)?.id == choice.id
-            content.addView(button(choice.title + if (selected) "  ✓" else "", primary = selected) { guide.select(choice.id); render(true) }.apply {
+            content.addView(button(choice.title + if (selected) "  ✓" else "", primary = selected) { if (guide.selected(step.target)?.id != choice.id) { guide.select(choice.id); refreshChoices(); renderControls() } }.apply {
+                choiceButtons[choice.id] = this
                 gravity = Gravity.START or Gravity.CENTER_VERTICAL
                 minHeight = dp(60); compoundDrawablePadding = dp(14)
                 setCompoundDrawablesWithIntrinsicBounds(InterfaceSymbol(skin, choice.icon, if (selected) skin.controlText else skin.text), null, null, null)
@@ -105,6 +108,8 @@ class TutorialGuide(
         if (step.target == "connectionPlan") for (target in listOf("chooseTV", "chooseHome")) {
             guide.selected(target)?.let { selected ->
                 val box = column().apply { setPadding(dp(16), dp(16), dp(16), dp(6)); background = skin.shape(skin.surface) }
+                box.addView(InterfaceGraphic(activity, skin, "orbit"), LinearLayout.LayoutParams(-1, dp(64)))
+                text(box, "Open the pictures below. Match your TV or app, then follow one highlighted action at a time.", color = skin.muted)
                 text(box, selected.title, 20f, bold = true); text(box, selected.detail, color = skin.muted)
                 box.addView(button("Show ${selected.title} steps") { openSetup(selected.id) }, LinearLayout.LayoutParams(-1, -2).apply { bottomMargin = dp(12) })
                 content.addView(box, LinearLayout.LayoutParams(-1, -2).apply { bottomMargin = dp(16) })
@@ -113,6 +118,28 @@ class TutorialGuide(
         val example = column().apply { setPadding(dp(16), dp(16), dp(16), dp(6)); background = skin.shape(skin.surface) }
         text(example, step.example, color = skin.muted); content.addView(example)
         if (step.target == "connectionCheck") text(content, "Not connected · Audio protection is not active", 18f, skin.warning, true)
+        renderControls()
+        footer.visibility = View.VISIBLE; stateChanged()
+        reading.post { reading.scrollTo(0, oldScroll) }
+    }
+    private fun refreshChoices() {
+        val step = guide.step ?: return
+        guide.choices.forEach { choice ->
+            val selected = guide.selected(step.target)?.id == choice.id
+            choiceButtons[choice.id]?.let { button ->
+                button.text = choice.title + if (selected) "  ✓" else ""
+                skin.style(button, selected); button.gravity = Gravity.START or Gravity.CENTER_VERTICAL; button.minHeight = dp(60)
+                button.compoundDrawablePadding = dp(14)
+                button.setCompoundDrawablesWithIntrinsicBounds(InterfaceSymbol(skin, choice.icon, if (selected) skin.controlText else skin.text), null, null, null)
+                button.isSelected = selected
+                if (Build.VERSION.SDK_INT >= 30) button.stateDescription = if (selected) "Selected" else "Not selected"
+            }
+        }
+    }
+    private fun renderControls() {
+        val topic = guide.topic ?: return
+        val step = guide.step ?: return
+        controls.removeAllViews()
         if (!guide.canContinue) text(controls, "Choose one option above to continue.", 15f, skin.muted)
         guide.selected(step.target)?.let { text(controls, "Selected: ${it.title}", 15f, skin.muted) }
         val row = LinearLayout(activity)
@@ -124,8 +151,6 @@ class TutorialGuide(
             }, LinearLayout.LayoutParams(0, -2, 1f))
         }
         controls.addView(row)
-        footer.visibility = View.VISIBLE; stateChanged()
-        reading.post { reading.scrollTo(0, oldScroll) }
     }
     fun detachTarget() { /* Guide never overlays a page. */ }
     fun refreshHighlight() { /* Full app and guide have separate view trees. */ }
@@ -137,7 +162,7 @@ class TutorialGuide(
         if (restore) { restorePage(previousPage); focusHelp() }
     }
     fun pause() { /* No animation or timer to stop. */ }
-    fun resume() { if (isActive) render(true) }
+    fun resume() { if (isActive) { footer.visibility = View.VISIBLE; stateChanged() } }
     fun save(bundle: Bundle) {
         guide.topicId?.let { id ->
             bundle.putString("tutorialTopic", id); bundle.putInt("tutorialIndex", guide.index)

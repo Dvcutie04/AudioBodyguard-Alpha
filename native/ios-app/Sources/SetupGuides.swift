@@ -17,6 +17,7 @@ struct SetupGuidesView: View {
     @State private var index = -1
     @State private var mismatch = false
     @State private var initialized = false
+    @AppStorage("aqssSetupProgressV1") private var savedProgress = "{}"
     @AccessibilityFocusState private var headingFocused: Bool
     private var group: AQSSSetupGroup? { AQSSSetupContent.groups.first { $0.id == groupID } }
     private var route: AQSSSetupRoute? { AQSSSetupContent.routes.first { $0.id == routeID } }
@@ -50,11 +51,21 @@ struct SetupGuidesView: View {
                             Label(step.surface == "tv" ? "On your TV · use the remote" : step.surface == "both" ? "Your TV + your phone" : "On your phone", systemImage: step.surface == "phone" ? "iphone" : "tv")
                                 .font(.subheadline.weight(.semibold)).foregroundColor(theme.accent)
                             Text(step.instruction).font(.body.weight(.medium)).fixedSize(horizontal: false, vertical: true)
-                            SetupScreenIllustration(step: step, number: index + 1, theme: theme)
+                            if route.id == "roku_network" || route.id == "roku_model" {
+                                RokuMenuIllustration(step: step, number: index + 1, theme: theme)
+                            } else { SetupScreenIllustration(step: step, number: index + 1, theme: theme) }
+                            Text("In the picture, look for the numbered highlight. Complete that action on your TV or phone, then tap Next here.").font(.callout).foregroundColor(theme.muted)
                             Text(step.note).font(.callout).foregroundColor(theme.muted)
                             control("My screen looks different", icon: "questionmark.circle", id: "setup-mismatch") { mismatch = true }
                         } else { introduction(route) }
-                    } else if let group = group {
+                    } else if groupID == "tcl" {
+                        Text("Which home screen is on your TCL TV?").font(.headline)
+                        Text("Choose the name or menu that matches your TV. If your screen says Roku like the blue Settings photo, choose Roku TV.").foregroundColor(theme.muted)
+                        platformChoice("Roku TV", subtitle: "Roku name · left menu and right panel", group: "tcl_roku", blue: true)
+                        platformChoice("Google TV / Android TV", subtitle: "Google name · app tiles and a settings gear", group: "tcl_google", blue: false)
+                        platformChoice("Fire TV", subtitle: "Fire TV name · Amazon account", group: "tcl_fire", blue: false)
+                    }
+                    else if let group = group {
                         Text(group.title).font(.title3.weight(.semibold)).foregroundColor(theme.accent)
                         Text("Choose the setup screen or operating system you actually see. A brand alone does not confirm compatibility.").foregroundColor(theme.muted)
                         ForEach(group.routes, id: \.self) { id in
@@ -64,7 +75,7 @@ struct SetupGuidesView: View {
                         }
                     } else {
                         Text("Follow one picture at a time. The numbered arrow marks the next choice; TV, remote and phone symbols show which device to use.").foregroundColor(theme.muted)
-                        ForEach(AQSSSetupContent.groups.filter { !["both", "neither"].contains($0.id) }, id: \.id) { item in
+                        ForEach(AQSSSetupContent.groups.filter { !["both", "neither"].contains($0.id) && !$0.id.hasPrefix("tcl_") }, id: \.id) { item in
                             control(item.title, icon: item.id == "voice" ? "mic" : ["google", "alexa"].contains(item.id) ? "house" : "tv", id: "setup-group-\(item.id)") { chooseGroup(item.id) }
                         }
                     }
@@ -73,9 +84,38 @@ struct SetupGuidesView: View {
             footer
         }.background(theme.background.ignoresSafeArea()).foregroundColor(theme.text)
             .onAppear { if !initialized { initialized = true; chooseGroup(initialGroup) } }
+            .onChange(of: index) { value in
+                if let route = route, route.id != "voice", route.steps.indices.contains(value) { writeProgress(route.id, value) }
+            }
             .onChange(of: key) { _ in DispatchQueue.main.async { headingFocused = true } }
     }
 
+    private func platformChoice(_ title: String, subtitle: String, group: String, blue: Bool) -> some View {
+        Button { chooseGroup(group) } label: {
+            HStack(spacing: 14) {
+                VStack(alignment: .leading, spacing: 3) {
+                    Image(systemName: "tv").font(.title2)
+                    ForEach(0..<3) { n in Capsule().fill(n == 0 ? Color.white : Color.white.opacity(0.35)).frame(width: n == 0 ? 40 : 28, height: 3) }
+                }.foregroundColor(.white).padding(10).background(blue ? Color.blue : theme.violet).clipShape(RoundedRectangle(cornerRadius: 8)).accessibilityHidden(true)
+                VStack(alignment: .leading) { Text(title).font(.headline); Text(subtitle).font(.caption).foregroundColor(theme.muted) }
+                Spacer(minLength: 0); Image(systemName: "chevron.right").accessibilityHidden(true)
+            }.frame(maxWidth: .infinity, minHeight: 64, alignment: .leading)
+        }.buttonStyle(AppButtonStyle(theme: theme)).accessibilityIdentifier("setup-platform-\(group)")
+    }
+
+    private func resumeIndex(_ route: AQSSSetupRoute) -> Int? {
+        guard route.id != "voice", let data = savedProgress.data(using: .utf8),
+              let saved = try? JSONDecoder().decode([String: Int].self, from: data),
+              let value = saved[route.id], route.steps.indices.contains(value) else { return nil }
+        return value
+    }
+    private func writeProgress(_ id: String, _ value: Int?) {
+        var saved = (savedProgress.data(using: .utf8).flatMap { try? JSONDecoder().decode([String: Int].self, from: $0) }) ?? [:]
+        let allowed = Set(AQSSSetupContent.routes.map { $0.id })
+        saved = saved.filter { allowed.contains($0.key) }
+        saved[id] = value
+        if let data = try? JSONEncoder().encode(saved), let text = String(data: data, encoding: .utf8) { savedProgress = text }
+    }
     private func chooseGroup(_ id: String) {
         groupID = AQSSSetupContent.groups.contains { $0.id == id } ? id : ""
         routeID = groupID == "voice" ? "voice" : nil
@@ -101,6 +141,9 @@ struct SetupGuidesView: View {
     @ViewBuilder private func introduction(_ route: AQSSSetupRoute) -> some View {
         HStack(spacing: 20) { Image(systemName: "tv"); Image(systemName: "arrow.right"); Image(systemName: "iphone") }
             .font(.system(size: 36)).foregroundColor(theme.violet).accessibilityHidden(true)
+        if route.id == "roku_network" || route.id == "roku_model" {
+            control("I’m already in Settings", icon: "gearshape", id: "setup-skip-home") { index = 2 }
+        }
         Text("Before you begin").font(.headline)
         Text(route.appliesTo)
         if !route.models.isEmpty {
@@ -111,6 +154,10 @@ struct SetupGuidesView: View {
         Text("\(route.steps.count) pictures · one action at a time").font(.headline).foregroundColor(theme.accent)
         Text("Pictures are simplified illustrations. Labels, layout and services can differ by country, software and language. Compare each picture with your own screen.").foregroundColor(theme.muted)
         Text("Complete account approvals in the official app or on your TV. This guide never asks for a password and does not connect Audio Bodyguard.").font(.callout)
+        if let saved = resumeIndex(route) {
+            Text("You stopped at picture \(saved + 1). Tap Resume guide to continue there.").foregroundColor(theme.accent)
+            control("Start from the beginning", icon: "arrow.counterclockwise", id: "setup-restart") { writeProgress(route.id, nil); index = 0 }
+        }
         sources(route)
         control("My screen looks different", icon: "questionmark.circle", id: "setup-mismatch") { mismatch = true }
     }
@@ -144,10 +191,12 @@ struct SetupGuidesView: View {
                 Button {
                     if index == route.steps.count - 1 {
                         if route.id == "voice" { onVoiceCheck?() }
+                        writeProgress(route.id, nil)
                         dismiss()
-                    } else { index += 1 }
+                    } else if index < 0 { index = resumeIndex(route) ?? 0 }
+                    else { index += 1 }
                 } label: {
-                    navigationLabel(index < 0 ? "Start guide" : index == route.steps.count - 1 ? (route.id == "voice" && onVoiceCheck != nil ? "Open Voice check" : "Finish guide") : "Next", icon: index == route.steps.count - 1 ? (route.id == "voice" && onVoiceCheck != nil ? "mic" : "checkmark") : "arrow.right")
+                    navigationLabel(index < 0 ? (resumeIndex(route) == nil ? "Start guide" : "Resume guide") : index == route.steps.count - 1 ? (route.id == "voice" && onVoiceCheck != nil ? "Open Voice check" : "Finish guide") : "Next", icon: index == route.steps.count - 1 ? (route.id == "voice" && onVoiceCheck != nil ? "mic" : "checkmark") : "arrow.right")
                         .frame(maxWidth: .infinity, minHeight: 44)
                 }.buttonStyle(AppButtonStyle(theme: theme, primary: true)).accessibilityIdentifier("setup-next")
             }
@@ -157,7 +206,7 @@ struct SetupGuidesView: View {
         if mismatch { mismatch = false }
         else if index >= 0 { index -= 1 }
         else if routeID != nil { routeID = nil }
-        else { groupID = "" }
+        else { groupID = groupID.hasPrefix("tcl_") ? "tcl" : "" }
     }
 }
 
@@ -239,5 +288,65 @@ private struct SetupScreenIllustration: View {
             .accessibilityElement(children: .ignore)
             .accessibilityLabel("Illustration \(number). \(step.surface == "tv" ? "TV screen" : step.surface == "both" ? "TV and phone" : "Phone screen"): \(step.screen). Highlighted: \(step.items[step.focus]). Action: \(step.action). \(step.instruction)")
             .accessibilityIdentifier("setup-illustration")
+    }
+}
+
+/// Recreates the Roku left-menu / right-panel geometry visible in the supplied photo.
+/// Background art and unknown device values are deliberately omitted.
+private struct RokuMenuIllustration: View {
+    let step: AQSSSetupStep
+    let number: Int
+    let theme: AppTheme
+    private var about: Bool { number >= 4 }
+    private var model: Bool { step.screen.contains("System") }
+    var body: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Text("Picture \(number) · Roku menu layout").font(.caption).foregroundColor(theme.muted)
+            if number == 1 {
+                HStack(spacing: 20) {
+                    Image(systemName: "appletvremote.gen1").font(.system(size: 58)).foregroundColor(theme.violet)
+                    Label("Press Home", systemImage: "house.fill").padding(16).background(theme.control).foregroundColor(theme.controlText).clipShape(RoundedRectangle(cornerRadius: 12))
+                }
+            } else {
+                VStack(alignment: .leading, spacing: 14) {
+                    Text(number == 2 ? "Roku • Home" : "Roku • Settings").font(.system(size: 20, weight: .semibold))
+                    HStack(alignment: .top, spacing: 12) {
+                        VStack(alignment: .leading, spacing: 6) {
+                            if number == 2 {
+                                row("Home", selected: false)
+                                row("Settings", selected: true)
+                                row("Streaming Store", selected: false)
+                            } else {
+                                ForEach(model ? ["Accessibility", "Audio", "Home screen", "System", "Power"] : ["Network", "Remotes & devices", "Theme", "Display type", "TV inputs"], id: \.self) { item in
+                                    row(item, selected: item == (model ? "System" : "Network") && !about)
+                                }
+                            }
+                        }.frame(maxWidth: .infinity, alignment: .leading)
+                        VStack(alignment: .leading, spacing: 6) {
+                            if number == 5 {
+                                ForEach(Array(step.items.enumerated()), id: \.offset) { i, item in row(item, selected: i == step.focus) }
+                            } else if number >= 3 {
+                                row("About", selected: about)
+                                ForEach(model ? ["Power", "System update"] : ["Check connection", "Set up connection", "Bandwidth saver"], id: \.self) { item in row(item, selected: false) }
+                            } else {
+                                Image(systemName: "square.grid.2x2").font(.system(size: 40)).padding(16)
+                            }
+                        }.frame(maxWidth: .infinity, alignment: .leading)
+                    }
+                }.foregroundColor(.white).padding(16).background(Color(red: 0.02, green: 0.22, blue: 0.57)).clipShape(RoundedRectangle(cornerRadius: 12))
+            }
+            Label(number == 5 ? "Read the highlighted field on your TV" : number == 1 ? "Use the Home button on the remote" : "Use the remote arrows, then press Right", systemImage: number == 5 ? "eye" : "arrow.right.circle")
+                .font(.caption).foregroundColor(theme.accent)
+        }.padding(14).background(theme.raised).clipShape(RoundedRectangle(cornerRadius: 18))
+            .accessibilityElement(children: .ignore).accessibilityLabel("Roku picture \(number). Left menu and right information panel. Highlighted: \(step.items[step.focus]). \(step.instruction)")
+            .accessibilityIdentifier("setup-illustration")
+    }
+    private func row(_ label: String, selected: Bool) -> some View {
+        HStack(alignment: .top, spacing: 3) {
+            if selected { Text("\(number) →").font(.system(size: 11, weight: .bold)) }
+            Text(label).font(.system(size: 13, weight: selected ? .semibold : .regular)).fixedSize(horizontal: false, vertical: true)
+        }.padding(7).frame(maxWidth: .infinity, alignment: .leading)
+            .foregroundColor(selected ? Color.black : Color.white)
+            .background(selected ? Color.white : Color.black.opacity(0.12)).clipShape(RoundedRectangle(cornerRadius: 3))
     }
 }

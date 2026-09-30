@@ -301,6 +301,33 @@ tap_tutorial_label "Exit tutorial" guide_close
 capture_ui restored_home
 assert_tutorial_label restored_home "does not monitor or change TV audio"
 
+tap_tutorial_label "Devices" roku_devices
+tap_scroll_label "Illustrated setup guides. TV pairing, Google Home & Alexa · one picture at a time" roku_open
+tap_scroll_label "TCL" roku_brand
+tap_scroll_label "Roku TV" roku_platform
+tap_scroll_label "Find my IP address (Roku TV)" roku_network
+tap_scroll_label "I’m already in Settings" roku_settings
+capture_ui roku_settings_picture
+assert_tutorial_label roku_settings_picture "Step 3 of 5"
+adb shell dumpsys gfxinfo com.aqss.bodyguard.prototype reset > "$artifact_dir/roku-frames-reset.txt"
+tap_tutorial_label "Next" roku_about
+capture_ui roku_about_picture
+assert_tutorial_label roku_about_picture "Step 4 of 5"
+tap_tutorial_label "Close" roku_close
+tap_scroll_label "Illustrated setup guides. TV pairing, Google Home & Alexa · one picture at a time" roku_reopen
+tap_scroll_label "TCL" roku_rebrand
+tap_scroll_label "Roku TV" roku_replatform
+tap_scroll_label "Find my IP address (Roku TV)" roku_reroute
+tap_tutorial_label "Resume guide" roku_resume
+capture_ui roku_resumed
+assert_tutorial_label roku_resumed "Step 4 of 5"
+tap_tutorial_label "Next" roku_ip
+capture_ui roku_ip_picture
+assert_tutorial_label roku_ip_picture "Step 5 of 5"
+tap_tutorial_label "Finish guide" roku_finish
+adb shell dumpsys gfxinfo com.aqss.bodyguard.prototype > "$artifact_dir/roku-frame-summary.txt"
+tap_tutorial_label "Home" roku_home
+
 adb shell settings put system font_scale 2.0
 capture_ui large_text_home
 tap_scroll_label "TV & smart-home guide" large_beginner_open
@@ -313,6 +340,7 @@ tap_tutorial_label "Devices" large_devices
 capture_ui large_text_devices
 tap_scroll_label "Illustrated setup guides. TV pairing, Google Home & Alexa · one picture at a time" setup_large_open
 tap_scroll_label "TCL" setup_large_tcl
+tap_scroll_label "Google TV / Android TV" setup_large_platform
 tap_scroll_label "TCL QM851G / Q651G / QM891G — first setup" setup_large_route
 tap_tutorial_label "Start guide" setup_large_start
 capture_ui setup_large_step

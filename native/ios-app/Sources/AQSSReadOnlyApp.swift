@@ -502,8 +502,14 @@ private struct ReadOnlyHomeView: View {
                         ForEach(["chooseTV", "chooseHome"], id: \.self) { target in
                             if let selected = guide.selected(target) {
                                 VStack(alignment: .leading, spacing: 10) {
+                                    HStack(spacing: 16) {
+                                        Image(systemName: target == "chooseTV" ? "tv" : "iphone").font(.system(size: 38)).foregroundColor(theme.violet)
+                                        Image(systemName: "arrow.right").foregroundColor(theme.accent)
+                                        Image(systemName: "hand.point.up.left.fill").font(.title2).foregroundColor(theme.accent)
+                                    }.accessibilityHidden(true)
                                     Text(selected.title).font(.title3.bold())
                                     Text(selected.detail).foregroundColor(theme.muted)
+                                    Text("Tap Show steps below. Match your TV or app, then follow one highlighted picture at a time.").font(.callout)
                                     action("Show \(selected.title) steps", icon: "rectangle.stack") { showSetup(selected.id) }
                                         .accessibilityIdentifier("setup-from-\(selected.id)")
                                 }.padding(18).frame(maxWidth: .infinity, alignment: .leading).background(theme.surface).clipShape(RoundedRectangle(cornerRadius: 18))

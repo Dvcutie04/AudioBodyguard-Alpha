@@ -93,10 +93,18 @@ class SetupGuideActivity : Activity() {
     private fun chooseGroup(id: String) {
         groupId = id; routeId = if (id == "voice") "voice" else null; index = if (id == "voice") 0 else -1; mismatch = false; render()
     }
+    private fun resumeIndex(route: SetupRoute): Int? = getSharedPreferences("aqss-presentation", MODE_PRIVATE).getInt("setup-progress-${route.id}", -1).takeIf { route.id != "voice" && it in route.steps.indices }
+    private fun saveProgress(route: SetupRoute, value: Int?) {
+        if (value != null && resumeIndex(route) == value) return
+        val edit = getSharedPreferences("aqss-presentation", MODE_PRIVATE).edit()
+        if (value == null) edit.remove("setup-progress-${route.id}") else edit.putInt("setup-progress-${route.id}", value)
+        edit.apply()
+    }
     private fun render() {
         header.removeAllViews(); content.removeAllViews(); controls.removeAllViews()
         val route = route
         val step = route?.steps?.getOrNull(index)
+        if (route != null && route.id != "voice" && step != null && !mismatch) saveProgress(route, index)
         val row = LinearLayout(this).apply { gravity = Gravity.CENTER_VERTICAL }
         row.addView(TextView(this).apply {
             text = if (route != null && index >= 0) "Step ${index + 1} of ${route.steps.size}" else "Illustrated setup"
@@ -115,11 +123,22 @@ class SetupGuideActivity : Activity() {
             route != null && step != null -> {
                 words(content, when (step.surface) { "tv" -> "On your TV · use the remote"; "both" -> "Your TV + your phone"; else -> "On your phone" }, 15f, skin.accent, true)
                 words(content, step.instruction, 16f, bold = true)
-                content.addView(illustration(step, index + 1), LinearLayout.LayoutParams(-1, -2).apply { bottomMargin = dp(18) })
+                content.addView(if (route.id == "roku_network" || route.id == "roku_model") rokuIllustration(step, index + 1) else illustration(step, index + 1), LinearLayout.LayoutParams(-1, -2).apply { bottomMargin = dp(18) })
+                words(content, "Look for the numbered highlight in the picture. Finish that action on your TV or phone, then tap Next here.", color = skin.muted)
                 words(content, step.note, color = skin.muted)
                 action(content, "My screen looks different") { mismatch = true; render() }
             }
             route != null -> intro(route)
+            groupId == "tcl" -> {
+                words(content, "Which home screen is on your TCL TV?", 20f, bold = true)
+                words(content, "Choose the name that matches your TV. A blue Roku Settings menu means Roku TV.", color = skin.muted)
+                for ((id, name) in listOf("tcl_roku" to "Roku TV", "tcl_google" to "Google TV / Android TV", "tcl_fire" to "Fire TV")) {
+                    content.addView(button(name) { chooseGroup(id) }.apply {
+                        setCompoundDrawablesWithIntrinsicBounds(InterfaceSymbol(skin, "tv", skin.accent), null, null, null)
+                        compoundDrawablePadding = dp(12); gravity = Gravity.START or Gravity.CENTER_VERTICAL; minHeight = dp(64)
+                    }, LinearLayout.LayoutParams(-1, -2).apply { bottomMargin = dp(12) })
+                }
+            }
             group != null -> {
                 words(content, group!!.title, 20f, skin.accent, true)
                 words(content, "Choose the setup screen or operating system you actually see. A brand alone does not confirm compatibility.", color = skin.muted)
@@ -129,27 +148,33 @@ class SetupGuideActivity : Activity() {
             }
             else -> {
                 words(content, "Follow one picture at a time. The numbered arrow marks the next choice; TV, remote and phone symbols show which device to use.", color = skin.muted)
-                SetupContent.groups.filter { it.id !in listOf("both", "neither") }.forEach { choice -> action(content, choice.title) { chooseGroup(choice.id) } }
+                SetupContent.groups.filter { it.id !in listOf("both", "neither") && !it.id.startsWith("tcl_") }.forEach { choice -> action(content, choice.title) { chooseGroup(choice.id) } }
             }
         }
         val footer = LinearLayout(this)
         if (group != null || route != null) footer.addView(button(if (mismatch) "Return to step" else "Back") { back() }, LinearLayout.LayoutParams(-2, -2).apply { marginEnd = dp(12) })
-        if (route != null && !mismatch) footer.addView(button(if (index < 0) "Start guide" else if (index == route.steps.lastIndex) { if (route.id == "voice") "Open Voice check" else "Finish guide" } else "Next", primary = true) {
+        if (route != null && !mismatch) footer.addView(button(if (index < 0) { if (resumeIndex(route) == null) "Start guide" else "Resume guide" } else if (index == route.steps.lastIndex) { if (route.id == "voice") "Open Voice check" else "Finish guide" } else "Next", primary = true) {
             if (index == route.steps.lastIndex) {
                 if (route.id == "voice" && !intent.getBooleanExtra("returnToVoice", false)) startActivity(Intent(this, InputAssistanceActivity::class.java).putExtra("mode", "voice").putExtra("dark", skin.dark))
+                saveProgress(route, null)
                 finish()
-            } else { index++; render() }
+            } else { index = if (index < 0) resumeIndex(route) ?: 0 else index + 1; render() }
         }, LinearLayout.LayoutParams(0, -2, 1f))
         controls.addView(footer)
         scroll.post { scroll.scrollTo(0, 0); heading.sendAccessibilityEvent(android.view.accessibility.AccessibilityEvent.TYPE_VIEW_FOCUSED) }
     }
     private fun intro(route: SetupRoute) {
+        if (route.id == "roku_network" || route.id == "roku_model") action(content, "I’m already in Settings") { index = 2; render() }
         words(content, "Before you begin", 19f, bold = true)
         words(content, route.appliesTo)
         words(content, if (route.models.isEmpty()) "Menu-family guide. Your exact model is not confirmed by this preview." else "Documented model examples: ${route.models.joinToString()}", color = skin.muted)
         words(content, "${route.steps.size} pictures · one action at a time", 18f, skin.accent, true)
         words(content, "Pictures are simplified illustrations. Labels, layout and services can differ by country, software and language. Compare each picture with your own screen.", color = skin.muted)
         words(content, "Complete account approvals in the official app or on your TV. This guide never asks for a password and does not connect Audio Bodyguard.")
+        resumeIndex(route)?.let { saved ->
+            words(content, "You stopped at picture ${saved + 1}. Tap Resume guide to continue there.", color = skin.accent)
+            action(content, "Start from the beginning") { saveProgress(route, null); index = 0; render() }
+        }
         sources(route)
         action(content, "My screen looks different") { mismatch = true; render() }
     }
@@ -170,6 +195,41 @@ class SetupGuideActivity : Activity() {
         action(content, "Choose another TV or app") { chooseGroup("") }
         words(content, "You can close this guide at any time. Your current place is preserved while viewing this help.", color = skin.muted)
     }
+    private fun rokuIllustration(step: SetupStep, number: Int): View {
+        val box = column().apply { setPadding(dp(14), dp(14), dp(14), dp(14)); background = skin.shape(skin.raised, 18)
+            importantForAccessibility = View.IMPORTANT_FOR_ACCESSIBILITY_YES
+            contentDescription = "Roku picture $number. Left menu and right panel. Highlighted: ${step.items[step.focus]}. ${step.instruction}" }
+        words(box, "Picture $number · Roku menu layout", 12f, skin.muted)
+        if (number == 1) {
+            box.addView(SetupActionPicture(this, skin, "tv", "home"), LinearLayout.LayoutParams(-1, dp(80)))
+            words(box, "Press the Home button on your TV remote", 15f, skin.accent)
+            return box
+        }
+        val blue = android.graphics.Color.rgb(5, 56, 145)
+        val panel = column().apply { setPadding(dp(12), dp(12), dp(12), dp(12)); background = skin.shape(blue, 10); importantForAccessibility = View.IMPORTANT_FOR_ACCESSIBILITY_NO_HIDE_DESCENDANTS }
+        words(panel, if (number == 2) "Roku • Home" else "Roku • Settings", 18f, android.graphics.Color.WHITE, true)
+        val columns = LinearLayout(this).apply { gravity = Gravity.TOP }
+        val left = column(); val right = column()
+        columns.addView(left, LinearLayout.LayoutParams(0, -2, 1f).apply { marginEnd = dp(8) }); columns.addView(right, LinearLayout.LayoutParams(0, -2, 1f)); panel.addView(columns)
+        val model = step.screen.contains("System")
+        fun row(parent: LinearLayout, label: String, selected: Boolean) {
+            parent.addView(TextView(this).apply {
+                text = if (selected) "$number → $label" else label; textSize = 12f
+                setPadding(dp(6), dp(7), dp(6), dp(7)); setTextColor(if (selected) android.graphics.Color.BLACK else android.graphics.Color.WHITE)
+                background = skin.shape(if (selected) android.graphics.Color.WHITE else blue, 3)
+                if (selected) setTypeface(null, Typeface.BOLD)
+            }, LinearLayout.LayoutParams(-1, -2).apply { bottomMargin = dp(4) })
+        }
+        val names = if (number == 2) listOf("Home", "Settings", "Streaming Store") else if (model) listOf("Accessibility", "Audio", "Home screen", "System", "Power") else listOf("Network", "Remotes & devices", "Theme", "Display type", "TV inputs")
+        names.forEach { row(left, it, if (number == 2) it == "Settings" else number == 3 && it == (if (model) "System" else "Network")) }
+        if (number == 5) step.items.forEachIndexed { i, item -> row(right, item, i == step.focus) }
+        else if (number >= 3) (if (model) listOf("About", "Power", "System update") else listOf("About", "Check connection", "Set up connection", "Bandwidth saver")).forEach { row(right, it, number == 4 && it == "About") }
+        else row(right, "App tiles", false)
+        box.addView(panel)
+        words(box, if (number == 5) "Read the highlighted field on your TV" else "Use the remote arrows, then press Right", 13f, skin.accent)
+        return box
+    }
+
     private fun illustration(step: SetupStep, number: Int): View {
         val box = column().apply {
             setPadding(dp(14), dp(14), dp(14), dp(14)); background = skin.shape(skin.raised, 22)
@@ -205,7 +265,7 @@ class SetupGuideActivity : Activity() {
             mismatch -> mismatch = false
             index >= 0 -> index--
             routeId != null -> routeId = null
-            groupId.isNotEmpty() -> groupId = ""
+            groupId.isNotEmpty() -> groupId = if (groupId.startsWith("tcl_")) "tcl" else ""
             else -> { finish(); return }
         }
         render()

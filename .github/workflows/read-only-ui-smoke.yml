@@ -154,6 +154,10 @@ jobs:
             artifacts/ui/android/setup_tv_approval.png
             artifacts/ui/android/setup_large_step.png
             artifacts/ui/android/beginner_tv_selected.png
+            artifacts/ui/android/roku_settings_picture.png
+            artifacts/ui/android/roku_about_picture.png
+            artifacts/ui/android/roku_ip_picture.png
+            artifacts/ui/android/roku-frame-summary.txt
           if-no-files-found: ignore
           retention-days: 7
       - name: Keep Android UI hierarchy and screenshots

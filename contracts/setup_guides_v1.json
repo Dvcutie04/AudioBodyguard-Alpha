@@ -122,6 +122,16 @@
       "id": "voice",
       "title": "Audio Bodyguard: foreground voice-check behavior",
       "url": "https://github.com/Dvcutie04/AudioBodyguard-Alpha/blob/codex/voice-photo-assistance/docs/voice-photo-research-2026-09-29.md"
+    },
+    {
+      "id": "tcl_roku_model",
+      "title": "TCL: find Roku TV system information",
+      "url": "https://support.tcl.com/en_US/62989-tcl-roku-tv/where-to-find-the-system-information-of-your-tcl-roku-tv"
+    },
+    {
+      "id": "roku_network_manual",
+      "title": "Roku TV guide: Network > About",
+      "url": "https://image.roku.com/c3VwcG9ydC1B/Roku-TV-User-Guide-12-0en-US.pdf"
     }
   ],
   "groups": [
@@ -174,6 +184,8 @@
       "id": "tcl",
       "title": "TCL",
       "routes": [
+        "roku_network",
+        "roku_model",
         "tcl_models",
         "google_remote",
         "google_setup",
@@ -309,6 +321,38 @@
       "title": "Voice check",
       "routes": [
         "voice"
+      ]
+    },
+    {
+      "id": "tcl_roku",
+      "title": "TCL • Roku TV",
+      "routes": [
+        "roku_network",
+        "roku_model",
+        "roku_alexa",
+        "google_roku",
+        "identify"
+      ]
+    },
+    {
+      "id": "tcl_google",
+      "title": "TCL • Google TV / Android TV",
+      "routes": [
+        "tcl_models",
+        "google_remote",
+        "google_setup",
+        "google_fast",
+        "google_legacy",
+        "google_legacy_add",
+        "identify"
+      ]
+    },
+    {
+      "id": "tcl_fire",
+      "title": "TCL • Fire TV",
+      "routes": [
+        "fire_alexa",
+        "identify"
       ]
     }
   ],
@@ -4647,6 +4691,169 @@
           "focus": 0,
           "action": "check",
           "note": "Finishing this guide does not connect Audio Bodyguard or activate protection."
+        }
+      ]
+    },
+    {
+      "id": "roku_network",
+      "title": "Find my IP address (Roku TV)",
+      "applies_to": "TCL Roku TVs whose menus match the supplied Roku Settings photo. The Settings illustration matches its left-menu/right-panel arrangement. About panels are labeled diagrams from official menu instructions. The model and software version are not visible in that photo, so exact-model artwork is not confirmed.",
+      "models": [],
+      "sources": [
+        "roku_network_manual"
+      ],
+      "steps": [
+        {
+          "title": "Start with the TV remote",
+          "instruction": "Press the house-shaped Home button on your TV remote. The picture marks that button.",
+          "surface": "tv",
+          "screen": "Roku • Home",
+          "items": [
+            "Home button"
+          ],
+          "focus": 0,
+          "action": "home",
+          "note": "Compare the highlighted menu with your TV. If it differs, open My screen looks different."
+        },
+        {
+          "title": "Open Settings",
+          "instruction": "Use the remote’s up or down arrow until Settings is highlighted on the TV. Press the right arrow. Look for the white Settings bar in the picture.",
+          "surface": "tv",
+          "screen": "Roku • Home",
+          "items": [
+            "Home",
+            "Settings",
+            "Streaming Store"
+          ],
+          "focus": 1,
+          "action": "settings",
+          "note": "Compare the highlighted menu with your TV. If it differs, open My screen looks different."
+        },
+        {
+          "title": "Choose Network",
+          "instruction": "In Settings, use up or down to select Network. Press the right arrow to open the column on the right. The picture highlights Network.",
+          "surface": "tv",
+          "screen": "Roku • Settings",
+          "items": [
+            "Network",
+            "Remotes & devices",
+            "Theme",
+            "Display type",
+            "System"
+          ],
+          "focus": 0,
+          "action": "select",
+          "note": "Compare the highlighted menu with your TV. If it differs, open My screen looks different."
+        },
+        {
+          "title": "Open About",
+          "instruction": "In the right-hand column, select About and press the right arrow. Look for the highlighted About row in the picture.",
+          "surface": "tv",
+          "screen": "Roku • Network",
+          "items": [
+            "About",
+            "Check connection",
+            "Set up connection",
+            "Bandwidth saver"
+          ],
+          "focus": 0,
+          "action": "select",
+          "note": "Compare the highlighted menu with your TV. If it differs, open My screen looks different."
+        },
+        {
+          "title": "Read your ip address",
+          "instruction": "Look for IP address in the information panel. This is your TV’s address on your home network. Read the numbers on your own TV, not the example picture.",
+          "surface": "tv",
+          "screen": "Roku • Network • About",
+          "items": [
+            "Status — read on your TV",
+            "Connection type — read on your TV",
+            "IP address — read on your TV"
+          ],
+          "focus": 2,
+          "action": "check",
+          "note": "You have found information, not paired Audio Bodyguard. Close this guide or choose an assistant guide next."
+        }
+      ]
+    },
+    {
+      "id": "roku_model",
+      "title": "Find my exact model (Roku TV)",
+      "applies_to": "TCL Roku TVs whose menus match the supplied Roku Settings photo. The Settings illustration matches its left-menu/right-panel arrangement. About panels are labeled diagrams from official menu instructions. The model and software version are not visible in that photo, so exact-model artwork is not confirmed.",
+      "models": [],
+      "sources": [
+        "tcl_roku_model"
+      ],
+      "steps": [
+        {
+          "title": "Start with the TV remote",
+          "instruction": "Press the house-shaped Home button on your TV remote. The picture marks that button.",
+          "surface": "tv",
+          "screen": "Roku • Home",
+          "items": [
+            "Home button"
+          ],
+          "focus": 0,
+          "action": "home",
+          "note": "Compare the highlighted menu with your TV. If it differs, open My screen looks different."
+        },
+        {
+          "title": "Open Settings",
+          "instruction": "Use the remote’s up or down arrow until Settings is highlighted on the TV. Press the right arrow. Look for the white Settings bar in the picture.",
+          "surface": "tv",
+          "screen": "Roku • Home",
+          "items": [
+            "Home",
+            "Settings",
+            "Streaming Store"
+          ],
+          "focus": 1,
+          "action": "settings",
+          "note": "Compare the highlighted menu with your TV. If it differs, open My screen looks different."
+        },
+        {
+          "title": "Choose System",
+          "instruction": "In Settings, use up or down to select System. Press the right arrow to open the column on the right. The picture highlights System.",
+          "surface": "tv",
+          "screen": "Roku • Settings",
+          "items": [
+            "Accessibility",
+            "Audio",
+            "Home screen",
+            "System",
+            "Power"
+          ],
+          "focus": 3,
+          "action": "select",
+          "note": "Compare the highlighted menu with your TV. If it differs, open My screen looks different."
+        },
+        {
+          "title": "Open About",
+          "instruction": "In the right-hand column, select About and press the right arrow. Look for the highlighted About row in the picture.",
+          "surface": "tv",
+          "screen": "Roku • System",
+          "items": [
+            "About",
+            "Power",
+            "System update",
+            "Advanced system settings"
+          ],
+          "focus": 0,
+          "action": "select",
+          "note": "Compare the highlighted menu with your TV. If it differs, open My screen looks different."
+        },
+        {
+          "title": "Read your model",
+          "instruction": "Look for Model in the information panel. Copy the full model name and software version from your own TV. A Roku model code and a TCL model number may both appear.",
+          "surface": "tv",
+          "screen": "Roku • System • About",
+          "items": [
+            "Model — read on your TV",
+            "Software version — read on your TV"
+          ],
+          "focus": 0,
+          "action": "check",
+          "note": "You have found information, not paired Audio Bodyguard. Close this guide or choose an assistant guide next."
         }
       ]
     }

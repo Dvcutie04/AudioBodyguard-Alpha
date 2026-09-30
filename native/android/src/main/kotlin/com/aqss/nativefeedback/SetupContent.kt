@@ -31,12 +31,14 @@ object SetupContent {
         SetupSource("fire_alexa", "Amazon: link Fire TV and Alexa", "https://digprjsurvey.amazon.com/csad/help/node/G7JTYZL789TQJHKV"),
         SetupSource("tcl_fire", "TCL: Fire TV and Alexa compatibility", "https://support.tcl.com/en_US/set-up-and-configuration-ca/control-amazon-fire-tv-smart-tvs-with-alexa"),
         SetupSource("voice", "Audio Bodyguard: foreground voice-check behavior", "https://github.com/Dvcutie04/AudioBodyguard-Alpha/blob/codex/voice-photo-assistance/docs/voice-photo-research-2026-09-29.md"),
+        SetupSource("tcl_roku_model", "TCL: find Roku TV system information", "https://support.tcl.com/en_US/62989-tcl-roku-tv/where-to-find-the-system-information-of-your-tcl-roku-tv"),
+        SetupSource("roku_network_manual", "Roku TV guide: Network > About", "https://image.roku.com/c3VwcG9ydC1B/Roku-TV-User-Guide-12-0en-US.pdf"),
     )
     val groups: List<SetupGroup> = listOf(
         SetupGroup("samsung", "Samsung", listOf("samsung_ok", "samsung_pin", "samsung_model_new", "samsung_model_old", "google_samsung", "samsung_alexa", "google_legacy", "google_legacy_add", "identify")),
         SetupGroup("lg", "LG", listOf("lg_pair", "lg_account5", "lg_account6", "lg_model_new", "lg_model_mid", "lg_model_2020", "lg_model_old", "google_lg", "lg_alexa", "google_legacy", "google_legacy_add", "identify")),
         SetupGroup("sony", "Sony", listOf("google_remote", "sony_new", "sony_legacy", "google_setup", "google_fast", "identify")),
-        SetupGroup("tcl", "TCL", listOf("tcl_models", "google_remote", "google_setup", "google_fast", "roku_alexa", "google_roku", "fire_alexa", "google_legacy", "google_legacy_add", "identify")),
+        SetupGroup("tcl", "TCL", listOf("roku_network", "roku_model", "tcl_models", "google_remote", "google_setup", "google_fast", "roku_alexa", "google_roku", "fire_alexa", "google_legacy", "google_legacy_add", "identify")),
         SetupGroup("hisense", "Hisense", listOf("vidaa_google", "vidaa_alexa", "google_remote", "google_setup", "roku_alexa", "google_roku", "fire_alexa", "identify")),
         SetupGroup("vizio", "Vizio", listOf("vizio_pair", "vizio_account", "vizio_assist", "google_vizio", "identify")),
         SetupGroup("other", "Another brand", listOf("identify", "google_remote", "google_setup", "roku_alexa", "google_legacy", "google_legacy_add", "fire_alexa")),
@@ -46,6 +48,9 @@ object SetupContent {
         SetupGroup("both", "Google Home + Alexa", listOf("google_samsung", "google_lg", "google_roku", "google_vidaa", "google_vizio", "google_legacy", "google_legacy_add", "google_setup", "google_fast", "google_remote", "vidaa_google", "lg_account5", "lg_account6", "samsung_alexa", "lg_alexa", "sony_new", "sony_legacy", "roku_alexa", "vidaa_alexa", "vizio_assist", "fire_alexa")),
         SetupGroup("neither", "Neither / not sure", listOf("identify", "samsung_ok", "lg_pair", "google_remote", "vizio_pair")),
         SetupGroup("voice", "Voice check", listOf("voice")),
+        SetupGroup("tcl_roku", "TCL • Roku TV", listOf("roku_network", "roku_model", "roku_alexa", "google_roku", "identify")),
+        SetupGroup("tcl_google", "TCL • Google TV / Android TV", listOf("tcl_models", "google_remote", "google_setup", "google_fast", "google_legacy", "google_legacy_add", "identify")),
+        SetupGroup("tcl_fire", "TCL • Fire TV", listOf("fire_alexa", "identify")),
     )
     val routes: List<SetupRoute> = listOf(
         SetupRoute("samsung_model_new", "Samsung — find model (2022 and newer)", "Use this menu version only when it matches your TV. Regional menus may differ.", listOf(), listOf("samsung_model"), listOf(
@@ -433,6 +438,20 @@ object SetupContent {
             SetupStep("Review the account request", "Sign in to that provider and review the requested access. Continue only if you agree.", "phone", "Provider approval", listOf("Account", "Permissions", "Continue"), 2, "check", "Use your real device. This picture is an illustration."),
             SetupStep("Place the TV in your home", "If offered, choose the TV and its room, then finish.", "phone", "Your devices", listOf("Your TV", "Add to a room", "Done"), 2, "tap", "Use your real device. This picture is an illustration."),
             SetupStep("Check the actual result", "Look in Google Home for your TV. If it is missing, use “My screen looks different”.", "phone", "Google Home", listOf("Your TV appears", "TV missing? Get help"), 0, "check", "Finishing this guide does not connect Audio Bodyguard or activate protection."),
+        )),
+        SetupRoute("roku_network", "Find my IP address (Roku TV)", "TCL Roku TVs whose menus match the supplied Roku Settings photo. The Settings illustration matches its left-menu/right-panel arrangement. About panels are labeled diagrams from official menu instructions. The model and software version are not visible in that photo, so exact-model artwork is not confirmed.", listOf(), listOf("roku_network_manual"), listOf(
+            SetupStep("Start with the TV remote", "Press the house-shaped Home button on your TV remote. The picture marks that button.", "tv", "Roku • Home", listOf("Home button"), 0, "home", "Compare the highlighted menu with your TV. If it differs, open My screen looks different."),
+            SetupStep("Open Settings", "Use the remote’s up or down arrow until Settings is highlighted on the TV. Press the right arrow. Look for the white Settings bar in the picture.", "tv", "Roku • Home", listOf("Home", "Settings", "Streaming Store"), 1, "settings", "Compare the highlighted menu with your TV. If it differs, open My screen looks different."),
+            SetupStep("Choose Network", "In Settings, use up or down to select Network. Press the right arrow to open the column on the right. The picture highlights Network.", "tv", "Roku • Settings", listOf("Network", "Remotes & devices", "Theme", "Display type", "System"), 0, "select", "Compare the highlighted menu with your TV. If it differs, open My screen looks different."),
+            SetupStep("Open About", "In the right-hand column, select About and press the right arrow. Look for the highlighted About row in the picture.", "tv", "Roku • Network", listOf("About", "Check connection", "Set up connection", "Bandwidth saver"), 0, "select", "Compare the highlighted menu with your TV. If it differs, open My screen looks different."),
+            SetupStep("Read your ip address", "Look for IP address in the information panel. This is your TV’s address on your home network. Read the numbers on your own TV, not the example picture.", "tv", "Roku • Network • About", listOf("Status — read on your TV", "Connection type — read on your TV", "IP address — read on your TV"), 2, "check", "You have found information, not paired Audio Bodyguard. Close this guide or choose an assistant guide next."),
+        )),
+        SetupRoute("roku_model", "Find my exact model (Roku TV)", "TCL Roku TVs whose menus match the supplied Roku Settings photo. The Settings illustration matches its left-menu/right-panel arrangement. About panels are labeled diagrams from official menu instructions. The model and software version are not visible in that photo, so exact-model artwork is not confirmed.", listOf(), listOf("tcl_roku_model"), listOf(
+            SetupStep("Start with the TV remote", "Press the house-shaped Home button on your TV remote. The picture marks that button.", "tv", "Roku • Home", listOf("Home button"), 0, "home", "Compare the highlighted menu with your TV. If it differs, open My screen looks different."),
+            SetupStep("Open Settings", "Use the remote’s up or down arrow until Settings is highlighted on the TV. Press the right arrow. Look for the white Settings bar in the picture.", "tv", "Roku • Home", listOf("Home", "Settings", "Streaming Store"), 1, "settings", "Compare the highlighted menu with your TV. If it differs, open My screen looks different."),
+            SetupStep("Choose System", "In Settings, use up or down to select System. Press the right arrow to open the column on the right. The picture highlights System.", "tv", "Roku • Settings", listOf("Accessibility", "Audio", "Home screen", "System", "Power"), 3, "select", "Compare the highlighted menu with your TV. If it differs, open My screen looks different."),
+            SetupStep("Open About", "In the right-hand column, select About and press the right arrow. Look for the highlighted About row in the picture.", "tv", "Roku • System", listOf("About", "Power", "System update", "Advanced system settings"), 0, "select", "Compare the highlighted menu with your TV. If it differs, open My screen looks different."),
+            SetupStep("Read your model", "Look for Model in the information panel. Copy the full model name and software version from your own TV. A Roku model code and a TCL model number may both appear.", "tv", "Roku • System • About", listOf("Model — read on your TV", "Software version — read on your TV"), 0, "check", "You have found information, not paired Audio Bodyguard. Close this guide or choose an assistant guide next."),
         )),
     )
 }

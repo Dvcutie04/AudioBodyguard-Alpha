@@ -167,11 +167,34 @@ final class AQSSReadOnlyUITests: XCTestCase {
         tab("home", app); label("Unknown physical state", app)
     }
 
+    func testRokuPicturesResumeAndFinishWithoutClaimingConnection() {
+        let app = launch()
+        tab("devices", app); tap("Illustrated setup guides", app)
+        tap("TCL", app); tap("Roku TV", app); tap("Find my IP address", app)
+        tap("I’m already in Settings", app); label("Step 3 of 5", app)
+        XCTAssertTrue(app.otherElements["setup-illustration"].exists)
+        screenshot("Roku matching Settings Network picture", app)
+        let started = Date()
+        app.buttons["setup-next"].tap()
+        XCTAssertTrue(app.staticTexts["setup-progress"].waitForExistence(timeout: 2))
+        XCTAssertEqual(app.staticTexts["setup-progress"].label, "Step 4 of 5")
+        print("SIMULATOR_GUIDE_DRIVER_SECONDS=\(Date().timeIntervalSince(started)) includes XCTest tap overhead")
+        app.buttons["setup-close"].tap()
+        tap("Illustrated setup guides", app); tap("TCL", app); tap("Roku TV", app); tap("Find my IP address", app)
+        XCTAssertEqual(app.buttons["setup-next"].label, "Resume guide")
+        app.buttons["setup-next"].tap(); label("Step 4 of 5", app)
+        screenshot("Roku About selection and resumed step", app)
+        app.buttons["setup-next"].tap(); label("Step 5 of 5", app)
+        screenshot("Roku IP address information diagram", app)
+        app.buttons["setup-next"].tap()
+        tab("home", app); label("Unknown physical state", app)
+    }
+
     func testIllustratedGuideFromTCLPlanAndVoiceHelp() {
         let app = launch(true)
         next(app); tap("TCL", app); next(app); tap("Google Home", app); next(app)
         tap("Show TCL steps", app)
-        tap("TCL QM851G", app); label("85QM851G", app)
+        tap("Google TV / Android TV", app); tap("TCL QM851G", app); label("85QM851G", app)
         app.buttons["setup-next"].tap(); label("Step 1 of 12", app)
         screenshot("TCL illustrated TV first setup", app)
         app.buttons["setup-next"].tap(); app.buttons["setup-next"].tap()
