@@ -49,8 +49,8 @@ struct SetupGuidesView: View {
                         if let step = step {
                             Label(step.surface == "tv" ? "On your TV · use the remote" : step.surface == "both" ? "Your TV + your phone" : "On your phone", systemImage: step.surface == "phone" ? "iphone" : "tv")
                                 .font(.subheadline.weight(.semibold)).foregroundColor(theme.accent)
+                            Text(step.instruction).font(.body.weight(.medium)).fixedSize(horizontal: false, vertical: true)
                             SetupScreenIllustration(step: step, number: index + 1, theme: theme)
-                            Text(step.instruction).font(.title3.weight(.medium)).fixedSize(horizontal: false, vertical: true)
                             Text(step.note).font(.callout).foregroundColor(theme.muted)
                             control("My screen looks different", icon: "questionmark.circle", id: "setup-mismatch") { mismatch = true }
                         } else { introduction(route) }
@@ -149,7 +149,7 @@ struct SetupGuidesView: View {
                 } label: {
                     navigationLabel(index < 0 ? "Start guide" : index == route.steps.count - 1 ? (route.id == "voice" && onVoiceCheck != nil ? "Open Voice check" : "Finish guide") : "Next", icon: index == route.steps.count - 1 ? (route.id == "voice" && onVoiceCheck != nil ? "mic" : "checkmark") : "arrow.right")
                         .frame(maxWidth: .infinity, minHeight: 44)
-                }.buttonStyle(AppButtonStyle(theme: theme)).accessibilityIdentifier("setup-next")
+                }.buttonStyle(AppButtonStyle(theme: theme, primary: true)).accessibilityIdentifier("setup-next")
             }
         }.padding(16).background(theme.surface)
     }
@@ -182,7 +182,7 @@ private struct SetupScreenIllustration: View {
     }
     var body: some View {
         VStack(spacing: 10) {
-            HStack { Text("ILLUSTRATION").font(.caption2.bold()).tracking(1); Spacer(); Image(systemName: step.surface == "phone" ? "iphone" : "tv") }.foregroundColor(theme.muted)
+            HStack { Text("Illustration").font(.caption2.weight(.semibold)); Spacer(); Image(systemName: step.surface == "phone" ? "iphone" : "tv") }.foregroundColor(theme.muted)
             if step.surface == "both" {
                 HStack(spacing: 16) {
                     Image(systemName: "tv").font(.system(size: 34))
@@ -233,7 +233,7 @@ private struct SetupScreenIllustration: View {
                     }.padding(12).background(theme.raised).clipShape(RoundedRectangle(cornerRadius: 18))
                 }
                 Image(systemName: "arrow.right").font(.title2)
-                Image(systemName: glyph).font(.system(size: 30)).frame(width: 64, height: 54).background(theme.control).foregroundColor(theme.controlText).clipShape(RoundedRectangle(cornerRadius: 14))
+                Image(systemName: glyph).font(.system(size: 26)).frame(width: 54, height: 44).background(theme.control).foregroundColor(theme.controlText).clipShape(RoundedRectangle(cornerRadius: 14))
             }.foregroundColor(theme.violet).padding(.top, 4)
         }.padding(14).background(theme.raised.opacity(0.7)).clipShape(RoundedRectangle(cornerRadius: 22))
             .accessibilityElement(children: .ignore)

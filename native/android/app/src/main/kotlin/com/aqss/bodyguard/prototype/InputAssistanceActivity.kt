@@ -64,8 +64,8 @@ class InputAssistanceActivity : Activity() {
     private fun label(value: String, large: Boolean = false): TextView = TextView(this).apply {
         text = value; textSize = if (large) 20f else 16f; setTextColor(skin.text); setPadding(0, skin.dp(8), 0, skin.dp(8)); column.addView(this)
     }
-    private fun action(value: String, block: () -> Unit): Button = Button(this).apply {
-        text = value; skin.style(this); setOnClickListener { block() }; column.addView(this, LinearLayout.LayoutParams(-1, -2).apply { bottomMargin = skin.dp(10) })
+    private fun action(value: String, primary: Boolean = false, block: () -> Unit): Button = Button(this).apply {
+        text = value; skin.style(this, primary); setOnClickListener { block() }; column.addView(this, LinearLayout.LayoutParams(-1, -2).apply { bottomMargin = skin.dp(10) })
     }
     private fun openSetup(group: String = "") {
         if (isVoice) { stopVoice(); details.text = "No words recognized yet" }
@@ -82,7 +82,7 @@ class InputAssistanceActivity : Activity() {
         label("Sound-level history, oldest to newest. Levels come from the speech recognizer; some phones do not supply them. This is not room loudness, a hearing-safety measurement, frequency bands or a syllable count.")
         label("Recent recognized words · may change", true)
         details = label("No words recognized yet")
-        startButton = action("Start voice check") { if (running) stopVoice() else startVoice() }
+        startButton = action("Start voice check", primary = true) { if (running) stopVoice() else startVoice() }
         val clear = action("Clear words") { stopVoice(); details.text = "No words recognized yet" }
         column.removeView(startButton); column.removeView(clear)
         footer.addView(startButton, LinearLayout.LayoutParams(-1, -2))
@@ -142,7 +142,7 @@ class InputAssistanceActivity : Activity() {
     private fun photoPage() {
         label("Find your TV details", true)
         label("Take a clear picture of the model label, or the TV’s Network / IP settings screen. Avoid passwords. Do not move a heavy or wall-mounted TV: use its About screen instead.")
-        action("Take a TV photo") {
+        action("Take a TV photo", primary = true) {
             try { startActivityForResult(Intent(MediaStore.ACTION_IMAGE_CAPTURE), 52) }
             catch (_: Exception) { status.text = "Camera unavailable. Take a photo in your Camera app, then choose it below." }
         }

@@ -84,11 +84,11 @@ class SetupGuideActivity : Activity() {
         }
         box.addView(view, LinearLayout.LayoutParams(-1, -2)); return view
     }
-    private fun button(title: String, action: () -> Unit) = Button(this).apply {
-        text = title; skin.style(this); setOnClickListener { action() }
+    private fun button(title: String, primary: Boolean = false, action: () -> Unit) = Button(this).apply {
+        text = title; skin.style(this, primary); setOnClickListener { action() }
     }
     private fun action(box: LinearLayout, title: String, block: () -> Unit) {
-        box.addView(button(title, block).apply { gravity = Gravity.START or Gravity.CENTER_VERTICAL }, LinearLayout.LayoutParams(-1, -2).apply { bottomMargin = dp(10) })
+        box.addView(button(title, action = block).apply { gravity = Gravity.START or Gravity.CENTER_VERTICAL }, LinearLayout.LayoutParams(-1, -2).apply { bottomMargin = dp(10) })
     }
     private fun chooseGroup(id: String) {
         groupId = id; routeId = if (id == "voice") "voice" else null; index = if (id == "voice") 0 else -1; mismatch = false; render()
@@ -114,8 +114,8 @@ class SetupGuideActivity : Activity() {
             mismatch -> mismatchContent(route)
             route != null && step != null -> {
                 words(content, when (step.surface) { "tv" -> "On your TV · use the remote"; "both" -> "Your TV + your phone"; else -> "On your phone" }, 15f, skin.accent, true)
+                words(content, step.instruction, 16f, bold = true)
                 content.addView(illustration(step, index + 1), LinearLayout.LayoutParams(-1, -2).apply { bottomMargin = dp(18) })
-                words(content, step.instruction, 20f, bold = true)
                 words(content, step.note, color = skin.muted)
                 action(content, "My screen looks different") { mismatch = true; render() }
             }
@@ -134,7 +134,7 @@ class SetupGuideActivity : Activity() {
         }
         val footer = LinearLayout(this)
         if (group != null || route != null) footer.addView(button(if (mismatch) "Return to step" else "Back") { back() }, LinearLayout.LayoutParams(-2, -2).apply { marginEnd = dp(12) })
-        if (route != null && !mismatch) footer.addView(button(if (index < 0) "Start guide" else if (index == route.steps.lastIndex) { if (route.id == "voice") "Open Voice check" else "Finish guide" } else "Next") {
+        if (route != null && !mismatch) footer.addView(button(if (index < 0) "Start guide" else if (index == route.steps.lastIndex) { if (route.id == "voice") "Open Voice check" else "Finish guide" } else "Next", primary = true) {
             if (index == route.steps.lastIndex) {
                 if (route.id == "voice" && !intent.getBooleanExtra("returnToVoice", false)) startActivity(Intent(this, InputAssistanceActivity::class.java).putExtra("mode", "voice").putExtra("dark", skin.dark))
                 finish()
@@ -176,7 +176,7 @@ class SetupGuideActivity : Activity() {
             importantForAccessibility = View.IMPORTANT_FOR_ACCESSIBILITY_YES
             contentDescription = "Illustration $number. ${step.surface}: ${step.screen}. Highlighted: ${step.items[step.focus]}. Action: ${step.action}. ${step.instruction}"
         }
-        words(box, "ILLUSTRATION", 11f, skin.muted, true).importantForAccessibility = View.IMPORTANT_FOR_ACCESSIBILITY_NO
+        words(box, "Illustration", 11f, skin.muted, true).importantForAccessibility = View.IMPORTANT_FOR_ACCESSIBILITY_NO
         if (step.surface == "both") box.addView(SetupActionPicture(this, skin, "both", step.action), LinearLayout.LayoutParams(-1, dp(64)))
         val screen = column().apply { setPadding(dp(12), dp(12), dp(12), dp(12)); background = skin.shape(skin.surface, if (step.surface == "tv") 12 else 26, true); importantForAccessibility = View.IMPORTANT_FOR_ACCESSIBILITY_NO_HIDE_DESCENDANTS }
         box.addView(screen, LinearLayout.LayoutParams(-1, -2).apply { if (step.surface == "phone") { marginStart = dp(10); marginEnd = dp(10) } })
@@ -197,7 +197,7 @@ class SetupGuideActivity : Activity() {
             box.addView(View(this).apply { setBackgroundColor(skin.outline) }, LinearLayout.LayoutParams(dp(14), dp(12)).apply { gravity = Gravity.CENTER })
             box.addView(View(this).apply { background = skin.shape(skin.outline, 4) }, LinearLayout.LayoutParams(dp(90), dp(4)).apply { gravity = Gravity.CENTER })
         } else screen.addView(View(this).apply { background = skin.shape(skin.muted, 4) }, LinearLayout.LayoutParams(dp(70), dp(4)).apply { gravity = Gravity.CENTER; topMargin = dp(8) })
-        box.addView(SetupActionPicture(this, skin, if (step.surface == "both") "phone" else step.surface, step.action), LinearLayout.LayoutParams(-1, dp(80)).apply { topMargin = dp(8) })
+        box.addView(SetupActionPicture(this, skin, if (step.surface == "both") "phone" else step.surface, step.action), LinearLayout.LayoutParams(-1, dp(64)).apply { topMargin = dp(8) })
         return box
     }
     private fun back() {

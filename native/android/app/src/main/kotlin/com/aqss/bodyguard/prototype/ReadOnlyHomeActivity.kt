@@ -231,10 +231,11 @@ class ReadOnlyHomeActivity : Activity() {
             InterfaceContent.pages.forEach { item ->
                 nav.addView(button(item.title) { openPage(item.id) }.apply {
                     textSize = 12f; minHeight = dp(58); setPadding(dp(1), dp(4), dp(1), dp(4))
-                    setTextColor(skin.controlText)
-                    setCompoundDrawablesWithIntrinsicBounds(null, InterfaceSymbol(skin, item.id, skin.controlText), null, null)
+                    val ink = if (page == item.id) skin.accent else skin.muted
+                    setTextColor(ink)
+                    setCompoundDrawablesWithIntrinsicBounds(null, InterfaceSymbol(skin, item.id, ink), null, null)
                     compoundDrawablePadding = dp(4)
-                    background = skin.shape(skin.control, 14).apply { setStroke(dp(if (page == item.id) 3 else 1), skin.controlBorder) }
+                    background = skin.shape(if (page == item.id) skin.raised else skin.surface, 14)
                     if (page == item.id) text = "• ${item.title}"
                     contentDescription = item.title; isSelected = page == item.id
                     if (Build.VERSION.SDK_INT >= 30) stateDescription = if (isSelected) "Selected" else "Not selected"
@@ -386,7 +387,7 @@ class ReadOnlyHomeActivity : Activity() {
             label(c, "Appearance", 22f, bold = true)
             label(c, "One visual language, in the light that suits you.", 16f, skin.muted)
             for (value in listOf("midnight", "daylight", "system")) {
-                c.addView(button(value.replaceFirstChar { it.uppercase() } + if (appearance == value) "  ✓" else "") {
+                c.addView(button(value.replaceFirstChar { it.uppercase() } + if (appearance == value) "  ✓" else "", primary = appearance == value) {
                     val state = Bundle(); savePresentation(state); tutorial.pause(); appearance = value; build(state)
                 }.apply { contentDescription = value.replaceFirstChar { it.uppercase() }; isSelected = appearance == value }, LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(8) })
             }

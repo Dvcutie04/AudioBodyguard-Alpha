@@ -141,6 +141,21 @@ jobs:
           arch: x86_64
           profile: pixel_7_pro
           script: bash tools/smoke_android_ui.sh
+      - name: Keep compact Android review screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: aqss-android-review-screenshots
+          path: |
+            artifacts/ui/android/home.png
+            artifacts/ui/android/settings.png
+            artifacts/ui/android/daylight_settings.png
+            artifacts/ui/android/daylight_home.png
+            artifacts/ui/android/setup_tv_approval.png
+            artifacts/ui/android/setup_large_step.png
+            artifacts/ui/android/beginner_tv_selected.png
+          if-no-files-found: ignore
+          retention-days: 7
       - name: Keep Android UI hierarchy and screenshots
         if: always()
         uses: actions/upload-artifact@v4

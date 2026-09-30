@@ -30,15 +30,16 @@ struct AppTheme {
 struct AppButtonStyle: ButtonStyle {
     let theme: AppTheme
     var primary = false
+    @Environment(\.isEnabled) private var isEnabled
     func makeBody(configuration: Configuration) -> some View {
         configuration.label.font(.body.weight(.semibold))
             .padding(.horizontal, 14).padding(.vertical, 8)
             .frame(minHeight: 44)
-            .foregroundColor(theme.controlText)
-            .background(theme.control)
+            .foregroundColor(primary ? theme.controlText : theme.text)
+            .background(primary ? theme.control : theme.raised)
             .clipShape(RoundedRectangle(cornerRadius: 14))
-            .overlay(RoundedRectangle(cornerRadius: 14).stroke(theme.controlBorder, lineWidth: 1))
-            .opacity(configuration.isPressed ? 0.75 : 1)
+            .overlay(RoundedRectangle(cornerRadius: 14).stroke(primary ? theme.controlBorder : theme.outline, lineWidth: 1))
+            .opacity(!isEnabled ? 0.45 : configuration.isPressed ? 0.75 : 1)
     }
 }
 
@@ -177,9 +178,9 @@ private struct ReadOnlyHomeView: View {
             Image(systemName: "waveform.path").font(.title2).foregroundColor(theme.accent).accessibilityHidden(true)
             if !textSize.isAccessibilitySize { Text("BODYGUARD").font(.caption.weight(.bold)).tracking(2) }
             Spacer(minLength: 0)
-            Button { navigationVisible = true } label: { Image(systemName: "square.grid.2x2").frame(width: 44, height: 44).contentShape(Rectangle()) }
+            Button { navigationVisible = true } label: { Image(systemName: "square.grid.2x2").frame(width: 24, height: 24).contentShape(Rectangle()) }
                 .accessibilityLabel("Jump to").accessibilityIdentifier("section-navigation")
-            Button { helpVisible = true } label: { Label("Help", systemImage: "questionmark.circle").font(.subheadline.weight(.semibold)).frame(minWidth: 44, minHeight: 44).contentShape(Rectangle()) }
+            Button { helpVisible = true } label: { Label("Help", systemImage: "questionmark.circle").font(.subheadline.weight(.semibold)).frame(minWidth: 44, minHeight: 24).contentShape(Rectangle()) }
                 .accessibilityLabel("Help & tutorials").accessibilityIdentifier("tutorial-help").accessibilityFocused($focusedElement, equals: .help)
         }.buttonStyle(AppButtonStyle(theme: theme)).padding(.horizontal, 20).padding(.vertical, 4).foregroundColor(theme.accent).background(theme.background)
     }
@@ -350,7 +351,7 @@ private struct ReadOnlyHomeView: View {
                 ForEach(["midnight", "daylight", "system"], id: \.self) { value in
                     Button { appearance = value } label: {
                         HStack { Image(systemName: value == "midnight" ? "moon.stars" : value == "daylight" ? "sun.max" : "circle.lefthalf.filled"); Text(value.capitalized); Spacer(); if appearance == value { Image(systemName: "checkmark") } }.frame(maxWidth: .infinity, minHeight: 44)
-                    }.buttonStyle(AppButtonStyle(theme: theme)).accessibilityLabel(value.capitalized).accessibilityValue(appearance == value ? "Selected" : "Not selected")
+                    }.buttonStyle(AppButtonStyle(theme: theme, primary: appearance == value)).accessibilityLabel(value.capitalized).accessibilityValue(appearance == value ? "Selected" : "Not selected")
                 }
             }
             card(target: "advanced") {
@@ -388,10 +389,9 @@ private struct ReadOnlyHomeView: View {
                         Button { openPage(item.id) } label: {
                             VStack(spacing: 5) { Image(systemName: item.icon).font(.system(size: 20)); Text(item.title).font(.caption.weight(.semibold)) }
                                 .frame(maxWidth: .infinity, minHeight: 56).contentShape(Rectangle())
-                                .foregroundColor(theme.controlText)
-                                .background(theme.control).clipShape(RoundedRectangle(cornerRadius: 14))
-                                .overlay(RoundedRectangle(cornerRadius: 14).stroke(theme.controlBorder, lineWidth: page == item.id ? 3 : 1))
-                                .overlay(alignment: .top) { if page == item.id { Capsule().fill(theme.controlText).frame(width: 18, height: 3).padding(.top, 3) } }
+                                .foregroundColor(page == item.id ? theme.accent : theme.muted)
+                                .background(page == item.id ? theme.raised : Color.clear).clipShape(RoundedRectangle(cornerRadius: 14))
+                                .overlay(alignment: .top) { if page == item.id { Capsule().fill(theme.accent).frame(width: 18, height: 3).padding(.top, 3) } }
                         }.accessibilityIdentifier("tab-\(item.id)").accessibilityLabel(item.title).accessibilityValue(page == item.id ? "Selected" : "Not selected")
                     }
                 }.padding(.horizontal, 10).padding(.vertical, 8)
@@ -495,7 +495,7 @@ private struct ReadOnlyHomeView: View {
                                 Spacer(minLength: 0)
                                 if guide.selected(step.target)?.id == choice.id { Image(systemName: "checkmark.circle.fill").accessibilityHidden(true) }
                             }.frame(maxWidth: .infinity, minHeight: 44, alignment: .leading)
-                        }.buttonStyle(AppButtonStyle(theme: theme)).accessibilityIdentifier("choice-\(choice.id)")
+                        }.buttonStyle(AppButtonStyle(theme: theme, primary: guide.selected(step.target)?.id == choice.id)).accessibilityIdentifier("choice-\(choice.id)")
                             .accessibilityLabel(choice.title).accessibilityValue(guide.selected(step.target)?.id == choice.id ? "Selected" : "Not selected")
                     }
                     if step.target == "connectionPlan" {

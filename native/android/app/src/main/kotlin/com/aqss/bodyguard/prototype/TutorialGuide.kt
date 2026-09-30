@@ -55,7 +55,7 @@ class TutorialGuide(
         }
         parent.addView(view, LinearLayout.LayoutParams(-1, -2)); return view
     }
-    private fun button(label: String, action: () -> Unit) = Button(activity).apply { text = label; skin.style(this); setOnClickListener { action() } }
+    private fun button(label: String, primary: Boolean = false, action: () -> Unit) = Button(activity).apply { text = label; skin.style(this, primary); setOnClickListener { action() } }
     fun chooseTopic() = skin.menu("Choose a tutorial", listOf("Illustrated setup guides" to { openSetup("") }, "Voice check — step by step" to { openSetup("voice") }) + TutorialContent.topics.map { it.title to { start(it.id) } })
     fun chooseSection() {
         val entries = listOf("Start here" to "welcome", "Coverage" to "coverage", "Readiness checklist" to "capability", "Sound options" to "options", "Advanced options" to "advanced", "Captions" to "captions", "Session history" to "history", "Foreground OS hint" to "hint", "Privacy and storage" to "privacy", "Session transfer" to "handoff")
@@ -94,10 +94,10 @@ class TutorialGuide(
         text(content, step.explanation)
         guide.choices.forEach { choice ->
             val selected = guide.selected(step.target)?.id == choice.id
-            content.addView(button(choice.title + if (selected) "  ✓" else "") { guide.select(choice.id); render(true) }.apply {
+            content.addView(button(choice.title + if (selected) "  ✓" else "", primary = selected) { guide.select(choice.id); render(true) }.apply {
                 gravity = Gravity.START or Gravity.CENTER_VERTICAL
                 minHeight = dp(60); compoundDrawablePadding = dp(14)
-                setCompoundDrawablesWithIntrinsicBounds(InterfaceSymbol(skin, choice.icon, skin.controlText), null, null, null)
+                setCompoundDrawablesWithIntrinsicBounds(InterfaceSymbol(skin, choice.icon, if (selected) skin.controlText else skin.text), null, null, null)
                 contentDescription = choice.title; isSelected = selected
                 if (Build.VERSION.SDK_INT >= 30) stateDescription = if (selected) "Selected" else "Not selected"
             }, LinearLayout.LayoutParams(-1, -2).apply { bottomMargin = dp(10) })
@@ -119,7 +119,7 @@ class TutorialGuide(
         if (guide.index > 0) row.addView(button("Back") { guide.back(); render() }, LinearLayout.LayoutParams(-2, -2).apply { marginEnd = dp(12) })
         if (guide.canContinue) {
             val label = if (guide.isLast) { if (isBeginner) "Open full app" else "Done" } else if (guide.index == 0) "Begin" else "Next"
-            row.addView(button(label) {
+            row.addView(button(label, primary = true) {
                 if (guide.isLast) { finished(topic.id); close() } else { guide.next(); render() }
             }, LinearLayout.LayoutParams(0, -2, 1f))
         }

@@ -130,7 +130,7 @@ struct VoiceCheckView: View {
                 }.padding()
             }
             HStack {
-                Button(voice.running ? "Stop listening" : "Start voice check") { if voice.running { voice.stop() } else { voice.start() } }.buttonStyle(AppButtonStyle(theme: theme)).accessibilityIdentifier("voice-start-stop")
+                Button(voice.running ? "Stop listening" : "Start voice check") { if voice.running { voice.stop() } else { voice.start() } }.buttonStyle(AppButtonStyle(theme: theme, primary: true)).accessibilityIdentifier("voice-start-stop")
                 Button("Clear words") { voice.clear() }.buttonStyle(AppButtonStyle(theme: theme))
             }.padding()
         }.background(theme.background.ignoresSafeArea()).foregroundColor(theme.text)
@@ -199,7 +199,7 @@ struct TVPhotoView: View {
                         AVCaptureDevice.requestAccess(for: .video) { allowed in DispatchQueue.main.async {
                             if allowed { camera = true } else { cameraNotice = "Camera permission denied. Choose an existing photo or use the instructions." }
                         } }
-                    }.buttonStyle(AppButtonStyle(theme: theme))
+                    }.buttonStyle(AppButtonStyle(theme: theme, primary: true))
                     Button("Choose a photo") { gallery = true }.buttonStyle(AppButtonStyle(theme: theme))
                     if !cameraNotice.isEmpty { Text(cameraNotice).foregroundColor(theme.warning) }
                     Text(photo.status).font(.headline).accessibilityIdentifier("photo-status")

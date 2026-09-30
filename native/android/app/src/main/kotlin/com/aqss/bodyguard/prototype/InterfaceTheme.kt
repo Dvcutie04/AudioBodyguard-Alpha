@@ -44,8 +44,8 @@ class InterfaceTheme(val activity: Activity, val dark: Boolean) {
     fun style(button: Button, primary: Boolean = false) {
         button.isAllCaps = false; button.minHeight = dp(48); button.minimumWidth = 0
         button.setPadding(dp(12), dp(9), dp(12), dp(9)); button.textSize = 15f
-        button.setTextColor(ColorStateList(arrayOf(intArrayOf(-android.R.attr.state_enabled), intArrayOf()), intArrayOf(muted, controlText)))
-        button.background = RippleDrawable(ColorStateList.valueOf(outline), shape(control, 14).apply { setStroke(dp(1), controlBorder) }, null)
+        button.setTextColor(ColorStateList(arrayOf(intArrayOf(-android.R.attr.state_enabled), intArrayOf()), intArrayOf(muted, if (primary) controlText else text)))
+        button.background = RippleDrawable(ColorStateList.valueOf(outline), shape(if (primary) control else raised, 14).apply { setStroke(dp(1), if (primary) controlBorder else outline) }, null)
         button.stateListAnimator = null
     }
     fun menu(title: String, items: List<Pair<String, () -> Unit>>) {
