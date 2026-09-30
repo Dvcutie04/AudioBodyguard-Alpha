@@ -282,7 +282,7 @@ class SetupGuideActivity : Activity() {
 }
 
 /** Pictograms show the physical device and gesture without depending on a language. */
-private class SetupActionPicture(activity: Activity, private val skin: InterfaceTheme, private val surface: String, private val action: String) : View(activity) {
+internal class SetupActionPicture(activity: Activity, private val skin: InterfaceTheme, private val surface: String, private val action: String) : View(activity) {
     private val paint = Paint(Paint.ANTI_ALIAS_FLAG)
     init { importantForAccessibility = IMPORTANT_FOR_ACCESSIBILITY_NO }
     override fun onDraw(c: Canvas) {
