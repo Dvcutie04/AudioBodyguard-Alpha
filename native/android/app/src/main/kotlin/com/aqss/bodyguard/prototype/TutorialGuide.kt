@@ -108,7 +108,7 @@ class TutorialGuide(
         if (step.target == "connectionPlan") for (target in listOf("chooseTV", "chooseHome")) {
             guide.selected(target)?.let { selected ->
                 val box = column().apply { setPadding(dp(16), dp(16), dp(16), dp(6)); background = skin.shape(skin.surface) }
-                box.addView(InterfaceGraphic(activity, skin, "orbit"), LinearLayout.LayoutParams(-1, dp(64)))
+                box.addView(SetupActionPicture(activity, skin, if (target == "chooseTV") "tv" else "phone", "settings"), LinearLayout.LayoutParams(-1, dp(64)))
                 text(box, "Open the pictures below. Match your TV or app, then follow one highlighted action at a time.", color = skin.muted)
                 text(box, selected.title, 20f, bold = true); text(box, selected.detail, color = skin.muted)
                 box.addView(button("Show ${selected.title} steps") { openSetup(selected.id) }, LinearLayout.LayoutParams(-1, -2).apply { bottomMargin = dp(12) })
