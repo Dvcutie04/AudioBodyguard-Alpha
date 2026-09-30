@@ -10,3 +10,12 @@ def test_next_taps_real_footer_instead_of_the_illustrated_label(tmp_path, capsys
     </node></hierarchy>''')
     button_coordinates(str(page), 'Next')
     assert capsys.readouterr().out.strip() == '650 1850'
+
+
+def test_resume_guide_taps_footer_above_system_navigation(tmp_path, capsys):
+    page = tmp_path / 'resume.xml'
+    page.write_text('''<hierarchy><node package="com.aqss.bodyguard.prototype" bounds="[0,0][1440,2910]">
+        <node package="com.aqss.bodyguard.prototype" class="android.widget.Button" text="Resume guide" clickable="true" enabled="true" bounds="[406,2742][1384,2910]" />
+    </node></hierarchy>''')
+    button_coordinates(str(page), 'Resume guide')
+    assert capsys.readouterr().out.strip() == '895 2826'
