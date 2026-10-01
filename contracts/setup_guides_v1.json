@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "mode": "illustrated_guidance_only",
-  "reviewed_at": "2026-09-29",
+  "reviewed_at": "2026-09-30",
   "sources": [
     {
       "id": "samsung_pair",
@@ -132,6 +132,21 @@
       "id": "roku_network_manual",
       "title": "Roku TV guide: Network > About",
       "url": "https://image.roku.com/c3VwcG9ydC1B/Roku-TV-User-Guide-12-0en-US.pdf"
+    },
+    {
+      "id": "roku_brands",
+      "title": "Roku: manufacturer support and System About",
+      "url": "https://support.roku.com/en-us/article/get-manufacturer-support-for-your-roku-tv"
+    },
+    {
+      "id": "philips_remote",
+      "title": "Philips: voice remote pairing for documented Google TV models",
+      "url": "https://www.usa.philips.com/c-f/XC000020869/how-do-i-troubleshoot-the-remote-control-for-my-philips-google-tv"
+    },
+    {
+      "id": "fire_setup",
+      "title": "Amazon: Fire TV Smart TV account setup",
+      "url": "https://digprjsurvey.amazon.com/csad/help/node/GFH3K8GVLXYTBZ63"
     }
   ],
   "groups": [
@@ -202,6 +217,8 @@
       "id": "hisense",
       "title": "Hisense",
       "routes": [
+        "roku_model",
+        "roku_network",
         "vidaa_google",
         "vidaa_alexa",
         "google_remote",
@@ -351,7 +368,57 @@
       "id": "tcl_fire",
       "title": "TCL • Fire TV",
       "routes": [
+        "fire_setup",
         "fire_alexa",
+        "identify"
+      ]
+    },
+    {
+      "id": "philips",
+      "title": "Philips",
+      "routes": [
+        "philips_voice_remote",
+        "google_remote",
+        "google_setup",
+        "roku_model",
+        "roku_network",
+        "roku_alexa",
+        "google_roku",
+        "identify"
+      ]
+    },
+    {
+      "id": "sharp",
+      "title": "Sharp — Roku TV models",
+      "routes": [
+        "roku_model",
+        "roku_network",
+        "roku_alexa",
+        "google_roku",
+        "identify"
+      ]
+    },
+    {
+      "id": "roku",
+      "title": "Roku-branded TV",
+      "routes": [
+        "roku_model",
+        "roku_network",
+        "roku_alexa",
+        "google_roku",
+        "identify"
+      ]
+    },
+    {
+      "id": "insignia",
+      "title": "Insignia — match Roku TV or Fire TV",
+      "routes": [
+        "roku_model",
+        "roku_network",
+        "fire_setup",
+        "fire_alexa",
+        "roku_alexa",
+        "google_roku",
         "identify"
       ]
     }
@@ -4697,10 +4764,11 @@
     {
       "id": "roku_network",
       "title": "Find my IP address (Roku TV)",
-      "applies_to": "TCL Roku TVs whose menus match the supplied Roku Settings photo. The Settings illustration matches its left-menu/right-panel arrangement. About panels are labeled diagrams from official menu instructions. The model and software version are not visible in that photo, so exact-model artwork is not confirmed.",
+      "applies_to": "Roku TV menus with Settings on the left and a submenu on the right. Match the blue Roku screen before starting. Exact model and software artwork must be checked on your own TV.",
       "models": [],
       "sources": [
-        "roku_network_manual"
+        "roku_network_manual",
+        "roku_brands"
       ],
       "steps": [
         {
@@ -4779,10 +4847,11 @@
     {
       "id": "roku_model",
       "title": "Find my exact model (Roku TV)",
-      "applies_to": "TCL Roku TVs whose menus match the supplied Roku Settings photo. The Settings illustration matches its left-menu/right-panel arrangement. About panels are labeled diagrams from official menu instructions. The model and software version are not visible in that photo, so exact-model artwork is not confirmed.",
+      "applies_to": "Roku TV menus with Settings on the left and a submenu on the right. Match the blue Roku screen before starting. Exact model and software artwork must be checked on your own TV.",
       "models": [],
       "sources": [
-        "tcl_roku_model"
+        "tcl_roku_model",
+        "roku_brands"
       ],
       "steps": [
         {
@@ -4854,6 +4923,256 @@
           "focus": 0,
           "action": "check",
           "note": "You have found information, not paired Audio Bodyguard. Close this guide or choose an assistant guide next."
+        }
+      ]
+    },
+    {
+      "id": "philips_voice_remote",
+      "title": "Philips Google TV — pair the voice remote",
+      "applies_to": "Philips Google TV models listed in the manufacturer article. Button combinations are specific to this remote family; do not use them on a different remote.",
+      "models": [
+        "43PUL7652/F7",
+        "50PUL7552/F7",
+        "55PUL7552/F7"
+      ],
+      "sources": [
+        "philips_remote"
+      ],
+      "steps": [
+        {
+          "title": "Start with your TV home screen",
+          "instruction": "Press Home on your Philips remote. Use this guide only for the documented Google TV models.",
+          "surface": "tv",
+          "screen": "Philips Google TV",
+          "items": [
+            "Home"
+          ],
+          "focus": 0,
+          "action": "home",
+          "note": "Use the numbered highlight on your real device. This illustration does not confirm a connection to Audio Bodyguard."
+        },
+        {
+          "title": "Open the profile menu",
+          "instruction": "Use Up, then Right to highlight the profile icon in the upper-right corner. Press OK.",
+          "surface": "tv",
+          "screen": "Google TV home",
+          "items": [
+            "Profile icon → upper right"
+          ],
+          "focus": 0,
+          "action": "select",
+          "note": "Use the numbered highlight on your real device. This illustration does not confirm a connection to Audio Bodyguard."
+        },
+        {
+          "title": "Choose Settings",
+          "instruction": "In the profile popup, select Settings and press OK.",
+          "surface": "tv",
+          "screen": "Profile menu",
+          "items": [
+            "Your account",
+            "Settings"
+          ],
+          "focus": 1,
+          "action": "settings",
+          "note": "Use the numbered highlight on your real device. This illustration does not confirm a connection to Audio Bodyguard."
+        },
+        {
+          "title": "Open Remotes & Accessories",
+          "instruction": "Move down to Remotes & Accessories and press OK.",
+          "surface": "tv",
+          "screen": "Google TV Settings",
+          "items": [
+            "Network & Internet",
+            "Accounts & Sign In",
+            "Remotes & Accessories"
+          ],
+          "focus": 2,
+          "action": "select",
+          "note": "Use the numbered highlight on your real device. This illustration does not confirm a connection to Audio Bodyguard."
+        },
+        {
+          "title": "Check whether the remote is already paired",
+          "instruction": "Look for Philips TV Voice RC_8. If it already says Connected, go to the final check. Otherwise select + Pair accessory.",
+          "surface": "tv",
+          "screen": "Remotes & Accessories",
+          "items": [
+            "+ Pair accessory",
+            "Philips TV Voice RC_8"
+          ],
+          "focus": 0,
+          "action": "select",
+          "note": "Use the numbered highlight on your real device. This illustration does not confirm a connection to Audio Bodyguard."
+        },
+        {
+          "title": "Put the remote in pairing mode",
+          "instruction": "Hold the Google Voice button and VOL − together for 3–5 seconds. Look for the remote light blinking.",
+          "surface": "tv",
+          "screen": "Philips remote",
+          "items": [
+            "Google Voice + VOL −",
+            "Hold 3–5 seconds"
+          ],
+          "focus": 0,
+          "action": "check",
+          "note": "Use the numbered highlight on your real device. This illustration does not confirm a connection to Audio Bodyguard."
+        },
+        {
+          "title": "If the light does not blink",
+          "instruction": "Only if pairing mode failed: hold OPTIONS and VOL − for 3–5 seconds. Release when the light flashes. If it already blinked, continue.",
+          "surface": "tv",
+          "screen": "Remote troubleshooting",
+          "items": [
+            "OPTIONS + VOL −",
+            "Only when pairing mode failed"
+          ],
+          "focus": 0,
+          "action": "check",
+          "note": "Use the numbered highlight on your real device. This illustration does not confirm a connection to Audio Bodyguard."
+        },
+        {
+          "title": "Find the remote on the TV",
+          "instruction": "If you used the troubleshooting step, press Back and reopen Pair accessory. Look at the top-right area for your Philips remote.",
+          "surface": "tv",
+          "screen": "Pair accessory",
+          "items": [
+            "Philips TV Voice RC_8"
+          ],
+          "focus": 0,
+          "action": "select",
+          "note": "Use the numbered highlight on your real device. This illustration does not confirm a connection to Audio Bodyguard."
+        },
+        {
+          "title": "Approve the remote",
+          "instruction": "Highlight your Philips remote on the TV and press OK to pair it.",
+          "surface": "tv",
+          "screen": "Pair accessory",
+          "items": [
+            "Philips TV Voice RC_8",
+            "OK"
+          ],
+          "focus": 0,
+          "action": "select",
+          "note": "Use the numbered highlight on your real device. This illustration does not confirm a connection to Audio Bodyguard."
+        },
+        {
+          "title": "Check the real status",
+          "instruction": "Look under Accessories for the Philips remote and the status Connected. If it is missing, choose My screen looks different.",
+          "surface": "tv",
+          "screen": "Remotes & Accessories",
+          "items": [
+            "Philips TV Voice RC_8 — Connected"
+          ],
+          "focus": 0,
+          "action": "check",
+          "note": "Use the numbered highlight on your real device. This illustration does not confirm a connection to Audio Bodyguard."
+        }
+      ]
+    },
+    {
+      "id": "fire_setup",
+      "title": "Fire TV Smart TV — first setup and Amazon approval",
+      "applies_to": "Only televisions that identify themselves as Fire TV Smart TV. Menus vary by year and country. This is initial setup, not a reset procedure.",
+      "models": [],
+      "sources": [
+        "fire_setup"
+      ],
+      "steps": [
+        {
+          "title": "Start your Fire TV",
+          "instruction": "With the TV safely installed, put batteries in its remote and press Power. If you already see the normal Home screen, use the Alexa linking guide instead.",
+          "surface": "tv",
+          "screen": "Fire TV first setup",
+          "items": [
+            "Power on"
+          ],
+          "focus": 0,
+          "action": "check",
+          "note": "Use the numbered highlight on your real device. This illustration does not confirm a connection to Audio Bodyguard."
+        },
+        {
+          "title": "Pair the remote if needed",
+          "instruction": "If the remote did not pair automatically, hold Home for about 10 seconds until the TV shows Press Play/Pause to start.",
+          "surface": "tv",
+          "screen": "Remote pairing",
+          "items": [
+            "Home — hold about 10 seconds"
+          ],
+          "focus": 0,
+          "action": "home",
+          "note": "Use the numbered highlight on your real device. This illustration does not confirm a connection to Audio Bodyguard."
+        },
+        {
+          "title": "Continue on the TV",
+          "instruction": "When the TV shows Press Play/Pause to start, press that button on the remote.",
+          "surface": "tv",
+          "screen": "Fire TV setup",
+          "items": [
+            "Play / Pause"
+          ],
+          "focus": 0,
+          "action": "select",
+          "note": "Use the numbered highlight on your real device. This illustration does not confirm a connection to Audio Bodyguard."
+        },
+        {
+          "title": "Review the voice option",
+          "instruction": "If the Voice Commands When TV Screen is Off option appears, read the TV explanation and choose the preference you want. This guide does not enable listening.",
+          "surface": "tv",
+          "screen": "Voice options",
+          "items": [
+            "Review the on-screen voice option"
+          ],
+          "focus": 0,
+          "action": "check",
+          "note": "Use the numbered highlight on your real device. This illustration does not confirm a connection to Audio Bodyguard."
+        },
+        {
+          "title": "Choose Wi-Fi setup",
+          "instruction": "Follow the TV option for your home Wi-Fi. Use its QR code with your phone, or use the remote to choose the network. Enter passwords only in the official setup.",
+          "surface": "both",
+          "screen": "Network setup",
+          "items": [
+            "QR code or TV remote setup"
+          ],
+          "focus": 0,
+          "action": "scan",
+          "note": "Use the numbered highlight on your real device. This illustration does not confirm a connection to Audio Bodyguard."
+        },
+        {
+          "title": "Read the account approval screen",
+          "instruction": "For Amazon account sign-in, use the QR code on your TV or visit the exact address shown on its screen, such as amazon.com/code.",
+          "surface": "both",
+          "screen": "Amazon account setup",
+          "items": [
+            "TV QR code / amazon.com/code"
+          ],
+          "focus": 0,
+          "action": "scan",
+          "note": "Use the numbered highlight on your real device. This illustration does not confirm a connection to Audio Bodyguard."
+        },
+        {
+          "title": "Enter the TV verification code",
+          "instruction": "On your own phone or computer, sign in to the official Amazon page and enter the verification code shown on your own TV. Never use a code drawn in an example.",
+          "surface": "phone",
+          "screen": "Amazon device approval",
+          "items": [
+            "Enter code from your TV",
+            "Approve your TV"
+          ],
+          "focus": 0,
+          "action": "type",
+          "note": "Use the numbered highlight on your real device. This illustration does not confirm a connection to Audio Bodyguard."
+        },
+        {
+          "title": "Check setup on your TV",
+          "instruction": "Return to the TV and follow its remaining prompts until its Home screen appears. If approval did not finish, use My screen looks different.",
+          "surface": "tv",
+          "screen": "Fire TV Home",
+          "items": [
+            "Home screen on your TV"
+          ],
+          "focus": 0,
+          "action": "check",
+          "note": "Use the numbered highlight on your real device. This illustration does not confirm a connection to Audio Bodyguard."
         }
       ]
     }

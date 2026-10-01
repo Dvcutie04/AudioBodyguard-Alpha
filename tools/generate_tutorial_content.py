@@ -20,7 +20,7 @@ def validate(data):
     if not isinstance(data["choices"], dict) or set(data["choices"]) != {"chooseTV", "chooseHome"}:
         raise ValueError("invalid guide choice groups")
     for choices in data["choices"].values():
-        if not isinstance(choices, list) or not 1 <= len(choices) <= 10:
+        if not isinstance(choices, list) or not 1 <= len(choices) <= 16:
             raise ValueError("invalid choice count")
         ids = set()
         for choice in choices:

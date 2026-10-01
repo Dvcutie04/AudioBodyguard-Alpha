@@ -53,6 +53,8 @@ struct SetupGuidesView: View {
                             Text(step.instruction).font(.body.weight(.medium)).fixedSize(horizontal: false, vertical: true)
                             if route.id == "roku_network" || route.id == "roku_model" {
                                 RokuMenuIllustration(step: step, number: index + 1, theme: theme)
+                            } else if route.id == "philips_voice_remote" && [1, 2].contains(index) {
+                                ProfileMenuIllustration(step: step, number: index + 1, theme: theme)
                             } else { SetupScreenIllustration(step: step, number: index + 1, theme: theme) }
                             Text("In the picture, look for the numbered highlight. Complete that action on your TV or phone, then tap Next here.").font(.callout).foregroundColor(theme.muted)
                             Text(step.note).font(.callout).foregroundColor(theme.muted)
@@ -348,5 +350,47 @@ private struct RokuMenuIllustration: View {
         }.padding(7).frame(maxWidth: .infinity, alignment: .leading)
             .foregroundColor(selected ? Color.black : Color.white)
             .background(selected ? Color.white : Color.black.opacity(0.12)).clipShape(RoundedRectangle(cornerRadius: 3))
+    }
+}
+
+/// Manufacturer-documented profile location; illustrative, not firmware artwork.
+private struct ProfileMenuIllustration: View {
+    let step: AQSSSetupStep
+    let number: Int
+    let theme: AppTheme
+    var body: some View {
+        VStack(alignment: .leading, spacing: 14) {
+            Text("Picture \(number) · upper-right profile menu").font(.caption).foregroundColor(theme.muted)
+            VStack(spacing: 16) {
+                HStack {
+                    Text("Google TV").font(.headline)
+                    Spacer()
+                    Label(number == 2 ? "2 → Profile" : "Profile", systemImage: "person.crop.circle")
+                        .font(.subheadline.bold()).padding(10)
+                        .foregroundColor(number == 2 ? theme.controlText : theme.text)
+                        .background(number == 2 ? theme.control : theme.raised)
+                        .clipShape(RoundedRectangle(cornerRadius: 10))
+                }
+                HStack(alignment: .top, spacing: 12) {
+                    VStack(alignment: .leading, spacing: 10) {
+                        Text("For you · Apps").font(.caption)
+                        HStack { ForEach(0..<3) { _ in RoundedRectangle(cornerRadius: 6).fill(theme.outline).frame(height: 42) } }
+                        Text("TV home content").font(.caption).foregroundColor(theme.muted)
+                    }.frame(maxWidth: .infinity)
+                    if number == 3 {
+                        VStack(alignment: .leading, spacing: 12) {
+                            Text("Your account").font(.caption)
+                            Label("3 → Settings", systemImage: "gearshape").font(.subheadline.bold())
+                                .padding(10).foregroundColor(theme.controlText).background(theme.control)
+                                .clipShape(RoundedRectangle(cornerRadius: 8))
+                        }.padding(10).background(theme.raised).clipShape(RoundedRectangle(cornerRadius: 10))
+                    }
+                }
+            }.padding(14).background(theme.surface).clipShape(RoundedRectangle(cornerRadius: 12))
+            Label("Use the remote arrows, then OK", systemImage: "arrow.up.and.down.and.arrow.left.and.right").font(.caption).foregroundColor(theme.accent)
+        }.padding(14).background(theme.raised).clipShape(RoundedRectangle(cornerRadius: 20))
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel("Picture \(number). Profile icon at upper right. Highlighted: \(step.items[step.focus]). \(step.instruction)")
+        .accessibilityIdentifier("setup-illustration")
     }
 }

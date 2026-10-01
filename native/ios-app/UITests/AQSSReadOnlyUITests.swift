@@ -244,6 +244,19 @@ final class AQSSReadOnlyUITests: XCTestCase {
         tab("home", app); label("Unknown physical state", app)
     }
 
+    func testNewBrandPicturesAreReachable() {
+        let app = launch()
+        tab("devices", app); tap("Illustrated setup guides", app); tap("Philips", app)
+        tap("Philips Google TV — pair the voice remote", app)
+        app.buttons["setup-next"].tap()
+        label("Start with your TV home screen", app)
+        app.buttons["setup-next"].tap()
+        label("Open the profile menu", app)
+        screenshot("Philips illustrated profile choice", app)
+        app.buttons["setup-close"].tap()
+        tab("home", app); label("Unknown physical state", app)
+    }
+
     func testLargestTextKeepsExitAndNextReachable() {
         let app = XCUIApplication()
         app.launchArguments = ["-aqssGuideDismissedV1", "NO", "-UIPreferredContentSizeCategoryName", "UICTContentSizeCategoryAccessibilityXXXL"]

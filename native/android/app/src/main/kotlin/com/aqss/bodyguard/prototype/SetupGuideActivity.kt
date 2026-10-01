@@ -123,7 +123,7 @@ class SetupGuideActivity : Activity() {
             route != null && step != null -> {
                 words(content, when (step.surface) { "tv" -> "On your TV · use the remote"; "both" -> "Your TV + your phone"; else -> "On your phone" }, 15f, skin.accent, true)
                 words(content, step.instruction, 16f, bold = true)
-                content.addView(if (route.id == "roku_network" || route.id == "roku_model") rokuIllustration(step, index + 1) else illustration(step, index + 1), LinearLayout.LayoutParams(-1, -2).apply { bottomMargin = dp(18) })
+                content.addView(if (route.id == "roku_network" || route.id == "roku_model") rokuIllustration(step, index + 1) else if (route.id == "philips_voice_remote" && index in 1..2) profileIllustration(step, index + 1) else illustration(step, index + 1), LinearLayout.LayoutParams(-1, -2).apply { bottomMargin = dp(18) })
                 words(content, "Look for the numbered highlight in the picture. Finish that action on your TV or phone, then tap Next here.", color = skin.muted)
                 words(content, step.note, color = skin.muted)
                 action(content, "My screen looks different") { mismatch = true; render() }
@@ -227,6 +227,31 @@ class SetupGuideActivity : Activity() {
         else row(right, "App tiles", false)
         box.addView(panel)
         words(box, if (number == 5) "Read the highlighted field on your TV" else "Use the remote arrows, then press Right", 13f, skin.accent)
+        return box
+    }
+
+    private fun profileIllustration(step: SetupStep, number: Int): View {
+        val box = column().apply {
+            setPadding(dp(14), dp(14), dp(14), dp(14)); background = skin.shape(skin.raised, 18)
+            contentDescription = "Picture $number. Profile icon at upper right. Highlighted: ${step.items[step.focus]}. ${step.instruction}"
+            importantForAccessibility = View.IMPORTANT_FOR_ACCESSIBILITY_YES
+        }
+        words(box, "Picture $number · upper-right profile menu", 13f, skin.muted)
+        val screen = column().apply { setPadding(dp(12), dp(12), dp(12), dp(12)); background = skin.shape(skin.surface, 10); importantForAccessibility = View.IMPORTANT_FOR_ACCESSIBILITY_NO_HIDE_DESCENDANTS }
+        val top = LinearLayout(this).apply { gravity = Gravity.CENTER_VERTICAL }
+        top.addView(TextView(this).apply { text = "Google TV"; textSize = 16f; setTextColor(skin.text) }, LinearLayout.LayoutParams(0, -2, 1f))
+        top.addView(TextView(this).apply { text = if (number == 2) "2 → Profile" else "Profile"; textSize = 13f; setPadding(dp(8), dp(10), dp(8), dp(10)); setTextColor(if (number == 2) skin.controlText else skin.text); background = skin.shape(if (number == 2) skin.control else skin.raised, 8) })
+        screen.addView(top)
+        val body = LinearLayout(this).apply { gravity = Gravity.TOP }
+        val home = column(); words(home, "For you · Apps", 12f, skin.muted); words(home, "▣   ▣   ▣", 24f, skin.outline); words(home, "TV home content", 12f, skin.muted)
+        body.addView(home, LinearLayout.LayoutParams(0, -2, 1f))
+        if (number == 3) {
+            val menu = column().apply { setPadding(dp(8), dp(8), dp(8), dp(8)); background = skin.shape(skin.raised, 8) }
+            words(menu, "Your account", 12f, skin.muted)
+            menu.addView(TextView(this).apply { text = "3 → Settings"; textSize = 14f; setTypeface(null, Typeface.BOLD); setPadding(dp(8), dp(10), dp(8), dp(10)); setTextColor(skin.controlText); background = skin.shape(skin.control, 8) })
+            body.addView(menu, LinearLayout.LayoutParams(0, -2, 1f))
+        }
+        screen.addView(body); box.addView(screen); words(box, "Use the remote arrows, then OK", 13f, skin.accent)
         return box
     }
 

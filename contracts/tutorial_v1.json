@@ -314,6 +314,30 @@
         "detail": "Find the exact Vizio model on its label or in its About menu. Check that model in the manufacturer’s instructions; a brand name alone does not tell us what it supports."
       },
       {
+        "id": "philips",
+        "title": "Philips",
+        "icon": "tv",
+        "detail": "Tap Show steps on the checklist. Choose the operating system or remote that matches your TV, then follow the numbered pictures. Exact model support must be checked."
+      },
+      {
+        "id": "sharp",
+        "title": "Sharp",
+        "icon": "tv",
+        "detail": "Tap Show steps on the checklist. Choose the operating system or remote that matches your TV, then follow the numbered pictures. Exact model support must be checked."
+      },
+      {
+        "id": "roku",
+        "title": "Roku-branded TV",
+        "icon": "tv",
+        "detail": "Tap Show steps on the checklist. Choose the operating system or remote that matches your TV, then follow the numbered pictures. Exact model support must be checked."
+      },
+      {
+        "id": "insignia",
+        "title": "Insignia",
+        "icon": "tv",
+        "detail": "Tap Show steps on the checklist. Choose the operating system or remote that matches your TV, then follow the numbered pictures. Exact model support must be checked."
+      },
+      {
         "id": "other",
         "title": "Another brand",
         "icon": "tv",

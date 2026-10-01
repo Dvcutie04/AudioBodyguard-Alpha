@@ -328,6 +328,17 @@ tap_tutorial_label "Finish guide" roku_finish
 adb shell dumpsys gfxinfo com.aqss.bodyguard.prototype > "$artifact_dir/roku-frame-summary.txt"
 tap_tutorial_label "Home" roku_home
 
+tap_tutorial_label "Devices" philips_devices
+tap_scroll_label "Illustrated setup guides. TV pairing, Google Home & Alexa · one picture at a time" philips_open
+tap_scroll_label "Philips" philips_brand
+tap_scroll_label "Philips Google TV — pair the voice remote" philips_route
+tap_tutorial_label "Start guide" philips_start
+tap_tutorial_label "Next" philips_profile
+capture_ui philips_profile_picture
+assert_tutorial_label philips_profile_picture "Step 2 of 10"
+tap_tutorial_label "Close" philips_close
+tap_tutorial_label "Home" philips_home
+
 adb shell settings put system font_scale 2.0
 capture_ui large_text_home
 tap_scroll_label "TV & smart-home guide" large_beginner_open

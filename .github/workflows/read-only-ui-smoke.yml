@@ -158,6 +158,7 @@ jobs:
             artifacts/ui/android/roku_about_picture.png
             artifacts/ui/android/roku_ip_picture.png
             artifacts/ui/android/roku-frame-summary.txt
+            artifacts/ui/android/philips_profile_picture.png
           if-no-files-found: ignore
           retention-days: 7
       - name: Keep Android UI hierarchy and screenshots
