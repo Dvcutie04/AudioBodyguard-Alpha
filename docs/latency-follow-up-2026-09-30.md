@@ -19,3 +19,21 @@ The illustrated setup activity preserves its root/ScrollView but rebuilds step c
 No speculative native rendering change is made in this increment. Next: capture installed-phone FrameTimeline/Perfetto or equivalent iOS instrumentation, correlate layout/draw costs with individual actions, then reproduce a specific regression before repairing it. Measure AQSS eligible-event → independently observed physical response separately under the research charter's latency, energy, memory and ecosystem constraints. Production actuation remains closed.
 
 Regression evidence: the new-frame parser test failed before implementation and passed afterward; additional cases cover an in-flight baseline frame, duplicated rows and unavailable evidence. Final CI observations are recorded in draft PR #32.
+
+## Observed interaction evidence
+
+Raw capture revision: `7a0e62893bcef5c99e547038d7886f081a70173c`, [native walkthrough run](https://github.com/Dvcutie04/AudioBodyguard-Alpha/actions/runs/36797456069). All seven jobs passed for that capture. The initial parser allowed one implausible timestamp; this follow-up repairs that evidence boundary and reprocesses the original snapshots.
+
+| Interaction | New usable frames | Median / maximum | Qualification |
+|---|---:|---|---|
+| Picture 3 → 4 | 3 | 64.4 / 118.4 ms | Hosted rendered-frame samples only |
+| Resume → picture 4 | 3 | 71.4 / 120.2 ms | Hosted rendered-frame samples only |
+| Picture 4 → 5 | 2, plus 1 invalid | Withheld | Timestamp evidence is unqualified |
+
+The invalid row reported IntendedVsync `456634339846` and FrameCompleted `7305508662576702820` nanoseconds, against a dump uptime of `459141` milliseconds. Its apparent duration is roughly 231 years. That is adverse timing evidence, not a real 231-year response. The cause of the bad field is not established.
+
+The repaired parser uses the dump uptime with a generous 60-second diagnostic horizon, also bounding any individual duration to that horizon. This is a plausibility budget, not a performance target or a claim that long delays are acceptable. Missing clock evidence, missing baselines, invalid new timestamps or absent usable samples withhold the median/maximum qualification. Invalid evidence is counted and retained in raw snapshots; it is never clipped into a fast value or silently used in a percentile. Valid-subset durations remain diagnostic data when one frame invalidates the transition.
+
+The same capture's aggregate was 50/53 janky frames, median 73 ms and p95 350 ms. Variation and corrupt timing reinforce the need for an installed-device trace. Two three-frame samples cannot establish smoothness, improvement over an earlier run or the charter's physical-response bound. No speculative native rendering change is claimed.
+
+Parser regression with the actual implausible field failed first, then passed after repair. Additional coverage tests unavailable clocks and mixed valid/invalid samples. The complete local suite passes 1,813 tests and 14 subtests. Final publication/CI status is recorded in PR #32.
