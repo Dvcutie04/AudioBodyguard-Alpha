@@ -25,3 +25,42 @@ def test_every_existing_tv_and_assistant_choice_has_an_illustrated_route():
             assert 0 <= step['focus'] < len(step['items'])
     for path, content in generator.sources(data).items():
         assert path.read_text() == content
+
+
+def setup_routes():
+    root = Path(__file__).resolve().parents[1]
+    return {route['id']: route for route in json.loads((root / 'contracts/setup_guides_v1.json').read_text())['routes']}
+
+
+def test_pin_picture_highlights_input_before_a_separate_confirmation_picture():
+    steps = setup_routes()['lg_pair']['steps']
+    entry = next(i for i, step in enumerate(steps) if step['title'] == 'Enter the real PIN')
+    assert steps[entry]['action'] == 'type'
+    assert steps[entry]['items'][steps[entry]['focus']] == 'PIN'
+    assert steps[entry + 1]['action'] == 'tap'
+    assert steps[entry + 1]['items'][steps[entry + 1]['focus']] == 'Next'
+
+
+def test_faster_google_setup_states_platform_limits_and_checks_the_tv_result():
+    route = setup_routes()['google_fast']
+    assert 'iOS 17' in route['applies_to'] and 'Android 9' in route['applies_to']
+    assert '3.3100002' in route['steps'][1]['note']
+    assert route['steps'][-1]['surface'] == 'tv'
+    assert 'Home screen' in route['steps'][-1]['instruction']
+
+
+def test_assistant_choice_pictures_do_not_single_out_an_unselected_provider():
+    routes = setup_routes()
+    for identifier in ('lg_account5', 'lg_account6'):
+        step = routes[identifier]['steps'][-1]
+        assert step['items'][step['focus']] == 'Your chosen assistant guide'
+    for step in routes['vizio_assist']['steps']:
+        if 'Google Home or' in step['instruction']:
+            assert 'chosen' in step['items'][step['focus']].lower()
+
+
+def test_legacy_sony_remote_start_precedes_the_google_account_selection():
+    steps = setup_routes()['sony_legacy']['steps']
+    start = next(i for i, step in enumerate(steps) if step['screen'] == 'Remote start')
+    account = next(i for i, step in enumerate(steps) if step['title'] == 'Choose the TV Google account')
+    assert start < account

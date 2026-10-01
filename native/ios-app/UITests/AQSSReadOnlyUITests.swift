@@ -92,9 +92,24 @@ final class AQSSReadOnlyUITests: XCTestCase {
     func testFirstVisitHasOnePathChoiceGatesTailoredPlanAndReplay() {
         let app = launch(true)
         label("Step 1 of 7", app); assertOnlyGuide(app)
+        label("Both connections are required", app)
+        label("1. Connect to your TV or home device", app)
+        label("2. Connect to your phone", app)
+        label("Skip series intros", app); label("Lower volume during commercials", app); label("Universal remote controls", app)
+        label("Voice input display and recognized words", app)
+        XCTAssertFalse(app.staticTexts.containing(NSPredicate(format: "label CONTAINS %@", "a film is quiet, then an advert")).firstMatch.exists)
         XCTAssertFalse(app.buttons["Back"].exists)
         XCTAssertFalse(app.buttons["choice-samsung"].exists)
         screenshot("Guide 1 Welcome", app)
+        let firstFeature = app.staticTexts.containing(NSPredicate(format: "label CONTAINS %@", "Skip series intros")).firstMatch
+        let scroll = app.scrollViews["guide-scroll"]
+        for _ in 0..<12 {
+            if firstFeature.frame.midY < scroll.frame.midY { break }
+            scroll.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.7)).press(forDuration: 0.1,
+                thenDragTo: scroll.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.4)), withVelocity: .slow, thenHoldForDuration: 0.1)
+        }
+        XCTAssertTrue(firstFeature.isHittable)
+        screenshot("Guide 1 Replacement feature list", app)
         next(app); label("Step 2 of 7", app); assertOnlyGuide(app)
         XCTAssertFalse(app.buttons["guide-next"].isEnabled)
         XCTAssertFalse(app.buttons["choice-alexa"].exists)
@@ -108,6 +123,8 @@ final class AQSSReadOnlyUITests: XCTestCase {
         app.buttons["Back"].tap(); label("Step 3 of 7", app)
         XCTAssertEqual(app.buttons["choice-alexa"].value as? String, "Selected")
         next(app); next(app); label("Step 5 of 7", app)
+        label("2. Connect to your phone", app)
+        screenshot("Guide 5 Phone connection", app)
         label("not connected to Audio Bodyguard", app); assertOnlyGuide(app)
         next(app); label("Step 6 of 7", app); next(app); label("Step 7 of 7", app)
         next(app); XCTAssertTrue(app.buttons["tab-home"].isHittable)

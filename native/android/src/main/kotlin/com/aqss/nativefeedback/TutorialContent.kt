@@ -5,12 +5,12 @@ data class TutorialTopic(val id: String, val title: String, val steps: List<Tuto
 object TutorialContent {
     val topics: List<TutorialTopic> = listOf(
         TutorialTopic("getting_started", "TV & smart-home guide", listOf(
-            TutorialStep("welcome", "overview", "Start with your TV", "Audio Bodyguard is being built to help with sudden loud sound. This preview does not monitor or change TV audio. We will show one step at a time. You can leave whenever you like.", "Example: a film is quiet, then an advert is much louder. Reducing that jump is a planned feature, not something this preview can do."),
+            TutorialStep("welcome", "overview", "Start with your TV", "Complete both connections: first your TV or home device, then your phone. We will guide you one screen at a time. This preview does not monitor or change TV audio.", ""),
             TutorialStep("chooseTV", "connection", "Which TV do you use?", "Choose the name on the front of your TV or on its remote. This changes the explanation only. It does not search for or connect to your TV.", "Example: if the remote says Samsung, choose Samsung. If you cannot find a name, choose Not sure / no TV."),
             TutorialStep("chooseHome", "connection", "Do you use a smart-home app?", "Choose the app you already use to manage devices at home. If you use neither app, that is fine. No account sign-in is needed for this guide.", "Example: if you say “Alexa” to an Echo speaker, choose Amazon Alexa. If you manage devices in the Google Home app, choose Google Home."),
-            TutorialStep("connectionPlan", "connection", "Your connection checklist", "These are preparation notes for your setup. Pairing is not available in Audio Bodyguard yet. Your TV model and the features it supports must be checked before an integration can be built.", "Example: finding a Samsung TV in Alexa does not let this preview control it. Audio Bodyguard would still need its own supported connection and your permission."),
-            TutorialStep("connectionCheck", "connection", "What does connected mean?", "Your TV is not connected to Audio Bodyguard by this guide. A name in a list only identifies a device. Changing sound would also need your permission and a separate check of what actually comes from the speakers.", "Example: a TV appears online, but sound is coming from a soundbar. Seeing the TV online does not prove the soundbar volume changed."),
-            TutorialStep("featureExample", "connection", "A simple sound example", "Planned sound presets would help with different listening needs. For now, Sound explains those controls. Insights can show an invented graph so you can learn to read it.", "Example: people speak quietly in a film, then an advert starts loudly. A future Night preset could request a smaller jump. This preview does not lower either sound."),
+            TutorialStep("connectionPlan", "connection", "1. Connect to your TV or home device", "Follow the picture guide for your TV or home device. Pair it in its official app and approve access on the device when asked. Then continue to the separate phone step. Audio Bodyguard pairing is not available in this preview.", "Example: finding a Samsung TV in Alexa does not let this preview control it. Audio Bodyguard would still need its own supported connection and your permission."),
+            TutorialStep("connectionCheck", "connection", "2. Connect to your phone", "On your iPhone or Android phone, open the device's official app and check that your TV or home device is listed. Follow the phone permissions in its picture guide. Your TV is not connected to Audio Bodyguard by this guide; both connections still need to be checked.", "Example: use your phone on the home network required by the device's official app. A paired TV and a phone with the right permissions are separate checks."),
+            TutorialStep("featureExample", "connection", "Check both connections", "Device connection and phone connection are both required. In a supported release, each needs a separate check before controls become available. Finishing these instructions does not mark either connection as successful.", "Example: your TV is online, but sound is playing through a soundbar. Check the phone's selected device and the actual sound output before using a supported control."),
             TutorialStep("guideFinish", "connection", "You know where to start", "Open the full app to explore. Devices explains connection requirements. Sound explains planned controls. Insights has an example graph. Settings has appearance choices. Help can replay this guide from any page.", "Example: to look at the sample graph, open Insights, then Explore an example. Its values are made up; they are not measurements from your phone."),
         )),
         TutorialTopic("home", "Home and coverage", listOf(
@@ -75,5 +75,36 @@ object TutorialContent {
             TutorialChoice("neither", "Neither / not sure", "questionmark.circle", "No smart-home account is needed to explore. Keep using your TV remote. A future direct TV connection would still need a supported model and your permission."),
         ),
     )
+    val connectionStages: List<ConnectionStage> = listOf(
+        ConnectionStage(1, "Connect to your TV or home device", "Pair the device and approve access on its screen or in its official home app.", listOf("chooseTV", "chooseHome", "connectionPlan")),
+        ConnectionStage(2, "Connect to your phone", "Link your iPhone or Android phone, then check its permissions and sound connection.", listOf("connectionCheck")),
+    )
+    const val featureTitle = "Features for supported connections"
+    const val featureNote = "Device controls are planned and depend on the TV, player and phone. This preview does not control connected devices. Picture guides, photo hints and voice input can be explored now."
+    val features: List<TutorialFeature> = listOf(
+        TutorialFeature("series_intro", "Skip series intros", "On supported players with a confirmed intro segment.", "planned"),
+        TutorialFeature("commercial_volume", "Lower volume during commercials", "With an eligible sound path and your permission.", "planned"),
+        TutorialFeature("remote", "Universal remote controls", "For compatible devices; controls vary by model.", "planned"),
+        TutorialFeature("loud_sounds", "Reduce sudden loud sounds", "Bounded volume, mute and comfort controls.", "planned"),
+        TutorialFeature("presets", "Dialogue and Night sound presets", "Listening options for qualified sound outputs.", "planned"),
+        TutorialFeature("equalizer", "Custom equalizer", "Bass, midrange and treble on supported devices.", "planned"),
+        TutorialFeature("captions", "Captions, subtitles and audio description", "When the media supplies compatible tracks.", "planned"),
+        TutorialFeature("languages", "Audio and caption languages", "Choose from the tracks supplied by the media.", "planned"),
+        TutorialFeature("voice", "Voice requests", "Requests require confirmation and eligible controls.", "planned"),
+        TutorialFeature("profiles", "Personal sound profiles and saved settings", "Save and restore confirmed preferences.", "planned"),
+        TutorialFeature("undo", "Undo changes and restore settings", "For eligible changes with a known earlier setting.", "planned"),
+        TutorialFeature("history", "Session history and sound insights", "Real observations and gaps; examples are labeled.", "planned"),
+        TutorialFeature("recovery", "Pause, resume and connection recovery", "Recheck the connection before resuming controls.", "planned"),
+        TutorialFeature("handoff", "Move sessions between iPhone and Android", "Only through a supported, checked transfer path.", "planned"),
+        TutorialFeature("background", "Background protection where supported", "Subject to phone limits and a qualified sound path.", "planned"),
+        TutorialFeature("privacy", "Privacy controls and private support reports", "Capture choices, deletion and review before sharing.", "planned"),
+        TutorialFeature("status", "Optional alerts, haptics and status widgets", "Readable status with freshness and coverage gaps.", "planned"),
+        TutorialFeature("suggestions", "Explainable suggestions and session recipes", "Optional suggestions that you can review or dismiss.", "planned"),
+        TutorialFeature("accessories", "Compatible speakers, headphones and accessories", "Integrations depend on the exact device and route.", "planned"),
+        TutorialFeature("setup", "Picture guides and photo-assisted setup", "Photo hints help identify a device; they do not pair it.", "preview"),
+        TutorialFeature("input", "Voice input display and recognized words", "Foreground input check; recognized words may be wrong.", "preview"),
+    )
 }
 data class TutorialChoice(val id: String, val title: String, val icon: String, val detail: String)
+data class ConnectionStage(val number: Int, val title: String, val detail: String, val targets: List<String>)
+data class TutorialFeature(val id: String, val title: String, val detail: String, val availability: String)

@@ -278,6 +278,7 @@ private struct ReadOnlyHomeView: View {
 
     private var devicesPage: some View {
         VStack(alignment: .leading, spacing: 18) {
+            connectionStages(currentTarget: nil)
             destinationCard("TV photo setup", subtitle: "Read a model label or Network settings photo", icon: "camera") { photoCheckVisible = true }
             destinationCard("Illustrated setup guides", subtitle: "TV pairing, Google Home & Alexa · one picture at a time", icon: "rectangle.stack") { showSetup() }
             helpButton("TV & smart-home guide", topic: "getting_started")
@@ -486,6 +487,7 @@ private struct ReadOnlyHomeView: View {
                     Text(step.title).font(.largeTitle.bold()).fixedSize(horizontal: false, vertical: true)
                         .accessibilityAddTraits(.isHeader).accessibilityFocused($focusedElement, equals: .tutorial(tutorialStepKey))
                     Text(step.explanation).font(.body).fixedSize(horizontal: false, vertical: true)
+                    if topic.id == "getting_started" { connectionStages(currentTarget: step.target) }
                     ForEach(guide.choices, id: \.id) { choice in
                         Button { _ = guide.select(choice.id) } label: {
                             HStack(spacing: 14) {
@@ -515,8 +517,12 @@ private struct ReadOnlyHomeView: View {
                             }
                         }
                     }
-                    Text(step.example).font(.callout).foregroundColor(theme.muted).fixedSize(horizontal: false, vertical: true)
-                        .padding(18).frame(maxWidth: .infinity, alignment: .leading).background(theme.surface).clipShape(RoundedRectangle(cornerRadius: 18))
+                    if topic.id == "getting_started" && step.target == "welcome" {
+                        featureCatalog
+                    } else if !step.example.isEmpty {
+                        Text(step.example).font(.callout).foregroundColor(theme.muted).fixedSize(horizontal: false, vertical: true)
+                            .padding(18).frame(maxWidth: .infinity, alignment: .leading).background(theme.surface).clipShape(RoundedRectangle(cornerRadius: 18))
+                    }
                     if step.target == "connectionCheck" {
                         Text("Not connected · Audio protection is not active").font(.headline).foregroundColor(theme.warning)
                     }
@@ -537,6 +543,40 @@ private struct ReadOnlyHomeView: View {
                 }
             }.padding(16).background(theme.surface)
         }
+    }
+
+    private func connectionStages(currentTarget: String?) -> some View {
+        VStack(alignment: .leading, spacing: 10) {
+            Text("Both connections are required").font(.subheadline.bold()).accessibilityAddTraits(.isHeader)
+            ForEach(AQSSTutorialContent.connectionStages, id: \.number) { stage in
+                HStack(alignment: .top, spacing: 12) {
+                    Text("\(stage.number)").font(.headline).foregroundColor(theme.accent)
+                        .frame(width: 28, height: 28).background(theme.raised).clipShape(Circle()).accessibilityHidden(true)
+                    VStack(alignment: .leading, spacing: 3) {
+                        Text("\(stage.number). \(stage.title)").font(.subheadline.weight(.semibold)).fixedSize(horizontal: false, vertical: true)
+                        if let target = currentTarget, stage.targets.contains(target) {
+                            Text("Current guide section").font(.caption).foregroundColor(theme.accent)
+                        }
+                    }
+                }.accessibilityElement(children: .combine)
+            }
+        }.padding(16).frame(maxWidth: .infinity, alignment: .leading).background(theme.surface).clipShape(RoundedRectangle(cornerRadius: 18))
+    }
+
+    private var featureCatalog: some View {
+        VStack(spacing: 16) {
+            Text(AQSSTutorialContent.featureTitle).font(.headline).accessibilityAddTraits(.isHeader)
+            Text("Planned controls · availability varies by device").font(.caption).foregroundColor(theme.warning)
+            ForEach(AQSSTutorialContent.features, id: \.id) { feature in
+                VStack(spacing: 3) {
+                    Text(feature.title).font(.callout.weight(.semibold)).fixedSize(horizontal: false, vertical: true)
+                    Text(feature.availability == "preview" ? "Explore in this preview" : "Planned")
+                        .font(.caption).foregroundColor(feature.availability == "preview" ? theme.accent : theme.muted)
+                }.accessibilityElement(children: .combine).accessibilityHint(feature.detail)
+            }
+            Text(AQSSTutorialContent.featureNote).font(.footnote).foregroundColor(theme.muted).fixedSize(horizontal: false, vertical: true)
+        }.multilineTextAlignment(.center).padding(18).frame(maxWidth: .infinity).background(theme.surface).clipShape(RoundedRectangle(cornerRadius: 18))
+            .accessibilityIdentifier("welcome-feature-catalog")
     }
 
 }

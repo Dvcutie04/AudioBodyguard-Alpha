@@ -5,13 +5,13 @@ data class SetupGroup(val id: String, val title: String, val routes: List<String
 data class SetupStep(val title: String, val instruction: String, val surface: String, val screen: String, val items: List<String>, val focus: Int, val action: String, val note: String)
 data class SetupRoute(val id: String, val title: String, val appliesTo: String, val models: List<String>, val sources: List<String>, val steps: List<SetupStep>)
 object SetupContent {
-    const val reviewedAt = "2026-09-30"
+    const val reviewedAt = "2026-10-01"
     val sources: List<SetupSource> = listOf(
         SetupSource("samsung_pair", "Samsung: add a TV to SmartThings", "https://www.samsung.com/us/support/answer/ANS10005262/"),
         SetupSource("samsung_assist", "Samsung: Google and Alexa account linking", "https://www.samsung.com/us/support/answer/ANS10006871/"),
         SetupSource("samsung_model", "Samsung: model information, old and new menus", "https://www.samsung.com/ca/support/home-appliances/find-the-model-and-serial-numbers-for-your-samsung-device/"),
         SetupSource("lg_pair", "LG: register a TV with ThinQ", "https://www.lg.com/us/support/help-library/lg-thinq-how-to-register-your-tv-with-lg-thinq--20153095986130"),
-        SetupSource("lg_model", "LG: TV information by webOS version", "https://www.lg.com/us/support/help-library/lg-tv-check-out-the-lg-content-store-to-see-what-apps-are-available-for-your-smart-tv-CT10000018-20154548998527"),
+        SetupSource("lg_model", "LG: TV information by webOS version", "https://www.lg.com/us/support/help-library/lg-tv-check-out-the-lg-content-store-to-see-what-apps-are-available-for-your-smart-tv--20154548998527"),
         SetupSource("lg_assist", "LG: account linking and webOS differences (UAE)", "https://www.lg.com/ae/lg-story/helpful-guide/how-to-use-voice-commands-with-lg-thinq"),
         SetupSource("lg_alexa", "LG: ThinQ Alexa skills (US)", "https://www.lg.com/us/support/smart-thinq-alexa-voice-control"),
         SetupSource("sony_alexa", "Sony: current and legacy Alexa TV setup", "https://www.sony.com/electronics/support/articles/00178939"),
@@ -23,7 +23,7 @@ object SetupContent {
         SetupSource("tcl_qm851", "TCL 85QM851G / 98QM851G quick start", "https://www.tcl.com/usca/content/dam/tcl/product/home-theater/q-class/documents/85-98QM851G%20V2%20US%20QSG.pdf"),
         SetupSource("tcl_q651", "TCL 98Q651G quick start", "https://www.tcl.com/usca/content/dam/tcl/product/home-theater/q-class/documents/98Q651G%20US%20QSG.pdf"),
         SetupSource("tcl_qm891", "TCL 115QM891G quick start", "https://www.tcl.com/usca/content/dam/tcl/product/home-theater/q-class/documents/115QM891G%20US%20QSG.pdf"),
-        SetupSource("roku_alexa", "Roku TV: Alexa linking, OS 9.1+", "https://support.roku.com/en-us/article/control-your-streaming-devices-with-alexa"),
+        SetupSource("roku_alexa", "Roku TV: Alexa linking, OS 9.1+", "https://support.roku.com/article/control-your-streaming-devices-with-alexa"),
         SetupSource("roku_google", "Roku TV: Google Home linking, OS 9.1+", "https://support.roku.com/en-gb/article/control-your-streaming-devices-with-google"),
         SetupSource("vidaa", "Hisense 43A6GV: VIDAA account and voice services", "https://assets.hisense-usa.com/assets/ProductDownloads/472/049fe3952c/43A6GV-user-manual.pdf"),
         SetupSource("vizio_pair", "VIZIO: mobile pairing and voice assistants", "https://www.vizio.com/en/mobile"),
@@ -64,14 +64,14 @@ object SetupContent {
             SetupStep("Find the model", "On the TV, select Settings.", "tv", "TV home", listOf("Settings"), 0, "settings", "Use your real device. This picture is an illustration."),
             SetupStep("Find the model", "On the TV, select All Settings.", "tv", "Settings", listOf("All Settings"), 0, "settings", "Use your real device. This picture is an illustration."),
             SetupStep("Find the model", "On the TV, select Support.", "tv", "All Settings", listOf("Support"), 0, "select", "Use your real device. This picture is an illustration."),
-            SetupStep("Find the model", "On the TV, select About This TV.", "tv", "Support", listOf("About This TV"), 0, "select", "Use your real device. This picture is an illustration."),
+            SetupStep("Find the model", "On the TV, select About This TV.", "tv", "Support", listOf("About This TV"), 0, "select", "Some Samsung menus use Contact Samsung instead. Follow the matching label on your TV; pause if neither is present."),
             SetupStep("Read the full model code", "Write down the full Model Code shown on your TV. Keep regional letters.", "tv", "About This TV", listOf("Model Code", "Software version"), 0, "check", "Some older TVs use Contact Samsung instead. A matching brand is not enough."),
         )),
         SetupRoute("samsung_model_old", "Samsung — find model (2021 and older)", "Use this menu version only when it matches your TV. Regional menus may differ.", listOf(), listOf("samsung_model"), listOf(
             SetupStep("Find the model", "On the TV, select Home.", "tv", "TV home", listOf("Home"), 0, "home", "Use your real device. This picture is an illustration."),
             SetupStep("Find the model", "On the TV, select Settings.", "tv", "Home", listOf("Settings"), 0, "settings", "Use your real device. This picture is an illustration."),
             SetupStep("Find the model", "On the TV, select Support.", "tv", "Settings", listOf("Support"), 0, "select", "Use your real device. This picture is an illustration."),
-            SetupStep("Find the model", "On the TV, select About This TV.", "tv", "Support", listOf("About This TV"), 0, "select", "Use your real device. This picture is an illustration."),
+            SetupStep("Find the model", "On the TV, select About This TV.", "tv", "Support", listOf("About This TV"), 0, "select", "Some Samsung menus use Contact Samsung instead. Follow the matching label on your TV; pause if neither is present."),
             SetupStep("Read the full model code", "Write down the full Model Code shown on your TV. Keep regional letters.", "tv", "About This TV", listOf("Model Code", "Software version"), 0, "check", "Some older TVs use Contact Samsung instead. A matching brand is not enough."),
         )),
         SetupRoute("samsung_ok", "Samsung — TV shows OK approval", "Compatible Samsung SmartThings TVs. Both devices need the same Samsung account. Choose the approval screen your actual model displays.", listOf(), listOf("samsung_pair"), listOf(
@@ -149,8 +149,9 @@ object SetupContent {
             SetupStep("Open the device selector", "Tap Select Device.", "phone", "Add a Device", listOf("Select Device"), 0, "tap", "Use your real device. This picture is an illustration."),
             SetupStep("Choose your LG TV", "Select the TV you intend to pair from the discovered devices.", "phone", "Select Device", listOf("Your LG TV"), 0, "tap", "Use your real device. This picture is an illustration."),
             SetupStep("Read the TV code", "Keep the TV PIN visible.", "tv", "ThinQ pairing", listOf("TV PIN: ••••"), 0, "check", "Use your real device. This picture is an illustration."),
-            SetupStep("Enter the real PIN", "Type the TV PIN in ThinQ, then tap Next.", "phone", "Pair TV", listOf("PIN", "Next"), 1, "type", "Never use the placeholder dots as a code."),
-            SetupStep("Decide whether to link accounts", "Choose Link only if you also want your ThinQ devices on the TV Home Board; otherwise choose Skip.", "phone", "Link account", listOf("Link", "Skip"), 0, "tap", "Account linking is optional here. Read the permissions in ThinQ."),
+            SetupStep("Enter the real PIN", "Type the PIN displayed on your own TV into ThinQ.", "phone", "Pair TV", listOf("PIN", "Next"), 0, "type", "Never use the placeholder dots as a code."),
+            SetupStep("Confirm the entered PIN", "After entering the TV PIN, tap Next in ThinQ.", "phone", "Pair TV", listOf("PIN entered from your TV", "Next"), 1, "tap", "If the TV rejects the code, keep the same TV selected and follow the official pairing help."),
+            SetupStep("Decide whether to link accounts", "Choose Link only if you also want your ThinQ devices on the TV Home Board; otherwise choose Skip.", "phone", "Link account", listOf("Link", "Skip"), 0, "tap", "The Link highlight is an example, not a recommendation. Choose Skip if you do not want this optional account link."),
             SetupStep("Finish registration", "Select Go to Home in ThinQ.", "phone", "Registration", listOf("Go to Home"), 0, "tap", "Use your real device. This picture is an illustration."),
             SetupStep("Check the actual result", "Look in LG ThinQ for your TV. If it is missing, use “My screen looks different”.", "phone", "LG ThinQ", listOf("Your TV appears", "TV missing? Get help"), 0, "check", "Finishing this guide does not connect Audio Bodyguard or activate protection."),
         )),
@@ -191,14 +192,14 @@ object SetupContent {
             SetupStep("Finish the remaining TV prompts", "Review the network and manufacturer prompts until the real TV shows its Home screen.", "tv", "TV setup", listOf("Review remaining prompts", "TV Home screen"), 1, "check", "Do not reset a configured TV to recreate these pictures."),
             SetupStep("Check the actual result", "Look in Google Home for your TV. If it is missing, use “My screen looks different”.", "phone", "Google Home", listOf("Your TV appears", "TV missing? Get help"), 0, "check", "Finishing this guide does not connect Audio Bodyguard or activate protection."),
         )),
-        SetupRoute("google_fast", "Google TV — faster phone setup", "Only for TVs showing the newer phone-camera setup instructions. This path is distinct from Google Home app setup.", listOf(), listOf("google_setup"), listOf(
+        SetupRoute("google_fast", "Google TV — faster phone setup", "Only for TVs showing the newer phone-camera setup instructions. Requires iOS 17 or later, or Android 9 or later. This is a separate path from Google Home app setup.", listOf(), listOf("google_setup"), listOf(
             SetupStep("Start at the welcome screen", "Choose the TV language and region with its remote.", "tv", "Welcome", listOf("Language", "Region"), 0, "select", "Use your real device. This picture is an illustration."),
-            SetupStep("Check which setup screen you have", "Continue only if the TV tells you to scan with your phone camera.", "tv", "Set up with your phone", listOf("Scan using phone camera"), 0, "check", "Use your real device. This picture is an illustration."),
+            SetupStep("Check which setup screen you have", "Continue only if the TV tells you to scan with your phone camera.", "tv", "Set up with your phone", listOf("Scan using phone camera"), 0, "check", "Use current phone software. If Google TV is already installed on iPhone, Google specifies app version 3.3100002 or later."),
             SetupStep("Prepare the phone", "Turn on Wi-Fi and Bluetooth.", "phone", "Phone settings", listOf("Wi-Fi", "Bluetooth"), 0, "settings", "Use your real device. This picture is an illustration."),
             SetupStep("Scan your TV code", "Use your phone camera to scan the code on the actual TV.", "both", "Phone camera", listOf("TV setup code"), 0, "scan", "Use your real device. This picture is an illustration."),
             SetupStep("Review account and permissions", "Continue in the official setup flow and choose your Google account.", "phone", "Google setup", listOf("Account", "Permissions", "Continue"), 2, "check", "Use your real device. This picture is an illustration."),
             SetupStep("Complete on the TV", "Review any remaining TV prompts until its Home screen appears.", "tv", "TV setup", listOf("Finish setup", "Home"), 1, "check", "Use your real device. This picture is an illustration."),
-            SetupStep("Check the actual result", "Look in Google Home for your TV. If it is missing, use “My screen looks different”.", "phone", "Google Home", listOf("Your TV appears", "TV missing? Get help"), 0, "check", "Finishing this guide does not connect Audio Bodyguard or activate protection."),
+            SetupStep("Check the actual TV result", "Check that setup finished and the Home screen appears on your own TV. If it does not, use My screen looks different.", "tv", "Google TV Home", listOf("Home screen on your TV", "Setup unfinished? Get help"), 0, "check", "Finishing this guide does not connect Audio Bodyguard or activate protection."),
         )),
         SetupRoute("google_samsung", "SmartThings → Google Home (Add device menus)", "First register the TV with SmartThings. Use this path when Google Home shows Add → Device → Add a different way. Availability depends on model, region and provider.", listOf(), listOf("google_link", "samsung_assist"), listOf(
             SetupStep("Check the TV in its own app", "Make sure the TV is already listed in SmartThings.", "phone", "SmartThings", listOf("Your TV"), 0, "check", "Use your real device. This picture is an illustration."),
@@ -293,7 +294,7 @@ object SetupContent {
             SetupStep("Start the sign-in on your phone", "Scan the real TV QR code or use the official address shown on that screen.", "both", "BRAVIA sign-in", listOf("TV activation code"), 0, "scan", "Use your real device. This picture is an illustration."),
             SetupStep("Complete account sign-in", "Confirm the activation code and sign in through the offered official account flow.", "phone", "BRAVIA account", listOf("Proceed to sign in"), 0, "type", "Use your real device. This picture is an illustration."),
             SetupStep("Confirm the TV name", "Back on the TV, confirm Signed in. Choose an easy-to-recognize TV name.", "tv", "TV name", listOf("Change TV name", "Next"), 1, "select", "Use your real device. This picture is an illustration."),
-            SetupStep("Choose remote-start behavior", "If asked, decide whether to enable Remote start. It is needed for voice power-on and can affect standby energy.", "tv", "Remote start", listOf("Yes", "No"), 0, "select", "Use your real device. This picture is an illustration."),
+            SetupStep("Choose remote-start behavior", "If asked, decide whether to enable Remote start. It is needed for voice power-on and can affect standby energy.", "tv", "Remote start", listOf("Yes", "No"), 0, "select", "Yes is an illustrated choice only. Select No if you do not want remote power-on. Enabling standby access can use more power."),
             SetupStep("Choose Alexa on the TV", "Select Amazon Alexa Device.", "tv", "Smart speaker", listOf("Amazon Alexa Device"), 0, "select", "Use your real device. This picture is an illustration."),
             SetupStep("Open the matching Alexa skill", "On Set up the smart speaker, scan the real TV QR code with your phone to open Sony’s TV Skill.", "both", "Set up the smart speaker", listOf("TV skill setup code"), 0, "scan", "If unavailable, open Alexa and search BRAVIA in Search for Skills; select Sony’s TV Skill, not Basic."),
             SetupStep("Enable and link the same account", "Tap Enable to use. Link the BRAVIA account just used on your TV.", "phone", "Sony’s TV Skill", listOf("Enable to use", "Same BRAVIA account"), 1, "check", "Use your real device. This picture is an illustration."),
@@ -311,8 +312,8 @@ object SetupContent {
             SetupStep("Open Home", "Press Home on the remote.", "tv", "Sony TV", listOf("Home"), 0, "home", "Use your real device. This picture is an illustration."),
             SetupStep("Find the legacy app", "Open Apps, then TV Control Setup with Amazon Alexa.", "tv", "Apps", listOf("TV Control Setup with Amazon Alexa"), 0, "select", "Use your real device. This picture is an illustration."),
             SetupStep("Review the setup policy", "Choose Next. Read the policy, then Proceed or Agree if you accept.", "tv", "Privacy", listOf("Proceed / Agree"), 0, "check", "Use your real device. This picture is an illustration."),
+            SetupStep("Decide about Remote start", "If asked, choose whether voice power-on should be allowed.", "tv", "Remote start", listOf("Yes", "No"), 0, "select", "Yes is an illustrated choice only. Select No if you do not want remote power-on. Enabling standby access can use more power."),
             SetupStep("Choose the TV Google account", "Continue through Log in with Google and select the account registered on this TV.", "tv", "Log in with Google", listOf("Your Google account"), 0, "select", "Use your real device. This picture is an illustration."),
-            SetupStep("Decide about Remote start", "If asked, choose whether voice power-on should be allowed.", "tv", "Remote start", listOf("Yes", "No"), 0, "select", "Enabling standby access can use more power."),
             SetupStep("Name the TV", "Choose a TV name and leave the setup app waiting.", "tv", "TV name", listOf("TV name", "Wait for Alexa"), 1, "select", "Use your real device. This picture is an illustration."),
             SetupStep("Find the Basic skill", "Search BRAVIA in Alexa and choose Sony’s TV – Basic.", "phone", "Alexa skills", listOf("Sony’s TV Skill", "Sony’s TV – Basic"), 1, "tap", "Use your real device. This picture is an illustration."),
             SetupStep("Approve the matching account", "Enable the Basic skill and sign in with the same Google account as the TV.", "phone", "Sony’s TV – Basic", listOf("Enable", "Same Google account"), 1, "check", "Use your real device. This picture is an illustration."),
@@ -387,9 +388,9 @@ object SetupContent {
         )),
         SetupRoute("vizio_assist", "Vizio → Google Home or Alexa", "Pair VIZIO Mobile and link the VIZIO account first. The current VIZIO app starts supported partner linking from Account. Names vary by app version.", listOf(), listOf("vizio_pair", "vizio_account", "google_link"), listOf(
             SetupStep("Check the TV in VIZIO Mobile", "Use the paired TV and the VIZIO account associated with it.", "phone", "VIZIO Mobile", listOf("Your TV"), 0, "check", "Use your real device. This picture is an illustration."),
-            SetupStep("Prepare the assistant app", "Sign in to Google Home or Amazon Alexa on the same phone.", "phone", "Phone apps", listOf("Google Home", "Amazon Alexa"), 0, "tap", "Use your real device. This picture is an illustration."),
+            SetupStep("Prepare the assistant app", "Sign in to Google Home or Amazon Alexa on the same phone.", "phone", "Phone apps", listOf("Your chosen assistant app"), 0, "tap", "Open Google Home or Amazon Alexa according to the assistant you chose; the picture does not select one for you."),
             SetupStep("Return to VIZIO Account", "In VIZIO Mobile, open the Account tab.", "phone", "VIZIO Mobile", listOf("Account"), 0, "tap", "Use your real device. This picture is an illustration."),
-            SetupStep("Choose assistant linking", "Start the partner-linking option offered for Google Home or Alexa.", "phone", "VIZIO Account", listOf("Google Home linking", "Alexa linking"), 0, "tap", "These are descriptive illustration labels. Use the matching option in your app."),
+            SetupStep("Choose assistant linking", "Start the partner-linking option offered for Google Home or Alexa.", "phone", "VIZIO Account", listOf("Link your chosen assistant"), 0, "tap", "This is a descriptive highlight. Choose the actual linking option for your assistant in VIZIO Mobile; labels vary."),
             SetupStep("Review the official handoff", "Continue to the assistant app and approve the intended VIZIO account access.", "phone", "Provider approval", listOf("Account", "Requested access", "Continue"), 2, "check", "Use your real device. This picture is an illustration."),
             SetupStep("Check the actual result", "Look in the assistant app for your TV. If it is missing, use “My screen looks different”.", "phone", "the assistant app", listOf("Your TV appears", "TV missing? Get help"), 0, "check", "Finishing this guide does not connect Audio Bodyguard or activate protection."),
         )),
@@ -426,7 +427,7 @@ object SetupContent {
             SetupStep("Open Settings", "Open Settings.", "tv", "Home Dashboard", listOf("Settings"), 0, "settings", "Use your real device. This picture is an illustration."),
             SetupStep("Open Link to Smart Speaker", "Open Link to Smart Speaker.", "tv", "Settings", listOf("Link to Smart Speaker"), 0, "select", "Use your real device. This picture is an illustration."),
             SetupStep("Check and approve your account", "Use the same LG account as ThinQ. Read the official access request and continue only if you agree.", "tv", "LG account", listOf("Same LG account", "Review requested access"), 1, "check", "This account link does not grant Audio Bodyguard access."),
-            SetupStep("Continue with your assistant", "Return to the guide list. Choose LG ThinQ → Alexa or LG ThinQ → Google Home.", "phone", "Illustrated setup", listOf("Alexa guide", "Google Home guide"), 0, "tap", "Use your real device. This picture is an illustration."),
+            SetupStep("Continue with your assistant", "Return to the guide list. Choose LG ThinQ → Alexa or LG ThinQ → Google Home.", "phone", "Illustrated setup", listOf("Your chosen assistant guide"), 0, "tap", "Choose the guide for the assistant you use. Google Home and Alexa are separate options."),
         )),
         SetupRoute("lg_account6", "LG webOS 6.0+ — link the ThinQ account", "Use only on matching webOS menus and where the service is available. This path is documented by LG’s UAE support guidance; availability varies by country.", listOf(), listOf("lg_assist"), listOf(
             SetupStep("Open LG ThinQ", "Open LG ThinQ.", "phone", "Phone apps", listOf("LG ThinQ"), 0, "tap", "Use your real device. This picture is an illustration."),
@@ -434,7 +435,7 @@ object SetupContent {
             SetupStep("Open Settings", "Open Settings.", "phone", "Your TV", listOf("Settings"), 0, "settings", "Use your real device. This picture is an illustration."),
             SetupStep("Open Link LG ThinQ Account", "Open Link LG ThinQ Account.", "phone", "Settings", listOf("Link LG ThinQ Account"), 0, "tap", "Use your real device. This picture is an illustration."),
             SetupStep("Check and approve your account", "Use the same LG account as ThinQ. Read the official access request and continue only if you agree.", "phone", "LG account", listOf("Same LG account", "Review requested access"), 1, "check", "This account link does not grant Audio Bodyguard access."),
-            SetupStep("Continue with your assistant", "Return to the guide list. Choose LG ThinQ → Alexa or LG ThinQ → Google Home.", "phone", "Illustrated setup", listOf("Alexa guide", "Google Home guide"), 0, "tap", "Use your real device. This picture is an illustration."),
+            SetupStep("Continue with your assistant", "Return to the guide list. Choose LG ThinQ → Alexa or LG ThinQ → Google Home.", "phone", "Illustrated setup", listOf("Your chosen assistant guide"), 0, "tap", "Choose the guide for the assistant you use. Google Home and Alexa are separate options."),
         )),
         SetupRoute("google_legacy_add", "Google Home — + / Set up device menus", "Only when your app shows the older Works with Google route. Supported providers differ by TV model and region. Set up the TV in its official app first.", listOf(), listOf("roku_google", "samsung_assist"), listOf(
             SetupStep("Open Google Home Add", "Open Google Home and tap +.", "phone", "Google Home", listOf("+"), 0, "tap", "Use your real device. This picture is an illustration."),

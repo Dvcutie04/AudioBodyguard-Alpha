@@ -14,12 +14,12 @@ public struct AQSSTutorialTopic: Equatable, Sendable {
 public enum AQSSTutorialContent {
     public static let topics: [AQSSTutorialTopic] = [
         AQSSTutorialTopic(id: "getting_started", title: "TV & smart-home guide", steps: [
-            AQSSTutorialStep(target: "welcome", area: "overview", title: "Start with your TV", explanation: "Audio Bodyguard is being built to help with sudden loud sound. This preview does not monitor or change TV audio. We will show one step at a time. You can leave whenever you like.", example: "Example: a film is quiet, then an advert is much louder. Reducing that jump is a planned feature, not something this preview can do."),
+            AQSSTutorialStep(target: "welcome", area: "overview", title: "Start with your TV", explanation: "Complete both connections: first your TV or home device, then your phone. We will guide you one screen at a time. This preview does not monitor or change TV audio.", example: ""),
             AQSSTutorialStep(target: "chooseTV", area: "connection", title: "Which TV do you use?", explanation: "Choose the name on the front of your TV or on its remote. This changes the explanation only. It does not search for or connect to your TV.", example: "Example: if the remote says Samsung, choose Samsung. If you cannot find a name, choose Not sure / no TV."),
             AQSSTutorialStep(target: "chooseHome", area: "connection", title: "Do you use a smart-home app?", explanation: "Choose the app you already use to manage devices at home. If you use neither app, that is fine. No account sign-in is needed for this guide.", example: "Example: if you say “Alexa” to an Echo speaker, choose Amazon Alexa. If you manage devices in the Google Home app, choose Google Home."),
-            AQSSTutorialStep(target: "connectionPlan", area: "connection", title: "Your connection checklist", explanation: "These are preparation notes for your setup. Pairing is not available in Audio Bodyguard yet. Your TV model and the features it supports must be checked before an integration can be built.", example: "Example: finding a Samsung TV in Alexa does not let this preview control it. Audio Bodyguard would still need its own supported connection and your permission."),
-            AQSSTutorialStep(target: "connectionCheck", area: "connection", title: "What does connected mean?", explanation: "Your TV is not connected to Audio Bodyguard by this guide. A name in a list only identifies a device. Changing sound would also need your permission and a separate check of what actually comes from the speakers.", example: "Example: a TV appears online, but sound is coming from a soundbar. Seeing the TV online does not prove the soundbar volume changed."),
-            AQSSTutorialStep(target: "featureExample", area: "connection", title: "A simple sound example", explanation: "Planned sound presets would help with different listening needs. For now, Sound explains those controls. Insights can show an invented graph so you can learn to read it.", example: "Example: people speak quietly in a film, then an advert starts loudly. A future Night preset could request a smaller jump. This preview does not lower either sound."),
+            AQSSTutorialStep(target: "connectionPlan", area: "connection", title: "1. Connect to your TV or home device", explanation: "Follow the picture guide for your TV or home device. Pair it in its official app and approve access on the device when asked. Then continue to the separate phone step. Audio Bodyguard pairing is not available in this preview.", example: "Example: finding a Samsung TV in Alexa does not let this preview control it. Audio Bodyguard would still need its own supported connection and your permission."),
+            AQSSTutorialStep(target: "connectionCheck", area: "connection", title: "2. Connect to your phone", explanation: "On your iPhone or Android phone, open the device's official app and check that your TV or home device is listed. Follow the phone permissions in its picture guide. Your TV is not connected to Audio Bodyguard by this guide; both connections still need to be checked.", example: "Example: use your phone on the home network required by the device's official app. A paired TV and a phone with the right permissions are separate checks."),
+            AQSSTutorialStep(target: "featureExample", area: "connection", title: "Check both connections", explanation: "Device connection and phone connection are both required. In a supported release, each needs a separate check before controls become available. Finishing these instructions does not mark either connection as successful.", example: "Example: your TV is online, but sound is playing through a soundbar. Check the phone's selected device and the actual sound output before using a supported control."),
             AQSSTutorialStep(target: "guideFinish", area: "connection", title: "You know where to start", explanation: "Open the full app to explore. Devices explains connection requirements. Sound explains planned controls. Insights has an example graph. Settings has appearance choices. Help can replay this guide from any page.", example: "Example: to look at the sample graph, open Insights, then Explore an example. Its values are made up; they are not measurements from your phone."),
         ]),
         AQSSTutorialTopic(id: "home", title: "Home and coverage", steps: [
@@ -84,7 +84,44 @@ public enum AQSSTutorialContent {
             AQSSTutorialChoice(id: "neither", title: "Neither / not sure", icon: "questionmark.circle", detail: "No smart-home account is needed to explore. Keep using your TV remote. A future direct TV connection would still need a supported model and your permission."),
         ],
     ]
+    public static let connectionStages: [AQSSConnectionStage] = [
+        AQSSConnectionStage(number: 1, title: "Connect to your TV or home device", detail: "Pair the device and approve access on its screen or in its official home app.", targets: ["chooseTV", "chooseHome", "connectionPlan"]),
+        AQSSConnectionStage(number: 2, title: "Connect to your phone", detail: "Link your iPhone or Android phone, then check its permissions and sound connection.", targets: ["connectionCheck"]),
+    ]
+    public static let featureTitle = "Features for supported connections"
+    public static let featureNote = "Device controls are planned and depend on the TV, player and phone. This preview does not control connected devices. Picture guides, photo hints and voice input can be explored now."
+    public static let features: [AQSSTutorialFeature] = [
+        AQSSTutorialFeature(id: "series_intro", title: "Skip series intros", detail: "On supported players with a confirmed intro segment.", availability: "planned"),
+        AQSSTutorialFeature(id: "commercial_volume", title: "Lower volume during commercials", detail: "With an eligible sound path and your permission.", availability: "planned"),
+        AQSSTutorialFeature(id: "remote", title: "Universal remote controls", detail: "For compatible devices; controls vary by model.", availability: "planned"),
+        AQSSTutorialFeature(id: "loud_sounds", title: "Reduce sudden loud sounds", detail: "Bounded volume, mute and comfort controls.", availability: "planned"),
+        AQSSTutorialFeature(id: "presets", title: "Dialogue and Night sound presets", detail: "Listening options for qualified sound outputs.", availability: "planned"),
+        AQSSTutorialFeature(id: "equalizer", title: "Custom equalizer", detail: "Bass, midrange and treble on supported devices.", availability: "planned"),
+        AQSSTutorialFeature(id: "captions", title: "Captions, subtitles and audio description", detail: "When the media supplies compatible tracks.", availability: "planned"),
+        AQSSTutorialFeature(id: "languages", title: "Audio and caption languages", detail: "Choose from the tracks supplied by the media.", availability: "planned"),
+        AQSSTutorialFeature(id: "voice", title: "Voice requests", detail: "Requests require confirmation and eligible controls.", availability: "planned"),
+        AQSSTutorialFeature(id: "profiles", title: "Personal sound profiles and saved settings", detail: "Save and restore confirmed preferences.", availability: "planned"),
+        AQSSTutorialFeature(id: "undo", title: "Undo changes and restore settings", detail: "For eligible changes with a known earlier setting.", availability: "planned"),
+        AQSSTutorialFeature(id: "history", title: "Session history and sound insights", detail: "Real observations and gaps; examples are labeled.", availability: "planned"),
+        AQSSTutorialFeature(id: "recovery", title: "Pause, resume and connection recovery", detail: "Recheck the connection before resuming controls.", availability: "planned"),
+        AQSSTutorialFeature(id: "handoff", title: "Move sessions between iPhone and Android", detail: "Only through a supported, checked transfer path.", availability: "planned"),
+        AQSSTutorialFeature(id: "background", title: "Background protection where supported", detail: "Subject to phone limits and a qualified sound path.", availability: "planned"),
+        AQSSTutorialFeature(id: "privacy", title: "Privacy controls and private support reports", detail: "Capture choices, deletion and review before sharing.", availability: "planned"),
+        AQSSTutorialFeature(id: "status", title: "Optional alerts, haptics and status widgets", detail: "Readable status with freshness and coverage gaps.", availability: "planned"),
+        AQSSTutorialFeature(id: "suggestions", title: "Explainable suggestions and session recipes", detail: "Optional suggestions that you can review or dismiss.", availability: "planned"),
+        AQSSTutorialFeature(id: "accessories", title: "Compatible speakers, headphones and accessories", detail: "Integrations depend on the exact device and route.", availability: "planned"),
+        AQSSTutorialFeature(id: "setup", title: "Picture guides and photo-assisted setup", detail: "Photo hints help identify a device; they do not pair it.", availability: "preview"),
+        AQSSTutorialFeature(id: "input", title: "Voice input display and recognized words", detail: "Foreground input check; recognized words may be wrong.", availability: "preview"),
+    ]
 }
 public struct AQSSTutorialChoice: Equatable, Sendable {
     public let id, title, icon, detail: String
+}
+public struct AQSSConnectionStage: Equatable, Sendable {
+    public let number: Int
+    public let title, detail: String
+    public let targets: [String]
+}
+public struct AQSSTutorialFeature: Equatable, Sendable {
+    public let id, title, detail, availability: String
 }

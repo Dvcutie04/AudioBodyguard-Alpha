@@ -128,21 +128,30 @@ CHECK
 capture_ui beginner_step_1
 assert_tutorial_label beginner_step_1 "Step 1 of 7"
 assert_only_guide beginner_step_1
+assert_tutorial_label beginner_step_1 "Both connections are required"
+assert_tutorial_label beginner_step_1 "1. Connect to your TV or home device"
+assert_tutorial_label beginner_step_1 "2. Connect to your phone"
+adb shell input swipe 500 1350 500 950 650
+assert_scroll_label "Skip series intros" welcome_features
+assert_scroll_label "Lower volume during commercials" welcome_features_commercials
+assert_scroll_label "Universal remote controls" welcome_features_remote
+assert_scroll_label "Voice input display and recognized words" welcome_features_last
+assert_scroll_label "does not control connected devices" welcome_features_note
 tap_tutorial_label "Begin" beginner_begin
 capture_ui beginner_step_2
 assert_only_guide beginner_step_2
 if python3 tools/check_android_simulation_ui.py --text-tap-coordinates "$artifact_dir/beginner_step_2.xml" "Next" | grep -q '[0-9]'; then exit 1; fi
-tap_tutorial_label "Samsung" beginner_tv
+tap_scroll_label "Samsung" beginner_tv
 capture_ui beginner_tv_selected
 assert_tutorial_label beginner_tv_selected "Selected: Samsung"
 tap_tutorial_label "Next" beginner_to_home
 capture_ui beginner_step_3
 assert_only_guide beginner_step_3
 if python3 tools/check_android_simulation_ui.py --text-tap-coordinates "$artifact_dir/beginner_step_3.xml" "Next" | grep -q '[0-9]'; then exit 1; fi
-tap_tutorial_label "Amazon Alexa" beginner_home_choice
+tap_scroll_label "Amazon Alexa" beginner_home_choice
 tap_tutorial_label "Next" beginner_to_plan
 capture_ui beginner_step_4
-assert_tutorial_label beginner_step_4 "Your connection checklist"
+assert_tutorial_label beginner_step_4 "1. Connect to your TV or home device"
 tap_scroll_label "Show Samsung steps" setup_from_plan
 tap_scroll_label "Samsung — TV shows OK approval" setup_samsung_route
 tap_tutorial_label "Start guide" setup_samsung_begin
@@ -171,6 +180,7 @@ assert_tutorial_label beginner_home_retained "Selected: Amazon Alexa"
 tap_tutorial_label "Next" beginner_plan_again
 tap_tutorial_label "Next" beginner_connection_truth
 capture_ui beginner_step_5
+assert_tutorial_label beginner_step_5 "2. Connect to your phone"
 assert_tutorial_label beginner_step_5 "not connected to Audio Bodyguard"
 tap_tutorial_label "Next" beginner_feature_example
 tap_tutorial_label "Next" beginner_last

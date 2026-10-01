@@ -93,6 +93,7 @@ class TutorialGuide(
             accessibilityLiveRegion = View.ACCESSIBILITY_LIVE_REGION_POLITE
         }
         text(content, step.explanation)
+        if (isBeginner) content.addView(connectionOverview(step.target), LinearLayout.LayoutParams(-1, -2).apply { bottomMargin = dp(16) })
         choiceButtons.clear()
         guide.choices.forEach { choice ->
             val selected = guide.selected(step.target)?.id == choice.id
@@ -115,12 +116,44 @@ class TutorialGuide(
                 content.addView(box, LinearLayout.LayoutParams(-1, -2).apply { bottomMargin = dp(16) })
             }
         }
-        val example = column().apply { setPadding(dp(16), dp(16), dp(16), dp(6)); background = skin.shape(skin.surface) }
-        text(example, step.example, color = skin.muted); content.addView(example)
+        if (isBeginner && step.target == "welcome") {
+            content.addView(featureCatalog())
+        } else if (step.example.isNotEmpty()) {
+            val example = column().apply { setPadding(dp(16), dp(16), dp(16), dp(6)); background = skin.shape(skin.surface) }
+            text(example, step.example, color = skin.muted); content.addView(example)
+        }
         if (step.target == "connectionCheck") text(content, "Not connected · Audio protection is not active", 18f, skin.warning, true)
         renderControls()
         footer.visibility = View.VISIBLE; stateChanged()
         reading.post { reading.scrollTo(0, oldScroll) }
+    }
+    fun connectionOverview(currentTarget: String? = null): LinearLayout {
+        val box = column().apply { setPadding(dp(16), dp(16), dp(16), dp(6)); background = skin.shape(skin.surface) }
+        text(box, "Both connections are required", 15f, bold = true)
+        TutorialContent.connectionStages.forEach { stage ->
+            text(box, "${stage.number}. ${stage.title}", 15f, bold = true)
+            if (currentTarget != null && currentTarget in stage.targets) text(box, "Current guide section", 12f, skin.accent)
+        }
+        return box
+    }
+    private fun featureCatalog(): LinearLayout {
+        val box = column().apply { setPadding(dp(18), dp(18), dp(18), dp(6)); background = skin.shape(skin.surface) }
+        text(box, TutorialContent.featureTitle, 18f, bold = true).apply {
+            gravity = Gravity.CENTER
+            if (Build.VERSION.SDK_INT >= 28) isAccessibilityHeading = true
+        }
+        text(box, "Planned controls · availability varies by device", 12f, skin.warning).gravity = Gravity.CENTER
+        TutorialContent.features.forEach { feature ->
+            val row = column()
+            text(row, feature.title, 16f, bold = true).apply { gravity = Gravity.CENTER; setPadding(0, 0, 0, dp(3)) }
+            text(row, if (feature.availability == "preview") "Explore in this preview" else "Planned", 12f,
+                if (feature.availability == "preview") skin.accent else skin.muted).gravity = Gravity.CENTER
+            row.importantForAccessibility = View.IMPORTANT_FOR_ACCESSIBILITY_YES
+            row.contentDescription = "${feature.title}. ${if (feature.availability == "preview") "Explore in this preview" else "Planned"}. ${feature.detail}"
+            box.addView(row, LinearLayout.LayoutParams(-1, -2))
+        }
+        text(box, TutorialContent.featureNote, 14f, skin.muted).gravity = Gravity.CENTER
+        return box
     }
     private fun refreshChoices() {
         val step = guide.step ?: return

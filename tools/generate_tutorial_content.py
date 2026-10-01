@@ -15,8 +15,32 @@ TARGETS = {
 
 
 def validate(data):
-    if set(data) != {"schema_version", "mode", "topics", "choices"} or data["schema_version"] != 1 or data["mode"] != "read_only_guidance":
+    if set(data) != {"schema_version", "mode", "topics", "choices", "connection_stages", "feature_catalog"} or data["schema_version"] != 1 or data["mode"] != "read_only_guidance":
         raise ValueError("invalid presentation-only tutorial contract")
+    stages = data["connection_stages"]
+    if not isinstance(stages, list) or len(stages) != 2:
+        raise ValueError("two connection stages required")
+    used_targets = set()
+    for number, stage in enumerate(stages, 1):
+        if type(stage) is not dict or set(stage) != {"number", "title", "detail", "targets"} or type(stage["number"]) is not int or stage["number"] != number:
+            raise ValueError("ordered presentation-only connection stages required")
+        if any(type(stage[key]) is not str or not stage[key].strip() or len(stage[key]) > 160 for key in ("title", "detail")):
+            raise ValueError("invalid connection stage text")
+        if not isinstance(stage["targets"], list) or not stage["targets"] or any(type(target) is not str or target not in TARGETS["connection"] or target in used_targets for target in stage["targets"]) or len(stage["targets"]) != len(set(stage["targets"])):
+            raise ValueError("invalid connection stage targets")
+        used_targets.update(stage["targets"])
+    catalog = data["feature_catalog"]
+    if type(catalog) is not dict or set(catalog) != {"title", "note", "items"}:
+        raise ValueError("presentation-only feature catalog required")
+    if any(type(catalog[key]) is not str or not catalog[key].strip() or len(catalog[key]) > 320 for key in ("title", "note")) or type(catalog["items"]) is not list or not 1 <= len(catalog["items"]) <= 24:
+        raise ValueError("invalid bounded feature catalog")
+    feature_ids = set()
+    for feature in catalog["items"]:
+        if type(feature) is not dict or set(feature) != {"id", "title", "detail", "availability"} or any(type(value) is not str or not value.strip() or len(value) > 160 for value in feature.values()):
+            raise ValueError("presentation-only feature descriptions required")
+        if not feature["id"].isidentifier() or feature["id"] in feature_ids or feature["availability"] not in {"planned", "preview"}:
+            raise ValueError("invalid feature identity or availability")
+        feature_ids.add(feature["id"])
     if not isinstance(data["choices"], dict) or set(data["choices"]) != {"chooseTV", "chooseHome"}:
         raise ValueError("invalid guide choice groups")
     for choices in data["choices"].values():
@@ -48,9 +72,12 @@ def validate(data):
                 raise ValueError("tutorial steps may contain only presentation fields")
             if step["area"] not in TARGETS or step["target"] not in TARGETS[step["area"]]:
                 raise ValueError("unknown tutorial area or target")
-            if any(not isinstance(step[k], str) or not step[k].strip() or len(step[k]) > 320 for k in ("title", "explanation", "example")):
+            if any(not isinstance(step[k], str) or not step[k].strip() or len(step[k]) > 320 for k in ("title", "explanation")) or type(step["example"]) is not str or len(step["example"]) > 320:
                 raise ValueError("invalid tutorial text")
-            if not step["example"].startswith("Example:"):
+            if topic["id"] == "getting_started" and step["target"] == "welcome":
+                if step["example"]:
+                    raise ValueError("welcome uses the feature catalog instead of an example")
+            elif not step["example"].startswith("Example:"):
                 raise ValueError("tutorial example must be labeled")
     return data
 
@@ -81,8 +108,21 @@ def sources(data):
             kotlin += ["            TutorialChoice(" + ", ".join(q(choice[k]).replace("$", r"\$") for k in ("id", "title", "icon", "detail")) + "),"]
         swift += ["        ],"]
         kotlin += ["        ),"]
-    swift += ["    ]", "}", "public struct AQSSTutorialChoice: Equatable, Sendable {", "    public let id, title, icon, detail: String", "}", ""]
-    kotlin += ["    )", "}", "data class TutorialChoice(val id: String, val title: String, val icon: String, val detail: String)", ""]
+    swift += ["    ]", "    public static let connectionStages: [AQSSConnectionStage] = ["]
+    kotlin += ["    )", "    val connectionStages: List<ConnectionStage> = listOf("]
+    for stage in data["connection_stages"]:
+        targets = ", ".join(q(target) for target in stage["targets"])
+        swift += [f"        AQSSConnectionStage(number: {stage['number']}, title: {q(stage['title'])}, detail: {q(stage['detail'])}, targets: [{targets}]),"]
+        kotlin += [f"        ConnectionStage({stage['number']}, {q(stage['title'])}, {q(stage['detail'])}, listOf({targets})),"]
+    catalog = data["feature_catalog"]
+    swift += ["    ]", f"    public static let featureTitle = {q(catalog['title'])}", f"    public static let featureNote = {q(catalog['note'])}", "    public static let features: [AQSSTutorialFeature] = ["]
+    kotlin += ["    )", f"    const val featureTitle = {q(catalog['title'])}", f"    const val featureNote = {q(catalog['note'])}", "    val features: List<TutorialFeature> = listOf("]
+    for feature in catalog["items"]:
+        keys = ("id", "title", "detail", "availability")
+        swift += ["        AQSSTutorialFeature(" + ", ".join(f"{key}: {q(feature[key])}" for key in keys) + "),"]
+        kotlin += ["        TutorialFeature(" + ", ".join(q(feature[key]).replace("$", r"\$") for key in keys) + "),"]
+    swift += ["    ]", "}", "public struct AQSSTutorialChoice: Equatable, Sendable {", "    public let id, title, icon, detail: String", "}", "public struct AQSSConnectionStage: Equatable, Sendable {", "    public let number: Int", "    public let title, detail: String", "    public let targets: [String]", "}", "public struct AQSSTutorialFeature: Equatable, Sendable {", "    public let id, title, detail, availability: String", "}", ""]
+    kotlin += ["    )", "}", "data class TutorialChoice(val id: String, val title: String, val icon: String, val detail: String)", "data class ConnectionStage(val number: Int, val title: String, val detail: String, val targets: List<String>)", "data class TutorialFeature(val id: String, val title: String, val detail: String, val availability: String)", ""]
     return {
         ROOT / "native/ios/Sources/AQSSNativeFeedback/TutorialContent.swift": "\n".join(swift),
         ROOT / "native/android/src/main/kotlin/com/aqss/nativefeedback/TutorialContent.kt": "\n".join(kotlin),

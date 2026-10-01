@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "mode": "illustrated_guidance_only",
-  "reviewed_at": "2026-09-30",
+  "reviewed_at": "2026-10-01",
   "sources": [
     {
       "id": "samsung_pair",
@@ -26,7 +26,7 @@
     {
       "id": "lg_model",
       "title": "LG: TV information by webOS version",
-      "url": "https://www.lg.com/us/support/help-library/lg-tv-check-out-the-lg-content-store-to-see-what-apps-are-available-for-your-smart-tv-CT10000018-20154548998527"
+      "url": "https://www.lg.com/us/support/help-library/lg-tv-check-out-the-lg-content-store-to-see-what-apps-are-available-for-your-smart-tv--20154548998527"
     },
     {
       "id": "lg_assist",
@@ -86,7 +86,7 @@
     {
       "id": "roku_alexa",
       "title": "Roku TV: Alexa linking, OS 9.1+",
-      "url": "https://support.roku.com/en-us/article/control-your-streaming-devices-with-alexa"
+      "url": "https://support.roku.com/article/control-your-streaming-devices-with-alexa"
     },
     {
       "id": "roku_google",
@@ -479,7 +479,7 @@
           ],
           "focus": 0,
           "action": "select",
-          "note": "Use your real device. This picture is an illustration."
+          "note": "Some Samsung menus use Contact Samsung instead. Follow the matching label on your TV; pause if neither is present."
         },
         {
           "title": "Read the full model code",
@@ -551,7 +551,7 @@
           ],
           "focus": 0,
           "action": "select",
-          "note": "Use your real device. This picture is an illustration."
+          "note": "Some Samsung menus use Contact Samsung instead. Follow the matching label on your TV; pause if neither is present."
         },
         {
           "title": "Read the full model code",
@@ -1407,16 +1407,29 @@
         },
         {
           "title": "Enter the real PIN",
-          "instruction": "Type the TV PIN in ThinQ, then tap Next.",
+          "instruction": "Type the PIN displayed on your own TV into ThinQ.",
           "surface": "phone",
           "screen": "Pair TV",
           "items": [
             "PIN",
             "Next"
           ],
-          "focus": 1,
+          "focus": 0,
           "action": "type",
           "note": "Never use the placeholder dots as a code."
+        },
+        {
+          "title": "Confirm the entered PIN",
+          "instruction": "After entering the TV PIN, tap Next in ThinQ.",
+          "surface": "phone",
+          "screen": "Pair TV",
+          "items": [
+            "PIN entered from your TV",
+            "Next"
+          ],
+          "focus": 1,
+          "action": "tap",
+          "note": "If the TV rejects the code, keep the same TV selected and follow the official pairing help."
         },
         {
           "title": "Decide whether to link accounts",
@@ -1429,7 +1442,7 @@
           ],
           "focus": 0,
           "action": "tap",
-          "note": "Account linking is optional here. Read the permissions in ThinQ."
+          "note": "The Link highlight is an example, not a recommendation. Choose Skip if you do not want this optional account link."
         },
         {
           "title": "Finish registration",
@@ -1889,7 +1902,7 @@
     {
       "id": "google_fast",
       "title": "Google TV — faster phone setup",
-      "applies_to": "Only for TVs showing the newer phone-camera setup instructions. This path is distinct from Google Home app setup.",
+      "applies_to": "Only for TVs showing the newer phone-camera setup instructions. Requires iOS 17 or later, or Android 9 or later. This is a separate path from Google Home app setup.",
       "models": [],
       "sources": [
         "google_setup"
@@ -1918,7 +1931,7 @@
           ],
           "focus": 0,
           "action": "check",
-          "note": "Use your real device. This picture is an illustration."
+          "note": "Use current phone software. If Google TV is already installed on iPhone, Google specifies app version 3.3100002 or later."
         },
         {
           "title": "Prepare the phone",
@@ -1973,13 +1986,13 @@
           "note": "Use your real device. This picture is an illustration."
         },
         {
-          "title": "Check the actual result",
-          "instruction": "Look in Google Home for your TV. If it is missing, use “My screen looks different”.",
-          "surface": "phone",
-          "screen": "Google Home",
+          "title": "Check the actual TV result",
+          "instruction": "Check that setup finished and the Home screen appears on your own TV. If it does not, use My screen looks different.",
+          "surface": "tv",
+          "screen": "Google TV Home",
           "items": [
-            "Your TV appears",
-            "TV missing? Get help"
+            "Home screen on your TV",
+            "Setup unfinished? Get help"
           ],
           "focus": 0,
           "action": "check",
@@ -3056,7 +3069,7 @@
           ],
           "focus": 0,
           "action": "select",
-          "note": "Use your real device. This picture is an illustration."
+          "note": "Yes is an illustrated choice only. Select No if you do not want remote power-on. Enabling standby access can use more power."
         },
         {
           "title": "Choose Alexa on the TV",
@@ -3255,18 +3268,6 @@
           "note": "Use your real device. This picture is an illustration."
         },
         {
-          "title": "Choose the TV Google account",
-          "instruction": "Continue through Log in with Google and select the account registered on this TV.",
-          "surface": "tv",
-          "screen": "Log in with Google",
-          "items": [
-            "Your Google account"
-          ],
-          "focus": 0,
-          "action": "select",
-          "note": "Use your real device. This picture is an illustration."
-        },
-        {
           "title": "Decide about Remote start",
           "instruction": "If asked, choose whether voice power-on should be allowed.",
           "surface": "tv",
@@ -3277,7 +3278,19 @@
           ],
           "focus": 0,
           "action": "select",
-          "note": "Enabling standby access can use more power."
+          "note": "Yes is an illustrated choice only. Select No if you do not want remote power-on. Enabling standby access can use more power."
+        },
+        {
+          "title": "Choose the TV Google account",
+          "instruction": "Continue through Log in with Google and select the account registered on this TV.",
+          "surface": "tv",
+          "screen": "Log in with Google",
+          "items": [
+            "Your Google account"
+          ],
+          "focus": 0,
+          "action": "select",
+          "note": "Use your real device. This picture is an illustration."
         },
         {
           "title": "Name the TV",
@@ -4118,12 +4131,11 @@
           "surface": "phone",
           "screen": "Phone apps",
           "items": [
-            "Google Home",
-            "Amazon Alexa"
+            "Your chosen assistant app"
           ],
           "focus": 0,
           "action": "tap",
-          "note": "Use your real device. This picture is an illustration."
+          "note": "Open Google Home or Amazon Alexa according to the assistant you chose; the picture does not select one for you."
         },
         {
           "title": "Return to VIZIO Account",
@@ -4143,12 +4155,11 @@
           "surface": "phone",
           "screen": "VIZIO Account",
           "items": [
-            "Google Home linking",
-            "Alexa linking"
+            "Link your chosen assistant"
           ],
           "focus": 0,
           "action": "tap",
-          "note": "These are descriptive illustration labels. Use the matching option in your app."
+          "note": "This is a descriptive highlight. Choose the actual linking option for your assistant in VIZIO Mobile; labels vary."
         },
         {
           "title": "Review the official handoff",
@@ -4554,12 +4565,11 @@
           "surface": "phone",
           "screen": "Illustrated setup",
           "items": [
-            "Alexa guide",
-            "Google Home guide"
+            "Your chosen assistant guide"
           ],
           "focus": 0,
           "action": "tap",
-          "note": "Use your real device. This picture is an illustration."
+          "note": "Choose the guide for the assistant you use. Google Home and Alexa are separate options."
         }
       ]
     },
@@ -4639,12 +4649,11 @@
           "surface": "phone",
           "screen": "Illustrated setup",
           "items": [
-            "Alexa guide",
-            "Google Home guide"
+            "Your chosen assistant guide"
           ],
           "focus": 0,
           "action": "tap",
-          "note": "Use your real device. This picture is an illustration."
+          "note": "Choose the guide for the assistant you use. Google Home and Alexa are separate options."
         }
       ]
     },

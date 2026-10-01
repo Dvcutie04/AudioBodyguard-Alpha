@@ -320,6 +320,7 @@ class ReadOnlyHomeActivity : Activity() {
         destination("Advanced options", "Device, privacy & background details") { jump("advanced") }
     }
     private fun devicesPage() {
+        column.addView(tutorial.connectionOverview(), LinearLayout.LayoutParams(-1, -2).apply { bottomMargin = dp(18) })
         destination("TV photo setup", "Read a model label or Network settings photo") { openInputTool("photo") }
         destination("Illustrated setup guides", "TV pairing, Google Home & Alexa · one picture at a time") { openSetup() }
         action(column, "TV & smart-home guide") { tutorial.start("getting_started") }
