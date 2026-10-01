@@ -66,12 +66,24 @@ capture_ui() {
 }
 
 tap_tutorial_label() {
-    local label="$1" capture="$2" coordinates x y
+    local label="$1" capture="$2" evidence="${3:-}" reset_counters="${4:-}" coordinates x y
     capture_ui "$capture"
     coordinates="$(python3 tools/check_android_simulation_ui.py --text-tap-coordinates "$artifact_dir/$capture.xml" "$label")"
     if [[ -z "$coordinates" ]]; then echo "Tutorial target not visible: $label" >&2; return 1; fi
     read -r x y <<< "$coordinates"
+    if [[ -n "$evidence" ]]; then
+        adb shell dumpsys gfxinfo com.aqss.bodyguard.prototype framestats > "$artifact_dir/$evidence-before.txt"
+    fi
+    if [[ -n "$reset_counters" ]]; then
+        adb shell dumpsys gfxinfo com.aqss.bodyguard.prototype reset > "$artifact_dir/roku-frames-reset.txt"
+    fi
     adb shell input tap "$x" "$y"
+}
+
+complete_frame_evidence() {
+    local evidence="$1"
+    adb shell dumpsys gfxinfo com.aqss.bodyguard.prototype framestats > "$artifact_dir/$evidence-after.txt"
+    python3 tools/android_frame_evidence.py "$artifact_dir/$evidence-before.txt" "$artifact_dir/$evidence-after.txt" --output "$artifact_dir/$evidence.json"
 }
 
 assert_tutorial_label() {
@@ -309,20 +321,22 @@ tap_scroll_label "Find my IP address (Roku TV)" roku_network
 tap_scroll_label "I’m already in Settings" roku_settings
 capture_ui roku_settings_picture
 assert_tutorial_label roku_settings_picture "Step 3 of 5"
-adb shell dumpsys gfxinfo com.aqss.bodyguard.prototype reset > "$artifact_dir/roku-frames-reset.txt"
-tap_tutorial_label "Next" roku_about
+tap_tutorial_label "Next" roku_about roku-step-3-to-4-frames reset
 capture_ui roku_about_picture
+complete_frame_evidence roku-step-3-to-4-frames
 assert_tutorial_label roku_about_picture "Step 4 of 5"
 tap_tutorial_label "Close" roku_close
 tap_scroll_label "Illustrated setup guides. TV pairing, Google Home & Alexa · one picture at a time" roku_reopen
 tap_scroll_label "TCL" roku_rebrand
 tap_scroll_label "Roku TV" roku_replatform
 tap_scroll_label "Find my IP address (Roku TV)" roku_reroute
-tap_tutorial_label "Resume guide" roku_resume
+tap_tutorial_label "Resume guide" roku_resume roku-resume-frames
 capture_ui roku_resumed
+complete_frame_evidence roku-resume-frames
 assert_tutorial_label roku_resumed "Step 4 of 5"
-tap_tutorial_label "Next" roku_ip
+tap_tutorial_label "Next" roku_ip roku-step-4-to-5-frames
 capture_ui roku_ip_picture
+complete_frame_evidence roku-step-4-to-5-frames
 assert_tutorial_label roku_ip_picture "Step 5 of 5"
 tap_tutorial_label "Finish guide" roku_finish
 adb shell dumpsys gfxinfo com.aqss.bodyguard.prototype > "$artifact_dir/roku-frame-summary.txt"
