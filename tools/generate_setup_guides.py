@@ -8,7 +8,8 @@ from urllib.parse import urlsplit
 
 ROOT = Path(__file__).resolve().parents[1]
 HOSTS = {'www.samsung.com', 'www.lg.com', 'www.sony.com', 'support.tcl.com',
-         'www.tcl.com', 'support.roku.com', 'image.roku.com', 'assets.hisense-usa.com',
+         'www.tcl.com', 'us.tcl.com', 'ca-en.tcl.com',
+         'support.roku.com', 'image.roku.com', 'assets.hisense-usa.com',
          'www.vizio.com', 'support.google.com', 'www.amazon.com',
          'digprjsurvey.amazon.com', 'github.com', 'www.usa.philips.com'}
 ACTIONS = {'home', 'settings', 'select', 'tap', 'scan', 'type', 'check', 'speak', 'stop', 'wait'}
