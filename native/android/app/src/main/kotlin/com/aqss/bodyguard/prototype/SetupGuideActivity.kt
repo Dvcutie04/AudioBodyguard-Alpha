@@ -32,6 +32,11 @@ class SetupGuideActivity : Activity() {
     private lateinit var content: LinearLayout
     private lateinit var controls: LinearLayout
     private lateinit var scroll: ScrollView
+    private lateinit var progressLabel: TextView
+    private lateinit var progressBar: ProgressBar
+    private lateinit var backButton: Button
+    private lateinit var nextButton: Button
+    private var renderVersion = 0
     private var groupId = ""
     private var routeId: String? = null
     private var index = -1
@@ -55,6 +60,21 @@ class SetupGuideActivity : Activity() {
         content = column().apply { setPadding(dp(20), dp(20), dp(20), dp(20)) }
         controls = column().apply { setPadding(dp(16), dp(12), dp(16), dp(12)); setBackgroundColor(skin.surface) }
         scroll = ScrollView(this).apply { addView(content); clipToPadding = true }
+        val topRow = LinearLayout(this).apply { gravity = Gravity.CENTER_VERTICAL }
+        progressLabel = TextView(this).apply { textSize = 17f; setTextColor(skin.text); setTypeface(null, Typeface.BOLD) }
+        topRow.addView(progressLabel, LinearLayout.LayoutParams(0, -2, 1f))
+        topRow.addView(button("Close") { finish() }); header.addView(topRow)
+        progressBar = ProgressBar(this, null, android.R.attr.progressBarStyleHorizontal).apply {
+            progressTintList = android.content.res.ColorStateList.valueOf(skin.accent)
+            importantForAccessibility = View.IMPORTANT_FOR_ACCESSIBILITY_NO
+        }
+        header.addView(progressBar, LinearLayout.LayoutParams(-1, dp(6)).apply { topMargin = dp(10) })
+        val footer = LinearLayout(this)
+        backButton = button("Back") { back() }
+        nextButton = button("Next", primary = true) { advance() }
+        footer.addView(backButton, LinearLayout.LayoutParams(-2, -2).apply { marginEnd = dp(12) })
+        footer.addView(nextButton, LinearLayout.LayoutParams(0, -2, 1f))
+        controls.addView(footer)
         root.addView(header); root.addView(scroll, LinearLayout.LayoutParams(-1, 0, 1f)); root.addView(controls)
         setContentView(root)
         @Suppress("DEPRECATION")
@@ -101,19 +121,14 @@ class SetupGuideActivity : Activity() {
         edit.apply()
     }
     private fun render() {
-        header.removeAllViews(); content.removeAllViews(); controls.removeAllViews()
+        val version = ++renderVersion
+        content.removeAllViews()
         val route = route
         val step = route?.steps?.getOrNull(index)
         if (route != null && route.id != "voice" && step != null && !mismatch) saveProgress(route, index)
-        val row = LinearLayout(this).apply { gravity = Gravity.CENTER_VERTICAL }
-        row.addView(TextView(this).apply {
-            text = if (route != null && index >= 0) "Step ${index + 1} of ${route.steps.size}" else "Illustrated setup"
-            textSize = 17f; setTextColor(skin.text); setTypeface(null, Typeface.BOLD)
-        }, LinearLayout.LayoutParams(0, -2, 1f))
-        row.addView(button("Close") { finish() }); header.addView(row)
-        if (route != null && index >= 0) header.addView(ProgressBar(this, null, android.R.attr.progressBarStyleHorizontal).apply {
-            max = route.steps.size; progress = index + 1; progressTintList = android.content.res.ColorStateList.valueOf(skin.accent); importantForAccessibility = View.IMPORTANT_FOR_ACCESSIBILITY_NO
-        }, LinearLayout.LayoutParams(-1, dp(6)).apply { topMargin = dp(10) })
+        progressLabel.text = if (route != null && index >= 0) "Step ${index + 1} of ${route.steps.size}" else "Illustrated setup"
+        progressBar.visibility = if (route != null && index >= 0) View.VISIBLE else View.GONE
+        if (route != null && index >= 0) { progressBar.max = route.steps.size; progressBar.setProgress(index + 1, false) }
         val heading = words(content, if (mismatch) "My screen looks different" else step?.title ?: route?.title ?: if (group == null) "Choose your TV or app" else "Match your model or menu", 28f, bold = true).apply {
             if (Build.VERSION.SDK_INT >= 28) isAccessibilityHeading = true
             accessibilityLiveRegion = View.ACCESSIBILITY_LIVE_REGION_POLITE
@@ -151,17 +166,30 @@ class SetupGuideActivity : Activity() {
                 SetupContent.groups.filter { it.id !in listOf("both", "neither") && !it.id.startsWith("tcl_") }.forEach { choice -> action(content, choice.title) { chooseGroup(choice.id) } }
             }
         }
-        val footer = LinearLayout(this)
-        if (group != null || route != null) footer.addView(button(if (mismatch) "Return to step" else "Back") { back() }, LinearLayout.LayoutParams(-2, -2).apply { marginEnd = dp(12) })
-        if (route != null && !mismatch) footer.addView(button(if (index < 0) { if (resumeIndex(route) == null) "Start guide" else "Resume guide" } else if (index == route.steps.lastIndex) { if (route.id == "voice") "Open Voice check" else "Finish guide" } else "Next", primary = true) {
-            if (index == route.steps.lastIndex) {
-                if (route.id == "voice" && !intent.getBooleanExtra("returnToVoice", false)) startActivity(Intent(this, InputAssistanceActivity::class.java).putExtra("mode", "voice").putExtra("dark", skin.dark))
-                saveProgress(route, null)
-                finish()
-            } else { index = if (index < 0) resumeIndex(route) ?: 0 else index + 1; render() }
-        }, LinearLayout.LayoutParams(0, -2, 1f))
-        controls.addView(footer)
-        scroll.post { scroll.scrollTo(0, 0); heading.sendAccessibilityEvent(android.view.accessibility.AccessibilityEvent.TYPE_VIEW_FOCUSED) }
+        backButton.visibility = if (group != null || route != null) View.VISIBLE else View.GONE
+        backButton.text = if (mismatch) "Return to step" else "Back"
+        nextButton.visibility = if (route != null && !mismatch) View.VISIBLE else View.GONE
+        if (route != null && !mismatch) nextButton.text = if (index < 0) {
+            if (resumeIndex(route) == null) "Start guide" else "Resume guide"
+        } else if (index == route.steps.lastIndex) {
+            if (route.id == "voice") "Open Voice check" else "Finish guide"
+        } else "Next"
+        scroll.post {
+            // Ignore callbacks for a replaced step or an Activity that is closing.
+            if (version == renderVersion && !isFinishing && !isDestroyed) {
+                scroll.scrollTo(0, 0)
+                heading.sendAccessibilityEvent(android.view.accessibility.AccessibilityEvent.TYPE_VIEW_FOCUSED)
+            }
+        }
+    }
+    private fun advance() {
+        val route = route ?: return
+        if (mismatch || isFinishing) return
+        if (index == route.steps.lastIndex) {
+            if (route.id == "voice" && !intent.getBooleanExtra("returnToVoice", false)) startActivity(Intent(this, InputAssistanceActivity::class.java).putExtra("mode", "voice").putExtra("dark", skin.dark))
+            saveProgress(route, null)
+            finish()
+        } else { index = if (index < 0) resumeIndex(route) ?: 0 else index + 1; render() }
     }
     private fun intro(route: SetupRoute) {
         if (route.id == "roku_network" || route.id == "roku_model") action(content, "I’m already in Settings") { index = 2; render() }

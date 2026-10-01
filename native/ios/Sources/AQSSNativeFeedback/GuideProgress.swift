@@ -1,3 +1,5 @@
+import Foundation
+
 /// Local learning state only. It has no device, account, permission or adapter API.
 public struct AQSSGuideProgress: Equatable, Sendable {
     public private(set) var topicID: String?
@@ -29,5 +31,29 @@ public struct AQSSGuideProgress: Equatable, Sendable {
         for (target, id) in saved where AQSSTutorialContent.choices[target]?.contains(where: { $0.id == id }) == true { selections[target] = id }
         let destination = max(0, min(requested, topic.steps.count - 1))
         while index < destination && next() {}
+    }
+}
+
+/// Cached local guide bookmarks. These indices never represent a paired device.
+public struct AQSSSetupProgress: Equatable, Sendable {
+    private var indices: [String: Int]
+    private static let limits = Dictionary(uniqueKeysWithValues: AQSSSetupContent.routes.filter { $0.id != "voice" }.map { ($0.id, $0.steps.count) })
+    public init(serialized: String? = nil) {
+        guard let serialized, serialized.utf8.count <= 16_384,
+              let data = serialized.data(using: .utf8),
+              let decoded = try? JSONDecoder().decode([String: Int].self, from: data) else { indices = [:]; return }
+        indices = decoded.filter { id, value in Self.limits[id].map { value >= 0 && value < $0 } ?? false }
+    }
+    public func resumeIndex(_ id: String) -> Int? { indices[id] }
+    /// Returns false for unchanged, invalid or voice-only bookmarks.
+    @discardableResult public mutating func record(_ id: String, _ value: Int?) -> Bool {
+        guard let count = Self.limits[id], value.map({ $0 >= 0 && $0 < count }) ?? true,
+              indices[id] != value else { return false }
+        indices[id] = value
+        return true
+    }
+    public func serialized() -> String? {
+        let encoder = JSONEncoder(); encoder.outputFormatting = .sortedKeys
+        return (try? encoder.encode(indices)).flatMap { String(data: $0, encoding: .utf8) }
     }
 }

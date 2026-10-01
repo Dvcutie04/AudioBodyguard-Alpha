@@ -120,9 +120,6 @@ private struct ReadOnlyHomeView: View {
             }
             .background(theme.background.ignoresSafeArea())
             .foregroundColor(theme.text).accentColor(theme.accent)
-            .onChange(of: tutorialStepKey) { key in
-                DispatchQueue.main.async { if key == tutorialStepKey && scenePhase == .active { focusedElement = .tutorial(key) } }
-            }
             .onChange(of: navigationRequest) { request in
                 DispatchQueue.main.async {
                     guard request == navigationRequest, scenePhase == .active else { return }
@@ -477,7 +474,9 @@ private struct ReadOnlyHomeView: View {
                 Text("Step \(tutorialIndex + 1) of \(topic.steps.count)").font(.subheadline.weight(.semibold)).foregroundColor(theme.muted)
                 action("Exit tutorial", icon: "xmark") { closeTutorial() }.accessibilityIdentifier("exit-tutorial")
             }.padding(.horizontal, 20).padding(.vertical, 10)
-            ScrollView {
+            GuideScrollView(screenKey: tutorialStepKey, identifier: "guide-scroll", onStepReady: { key in
+                if scenePhase == .active { focusedElement = .tutorial(key) }
+            }) {
                 VStack(alignment: .leading, spacing: 20) {
                     HStack(spacing: 18) {
                         Image(systemName: "iphone")
@@ -522,23 +521,56 @@ private struct ReadOnlyHomeView: View {
                         Text("Not connected · Audio protection is not active").font(.headline).foregroundColor(theme.warning)
                     }
                 }.frame(maxWidth: 640, alignment: .leading).padding(20).frame(maxWidth: .infinity)
-            }.id(tutorialStepKey).accessibilityIdentifier("guide-scroll")
+            }
             VStack(spacing: 8) {
-                if !guide.canContinue { Text("Choose one option above to continue.").font(.subheadline).foregroundColor(theme.muted) }
-                if let selected = guide.selected(step.target) { Text("Selected: \(selected.title)").font(.subheadline).foregroundColor(theme.muted) }
+                if !guide.choices.isEmpty {
+                    Text(guide.selected(step.target).map { "Selected: \($0.title)" } ?? "Choose one option above to continue.")
+                        .font(.subheadline).foregroundColor(theme.muted)
+                }
                 HStack(spacing: 12) {
                     if tutorialIndex > 0 { Button("Back") { guide.back() }.buttonStyle(AppButtonStyle(theme: theme)) }
-                    if guide.canContinue {
-                        action(guide.isLast ? (topic.id == "getting_started" ? "Open full app" : "Done") : (tutorialIndex == 0 ? "Begin" : "Next"), icon: "arrow.right", primary: true) {
-                            if guide.isLast { if topic.id == "getting_started" { beginnerTourFinished = true }; closeTutorial() }
-                            else { _ = guide.next() }
-                        }.accessibilityIdentifier("guide-next")
-                    }
+                    action(guide.isLast ? (topic.id == "getting_started" ? "Open full app" : "Done") : (tutorialIndex == 0 ? "Begin" : "Next"), icon: "arrow.right", primary: true) {
+                        guard guide.canContinue else { return }
+                        if guide.isLast { if topic.id == "getting_started" { beginnerTourFinished = true }; closeTutorial() }
+                        else { _ = guide.next() }
+                    }.disabled(!guide.canContinue).accessibilityIdentifier("guide-next")
                 }
             }.padding(16).background(theme.surface)
         }
     }
 
+}
+
+/// Keeps the scrolling container alive when a guide changes its content.
+/// Reset only its position: replacing the container also tears down gestures,
+/// accessibility elements and the native scrolling view on every Next/Back.
+struct GuideScrollView<Content: View>: View {
+    let screenKey: String
+    let identifier: String
+    let onStepReady: (String) -> Void
+    let content: Content
+    @State private var lifetimeID = UUID().uuidString
+    private static var traceNavigation: Bool { ProcessInfo.processInfo.arguments.contains("--aqss-trace-navigation") }
+
+    init(screenKey: String, identifier: String, onStepReady: @escaping (String) -> Void = { _ in }, @ViewBuilder content: () -> Content) {
+        self.screenKey = screenKey; self.identifier = identifier; self.onStepReady = onStepReady
+        self.content = content()
+    }
+    var body: some View {
+        ScrollViewReader { proxy in
+            ScrollView { content.id("guide-content-top") }
+                .accessibilityIdentifier(identifier)
+                // Opt-in test evidence only; no user content or telemetry.
+                .accessibilityValue(Self.traceNavigation ? lifetimeID : "")
+                .onChange(of: screenKey) { key in
+                    var transaction = Transaction(animation: nil)
+                    transaction.disablesAnimations = true
+                    withTransaction(transaction) { proxy.scrollTo("guide-content-top", anchor: .top) }
+                    onStepReady(key)
+                }
+                .onAppear { onStepReady(screenKey) }
+        }
+    }
 }
 
 private struct SectionAnchor: ViewModifier {

@@ -17,8 +17,8 @@ struct SetupGuidesView: View {
     @State private var index = -1
     @State private var mismatch = false
     @State private var initialized = false
-    @AppStorage("aqssSetupProgressV1") private var savedProgress = "{}"
-    @AccessibilityFocusState private var headingFocused: Bool
+    @StateObject private var progress = SetupProgressStore()
+    @AccessibilityFocusState private var headingFocused: String?
     private var group: AQSSSetupGroup? { AQSSSetupContent.groups.first { $0.id == groupID } }
     private var route: AQSSSetupRoute? { AQSSSetupContent.routes.first { $0.id == routeID } }
     private var step: AQSSSetupStep? { guard let route = route, route.steps.indices.contains(index) else { return nil }; return route.steps[index] }
@@ -41,10 +41,10 @@ struct SetupGuidesView: View {
                     ProgressView(value: Double(index + 1), total: Double(route.steps.count)).tint(theme.accent).accessibilityHidden(true)
                 }
             }.padding(16).background(theme.surface)
-            ScrollView {
+            GuideScrollView(screenKey: key, identifier: "setup-scroll", onStepReady: { key in headingFocused = key }) {
                 VStack(alignment: .leading, spacing: 18) {
                     Text(title).font(.title.bold()).fixedSize(horizontal: false, vertical: true)
-                        .accessibilityAddTraits(.isHeader).accessibilityFocused($headingFocused)
+                        .accessibilityAddTraits(.isHeader).accessibilityFocused($headingFocused, equals: key)
                     if mismatch { mismatchContent }
                     else if let route = route {
                         if let step = step {
@@ -82,14 +82,13 @@ struct SetupGuidesView: View {
                         }
                     }
                 }.frame(maxWidth: 620, alignment: .leading).padding(20).frame(maxWidth: .infinity)
-            }.id(key).accessibilityIdentifier("setup-scroll")
+            }
             footer
         }.background(theme.background.ignoresSafeArea()).foregroundColor(theme.text)
             .onAppear { if !initialized { initialized = true; chooseGroup(initialGroup) } }
             .onChange(of: index) { value in
                 if let route = route, route.id != "voice", route.steps.indices.contains(value) { writeProgress(route.id, value) }
             }
-            .onChange(of: key) { _ in DispatchQueue.main.async { headingFocused = true } }
     }
 
     private func platformChoice(_ title: String, subtitle: String, group: String, blue: Bool) -> some View {
@@ -105,19 +104,8 @@ struct SetupGuidesView: View {
         }.buttonStyle(AppButtonStyle(theme: theme)).accessibilityIdentifier("setup-platform-\(group)")
     }
 
-    private func resumeIndex(_ route: AQSSSetupRoute) -> Int? {
-        guard route.id != "voice", let data = savedProgress.data(using: .utf8),
-              let saved = try? JSONDecoder().decode([String: Int].self, from: data),
-              let value = saved[route.id], route.steps.indices.contains(value) else { return nil }
-        return value
-    }
-    private func writeProgress(_ id: String, _ value: Int?) {
-        var saved = (savedProgress.data(using: .utf8).flatMap { try? JSONDecoder().decode([String: Int].self, from: $0) }) ?? [:]
-        let allowed = Set(AQSSSetupContent.routes.map { $0.id })
-        saved = saved.filter { allowed.contains($0.key) }
-        saved[id] = value
-        if let data = try? JSONEncoder().encode(saved), let text = String(data: data, encoding: .utf8) { savedProgress = text }
-    }
+    private func resumeIndex(_ route: AQSSSetupRoute) -> Int? { progress.resumeIndex(route.id) }
+    private func writeProgress(_ id: String, _ value: Int?) { progress.record(id, value) }
     private func chooseGroup(_ id: String) {
         groupID = AQSSSetupContent.groups.contains { $0.id == id } ? id : ""
         routeID = groupID == "voice" ? "voice" : nil
@@ -190,7 +178,9 @@ struct SetupGuidesView: View {
                     .buttonStyle(AppButtonStyle(theme: theme)).accessibilityIdentifier("setup-back")
             }
             if let route = route, !mismatch {
+                let displayedIndex = index
                 Button {
+                    guard routeID == route.id, index == displayedIndex, !mismatch else { return }
                     if index == route.steps.count - 1 {
                         if route.id == "voice" { onVoiceCheck?() }
                         writeProgress(route.id, nil)
@@ -209,6 +199,22 @@ struct SetupGuidesView: View {
         else if index >= 0 { index -= 1 }
         else if routeID != nil { routeID = nil }
         else { groupID = groupID.hasPrefix("tcl_") ? "tcl" : "" }
+    }
+}
+
+/// One decode per presented guide. Persistence never publishes a second
+/// SwiftUI update after the navigation state has already changed.
+private final class SetupProgressStore: ObservableObject {
+    private let defaults: UserDefaults
+    private var progress: AQSSSetupProgress
+    init(defaults: UserDefaults = .standard) {
+        self.defaults = defaults
+        self.progress = AQSSSetupProgress(serialized: defaults.string(forKey: "aqssSetupProgressV1"))
+    }
+    func resumeIndex(_ id: String) -> Int? { progress.resumeIndex(id) }
+    func record(_ id: String, _ value: Int?) {
+        guard progress.record(id, value), let saved = progress.serialized() else { return }
+        defaults.set(saved, forKey: "aqssSetupProgressV1")
     }
 }
 

@@ -96,12 +96,12 @@ final class AQSSReadOnlyUITests: XCTestCase {
         XCTAssertFalse(app.buttons["choice-samsung"].exists)
         screenshot("Guide 1 Welcome", app)
         next(app); label("Step 2 of 7", app); assertOnlyGuide(app)
-        XCTAssertFalse(app.buttons["guide-next"].exists)
+        XCTAssertFalse(app.buttons["guide-next"].isEnabled)
         XCTAssertFalse(app.buttons["choice-alexa"].exists)
         tap("Samsung", app); XCTAssertEqual(app.buttons["choice-samsung"].value as? String, "Selected")
         screenshot("Guide 2 TV selection", app)
         next(app); label("Step 3 of 7", app)
-        XCTAssertFalse(app.buttons["guide-next"].exists)
+        XCTAssertFalse(app.buttons["guide-next"].isEnabled)
         tap("Amazon Alexa", app); next(app)
         label("Step 4 of 7", app); label("Samsung", app); label("Amazon Alexa", app)
         screenshot("Guide 4 Tailored connection", app)
@@ -113,7 +113,7 @@ final class AQSSReadOnlyUITests: XCTestCase {
         next(app); XCTAssertTrue(app.buttons["tab-home"].isHittable)
         label("TOUR FINISHED", app)
         app.buttons["start-beginner-tour"].tap(); label("Step 1 of 7", app)
-        next(app); XCTAssertFalse(app.buttons["guide-next"].exists)
+        next(app); XCTAssertFalse(app.buttons["guide-next"].isEnabled)
         exit(app); tab("sound", app); label("Dialogue preset", app)
         tab("devices", app); label("Six setup checks unknown", app)
         app.terminate(); app.launchArguments = []; app.launch()
@@ -255,6 +255,55 @@ final class AQSSReadOnlyUITests: XCTestCase {
         screenshot("Philips illustrated profile choice", app)
         app.buttons["setup-close"].tap()
         tab("home", app); label("Unknown physical state", app)
+    }
+
+    func testIllustratedGuideKeepsScrollContainerAndResetsPosition() {
+        let app = XCUIApplication()
+        app.launchArguments = ["-aqssGuideDismissedV1", "YES", "--aqss-trace-navigation"]
+        app.launch(); tab("devices", app); tap("Illustrated setup guides", app)
+        let scroll = app.scrollViews["setup-scroll"]
+        let instance = scroll.value as? String
+        XCTAssertNotNil(UUID(uuidString: instance ?? ""))
+        tap("TCL", app); tap("Roku TV", app); tap("Find my IP address", app)
+        tap("I’m already in Settings", app); label("Step 3 of 5", app)
+        XCTAssertEqual(scroll.value as? String, instance)
+        scroll.swipeUp()
+        app.buttons["setup-next"].tap(); label("Step 4 of 5", app)
+        XCTAssertEqual(scroll.value as? String, instance)
+        // A new step must start at its heading, even after scrolling the old one.
+        let heading = app.staticTexts["Open About"]
+        XCTAssertTrue(heading.waitForExistence(timeout: 5))
+        XCTAssertTrue(heading.isHittable)
+        XCTAssertLessThan(heading.frame.minY, scroll.frame.minY + 100)
+        app.buttons["setup-back"].tap(); label("Step 3 of 5", app)
+        XCTAssertEqual(scroll.value as? String, instance)
+        tap("My screen looks different", app); label("Pause at this step", app)
+        app.buttons["setup-back"].tap(); label("Step 3 of 5", app)
+        XCTAssertEqual(scroll.value as? String, instance)
+        screenshot("Stable scrolling container after Next Back and help", app)
+    }
+
+    func testSelectingATVDoesNotMoveItsButtonOrReplaceTheScroll() {
+        let app = XCUIApplication()
+        app.launchArguments = ["-aqssGuideDismissedV1", "NO", "--aqss-trace-navigation"]
+        app.launch(); next(app); label("Step 2 of 7", app)
+        let scroll = app.scrollViews["guide-scroll"]
+        let instance = scroll.value as? String
+        XCTAssertFalse(instance?.isEmpty ?? true)
+        let button = app.buttons["choice-samsung"]
+        let before = button.frame
+        XCTAssertFalse(app.buttons["guide-next"].isEnabled)
+        tap("Samsung", app)
+        XCTAssertTrue(app.buttons["guide-next"].isEnabled)
+        XCTAssertEqual(button.frame.minY, before.minY, accuracy: 1)
+        XCTAssertEqual(scroll.value as? String, instance)
+        next(app); label("Step 3 of 7", app)
+        XCTAssertEqual(scroll.value as? String, instance)
+        XCTAssertFalse(app.buttons["guide-next"].isEnabled)
+        tap("Google Home", app); next(app); label("Step 4 of 7", app)
+        app.buttons["Back"].tap(); label("Step 3 of 7", app)
+        XCTAssertEqual(app.buttons["choice-google"].value as? String, "Selected")
+        XCTAssertEqual(scroll.value as? String, instance)
     }
 
     func testLargestTextKeepsExitAndNextReachable() {

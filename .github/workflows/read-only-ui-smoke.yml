@@ -23,7 +23,7 @@ jobs:
           set -euo pipefail
           simulator_udid="$(xcrun simctl list devices available -j | python3 -c 'import json,sys; devices=json.load(sys.stdin)["devices"]; print(next(d["udid"] for group in devices.values() for d in group if d["name"].startswith("iPhone") and d.get("isAvailable", True)))')"
           xcodebuild -project native/ios-app/AQSSReadOnly.xcodeproj \
-            -scheme AQSSReadOnly -configuration Debug \
+            -scheme AQSSReadOnly -configuration Release \
             -destination "platform=iOS Simulator,id=$simulator_udid" \
             -resultBundlePath "$RUNNER_TEMP/aqss-read-only-ui.xcresult" \
             CODE_SIGNING_ALLOWED=NO test
@@ -89,11 +89,11 @@ jobs:
         run: |
           set -euo pipefail
           xcodebuild -project native/ios-app/AQSSReadOnly.xcodeproj \
-            -scheme AQSSReadOnly -configuration Debug -sdk iphonesimulator \
+            -scheme AQSSReadOnly -configuration Release -sdk iphonesimulator \
             -destination 'generic/platform=iOS Simulator' \
             -derivedDataPath "$RUNNER_TEMP/aqss-browser-derived" \
             ARCHS=arm64 ONLY_ACTIVE_ARCH=NO CODE_SIGNING_ALLOWED=NO build
-          app="$RUNNER_TEMP/aqss-browser-derived/Build/Products/Debug-iphonesimulator/AQSSReadOnly.app"
+          app="$RUNNER_TEMP/aqss-browser-derived/Build/Products/Release-iphonesimulator/AQSSReadOnly.app"
           test -f "$app/Info.plist"
           lipo "$app/AQSSReadOnly" -verify_arch arm64
           test "$(/usr/libexec/PlistBuddy -c 'Print :CFBundleIdentifier' "$app/Info.plist")" = 'com.aqss.bodyguard.prototype'
