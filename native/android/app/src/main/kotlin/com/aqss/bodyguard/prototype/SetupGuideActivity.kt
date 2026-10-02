@@ -157,7 +157,7 @@ class SetupGuideActivity : Activity() {
             }
             group != null -> {
                 words(content, group!!.title, 20f, skin.accent, true)
-                words(content, "Choose the setup screen or operating system you actually see. A brand alone does not confirm compatibility.", color = skin.muted)
+                words(content, "Match the setup screen and exact TV model before following the pictures.", color = skin.muted)
                 group!!.routes.forEach { id -> SetupContent.routes.firstOrNull { it.id == id }?.let { guide ->
                     action(content, guide.title) { routeId = id; index = -1; render() }
                 } }
@@ -199,14 +199,14 @@ class SetupGuideActivity : Activity() {
         words(content, route.appliesTo)
         words(content, "${route.steps.size} pictures · one action at a time", 18f, skin.accent, true)
         words(content, "Illustrations may differ from your screen. Complete approvals in the official app or on your TV.", color = skin.muted)
-        words(content, "No passwords here. This preview does not connect Audio Bodyguard.")
+        words(content, "Use your TV maker’s app for passwords and approvals.")
         resumeIndex(route)?.let { saved ->
             words(content, "You stopped at picture ${saved + 1}. Tap Resume guide to continue there.", color = skin.accent)
             action(content, "Start from the beginning") { saveProgress(route, null); index = 0; render() }
         }
         action(content, if (detailsExpanded) "Hide details" else "Details & official instructions") { detailsExpanded = !detailsExpanded; render() }
         if (detailsExpanded) {
-            words(content, if (route.models.isEmpty()) "Menu-family guide. Your exact model is not confirmed by this preview." else "Documented model examples: ${route.models.joinToString()}", color = skin.muted)
+            words(content, if (route.models.isEmpty()) "Menu-family guide · match your TV’s exact model." else "Documented model examples: ${route.models.joinToString()}", color = skin.muted)
             words(content, "Labels, layout and services can differ by country, software and language. Compare each picture with your own screen.", color = skin.muted)
             sources(route)
         }

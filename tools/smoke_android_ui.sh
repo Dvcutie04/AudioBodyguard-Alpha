@@ -129,6 +129,9 @@ capture_ui beginner_step_1
 assert_tutorial_label beginner_step_1 "Step 1 of 6"
 assert_only_guide beginner_step_1
 assert_tutorial_label beginner_step_1 "Both connections are required"
+assert_tutorial_label beginner_step_1 "What we're building"
+if python3 tools/check_android_simulation_ui.py --assert-label "$artifact_dir/beginner_step_1.xml" "does not monitor or change TV audio" 2>/dev/null; then exit 1; fi
+if python3 tools/check_android_simulation_ui.py --assert-label "$artifact_dir/beginner_step_1.xml" "Planned controls" 2>/dev/null; then exit 1; fi
 assert_tutorial_label beginner_step_1 "1. Connect to your TV or home device"
 assert_tutorial_label beginner_step_1 "2. Connect to your phone"
 adb shell input swipe 500 1350 500 950 650
@@ -138,7 +141,7 @@ assert_scroll_label "Universal remote controls" welcome_features_remote
 if python3 tools/check_android_simulation_ui.py --assert-label "$artifact_dir/welcome_features_remote.xml" "Voice input display and recognized words" 2>/dev/null; then exit 1; fi
 tap_scroll_label "More features" welcome_more_features
 assert_scroll_label "Voice input display and recognized words" welcome_features_last
-assert_scroll_label "does not control connected devices" welcome_features_note
+assert_scroll_label "Explore picture guides for your TV and phone" welcome_features_note
 tap_tutorial_label "Start picture setup" beginner_begin
 capture_ui beginner_step_2
 assert_only_guide beginner_step_2
@@ -179,7 +182,7 @@ assert_tutorial_label setup_plan_return "2. Connect to your phone"
 assert_tutorial_label setup_plan_return "follow the pictures"
 if python3 tools/check_android_simulation_ui.py --assert-label "$artifact_dir/setup_plan_return.xml" "Not connected · Audio protection is not active" 2>/dev/null; then exit 1; fi
 tap_scroll_label "Need help?" phone_help_open
-assert_scroll_label "does not control devices in this preview" phone_help_limits
+assert_scroll_label "official phone app" phone_help_limits
 tap_scroll_label "Hide help" phone_help_close
 tap_scroll_label "Show Samsung steps" setup_from_phone
 tap_scroll_label "Samsung — TV shows OK approval" setup_phone_route

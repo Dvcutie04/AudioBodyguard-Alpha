@@ -74,12 +74,12 @@ class InputAssistanceActivity : Activity() {
     private fun voicePage() {
         label("See what your phone hears", true)
         action("Help · show voice steps") { openSetup("voice") }
-        label("Tap Start, then say: ‘Make the TV quieter.’ The bars show incoming sound. The text shows the words the phone thinks you said. This check does not send a command.")
+        label("Tap Start, then say: ‘Make the TV quieter.’ See the incoming sound bars and recognized words.")
         status = label("Microphone off", true)
         meter = InputMeter(this, skin.violet)
         column.addView(meter, LinearLayout.LayoutParams(-1, skin.dp(120)))
         levelText = label("No microphone samples yet")
-        label("Sound-level history, oldest to newest. Levels come from the speech recognizer; some phones do not supply them. This is not room loudness, a hearing-safety measurement, frequency bands or a syllable count.")
+        label("Digital input levels over time, when available on your phone.")
         label("Recent recognized words · may change", true)
         details = label("No words recognized yet")
         startButton = action("Start voice check", primary = true) { if (running) stopVoice() else startVoice() }
@@ -87,7 +87,7 @@ class InputAssistanceActivity : Activity() {
         column.removeView(startButton); column.removeView(clear)
         footer.addView(startButton, LinearLayout.LayoutParams(-1, -2))
         footer.addView(clear, LinearLayout.LayoutParams(-1, -2))
-        label("On-device recognition only, Android 12 or later with a supported local recognizer. No cloud fallback. No audio file is saved. Closing or leaving the app stops listening and clears words. Noise, accents and overlapping voices can cause errors; a moving meter does not prove every word or sound was understood.")
+        label("On-device recognition on supported Android 12+ phones. Words clear and listening stops when you leave. Review recognized words before using them.")
     }
     private fun startVoice() {
         stopVoice(); details.text = "No words recognized yet"
@@ -152,12 +152,12 @@ class InputAssistanceActivity : Activity() {
         }
         status = label("No photo selected", true)
         details = label("Brand: Not identified\nModel: Not identified\nTV IP hint: Not identified")
-        label("These are unverified hints. Only a clearly labeled private IPv4 address is shown. We never use a photo as permission to control your TV.")
+        label("Photo hints · confirm the model and network details on your TV.")
         action("Illustrated setup guides") { openSetup(photoBrand?.lowercase() ?: "") }
         action("Show connection instructions") { instructions?.visibility = if (instructions?.visibility == View.VISIBLE) View.GONE else View.VISIBLE }
-        instructions = label("1. Open Settings on the TV. Look for About, Support or Device information to find its model. Menu names differ.\n\n2. Look for Network, Connection or Network status, then IP settings. Photograph the IP address row — not Gateway or DNS. The back label usually does not show the current IP.\n\n3. Put the phone and TV on the same home Wi-Fi. Avoid a guest network. IP addresses can change and do not prove TV identity.\n\n4. Supported Samsung models use SmartThings and may ask for approval on the TV. For Alexa or Google Home, add/link a supported TV inside that app and follow its approval steps. Compatibility varies by model.\n\nAQSS pairing is not available yet. This tool reads a photo and helps you prepare; it does not connect or change the TV.").apply { visibility = View.GONE }
+        instructions = label("1. Open Settings on the TV. Look for About, Support or Device information to find its model. Menu names differ.\n\n2. Look for Network, Connection or Network status, then IP settings. Photograph the IP address row — not Gateway or DNS. The back label usually does not show the current IP.\n\n3. Put the phone and TV on the same home Wi-Fi. Avoid a guest network. IP addresses can change and do not prove TV identity.\n\n4. Supported Samsung models use SmartThings and may ask for approval on the TV. For Alexa or Google Home, add/link a supported TV inside that app and follow its approval steps.").apply { visibility = View.GONE }
         action("Clear photo details") { clearPhoto() }
-        label("Text recognition runs on this phone. AQSS does not save or upload the image, serial number or password. Your camera/gallery may keep the original outside AQSS. Details clear on close. Camera previews can be too small for text: choose the original photo if needed.")
+        label("Text recognition stays on this phone. Details clear on close. Manage the original in your camera or gallery app. Choose the full photo if text looks small.")
     }
     private fun clearPhoto() {
         photoBrand = null; photoGeneration++; status.text = "No photo selected"; details.text = "Brand: Not identified\nModel: Not identified\nTV IP hint: Not identified"

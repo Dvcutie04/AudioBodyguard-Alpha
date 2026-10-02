@@ -116,7 +116,6 @@ private struct ReadOnlyHomeView: View {
                         VStack(alignment: .leading, spacing: 22) {
                             pageHeading
                             pageContent
-                            Text("SIMULATION · No audio path connected").font(.caption).foregroundColor(theme.muted)
                         }.frame(maxWidth: 680, alignment: .leading).padding(20).frame(maxWidth: .infinity)
                     }.clipped().id(page).accessibilityIdentifier("home-scroll")
                     navigationBar
@@ -197,7 +196,7 @@ private struct ReadOnlyHomeView: View {
 
     private var pageHeading: some View {
         VStack(alignment: .leading, spacing: 10) {
-            HStack { Text(currentPage.title.uppercased()).tracking(2).font(.caption.weight(.bold)).foregroundColor(theme.accent); Spacer(); badge("PREVIEW", color: theme.violet) }
+            Text(currentPage.title.uppercased()).tracking(2).font(.caption.weight(.bold)).foregroundColor(theme.accent)
             Text(currentPage.headline).font(.largeTitle.bold()).fixedSize(horizontal: false, vertical: true).accessibilityAddTraits(.isHeader)
             Text(currentPage.subtitle).font(.body).foregroundColor(theme.muted)
         }.accessibilityIdentifier("page-\(page)")
@@ -218,14 +217,12 @@ private struct ReadOnlyHomeView: View {
             card(target: "welcome") {
                 badge(showTourFinished ? "TOUR FINISHED" : "YOUR TV & SMART HOME", color: theme.violet)
                 Text(showTourFinished ? "Explore at your pace." : "Meet Audio Bodyguard.").font(.title2.bold()).accessibilityAddTraits(.isHeader)
-                Text("This is a read-only preview. It does not monitor or change TV audio.").foregroundColor(theme.muted)
                 if tutorialTopicID == "getting_started" {
                     Text("Use Next in the guide below to continue.").font(.headline).foregroundColor(theme.accent)
                 } else {
                     action(beginnerTourFinished ? "Replay connection guide" : "TV & smart-home guide", icon: "arrow.right.circle", primary: true) { startTutorial("getting_started") }
                         .accessibilityIdentifier("start-beginner-tour")
                 }
-                Text("Explore pictures, themes and examples. Help is always at the top.").font(.subheadline).foregroundColor(theme.muted)
             }
             card(target: "coverage") {
                 HStack(alignment: .top) {
@@ -237,7 +234,6 @@ private struct ReadOnlyHomeView: View {
                     Spacer(minLength: 4)
                     if !textSize.isAccessibilitySize { OrbitMark(theme: theme).frame(width: 96, height: 96).accessibilityHidden(true) }
                 }
-                Text("This preview does not monitor or protect audio. Start by exploring what a supported path needs.").foregroundColor(theme.muted)
                 action("Review readiness", icon: "checklist", primary: true) { jump("capability"); checklistExpanded = true }
             }
             VStack(alignment: .leading, spacing: 12) {
@@ -592,7 +588,6 @@ private struct ReadOnlyHomeView: View {
     private var featureCatalog: some View {
         VStack(spacing: 12) {
             Text(AQSSTutorialContent.featureTitle).font(.headline).accessibilityAddTraits(.isHeader)
-            Text("Planned controls · availability varies by device").font(.caption).foregroundColor(theme.warning)
             ForEach(AQSSTutorialContent.features.filter { moreFeatures || AQSSTutorialContent.featuredIDs.contains($0.id) }, id: \.id) { feature in
                 VStack(spacing: 3) {
                     Text(feature.title).font(.callout.weight(.semibold)).fixedSize(horizontal: false, vertical: true)

@@ -74,7 +74,7 @@ final class AQSSReadOnlyUITests: XCTestCase {
     func testAllFivePagesKeepHelpAndTruthfulEmptyStates() {
         let app = launch()
         XCTAssertTrue(app.buttons["start-beginner-tour"].isHittable)
-        label("does not monitor or change TV audio", app)
+        XCTAssertFalse(app.staticTexts.containing(NSPredicate(format: "label CONTAINS %@", "does not monitor or change TV audio")).firstMatch.exists)
         screenshot("00 Beginner welcome", app)
         jump("Coverage", app)
         label("Unknown physical state", app); label("No output observation", app)
@@ -97,14 +97,17 @@ final class AQSSReadOnlyUITests: XCTestCase {
         label("2. Connect to your phone", app)
         label("Skip series intros", app); label("Lower volume during commercials", app); label("Universal remote controls", app)
         XCTAssertFalse(app.staticTexts.containing(NSPredicate(format: "label CONTAINS %@", "Voice input display and recognized words")).firstMatch.exists)
-        label("Preview", app)
+        label("Picture guide", app)
+        label("What we're building", app)
+        XCTAssertFalse(app.staticTexts.containing(NSPredicate(format: "label CONTAINS %@", "Planned controls")).firstMatch.exists)
+        XCTAssertFalse(app.staticTexts.containing(NSPredicate(format: "label CONTAINS %@", "This preview does not")).firstMatch.exists)
         XCTAssertFalse(app.staticTexts.containing(NSPredicate(format: "label CONTAINS %@", "a film is quiet, then an advert")).firstMatch.exists)
         XCTAssertFalse(app.buttons["Back"].exists)
         XCTAssertFalse(app.buttons["choice-samsung"].exists)
         screenshot("Guide 1 Welcome", app)
         tap("More features", app)
+        label("Explore picture guides for your TV and phone", app)
         label("Voice input display and recognized words", app)
-        label("does not control connected devices", app)
         let firstFeature = app.staticTexts.containing(NSPredicate(format: "label CONTAINS %@", "Skip series intros")).firstMatch
         let scroll = app.scrollViews["guide-scroll"]
         for _ in 0..<12 {
@@ -282,7 +285,7 @@ final class AQSSReadOnlyUITests: XCTestCase {
         label("Step 5 of 6", app); label("2. Connect to your phone", app)
         label("follow the pictures", app)
         XCTAssertFalse(app.staticTexts["Not connected · Audio protection is not active"].exists)
-        tap("Need help?", app); label("does not control devices in this preview", app)
+        tap("Need help?", app); label("official phone app", app)
         tap("Hide help", app)
         screenshot("Picture completion continues to phone setup", app)
         tap("Show Samsung steps", app); tap("Samsung — TV shows OK approval", app)

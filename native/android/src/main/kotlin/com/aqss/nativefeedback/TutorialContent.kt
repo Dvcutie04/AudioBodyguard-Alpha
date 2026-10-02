@@ -5,50 +5,50 @@ data class TutorialTopic(val id: String, val title: String, val steps: List<Tuto
 object TutorialContent {
     val topics: List<TutorialTopic> = listOf(
         TutorialTopic("getting_started", "TV & smart-home guide", listOf(
-            TutorialStep("welcome", "overview", "Your TV. Your comfort.", "Set up both connections with pictures. This preview does not monitor or change TV audio.", ""),
+            TutorialStep("welcome", "overview", "Your TV. Your comfort.", "Follow the pictures for both your TV and phone.", ""),
             TutorialStep("chooseTV", "connection", "Which TV do you use?", "Choose the brand on your TV or remote.", "Example: if the remote says Samsung, choose Samsung. If you cannot find a name, choose Not sure / no TV."),
             TutorialStep("chooseHome", "connection", "Use a home app?", "Choose the home app you use. Neither is fine.", "Example: if you say “Alexa” to an Echo speaker, choose Amazon Alexa. If you manage devices in the Google Home app, choose Google Home."),
-            TutorialStep("connectionPlan", "connection", "1. Connect to your TV or home device", "Follow the highlighted pictures on your TV or in its official app.", "Example: finding a Samsung TV in Alexa does not let this preview control it. Audio Bodyguard would still need its own supported connection and your permission."),
-            TutorialStep("connectionCheck", "connection", "2. Connect to your phone", "Open your TV's official phone app and follow the pictures.", "Example: Audio Bodyguard does not control devices in this preview. Pairing and phone permissions are separate checks."),
-            TutorialStep("guideFinish", "connection", "Your next step is ready", "Explore the preview. Replay the pictures anytime from Help.", "Example: to look at the sample graph, open Insights, then Explore an example. Its values are made up; they are not measurements from your phone."),
+            TutorialStep("connectionPlan", "connection", "1. Connect to your TV or home device", "Follow the highlighted pictures on your TV or in its official app.", "Example: follow your TV maker’s app steps, then review any approval request on the television."),
+            TutorialStep("connectionCheck", "connection", "2. Connect to your phone", "Open your TV's official phone app and follow the pictures.", "Example: open the official phone app, follow its pairing prompts and review requested permissions."),
+            TutorialStep("guideFinish", "connection", "Your next step is ready", "Explore the controls. Replay the pictures anytime from Help.", "Example: open Insights and select Explore an example to see a sample graph."),
         )),
         TutorialTopic("home", "Home and coverage", listOf(
-            TutorialStep("coverage", "home", "Read the coverage state", "Unknown physical state means the app has not independently checked the sound coming from the speakers. This preview does not provide audio protection.", "Example: a phone can show a TV as connected while the room is using a separate soundbar. The app must check the actual sound output."),
+            TutorialStep("coverage", "home", "Read the coverage state", "Unknown physical state means the sound coming from the speakers still needs an independent check.", "Example: a phone can show a TV as connected while the room is using a separate soundbar. The app must check the actual sound output."),
             TutorialStep("capability", "home", "Check what is supported", "The six setup checks must be established before a control can become eligible. A connected device alone is insufficient.", "Example: Bluetooth may report headphones connected while the actual playback route is still unknown."),
-            TutorialStep("history", "home", "Understand missing history", "No observed events means the app has no session evidence to show. An empty list does not mean everything was safe.", "Example: A gap while the app was away remains a gap in knowledge."),
+            TutorialStep("history", "home", "Understand missing history", "No observed events means there is no session evidence to show. Check for gaps in observation.", "Example: A gap while the app was away remains a gap in knowledge."),
             TutorialStep("hint", "home", "Treat OS hints as clues", "Foreground hints describe a system notification. They cannot verify audible output or another app's playback.", "Example: A route-change notice is a clue to investigate, not an observation of sound."),
         )),
         TutorialTopic("sound", "Sound options", listOf(
-            TutorialStep("options", "options", "Find the Options menu", "After leaving this guide, choose Sound to see the option descriptions. All controls there are explanations until a supported device is connected and checked.", "Example: to learn about quieter evening listening, open Sound and read the Night preset description."),
-            TutorialStep("volume", "options", "Volume needs a supported output", "Volume is unavailable in this simulation. A future change needs an authorized device and verified physical result.", "Example: A requested volume of 40 percent would not prove the speaker reached that level."),
-            TutorialStep("sound", "options", "Choose a compatible preset", "A Dialogue preset is intended for speech. A Night preset is intended for quieter evening listening. They are planned settings and cannot be applied in this preview.", "Example: you might want speech to be easier to follow without making loud adverts louder. A future preset would still need to be tested on your speakers."),
-            TutorialStep("equalizer", "options", "Custom EQ is device-specific", "An equalizer changes the balance of low, middle and high sounds. A compatible device would be needed to apply it. This preview cannot change those sounds.", "Example: reducing bass would make low, rumbling sounds less strong. Reading this description does not change your TV bass."),
+            TutorialStep("options", "options", "Find the Options menu", "Choose Sound to explore controls and their device requirements.", "Example: to learn about quieter evening listening, open Sound and read the Night preset description."),
+            TutorialStep("volume", "options", "Volume needs a supported output", "Volume controls require an authorized output and a verified physical result.", "Example: A requested volume of 40 percent would not prove the speaker reached that level."),
+            TutorialStep("sound", "options", "Choose a compatible preset", "Dialogue and Night presets are planned for supported sound outputs.", "Example: you might want speech to be easier to follow without making loud adverts louder. A future preset would still need to be tested on your speakers."),
+            TutorialStep("equalizer", "options", "Custom EQ is device-specific", "An equalizer balances low, middle and high sounds on a compatible device.", "Example: reducing bass can soften low, rumbling sounds on a supported output."),
         )),
         TutorialTopic("captions", "Captions", listOf(
             TutorialStep("captionOption", "options", "Find the captions option", "Captions depend on an available track or supported caption mode. This option is unavailable until one is connected.", "Example: A film's authored English caption track could be selectable on a supported player."),
-            TutorialStep("captions", "home", "Check caption evidence", "The Sound page reports what has been observed. This shell has not discovered or selected a caption track.", "Example: A label describing captions does not mean captions are currently displayed."),
+            TutorialStep("captions", "home", "Check caption evidence", "The Sound page reports what has been observed. This shell has not discovered or selected a caption track.", "Example: check the player screen to confirm captions are displayed."),
         )),
         TutorialTopic("defaults", "Defaults and undo", listOf(
             TutorialStep("defaults", "options", "Save only confirmed settings", "Save, restore and undo require suitable device settings and verification. This shell has no confirmed settings to use.", "Example: Undo would propose a return to a verified earlier setting; it cannot assume that return succeeded."),
             TutorialStep("history", "home", "Look for a verified change", "A requested change and an observed result are different events. Missing history cannot supply an undo result.", "Example: A successful button tap is not a verified audio change."),
         )),
         TutorialTopic("advanced", "Advanced and privacy", listOf(
-            TutorialStep("advanced", "advanced", "Open Advanced options", "After leaving this guide, choose Settings. Advanced options explains device checks, background limits and privacy. These descriptions do not change sound.", "Example: to learn what is stored on your phone, open Settings and read Privacy and storage."),
+            TutorialStep("advanced", "advanced", "Open Advanced options", "Choose Settings to explore device checks, background options and privacy.", "Example: to learn what is stored on your phone, open Settings and read Privacy and storage."),
             TutorialStep("route", "advanced", "Identify the output path", "Device and route stay Unknown until qualified. A device name or connection notification cannot establish the path of sound.", "Example: A connected speaker may not be the speaker currently used by a player."),
-            TutorialStep("physical", "advanced", "Require physical observation", "The app needs a check of what actually comes from the speakers, separate from its own command messages. This preview has no such observation.", "Example: sending “lower the volume” is only a request. A separate check must confirm the intended speaker really became quieter."),
-            TutorialStep("background", "advanced", "Understand background limits", "This screen receives foreground hints only. Leaving the app does not establish continuing protection.", "Example: Events while the screen is hidden remain unknown."),
-            TutorialStep("privacy", "advanced", "Know what this tour stores", "Only appearance and whether you left the beginner guide are saved locally. TV choices and tutorial progress are temporary. No audio or tutorial analytics are uploaded.", "Example: Closing the tour lets you reopen any topic from its first step."),
+            TutorialStep("physical", "advanced", "Require physical observation", "Confirm sound at the speakers independently of command messages.", "Example: sending “lower the volume” is only a request. A separate check must confirm the intended speaker really became quieter."),
+            TutorialStep("background", "advanced", "Understand background limits", "This screen receives foreground hints. Review coverage again when returning to the app.", "Example: Events while the screen is hidden remain unknown."),
+            TutorialStep("privacy", "advanced", "Know what this tour stores", "Appearance and your guide choice stay on this phone. TV choices and tutorial progress clear when you leave.", "Example: Closing the tour lets you reopen any topic from its first step."),
         )),
         TutorialTopic("handoff", "Session transfer", listOf(
             TutorialStep("handoffOption", "advanced", "Check transfer eligibility", "Moving a session is unavailable. A transfer requires authorized endpoints and a verified path between them.", "Example: Two phones signed in to an account are not, by themselves, a qualified transfer path."),
-            TutorialStep("handoff", "home", "Keep the handoff state truthful", "The current screen reports that no transfer path is connected. Completing this tutorial does not change that state.", "Example: You can finish this lesson while session transfer remains unavailable."),
+            TutorialStep("handoff", "home", "Keep the handoff state truthful", "The current screen shows the transfer path status. Review it before moving a session.", "Example: review transfer eligibility on both phones before moving a session."),
         )),
         TutorialTopic("readiness", "Readiness checklist", listOf(
             TutorialStep("checkHardware", "checklist", "Output hardware", "Unknown: no supported output device has been identified and qualified for this app.", "Example: A connected Bluetooth speaker is a candidate, not proof that AQSS can control it."),
-            TutorialStep("checkQualification", "checklist", "Qualified path", "Unknown: this exact device, driver and output path have not passed the required checks.", "Example: Passing an emulator test does not qualify a phone speaker."),
+            TutorialStep("checkQualification", "checklist", "Qualified path", "Unknown: this exact device, driver and output path have not passed the required checks.", "Example: qualify the exact phone speaker and output path on a real device."),
             TutorialStep("checkPermission", "checklist", "Permission and authority", "Unknown: permission and authority for a supported action have not been established. This checklist requests neither.", "Example: An OS permission alone cannot authorize a change to another device."),
             TutorialStep("checkRoute", "checklist", "Output route", "Unknown: there is no verified path from an authorized action to the intended output.", "Example: Headphones can be connected without being the active playback route."),
-            TutorialStep("checkRuntime", "checklist", "Runtime eligibility", "Unknown: there is no qualified running protection path. This screen only receives foreground hints.", "Example: Leaving the app may suspend it; returning does not fill the gap in observation."),
+            TutorialStep("checkRuntime", "checklist", "Runtime eligibility", "Unknown: there is no qualified running protection path. This screen only receives foreground hints.", "Example: review the observation gap after returning to the app."),
             TutorialStep("checkEvidence", "checklist", "Independent observation", "Unknown: there is no independent observation tied to an authorized device transaction.", "Example: A device saying that a command succeeded is not independent evidence of audible output."),
         )),
     )
@@ -68,9 +68,9 @@ object TutorialContent {
             TutorialChoice("unsure", "Not sure / no TV", "tv", "You can explore without a TV. Later, look for the brand and model on the TV label or ask someone to help you find it in the About menu."),
         ),
         "chooseHome" to listOf(
-            TutorialChoice("alexa", "Amazon Alexa", "speaker", "In the Alexa app, check whether your TV maker offers a compatible skill. Follow that maker’s account-linking instructions. Seeing a TV there does not connect it to Audio Bodyguard."),
-            TutorialChoice("google", "Google Home", "house", "In Google Home, check whether your exact TV model can be added. Follow its maker’s setup instructions and review any requested permissions. This preview does not access your Google Home."),
-            TutorialChoice("both", "Both apps", "house", "Check the TV maker’s instructions for each app separately. Support in Alexa does not prove support in Google Home. This preview does not access either account."),
+            TutorialChoice("alexa", "Amazon Alexa", "speaker", "In the Alexa app, check your exact TV model for a compatible skill and follow the maker’s account-linking steps."),
+            TutorialChoice("google", "Google Home", "house", "In Google Home, check your exact TV model, follow the maker’s setup instructions and review requested permissions."),
+            TutorialChoice("both", "Both apps", "house", "Check your TV maker’s instructions for each app separately and follow each app’s approval steps."),
             TutorialChoice("neither", "Neither / not sure", "questionmark.circle", "No smart-home account is needed to explore. Keep using your TV remote. A future direct TV connection would still need a supported model and your permission."),
         ),
     )
@@ -78,8 +78,8 @@ object TutorialContent {
         ConnectionStage(1, "Connect to your TV or home device", "Pair the device and approve access on its screen or in its official home app.", listOf("chooseTV", "chooseHome", "connectionPlan")),
         ConnectionStage(2, "Connect to your phone", "Link your iPhone or Android phone, then check its permissions and sound connection.", listOf("connectionCheck")),
     )
-    const val featureTitle = "Made for better TV time"
-    const val featureNote = "Device controls are planned and depend on the TV, player and phone. This preview does not control connected devices. Picture guides, photo hints and voice input can be explored now."
+    const val featureTitle = "What we're building"
+    const val featureNote = "Explore picture guides for your TV and phone, plus photo hints and voice input."
     val features: List<TutorialFeature> = listOf(
         TutorialFeature("series_intro", "Skip series intros", "On supported players with a confirmed intro segment.", "planned"),
         TutorialFeature("commercial_volume", "Lower volume during commercials", "With an eligible sound path and your permission.", "planned"),
@@ -105,7 +105,7 @@ object TutorialContent {
     )
     val featuredIDs: List<String> = listOf("series_intro", "commercial_volume", "remote")
     val pictureContinueRoutes: List<String> = listOf("samsung_ok", "samsung_pin", "lg_pair", "google_remote", "google_setup", "tcl_models", "google_fast", "google_samsung", "google_lg", "google_roku", "google_vidaa", "google_vizio", "google_legacy", "samsung_alexa", "lg_alexa", "sony_new", "sony_legacy", "roku_alexa", "vidaa_google", "vidaa_alexa", "vizio_pair", "vizio_account", "vizio_assist", "fire_alexa", "lg_account5", "lg_account6", "google_legacy_add", "fire_setup")
-    const val previewNotice = "Preview"
+    const val previewNotice = "Picture guide"
     const val startLabel = "Start picture setup"
     const val moreFeaturesLabel = "More features"
     const val helpLabel = "Need help?"

@@ -109,7 +109,7 @@ struct VoiceCheckView: View {
                 VStack(alignment: .leading, spacing: 18) {
                     Text("See what your phone hears").font(.title.bold())
                     Button("Help · show voice steps") { voice.clear(); setupVisible = true }.buttonStyle(AppButtonStyle(theme: theme))
-                    Text("Tap Start, then say: ‘Make the TV quieter.’ The bars show incoming sound. The text shows the words the phone thinks you said. This check does not send a command.")
+                    Text("Tap Start, then say: ‘Make the TV quieter.’ See the incoming sound bars and recognized words.")
                     Text(voice.status).font(.headline).accessibilityIdentifier("voice-status")
                     GeometryReader { box in
                         HStack(alignment: .center, spacing: 2) {
@@ -122,11 +122,11 @@ struct VoiceCheckView: View {
                         }.frame(height: box.size.height)
                     }.frame(height: 120).accessibilityHidden(true)
                     Text(voice.levelText).foregroundColor(theme.muted)
-                    Text("Sound-level history, oldest to newest. dBFS is a digital input level, not room loudness or a hearing-safety measurement. Bars are not frequency bands or a syllable count.").font(.caption).foregroundColor(theme.muted)
+                    Text("Digital input levels over time (dBFS).").font(.caption).foregroundColor(theme.muted)
                     Text("Recent recognized words · may change").font(.headline)
                     Text(voice.transcript.isEmpty ? "No words recognized yet" : voice.transcript).accessibilityIdentifier("voice-transcript")
-                    Text("Noise, accents and overlapping voices can cause missing or incorrect words. A moving meter does not prove every word or sound was understood.").foregroundColor(theme.muted)
-                    Text("On-device recognition only. No audio file is saved. Closing this screen clears the words. Listening stops when you leave the app. Camera, microphone and speech features may be unavailable in browser simulators.").font(.caption).foregroundColor(theme.muted)
+                    Text("Review recognized words before using them. Noise and overlapping voices can change what appears.").foregroundColor(theme.muted)
+                    Text("Recognition stays on this phone. Words clear when you close the screen; listening stops when you leave.").font(.caption).foregroundColor(theme.muted)
                 }.padding()
             }
             HStack {
@@ -206,7 +206,7 @@ struct TVPhotoView: View {
                     Text("Brand: \(photo.hints.brand ?? "Not identified")")
                     Text("Model: \(photo.hints.model ?? "Not identified")")
                     Text("TV IP hint: \(photo.hints.address ?? "Not identified")")
-                    Text("These are unverified hints. Only a clearly labeled, private IPv4 address is shown. We never use a photo as permission to control your TV.").font(.caption).foregroundColor(theme.muted)
+                    Text("Photo hints · confirm the model and network details on your TV.").font(.caption).foregroundColor(theme.muted)
                     Button("Illustrated setup guides") { setupRequest = SetupGuideRequest(group: photo.hints.brand?.lowercased() ?? "") }.buttonStyle(AppButtonStyle(theme: theme))
                     Button(instructions ? "Hide connection instructions" : "Show connection instructions") { instructions.toggle() }.buttonStyle(AppButtonStyle(theme: theme))
                     if instructions {
@@ -214,10 +214,9 @@ struct TVPhotoView: View {
                         Text("2. Look for Network, Connection or Network status, then IP settings. Photograph the row labeled IP address — not Gateway or DNS. A label on the back usually does not show the current IP address.")
                         Text("3. Put your phone and TV on the same home Wi-Fi. Avoid a guest network. An IP address can change and does not prove which TV owns it.")
                         Text("4. For Samsung, supported models use SmartThings and may ask you to approve on the TV. For Alexa or Google Home, add/link a supported TV in that app and follow its approval steps. Compatibility varies by model.")
-                        Text("AQSS pairing is not available yet. This tool reads the photo and helps you prepare; it does not connect or change the TV.").font(.headline).foregroundColor(theme.warning)
                     }
                     Button("Clear photo details") { photo.clear() }.buttonStyle(AppButtonStyle(theme: theme))
-                    Text("Text recognition runs on this phone. AQSS does not save or upload the picture, serial number or password. Your original photo may remain in your Photos app. Details are cleared when this screen closes.").font(.caption).foregroundColor(theme.muted)
+                    Text("Text recognition stays on this phone. Details clear when you close this screen. Your original photo remains in Photos until you delete it there.").font(.caption).foregroundColor(theme.muted)
                 }.padding()
             }
         }.background(theme.background.ignoresSafeArea()).foregroundColor(theme.text)

@@ -209,7 +209,7 @@ class ReadOnlyHomeActivity : Activity() {
         if (::tutorial.isInitialized) tutorial.detachTarget()
         hintView = null; targets.clear(); column.removeAllViews(); scroll.scrollTo(0, 0)
         val current = InterfaceContent.pages.single { it.id == page }
-        label(column, "${current.title.uppercase()}  /  PREVIEW", 12f, skin.accent, true)
+        label(column, current.title.uppercase(), 12f, skin.accent, true)
         label(column, current.headline, 30f, bold = true)
         label(column, current.subtitle, 16f, skin.muted).setPadding(0, 0, 0, dp(22))
         when (page) {
@@ -219,7 +219,6 @@ class ReadOnlyHomeActivity : Activity() {
             "settings" -> settingsPage()
             else -> homePage()
         }
-        label(column, "SIMULATION · No audio path connected", 12f, skin.muted)
         renderNav(); syncBackCallback()
         tutorial.refreshHighlight()
         if (preserveScroll) scroll.post { scroll.scrollTo(0, previousScroll) }
@@ -260,10 +259,8 @@ class ReadOnlyHomeActivity : Activity() {
             val showFinished = beginnerTourFinished && !tutorial.isBeginner
             label(c, if (showFinished) "TOUR FINISHED" else "YOUR TV & SMART HOME", 12f, skin.violet, true)
             label(c, if (showFinished) "Explore at your pace." else "Meet Audio Bodyguard.", 23f, bold = true)
-            label(c, "This is a read-only preview. It does not monitor or change TV audio.", 16f, skin.muted)
             if (tutorial.isBeginner) label(c, "Use Next in the guide below to continue.", 17f, skin.accent, true)
             else action(c, if (beginnerTourFinished) "Replay connection guide" else "TV & smart-home guide", true) { tutorial.start("getting_started") }
-            label(c, "Explore pictures, themes and examples. Help is always at the top.", 15f, skin.muted)
         }
         card("coverage") { c ->
             label(c, "COVERAGE", 12f, skin.muted, true)
@@ -274,7 +271,6 @@ class ReadOnlyHomeActivity : Activity() {
             label(words, "No output observation", 15f, skin.text, true)
             if (resources.configuration.fontScale < 1.5f) row.addView(InterfaceGraphic(this, skin, "orbit"), LinearLayout.LayoutParams(dp(90), dp(90)))
             c.addView(row)
-            label(c, "This preview does not monitor or protect audio. Start by exploring what a supported path needs.", 16f, skin.muted)
             action(c, "Review readiness", true) { checklistExpanded = true; jump("capability") }
         }
         label(column, "Explore your space", 20f, bold = true)

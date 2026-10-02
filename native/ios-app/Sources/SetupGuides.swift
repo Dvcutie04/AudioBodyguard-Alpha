@@ -70,7 +70,7 @@ struct SetupGuidesView: View {
                     }
                     else if let group = group {
                         Text(group.title).font(.title3.weight(.semibold)).foregroundColor(theme.accent)
-                        Text("Choose the setup screen or operating system you actually see. A brand alone does not confirm compatibility.").foregroundColor(theme.muted)
+                        Text("Match the setup screen and exact TV model before following the pictures.").foregroundColor(theme.muted)
                         ForEach(group.routes, id: \.self) { id in
                             if let route = AQSSSetupContent.routes.first(where: { $0.id == id }) {
                                 control(route.title, icon: "rectangle.stack", id: "setup-route-\(id)") { routeID = id; index = -1 }
@@ -140,7 +140,7 @@ struct SetupGuidesView: View {
         Text(route.appliesTo)
         Text("\(route.steps.count) pictures · one action at a time").font(.headline).foregroundColor(theme.accent)
         Text("Illustrations may differ from your screen. Complete approvals in the official app or on your TV.").font(.callout).foregroundColor(theme.muted)
-        Text("No passwords here. This preview does not connect Audio Bodyguard.").font(.callout)
+        Text("Use your TV maker’s app for passwords and approvals.").font(.callout)
         if let saved = resumeIndex(route) {
             Text("You stopped at picture \(saved + 1). Tap Resume guide to continue there.").foregroundColor(theme.accent)
             control("Start from the beginning", icon: "arrow.counterclockwise", id: "setup-restart") { writeProgress(route.id, nil); index = 0 }
@@ -154,7 +154,7 @@ struct SetupGuidesView: View {
             VStack(alignment: .leading, spacing: 14) {
                 if !route.models.isEmpty {
                     Text("Documented model examples: \(route.models.joined(separator: ", "))").font(.callout)
-                } else { Text("Menu-family guide. Your exact model is not confirmed by this preview.").font(.callout) }
+                } else { Text("Menu-family guide · match your TV’s exact model.").font(.callout) }
                 Text("Labels, layout and services can differ by country, software and language. Compare each picture with your own screen.").font(.callout)
                 sources(route)
             }.foregroundColor(theme.muted).padding(.top, 12)

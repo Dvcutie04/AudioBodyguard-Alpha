@@ -22,8 +22,8 @@
     }
   ],
   "feature_catalog": {
-    "title": "Made for better TV time",
-    "note": "Device controls are planned and depend on the TV, player and phone. This preview does not control connected devices. Picture guides, photo hints and voice input can be explored now.",
+    "title": "What we're building",
+    "note": "Explore picture guides for your TV and phone, plus photo hints and voice input.",
     "items": [
       {
         "id": "series_intro",
@@ -162,7 +162,7 @@
           "target": "welcome",
           "area": "overview",
           "title": "Your TV. Your comfort.",
-          "explanation": "Set up both connections with pictures. This preview does not monitor or change TV audio.",
+          "explanation": "Follow the pictures for both your TV and phone.",
           "example": ""
         },
         {
@@ -184,21 +184,21 @@
           "area": "connection",
           "title": "1. Connect to your TV or home device",
           "explanation": "Follow the highlighted pictures on your TV or in its official app.",
-          "example": "Example: finding a Samsung TV in Alexa does not let this preview control it. Audio Bodyguard would still need its own supported connection and your permission."
+          "example": "Example: follow your TV maker’s app steps, then review any approval request on the television."
         },
         {
           "target": "connectionCheck",
           "area": "connection",
           "title": "2. Connect to your phone",
           "explanation": "Open your TV's official phone app and follow the pictures.",
-          "example": "Example: Audio Bodyguard does not control devices in this preview. Pairing and phone permissions are separate checks."
+          "example": "Example: open the official phone app, follow its pairing prompts and review requested permissions."
         },
         {
           "target": "guideFinish",
           "area": "connection",
           "title": "Your next step is ready",
-          "explanation": "Explore the preview. Replay the pictures anytime from Help.",
-          "example": "Example: to look at the sample graph, open Insights, then Explore an example. Its values are made up; they are not measurements from your phone."
+          "explanation": "Explore the controls. Replay the pictures anytime from Help.",
+          "example": "Example: open Insights and select Explore an example to see a sample graph."
         }
       ]
     },
@@ -210,7 +210,7 @@
           "target": "coverage",
           "area": "home",
           "title": "Read the coverage state",
-          "explanation": "Unknown physical state means the app has not independently checked the sound coming from the speakers. This preview does not provide audio protection.",
+          "explanation": "Unknown physical state means the sound coming from the speakers still needs an independent check.",
           "example": "Example: a phone can show a TV as connected while the room is using a separate soundbar. The app must check the actual sound output."
         },
         {
@@ -224,7 +224,7 @@
           "target": "history",
           "area": "home",
           "title": "Understand missing history",
-          "explanation": "No observed events means the app has no session evidence to show. An empty list does not mean everything was safe.",
+          "explanation": "No observed events means there is no session evidence to show. Check for gaps in observation.",
           "example": "Example: A gap while the app was away remains a gap in knowledge."
         },
         {
@@ -244,29 +244,29 @@
           "target": "options",
           "area": "options",
           "title": "Find the Options menu",
-          "explanation": "After leaving this guide, choose Sound to see the option descriptions. All controls there are explanations until a supported device is connected and checked.",
+          "explanation": "Choose Sound to explore controls and their device requirements.",
           "example": "Example: to learn about quieter evening listening, open Sound and read the Night preset description."
         },
         {
           "target": "volume",
           "area": "options",
           "title": "Volume needs a supported output",
-          "explanation": "Volume is unavailable in this simulation. A future change needs an authorized device and verified physical result.",
+          "explanation": "Volume controls require an authorized output and a verified physical result.",
           "example": "Example: A requested volume of 40 percent would not prove the speaker reached that level."
         },
         {
           "target": "sound",
           "area": "options",
           "title": "Choose a compatible preset",
-          "explanation": "A Dialogue preset is intended for speech. A Night preset is intended for quieter evening listening. They are planned settings and cannot be applied in this preview.",
+          "explanation": "Dialogue and Night presets are planned for supported sound outputs.",
           "example": "Example: you might want speech to be easier to follow without making loud adverts louder. A future preset would still need to be tested on your speakers."
         },
         {
           "target": "equalizer",
           "area": "options",
           "title": "Custom EQ is device-specific",
-          "explanation": "An equalizer changes the balance of low, middle and high sounds. A compatible device would be needed to apply it. This preview cannot change those sounds.",
-          "example": "Example: reducing bass would make low, rumbling sounds less strong. Reading this description does not change your TV bass."
+          "explanation": "An equalizer balances low, middle and high sounds on a compatible device.",
+          "example": "Example: reducing bass can soften low, rumbling sounds on a supported output."
         }
       ]
     },
@@ -286,7 +286,7 @@
           "area": "home",
           "title": "Check caption evidence",
           "explanation": "The Sound page reports what has been observed. This shell has not discovered or selected a caption track.",
-          "example": "Example: A label describing captions does not mean captions are currently displayed."
+          "example": "Example: check the player screen to confirm captions are displayed."
         }
       ]
     },
@@ -318,7 +318,7 @@
           "target": "advanced",
           "area": "advanced",
           "title": "Open Advanced options",
-          "explanation": "After leaving this guide, choose Settings. Advanced options explains device checks, background limits and privacy. These descriptions do not change sound.",
+          "explanation": "Choose Settings to explore device checks, background options and privacy.",
           "example": "Example: to learn what is stored on your phone, open Settings and read Privacy and storage."
         },
         {
@@ -332,21 +332,21 @@
           "target": "physical",
           "area": "advanced",
           "title": "Require physical observation",
-          "explanation": "The app needs a check of what actually comes from the speakers, separate from its own command messages. This preview has no such observation.",
+          "explanation": "Confirm sound at the speakers independently of command messages.",
           "example": "Example: sending “lower the volume” is only a request. A separate check must confirm the intended speaker really became quieter."
         },
         {
           "target": "background",
           "area": "advanced",
           "title": "Understand background limits",
-          "explanation": "This screen receives foreground hints only. Leaving the app does not establish continuing protection.",
+          "explanation": "This screen receives foreground hints. Review coverage again when returning to the app.",
           "example": "Example: Events while the screen is hidden remain unknown."
         },
         {
           "target": "privacy",
           "area": "advanced",
           "title": "Know what this tour stores",
-          "explanation": "Only appearance and whether you left the beginner guide are saved locally. TV choices and tutorial progress are temporary. No audio or tutorial analytics are uploaded.",
+          "explanation": "Appearance and your guide choice stay on this phone. TV choices and tutorial progress clear when you leave.",
           "example": "Example: Closing the tour lets you reopen any topic from its first step."
         }
       ]
@@ -366,8 +366,8 @@
           "target": "handoff",
           "area": "home",
           "title": "Keep the handoff state truthful",
-          "explanation": "The current screen reports that no transfer path is connected. Completing this tutorial does not change that state.",
-          "example": "Example: You can finish this lesson while session transfer remains unavailable."
+          "explanation": "The current screen shows the transfer path status. Review it before moving a session.",
+          "example": "Example: review transfer eligibility on both phones before moving a session."
         }
       ]
     },
@@ -387,7 +387,7 @@
           "area": "checklist",
           "title": "Qualified path",
           "explanation": "Unknown: this exact device, driver and output path have not passed the required checks.",
-          "example": "Example: Passing an emulator test does not qualify a phone speaker."
+          "example": "Example: qualify the exact phone speaker and output path on a real device."
         },
         {
           "target": "checkPermission",
@@ -408,7 +408,7 @@
           "area": "checklist",
           "title": "Runtime eligibility",
           "explanation": "Unknown: there is no qualified running protection path. This screen only receives foreground hints.",
-          "example": "Example: Leaving the app may suspend it; returning does not fill the gap in observation."
+          "example": "Example: review the observation gap after returning to the app."
         },
         {
           "target": "checkEvidence",
@@ -500,19 +500,19 @@
         "id": "alexa",
         "title": "Amazon Alexa",
         "icon": "speaker",
-        "detail": "In the Alexa app, check whether your TV maker offers a compatible skill. Follow that maker’s account-linking instructions. Seeing a TV there does not connect it to Audio Bodyguard."
+        "detail": "In the Alexa app, check your exact TV model for a compatible skill and follow the maker’s account-linking steps."
       },
       {
         "id": "google",
         "title": "Google Home",
         "icon": "house",
-        "detail": "In Google Home, check whether your exact TV model can be added. Follow its maker’s setup instructions and review any requested permissions. This preview does not access your Google Home."
+        "detail": "In Google Home, check your exact TV model, follow the maker’s setup instructions and review requested permissions."
       },
       {
         "id": "both",
         "title": "Both apps",
         "icon": "house",
-        "detail": "Check the TV maker’s instructions for each app separately. Support in Alexa does not prove support in Google Home. This preview does not access either account."
+        "detail": "Check your TV maker’s instructions for each app separately and follow each app’s approval steps."
       },
       {
         "id": "neither",
@@ -528,7 +528,7 @@
       "commercial_volume",
       "remote"
     ],
-    "notice": "Preview",
+    "notice": "Picture guide",
     "start_label": "Start picture setup",
     "more_features_label": "More features",
     "help_label": "Need help?",

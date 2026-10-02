@@ -15,7 +15,9 @@ def test_beginner_default_is_brief_while_the_complete_catalog_stays_available():
     presentation = data["onboarding"]
     assert presentation["featured_ids"] == ["series_intro", "commercial_volume", "remote"]
     assert len(data["feature_catalog"]["items"]) == 21
-    assert presentation["notice"] == "Preview"
+    assert presentation["notice"] == "Picture guide"
+    assert data["feature_catalog"]["title"] == "What we're building"
+    assert "does not" not in data["topics"][0]["steps"][0]["explanation"].lower()
     beginner = data["topics"][0]
     assert [step["target"] for step in beginner["steps"]] == [
         "welcome", "chooseTV", "chooseHome", "connectionPlan", "connectionCheck", "guideFinish",
@@ -37,7 +39,7 @@ def test_connection_guide_requires_both_visible_parts_without_claiming_connectio
     assert topic["steps"][3]["title"].startswith("1.")
     assert topic["steps"][4]["title"].startswith("2.")
     assert "follow the pictures" in topic["steps"][4]["explanation"]
-    assert "does not control devices in this preview" in topic["steps"][4]["example"]
+    assert "official phone app" in topic["steps"][4]["example"]
     assert not any("connected" in stage.get("status", "").lower() for stage in stages)
 
 
@@ -47,8 +49,8 @@ def test_welcome_feature_list_includes_requested_controls_with_truthful_availabi
     assert [item["id"] for item in items[:3]] == ["series_intro", "commercial_volume", "remote"]
     assert {"loud_sounds", "presets", "equalizer", "captions", "languages", "voice", "profiles", "undo", "history", "recovery", "handoff", "background", "privacy", "setup", "input", "suggestions", "accessories", "status"} <= {item["id"] for item in items}
     assert all(item["availability"] == "planned" for item in items[:3])
-    assert "preview" in catalog["note"].lower()
-    assert "does not control" in catalog["note"].lower()
+    assert "picture guides" in catalog["note"].lower()
+    assert "does not" not in catalog["note"].lower()
     assert not any("skip ads" in item["title"].lower() or item["title"].lower() == "etc." for item in items)
 
 
@@ -94,8 +96,8 @@ def test_beginner_guide_has_one_ordered_connection_path_and_no_actuation():
         "welcome", "chooseTV", "chooseHome", "connectionPlan",
         "connectionCheck", "guideFinish",
     ]
-    assert "does not monitor or change TV audio" in topic["steps"][0]["explanation"]
-    assert "does not control devices in this preview" in topic["steps"][4]["example"]
+    assert "both your TV and phone" in topic["steps"][0]["explanation"]
+    assert "official phone app" in topic["steps"][4]["example"]
     assert "Help" in topic["steps"][-1]["explanation"]
     assert {c["id"] for c in data["choices"]["chooseHome"]} == {"alexa", "google", "both", "neither"}
     assert {"samsung", "lg", "sony", "other", "unsure"} <= {c["id"] for c in data["choices"]["chooseTV"]}

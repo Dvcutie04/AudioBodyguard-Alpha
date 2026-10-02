@@ -165,7 +165,6 @@ class TutorialGuide(
             gravity = Gravity.CENTER
             if (Build.VERSION.SDK_INT >= 28) isAccessibilityHeading = true
         }
-        text(box, "Planned controls · availability varies by device", 12f, skin.warning).gravity = Gravity.CENTER
         TutorialContent.features.filter { moreFeatures || it.id in TutorialContent.featuredIDs }.forEach { feature ->
             val row = column()
             text(row, feature.title, 16f, bold = true).apply { gravity = Gravity.CENTER; setPadding(0, 0, 0, dp(3)) }
