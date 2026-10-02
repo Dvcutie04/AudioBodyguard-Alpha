@@ -272,7 +272,7 @@ tap_tutorial_label "Daylight" theme_daylight
 capture_ui daylight_settings
 tap_tutorial_label "Home" theme_home
 capture_ui daylight_home
-assert_tutorial_label daylight_home "does not monitor or change TV audio"
+assert_tutorial_label daylight_home "Unknown physical state"
 tap_tutorial_label "Settings" theme_settings
 tap_tutorial_label "Midnight" theme_midnight
 tap_scroll_label "Hide advanced options" advanced_close
@@ -338,7 +338,7 @@ adb shell settings put system user_rotation 0
 capture_ui portrait_tutorial
 tap_tutorial_label "Exit tutorial" guide_close
 capture_ui restored_home
-assert_tutorial_label restored_home "does not monitor or change TV audio"
+assert_tutorial_label restored_home "Unknown physical state"
 
 tap_tutorial_label "Devices" roku_devices
 tap_scroll_label "Illustrated setup guides. TV pairing, Google Home & Alexa · one picture at a time" roku_open
