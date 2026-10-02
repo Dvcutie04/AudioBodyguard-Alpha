@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_name">Audio Bodyguard — Simulation</string>
+    <string name="app_name">Audio Bodyguard</string>
     <string name="simulation">SIMULATION — no audio path connected</string>
     <string name="options_open">Options</string>
     <string name="options_close">Hide options</string>
