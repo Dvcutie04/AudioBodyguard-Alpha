@@ -70,6 +70,15 @@ class InterfaceContentTests(unittest.TestCase):
         self.assertTrue(targets.issubset(TARGET_PAGES))
         self.assertTrue(set(TARGET_PAGES.values()).issubset({page["id"] for page in self.data["pages"]}))
 
+    def test_picture_guide_pages_use_concise_action_copy(self):
+        home = self.data["pages"][0]["subtitle"]
+        self.assertIn("TV and phone picture guide", home)
+        for page in self.data["pages"]:
+            with self.subTest(page=page["id"]):
+                self.assertNotIn("this preview", page["subtitle"].lower())
+                self.assertNotIn("does not", page["subtitle"].lower())
+                self.assertNotIn("five-step", page["subtitle"].lower())
+
     def test_both_native_apps_have_the_validated_content(self):
         for path, expected in sources(validate(self.data)).items():
             with self.subTest(platform=path):

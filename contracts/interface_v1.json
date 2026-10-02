@@ -7,35 +7,35 @@
       "title": "Home",
       "icon": "shield.lefthalf.filled",
       "headline": "Your listening space.",
-      "subtitle": "New here? Start with the five-step tour below."
+      "subtitle": "New here? Follow the TV and phone picture guide below."
     },
     {
       "id": "sound",
       "title": "Sound",
       "icon": "slider.horizontal.3",
       "headline": "Sound, on your terms.",
-      "subtitle": "Preview volume, presets, equalizer and captions. Audio controls are not connected."
+      "subtitle": "Explore volume, presets, equalizer and captions."
     },
     {
       "id": "devices",
       "title": "Devices",
       "icon": "hifispeaker",
       "headline": "A clear path to sound.",
-      "subtitle": "See what a future device connection will need. Pairing is not available in this preview."
+      "subtitle": "Choose your device and follow its picture guide."
     },
     {
       "id": "insights",
       "title": "Insights",
       "icon": "chart.xyaxis.line",
       "headline": "Know what happened.",
-      "subtitle": "Learn how graphs work with labeled examples. No real audio has been measured."
+      "subtitle": "Explore sample graphs and session evidence."
     },
     {
       "id": "settings",
       "title": "Settings",
       "icon": "gearshape",
       "headline": "Make space for you.",
-      "subtitle": "Choose your theme, find help and read about planned features."
+      "subtitle": "Choose your theme, find help and explore more features."
     }
   ],
   "palettes": {
@@ -89,25 +89,25 @@
       "id": "voice",
       "title": "Voice requests",
       "detail": "Planned · proposal only",
-      "explanation": "Sound now offers a foreground Voice check with input activity and provisional words. Executing voice commands is still planned: device authority and independent verification are required. No command is sent by Voice check."
+      "explanation": "Explore voice input and recognized words in Sound. Voice control requires device authority and checked output."
     },
     {
       "id": "profiles",
       "title": "Personal sound profiles",
       "detail": "Planned · verified settings",
-      "explanation": "Future profiles could restore confirmed preferences on supported devices. No profile is being learned, saved or applied here."
+      "explanation": "Planned profiles: save and restore confirmed preferences on supported devices."
     },
     {
       "id": "supervisor",
       "title": "Background protection",
       "detail": "Research · device trials needed",
-      "explanation": "Continuous availability depends on platform limits and a qualified path. Leaving this app does not establish continuing protection."
+      "explanation": "Background support depends on platform rules and a qualified output path. Review coverage when you return."
     },
     {
       "id": "support",
       "title": "Private support report",
       "detail": "Planned · review before sharing",
-      "explanation": "A future report could let you inspect a small, redacted record before sharing. No export or upload occurs here."
+      "explanation": "Planned support reports: review a small, redacted record before choosing to share it."
     }
   ]
 }

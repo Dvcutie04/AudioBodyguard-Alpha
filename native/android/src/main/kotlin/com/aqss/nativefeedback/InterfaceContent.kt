@@ -4,17 +4,17 @@ data class InterfacePage(val id: String, val title: String, val icon: String, va
 data class InterfaceFeature(val id: String, val title: String, val detail: String, val explanation: String)
 object InterfaceContent {
     val pages = listOf(
-        InterfacePage("home", "Home", "shield.lefthalf.filled", "Your listening space.", "New here? Start with the five-step tour below."),
-        InterfacePage("sound", "Sound", "slider.horizontal.3", "Sound, on your terms.", "Preview volume, presets, equalizer and captions. Audio controls are not connected."),
-        InterfacePage("devices", "Devices", "hifispeaker", "A clear path to sound.", "See what a future device connection will need. Pairing is not available in this preview."),
-        InterfacePage("insights", "Insights", "chart.xyaxis.line", "Know what happened.", "Learn how graphs work with labeled examples. No real audio has been measured."),
-        InterfacePage("settings", "Settings", "gearshape", "Make space for you.", "Choose your theme, find help and read about planned features."),
+        InterfacePage("home", "Home", "shield.lefthalf.filled", "Your listening space.", "New here? Follow the TV and phone picture guide below."),
+        InterfacePage("sound", "Sound", "slider.horizontal.3", "Sound, on your terms.", "Explore volume, presets, equalizer and captions."),
+        InterfacePage("devices", "Devices", "hifispeaker", "A clear path to sound.", "Choose your device and follow its picture guide."),
+        InterfacePage("insights", "Insights", "chart.xyaxis.line", "Know what happened.", "Explore sample graphs and session evidence."),
+        InterfacePage("settings", "Settings", "gearshape", "Make space for you.", "Choose your theme, find help and explore more features."),
     )
     val future = listOf(
-        InterfaceFeature("voice", "Voice requests", "Planned · proposal only", "Sound now offers a foreground Voice check with input activity and provisional words. Executing voice commands is still planned: device authority and independent verification are required. No command is sent by Voice check."),
-        InterfaceFeature("profiles", "Personal sound profiles", "Planned · verified settings", "Future profiles could restore confirmed preferences on supported devices. No profile is being learned, saved or applied here."),
-        InterfaceFeature("supervisor", "Background protection", "Research · device trials needed", "Continuous availability depends on platform limits and a qualified path. Leaving this app does not establish continuing protection."),
-        InterfaceFeature("support", "Private support report", "Planned · review before sharing", "A future report could let you inspect a small, redacted record before sharing. No export or upload occurs here."),
+        InterfaceFeature("voice", "Voice requests", "Planned · proposal only", "Explore voice input and recognized words in Sound. Voice control requires device authority and checked output."),
+        InterfaceFeature("profiles", "Personal sound profiles", "Planned · verified settings", "Planned profiles: save and restore confirmed preferences on supported devices."),
+        InterfaceFeature("supervisor", "Background protection", "Research · device trials needed", "Background support depends on platform rules and a qualified output path. Review coverage when you return."),
+        InterfaceFeature("support", "Private support report", "Planned · review before sharing", "Planned support reports: review a small, redacted record before choosing to share it."),
     )
     val palettes = mapOf(
         "midnight" to mapOf("background" to 0xFF080F20.toInt(), "surface" to 0xFF121D33.toInt(), "raised" to 0xFF1A2842.toInt(), "text" to 0xFFF1F5FF.toInt(), "muted" to 0xFFADBDD7.toInt(), "accent" to 0xFF64DAE8.toInt(), "violet" to 0xFFB4A0FF.toInt(), "warning" to 0xFFF9CB80.toInt(), "outline" to 0xFF536A91.toInt(), "control" to 0xFF64DAE8.toInt(), "controlText" to 0xFF080F20.toInt(), "controlBorder" to 0xFF006774.toInt()),

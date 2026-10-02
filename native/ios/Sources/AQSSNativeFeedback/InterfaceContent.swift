@@ -14,17 +14,17 @@ public struct AQSSInterfaceFeature: Equatable, Sendable {
 }
 public enum AQSSInterfaceContent {
     public static let pages: [AQSSInterfacePage] = [
-        AQSSInterfacePage(id: "home", title: "Home", icon: "shield.lefthalf.filled", headline: "Your listening space.", subtitle: "New here? Start with the five-step tour below."),
-        AQSSInterfacePage(id: "sound", title: "Sound", icon: "slider.horizontal.3", headline: "Sound, on your terms.", subtitle: "Preview volume, presets, equalizer and captions. Audio controls are not connected."),
-        AQSSInterfacePage(id: "devices", title: "Devices", icon: "hifispeaker", headline: "A clear path to sound.", subtitle: "See what a future device connection will need. Pairing is not available in this preview."),
-        AQSSInterfacePage(id: "insights", title: "Insights", icon: "chart.xyaxis.line", headline: "Know what happened.", subtitle: "Learn how graphs work with labeled examples. No real audio has been measured."),
-        AQSSInterfacePage(id: "settings", title: "Settings", icon: "gearshape", headline: "Make space for you.", subtitle: "Choose your theme, find help and read about planned features."),
+        AQSSInterfacePage(id: "home", title: "Home", icon: "shield.lefthalf.filled", headline: "Your listening space.", subtitle: "New here? Follow the TV and phone picture guide below."),
+        AQSSInterfacePage(id: "sound", title: "Sound", icon: "slider.horizontal.3", headline: "Sound, on your terms.", subtitle: "Explore volume, presets, equalizer and captions."),
+        AQSSInterfacePage(id: "devices", title: "Devices", icon: "hifispeaker", headline: "A clear path to sound.", subtitle: "Choose your device and follow its picture guide."),
+        AQSSInterfacePage(id: "insights", title: "Insights", icon: "chart.xyaxis.line", headline: "Know what happened.", subtitle: "Explore sample graphs and session evidence."),
+        AQSSInterfacePage(id: "settings", title: "Settings", icon: "gearshape", headline: "Make space for you.", subtitle: "Choose your theme, find help and explore more features."),
     ]
     public static let future: [AQSSInterfaceFeature] = [
-        AQSSInterfaceFeature(id: "voice", title: "Voice requests", detail: "Planned · proposal only", explanation: "Sound now offers a foreground Voice check with input activity and provisional words. Executing voice commands is still planned: device authority and independent verification are required. No command is sent by Voice check."),
-        AQSSInterfaceFeature(id: "profiles", title: "Personal sound profiles", detail: "Planned · verified settings", explanation: "Future profiles could restore confirmed preferences on supported devices. No profile is being learned, saved or applied here."),
-        AQSSInterfaceFeature(id: "supervisor", title: "Background protection", detail: "Research · device trials needed", explanation: "Continuous availability depends on platform limits and a qualified path. Leaving this app does not establish continuing protection."),
-        AQSSInterfaceFeature(id: "support", title: "Private support report", detail: "Planned · review before sharing", explanation: "A future report could let you inspect a small, redacted record before sharing. No export or upload occurs here."),
+        AQSSInterfaceFeature(id: "voice", title: "Voice requests", detail: "Planned · proposal only", explanation: "Explore voice input and recognized words in Sound. Voice control requires device authority and checked output."),
+        AQSSInterfaceFeature(id: "profiles", title: "Personal sound profiles", detail: "Planned · verified settings", explanation: "Planned profiles: save and restore confirmed preferences on supported devices."),
+        AQSSInterfaceFeature(id: "supervisor", title: "Background protection", detail: "Research · device trials needed", explanation: "Background support depends on platform rules and a qualified output path. Review coverage when you return."),
+        AQSSInterfaceFeature(id: "support", title: "Private support report", detail: "Planned · review before sharing", explanation: "Planned support reports: review a small, redacted record before choosing to share it."),
     ]
     public static let palettes: [String: [String: UInt32]] = [
         "midnight": ["background": 0x080F20, "surface": 0x121D33, "raised": 0x1A2842, "text": 0xF1F5FF, "muted": 0xADBDD7, "accent": 0x64DAE8, "violet": 0xB4A0FF, "warning": 0xF9CB80, "outline": 0x536A91, "control": 0x64DAE8, "controlText": 0x080F20, "controlBorder": 0x006774],
