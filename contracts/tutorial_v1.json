@@ -142,13 +142,13 @@
       {
         "id": "setup",
         "title": "Picture guides and photo-assisted setup",
-        "detail": "Photo hints help identify a device; they do not pair it.",
+        "detail": "Photo hints help you choose the matching picture guide.",
         "availability": "preview"
       },
       {
         "id": "input",
         "title": "Voice input display and recognized words",
-        "detail": "Foreground input check; recognized words may be wrong.",
+        "detail": "Review the recognized words on your phone.",
         "availability": "preview"
       }
     ]
@@ -231,7 +231,7 @@
           "target": "hint",
           "area": "home",
           "title": "Treat OS hints as clues",
-          "explanation": "Foreground hints describe a system notification. They cannot verify audible output or another app's playback.",
+          "explanation": "Foreground hints show system notifications. Check the active speaker output separately.",
           "example": "Example: A route-change notice is a clue to investigate, not an observation of sound."
         }
       ]
@@ -285,7 +285,7 @@
           "target": "captions",
           "area": "home",
           "title": "Check caption evidence",
-          "explanation": "The Sound page reports what has been observed. This shell has not discovered or selected a caption track.",
+          "explanation": "Check the Sound page for caption track status.",
           "example": "Example: check the player screen to confirm captions are displayed."
         }
       ]
@@ -298,14 +298,14 @@
           "target": "defaults",
           "area": "options",
           "title": "Save only confirmed settings",
-          "explanation": "Save, restore and undo require suitable device settings and verification. This shell has no confirmed settings to use.",
-          "example": "Example: Undo would propose a return to a verified earlier setting; it cannot assume that return succeeded."
+          "explanation": "Save, restore and undo use confirmed device settings and verified results.",
+          "example": "Example: Undo returns to a verified earlier setting and checks the result."
         },
         {
           "target": "history",
           "area": "home",
           "title": "Look for a verified change",
-          "explanation": "A requested change and an observed result are different events. Missing history cannot supply an undo result.",
+          "explanation": "Review session evidence before using Undo.",
           "example": "Example: A successful button tap is not a verified audio change."
         }
       ]
@@ -325,7 +325,7 @@
           "target": "route",
           "area": "advanced",
           "title": "Identify the output path",
-          "explanation": "Device and route stay Unknown until qualified. A device name or connection notification cannot establish the path of sound.",
+          "explanation": "Qualify the device and check its active sound output path.",
           "example": "Example: A connected speaker may not be the speaker currently used by a player."
         },
         {
@@ -394,7 +394,7 @@
           "area": "checklist",
           "title": "Permission and authority",
           "explanation": "Unknown: permission and authority for a supported action have not been established. This checklist requests neither.",
-          "example": "Example: An OS permission alone cannot authorize a change to another device."
+          "example": "Example: pair OS permission with device-specific authorization before a change."
         },
         {
           "target": "checkRoute",
@@ -426,37 +426,37 @@
         "id": "samsung",
         "title": "Samsung",
         "icon": "tv",
-        "detail": "Find the exact Samsung model on its label or in its About menu. Check that model in the manufacturer’s instructions; a brand name alone does not tell us what it supports."
+        "detail": "Find the exact Samsung model on its label or in its About menu. Check its supported connections in the manufacturer’s instructions."
       },
       {
         "id": "lg",
         "title": "LG",
         "icon": "tv",
-        "detail": "Find the exact LG model on its label or in its About menu. Check that model in the manufacturer’s instructions; a brand name alone does not tell us what it supports."
+        "detail": "Find the exact LG model on its label or in its About menu. Check its supported connections in the manufacturer’s instructions."
       },
       {
         "id": "sony",
         "title": "Sony",
         "icon": "tv",
-        "detail": "Find the exact Sony model on its label or in its About menu. Check that model in the manufacturer’s instructions; a brand name alone does not tell us what it supports."
+        "detail": "Find the exact Sony model on its label or in its About menu. Check its supported connections in the manufacturer’s instructions."
       },
       {
         "id": "tcl",
         "title": "TCL",
         "icon": "tv",
-        "detail": "Find the exact TCL model on its label or in its About menu. Check that model in the manufacturer’s instructions; a brand name alone does not tell us what it supports."
+        "detail": "Find the exact TCL model on its label or in its About menu. Check its supported connections in the manufacturer’s instructions."
       },
       {
         "id": "hisense",
         "title": "Hisense",
         "icon": "tv",
-        "detail": "Find the exact Hisense model on its label or in its About menu. Check that model in the manufacturer’s instructions; a brand name alone does not tell us what it supports."
+        "detail": "Find the exact Hisense model on its label or in its About menu. Check its supported connections in the manufacturer’s instructions."
       },
       {
         "id": "vizio",
         "title": "Vizio",
         "icon": "tv",
-        "detail": "Find the exact Vizio model on its label or in its About menu. Check that model in the manufacturer’s instructions; a brand name alone does not tell us what it supports."
+        "detail": "Find the exact Vizio model on its label or in its About menu. Check its supported connections in the manufacturer’s instructions."
       },
       {
         "id": "philips",

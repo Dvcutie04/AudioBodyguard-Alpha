@@ -16,7 +16,7 @@ object TutorialContent {
             TutorialStep("coverage", "home", "Read the coverage state", "Unknown physical state means the sound coming from the speakers still needs an independent check.", "Example: a phone can show a TV as connected while the room is using a separate soundbar. The app must check the actual sound output."),
             TutorialStep("capability", "home", "Check what is supported", "The six setup checks must be established before a control can become eligible. A connected device alone is insufficient.", "Example: Bluetooth may report headphones connected while the actual playback route is still unknown."),
             TutorialStep("history", "home", "Understand missing history", "No observed events means there is no session evidence to show. Check for gaps in observation.", "Example: A gap while the app was away remains a gap in knowledge."),
-            TutorialStep("hint", "home", "Treat OS hints as clues", "Foreground hints describe a system notification. They cannot verify audible output or another app's playback.", "Example: A route-change notice is a clue to investigate, not an observation of sound."),
+            TutorialStep("hint", "home", "Treat OS hints as clues", "Foreground hints show system notifications. Check the active speaker output separately.", "Example: A route-change notice is a clue to investigate, not an observation of sound."),
         )),
         TutorialTopic("sound", "Sound options", listOf(
             TutorialStep("options", "options", "Find the Options menu", "Choose Sound to explore controls and their device requirements.", "Example: to learn about quieter evening listening, open Sound and read the Night preset description."),
@@ -26,15 +26,15 @@ object TutorialContent {
         )),
         TutorialTopic("captions", "Captions", listOf(
             TutorialStep("captionOption", "options", "Find the captions option", "Captions depend on an available track or supported caption mode. This option is unavailable until one is connected.", "Example: A film's authored English caption track could be selectable on a supported player."),
-            TutorialStep("captions", "home", "Check caption evidence", "The Sound page reports what has been observed. This shell has not discovered or selected a caption track.", "Example: check the player screen to confirm captions are displayed."),
+            TutorialStep("captions", "home", "Check caption evidence", "Check the Sound page for caption track status.", "Example: check the player screen to confirm captions are displayed."),
         )),
         TutorialTopic("defaults", "Defaults and undo", listOf(
-            TutorialStep("defaults", "options", "Save only confirmed settings", "Save, restore and undo require suitable device settings and verification. This shell has no confirmed settings to use.", "Example: Undo would propose a return to a verified earlier setting; it cannot assume that return succeeded."),
-            TutorialStep("history", "home", "Look for a verified change", "A requested change and an observed result are different events. Missing history cannot supply an undo result.", "Example: A successful button tap is not a verified audio change."),
+            TutorialStep("defaults", "options", "Save only confirmed settings", "Save, restore and undo use confirmed device settings and verified results.", "Example: Undo returns to a verified earlier setting and checks the result."),
+            TutorialStep("history", "home", "Look for a verified change", "Review session evidence before using Undo.", "Example: A successful button tap is not a verified audio change."),
         )),
         TutorialTopic("advanced", "Advanced and privacy", listOf(
             TutorialStep("advanced", "advanced", "Open Advanced options", "Choose Settings to explore device checks, background options and privacy.", "Example: to learn what is stored on your phone, open Settings and read Privacy and storage."),
-            TutorialStep("route", "advanced", "Identify the output path", "Device and route stay Unknown until qualified. A device name or connection notification cannot establish the path of sound.", "Example: A connected speaker may not be the speaker currently used by a player."),
+            TutorialStep("route", "advanced", "Identify the output path", "Qualify the device and check its active sound output path.", "Example: A connected speaker may not be the speaker currently used by a player."),
             TutorialStep("physical", "advanced", "Require physical observation", "Confirm sound at the speakers independently of command messages.", "Example: sending “lower the volume” is only a request. A separate check must confirm the intended speaker really became quieter."),
             TutorialStep("background", "advanced", "Understand background limits", "This screen receives foreground hints. Review coverage again when returning to the app.", "Example: Events while the screen is hidden remain unknown."),
             TutorialStep("privacy", "advanced", "Know what this tour stores", "Appearance and your guide choice stay on this phone. TV choices and tutorial progress clear when you leave.", "Example: Closing the tour lets you reopen any topic from its first step."),
@@ -46,7 +46,7 @@ object TutorialContent {
         TutorialTopic("readiness", "Readiness checklist", listOf(
             TutorialStep("checkHardware", "checklist", "Output hardware", "Unknown: no supported output device has been identified and qualified for this app.", "Example: A connected Bluetooth speaker is a candidate, not proof that AQSS can control it."),
             TutorialStep("checkQualification", "checklist", "Qualified path", "Unknown: this exact device, driver and output path have not passed the required checks.", "Example: qualify the exact phone speaker and output path on a real device."),
-            TutorialStep("checkPermission", "checklist", "Permission and authority", "Unknown: permission and authority for a supported action have not been established. This checklist requests neither.", "Example: An OS permission alone cannot authorize a change to another device."),
+            TutorialStep("checkPermission", "checklist", "Permission and authority", "Unknown: permission and authority for a supported action have not been established. This checklist requests neither.", "Example: pair OS permission with device-specific authorization before a change."),
             TutorialStep("checkRoute", "checklist", "Output route", "Unknown: there is no verified path from an authorized action to the intended output.", "Example: Headphones can be connected without being the active playback route."),
             TutorialStep("checkRuntime", "checklist", "Runtime eligibility", "Unknown: there is no qualified running protection path. This screen only receives foreground hints.", "Example: review the observation gap after returning to the app."),
             TutorialStep("checkEvidence", "checklist", "Independent observation", "Unknown: there is no independent observation tied to an authorized device transaction.", "Example: A device saying that a command succeeded is not independent evidence of audible output."),
@@ -54,12 +54,12 @@ object TutorialContent {
     )
     val choices: Map<String, List<TutorialChoice>> = mapOf(
         "chooseTV" to listOf(
-            TutorialChoice("samsung", "Samsung", "tv", "Find the exact Samsung model on its label or in its About menu. Check that model in the manufacturer’s instructions; a brand name alone does not tell us what it supports."),
-            TutorialChoice("lg", "LG", "tv", "Find the exact LG model on its label or in its About menu. Check that model in the manufacturer’s instructions; a brand name alone does not tell us what it supports."),
-            TutorialChoice("sony", "Sony", "tv", "Find the exact Sony model on its label or in its About menu. Check that model in the manufacturer’s instructions; a brand name alone does not tell us what it supports."),
-            TutorialChoice("tcl", "TCL", "tv", "Find the exact TCL model on its label or in its About menu. Check that model in the manufacturer’s instructions; a brand name alone does not tell us what it supports."),
-            TutorialChoice("hisense", "Hisense", "tv", "Find the exact Hisense model on its label or in its About menu. Check that model in the manufacturer’s instructions; a brand name alone does not tell us what it supports."),
-            TutorialChoice("vizio", "Vizio", "tv", "Find the exact Vizio model on its label or in its About menu. Check that model in the manufacturer’s instructions; a brand name alone does not tell us what it supports."),
+            TutorialChoice("samsung", "Samsung", "tv", "Find the exact Samsung model on its label or in its About menu. Check its supported connections in the manufacturer’s instructions."),
+            TutorialChoice("lg", "LG", "tv", "Find the exact LG model on its label or in its About menu. Check its supported connections in the manufacturer’s instructions."),
+            TutorialChoice("sony", "Sony", "tv", "Find the exact Sony model on its label or in its About menu. Check its supported connections in the manufacturer’s instructions."),
+            TutorialChoice("tcl", "TCL", "tv", "Find the exact TCL model on its label or in its About menu. Check its supported connections in the manufacturer’s instructions."),
+            TutorialChoice("hisense", "Hisense", "tv", "Find the exact Hisense model on its label or in its About menu. Check its supported connections in the manufacturer’s instructions."),
+            TutorialChoice("vizio", "Vizio", "tv", "Find the exact Vizio model on its label or in its About menu. Check its supported connections in the manufacturer’s instructions."),
             TutorialChoice("philips", "Philips", "tv", "Tap Show steps on the checklist. Choose the operating system or remote that matches your TV, then follow the numbered pictures. Exact model support must be checked."),
             TutorialChoice("sharp", "Sharp", "tv", "Tap Show steps on the checklist. Choose the operating system or remote that matches your TV, then follow the numbered pictures. Exact model support must be checked."),
             TutorialChoice("roku", "Roku-branded TV", "tv", "Tap Show steps on the checklist. Choose the operating system or remote that matches your TV, then follow the numbered pictures. Exact model support must be checked."),
@@ -100,8 +100,8 @@ object TutorialContent {
         TutorialFeature("status", "Optional alerts, haptics and status widgets", "Readable status with freshness and coverage gaps.", "planned"),
         TutorialFeature("suggestions", "Explainable suggestions and session recipes", "Optional suggestions that you can review or dismiss.", "planned"),
         TutorialFeature("accessories", "Compatible speakers, headphones and accessories", "Integrations depend on the exact device and route.", "planned"),
-        TutorialFeature("setup", "Picture guides and photo-assisted setup", "Photo hints help identify a device; they do not pair it.", "preview"),
-        TutorialFeature("input", "Voice input display and recognized words", "Foreground input check; recognized words may be wrong.", "preview"),
+        TutorialFeature("setup", "Picture guides and photo-assisted setup", "Photo hints help you choose the matching picture guide.", "preview"),
+        TutorialFeature("input", "Voice input display and recognized words", "Review the recognized words on your phone.", "preview"),
     )
     val featuredIDs: List<String> = listOf("series_intro", "commercial_volume", "remote")
     val pictureContinueRoutes: List<String> = listOf("samsung_ok", "samsung_pin", "lg_pair", "google_remote", "google_setup", "tcl_models", "google_fast", "google_samsung", "google_lg", "google_roku", "google_vidaa", "google_vizio", "google_legacy", "samsung_alexa", "lg_alexa", "sony_new", "sony_legacy", "roku_alexa", "vidaa_google", "vidaa_alexa", "vizio_pair", "vizio_account", "vizio_assist", "fire_alexa", "lg_account5", "lg_account6", "google_legacy_add", "fire_setup")
