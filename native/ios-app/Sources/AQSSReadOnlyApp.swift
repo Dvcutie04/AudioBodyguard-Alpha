@@ -369,7 +369,6 @@ private struct ReadOnlyHomeView: View {
                 section("Move this session option", detail: "Unavailable", explanation: "No authorized endpoint or verified transfer path is connected.", target: "handoffOption", icon: "arrow.left.arrow.right")
             }
             Text("On the horizon").font(.title2.bold()).accessibilityAddTraits(.isHeader)
-            Text("Explore the direction. These features are not active.").foregroundColor(theme.muted)
             ForEach(AQSSInterfaceContent.future, id: \.id) { feature in
                 destinationCard(feature.title, subtitle: feature.detail, icon: feature.id == "voice" ? "mic" : feature.id == "profiles" ? "person.crop.circle" : feature.id == "supervisor" ? "moon" : "doc.text") {
                     futureID = feature.id; futureTitle = feature.title; futureExplanation = feature.explanation; futureVisible = true

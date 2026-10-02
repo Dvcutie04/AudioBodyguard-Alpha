@@ -7,6 +7,11 @@ struct SetupGuideRequest: Identifiable {
 
 /// Local, illustrative instructions. No device session, credentials or control API.
 struct SetupGuidesView: View {
+    private static let repeatedPictureNotes: Set<String> = [
+        "Use your real device. This picture is an illustration.",
+        "Finishing this guide does not connect Audio Bodyguard or activate protection.",
+        "Use the numbered highlight on your real device. This illustration does not confirm a connection to Audio Bodyguard."
+    ]
     let theme: AppTheme
     let initialGroup: String
     var onVoiceCheck: (() -> Void)? = nil
@@ -58,7 +63,9 @@ struct SetupGuidesView: View {
                             } else if route.id == "philips_voice_remote" && [1, 2].contains(index) {
                                 ProfileMenuIllustration(step: step, number: index + 1, theme: theme)
                             } else { SetupScreenIllustration(step: step, number: index + 1, theme: theme) }
-                            Text(step.note).font(.callout).foregroundColor(theme.muted)
+                            if !Self.repeatedPictureNotes.contains(step.note) {
+                                Text(step.note).font(.callout).foregroundColor(theme.muted)
+                            }
                             control("My screen looks different", icon: "questionmark.circle", id: "setup-mismatch") { mismatch = true }
                         } else { introduction(route) }
                     } else if groupID == "tcl" {
@@ -139,7 +146,6 @@ struct SetupGuidesView: View {
         Text("Before you begin").font(.headline)
         Text(route.appliesTo)
         Text("\(route.steps.count) pictures · one action at a time").font(.headline).foregroundColor(theme.accent)
-        Text("Illustrations may differ from your screen. Complete approvals in the official app or on your TV.").font(.callout).foregroundColor(theme.muted)
         Text("Use your TV maker’s app for passwords and approvals.").font(.callout)
         if let saved = resumeIndex(route) {
             Text("You stopped at picture \(saved + 1). Tap Resume guide to continue there.").foregroundColor(theme.accent)
@@ -174,7 +180,7 @@ struct SetupGuidesView: View {
         VStack(alignment: .leading, spacing: 16) {
             Image(systemName: "tv.and.mediabox").font(.system(size: 40)).foregroundColor(theme.violet).accessibilityHidden(true)
             Text("Pause at this step. Check the full model, TV software and country. Look for the same menu meaning or icon in your language.")
-            Text("If the option, TV or permission request is absent, use the manufacturer’s instructions below. Do not assume a successful pairing.")
+            Text("If the option, TV or permission request is absent, use the manufacturer’s instructions below.")
             if let route = route { sources(route) }
             control("Choose another model or menu", icon: "rectangle.stack", id: "setup-other-menu") { routeID = nil; index = -1; mismatch = false }
             control("Choose another TV or app", icon: "tv", id: "setup-other-group") { chooseGroup("") }

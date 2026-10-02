@@ -26,7 +26,14 @@ import com.aqss.nativefeedback.SetupStep
 
 /** Local illustrated instructions. Finishing a guide changes no connection state. */
 class SetupGuideActivity : Activity() {
-    companion object { const val COMPLETED_ROUTE = "completedPictureRoute" }
+    companion object {
+        const val COMPLETED_ROUTE = "completedPictureRoute"
+        private val repeatedPictureNotes = setOf(
+            "Use your real device. This picture is an illustration.",
+            "Finishing this guide does not connect Audio Bodyguard or activate protection.",
+            "Use the numbered highlight on your real device. This illustration does not confirm a connection to Audio Bodyguard."
+        )
+    }
     private lateinit var skin: InterfaceTheme
     private lateinit var root: LinearLayout
     private lateinit var header: LinearLayout
@@ -141,7 +148,7 @@ class SetupGuideActivity : Activity() {
                 words(content, when (step.surface) { "tv" -> "On your TV · use the remote"; "both" -> "Your TV + your phone"; else -> "On your phone" }, 15f, skin.accent, true)
                 words(content, step.instruction, 16f, bold = true)
                 content.addView(if (route.id == "roku_network" || route.id == "roku_model") rokuIllustration(step, index + 1) else if (route.id == "philips_voice_remote" && index in 1..2) profileIllustration(step, index + 1) else illustration(step, index + 1), LinearLayout.LayoutParams(-1, -2).apply { bottomMargin = dp(18) })
-                words(content, step.note, color = skin.muted)
+                if (step.note !in repeatedPictureNotes) words(content, step.note, color = skin.muted)
                 action(content, "My screen looks different") { mismatch = true; render() }
             }
             route != null -> intro(route)
@@ -198,7 +205,6 @@ class SetupGuideActivity : Activity() {
         words(content, "Before you begin", 19f, bold = true)
         words(content, route.appliesTo)
         words(content, "${route.steps.size} pictures · one action at a time", 18f, skin.accent, true)
-        words(content, "Illustrations may differ from your screen. Complete approvals in the official app or on your TV.", color = skin.muted)
         words(content, "Use your TV maker’s app for passwords and approvals.")
         resumeIndex(route)?.let { saved ->
             words(content, "You stopped at picture ${saved + 1}. Tap Resume guide to continue there.", color = skin.accent)
@@ -223,7 +229,7 @@ class SetupGuideActivity : Activity() {
     }
     private fun mismatchContent(route: SetupRoute?) {
         words(content, "Pause at this step. Check the full model, TV software and country. Look for the same menu meaning or icon in your language.")
-        words(content, "If the option, TV or permission request is absent, use the manufacturer’s instructions below. Do not assume a successful pairing.")
+        words(content, "If the option, TV or permission request is absent, use the manufacturer’s instructions below.")
         if (route != null) sources(route)
         action(content, "Choose another model or menu") { routeId = null; index = -1; mismatch = false; render() }
         action(content, "Choose another TV or app") { chooseGroup("") }

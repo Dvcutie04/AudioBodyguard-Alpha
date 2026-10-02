@@ -187,6 +187,7 @@ final class AQSSReadOnlyUITests: XCTestCase {
         tap("Close example", app); label("No measurements yet", app)
         tab("settings", app); tap("Daylight", app)
         XCTAssertEqual(app.buttons["Daylight"].value as? String, "Selected")
+        XCTAssertFalse(app.staticTexts["Explore the direction. These features are not active."].exists)
         screenshot("Daylight Settings", app)
         tab("home", app); screenshot("Daylight Home", app); label("Unknown physical state", app)
         tab("settings", app); tap("Midnight", app); tap("Hide advanced options", app)
@@ -256,6 +257,8 @@ final class AQSSReadOnlyUITests: XCTestCase {
         let app = launch()
         tab("devices", app); tap("Illustrated setup guides", app); tap("Samsung", app)
         tap("Samsung — TV shows OK approval", app); app.buttons["setup-next"].tap()
+        XCTAssertFalse(app.staticTexts["Use your real device. This picture is an illustration."].exists)
+        XCTAssertFalse(app.staticTexts.containing(NSPredicate(format: "label CONTAINS %@", "Illustrations may differ from your screen")).firstMatch.exists)
         for _ in 0..<13 { app.buttons["setup-next"].tap() }
         label("Approve on the television", app)
         screenshot("Samsung illustrated TV approval", app)

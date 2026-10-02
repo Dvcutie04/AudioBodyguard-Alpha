@@ -397,6 +397,7 @@ tap_scroll_label "TCL QM851G / Q651G / QM891G — first setup" setup_large_route
 tap_tutorial_label "Start guide" setup_large_start
 capture_ui setup_large_step
 assert_tutorial_label setup_large_step "Step 1 of 12"
+if python3 tools/check_android_simulation_ui.py --assert-label "$artifact_dir/setup_large_step.xml" "Use your real device. This picture is an illustration." 2>/dev/null; then exit 1; fi
 assert_tutorial_label setup_large_step "Close"
 assert_tutorial_label setup_large_step "Next"
 adb shell settings put system user_rotation 1

@@ -409,7 +409,6 @@ class ReadOnlyHomeActivity : Activity() {
             section("Move this session option", "Unavailable", "No authorized endpoint or verified transfer path is connected.", "handoffOption")
         }
         label(column, "On the horizon", 22f, bold = true)
-        label(column, "Explore the direction. These features are not active.", 16f, skin.muted)
         InterfaceContent.future.forEach { f ->
             destination(f.title, f.detail) {
                 val dialog = AlertDialog.Builder(this).setTitle(f.title).setMessage(f.explanation).setPositiveButton("Got it", null)
