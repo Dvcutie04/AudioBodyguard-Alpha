@@ -52,7 +52,7 @@ jobs:
           test -f "$APP/Assets.car"
           lipo "$APP/AQSSReadOnly" -verify_arch arm64
           test "$(/usr/libexec/PlistBuddy -c 'Print :CFBundleIdentifier' "$APP/Info.plist")" = 'com.aqss.bodyguard.prototype'
-          test "$(/usr/libexec/PlistBuddy -c 'Print :CFBundleDisplayName' "$APP/Info.plist")" = 'AQSS Simulation'
+          test "$(/usr/libexec/PlistBuddy -c 'Print :CFBundleDisplayName' "$APP/Info.plist")" = 'Audio Bodyguard'
           test "$(/usr/libexec/PlistBuddy -c 'Print :CFBundleVersion' "$APP/Info.plist")" = '1'
           if codesign -dv "$APP" >/dev/null 2>&1; then
             echo 'Unexpected signature on unsigned device preflight' >&2
