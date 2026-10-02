@@ -278,7 +278,7 @@ tap_tutorial_label "Midnight" theme_midnight
 tap_scroll_label "Hide advanced options" advanced_close
 tap_scroll_label "Voice requests. Planned · proposal only" future_voice
 capture_ui future_voice_detail
-assert_tutorial_label future_voice_detail "No command is sent by Voice check"
+assert_tutorial_label future_voice_detail "Voice control requires device authority and checked output"
 tap_tutorial_label "Show voice steps" future_voice_help
 capture_ui setup_voice_first
 assert_tutorial_label setup_voice_first "Step 1 of 9"

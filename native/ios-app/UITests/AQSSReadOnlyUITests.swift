@@ -190,7 +190,7 @@ final class AQSSReadOnlyUITests: XCTestCase {
         screenshot("Daylight Settings", app)
         tab("home", app); screenshot("Daylight Home", app); label("Unknown physical state", app)
         tab("settings", app); tap("Midnight", app); tap("Hide advanced options", app)
-        tap("Voice requests", app); label("No command is sent by Voice check", app); app.buttons["Got it"].tap()
+        tap("Voice requests", app); label("Voice control requires device authority and checked output", app); app.buttons["Got it"].tap()
         tab("home", app); label("Unknown physical state", app)
     }
 
