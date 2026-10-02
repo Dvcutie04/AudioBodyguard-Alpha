@@ -16,7 +16,7 @@ final class GuideProgressTests: XCTestCase {
         guide.back(); XCTAssertEqual(guide.selected("chooseHome")?.id, "alexa")
         XCTAssertTrue(guide.select("neither")); XCTAssertTrue(guide.next())
         while guide.next() {}
-        XCTAssertTrue(guide.isLast); XCTAssertEqual(guide.index, 6); XCTAssertFalse(guide.next())
+        XCTAssertTrue(guide.isLast); XCTAssertEqual(guide.index, 5); XCTAssertFalse(guide.next())
         guide.close(); XCTAssertNil(guide.topic); XCTAssertTrue(guide.selections.isEmpty)
         XCTAssertTrue(guide.start("getting_started")); XCTAssertEqual(guide.index, 0); XCTAssertNil(guide.selected("chooseTV"))
     }
@@ -25,7 +25,7 @@ final class GuideProgressTests: XCTestCase {
         guide.restore("getting_started", index: 100, selections: [:]); XCTAssertEqual(guide.index, 1)
         guide.restore("getting_started", index: 6, selections: ["chooseTV": "invalid", "chooseHome": "alexa"]); XCTAssertEqual(guide.index, 1)
         guide.restore("getting_started", index: 6, selections: ["chooseTV": "unsure"]); XCTAssertEqual(guide.index, 2)
-        guide.restore("getting_started", index: 6, selections: ["chooseTV": "unsure", "chooseHome": "neither"]); XCTAssertEqual(guide.index, 6)
+        guide.restore("getting_started", index: 6, selections: ["chooseTV": "unsure", "chooseHome": "neither"]); XCTAssertEqual(guide.index, 5)
         guide.restore("getting_started", index: -9, selections: [:]); XCTAssertEqual(guide.index, 0)
     }
     func testEveryTopicHasAReachableEndWithoutInventingADevice() {
@@ -37,5 +37,25 @@ final class GuideProgressTests: XCTestCase {
             }
             XCTAssertTrue(guide.isLast, topic.id)
         }
+    }
+    func testPictureCompletionAdvancesOnlyTheExpectedLocalConnectionSection() {
+        var guide = AQSSGuideProgress()
+        XCTAssertFalse(guide.completePictures(expectedTarget: "connectionPlan", routeID: "samsung_ok"))
+        guide.start("getting_started")
+        XCTAssertFalse(guide.completePictures(expectedTarget: "connectionPlan", routeID: "samsung_ok"))
+        guide.restore("getting_started", index: 3, selections: ["chooseTV": "samsung", "chooseHome": "alexa"])
+        for route in ["unknown", "voice", "identify", "roku_network", "samsung_model_new"] {
+            XCTAssertFalse(guide.completePictures(expectedTarget: "connectionPlan", routeID: route))
+            XCTAssertEqual(guide.index, 3)
+        }
+        XCTAssertFalse(guide.completePictures(expectedTarget: "connectionCheck", routeID: "samsung_ok"))
+        XCTAssertTrue(guide.completePictures(expectedTarget: "connectionPlan", routeID: "samsung_ok"))
+        XCTAssertEqual(guide.step?.target, "connectionCheck")
+        XCTAssertFalse(guide.completePictures(expectedTarget: "connectionPlan", routeID: "samsung_ok"))
+        XCTAssertTrue(guide.completePictures(expectedTarget: "connectionCheck", routeID: "samsung_ok"))
+        XCTAssertTrue(guide.isLast)
+        guide.start("readiness")
+        XCTAssertFalse(guide.completePictures(expectedTarget: "connectionPlan", routeID: "samsung_ok"))
+        XCTAssertEqual(guide.index, 0)
     }
 }

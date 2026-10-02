@@ -15,7 +15,7 @@ TARGETS = {
 
 
 def validate(data):
-    if set(data) != {"schema_version", "mode", "topics", "choices", "connection_stages", "feature_catalog"} or data["schema_version"] != 1 or data["mode"] != "read_only_guidance":
+    if set(data) != {"schema_version", "mode", "topics", "choices", "connection_stages", "feature_catalog", "onboarding"} or data["schema_version"] != 1 or data["mode"] != "read_only_guidance":
         raise ValueError("invalid presentation-only tutorial contract")
     stages = data["connection_stages"]
     if not isinstance(stages, list) or len(stages) != 2:
@@ -41,6 +41,21 @@ def validate(data):
         if not feature["id"].isidentifier() or feature["id"] in feature_ids or feature["availability"] not in {"planned", "preview"}:
             raise ValueError("invalid feature identity or availability")
         feature_ids.add(feature["id"])
+    presentation = data["onboarding"]
+    if type(presentation) is not dict or set(presentation) != {"featured_ids", "notice", "start_label", "more_features_label", "help_label", "picture_continue_routes"}:
+        raise ValueError("presentation-only onboarding required")
+    featured = presentation["featured_ids"]
+    if type(featured) is not list or len(featured) != 3 or any(type(value) is not str or value not in feature_ids for value in featured) or len(set(featured)) != 3:
+        raise ValueError("three distinct known featured descriptions required")
+    for key in ("notice", "start_label", "more_features_label", "help_label"):
+        if type(presentation[key]) is not str or not presentation[key].strip() or len(presentation[key]) > 80:
+            raise ValueError("invalid brief onboarding text")
+    routes = presentation["picture_continue_routes"]
+    setup = json.loads((ROOT / "contracts/setup_guides_v1.json").read_text())
+    helpers = {"samsung_model_new", "samsung_model_old", "lg_model_new", "lg_model_mid", "lg_model_2020", "lg_model_old", "identify", "voice", "roku_network", "roku_model", "philips_voice_remote"}
+    eligible = {route["id"] for route in setup["routes"] if route["id"] not in helpers}
+    if type(routes) is not list or not routes or any(type(value) is not str or value not in eligible for value in routes) or len(set(routes)) != len(routes):
+        raise ValueError("known pairing picture routes required for local continuation")
     if not isinstance(data["choices"], dict) or set(data["choices"]) != {"chooseTV", "chooseHome"}:
         raise ValueError("invalid guide choice groups")
     for choices in data["choices"].values():
@@ -121,8 +136,14 @@ def sources(data):
         keys = ("id", "title", "detail", "availability")
         swift += ["        AQSSTutorialFeature(" + ", ".join(f"{key}: {q(feature[key])}" for key in keys) + "),"]
         kotlin += ["        TutorialFeature(" + ", ".join(q(feature[key]).replace("$", r"\$") for key in keys) + "),"]
-    swift += ["    ]", "}", "public struct AQSSTutorialChoice: Equatable, Sendable {", "    public let id, title, icon, detail: String", "}", "public struct AQSSConnectionStage: Equatable, Sendable {", "    public let number: Int", "    public let title, detail: String", "    public let targets: [String]", "}", "public struct AQSSTutorialFeature: Equatable, Sendable {", "    public let id, title, detail, availability: String", "}", ""]
-    kotlin += ["    )", "}", "data class TutorialChoice(val id: String, val title: String, val icon: String, val detail: String)", "data class ConnectionStage(val number: Int, val title: String, val detail: String, val targets: List<String>)", "data class TutorialFeature(val id: String, val title: String, val detail: String, val availability: String)", ""]
+    presentation = data["onboarding"]
+    swift += ["    ]", "    public static let featuredIDs: [String] = [" + ", ".join(q(value) for value in presentation["featured_ids"]) + "]", "    public static let pictureContinueRoutes: [String] = [" + ", ".join(q(value) for value in presentation["picture_continue_routes"]) + "]"]
+    kotlin += ["    )", "    val featuredIDs: List<String> = listOf(" + ", ".join(q(value) for value in presentation["featured_ids"]) + ")", "    val pictureContinueRoutes: List<String> = listOf(" + ", ".join(q(value) for value in presentation["picture_continue_routes"]) + ")"]
+    for key, name in (("notice", "previewNotice"), ("start_label", "startLabel"), ("more_features_label", "moreFeaturesLabel"), ("help_label", "helpLabel")):
+        swift += [f"    public static let {name} = {q(presentation[key])}"]
+        kotlin += [f"    const val {name} = {q(presentation[key])}"]
+    swift += ["}", "public struct AQSSTutorialChoice: Equatable, Sendable {", "    public let id, title, icon, detail: String", "}", "public struct AQSSConnectionStage: Equatable, Sendable {", "    public let number: Int", "    public let title, detail: String", "    public let targets: [String]", "}", "public struct AQSSTutorialFeature: Equatable, Sendable {", "    public let id, title, detail, availability: String", "}", ""]
+    kotlin += ["}", "data class TutorialChoice(val id: String, val title: String, val icon: String, val detail: String)", "data class ConnectionStage(val number: Int, val title: String, val detail: String, val targets: List<String>)", "data class TutorialFeature(val id: String, val title: String, val detail: String, val availability: String)", ""]
     return {
         ROOT / "native/ios/Sources/AQSSNativeFeedback/TutorialContent.swift": "\n".join(swift),
         ROOT / "native/android/src/main/kotlin/com/aqss/nativefeedback/TutorialContent.kt": "\n".join(kotlin),

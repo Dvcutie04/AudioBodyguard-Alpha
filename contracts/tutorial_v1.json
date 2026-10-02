@@ -6,40 +6,151 @@
       "number": 1,
       "title": "Connect to your TV or home device",
       "detail": "Pair the device and approve access on its screen or in its official home app.",
-      "targets": ["chooseTV", "chooseHome", "connectionPlan"]
+      "targets": [
+        "chooseTV",
+        "chooseHome",
+        "connectionPlan"
+      ]
     },
     {
       "number": 2,
       "title": "Connect to your phone",
       "detail": "Link your iPhone or Android phone, then check its permissions and sound connection.",
-      "targets": ["connectionCheck"]
+      "targets": [
+        "connectionCheck"
+      ]
     }
   ],
   "feature_catalog": {
-    "title": "Features for supported connections",
+    "title": "Made for better TV time",
     "note": "Device controls are planned and depend on the TV, player and phone. This preview does not control connected devices. Picture guides, photo hints and voice input can be explored now.",
     "items": [
-      {"id": "series_intro", "title": "Skip series intros", "detail": "On supported players with a confirmed intro segment.", "availability": "planned"},
-      {"id": "commercial_volume", "title": "Lower volume during commercials", "detail": "With an eligible sound path and your permission.", "availability": "planned"},
-      {"id": "remote", "title": "Universal remote controls", "detail": "For compatible devices; controls vary by model.", "availability": "planned"},
-      {"id": "loud_sounds", "title": "Reduce sudden loud sounds", "detail": "Bounded volume, mute and comfort controls.", "availability": "planned"},
-      {"id": "presets", "title": "Dialogue and Night sound presets", "detail": "Listening options for qualified sound outputs.", "availability": "planned"},
-      {"id": "equalizer", "title": "Custom equalizer", "detail": "Bass, midrange and treble on supported devices.", "availability": "planned"},
-      {"id": "captions", "title": "Captions, subtitles and audio description", "detail": "When the media supplies compatible tracks.", "availability": "planned"},
-      {"id": "languages", "title": "Audio and caption languages", "detail": "Choose from the tracks supplied by the media.", "availability": "planned"},
-      {"id": "voice", "title": "Voice requests", "detail": "Requests require confirmation and eligible controls.", "availability": "planned"},
-      {"id": "profiles", "title": "Personal sound profiles and saved settings", "detail": "Save and restore confirmed preferences.", "availability": "planned"},
-      {"id": "undo", "title": "Undo changes and restore settings", "detail": "For eligible changes with a known earlier setting.", "availability": "planned"},
-      {"id": "history", "title": "Session history and sound insights", "detail": "Real observations and gaps; examples are labeled.", "availability": "planned"},
-      {"id": "recovery", "title": "Pause, resume and connection recovery", "detail": "Recheck the connection before resuming controls.", "availability": "planned"},
-      {"id": "handoff", "title": "Move sessions between iPhone and Android", "detail": "Only through a supported, checked transfer path.", "availability": "planned"},
-      {"id": "background", "title": "Background protection where supported", "detail": "Subject to phone limits and a qualified sound path.", "availability": "planned"},
-      {"id": "privacy", "title": "Privacy controls and private support reports", "detail": "Capture choices, deletion and review before sharing.", "availability": "planned"},
-      {"id": "status", "title": "Optional alerts, haptics and status widgets", "detail": "Readable status with freshness and coverage gaps.", "availability": "planned"},
-      {"id": "suggestions", "title": "Explainable suggestions and session recipes", "detail": "Optional suggestions that you can review or dismiss.", "availability": "planned"},
-      {"id": "accessories", "title": "Compatible speakers, headphones and accessories", "detail": "Integrations depend on the exact device and route.", "availability": "planned"},
-      {"id": "setup", "title": "Picture guides and photo-assisted setup", "detail": "Photo hints help identify a device; they do not pair it.", "availability": "preview"},
-      {"id": "input", "title": "Voice input display and recognized words", "detail": "Foreground input check; recognized words may be wrong.", "availability": "preview"}
+      {
+        "id": "series_intro",
+        "title": "Skip series intros",
+        "detail": "On supported players with a confirmed intro segment.",
+        "availability": "planned"
+      },
+      {
+        "id": "commercial_volume",
+        "title": "Lower volume during commercials",
+        "detail": "With an eligible sound path and your permission.",
+        "availability": "planned"
+      },
+      {
+        "id": "remote",
+        "title": "Universal remote controls",
+        "detail": "For compatible devices; controls vary by model.",
+        "availability": "planned"
+      },
+      {
+        "id": "loud_sounds",
+        "title": "Reduce sudden loud sounds",
+        "detail": "Bounded volume, mute and comfort controls.",
+        "availability": "planned"
+      },
+      {
+        "id": "presets",
+        "title": "Dialogue and Night sound presets",
+        "detail": "Listening options for qualified sound outputs.",
+        "availability": "planned"
+      },
+      {
+        "id": "equalizer",
+        "title": "Custom equalizer",
+        "detail": "Bass, midrange and treble on supported devices.",
+        "availability": "planned"
+      },
+      {
+        "id": "captions",
+        "title": "Captions, subtitles and audio description",
+        "detail": "When the media supplies compatible tracks.",
+        "availability": "planned"
+      },
+      {
+        "id": "languages",
+        "title": "Audio and caption languages",
+        "detail": "Choose from the tracks supplied by the media.",
+        "availability": "planned"
+      },
+      {
+        "id": "voice",
+        "title": "Voice requests",
+        "detail": "Requests require confirmation and eligible controls.",
+        "availability": "planned"
+      },
+      {
+        "id": "profiles",
+        "title": "Personal sound profiles and saved settings",
+        "detail": "Save and restore confirmed preferences.",
+        "availability": "planned"
+      },
+      {
+        "id": "undo",
+        "title": "Undo changes and restore settings",
+        "detail": "For eligible changes with a known earlier setting.",
+        "availability": "planned"
+      },
+      {
+        "id": "history",
+        "title": "Session history and sound insights",
+        "detail": "Real observations and gaps; examples are labeled.",
+        "availability": "planned"
+      },
+      {
+        "id": "recovery",
+        "title": "Pause, resume and connection recovery",
+        "detail": "Recheck the connection before resuming controls.",
+        "availability": "planned"
+      },
+      {
+        "id": "handoff",
+        "title": "Move sessions between iPhone and Android",
+        "detail": "Only through a supported, checked transfer path.",
+        "availability": "planned"
+      },
+      {
+        "id": "background",
+        "title": "Background protection where supported",
+        "detail": "Subject to phone limits and a qualified sound path.",
+        "availability": "planned"
+      },
+      {
+        "id": "privacy",
+        "title": "Privacy controls and private support reports",
+        "detail": "Capture choices, deletion and review before sharing.",
+        "availability": "planned"
+      },
+      {
+        "id": "status",
+        "title": "Optional alerts, haptics and status widgets",
+        "detail": "Readable status with freshness and coverage gaps.",
+        "availability": "planned"
+      },
+      {
+        "id": "suggestions",
+        "title": "Explainable suggestions and session recipes",
+        "detail": "Optional suggestions that you can review or dismiss.",
+        "availability": "planned"
+      },
+      {
+        "id": "accessories",
+        "title": "Compatible speakers, headphones and accessories",
+        "detail": "Integrations depend on the exact device and route.",
+        "availability": "planned"
+      },
+      {
+        "id": "setup",
+        "title": "Picture guides and photo-assisted setup",
+        "detail": "Photo hints help identify a device; they do not pair it.",
+        "availability": "preview"
+      },
+      {
+        "id": "input",
+        "title": "Voice input display and recognized words",
+        "detail": "Foreground input check; recognized words may be wrong.",
+        "availability": "preview"
+      }
     ]
   },
   "topics": [
@@ -50,50 +161,43 @@
         {
           "target": "welcome",
           "area": "overview",
-          "title": "Start with your TV",
-          "explanation": "Complete both connections: first your TV or home device, then your phone. We will guide you one screen at a time. This preview does not monitor or change TV audio.",
+          "title": "Your TV. Your comfort.",
+          "explanation": "Set up both connections with pictures. This preview does not monitor or change TV audio.",
           "example": ""
         },
         {
           "target": "chooseTV",
           "area": "connection",
           "title": "Which TV do you use?",
-          "explanation": "Choose the name on the front of your TV or on its remote. This changes the explanation only. It does not search for or connect to your TV.",
+          "explanation": "Choose the brand on your TV or remote.",
           "example": "Example: if the remote says Samsung, choose Samsung. If you cannot find a name, choose Not sure / no TV."
         },
         {
           "target": "chooseHome",
           "area": "connection",
-          "title": "Do you use a smart-home app?",
-          "explanation": "Choose the app you already use to manage devices at home. If you use neither app, that is fine. No account sign-in is needed for this guide.",
+          "title": "Use a home app?",
+          "explanation": "Choose the home app you use. Neither is fine.",
           "example": "Example: if you say “Alexa” to an Echo speaker, choose Amazon Alexa. If you manage devices in the Google Home app, choose Google Home."
         },
         {
           "target": "connectionPlan",
           "area": "connection",
           "title": "1. Connect to your TV or home device",
-          "explanation": "Follow the picture guide for your TV or home device. Pair it in its official app and approve access on the device when asked. Then continue to the separate phone step. Audio Bodyguard pairing is not available in this preview.",
+          "explanation": "Follow the highlighted pictures on your TV or in its official app.",
           "example": "Example: finding a Samsung TV in Alexa does not let this preview control it. Audio Bodyguard would still need its own supported connection and your permission."
         },
         {
           "target": "connectionCheck",
           "area": "connection",
           "title": "2. Connect to your phone",
-          "explanation": "On your iPhone or Android phone, open the device's official app and check that your TV or home device is listed. Follow the phone permissions in its picture guide. Your TV is not connected to Audio Bodyguard by this guide; both connections still need to be checked.",
+          "explanation": "Find your TV in its official phone app. Audio Bodyguard is not connected yet.",
           "example": "Example: use your phone on the home network required by the device's official app. A paired TV and a phone with the right permissions are separate checks."
-        },
-        {
-          "target": "featureExample",
-          "area": "connection",
-          "title": "Check both connections",
-          "explanation": "Device connection and phone connection are both required. In a supported release, each needs a separate check before controls become available. Finishing these instructions does not mark either connection as successful.",
-          "example": "Example: your TV is online, but sound is playing through a soundbar. Check the phone's selected device and the actual sound output before using a supported control."
         },
         {
           "target": "guideFinish",
           "area": "connection",
-          "title": "You know where to start",
-          "explanation": "Open the full app to explore. Devices explains connection requirements. Sound explains planned controls. Insights has an example graph. Settings has appearance choices. Help can replay this guide from any page.",
+          "title": "Your next step is ready",
+          "explanation": "Explore the preview. Replay the pictures anytime from Help.",
           "example": "Example: to look at the sample graph, open Insights, then Explore an example. Its values are made up; they are not measurements from your phone."
         }
       ]
@@ -416,6 +520,47 @@
         "icon": "questionmark.circle",
         "detail": "No smart-home account is needed to explore. Keep using your TV remote. A future direct TV connection would still need a supported model and your permission."
       }
+    ]
+  },
+  "onboarding": {
+    "featured_ids": [
+      "series_intro",
+      "commercial_volume",
+      "remote"
+    ],
+    "notice": "Preview · no TV control",
+    "start_label": "Start picture setup",
+    "more_features_label": "More features",
+    "help_label": "Need help?",
+    "picture_continue_routes": [
+      "samsung_ok",
+      "samsung_pin",
+      "lg_pair",
+      "google_remote",
+      "google_setup",
+      "tcl_models",
+      "google_fast",
+      "google_samsung",
+      "google_lg",
+      "google_roku",
+      "google_vidaa",
+      "google_vizio",
+      "google_legacy",
+      "samsung_alexa",
+      "lg_alexa",
+      "sony_new",
+      "sony_legacy",
+      "roku_alexa",
+      "vidaa_google",
+      "vidaa_alexa",
+      "vizio_pair",
+      "vizio_account",
+      "vizio_assist",
+      "fire_alexa",
+      "lg_account5",
+      "lg_account6",
+      "google_legacy_add",
+      "fire_setup"
     ]
   }
 }

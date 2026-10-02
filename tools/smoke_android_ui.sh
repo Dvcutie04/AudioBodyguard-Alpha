@@ -126,7 +126,7 @@ assert not labels.intersection({"Home", "Sound", "Devices", "Insights", "Setting
 CHECK
 }
 capture_ui beginner_step_1
-assert_tutorial_label beginner_step_1 "Step 1 of 7"
+assert_tutorial_label beginner_step_1 "Step 1 of 6"
 assert_only_guide beginner_step_1
 assert_tutorial_label beginner_step_1 "Both connections are required"
 assert_tutorial_label beginner_step_1 "1. Connect to your TV or home device"
@@ -135,9 +135,11 @@ adb shell input swipe 500 1350 500 950 650
 assert_scroll_label "Skip series intros" welcome_features
 assert_scroll_label "Lower volume during commercials" welcome_features_commercials
 assert_scroll_label "Universal remote controls" welcome_features_remote
+if python3 tools/check_android_simulation_ui.py --assert-label "$artifact_dir/welcome_features_remote.xml" "Voice input display and recognized words" 2>/dev/null; then exit 1; fi
+tap_scroll_label "More features" welcome_more_features
 assert_scroll_label "Voice input display and recognized words" welcome_features_last
 assert_scroll_label "does not control connected devices" welcome_features_note
-tap_tutorial_label "Begin" beginner_begin
+tap_tutorial_label "Start picture setup" beginner_begin
 capture_ui beginner_step_2
 assert_only_guide beginner_step_2
 if python3 tools/check_android_simulation_ui.py --text-tap-coordinates "$artifact_dir/beginner_step_2.xml" "Next" | grep -q '[0-9]'; then exit 1; fi
@@ -172,8 +174,17 @@ capture_ui setup_last
 assert_tutorial_label setup_last "Check the actual result"
 tap_tutorial_label "Finish guide" setup_finish
 capture_ui setup_plan_return
-assert_tutorial_label setup_plan_return "Step 4 of 7"
-assert_scroll_label "Amazon Alexa" beginner_tailored_plan
+assert_tutorial_label setup_plan_return "Step 5 of 6"
+assert_tutorial_label setup_plan_return "2. Connect to your phone"
+assert_tutorial_label setup_plan_return "Not connected · Audio protection is not active"
+tap_scroll_label "Show Samsung steps" setup_from_phone
+tap_scroll_label "Samsung — TV shows OK approval" setup_phone_route
+tap_tutorial_label "Close" setup_phone_cancel
+capture_ui phone_cancelled_return
+assert_tutorial_label phone_cancelled_return "Step 5 of 6"
+tap_tutorial_label "Back" beginner_phone_back
+capture_ui beginner_tailored_plan
+assert_tutorial_label beginner_tailored_plan "Step 4 of 6"
 tap_tutorial_label "Back" beginner_plan_back
 capture_ui beginner_home_retained
 assert_tutorial_label beginner_home_retained "Selected: Amazon Alexa"
@@ -181,17 +192,16 @@ tap_tutorial_label "Next" beginner_plan_again
 tap_tutorial_label "Next" beginner_connection_truth
 capture_ui beginner_step_5
 assert_tutorial_label beginner_step_5 "2. Connect to your phone"
-assert_tutorial_label beginner_step_5 "not connected to Audio Bodyguard"
-tap_tutorial_label "Next" beginner_feature_example
+assert_tutorial_label beginner_step_5 "not connected yet"
 tap_tutorial_label "Next" beginner_last
-capture_ui beginner_step_7
-assert_only_guide beginner_step_7
+capture_ui beginner_step_6
+assert_only_guide beginner_step_6
 tap_tutorial_label "Open full app" beginner_finish
 capture_ui beginner_finished
 assert_tutorial_label beginner_finished "TOUR FINISHED"
 tap_tutorial_label "Replay connection guide" beginner_replay
 capture_ui beginner_replayed
-assert_tutorial_label beginner_replayed "Step 1 of 7"
+assert_tutorial_label beginner_replayed "Step 1 of 6"
 tap_tutorial_label "Exit tutorial" beginner_exit
 adb shell am force-stop com.aqss.bodyguard.prototype
 adb shell am start -W -n com.aqss.bodyguard.prototype/.ReadOnlyHomeActivity
@@ -367,8 +377,8 @@ adb shell settings put system font_scale 2.0
 capture_ui large_text_home
 tap_scroll_label "TV & smart-home guide" large_beginner_open
 capture_ui large_beginner
-assert_tutorial_label large_beginner "Step 1 of 7"
-tap_tutorial_label "Begin" large_beginner_next
+assert_tutorial_label large_beginner "Step 1 of 6"
+tap_tutorial_label "Start picture setup" large_beginner_next
 tap_tutorial_label "Exit tutorial" large_beginner_close
 tap_tutorial_label "Pages · Home" large_pages
 tap_tutorial_label "Devices" large_devices

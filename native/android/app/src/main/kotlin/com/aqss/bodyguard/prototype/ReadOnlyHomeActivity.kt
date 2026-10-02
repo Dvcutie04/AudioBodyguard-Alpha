@@ -2,6 +2,7 @@ package com.aqss.bodyguard.prototype
 
 import android.app.Activity
 import android.app.AlertDialog
+import android.content.Intent
 import android.content.res.Configuration
 import android.graphics.Color
 import android.graphics.Typeface
@@ -32,6 +33,8 @@ import com.aqss.nativefeedback.InterfaceContent
 
 /** Presentation only: navigation and appearance cannot authorize an audio action. */
 class ReadOnlyHomeActivity : Activity() {
+    companion object { private const val PICTURE_REQUEST = 4101 }
+    private var pendingPictureTarget: String? = null
     private var page = "home"
     private var optionsExpanded = true
     private var advancedExpanded = true
@@ -66,6 +69,7 @@ class ReadOnlyHomeActivity : Activity() {
         advancedExpanded = savedInstanceState?.getBoolean("advancedExpanded", true) ?: true
         checklistExpanded = savedInstanceState?.getBoolean("checklistExpanded") ?: false
         beginnerTourFinished = savedInstanceState?.getBoolean("beginnerTourFinished") ?: false
+        pendingPictureTarget = savedInstanceState?.getString("pendingPictureTarget")?.takeIf { it in listOf("connectionPlan", "connectionCheck") }
         require(coverage.state == SessionState.UNKNOWN_PHYSICAL_STATE && coverage.reason == "NO_OBSERVATION")
         build(savedInstanceState)
     }
@@ -259,16 +263,7 @@ class ReadOnlyHomeActivity : Activity() {
             label(c, "This is a read-only preview. It does not monitor or change TV audio.", 16f, skin.muted)
             if (tutorial.isBeginner) label(c, "Use Next in the guide below to continue.", 17f, skin.accent, true)
             else action(c, if (beginnerTourFinished) "Replay connection guide" else "TV & smart-home guide", true) { tutorial.start("getting_started") }
-            label(c, "No setup needed to explore. Help is always at the top.", 15f, skin.muted)
-        }
-        card { c ->
-            label(c, "What can I do here?", 20f, bold = true)
-            label(c, "Available now", 17f, skin.accent, true)
-            label(c, "Explore pages, example graphs, themes and tutorials.", 15f, skin.muted)
-            label(c, "Preview only", 17f, skin.warning, true)
-            label(c, "Sound controls and device checks are explanations. Audio protection is not active.", 15f, skin.muted)
-            label(c, "Planned", 17f, skin.violet, true)
-            label(c, "Voice requests, personal profiles and background protection. Read more in Settings.", 15f, skin.muted)
+            label(c, "Explore pictures, themes and examples. Help is always at the top.", 15f, skin.muted)
         }
         card("coverage") { c ->
             label(c, "COVERAGE", 12f, skin.muted, true)
@@ -287,7 +282,19 @@ class ReadOnlyHomeActivity : Activity() {
         destination("Insights", "Trends, evidence & examples") { openPage("insights") }
     }
     private fun openSetup(group: String = "") {
-        startActivity(android.content.Intent(this, SetupGuideActivity::class.java).putExtra("group", group).putExtra("dark", skin.dark))
+        pendingPictureTarget = tutorial.pictureTarget
+        @Suppress("DEPRECATION")
+        startActivityForResult(Intent(this, SetupGuideActivity::class.java).putExtra("group", group).putExtra("dark", skin.dark), PICTURE_REQUEST)
+    }
+    @Deprecated("Existing framework Activity shell; validates local learning results only")
+    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
+        super.onActivityResult(requestCode, resultCode, data)
+        if (requestCode != PICTURE_REQUEST) return
+        val expected = pendingPictureTarget
+        pendingPictureTarget = null
+        if (resultCode == RESULT_OK && expected != null && ::tutorial.isInitialized) {
+            data?.getStringExtra(SetupGuideActivity.COMPLETED_ROUTE)?.let { tutorial.completePictures(expected, it) }
+        }
     }
     private fun openInputTool(mode: String) {
         startActivity(android.content.Intent(this, InputAssistanceActivity::class.java).putExtra("mode", mode).putExtra("dark", skin.dark))
@@ -445,6 +452,7 @@ class ReadOnlyHomeActivity : Activity() {
     private fun savePresentation(outState: Bundle) {
         outState.putString("page", page)
         outState.putBoolean("beginnerTourFinished", beginnerTourFinished)
+        outState.putString("pendingPictureTarget", pendingPictureTarget)
         outState.putBoolean("optionsExpanded", optionsExpanded); outState.putBoolean("advancedExpanded", advancedExpanded); outState.putBoolean("checklistExpanded", checklistExpanded)
         tutorial.save(outState)
     }

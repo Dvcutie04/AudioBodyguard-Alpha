@@ -150,7 +150,10 @@ jobs:
             artifacts/ui/android/home.png
             artifacts/ui/android/beginner_step_1.png
             artifacts/ui/android/welcome_features.png
+            artifacts/ui/android/welcome_features_last.png
             artifacts/ui/android/beginner_step_5.png
+            artifacts/ui/android/setup_plan_return.png
+            artifacts/ui/android/phone_cancelled_return.png
             artifacts/ui/android/settings.png
             artifacts/ui/android/daylight_settings.png
             artifacts/ui/android/daylight_home.png

@@ -5,13 +5,12 @@ data class TutorialTopic(val id: String, val title: String, val steps: List<Tuto
 object TutorialContent {
     val topics: List<TutorialTopic> = listOf(
         TutorialTopic("getting_started", "TV & smart-home guide", listOf(
-            TutorialStep("welcome", "overview", "Start with your TV", "Complete both connections: first your TV or home device, then your phone. We will guide you one screen at a time. This preview does not monitor or change TV audio.", ""),
-            TutorialStep("chooseTV", "connection", "Which TV do you use?", "Choose the name on the front of your TV or on its remote. This changes the explanation only. It does not search for or connect to your TV.", "Example: if the remote says Samsung, choose Samsung. If you cannot find a name, choose Not sure / no TV."),
-            TutorialStep("chooseHome", "connection", "Do you use a smart-home app?", "Choose the app you already use to manage devices at home. If you use neither app, that is fine. No account sign-in is needed for this guide.", "Example: if you say “Alexa” to an Echo speaker, choose Amazon Alexa. If you manage devices in the Google Home app, choose Google Home."),
-            TutorialStep("connectionPlan", "connection", "1. Connect to your TV or home device", "Follow the picture guide for your TV or home device. Pair it in its official app and approve access on the device when asked. Then continue to the separate phone step. Audio Bodyguard pairing is not available in this preview.", "Example: finding a Samsung TV in Alexa does not let this preview control it. Audio Bodyguard would still need its own supported connection and your permission."),
-            TutorialStep("connectionCheck", "connection", "2. Connect to your phone", "On your iPhone or Android phone, open the device's official app and check that your TV or home device is listed. Follow the phone permissions in its picture guide. Your TV is not connected to Audio Bodyguard by this guide; both connections still need to be checked.", "Example: use your phone on the home network required by the device's official app. A paired TV and a phone with the right permissions are separate checks."),
-            TutorialStep("featureExample", "connection", "Check both connections", "Device connection and phone connection are both required. In a supported release, each needs a separate check before controls become available. Finishing these instructions does not mark either connection as successful.", "Example: your TV is online, but sound is playing through a soundbar. Check the phone's selected device and the actual sound output before using a supported control."),
-            TutorialStep("guideFinish", "connection", "You know where to start", "Open the full app to explore. Devices explains connection requirements. Sound explains planned controls. Insights has an example graph. Settings has appearance choices. Help can replay this guide from any page.", "Example: to look at the sample graph, open Insights, then Explore an example. Its values are made up; they are not measurements from your phone."),
+            TutorialStep("welcome", "overview", "Your TV. Your comfort.", "Set up both connections with pictures. This preview does not monitor or change TV audio.", ""),
+            TutorialStep("chooseTV", "connection", "Which TV do you use?", "Choose the brand on your TV or remote.", "Example: if the remote says Samsung, choose Samsung. If you cannot find a name, choose Not sure / no TV."),
+            TutorialStep("chooseHome", "connection", "Use a home app?", "Choose the home app you use. Neither is fine.", "Example: if you say “Alexa” to an Echo speaker, choose Amazon Alexa. If you manage devices in the Google Home app, choose Google Home."),
+            TutorialStep("connectionPlan", "connection", "1. Connect to your TV or home device", "Follow the highlighted pictures on your TV or in its official app.", "Example: finding a Samsung TV in Alexa does not let this preview control it. Audio Bodyguard would still need its own supported connection and your permission."),
+            TutorialStep("connectionCheck", "connection", "2. Connect to your phone", "Find your TV in its official phone app. Audio Bodyguard is not connected yet.", "Example: use your phone on the home network required by the device's official app. A paired TV and a phone with the right permissions are separate checks."),
+            TutorialStep("guideFinish", "connection", "Your next step is ready", "Explore the preview. Replay the pictures anytime from Help.", "Example: to look at the sample graph, open Insights, then Explore an example. Its values are made up; they are not measurements from your phone."),
         )),
         TutorialTopic("home", "Home and coverage", listOf(
             TutorialStep("coverage", "home", "Read the coverage state", "Unknown physical state means the app has not independently checked the sound coming from the speakers. This preview does not provide audio protection.", "Example: a phone can show a TV as connected while the room is using a separate soundbar. The app must check the actual sound output."),
@@ -79,7 +78,7 @@ object TutorialContent {
         ConnectionStage(1, "Connect to your TV or home device", "Pair the device and approve access on its screen or in its official home app.", listOf("chooseTV", "chooseHome", "connectionPlan")),
         ConnectionStage(2, "Connect to your phone", "Link your iPhone or Android phone, then check its permissions and sound connection.", listOf("connectionCheck")),
     )
-    const val featureTitle = "Features for supported connections"
+    const val featureTitle = "Made for better TV time"
     const val featureNote = "Device controls are planned and depend on the TV, player and phone. This preview does not control connected devices. Picture guides, photo hints and voice input can be explored now."
     val features: List<TutorialFeature> = listOf(
         TutorialFeature("series_intro", "Skip series intros", "On supported players with a confirmed intro segment.", "planned"),
@@ -104,6 +103,12 @@ object TutorialContent {
         TutorialFeature("setup", "Picture guides and photo-assisted setup", "Photo hints help identify a device; they do not pair it.", "preview"),
         TutorialFeature("input", "Voice input display and recognized words", "Foreground input check; recognized words may be wrong.", "preview"),
     )
+    val featuredIDs: List<String> = listOf("series_intro", "commercial_volume", "remote")
+    val pictureContinueRoutes: List<String> = listOf("samsung_ok", "samsung_pin", "lg_pair", "google_remote", "google_setup", "tcl_models", "google_fast", "google_samsung", "google_lg", "google_roku", "google_vidaa", "google_vizio", "google_legacy", "samsung_alexa", "lg_alexa", "sony_new", "sony_legacy", "roku_alexa", "vidaa_google", "vidaa_alexa", "vizio_pair", "vizio_account", "vizio_assist", "fire_alexa", "lg_account5", "lg_account6", "google_legacy_add", "fire_setup")
+    const val previewNotice = "Preview · no TV control"
+    const val startLabel = "Start picture setup"
+    const val moreFeaturesLabel = "More features"
+    const val helpLabel = "Need help?"
 }
 data class TutorialChoice(val id: String, val title: String, val icon: String, val detail: String)
 data class ConnectionStage(val number: Int, val title: String, val detail: String, val targets: List<String>)

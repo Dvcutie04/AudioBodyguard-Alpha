@@ -20,7 +20,7 @@ class GuideProgressTest {
         guide.back(); assertEquals("alexa", guide.selected("chooseHome")?.id)
         assertTrue(guide.select("neither")); assertTrue(guide.next())
         while (guide.next()) { }
-        assertTrue(guide.isLast); assertEquals(6, guide.index); assertFalse(guide.next())
+        assertTrue(guide.isLast); assertEquals(5, guide.index); assertFalse(guide.next())
         guide.close(); assertNull(guide.topic); assertTrue(guide.snapshot().isEmpty())
         guide.start("getting_started"); assertEquals(0, guide.index); assertNull(guide.selected("chooseTV"))
     }
@@ -29,7 +29,7 @@ class GuideProgressTest {
         guide.restore("getting_started", 100, emptyMap()); assertEquals(1, guide.index)
         guide.restore("getting_started", 6, mapOf("chooseTV" to "invalid", "chooseHome" to "alexa")); assertEquals(1, guide.index)
         guide.restore("getting_started", 6, mapOf("chooseTV" to "unsure")); assertEquals(2, guide.index)
-        guide.restore("getting_started", 6, mapOf("chooseTV" to "unsure", "chooseHome" to "neither")); assertEquals(6, guide.index)
+        guide.restore("getting_started", 6, mapOf("chooseTV" to "unsure", "chooseHome" to "neither")); assertEquals(5, guide.index)
         guide.restore("getting_started", -9, emptyMap()); assertEquals(0, guide.index)
     }
     @Test fun everyTopicHasAReachableEnd() {
@@ -41,5 +41,21 @@ class GuideProgressTest {
             }
             assertTrue(guide.isLast, topic.id)
         }
+    }
+    @Test fun pictureCompletionAdvancesOnlyTheExpectedLocalConnectionSection() {
+        val guide = GuideProgress()
+        assertFalse(guide.completePictures("connectionPlan", "samsung_ok"))
+        guide.start("getting_started")
+        assertFalse(guide.completePictures("connectionPlan", "samsung_ok"))
+        guide.restore("getting_started", 3, mapOf("chooseTV" to "samsung", "chooseHome" to "alexa"))
+        listOf("unknown", "voice", "identify", "roku_network", "samsung_model_new").forEach { route ->
+            assertFalse(guide.completePictures("connectionPlan", route)); assertEquals(3, guide.index)
+        }
+        assertFalse(guide.completePictures("connectionCheck", "samsung_ok"))
+        assertTrue(guide.completePictures("connectionPlan", "samsung_ok")); assertEquals("connectionCheck", guide.step?.target)
+        assertFalse(guide.completePictures("connectionPlan", "samsung_ok"))
+        assertTrue(guide.completePictures("connectionCheck", "samsung_ok")); assertTrue(guide.isLast)
+        guide.start("readiness")
+        assertFalse(guide.completePictures("connectionPlan", "samsung_ok")); assertEquals(0, guide.index)
     }
 }

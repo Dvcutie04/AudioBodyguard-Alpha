@@ -10,6 +10,7 @@ struct SetupGuidesView: View {
     let theme: AppTheme
     let initialGroup: String
     var onVoiceCheck: (() -> Void)? = nil
+    var onFinish: ((String) -> Void)? = nil
     @Environment(\.dismiss) private var dismiss
     @Environment(\.dynamicTypeSize) private var textSize
     @State private var groupID = ""
@@ -17,6 +18,7 @@ struct SetupGuidesView: View {
     @State private var index = -1
     @State private var mismatch = false
     @State private var initialized = false
+    @State private var detailsExpanded = false
     @StateObject private var progress = SetupProgressStore()
     @AccessibilityFocusState private var headingFocused: String?
     private var group: AQSSSetupGroup? { AQSSSetupContent.groups.first { $0.id == groupID } }
@@ -56,7 +58,6 @@ struct SetupGuidesView: View {
                             } else if route.id == "philips_voice_remote" && [1, 2].contains(index) {
                                 ProfileMenuIllustration(step: step, number: index + 1, theme: theme)
                             } else { SetupScreenIllustration(step: step, number: index + 1, theme: theme) }
-                            Text("In the picture, look for the numbered highlight. Complete that action on your TV or phone, then tap Next here.").font(.callout).foregroundColor(theme.muted)
                             Text(step.note).font(.callout).foregroundColor(theme.muted)
                             control("My screen looks different", icon: "questionmark.circle", id: "setup-mismatch") { mismatch = true }
                         } else { introduction(route) }
@@ -111,6 +112,7 @@ struct SetupGuidesView: View {
         routeID = groupID == "voice" ? "voice" : nil
         index = groupID == "voice" ? 0 : -1
         mismatch = false
+        detailsExpanded = false
     }
     private func control(_ title: String, icon: String, id: String, action: @escaping () -> Void) -> some View {
         Button(action: action) {
@@ -136,19 +138,22 @@ struct SetupGuidesView: View {
         }
         Text("Before you begin").font(.headline)
         Text(route.appliesTo)
-        if !route.models.isEmpty {
-            Text("Documented model examples: \(route.models.joined(separator: ", "))").font(.headline)
-        } else {
-            Text("Menu-family guide. Your exact model is not confirmed by this preview.").foregroundColor(theme.muted)
-        }
         Text("\(route.steps.count) pictures · one action at a time").font(.headline).foregroundColor(theme.accent)
-        Text("Pictures are simplified illustrations. Labels, layout and services can differ by country, software and language. Compare each picture with your own screen.").foregroundColor(theme.muted)
-        Text("Complete account approvals in the official app or on your TV. This guide never asks for a password and does not connect Audio Bodyguard.").font(.callout)
+        Text("Illustrations may differ from your screen. Complete approvals in the official app or on your TV.").font(.callout).foregroundColor(theme.muted)
+        Text("No passwords here. This preview does not connect Audio Bodyguard.").font(.callout)
         if let saved = resumeIndex(route) {
             Text("You stopped at picture \(saved + 1). Tap Resume guide to continue there.").foregroundColor(theme.accent)
             control("Start from the beginning", icon: "arrow.counterclockwise", id: "setup-restart") { writeProgress(route.id, nil); index = 0 }
         }
-        sources(route)
+        DisclosureGroup("Details & official instructions", isExpanded: $detailsExpanded) {
+            VStack(alignment: .leading, spacing: 14) {
+                if !route.models.isEmpty {
+                    Text("Documented model examples: \(route.models.joined(separator: ", "))").font(.callout)
+                } else { Text("Menu-family guide. Your exact model is not confirmed by this preview.").font(.callout) }
+                Text("Labels, layout and services can differ by country, software and language. Compare each picture with your own screen.").font(.callout)
+                sources(route)
+            }.foregroundColor(theme.muted).padding(.top, 12)
+        }.accessibilityIdentifier("setup-details")
         control("My screen looks different", icon: "questionmark.circle", id: "setup-mismatch") { mismatch = true }
     }
     @ViewBuilder private func sources(_ route: AQSSSetupRoute) -> some View {
@@ -183,6 +188,7 @@ struct SetupGuidesView: View {
                     guard routeID == route.id, index == displayedIndex, !mismatch else { return }
                     if index == route.steps.count - 1 {
                         if route.id == "voice" { onVoiceCheck?() }
+                        else { onFinish?(route.id) }
                         writeProgress(route.id, nil)
                         dismiss()
                     } else if index < 0 { index = resumeIndex(route) ?? 0 }

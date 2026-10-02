@@ -26,6 +26,7 @@ import com.aqss.nativefeedback.SetupStep
 
 /** Local illustrated instructions. Finishing a guide changes no connection state. */
 class SetupGuideActivity : Activity() {
+    companion object { const val COMPLETED_ROUTE = "completedPictureRoute" }
     private lateinit var skin: InterfaceTheme
     private lateinit var root: LinearLayout
     private lateinit var header: LinearLayout
@@ -41,6 +42,7 @@ class SetupGuideActivity : Activity() {
     private var routeId: String? = null
     private var index = -1
     private var mismatch = false
+    private var detailsExpanded = false
     private var backCallback: OnBackInvokedCallback? = null
     private val group get() = SetupContent.groups.firstOrNull { it.id == groupId }
     private val route get() = SetupContent.routes.firstOrNull { it.id == routeId }
@@ -111,7 +113,7 @@ class SetupGuideActivity : Activity() {
         box.addView(button(title, action = block).apply { gravity = Gravity.START or Gravity.CENTER_VERTICAL }, LinearLayout.LayoutParams(-1, -2).apply { bottomMargin = dp(10) })
     }
     private fun chooseGroup(id: String) {
-        groupId = id; routeId = if (id == "voice") "voice" else null; index = if (id == "voice") 0 else -1; mismatch = false; render()
+        groupId = id; routeId = if (id == "voice") "voice" else null; index = if (id == "voice") 0 else -1; mismatch = false; detailsExpanded = false; render()
     }
     private fun resumeIndex(route: SetupRoute): Int? = getSharedPreferences("aqss-presentation", MODE_PRIVATE).getInt("setup-progress-${route.id}", -1).takeIf { route.id != "voice" && it in route.steps.indices }
     private fun saveProgress(route: SetupRoute, value: Int?) {
@@ -139,7 +141,6 @@ class SetupGuideActivity : Activity() {
                 words(content, when (step.surface) { "tv" -> "On your TV · use the remote"; "both" -> "Your TV + your phone"; else -> "On your phone" }, 15f, skin.accent, true)
                 words(content, step.instruction, 16f, bold = true)
                 content.addView(if (route.id == "roku_network" || route.id == "roku_model") rokuIllustration(step, index + 1) else if (route.id == "philips_voice_remote" && index in 1..2) profileIllustration(step, index + 1) else illustration(step, index + 1), LinearLayout.LayoutParams(-1, -2).apply { bottomMargin = dp(18) })
-                words(content, "Look for the numbered highlight in the picture. Finish that action on your TV or phone, then tap Next here.", color = skin.muted)
                 words(content, step.note, color = skin.muted)
                 action(content, "My screen looks different") { mismatch = true; render() }
             }
@@ -188,6 +189,7 @@ class SetupGuideActivity : Activity() {
         if (index == route.steps.lastIndex) {
             if (route.id == "voice" && !intent.getBooleanExtra("returnToVoice", false)) startActivity(Intent(this, InputAssistanceActivity::class.java).putExtra("mode", "voice").putExtra("dark", skin.dark))
             saveProgress(route, null)
+            if (route.id != "voice") setResult(RESULT_OK, Intent().putExtra(COMPLETED_ROUTE, route.id))
             finish()
         } else { index = if (index < 0) resumeIndex(route) ?: 0 else index + 1; render() }
     }
@@ -195,15 +197,19 @@ class SetupGuideActivity : Activity() {
         if (route.id == "roku_network" || route.id == "roku_model") action(content, "I’m already in Settings") { index = 2; render() }
         words(content, "Before you begin", 19f, bold = true)
         words(content, route.appliesTo)
-        words(content, if (route.models.isEmpty()) "Menu-family guide. Your exact model is not confirmed by this preview." else "Documented model examples: ${route.models.joinToString()}", color = skin.muted)
         words(content, "${route.steps.size} pictures · one action at a time", 18f, skin.accent, true)
-        words(content, "Pictures are simplified illustrations. Labels, layout and services can differ by country, software and language. Compare each picture with your own screen.", color = skin.muted)
-        words(content, "Complete account approvals in the official app or on your TV. This guide never asks for a password and does not connect Audio Bodyguard.")
+        words(content, "Illustrations may differ from your screen. Complete approvals in the official app or on your TV.", color = skin.muted)
+        words(content, "No passwords here. This preview does not connect Audio Bodyguard.")
         resumeIndex(route)?.let { saved ->
             words(content, "You stopped at picture ${saved + 1}. Tap Resume guide to continue there.", color = skin.accent)
             action(content, "Start from the beginning") { saveProgress(route, null); index = 0; render() }
         }
-        sources(route)
+        action(content, if (detailsExpanded) "Hide details" else "Details & official instructions") { detailsExpanded = !detailsExpanded; render() }
+        if (detailsExpanded) {
+            words(content, if (route.models.isEmpty()) "Menu-family guide. Your exact model is not confirmed by this preview." else "Documented model examples: ${route.models.joinToString()}", color = skin.muted)
+            words(content, "Labels, layout and services can differ by country, software and language. Compare each picture with your own screen.", color = skin.muted)
+            sources(route)
+        }
         action(content, "My screen looks different") { mismatch = true; render() }
     }
     private fun sources(route: SetupRoute) {

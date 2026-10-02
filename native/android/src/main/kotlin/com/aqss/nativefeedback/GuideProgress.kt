@@ -24,6 +24,13 @@ class GuideProgress {
         if (!canContinue || isLast) return false
         index++; return true
     }
+    /** Finishing pictures advances learning only, never a verified connection. */
+    fun completePictures(expectedTarget: String, routeId: String): Boolean {
+        if (topicId != "getting_started" || step?.target != expectedTarget ||
+            expectedTarget !in listOf("connectionPlan", "connectionCheck") ||
+            routeId !in TutorialContent.pictureContinueRoutes) return false
+        return next()
+    }
     fun back() { if (index > 0) index-- }
     fun close() { topicId = null; index = 0; selections.clear() }
     fun snapshot(): Map<String, String> = selections.toMap()

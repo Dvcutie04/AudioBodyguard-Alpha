@@ -23,6 +23,13 @@ public struct AQSSGuideProgress: Equatable, Sendable {
     @discardableResult public mutating func next() -> Bool {
         guard canContinue, !isLast else { return false }; index += 1; return true
     }
+    /// Finishing pictures advances learning only; it never verifies a connection.
+    @discardableResult public mutating func completePictures(expectedTarget: String, routeID: String) -> Bool {
+        guard topicID == "getting_started", step?.target == expectedTarget,
+              ["connectionPlan", "connectionCheck"].contains(expectedTarget),
+              AQSSTutorialContent.pictureContinueRoutes.contains(routeID) else { return false }
+        return next()
+    }
     public mutating func back() { if index > 0 { index -= 1 } }
     public mutating func close() { topicID = nil; index = 0; selections = [:] }
     /// Restored state can never bypass an unanswered earlier question.

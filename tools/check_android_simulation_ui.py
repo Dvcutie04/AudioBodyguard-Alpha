@@ -59,7 +59,7 @@ def button_coordinates(path: str, label: str) -> None:
         native_dialog = any(node.get("resource-id") == "android:id/alertTitle" for node in nodes)
         # Tutorial footer controls are laid out above consumed system insets.
         footer_labels = {"Jump to", "Help & tutorials", "Back", "Begin", "Next", "Done", "Start guide", "Resume guide", "Finish guide", "Return to step", "Open Voice check", "Open full app", "Exit tutorial", "Close tutorial", "Help", "Home", "Sound", "Devices", "Insights", "Settings", "Pages · Home", "Pages · Devices", "Pages · Settings"}
-        if center_y < screen_bottom * 0.85 or label in footer_labels or native_dialog:
+        if center_y < screen_bottom * 0.85 or label in footer_labels or label == "Start picture setup" or native_dialog:
             print((left + right) // 2, center_y)
 
 

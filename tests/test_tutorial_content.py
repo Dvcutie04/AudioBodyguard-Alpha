@@ -10,6 +10,20 @@ def contract():
     return json.loads((ROOT / "contracts/tutorial_v1.json").read_text())
 
 
+def test_beginner_default_is_brief_while_the_complete_catalog_stays_available():
+    data = contract()
+    presentation = data["onboarding"]
+    assert presentation["featured_ids"] == ["series_intro", "commercial_volume", "remote"]
+    assert len(data["feature_catalog"]["items"]) == 21
+    assert "preview" in presentation["notice"].lower()
+    assert "no TV control" in presentation["notice"]
+    beginner = data["topics"][0]
+    assert [step["target"] for step in beginner["steps"]] == [
+        "welcome", "chooseTV", "chooseHome", "connectionPlan", "connectionCheck", "guideFinish",
+    ]
+    assert all(len(step["explanation"].split()) <= 20 for step in beginner["steps"])
+
+
 def test_connection_guide_requires_both_visible_parts_without_claiming_connection():
     data = contract()
     stages = data["connection_stages"]
@@ -78,13 +92,33 @@ def test_beginner_guide_has_one_ordered_connection_path_and_no_actuation():
     assert topic["id"] == "getting_started"
     assert [s["target"] for s in topic["steps"]] == [
         "welcome", "chooseTV", "chooseHome", "connectionPlan",
-        "connectionCheck", "featureExample", "guideFinish",
+        "connectionCheck", "guideFinish",
     ]
     assert "does not monitor or change TV audio" in topic["steps"][0]["explanation"]
     assert "not connected" in topic["steps"][4]["explanation"]
     assert "Help" in topic["steps"][-1]["explanation"]
     assert {c["id"] for c in data["choices"]["chooseHome"]} == {"alexa", "google", "both", "neither"}
     assert {"samsung", "lg", "sony", "other", "unsure"} <= {c["id"] for c in data["choices"]["chooseTV"]}
+
+
+@pytest.mark.parametrize("change", ["unknown_feature", "duplicate_feature", "unknown_route", "helper_route", "duplicate_route", "command"])
+def test_simplified_onboarding_rejects_ambiguous_or_unsafe_continuation(change):
+    data = contract()
+    presentation = data["onboarding"]
+    if change == "unknown_feature":
+        presentation["featured_ids"][0] = "invented"
+    elif change == "duplicate_feature":
+        presentation["featured_ids"][0] = presentation["featured_ids"][1]
+    elif change == "unknown_route":
+        presentation["picture_continue_routes"].append("invented")
+    elif change == "helper_route":
+        presentation["picture_continue_routes"].append("roku_network")
+    elif change == "duplicate_route":
+        presentation["picture_continue_routes"].append(presentation["picture_continue_routes"][0])
+    else:
+        presentation["connect"] = "run_adapter"
+    with pytest.raises(ValueError):
+        validate(data)
 
 
 @pytest.mark.parametrize("change", ["duplicate", "command", "icon", "group", "empty"])

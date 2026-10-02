@@ -35,9 +35,16 @@ class TutorialGuide(
     private val content = column()
     private val controls = column()
     private var previousPage = "home"
+    private var moreFeatures = false
+    private var helpExpanded = false
+    private var renderVersion = 0
     private val choiceButtons = mutableMapOf<String, Button>()
     val isActive get() = guide.topicId != null
     val isBeginner get() = guide.topicId == "getting_started"
+    val pictureTarget get() = guide.step?.target?.takeIf { isBeginner && it in listOf("connectionPlan", "connectionCheck") }
+    fun completePictures(expectedTarget: String, routeId: String) {
+        if (guide.completePictures(expectedTarget, routeId)) render()
+    }
     init {
         for (box in listOf(header, content, controls)) box.setPadding(dp(20), dp(12), dp(20), dp(12))
         controls.setBackgroundColor(skin.surface)
@@ -80,9 +87,14 @@ class TutorialGuide(
         val topic = guide.topic ?: return
         val step = guide.step ?: return
         val oldScroll = if (preserveScroll) reading.scrollY else 0
+        val version = ++renderVersion
+        if (!preserveScroll) { moreFeatures = false; helpExpanded = false }
         header.removeAllViews(); content.removeAllViews(); controls.removeAllViews()
-        text(header, "Step ${guide.index + 1} of ${topic.steps.size}", 15f, skin.muted, true)
-        header.addView(button("Exit tutorial") { close() }, LinearLayout.LayoutParams(-1, -2))
+        val top = LinearLayout(activity).apply { gravity = Gravity.CENTER_VERTICAL }
+        top.addView(TextView(activity).apply { text = "Step ${guide.index + 1} of ${topic.steps.size}"; textSize = 15f; setTextColor(skin.muted); setTypeface(null, Typeface.BOLD) }, LinearLayout.LayoutParams(0, -2, 1f))
+        top.addView(button("Exit") { close() }.apply { contentDescription = "Exit tutorial" })
+        header.addView(top)
+        if (isBeginner) text(header, TutorialContent.previewNotice, 12f, skin.muted).setPadding(0, dp(4), 0, 0)
         content.addView(TextView(activity).apply {
             setCompoundDrawablesWithIntrinsicBounds(InterfaceSymbol(skin, if (step.target == "chooseHome") "house" else "tv", skin.violet), null, null, null)
             importantForAccessibility = View.IMPORTANT_FOR_ACCESSIBILITY_NO
@@ -93,7 +105,10 @@ class TutorialGuide(
             accessibilityLiveRegion = View.ACCESSIBILITY_LIVE_REGION_POLITE
         }
         text(content, step.explanation)
-        if (isBeginner) content.addView(connectionOverview(step.target), LinearLayout.LayoutParams(-1, -2).apply { bottomMargin = dp(16) })
+        if (isBeginner && step.target == "welcome") content.addView(connectionOverview(), LinearLayout.LayoutParams(-1, -2).apply { bottomMargin = dp(16) })
+        else if (isBeginner && step.target !in listOf("connectionPlan", "connectionCheck")) TutorialContent.connectionStages.firstOrNull { step.target in it.targets }?.let {
+            text(content, "Connection ${it.number} of 2", 12f, skin.accent, true)
+        }
         choiceButtons.clear()
         guide.choices.forEach { choice ->
             val selected = guide.selected(step.target)?.id == choice.id
@@ -106,26 +121,35 @@ class TutorialGuide(
                 if (Build.VERSION.SDK_INT >= 30) stateDescription = if (selected) "Selected" else "Not selected"
             }, LinearLayout.LayoutParams(-1, -2).apply { bottomMargin = dp(10) })
         }
-        if (step.target == "connectionPlan") for (target in listOf("chooseTV", "chooseHome")) {
-            guide.selected(target)?.let { selected ->
-                val box = column().apply { setPadding(dp(16), dp(16), dp(16), dp(6)); background = skin.shape(skin.surface) }
-                box.addView(SetupActionPicture(activity, skin, if (target == "chooseTV") "tv" else "phone", "settings"), LinearLayout.LayoutParams(-1, dp(64)))
-                text(box, "Open the pictures below. Match your TV or app, then follow one highlighted action at a time.", color = skin.muted)
-                text(box, selected.title, 20f, bold = true); text(box, selected.detail, color = skin.muted)
-                box.addView(button("Show ${selected.title} steps") { openSetup(selected.id) }, LinearLayout.LayoutParams(-1, -2).apply { bottomMargin = dp(12) })
-                content.addView(box, LinearLayout.LayoutParams(-1, -2).apply { bottomMargin = dp(16) })
+        if (step.target in listOf("connectionPlan", "connectionCheck")) {
+            for (target in listOf("chooseTV", "chooseHome")) guide.selected(target)?.takeIf { it.id !in listOf("both", "neither") }?.let { selected ->
+                content.addView(button("Show ${selected.title} steps") { openSetup(selected.id) }, LinearLayout.LayoutParams(-1, -2).apply { bottomMargin = dp(12) })
+            }
+            if (guide.selected("chooseHome")?.id == "both") listOf("alexa", "google").forEach { id ->
+                TutorialContent.choices["chooseHome"]?.firstOrNull { it.id == id }?.let { choice ->
+                    content.addView(button("Show ${choice.title} steps") { openSetup(id) }, LinearLayout.LayoutParams(-1, -2).apply { bottomMargin = dp(12) })
+                }
             }
         }
         if (isBeginner && step.target == "welcome") {
             content.addView(featureCatalog())
         } else if (step.example.isNotEmpty()) {
-            val example = column().apply { setPadding(dp(16), dp(16), dp(16), dp(6)); background = skin.shape(skin.surface) }
-            text(example, step.example, color = skin.muted); content.addView(example)
+            if (isBeginner) content.addView(button(if (helpExpanded) "Hide help" else TutorialContent.helpLabel) { helpExpanded = !helpExpanded; render(true) }.apply {
+                if (Build.VERSION.SDK_INT >= 30) stateDescription = if (helpExpanded) "Expanded" else "Collapsed"
+            }, LinearLayout.LayoutParams(-1, -2))
+            if (!isBeginner || helpExpanded) {
+                val example = column().apply { setPadding(dp(16), dp(16), dp(16), dp(6)); background = skin.shape(skin.surface) }
+                text(example, step.example, color = skin.muted)
+                if (isBeginner && step.target in listOf("connectionPlan", "connectionCheck")) listOf("chooseTV", "chooseHome").forEach { target ->
+                    guide.selected(target)?.let { text(example, it.detail, color = skin.muted) }
+                }
+                content.addView(example)
+            }
         }
         if (step.target == "connectionCheck") text(content, "Not connected · Audio protection is not active", 18f, skin.warning, true)
         renderControls()
         footer.visibility = View.VISIBLE; stateChanged()
-        reading.post { reading.scrollTo(0, oldScroll) }
+        reading.post { if (version == renderVersion && !activity.isFinishing && !activity.isDestroyed) reading.scrollTo(0, oldScroll) }
     }
     fun connectionOverview(currentTarget: String? = null): LinearLayout {
         val box = column().apply { setPadding(dp(16), dp(16), dp(16), dp(6)); background = skin.shape(skin.surface) }
@@ -143,16 +167,22 @@ class TutorialGuide(
             if (Build.VERSION.SDK_INT >= 28) isAccessibilityHeading = true
         }
         text(box, "Planned controls · availability varies by device", 12f, skin.warning).gravity = Gravity.CENTER
-        TutorialContent.features.forEach { feature ->
+        TutorialContent.features.filter { moreFeatures || it.id in TutorialContent.featuredIDs }.forEach { feature ->
             val row = column()
             text(row, feature.title, 16f, bold = true).apply { gravity = Gravity.CENTER; setPadding(0, 0, 0, dp(3)) }
-            text(row, if (feature.availability == "preview") "Explore in this preview" else "Planned", 12f,
-                if (feature.availability == "preview") skin.accent else skin.muted).gravity = Gravity.CENTER
+            if (moreFeatures) {
+                text(row, if (feature.availability == "preview") "Explore in this preview" else "Planned", 12f,
+                    if (feature.availability == "preview") skin.accent else skin.muted).gravity = Gravity.CENTER
+                text(row, feature.detail, 12f, skin.muted).gravity = Gravity.CENTER
+            } else row.setPadding(0, 0, 0, dp(10))
             row.importantForAccessibility = View.IMPORTANT_FOR_ACCESSIBILITY_YES
             row.contentDescription = "${feature.title}. ${if (feature.availability == "preview") "Explore in this preview" else "Planned"}. ${feature.detail}"
             box.addView(row, LinearLayout.LayoutParams(-1, -2))
         }
-        text(box, TutorialContent.featureNote, 14f, skin.muted).gravity = Gravity.CENTER
+        box.addView(button(if (moreFeatures) "Fewer features" else TutorialContent.moreFeaturesLabel) { moreFeatures = !moreFeatures; render(true) }.apply {
+            if (Build.VERSION.SDK_INT >= 30) stateDescription = if (moreFeatures) "Expanded" else "Collapsed"
+        }, LinearLayout.LayoutParams(-1, -2))
+        if (moreFeatures) text(box, TutorialContent.featureNote, 14f, skin.muted).gravity = Gravity.CENTER
         return box
     }
     private fun refreshChoices() {
@@ -178,7 +208,7 @@ class TutorialGuide(
         val row = LinearLayout(activity)
         if (guide.index > 0) row.addView(button("Back") { guide.back(); render() }, LinearLayout.LayoutParams(-2, -2).apply { marginEnd = dp(12) })
         if (guide.canContinue) {
-            val label = if (guide.isLast) { if (isBeginner) "Open full app" else "Done" } else if (guide.index == 0) "Begin" else "Next"
+            val label = if (guide.isLast) { if (isBeginner) "Open full app" else "Done" } else if (guide.index == 0) { if (isBeginner) TutorialContent.startLabel else "Begin" } else "Next"
             row.addView(button(label, primary = true) {
                 if (guide.isLast) { finished(topic.id); close() } else { guide.next(); render() }
             }, LinearLayout.LayoutParams(0, -2, 1f))

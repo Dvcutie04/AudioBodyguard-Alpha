@@ -91,16 +91,20 @@ final class AQSSReadOnlyUITests: XCTestCase {
 
     func testFirstVisitHasOnePathChoiceGatesTailoredPlanAndReplay() {
         let app = launch(true)
-        label("Step 1 of 7", app); assertOnlyGuide(app)
+        label("Step 1 of 6", app); assertOnlyGuide(app)
         label("Both connections are required", app)
         label("1. Connect to your TV or home device", app)
         label("2. Connect to your phone", app)
         label("Skip series intros", app); label("Lower volume during commercials", app); label("Universal remote controls", app)
-        label("Voice input display and recognized words", app)
+        XCTAssertFalse(app.staticTexts.containing(NSPredicate(format: "label CONTAINS %@", "Voice input display and recognized words")).firstMatch.exists)
+        label("Preview · no TV control", app)
         XCTAssertFalse(app.staticTexts.containing(NSPredicate(format: "label CONTAINS %@", "a film is quiet, then an advert")).firstMatch.exists)
         XCTAssertFalse(app.buttons["Back"].exists)
         XCTAssertFalse(app.buttons["choice-samsung"].exists)
         screenshot("Guide 1 Welcome", app)
+        tap("More features", app)
+        label("Voice input display and recognized words", app)
+        label("does not control connected devices", app)
         let firstFeature = app.staticTexts.containing(NSPredicate(format: "label CONTAINS %@", "Skip series intros")).firstMatch
         let scroll = app.scrollViews["guide-scroll"]
         for _ in 0..<12 {
@@ -110,26 +114,29 @@ final class AQSSReadOnlyUITests: XCTestCase {
         }
         XCTAssertTrue(firstFeature.isHittable)
         screenshot("Guide 1 Replacement feature list", app)
-        next(app); label("Step 2 of 7", app); assertOnlyGuide(app)
+        next(app); label("Step 2 of 6", app); assertOnlyGuide(app)
         XCTAssertFalse(app.buttons["guide-next"].isEnabled)
         XCTAssertFalse(app.buttons["choice-alexa"].exists)
         tap("Samsung", app); XCTAssertEqual(app.buttons["choice-samsung"].value as? String, "Selected")
         screenshot("Guide 2 TV selection", app)
-        next(app); label("Step 3 of 7", app)
+        next(app); label("Step 3 of 6", app)
         XCTAssertFalse(app.buttons["guide-next"].isEnabled)
         tap("Amazon Alexa", app); next(app)
-        label("Step 4 of 7", app); label("Samsung", app); label("Amazon Alexa", app)
+        label("Step 4 of 6", app)
+        XCTAssertTrue(app.buttons["setup-from-samsung"].exists)
+        XCTAssertTrue(app.buttons["setup-from-alexa"].exists)
         screenshot("Guide 4 Tailored connection", app)
-        app.buttons["Back"].tap(); label("Step 3 of 7", app)
+        app.buttons["Back"].tap(); label("Step 3 of 6", app)
         XCTAssertEqual(app.buttons["choice-alexa"].value as? String, "Selected")
-        next(app); next(app); label("Step 5 of 7", app)
+        next(app); next(app); label("Step 5 of 6", app)
         label("2. Connect to your phone", app)
         screenshot("Guide 5 Phone connection", app)
-        label("not connected to Audio Bodyguard", app); assertOnlyGuide(app)
-        next(app); label("Step 6 of 7", app); next(app); label("Step 7 of 7", app)
+        label("not connected yet", app); assertOnlyGuide(app)
+        XCTAssertTrue(app.buttons["setup-from-samsung"].exists)
+        next(app); label("Step 6 of 6", app)
         next(app); XCTAssertTrue(app.buttons["tab-home"].isHittable)
         label("TOUR FINISHED", app)
-        app.buttons["start-beginner-tour"].tap(); label("Step 1 of 7", app)
+        app.buttons["start-beginner-tour"].tap(); label("Step 1 of 6", app)
         next(app); XCTAssertFalse(app.buttons["guide-next"].isEnabled)
         exit(app); tab("sound", app); label("Dialogue preset", app)
         tab("devices", app); label("Six setup checks unknown", app)
@@ -211,7 +218,8 @@ final class AQSSReadOnlyUITests: XCTestCase {
         let app = launch(true)
         next(app); tap("TCL", app); next(app); tap("Google Home", app); next(app)
         tap("Show TCL steps", app)
-        tap("Google TV / Android TV", app); tap("TCL QM851G", app); label("85QM851G", app)
+        tap("Google TV / Android TV", app); tap("TCL QM851G", app)
+        tap("Details & official instructions", app); label("85QM851G", app)
         app.buttons["setup-next"].tap(); label("Step 1 of 12", app)
         screenshot("TCL illustrated TV first setup", app)
         app.buttons["setup-next"].tap(); app.buttons["setup-next"].tap()
@@ -220,7 +228,7 @@ final class AQSSReadOnlyUITests: XCTestCase {
         tap("My screen looks different", app)
         label("Pause at this step", app)
         app.buttons["setup-back"].tap(); label("Step 3 of 12", app)
-        app.buttons["setup-close"].tap(); label("Step 4 of 7", app)
+        app.buttons["setup-close"].tap(); label("Step 4 of 6", app)
         tap("Show Google Home steps", app); tap("SmartThings → Google Home", app)
         app.buttons["setup-next"].tap()
         for _ in 0..<4 { app.buttons["setup-next"].tap() }
@@ -259,6 +267,24 @@ final class AQSSReadOnlyUITests: XCTestCase {
         screenshot("Alexa illustrated account approval", app)
         app.buttons["setup-close"].tap()
         tab("home", app); label("Unknown physical state", app)
+    }
+
+    func testFinishedPairingPicturesAdvanceLocallyAndCloseKeepsThePhoneStep() {
+        let app = launch(true)
+        next(app); tap("Samsung", app); next(app); tap("Neither", app); next(app)
+        tap("Show Samsung steps", app); tap("Samsung — TV shows OK approval", app)
+        app.buttons["setup-close"].tap(); label("Step 4 of 6", app)
+        tap("Show Samsung steps", app); tap("Samsung — TV shows OK approval", app)
+        app.buttons["setup-next"].tap()
+        for _ in 0..<15 { app.buttons["setup-next"].tap() }
+        label("Check the actual result", app)
+        app.buttons["setup-next"].tap()
+        label("Step 5 of 6", app); label("2. Connect to your phone", app)
+        label("Not connected · Audio protection is not active", app)
+        screenshot("Picture completion continues to phone setup", app)
+        tap("Show Samsung steps", app); tap("Samsung — TV shows OK approval", app)
+        app.buttons["setup-close"].tap(); label("Step 5 of 6", app)
+        exit(app); label("Unknown physical state", app)
     }
 
     func testNewBrandPicturesAreReachable() {
@@ -303,7 +329,7 @@ final class AQSSReadOnlyUITests: XCTestCase {
     func testSelectingATVDoesNotMoveItsButtonOrReplaceTheScroll() {
         let app = XCUIApplication()
         app.launchArguments = ["-aqssGuideDismissedV1", "NO", "--aqss-trace-navigation"]
-        app.launch(); next(app); label("Step 2 of 7", app)
+        app.launch(); next(app); label("Step 2 of 6", app)
         let scroll = app.scrollViews["guide-scroll"]
         let instance = scroll.value as? String
         XCTAssertFalse(instance?.isEmpty ?? true)
@@ -314,11 +340,11 @@ final class AQSSReadOnlyUITests: XCTestCase {
         XCTAssertTrue(app.buttons["guide-next"].isEnabled)
         XCTAssertEqual(button.frame.minY, before.minY, accuracy: 1)
         XCTAssertEqual(scroll.value as? String, instance)
-        next(app); label("Step 3 of 7", app)
+        next(app); label("Step 3 of 6", app)
         XCTAssertEqual(scroll.value as? String, instance)
         XCTAssertFalse(app.buttons["guide-next"].isEnabled)
-        tap("Google Home", app); next(app); label("Step 4 of 7", app)
-        app.buttons["Back"].tap(); label("Step 3 of 7", app)
+        tap("Google Home", app); next(app); label("Step 4 of 6", app)
+        app.buttons["Back"].tap(); label("Step 3 of 6", app)
         XCTAssertEqual(app.buttons["choice-google"].value as? String, "Selected")
         XCTAssertEqual(scroll.value as? String, instance)
     }
@@ -326,7 +352,7 @@ final class AQSSReadOnlyUITests: XCTestCase {
     func testLargestTextKeepsExitAndNextReachable() {
         let app = XCUIApplication()
         app.launchArguments = ["-aqssGuideDismissedV1", "NO", "-UIPreferredContentSizeCategoryName", "UICTContentSizeCategoryAccessibilityXXXL"]
-        app.launch(); label("Step 1 of 7", app); assertOnlyGuide(app)
+        app.launch(); label("Step 1 of 6", app); assertOnlyGuide(app)
         XCTAssertTrue(app.buttons["guide-next"].isHittable)
         XCTAssertGreaterThanOrEqual(app.buttons["exit-tutorial"].frame.height, 44)
         screenshot("Largest text single-step guide", app)
