@@ -533,14 +533,20 @@ private struct ReadOnlyHomeView: View {
                         featureCatalog
                     } else if !step.example.isEmpty {
                         if topic.id == "getting_started" {
-                            DisclosureGroup(AQSSTutorialContent.helpLabel, isExpanded: $tutorialHelp) {
-                                Text(step.example).font(.callout).foregroundColor(theme.muted).fixedSize(horizontal: false, vertical: true)
-                                if ["connectionPlan", "connectionCheck"].contains(step.target) {
-                                    ForEach(["chooseTV", "chooseHome"], id: \.self) { target in
-                                        if let selected = guide.selected(target) { Text(selected.detail).font(.callout).foregroundColor(theme.muted) }
+                            Button { tutorialHelp.toggle() } label: {
+                                Label(tutorialHelp ? "Hide help" : AQSSTutorialContent.helpLabel, systemImage: tutorialHelp ? "chevron.up" : "chevron.down")
+                                    .frame(maxWidth: .infinity, minHeight: 44, alignment: .leading)
+                            }.buttonStyle(AppButtonStyle(theme: theme)).accessibilityValue(tutorialHelp ? "Expanded" : "Collapsed")
+                            if tutorialHelp {
+                                VStack(alignment: .leading, spacing: 12) {
+                                    Text(step.example).font(.callout).foregroundColor(theme.muted).fixedSize(horizontal: false, vertical: true)
+                                    if ["connectionPlan", "connectionCheck"].contains(step.target) {
+                                        ForEach(["chooseTV", "chooseHome"], id: \.self) { target in
+                                            if let selected = guide.selected(target) { Text(selected.detail).font(.callout).foregroundColor(theme.muted) }
+                                        }
                                     }
-                                }
-                            }.font(.subheadline).padding(14).background(theme.surface).clipShape(RoundedRectangle(cornerRadius: 14))
+                                }.padding(14).background(theme.surface).clipShape(RoundedRectangle(cornerRadius: 14))
+                            }
                         } else {
                             Text(step.example).font(.callout).foregroundColor(theme.muted).fixedSize(horizontal: false, vertical: true)
                                 .padding(18).frame(maxWidth: .infinity, alignment: .leading).background(theme.surface).clipShape(RoundedRectangle(cornerRadius: 18))

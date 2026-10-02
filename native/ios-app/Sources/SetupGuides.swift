@@ -145,7 +145,12 @@ struct SetupGuidesView: View {
             Text("You stopped at picture \(saved + 1). Tap Resume guide to continue there.").foregroundColor(theme.accent)
             control("Start from the beginning", icon: "arrow.counterclockwise", id: "setup-restart") { writeProgress(route.id, nil); index = 0 }
         }
-        DisclosureGroup("Details & official instructions", isExpanded: $detailsExpanded) {
+        Button { detailsExpanded.toggle() } label: {
+            Label(detailsExpanded ? "Hide details" : "Details & official instructions", systemImage: detailsExpanded ? "chevron.up" : "chevron.down")
+                .frame(maxWidth: .infinity, minHeight: 44, alignment: .leading)
+        }.buttonStyle(AppButtonStyle(theme: theme)).accessibilityIdentifier("setup-details")
+            .accessibilityValue(detailsExpanded ? "Expanded" : "Collapsed")
+        if detailsExpanded {
             VStack(alignment: .leading, spacing: 14) {
                 if !route.models.isEmpty {
                     Text("Documented model examples: \(route.models.joined(separator: ", "))").font(.callout)
@@ -153,7 +158,7 @@ struct SetupGuidesView: View {
                 Text("Labels, layout and services can differ by country, software and language. Compare each picture with your own screen.").font(.callout)
                 sources(route)
             }.foregroundColor(theme.muted).padding(.top, 12)
-        }.accessibilityIdentifier("setup-details")
+        }
         control("My screen looks different", icon: "questionmark.circle", id: "setup-mismatch") { mismatch = true }
     }
     @ViewBuilder private func sources(_ route: AQSSSetupRoute) -> some View {

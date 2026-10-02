@@ -283,7 +283,7 @@ final class AQSSReadOnlyUITests: XCTestCase {
         label("follow the pictures", app)
         XCTAssertFalse(app.staticTexts["Not connected · Audio protection is not active"].exists)
         tap("Need help?", app); label("does not control devices in this preview", app)
-        tap("Need help?", app)
+        tap("Hide help", app)
         screenshot("Picture completion continues to phone setup", app)
         tap("Show Samsung steps", app); tap("Samsung — TV shows OK approval", app)
         app.buttons["setup-close"].tap(); label("Step 5 of 6", app)
