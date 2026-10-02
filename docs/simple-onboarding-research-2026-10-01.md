@@ -37,6 +37,8 @@ Latency first: fewer default text rows and local callbacks; preserve stable scro
 
 ACTIVE, DEGRADED, PAUSED, RECOVERY_REQUIRED and UNKNOWN_PHYSICAL_STATE remain governed by evidence, not marketing or tutorial progress. This preview has no qualified audio connection and retains unknown physical state / inactive protection. Short labels summarize that fact; technical details remain available. New guide navigation must not mutate authority, coverage, capability, finality or adapter state.
 
+The owner subsequently asked to dismiss the discouraging connection sign, clarifying “claiming connection.” The prominent orange “Not connected · Audio protection is not active” banner is removed from setup, the header becomes a plain “Preview,” and the phone screen gives a direct picture action. The welcome still explains that this preview does not monitor or change TV audio; “Need help?” on the phone screen explains that it does not control devices. This applies Apple's information-hierarchy guidance to remove duplicate warnings without inventing a successful connection. Native walkthroughs assert the banner is absent and the limitation remains available in help.
+
 ## Staged roadmap and test plan
 
 1. Red/green: contract for three featured IDs, short explanations, six beginner screens, and allowlisted picture-continuation routes; reject unknown/duplicate routes and authority/status/command fields.

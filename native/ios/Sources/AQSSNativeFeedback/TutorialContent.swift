@@ -18,7 +18,7 @@ public enum AQSSTutorialContent {
             AQSSTutorialStep(target: "chooseTV", area: "connection", title: "Which TV do you use?", explanation: "Choose the brand on your TV or remote.", example: "Example: if the remote says Samsung, choose Samsung. If you cannot find a name, choose Not sure / no TV."),
             AQSSTutorialStep(target: "chooseHome", area: "connection", title: "Use a home app?", explanation: "Choose the home app you use. Neither is fine.", example: "Example: if you say “Alexa” to an Echo speaker, choose Amazon Alexa. If you manage devices in the Google Home app, choose Google Home."),
             AQSSTutorialStep(target: "connectionPlan", area: "connection", title: "1. Connect to your TV or home device", explanation: "Follow the highlighted pictures on your TV or in its official app.", example: "Example: finding a Samsung TV in Alexa does not let this preview control it. Audio Bodyguard would still need its own supported connection and your permission."),
-            AQSSTutorialStep(target: "connectionCheck", area: "connection", title: "2. Connect to your phone", explanation: "Find your TV in its official phone app. Audio Bodyguard is not connected yet.", example: "Example: use your phone on the home network required by the device's official app. A paired TV and a phone with the right permissions are separate checks."),
+            AQSSTutorialStep(target: "connectionCheck", area: "connection", title: "2. Connect to your phone", explanation: "Open your TV's official phone app and follow the pictures.", example: "Example: Audio Bodyguard does not control devices in this preview. Pairing and phone permissions are separate checks."),
             AQSSTutorialStep(target: "guideFinish", area: "connection", title: "Your next step is ready", explanation: "Explore the preview. Replay the pictures anytime from Help.", example: "Example: to look at the sample graph, open Insights, then Explore an example. Its values are made up; they are not measurements from your phone."),
         ]),
         AQSSTutorialTopic(id: "home", title: "Home and coverage", steps: [
@@ -114,7 +114,7 @@ public enum AQSSTutorialContent {
     ]
     public static let featuredIDs: [String] = ["series_intro", "commercial_volume", "remote"]
     public static let pictureContinueRoutes: [String] = ["samsung_ok", "samsung_pin", "lg_pair", "google_remote", "google_setup", "tcl_models", "google_fast", "google_samsung", "google_lg", "google_roku", "google_vidaa", "google_vizio", "google_legacy", "samsung_alexa", "lg_alexa", "sony_new", "sony_legacy", "roku_alexa", "vidaa_google", "vidaa_alexa", "vizio_pair", "vizio_account", "vizio_assist", "fire_alexa", "lg_account5", "lg_account6", "google_legacy_add", "fire_setup"]
-    public static let previewNotice = "Preview · no TV control"
+    public static let previewNotice = "Preview"
     public static let startLabel = "Start picture setup"
     public static let moreFeaturesLabel = "More features"
     public static let helpLabel = "Need help?"

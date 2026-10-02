@@ -546,9 +546,6 @@ private struct ReadOnlyHomeView: View {
                                 .padding(18).frame(maxWidth: .infinity, alignment: .leading).background(theme.surface).clipShape(RoundedRectangle(cornerRadius: 18))
                         }
                     }
-                    if step.target == "connectionCheck" {
-                        Text("Not connected · Audio protection is not active").font(.headline).foregroundColor(theme.warning)
-                    }
                 }.frame(maxWidth: 640, alignment: .leading).padding(20).frame(maxWidth: .infinity)
             }
             VStack(spacing: 8) {

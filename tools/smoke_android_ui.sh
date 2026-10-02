@@ -176,7 +176,11 @@ tap_tutorial_label "Finish guide" setup_finish
 capture_ui setup_plan_return
 assert_tutorial_label setup_plan_return "Step 5 of 6"
 assert_tutorial_label setup_plan_return "2. Connect to your phone"
-assert_tutorial_label setup_plan_return "Not connected · Audio protection is not active"
+assert_tutorial_label setup_plan_return "follow the pictures"
+if python3 tools/check_android_simulation_ui.py --assert-label "$artifact_dir/setup_plan_return.xml" "Not connected · Audio protection is not active" 2>/dev/null; then exit 1; fi
+tap_scroll_label "Need help?" phone_help_open
+assert_scroll_label "does not control devices in this preview" phone_help_limits
+tap_scroll_label "Hide help" phone_help_close
 tap_scroll_label "Show Samsung steps" setup_from_phone
 tap_scroll_label "Samsung — TV shows OK approval" setup_phone_route
 tap_tutorial_label "Close" setup_phone_cancel
@@ -192,7 +196,7 @@ tap_tutorial_label "Next" beginner_plan_again
 tap_tutorial_label "Next" beginner_connection_truth
 capture_ui beginner_step_5
 assert_tutorial_label beginner_step_5 "2. Connect to your phone"
-assert_tutorial_label beginner_step_5 "not connected yet"
+assert_tutorial_label beginner_step_5 "follow the pictures"
 tap_tutorial_label "Next" beginner_last
 capture_ui beginner_step_6
 assert_only_guide beginner_step_6

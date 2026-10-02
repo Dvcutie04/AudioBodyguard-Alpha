@@ -146,7 +146,6 @@ class TutorialGuide(
                 content.addView(example)
             }
         }
-        if (step.target == "connectionCheck") text(content, "Not connected · Audio protection is not active", 18f, skin.warning, true)
         renderControls()
         footer.visibility = View.VISIBLE; stateChanged()
         reading.post { if (version == renderVersion && !activity.isFinishing && !activity.isDestroyed) reading.scrollTo(0, oldScroll) }

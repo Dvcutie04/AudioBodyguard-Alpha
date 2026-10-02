@@ -15,8 +15,7 @@ def test_beginner_default_is_brief_while_the_complete_catalog_stays_available():
     presentation = data["onboarding"]
     assert presentation["featured_ids"] == ["series_intro", "commercial_volume", "remote"]
     assert len(data["feature_catalog"]["items"]) == 21
-    assert "preview" in presentation["notice"].lower()
-    assert "no TV control" in presentation["notice"]
+    assert presentation["notice"] == "Preview"
     beginner = data["topics"][0]
     assert [step["target"] for step in beginner["steps"]] == [
         "welcome", "chooseTV", "chooseHome", "connectionPlan", "connectionCheck", "guideFinish",
@@ -37,7 +36,8 @@ def test_connection_guide_requires_both_visible_parts_without_claiming_connectio
     assert "both" in topic["steps"][0]["explanation"].lower()
     assert topic["steps"][3]["title"].startswith("1.")
     assert topic["steps"][4]["title"].startswith("2.")
-    assert "not connected" in topic["steps"][4]["explanation"]
+    assert "follow the pictures" in topic["steps"][4]["explanation"]
+    assert "does not control devices in this preview" in topic["steps"][4]["example"]
     assert not any("connected" in stage.get("status", "").lower() for stage in stages)
 
 
@@ -95,7 +95,7 @@ def test_beginner_guide_has_one_ordered_connection_path_and_no_actuation():
         "connectionCheck", "guideFinish",
     ]
     assert "does not monitor or change TV audio" in topic["steps"][0]["explanation"]
-    assert "not connected" in topic["steps"][4]["explanation"]
+    assert "does not control devices in this preview" in topic["steps"][4]["example"]
     assert "Help" in topic["steps"][-1]["explanation"]
     assert {c["id"] for c in data["choices"]["chooseHome"]} == {"alexa", "google", "both", "neither"}
     assert {"samsung", "lg", "sony", "other", "unsure"} <= {c["id"] for c in data["choices"]["chooseTV"]}

@@ -190,8 +190,8 @@
           "target": "connectionCheck",
           "area": "connection",
           "title": "2. Connect to your phone",
-          "explanation": "Find your TV in its official phone app. Audio Bodyguard is not connected yet.",
-          "example": "Example: use your phone on the home network required by the device's official app. A paired TV and a phone with the right permissions are separate checks."
+          "explanation": "Open your TV's official phone app and follow the pictures.",
+          "example": "Example: Audio Bodyguard does not control devices in this preview. Pairing and phone permissions are separate checks."
         },
         {
           "target": "guideFinish",
@@ -528,7 +528,7 @@
       "commercial_volume",
       "remote"
     ],
-    "notice": "Preview · no TV control",
+    "notice": "Preview",
     "start_label": "Start picture setup",
     "more_features_label": "More features",
     "help_label": "Need help?",

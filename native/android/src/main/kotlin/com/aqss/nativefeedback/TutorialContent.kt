@@ -9,7 +9,7 @@ object TutorialContent {
             TutorialStep("chooseTV", "connection", "Which TV do you use?", "Choose the brand on your TV or remote.", "Example: if the remote says Samsung, choose Samsung. If you cannot find a name, choose Not sure / no TV."),
             TutorialStep("chooseHome", "connection", "Use a home app?", "Choose the home app you use. Neither is fine.", "Example: if you say “Alexa” to an Echo speaker, choose Amazon Alexa. If you manage devices in the Google Home app, choose Google Home."),
             TutorialStep("connectionPlan", "connection", "1. Connect to your TV or home device", "Follow the highlighted pictures on your TV or in its official app.", "Example: finding a Samsung TV in Alexa does not let this preview control it. Audio Bodyguard would still need its own supported connection and your permission."),
-            TutorialStep("connectionCheck", "connection", "2. Connect to your phone", "Find your TV in its official phone app. Audio Bodyguard is not connected yet.", "Example: use your phone on the home network required by the device's official app. A paired TV and a phone with the right permissions are separate checks."),
+            TutorialStep("connectionCheck", "connection", "2. Connect to your phone", "Open your TV's official phone app and follow the pictures.", "Example: Audio Bodyguard does not control devices in this preview. Pairing and phone permissions are separate checks."),
             TutorialStep("guideFinish", "connection", "Your next step is ready", "Explore the preview. Replay the pictures anytime from Help.", "Example: to look at the sample graph, open Insights, then Explore an example. Its values are made up; they are not measurements from your phone."),
         )),
         TutorialTopic("home", "Home and coverage", listOf(
@@ -105,7 +105,7 @@ object TutorialContent {
     )
     val featuredIDs: List<String> = listOf("series_intro", "commercial_volume", "remote")
     val pictureContinueRoutes: List<String> = listOf("samsung_ok", "samsung_pin", "lg_pair", "google_remote", "google_setup", "tcl_models", "google_fast", "google_samsung", "google_lg", "google_roku", "google_vidaa", "google_vizio", "google_legacy", "samsung_alexa", "lg_alexa", "sony_new", "sony_legacy", "roku_alexa", "vidaa_google", "vidaa_alexa", "vizio_pair", "vizio_account", "vizio_assist", "fire_alexa", "lg_account5", "lg_account6", "google_legacy_add", "fire_setup")
-    const val previewNotice = "Preview · no TV control"
+    const val previewNotice = "Preview"
     const val startLabel = "Start picture setup"
     const val moreFeaturesLabel = "More features"
     const val helpLabel = "Need help?"
