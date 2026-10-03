@@ -1,0 +1,95 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<document type="com.apple.InterfaceBuilder3.CocoaTouch.Storyboard.XIB" version="3.0" toolsVersion="23505" targetRuntime="iOS.CocoaTouch" propertyAccessControl="none" useAutolayout="YES" launchScreen="YES" useTraitCollections="YES" colorMatched="YES">
+    <device id="retina6_12" orientation="portrait" appearance="light"/>
+    <dependencies>
+        <plugIn identifier="com.apple.InterfaceBuilder.IBCocoaTouchPlugin" version="23502"/>
+        <capability name="documents saved in the Xcode 8 format" minToolsVersion="8.0"/>
+    </dependencies>
+    <scenes>
+        <scene sceneID="LaunchScene">
+            <objects>
+                <viewController id="LaunchController" sceneMemberID="viewController">
+                    <view key="view" contentMode="scaleToFill" id="LaunchView">
+                        <rect key="frame" x="0.0" y="0.0" width="393" height="852"/>
+                        <subviews>
+                            <view clipsSubviews="YES" contentMode="scaleToFill" translatesAutoresizingMaskIntoConstraints="NO" id="ArtArea">
+                                <rect key="frame" x="0.0" y="0.0" width="393" height="852"/>
+                                <subviews>
+                                    <view clipsSubviews="YES" contentMode="scaleToFill" translatesAutoresizingMaskIntoConstraints="NO" id="TitleSlice">
+                                        <rect key="frame" x="0.0" y="0.0" width="393" height="105.14"/>
+                                        <subviews>
+                                            <imageView userInteractionEnabled="NO" contentMode="scaleToFill" image="LaunchArtwork" translatesAutoresizingMaskIntoConstraints="NO" id="TitleImage">
+                                                <rect key="frame" x="0.0" y="0.0" width="393" height="628.17"/>
+                                            </imageView>
+                                        </subviews>
+                                        <constraints>
+                                            <constraint firstItem="TitleImage" firstAttribute="top" secondItem="TitleSlice" secondAttribute="top" id="TitleImageTop"/>
+                                            <constraint firstItem="TitleImage" firstAttribute="leading" secondItem="TitleSlice" secondAttribute="leading" id="TitleImageLeading"/>
+                                            <constraint firstAttribute="trailing" secondItem="TitleImage" secondAttribute="trailing" id="TitleImageTrailing"/>
+                                            <constraint firstItem="TitleImage" firstAttribute="height" secondItem="TitleImage" secondAttribute="width" multiplier="1733:1084" id="TitleImageRatio"/>
+                                            <constraint firstItem="TitleSlice" firstAttribute="height" secondItem="TitleSlice" secondAttribute="width" multiplier="290:1084" id="TitleSliceRatio"/>
+                                        </constraints>
+                                    </view>
+                                    <view clipsSubviews="YES" contentMode="scaleToFill" translatesAutoresizingMaskIntoConstraints="NO" id="RoseSlice">
+                                        <rect key="frame" x="0.0" y="200.36" width="393" height="451.44"/>
+                                        <subviews>
+                                            <imageView userInteractionEnabled="NO" contentMode="scaleToFill" image="LaunchArtwork" translatesAutoresizingMaskIntoConstraints="NO" id="RoseImage">
+                                                <rect key="frame" x="0.0" y="-104.36" width="393" height="628.17"/>
+                                            </imageView>
+                                        </subviews>
+                                        <constraints>
+                                            <constraint firstItem="RoseImage" firstAttribute="centerY" secondItem="RoseSlice" secondAttribute="centerY" constant="-16" id="RoseImageCenter"/>
+                                            <constraint firstItem="RoseImage" firstAttribute="leading" secondItem="RoseSlice" secondAttribute="leading" id="RoseImageLeading"/>
+                                            <constraint firstAttribute="trailing" secondItem="RoseImage" secondAttribute="trailing" id="RoseImageTrailing"/>
+                                            <constraint firstItem="RoseImage" firstAttribute="height" secondItem="RoseImage" secondAttribute="width" multiplier="1733:1084" id="RoseImageRatio"/>
+                                            <constraint firstItem="RoseSlice" firstAttribute="height" secondItem="RoseSlice" secondAttribute="width" multiplier="1245:1084" id="RoseSliceRatio"/>
+                                        </constraints>
+                                    </view>
+                                    <view clipsSubviews="YES" contentMode="scaleToFill" translatesAutoresizingMaskIntoConstraints="NO" id="CreditSlice">
+                                        <rect key="frame" x="0.0" y="780.23" width="393" height="71.77"/>
+                                        <subviews>
+                                            <imageView userInteractionEnabled="NO" contentMode="scaleToFill" image="LaunchArtwork" translatesAutoresizingMaskIntoConstraints="NO" id="CreditImage">
+                                                <rect key="frame" x="0.0" y="-556.4" width="393" height="628.17"/>
+                                            </imageView>
+                                        </subviews>
+                                        <constraints>
+                                            <constraint firstItem="CreditImage" firstAttribute="bottom" secondItem="CreditSlice" secondAttribute="bottom" id="CreditImageBottom"/>
+                                            <constraint firstItem="CreditImage" firstAttribute="leading" secondItem="CreditSlice" secondAttribute="leading" id="CreditImageLeading"/>
+                                            <constraint firstAttribute="trailing" secondItem="CreditImage" secondAttribute="trailing" id="CreditImageTrailing"/>
+                                            <constraint firstItem="CreditImage" firstAttribute="height" secondItem="CreditImage" secondAttribute="width" multiplier="1733:1084" id="CreditImageRatio"/>
+                                            <constraint firstItem="CreditSlice" firstAttribute="height" secondItem="CreditSlice" secondAttribute="width" multiplier="198:1084" id="CreditSliceRatio"/>
+                                        </constraints>
+                                    </view>
+                                </subviews>
+                                <constraints>
+                                    <constraint firstItem="TitleSlice" firstAttribute="top" secondItem="ArtArea" secondAttribute="top" id="TitleTop"/>
+                                    <constraint firstItem="TitleSlice" firstAttribute="leading" secondItem="ArtArea" secondAttribute="leading" id="TitleLeading"/>
+                                    <constraint firstAttribute="trailing" secondItem="TitleSlice" secondAttribute="trailing" id="TitleTrailing"/>
+                                    <constraint firstItem="RoseSlice" firstAttribute="centerY" secondItem="ArtArea" secondAttribute="centerY" id="RoseCenter"/>
+                                    <constraint firstItem="RoseSlice" firstAttribute="leading" secondItem="ArtArea" secondAttribute="leading" id="RoseLeading"/>
+                                    <constraint firstAttribute="trailing" secondItem="RoseSlice" secondAttribute="trailing" id="RoseTrailing"/>
+                                    <constraint firstAttribute="bottom" secondItem="CreditSlice" secondAttribute="bottom" id="CreditBottom"/>
+                                    <constraint firstItem="CreditSlice" firstAttribute="leading" secondItem="ArtArea" secondAttribute="leading" id="CreditLeading"/>
+                                    <constraint firstAttribute="trailing" secondItem="CreditSlice" secondAttribute="trailing" id="CreditTrailing"/>
+                                </constraints>
+                            </view>
+                        </subviews>
+                        <color key="backgroundColor" white="1" alpha="1" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
+                        <constraints>
+                            <constraint firstItem="ArtArea" firstAttribute="top" secondItem="LaunchView" secondAttribute="top" id="ArtTop"/>
+                            <constraint firstAttribute="bottom" secondItem="ArtArea" secondAttribute="bottom" id="ArtBottom"/>
+                            <constraint firstItem="ArtArea" firstAttribute="centerX" secondItem="LaunchView" secondAttribute="centerX" id="ArtCenter"/>
+                            <constraint firstItem="ArtArea" firstAttribute="width" relation="lessThanOrEqual" secondItem="LaunchView" secondAttribute="width" id="ArtMaxWidth"/>
+                            <constraint firstItem="ArtArea" firstAttribute="width" relation="lessThanOrEqual" secondItem="LaunchView" secondAttribute="height" multiplier="1084:1733" id="ArtMaxHeight"/>
+                            <constraint firstItem="ArtArea" firstAttribute="width" secondItem="LaunchView" secondAttribute="width" priority="750" id="ArtFillWidth"/>
+                        </constraints>
+                    </view>
+                </viewController>
+                <placeholder placeholderIdentifier="IBFirstResponder" id="LaunchResponder" userLabel="First Responder" sceneMemberID="firstResponder"/>
+            </objects>
+        </scene>
+    </scenes>
+    <resources>
+        <image name="LaunchArtwork" width="1084" height="1733"/>
+    </resources>
+</document>

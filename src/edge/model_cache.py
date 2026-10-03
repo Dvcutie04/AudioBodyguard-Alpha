@@ -16,8 +16,8 @@ class _Entry:
 
 class ModelCache:
     def __init__(self, max_memory_mb: int | None = None):
-        if max_memory_mb is not None and max_memory_mb < 0:
-            raise ValueError("max_memory_mb must be nonnegative")
+        if max_memory_mb is not None and (type(max_memory_mb) is not int or max_memory_mb < 0):
+            raise ValueError("max_memory_mb must be a nonnegative integer or None")
         self._entries = {}
         self._lock = Lock()
         self._max_memory_mb = max_memory_mb
@@ -27,8 +27,8 @@ class ModelCache:
     def register(self, key: tuple[str, str], model: object, *, memory_mb: int = 0, unload: Callable[[object], None]):
         if not callable(unload):
             raise TypeError("unload must be callable")
-        if memory_mb < 0:
-            raise ValueError("memory_mb must be nonnegative")
+        if type(memory_mb) is not int or memory_mb < 0:
+            raise ValueError("memory_mb must be a nonnegative integer")
         with self._lock:
             if key in self._entries:
                 raise ValueError("model key already registered")
@@ -38,8 +38,8 @@ class ModelCache:
         self._enforce_budget()
 
     def set_memory_budget(self, max_memory_mb: int | None):
-        if max_memory_mb is not None and max_memory_mb < 0:
-            raise ValueError("max_memory_mb must be nonnegative")
+        if max_memory_mb is not None and (type(max_memory_mb) is not int or max_memory_mb < 0):
+            raise ValueError("max_memory_mb must be a nonnegative integer or None")
         with self._lock:
             self._max_memory_mb = max_memory_mb
         self._enforce_budget()

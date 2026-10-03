@@ -1,0 +1,561 @@
+{
+  "schema_version": 1,
+  "mode": "read_only_guidance",
+  "connection_stages": [
+    {
+      "number": 1,
+      "title": "Connect to your TV or home device",
+      "detail": "Pair the device and approve access on its screen or in its official home app.",
+      "targets": [
+        "chooseTV",
+        "chooseHome",
+        "connectionPlan"
+      ]
+    },
+    {
+      "number": 2,
+      "title": "Connect to your phone",
+      "detail": "Link your iPhone or Android phone, then check its permissions and sound connection.",
+      "targets": [
+        "connectionCheck"
+      ]
+    }
+  ],
+  "feature_catalog": {
+    "title": "Features",
+    "note": "Explore picture guides for your TV and phone, plus photo hints and voice input.",
+    "items": [
+      {
+        "id": "series_intro",
+        "title": "Skip series intros",
+        "detail": "On supported players with a confirmed intro segment.",
+        "availability": "planned"
+      },
+      {
+        "id": "commercial_volume",
+        "title": "Lower volume during commercials",
+        "detail": "With an eligible sound path and your permission.",
+        "availability": "planned"
+      },
+      {
+        "id": "remote",
+        "title": "Universal remote control",
+        "detail": "For compatible devices; controls vary by model.",
+        "availability": "planned"
+      },
+      {
+        "id": "loud_sounds",
+        "title": "Reduce sudden loud sounds",
+        "detail": "Bounded volume, mute and comfort controls.",
+        "availability": "planned"
+      },
+      {
+        "id": "presets",
+        "title": "Dialogue and Night sound presets",
+        "detail": "Listening options for qualified sound outputs.",
+        "availability": "planned"
+      },
+      {
+        "id": "equalizer",
+        "title": "Custom equalizer",
+        "detail": "Bass, midrange and treble on supported devices.",
+        "availability": "planned"
+      },
+      {
+        "id": "captions",
+        "title": "Captions, subtitles and audio description",
+        "detail": "When the media supplies compatible tracks.",
+        "availability": "planned"
+      },
+      {
+        "id": "languages",
+        "title": "Audio and caption languages",
+        "detail": "Choose from the tracks supplied by the media.",
+        "availability": "planned"
+      },
+      {
+        "id": "voice",
+        "title": "Voice activated control",
+        "detail": "Requests require confirmation and eligible controls.",
+        "availability": "planned"
+      },
+      {
+        "id": "profiles",
+        "title": "Personal sound profiles and saved settings",
+        "detail": "Save and restore confirmed preferences.",
+        "availability": "planned"
+      },
+      {
+        "id": "undo",
+        "title": "Undo changes and restore settings",
+        "detail": "For eligible changes with a known earlier setting.",
+        "availability": "planned"
+      },
+      {
+        "id": "history",
+        "title": "Session history and sound insights",
+        "detail": "Real observations and gaps; examples are labeled.",
+        "availability": "planned"
+      },
+      {
+        "id": "recovery",
+        "title": "Pause, resume and connection recovery",
+        "detail": "Recheck the connection before resuming controls.",
+        "availability": "planned"
+      },
+      {
+        "id": "handoff",
+        "title": "Move sessions between iPhone and Android",
+        "detail": "Only through a supported, checked transfer path.",
+        "availability": "planned"
+      },
+      {
+        "id": "background",
+        "title": "Background protection where supported",
+        "detail": "Subject to phone limits and a qualified sound path.",
+        "availability": "planned"
+      },
+      {
+        "id": "privacy",
+        "title": "Privacy controls and private support reports",
+        "detail": "Capture choices, deletion and review before sharing.",
+        "availability": "planned"
+      },
+      {
+        "id": "status",
+        "title": "Optional alerts, haptics and status widgets",
+        "detail": "Readable status with freshness and coverage gaps.",
+        "availability": "planned"
+      },
+      {
+        "id": "suggestions",
+        "title": "Explainable suggestions and session recipes",
+        "detail": "Optional suggestions that you can review or dismiss.",
+        "availability": "planned"
+      },
+      {
+        "id": "accessories",
+        "title": "Compatible speakers, headphones and accessories",
+        "detail": "Integrations depend on the exact device and route.",
+        "availability": "planned"
+      },
+      {
+        "id": "input",
+        "title": "Voice input display and recognized words",
+        "detail": "Review the recognized words on your phone.",
+        "availability": "preview"
+      }
+    ]
+  },
+  "topics": [
+    {
+      "id": "getting_started",
+      "title": "TV & smart-home guide",
+      "steps": [
+        {
+          "target": "welcome",
+          "area": "overview",
+          "title": "Your TV. Your comfort.",
+          "explanation": "Follow the pictures for both your TV and phone.",
+          "example": ""
+        },
+        {
+          "target": "chooseTV",
+          "area": "connection",
+          "title": "Which TV do you use?",
+          "explanation": "Choose the brand on your TV or remote.",
+          "example": "Example: if the remote says Samsung, choose Samsung. If you cannot find a name, choose Not sure / no TV."
+        },
+        {
+          "target": "chooseHome",
+          "area": "connection",
+          "title": "Use a home app?",
+          "explanation": "Choose the home app you use. Neither is fine.",
+          "example": "Example: if you say “Alexa” to an Echo speaker, choose Amazon Alexa. If you manage devices in the Google Home app, choose Google Home."
+        },
+        {
+          "target": "connectionPlan",
+          "area": "connection",
+          "title": "1. Connect to your TV or home device",
+          "explanation": "Follow the highlighted pictures on your TV or in its official app.",
+          "example": "Example: follow your TV maker’s app steps, then review any approval request on the television."
+        },
+        {
+          "target": "connectionCheck",
+          "area": "connection",
+          "title": "2. Connect to your phone",
+          "explanation": "Open your TV's official phone app and follow the pictures.",
+          "example": "Example: open the official phone app, follow its pairing prompts and review requested permissions."
+        },
+        {
+          "target": "guideFinish",
+          "area": "connection",
+          "title": "Your next step is ready",
+          "explanation": "Explore the controls. Replay the pictures anytime from Help.",
+          "example": "Example: open Insights and select Explore an example to see a sample graph."
+        }
+      ]
+    },
+    {
+      "id": "home",
+      "title": "Home and coverage",
+      "steps": [
+        {
+          "target": "coverage",
+          "area": "home",
+          "title": "Read the coverage state",
+          "explanation": "Unknown physical state means the sound coming from the speakers still needs an independent check.",
+          "example": "Example: a phone can show a TV as connected while the room is using a separate soundbar. The app must check the actual sound output."
+        },
+        {
+          "target": "capability",
+          "area": "home",
+          "title": "Check what is supported",
+          "explanation": "The six setup checks must be established before a control can become eligible. A connected device alone is insufficient.",
+          "example": "Example: Bluetooth may report headphones connected while the actual playback route is still unknown."
+        },
+        {
+          "target": "history",
+          "area": "home",
+          "title": "Understand missing history",
+          "explanation": "No observed events means there is no session evidence to show. Check for gaps in observation.",
+          "example": "Example: A gap while the app was away remains a gap in knowledge."
+        },
+        {
+          "target": "hint",
+          "area": "home",
+          "title": "Treat OS hints as clues",
+          "explanation": "Foreground hints show system notifications. Check the active speaker output separately.",
+          "example": "Example: A route-change notice is a clue to investigate, not an observation of sound."
+        }
+      ]
+    },
+    {
+      "id": "sound",
+      "title": "Sound options",
+      "steps": [
+        {
+          "target": "options",
+          "area": "options",
+          "title": "Find the Options menu",
+          "explanation": "Choose Sound to explore controls and their device requirements.",
+          "example": "Example: to learn about quieter evening listening, open Sound and read the Night preset description."
+        },
+        {
+          "target": "volume",
+          "area": "options",
+          "title": "Volume needs a supported output",
+          "explanation": "Volume controls require an authorized output and a verified physical result.",
+          "example": "Example: A requested volume of 40 percent would not prove the speaker reached that level."
+        },
+        {
+          "target": "sound",
+          "area": "options",
+          "title": "Choose a compatible preset",
+          "explanation": "Dialogue and Night presets are planned for supported sound outputs.",
+          "example": "Example: you might want speech to be easier to follow without making loud adverts louder. A future preset would still need to be tested on your speakers."
+        },
+        {
+          "target": "equalizer",
+          "area": "options",
+          "title": "Custom EQ is device-specific",
+          "explanation": "An equalizer balances low, middle and high sounds on a compatible device.",
+          "example": "Example: reducing bass can soften low, rumbling sounds on a supported output."
+        }
+      ]
+    },
+    {
+      "id": "captions",
+      "title": "Captions",
+      "steps": [
+        {
+          "target": "captionOption",
+          "area": "options",
+          "title": "Find the captions option",
+          "explanation": "Captions depend on an available track or supported caption mode. This option is unavailable until one is connected.",
+          "example": "Example: A film's authored English caption track could be selectable on a supported player."
+        },
+        {
+          "target": "captions",
+          "area": "home",
+          "title": "Check caption evidence",
+          "explanation": "Check the Sound page for caption track status.",
+          "example": "Example: check the player screen to confirm captions are displayed."
+        }
+      ]
+    },
+    {
+      "id": "defaults",
+      "title": "Defaults and undo",
+      "steps": [
+        {
+          "target": "defaults",
+          "area": "options",
+          "title": "Save only confirmed settings",
+          "explanation": "Save, restore and undo use confirmed device settings and verified results.",
+          "example": "Example: Undo returns to a verified earlier setting and checks the result."
+        },
+        {
+          "target": "history",
+          "area": "home",
+          "title": "Look for a verified change",
+          "explanation": "Review session evidence before using Undo.",
+          "example": "Example: A successful button tap is not a verified audio change."
+        }
+      ]
+    },
+    {
+      "id": "advanced",
+      "title": "Advanced and privacy",
+      "steps": [
+        {
+          "target": "advanced",
+          "area": "advanced",
+          "title": "Open Advanced options",
+          "explanation": "Choose Settings to explore device checks, background options and privacy.",
+          "example": "Example: to learn what is stored on your phone, open Settings and read Privacy and storage."
+        },
+        {
+          "target": "route",
+          "area": "advanced",
+          "title": "Identify the output path",
+          "explanation": "Qualify the device and check its active sound output path.",
+          "example": "Example: A connected speaker may not be the speaker currently used by a player."
+        },
+        {
+          "target": "physical",
+          "area": "advanced",
+          "title": "Require physical observation",
+          "explanation": "Confirm sound at the speakers independently of command messages.",
+          "example": "Example: sending “lower the volume” is only a request. A separate check must confirm the intended speaker really became quieter."
+        },
+        {
+          "target": "background",
+          "area": "advanced",
+          "title": "Understand background limits",
+          "explanation": "This screen receives foreground hints. Review coverage again when returning to the app.",
+          "example": "Example: Events while the screen is hidden remain unknown."
+        },
+        {
+          "target": "privacy",
+          "area": "advanced",
+          "title": "Know what this tour stores",
+          "explanation": "Appearance and your guide choice stay on this phone. TV choices and tutorial progress clear when you leave.",
+          "example": "Example: Closing the tour lets you reopen any topic from its first step."
+        }
+      ]
+    },
+    {
+      "id": "handoff",
+      "title": "Session transfer",
+      "steps": [
+        {
+          "target": "handoffOption",
+          "area": "advanced",
+          "title": "Check transfer eligibility",
+          "explanation": "Moving a session is unavailable. A transfer requires authorized endpoints and a verified path between them.",
+          "example": "Example: Two phones signed in to an account are not, by themselves, a qualified transfer path."
+        },
+        {
+          "target": "handoff",
+          "area": "home",
+          "title": "Keep the handoff state truthful",
+          "explanation": "The current screen shows the transfer path status. Review it before moving a session.",
+          "example": "Example: review transfer eligibility on both phones before moving a session."
+        }
+      ]
+    },
+    {
+      "id": "readiness",
+      "title": "Readiness checklist",
+      "steps": [
+        {
+          "target": "checkHardware",
+          "area": "checklist",
+          "title": "Output hardware",
+          "explanation": "Unknown: no supported output device has been identified and qualified for this app.",
+          "example": "Example: A connected Bluetooth speaker is a candidate, not proof that AQSS can control it."
+        },
+        {
+          "target": "checkQualification",
+          "area": "checklist",
+          "title": "Qualified path",
+          "explanation": "Unknown: this exact device, driver and output path have not passed the required checks.",
+          "example": "Example: qualify the exact phone speaker and output path on a real device."
+        },
+        {
+          "target": "checkPermission",
+          "area": "checklist",
+          "title": "Permission and authority",
+          "explanation": "Unknown: permission and authority for a supported action have not been established. This checklist requests neither.",
+          "example": "Example: pair OS permission with device-specific authorization before a change."
+        },
+        {
+          "target": "checkRoute",
+          "area": "checklist",
+          "title": "Output route",
+          "explanation": "Unknown: there is no verified path from an authorized action to the intended output.",
+          "example": "Example: Headphones can be connected without being the active playback route."
+        },
+        {
+          "target": "checkRuntime",
+          "area": "checklist",
+          "title": "Runtime eligibility",
+          "explanation": "Unknown: there is no qualified running protection path. This screen only receives foreground hints.",
+          "example": "Example: review the observation gap after returning to the app."
+        },
+        {
+          "target": "checkEvidence",
+          "area": "checklist",
+          "title": "Independent observation",
+          "explanation": "Unknown: there is no independent observation tied to an authorized device transaction.",
+          "example": "Example: A device saying that a command succeeded is not independent evidence of audible output."
+        }
+      ]
+    }
+  ],
+  "choices": {
+    "chooseTV": [
+      {
+        "id": "samsung",
+        "title": "Samsung",
+        "icon": "tv",
+        "detail": "Find the exact Samsung model on its label or in its About menu. Check its supported connections in the manufacturer’s instructions."
+      },
+      {
+        "id": "lg",
+        "title": "LG",
+        "icon": "tv",
+        "detail": "Find the exact LG model on its label or in its About menu. Check its supported connections in the manufacturer’s instructions."
+      },
+      {
+        "id": "sony",
+        "title": "Sony",
+        "icon": "tv",
+        "detail": "Find the exact Sony model on its label or in its About menu. Check its supported connections in the manufacturer’s instructions."
+      },
+      {
+        "id": "tcl",
+        "title": "TCL",
+        "icon": "tv",
+        "detail": "Find the exact TCL model on its label or in its About menu. Check its supported connections in the manufacturer’s instructions."
+      },
+      {
+        "id": "hisense",
+        "title": "Hisense",
+        "icon": "tv",
+        "detail": "Find the exact Hisense model on its label or in its About menu. Check its supported connections in the manufacturer’s instructions."
+      },
+      {
+        "id": "vizio",
+        "title": "Vizio",
+        "icon": "tv",
+        "detail": "Find the exact Vizio model on its label or in its About menu. Check its supported connections in the manufacturer’s instructions."
+      },
+      {
+        "id": "philips",
+        "title": "Philips",
+        "icon": "tv",
+        "detail": "Tap Show steps on the checklist. Choose the operating system or remote that matches your TV, then follow the numbered pictures. Exact model support must be checked."
+      },
+      {
+        "id": "sharp",
+        "title": "Sharp",
+        "icon": "tv",
+        "detail": "Tap Show steps on the checklist. Choose the operating system or remote that matches your TV, then follow the numbered pictures. Exact model support must be checked."
+      },
+      {
+        "id": "roku",
+        "title": "Roku-branded TV",
+        "icon": "tv",
+        "detail": "Tap Show steps on the checklist. Choose the operating system or remote that matches your TV, then follow the numbered pictures. Exact model support must be checked."
+      },
+      {
+        "id": "insignia",
+        "title": "Insignia",
+        "icon": "tv",
+        "detail": "Tap Show steps on the checklist. Choose the operating system or remote that matches your TV, then follow the numbered pictures. Exact model support must be checked."
+      },
+      {
+        "id": "other",
+        "title": "Another brand",
+        "icon": "tv",
+        "detail": "Find the TV brand and model on its label or in its About menu. Use the manufacturer’s instructions to check which phone or smart-home connections it supports."
+      },
+      {
+        "id": "unsure",
+        "title": "Not sure / no TV",
+        "icon": "tv",
+        "detail": "You can explore without a TV. Later, look for the brand and model on the TV label or ask someone to help you find it in the About menu."
+      }
+    ],
+    "chooseHome": [
+      {
+        "id": "alexa",
+        "title": "Amazon Alexa",
+        "icon": "speaker",
+        "detail": "In the Alexa app, check your exact TV model for a compatible skill and follow the maker’s account-linking steps."
+      },
+      {
+        "id": "google",
+        "title": "Google Home",
+        "icon": "house",
+        "detail": "In Google Home, check your exact TV model, follow the maker’s setup instructions and review requested permissions."
+      },
+      {
+        "id": "both",
+        "title": "Both apps",
+        "icon": "house",
+        "detail": "Check your TV maker’s instructions for each app separately and follow each app’s approval steps."
+      },
+      {
+        "id": "neither",
+        "title": "Neither / not sure",
+        "icon": "questionmark.circle",
+        "detail": "No smart-home account is needed to explore. Keep using your TV remote. A future direct TV connection would still need a supported model and your permission."
+      }
+    ]
+  },
+  "onboarding": {
+    "featured_ids": [
+      "series_intro",
+      "commercial_volume",
+      "remote"
+    ],
+    "notice": "Picture guide",
+    "start_label": "Start picture setup",
+    "more_features_label": "More features",
+    "help_label": "Need help?",
+    "picture_continue_routes": [
+      "samsung_ok",
+      "samsung_pin",
+      "lg_pair",
+      "google_remote",
+      "google_setup",
+      "tcl_models",
+      "google_fast",
+      "google_samsung",
+      "google_lg",
+      "google_roku",
+      "google_vidaa",
+      "google_vizio",
+      "google_legacy",
+      "samsung_alexa",
+      "lg_alexa",
+      "sony_new",
+      "sony_legacy",
+      "roku_alexa",
+      "vidaa_google",
+      "vidaa_alexa",
+      "vizio_pair",
+      "vizio_account",
+      "vizio_assist",
+      "fire_alexa",
+      "lg_account5",
+      "lg_account6",
+      "google_legacy_add",
+      "fire_setup",
+      "roku_phone"
+    ]
+  }
+}

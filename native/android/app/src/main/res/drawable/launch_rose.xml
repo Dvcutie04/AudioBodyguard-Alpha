@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="288dp" android:height="288dp"
+    android:viewportWidth="288" android:viewportHeight="288">
+    <!-- A simple, masked-safe rose cue. The following full-screen layer uses the exact artwork. -->
+    <path android:fillColor="#211927" android:pathData="M150,221 C118,210 104,176 117,152 C126,135 145,131 155,109 C159,92 155,76 148,61 C169,80 174,100 166,119 C158,138 138,148 139,171 C138,192 153,208 171,218 C162,223 155,224 150,221 Z"/>
+    <path android:fillColor="#9233BB" android:pathData="M152,221 C182,197 186,165 168,146 C150,127 141,109 157,85 C165,73 171,63 173,52 C175,78 168,96 167,111 C167,125 184,132 193,149 C206,175 186,209 152,221 Z"/>
+    <path android:fillColor="#241529" android:pathData="M147,179 C126,166 108,163 89,176 C101,155 125,146 142,153 C153,158 160,170 160,181 C169,165 185,151 208,159 C195,161 184,170 181,183 C173,202 153,211 136,201 C153,201 162,191 147,179 Z"/>
+    <path android:fillColor="#B768D6" android:pathData="M91,176 C113,170 127,184 137,193 C121,190 107,194 99,202 C99,190 94,182 91,176 Z M194,160 C210,155 222,166 228,175 C211,169 203,181 190,187 C194,175 192,166 194,160 Z"/>
+</vector>
