@@ -28,6 +28,7 @@ import com.aqss.nativefeedback.SetupStep
 class SetupGuideActivity : Activity() {
     companion object {
         const val COMPLETED_ROUTE = "completedPictureRoute"
+        const val COMPLETED_TV_ROUTE = "completedTVPictureRoute"
         private val repeatedPictureNotes = setOf(
             "Use your real device. This picture is an illustration.",
             "Finishing this guide does not connect Audio Bodyguard or activate protection.",
@@ -50,6 +51,7 @@ class SetupGuideActivity : Activity() {
     private var index = -1
     private var mismatch = false
     private var detailsExpanded = false
+    private var completedTVRoute: String? = null
     private var backCallback: OnBackInvokedCallback? = null
     private val group get() = SetupContent.groups.firstOrNull { it.id == groupId }
     private val route get() = SetupContent.routes.firstOrNull { it.id == routeId }
@@ -61,8 +63,9 @@ class SetupGuideActivity : Activity() {
         skin = InterfaceTheme(this, dark)
         groupId = (savedInstanceState?.getString("group") ?: intent.getStringExtra("group") ?: "")
             .takeIf { id -> SetupContent.groups.any { it.id == id } } ?: ""
-        routeId = if (savedInstanceState == null) (intent.getStringExtra("route") ?: if (groupId == "voice") "voice" else null)?.takeIf { group?.routes?.contains(it) == true }
-            else savedInstanceState.getString("route")?.takeIf { group?.routes?.contains(it) == true }
+        routeId = if (savedInstanceState == null && groupId == "voice") "voice" else savedInstanceState?.getString("route")?.takeIf { group?.routes?.contains(it) == true }
+        completedTVRoute = savedInstanceState?.getString("completedTVRoute")?.takeIf { it in listOf("roku_network", "roku_model") }
+        completedTVRoute?.let { setResult(RESULT_OK, Intent().putExtra(COMPLETED_TV_ROUTE, it)) }
         index = if (savedInstanceState == null && groupId == "voice") 0 else (savedInstanceState?.getInt("index", -1) ?: -1).takeIf { it == -1 || route?.steps?.indices?.contains(it) == true } ?: -1
         mismatch = savedInstanceState?.getBoolean("mismatch", false) ?: false
         root = column().apply { setBackgroundColor(skin.background) }
@@ -195,12 +198,14 @@ class SetupGuideActivity : Activity() {
         val route = route ?: return
         if (mismatch || isFinishing) return
         if (index == route.steps.lastIndex) {
-            if (route.id in listOf("roku_network", "roku_model") && !intent.getBooleanExtra("returnToPhoneStep", false)) {
-                saveProgress(route, null); routeId = "roku_phone"; index = -1; render(); return
+            if (route.id in listOf("roku_network", "roku_model")) {
+                saveProgress(route, null); completedTVRoute = route.id
+                setResult(RESULT_OK, Intent().putExtra(COMPLETED_TV_ROUTE, route.id))
+                routeId = "roku_phone"; index = -1; render(); return
             }
             if (route.id == "voice" && !intent.getBooleanExtra("returnToVoice", false)) startActivity(Intent(this, InputAssistanceActivity::class.java).putExtra("mode", "voice").putExtra("dark", skin.dark))
             saveProgress(route, null)
-            if (route.id != "voice") setResult(RESULT_OK, Intent().putExtra(COMPLETED_ROUTE, route.id))
+            if (route.id != "voice") setResult(RESULT_OK, Intent().putExtra(COMPLETED_TV_ROUTE, completedTVRoute).putExtra(COMPLETED_ROUTE, route.id))
             finish()
         } else { index = if (index < 0) resumeIndex(route) ?: 0 else index + 1; render() }
     }
@@ -342,7 +347,7 @@ class SetupGuideActivity : Activity() {
     @Deprecated("Compatibility for Android 12 and earlier")
     override fun onBackPressed() { back() }
     override fun onSaveInstanceState(outState: Bundle) {
-        outState.putString("group", groupId); outState.putString("route", routeId); outState.putInt("index", index); outState.putBoolean("mismatch", mismatch); super.onSaveInstanceState(outState)
+        outState.putString("group", groupId); outState.putString("route", routeId); outState.putInt("index", index); outState.putBoolean("mismatch", mismatch); outState.putString("completedTVRoute", completedTVRoute); super.onSaveInstanceState(outState)
     }
     override fun onDestroy() {
         if (Build.VERSION.SDK_INT >= 33) backCallback?.let { onBackInvokedDispatcher.unregisterOnBackInvokedCallback(it) }

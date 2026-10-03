@@ -133,15 +133,14 @@ private struct ReadOnlyHomeView: View {
             .sheet(isPresented: $voiceCheckVisible) { VoiceCheckView(theme: theme) }
             .sheet(isPresented: $photoCheckVisible) { TVPhotoView(theme: theme) }
             .sheet(item: $setupRequest, onDismiss: {
-                var startRokuPhone = false
                 if let target = pictureTarget, let route = completedPictureRoute {
-                    let advanced = guide.completePictures(expectedTarget: target, routeID: route)
-                    startRokuPhone = advanced && target == "connectionPlan" && ["roku_network", "roku_model"].contains(route)
+                    _ = guide.completePictures(expectedTarget: target, routeID: route)
                 }
                 pictureTarget = nil; completedPictureRoute = nil
                 if voiceAfterGuide { voiceAfterGuide = false; voiceCheckVisible = true }
-                if startRokuPhone { DispatchQueue.main.async { showSetup("tcl_roku", route: "roku_phone") } }
-            }) { request in SetupGuidesView(theme: theme, initialGroup: request.group, initialRoute: request.route, returnToPhoneStep: pictureTarget == "connectionPlan", onVoiceCheck: { voiceAfterGuide = true }, onFinish: { completedPictureRoute = $0 }) }
+            }) { request in SetupGuidesView(theme: theme, initialGroup: request.group, onVoiceCheck: { voiceAfterGuide = true }, onPartOne: { route in
+                if pictureTarget == "connectionPlan" && guide.completePictures(expectedTarget: "connectionPlan", routeID: route) { pictureTarget = "connectionCheck" }
+            }, onFinish: { completedPictureRoute = $0 }) }
             .sheet(isPresented: $navigationVisible) {
                 menuSheet("Jump to a section") {
                     ForEach(destinations, id: \.1) { title, target in action(title, icon: "arrow.right") { navigationVisible = false; jump(target) } }
@@ -179,10 +178,10 @@ private struct ReadOnlyHomeView: View {
         .onChange(of: tutorialStepKey) { _ in moreFeatures = false; tutorialHelp = false }
     }
 
-    private func showSetup(_ group: String = "", route: String? = nil) {
+    private func showSetup(_ group: String = "") {
         completedPictureRoute = nil
         pictureTarget = tutorialTopicID == "getting_started" && ["connectionPlan", "connectionCheck"].contains(tutorialStep?.target ?? "") ? tutorialStep?.target : nil
-        setupRequest = SetupGuideRequest(group: group, route: route)
+        setupRequest = SetupGuideRequest(group: group)
     }
 
     private var header: some View {

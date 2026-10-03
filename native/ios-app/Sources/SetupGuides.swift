@@ -3,8 +3,6 @@ import SwiftUI
 struct SetupGuideRequest: Identifiable {
     let id = UUID()
     let group: String
-    let route: String?
-    init(group: String, route: String? = nil) { self.group = group; self.route = route }
 }
 
 /// Local, illustrative instructions. No device session, credentials or control API.
@@ -16,9 +14,8 @@ struct SetupGuidesView: View {
     ]
     let theme: AppTheme
     let initialGroup: String
-    var initialRoute: String? = nil
-    var returnToPhoneStep = false
     var onVoiceCheck: (() -> Void)? = nil
+    var onPartOne: ((String) -> Void)? = nil
     var onFinish: ((String) -> Void)? = nil
     @Environment(\.dismiss) private var dismiss
     @Environment(\.dynamicTypeSize) private var textSize
@@ -97,12 +94,7 @@ struct SetupGuidesView: View {
             }
             footer
         }.background(theme.background.ignoresSafeArea()).foregroundColor(theme.text)
-            .onAppear {
-                if !initialized {
-                    initialized = true; chooseGroup(initialGroup)
-                    if let initialRoute, group?.routes.contains(initialRoute) == true { routeID = initialRoute }
-                }
-            }
+            .onAppear { if !initialized { initialized = true; chooseGroup(initialGroup) } }
             .onChange(of: index) { value in
                 if let route = route, route.id != "voice", route.steps.indices.contains(value) { writeProgress(route.id, value) }
             }
@@ -207,8 +199,9 @@ struct SetupGuidesView: View {
                 Button {
                     guard routeID == route.id, index == displayedIndex, !mismatch else { return }
                     if index == route.steps.count - 1 {
-                        if ["roku_network", "roku_model"].contains(route.id) && !returnToPhoneStep {
+                        if ["roku_network", "roku_model"].contains(route.id) {
                             writeProgress(route.id, nil)
+                            onPartOne?(route.id)
                             routeID = "roku_phone"; index = -1
                             return
                         }

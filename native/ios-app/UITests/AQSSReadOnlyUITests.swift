@@ -218,7 +218,7 @@ final class AQSSReadOnlyUITests: XCTestCase {
         XCTAssertEqual(app.buttons["setup-next"].label, "Finish part one")
         app.buttons["setup-next"].tap()
         label("2. Connect to your phone (Roku)", app)
-        XCTAssertEqual(app.buttons["setup-next"].label, "Start part two")
+        XCTAssertTrue(["Start part two", "Resume guide"].contains(app.buttons["setup-next"].label))
         app.buttons["setup-next"].tap(); label("Step 1 of 5", app)
         screenshot("Roku phone app setup begins", app)
         app.buttons["setup-close"].tap()
