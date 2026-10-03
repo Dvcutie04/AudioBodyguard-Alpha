@@ -3,6 +3,8 @@ import SwiftUI
 struct SetupGuideRequest: Identifiable {
     let id = UUID()
     let group: String
+    let route: String?
+    init(group: String, route: String? = nil) { self.group = group; self.route = route }
 }
 
 /// Local, illustrative instructions. No device session, credentials or control API.
@@ -14,6 +16,8 @@ struct SetupGuidesView: View {
     ]
     let theme: AppTheme
     let initialGroup: String
+    var initialRoute: String? = nil
+    var returnToPhoneStep = false
     var onVoiceCheck: (() -> Void)? = nil
     var onFinish: ((String) -> Void)? = nil
     @Environment(\.dismiss) private var dismiss
@@ -93,7 +97,12 @@ struct SetupGuidesView: View {
             }
             footer
         }.background(theme.background.ignoresSafeArea()).foregroundColor(theme.text)
-            .onAppear { if !initialized { initialized = true; chooseGroup(initialGroup) } }
+            .onAppear {
+                if !initialized {
+                    initialized = true; chooseGroup(initialGroup)
+                    if let initialRoute, group?.routes.contains(initialRoute) == true { routeID = initialRoute }
+                }
+            }
             .onChange(of: index) { value in
                 if let route = route, route.id != "voice", route.steps.indices.contains(value) { writeProgress(route.id, value) }
             }
@@ -198,6 +207,11 @@ struct SetupGuidesView: View {
                 Button {
                     guard routeID == route.id, index == displayedIndex, !mismatch else { return }
                     if index == route.steps.count - 1 {
+                        if ["roku_network", "roku_model"].contains(route.id) && !returnToPhoneStep {
+                            writeProgress(route.id, nil)
+                            routeID = "roku_phone"; index = -1
+                            return
+                        }
                         if route.id == "voice" { onVoiceCheck?() }
                         else { onFinish?(route.id) }
                         writeProgress(route.id, nil)
@@ -205,7 +219,7 @@ struct SetupGuidesView: View {
                     } else if index < 0 { index = resumeIndex(route) ?? 0 }
                     else { index += 1 }
                 } label: {
-                    navigationLabel(index < 0 ? (resumeIndex(route) == nil ? "Start guide" : "Resume guide") : index == route.steps.count - 1 ? (route.id == "voice" && onVoiceCheck != nil ? "Open Voice check" : "Finish guide") : "Next", icon: index == route.steps.count - 1 ? (route.id == "voice" && onVoiceCheck != nil ? "mic" : "checkmark") : "arrow.right")
+                    navigationLabel(index < 0 ? (resumeIndex(route) == nil ? (route.id == "roku_phone" ? "Start part two" : "Start guide") : "Resume guide") : index == route.steps.count - 1 ? (route.id == "voice" && onVoiceCheck != nil ? "Open Voice check" : ["roku_network", "roku_model"].contains(route.id) ? "Finish part one" : route.id == "roku_phone" ? "Finish part two" : "Finish guide") : "Next", icon: index == route.steps.count - 1 ? (route.id == "voice" && onVoiceCheck != nil ? "mic" : "checkmark") : "arrow.right")
                         .frame(maxWidth: .infinity, minHeight: 44)
                 }.buttonStyle(AppButtonStyle(theme: theme, primary: true)).accessibilityIdentifier("setup-next")
             }

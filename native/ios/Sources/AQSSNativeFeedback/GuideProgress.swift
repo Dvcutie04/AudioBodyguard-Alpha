@@ -27,7 +27,9 @@ public struct AQSSGuideProgress: Equatable, Sendable {
     @discardableResult public mutating func completePictures(expectedTarget: String, routeID: String) -> Bool {
         guard topicID == "getting_started", step?.target == expectedTarget,
               ["connectionPlan", "connectionCheck"].contains(expectedTarget),
-              AQSSTutorialContent.pictureContinueRoutes.contains(routeID) else { return false }
+              (AQSSTutorialContent.pictureContinueRoutes.contains(routeID) ||
+               (expectedTarget == "connectionPlan" && ["roku_network", "roku_model"].contains(routeID))),
+              routeID != "roku_phone" || expectedTarget == "connectionCheck" else { return false }
         return next()
     }
     public mutating func back() { if index > 0 { index -= 1 } }

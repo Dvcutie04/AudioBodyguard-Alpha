@@ -14,9 +14,9 @@ def test_beginner_default_is_brief_while_the_complete_catalog_stays_available():
     data = contract()
     presentation = data["onboarding"]
     assert presentation["featured_ids"] == ["series_intro", "commercial_volume", "remote"]
-    assert len(data["feature_catalog"]["items"]) == 21
+    assert len(data["feature_catalog"]["items"]) == 20
     assert presentation["notice"] == "Picture guide"
-    assert data["feature_catalog"]["title"] == "What we're building"
+    assert data["feature_catalog"]["title"] == "Features"
     assert "does not" not in data["topics"][0]["steps"][0]["explanation"].lower()
     beginner = data["topics"][0]
     assert [step["target"] for step in beginner["steps"]] == [
@@ -47,7 +47,10 @@ def test_welcome_feature_list_includes_requested_controls_with_truthful_availabi
     catalog = contract()["feature_catalog"]
     items = catalog["items"]
     assert [item["id"] for item in items[:3]] == ["series_intro", "commercial_volume", "remote"]
-    assert {"loud_sounds", "presets", "equalizer", "captions", "languages", "voice", "profiles", "undo", "history", "recovery", "handoff", "background", "privacy", "setup", "input", "suggestions", "accessories", "status"} <= {item["id"] for item in items}
+    assert {"loud_sounds", "presets", "equalizer", "captions", "languages", "voice", "profiles", "undo", "history", "recovery", "handoff", "background", "privacy", "input", "suggestions", "accessories", "status"} <= {item["id"] for item in items}
+    assert "setup" not in {item["id"] for item in items}
+    assert next(item for item in items if item["id"] == "remote")["title"] == "Universal remote control"
+    assert next(item for item in items if item["id"] == "voice")["title"] == "Voice activated control"
     assert all(item["availability"] == "planned" for item in items[:3])
     assert "picture guides" in catalog["note"].lower()
     assert "does not" not in catalog["note"].lower()

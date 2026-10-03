@@ -95,10 +95,10 @@ final class AQSSReadOnlyUITests: XCTestCase {
         label("Both connections are required", app)
         label("1. Connect to your TV or home device", app)
         label("2. Connect to your phone", app)
-        label("Skip series intros", app); label("Lower volume during commercials", app); label("Universal remote controls", app)
+        label("Skip series intros", app); label("Lower volume during commercials", app); label("Universal remote control", app)
         XCTAssertFalse(app.staticTexts.containing(NSPredicate(format: "label CONTAINS %@", "Voice input display and recognized words")).firstMatch.exists)
         label("Picture guide", app)
-        label("What we're building", app)
+        XCTAssertFalse(app.staticTexts["What we're building"].exists)
         XCTAssertFalse(app.staticTexts.containing(NSPredicate(format: "label CONTAINS %@", "Planned controls")).firstMatch.exists)
         XCTAssertFalse(app.staticTexts.containing(NSPredicate(format: "label CONTAINS %@", "This preview does not")).firstMatch.exists)
         XCTAssertFalse(app.staticTexts.containing(NSPredicate(format: "label CONTAINS %@", "a film is quiet, then an advert")).firstMatch.exists)
@@ -106,8 +106,9 @@ final class AQSSReadOnlyUITests: XCTestCase {
         XCTAssertFalse(app.buttons["choice-samsung"].exists)
         screenshot("Guide 1 Welcome", app)
         tap("More features", app)
-        label("Explore picture guides for your TV and phone", app)
         label("Voice input display and recognized words", app)
+        label("Voice activated control", app)
+        XCTAssertFalse(app.staticTexts["Picture guides and photo-assisted setup"].exists)
         let firstFeature = app.staticTexts.containing(NSPredicate(format: "label CONTAINS %@", "Skip series intros")).firstMatch
         let scroll = app.scrollViews["guide-scroll"]
         for _ in 0..<12 {
@@ -214,8 +215,32 @@ final class AQSSReadOnlyUITests: XCTestCase {
         screenshot("Roku About selection and resumed step", app)
         app.buttons["setup-next"].tap(); label("Step 5 of 5", app)
         screenshot("Roku IP address information diagram", app)
+        XCTAssertEqual(app.buttons["setup-next"].label, "Finish part one")
         app.buttons["setup-next"].tap()
+        label("2. Connect to your phone (Roku)", app)
+        XCTAssertEqual(app.buttons["setup-next"].label, "Start part two")
+        app.buttons["setup-next"].tap(); label("Step 1 of 5", app)
+        screenshot("Roku phone app setup begins", app)
+        app.buttons["setup-close"].tap()
         tab("home", app); label("Unknown physical state", app)
+    }
+
+    func testRokuPartOneImmediatelyOpensPhonePicturesInFirstVisit() {
+        let app = launch(true)
+        next(app); tap("TCL", app); next(app); tap("Neither / not sure", app); next(app)
+        tap("Show TCL steps", app); tap("Roku TV", app); tap("Find my IP address", app)
+        tap("I’m already in Settings", app)
+        for _ in 0..<2 { app.buttons["setup-next"].tap() }
+        label("Step 5 of 5", app)
+        XCTAssertEqual(app.buttons["setup-next"].label, "Finish part one")
+        app.buttons["setup-next"].tap()
+        label("2. Connect to your phone (Roku)", app)
+        XCTAssertEqual(app.buttons["setup-next"].label, "Start part two")
+        app.buttons["setup-next"].tap(); label("Step 1 of 5", app)
+        screenshot("First visit Roku phone guide", app)
+        app.buttons["setup-close"].tap()
+        label("Step 5 of 6", app)
+        label("2. Connect to your phone", app)
     }
 
     func testIllustratedGuideFromTCLPlanAndVoiceHelp() {

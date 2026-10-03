@@ -42,8 +42,9 @@ class TutorialGuide(
     val isActive get() = guide.topicId != null
     val isBeginner get() = guide.topicId == "getting_started"
     val pictureTarget get() = guide.step?.target?.takeIf { isBeginner && it in listOf("connectionPlan", "connectionCheck") }
-    fun completePictures(expectedTarget: String, routeId: String) {
-        if (guide.completePictures(expectedTarget, routeId)) render()
+    fun completePictures(expectedTarget: String, routeId: String): Boolean {
+        if (!guide.completePictures(expectedTarget, routeId)) return false
+        render(); return true
     }
     init {
         for (box in listOf(header, content, controls)) box.setPadding(dp(20), dp(12), dp(20), dp(12))
@@ -161,18 +162,10 @@ class TutorialGuide(
     }
     private fun featureCatalog(): LinearLayout {
         val box = column().apply { setPadding(dp(18), dp(18), dp(18), dp(6)); background = skin.shape(skin.surface) }
-        text(box, TutorialContent.featureTitle, 18f, bold = true).apply {
-            gravity = Gravity.CENTER
-            if (Build.VERSION.SDK_INT >= 28) isAccessibilityHeading = true
-        }
         TutorialContent.features.filter { moreFeatures || it.id in TutorialContent.featuredIDs }.forEach { feature ->
             val row = column()
             text(row, feature.title, 16f, bold = true).apply { gravity = Gravity.CENTER; setPadding(0, 0, 0, dp(3)) }
-            if (moreFeatures) {
-                text(row, if (feature.availability == "preview") "Explore in this preview" else "Planned", 12f,
-                    if (feature.availability == "preview") skin.accent else skin.muted).gravity = Gravity.CENTER
-                text(row, feature.detail, 12f, skin.muted).gravity = Gravity.CENTER
-            } else row.setPadding(0, 0, 0, dp(10))
+            row.setPadding(0, 0, 0, dp(10))
             row.importantForAccessibility = View.IMPORTANT_FOR_ACCESSIBILITY_YES
             row.contentDescription = "${feature.title}. ${if (feature.availability == "preview") "Explore in this preview" else "Planned"}. ${feature.detail}"
             box.addView(row, LinearLayout.LayoutParams(-1, -2))
@@ -180,7 +173,6 @@ class TutorialGuide(
         box.addView(button(if (moreFeatures) "Fewer features" else TutorialContent.moreFeaturesLabel) { moreFeatures = !moreFeatures; render(true) }.apply {
             if (Build.VERSION.SDK_INT >= 30) stateDescription = if (moreFeatures) "Expanded" else "Collapsed"
         }, LinearLayout.LayoutParams(-1, -2))
-        if (moreFeatures) text(box, TutorialContent.featureNote, 14f, skin.muted).gravity = Gravity.CENTER
         return box
     }
     private fun refreshChoices() {

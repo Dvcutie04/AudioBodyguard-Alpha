@@ -48,10 +48,13 @@ class GuideProgressTest {
         guide.start("getting_started")
         assertFalse(guide.completePictures("connectionPlan", "samsung_ok"))
         guide.restore("getting_started", 3, mapOf("chooseTV" to "samsung", "chooseHome" to "alexa"))
-        listOf("unknown", "voice", "identify", "roku_network", "samsung_model_new").forEach { route ->
+        listOf("unknown", "voice", "identify", "roku_phone", "samsung_model_new").forEach { route ->
             assertFalse(guide.completePictures("connectionPlan", route)); assertEquals(3, guide.index)
         }
         assertFalse(guide.completePictures("connectionCheck", "samsung_ok"))
+        assertTrue(guide.completePictures("connectionPlan", "roku_network")); assertEquals("connectionCheck", guide.step?.target)
+        assertTrue(guide.completePictures("connectionCheck", "roku_phone"))
+        guide.restore("getting_started", 3, mapOf("chooseTV" to "samsung", "chooseHome" to "alexa"))
         assertTrue(guide.completePictures("connectionPlan", "samsung_ok")); assertEquals("connectionCheck", guide.step?.target)
         assertFalse(guide.completePictures("connectionPlan", "samsung_ok"))
         assertTrue(guide.completePictures("connectionCheck", "samsung_ok")); assertTrue(guide.isLast)

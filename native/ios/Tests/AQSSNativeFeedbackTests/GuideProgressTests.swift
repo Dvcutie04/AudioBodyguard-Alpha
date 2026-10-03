@@ -44,11 +44,15 @@ final class GuideProgressTests: XCTestCase {
         guide.start("getting_started")
         XCTAssertFalse(guide.completePictures(expectedTarget: "connectionPlan", routeID: "samsung_ok"))
         guide.restore("getting_started", index: 3, selections: ["chooseTV": "samsung", "chooseHome": "alexa"])
-        for route in ["unknown", "voice", "identify", "roku_network", "samsung_model_new"] {
+        for route in ["unknown", "voice", "identify", "roku_phone", "samsung_model_new"] {
             XCTAssertFalse(guide.completePictures(expectedTarget: "connectionPlan", routeID: route))
             XCTAssertEqual(guide.index, 3)
         }
         XCTAssertFalse(guide.completePictures(expectedTarget: "connectionCheck", routeID: "samsung_ok"))
+        XCTAssertTrue(guide.completePictures(expectedTarget: "connectionPlan", routeID: "roku_network"))
+        XCTAssertEqual(guide.step?.target, "connectionCheck")
+        XCTAssertTrue(guide.completePictures(expectedTarget: "connectionCheck", routeID: "roku_phone"))
+        guide.restore("getting_started", index: 3, selections: ["chooseTV": "samsung", "chooseHome": "alexa"])
         XCTAssertTrue(guide.completePictures(expectedTarget: "connectionPlan", routeID: "samsung_ok"))
         XCTAssertEqual(guide.step?.target, "connectionCheck")
         XCTAssertFalse(guide.completePictures(expectedTarget: "connectionPlan", routeID: "samsung_ok"))

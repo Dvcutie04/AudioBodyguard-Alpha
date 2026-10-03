@@ -277,10 +277,10 @@ class ReadOnlyHomeActivity : Activity() {
         destination("Sound controls", "Presets, captions & equalizer") { openPage("sound") }
         destination("Insights", "Trends, evidence & examples") { openPage("insights") }
     }
-    private fun openSetup(group: String = "") {
+    private fun openSetup(group: String = "", route: String? = null) {
         pendingPictureTarget = tutorial.pictureTarget
         @Suppress("DEPRECATION")
-        startActivityForResult(Intent(this, SetupGuideActivity::class.java).putExtra("group", group).putExtra("dark", skin.dark), PICTURE_REQUEST)
+        startActivityForResult(Intent(this, SetupGuideActivity::class.java).putExtra("group", group).putExtra("route", route).putExtra("dark", skin.dark).putExtra("returnToPhoneStep", pendingPictureTarget == "connectionPlan"), PICTURE_REQUEST)
     }
     @Deprecated("Existing framework Activity shell; validates local learning results only")
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
@@ -289,7 +289,11 @@ class ReadOnlyHomeActivity : Activity() {
         val expected = pendingPictureTarget
         pendingPictureTarget = null
         if (resultCode == RESULT_OK && expected != null && ::tutorial.isInitialized) {
-            data?.getStringExtra(SetupGuideActivity.COMPLETED_ROUTE)?.let { tutorial.completePictures(expected, it) }
+            data?.getStringExtra(SetupGuideActivity.COMPLETED_ROUTE)?.let { route ->
+                if (tutorial.completePictures(expected, route) && expected == "connectionPlan" && route in listOf("roku_network", "roku_model")) {
+                    openSetup("tcl_roku", "roku_phone")
+                }
+            }
         }
     }
     private fun openInputTool(mode: String) {

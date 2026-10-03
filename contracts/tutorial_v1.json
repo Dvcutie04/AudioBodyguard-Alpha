@@ -22,7 +22,7 @@
     }
   ],
   "feature_catalog": {
-    "title": "What we're building",
+    "title": "Features",
     "note": "Explore picture guides for your TV and phone, plus photo hints and voice input.",
     "items": [
       {
@@ -39,7 +39,7 @@
       },
       {
         "id": "remote",
-        "title": "Universal remote controls",
+        "title": "Universal remote control",
         "detail": "For compatible devices; controls vary by model.",
         "availability": "planned"
       },
@@ -75,7 +75,7 @@
       },
       {
         "id": "voice",
-        "title": "Voice requests",
+        "title": "Voice activated control",
         "detail": "Requests require confirmation and eligible controls.",
         "availability": "planned"
       },
@@ -138,12 +138,6 @@
         "title": "Compatible speakers, headphones and accessories",
         "detail": "Integrations depend on the exact device and route.",
         "availability": "planned"
-      },
-      {
-        "id": "setup",
-        "title": "Picture guides and photo-assisted setup",
-        "detail": "Photo hints help you choose the matching picture guide.",
-        "availability": "preview"
       },
       {
         "id": "input",
@@ -560,7 +554,8 @@
       "lg_account5",
       "lg_account6",
       "google_legacy_add",
-      "fire_setup"
+      "fire_setup",
+      "roku_phone"
     ]
   }
 }

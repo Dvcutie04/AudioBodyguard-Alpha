@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "mode": "illustrated_guidance_only",
-  "reviewed_at": "2026-10-01",
+  "reviewed_at": "2026-10-02",
   "sources": [
     {
       "id": "samsung_pair",
@@ -147,6 +147,11 @@
       "id": "fire_setup",
       "title": "Amazon: Fire TV Smart TV account setup",
       "url": "https://digprjsurvey.amazon.com/csad/help/node/GFH3K8GVLXYTBZ63"
+    },
+    {
+      "id": "roku_mobile",
+      "title": "Roku: connect the official phone app",
+      "url": "https://support.roku.com/article/article/install-the-mobile-app"
     }
   ],
   "groups": [
@@ -210,7 +215,8 @@
         "fire_alexa",
         "google_legacy",
         "google_legacy_add",
-        "identify"
+        "identify",
+        "roku_phone"
       ]
     },
     {
@@ -348,7 +354,8 @@
         "roku_model",
         "roku_alexa",
         "google_roku",
-        "identify"
+        "identify",
+        "roku_phone"
       ]
     },
     {
@@ -406,7 +413,8 @@
         "roku_network",
         "roku_alexa",
         "google_roku",
-        "identify"
+        "identify",
+        "roku_phone"
       ]
     },
     {
@@ -4849,7 +4857,7 @@
           ],
           "focus": 2,
           "action": "check",
-          "note": "You have found information, not paired Audio Bodyguard. Close this guide or choose an assistant guide next."
+          "note": "Next: use the picture guide to connect your phone with the official Roku app."
         }
       ]
     },
@@ -4931,7 +4939,7 @@
           ],
           "focus": 0,
           "action": "check",
-          "note": "You have found information, not paired Audio Bodyguard. Close this guide or choose an assistant guide next."
+          "note": "Next: use the picture guide to connect your phone with the official Roku app."
         }
       ]
     },
@@ -5182,6 +5190,87 @@
           "focus": 0,
           "action": "check",
           "note": "Use the numbered highlight on your real device. This illustration does not confirm a connection to Audio Bodyguard."
+        }
+      ]
+    },
+    {
+      "id": "roku_phone",
+      "title": "2. Connect to your phone (Roku)",
+      "applies_to": "Roku TV and the official Roku remote app on an iPhone or Android phone. Your TV and phone need the same Wi-Fi network.",
+      "models": [],
+      "sources": [
+        "roku_mobile"
+      ],
+      "steps": [
+        {
+          "title": "Get the Roku app",
+          "instruction": "On your phone, open the App Store or Google Play. Find the official Roku remote app and install it.",
+          "surface": "phone",
+          "screen": "App Store or Google Play",
+          "items": [
+            "Search for Roku",
+            "Official Roku app",
+            "Install"
+          ],
+          "focus": 1,
+          "action": "tap",
+          "note": "Check the publisher in the store before installing."
+        },
+        {
+          "title": "Check your Wi-Fi",
+          "instruction": "In phone Settings, connect to the same Wi-Fi network as your Roku TV.",
+          "surface": "phone",
+          "screen": "Phone • Wi-Fi",
+          "items": [
+            "Wi-Fi",
+            "Your home network",
+            "Connected"
+          ],
+          "focus": 1,
+          "action": "check",
+          "note": "The phone and TV need the same network for the Roku app to discover the TV."
+        },
+        {
+          "title": "Open the Roku app",
+          "instruction": "Open the Roku app on your phone, sign in if prompted, and let its device search finish.",
+          "surface": "phone",
+          "screen": "Roku mobile app",
+          "items": [
+            "Open Roku",
+            "Sign in if prompted",
+            "Wait for devices"
+          ],
+          "focus": 2,
+          "action": "wait",
+          "note": "Follow the app’s own prompts if its menu looks different."
+        },
+        {
+          "title": "Select your Roku TV",
+          "instruction": "When your TV appears in the Roku app’s device list, tap your TV.",
+          "surface": "phone",
+          "screen": "Roku • Devices",
+          "items": [
+            "Devices",
+            "Your Roku TV",
+            "Select your TV"
+          ],
+          "focus": 1,
+          "action": "tap",
+          "note": "If your TV is missing, compare the Wi-Fi network on both devices and open the official instructions."
+        },
+        {
+          "title": "Check the phone remote",
+          "instruction": "In the Roku app, open Remote and check whether it responds on your own TV.",
+          "surface": "phone",
+          "screen": "Roku • Remote",
+          "items": [
+            "Your Roku TV",
+            "Remote",
+            "Check on your TV"
+          ],
+          "focus": 1,
+          "action": "check",
+          "note": "Only your own TV can show whether the Roku app connection worked."
         }
       ]
     }

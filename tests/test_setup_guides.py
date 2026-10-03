@@ -32,6 +32,20 @@ def setup_routes():
     return {route['id']: route for route in json.loads((root / 'contracts/setup_guides_v1.json').read_text())['routes']}
 
 
+def test_roku_tv_part_one_leads_to_official_phone_app_pictures():
+    data = json.loads((Path(__file__).resolve().parents[1] / 'contracts/setup_guides_v1.json').read_text())
+    routes = setup_routes()
+    assert routes['roku_network']['steps'][-1]['surface'] == 'tv'
+    assert 'phone' in routes['roku_network']['steps'][-1]['note'].lower()
+    phone = routes['roku_phone']
+    assert phone['title'].startswith('2. Connect to your phone')
+    assert [step['surface'] for step in phone['steps']] == ['phone'] * 5
+    assert 'same Wi-Fi' in phone['steps'][1]['instruction']
+    assert phone['steps'][-1]['items'][phone['steps'][-1]['focus']] == 'Remote'
+    assert all('roku_phone' in group['routes'] for group in data['groups'] if group['id'] in ('tcl', 'tcl_roku', 'roku'))
+    assert any(source['id'] == 'roku_mobile' and source['url'].startswith('https://support.roku.com/') for source in data['sources'])
+
+
 def test_pin_picture_highlights_input_before_a_separate_confirmation_picture():
     steps = setup_routes()['lg_pair']['steps']
     entry = next(i for i, step in enumerate(steps) if step['title'] == 'Enter the real PIN')

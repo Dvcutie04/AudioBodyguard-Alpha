@@ -51,3 +51,14 @@ On October 2, the owner supplied an Appetize screenshot and asked for no disclai
 6. Deliver simulator ZIP and Android APK from the exact passing commit. Simulator evidence does not qualify physical devices or establish App Store/Play readiness.
 
 The smallest subsequent usability study asks new iPhone and Android users to identify the next action, distinguish planned controls from preview tools, reach both picture stages, recover a mismatched screen, and accurately report whether the device is verified connected. Measure reading/time, completion/abandonment, wrong actions and mistaken protection claims. Opt-in research can later evaluate engagement or purchase intent; no analytics collection is added here.
+
+## October 2 picture review
+
+The owner marked five screenshots: the Roku last button should read “Finish part one” and lead directly to phone setup; mandatory picture guidance should not appear as a marketed feature; “Voice requests” should read “Voice activated control”; “Universal remote controls” should read “Universal remote control”; and the “What we're building” heading should be removed. The expanded list now renders feature names without repeated status/detail lines. The shared catalog retains availability metadata for truthful semantics and still offers optional “More features.”
+
+| Evidence | Source fact | AQSS inference and remaining check |
+|---|---|---|
+| [Roku official mobile app installation](https://support.roku.com/article/article/install-the-mobile-app), updated August 20, 2026; checked October 2 | Roku says to install its iOS/Android app, put phone and Roku on the same Wi-Fi network, wait for discovery and select the Roku device. | Five compact phone-side pictures implement those actions. The diagram labels are illustrative; a physical Roku TV and both phone platforms still need hands-on verification. |
+| [Roku phone remote instructions](https://support.roku.com/article/roku-remote-on-your-phone), updated September 12, 2026; checked October 2 | The app's Remote control opens after the phone app connects to the Roku device; controls vary by device. | The last picture asks users to check Remote against their own TV. No AQSS connection state or physical output is inferred from completing a picture. |
+
+For the first-visit flow, finishing a Roku TV information route advances the local tutorial from part one to part two and opens the Roku phone pictures. Outside the tutorial it opens part two in the same illustrated guide. A closed guide retains its learning place; cancellation does not advance. Regression checks cover the route IDs, source link, five phone illustrations, button wording, feature list and iPhone/Android navigation. The image annotations are design input rather than evidence of working hardware or a measured conversion result.

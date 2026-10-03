@@ -133,12 +133,15 @@ private struct ReadOnlyHomeView: View {
             .sheet(isPresented: $voiceCheckVisible) { VoiceCheckView(theme: theme) }
             .sheet(isPresented: $photoCheckVisible) { TVPhotoView(theme: theme) }
             .sheet(item: $setupRequest, onDismiss: {
+                var startRokuPhone = false
                 if let target = pictureTarget, let route = completedPictureRoute {
-                    _ = guide.completePictures(expectedTarget: target, routeID: route)
+                    let advanced = guide.completePictures(expectedTarget: target, routeID: route)
+                    startRokuPhone = advanced && target == "connectionPlan" && ["roku_network", "roku_model"].contains(route)
                 }
                 pictureTarget = nil; completedPictureRoute = nil
                 if voiceAfterGuide { voiceAfterGuide = false; voiceCheckVisible = true }
-            }) { request in SetupGuidesView(theme: theme, initialGroup: request.group, onVoiceCheck: { voiceAfterGuide = true }, onFinish: { completedPictureRoute = $0 }) }
+                if startRokuPhone { DispatchQueue.main.async { showSetup("tcl_roku", route: "roku_phone") } }
+            }) { request in SetupGuidesView(theme: theme, initialGroup: request.group, initialRoute: request.route, returnToPhoneStep: pictureTarget == "connectionPlan", onVoiceCheck: { voiceAfterGuide = true }, onFinish: { completedPictureRoute = $0 }) }
             .sheet(isPresented: $navigationVisible) {
                 menuSheet("Jump to a section") {
                     ForEach(destinations, id: \.1) { title, target in action(title, icon: "arrow.right") { navigationVisible = false; jump(target) } }
@@ -176,10 +179,10 @@ private struct ReadOnlyHomeView: View {
         .onChange(of: tutorialStepKey) { _ in moreFeatures = false; tutorialHelp = false }
     }
 
-    private func showSetup(_ group: String = "") {
+    private func showSetup(_ group: String = "", route: String? = nil) {
         completedPictureRoute = nil
         pictureTarget = tutorialTopicID == "getting_started" && ["connectionPlan", "connectionCheck"].contains(tutorialStep?.target ?? "") ? tutorialStep?.target : nil
-        setupRequest = SetupGuideRequest(group: group)
+        setupRequest = SetupGuideRequest(group: group, route: route)
     }
 
     private var header: some View {
@@ -586,21 +589,14 @@ private struct ReadOnlyHomeView: View {
 
     private var featureCatalog: some View {
         VStack(spacing: 12) {
-            Text(AQSSTutorialContent.featureTitle).font(.headline).accessibilityAddTraits(.isHeader)
             ForEach(AQSSTutorialContent.features.filter { moreFeatures || AQSSTutorialContent.featuredIDs.contains($0.id) }, id: \.id) { feature in
                 VStack(spacing: 3) {
                     Text(feature.title).font(.callout.weight(.semibold)).fixedSize(horizontal: false, vertical: true)
-                    if moreFeatures {
-                        Text(feature.availability == "preview" ? "Explore in this preview" : "Planned")
-                            .font(.caption).foregroundColor(feature.availability == "preview" ? theme.accent : theme.muted)
-                        Text(feature.detail).font(.caption).foregroundColor(theme.muted).fixedSize(horizontal: false, vertical: true)
-                    }
                 }.accessibilityElement(children: .combine).accessibilityHint(feature.detail)
             }
             Button(moreFeatures ? "Fewer features" : AQSSTutorialContent.moreFeaturesLabel) { moreFeatures.toggle() }
                 .buttonStyle(AppButtonStyle(theme: theme)).accessibilityIdentifier("more-features")
                 .accessibilityValue(moreFeatures ? "Expanded" : "Collapsed")
-            if moreFeatures { Text(AQSSTutorialContent.featureNote).font(.footnote).foregroundColor(theme.muted).fixedSize(horizontal: false, vertical: true) }
         }.multilineTextAlignment(.center).padding(18).frame(maxWidth: .infinity).background(theme.surface).clipShape(RoundedRectangle(cornerRadius: 18))
             .accessibilityIdentifier("welcome-feature-catalog")
     }

@@ -78,18 +78,18 @@ object TutorialContent {
         ConnectionStage(1, "Connect to your TV or home device", "Pair the device and approve access on its screen or in its official home app.", listOf("chooseTV", "chooseHome", "connectionPlan")),
         ConnectionStage(2, "Connect to your phone", "Link your iPhone or Android phone, then check its permissions and sound connection.", listOf("connectionCheck")),
     )
-    const val featureTitle = "What we're building"
+    const val featureTitle = "Features"
     const val featureNote = "Explore picture guides for your TV and phone, plus photo hints and voice input."
     val features: List<TutorialFeature> = listOf(
         TutorialFeature("series_intro", "Skip series intros", "On supported players with a confirmed intro segment.", "planned"),
         TutorialFeature("commercial_volume", "Lower volume during commercials", "With an eligible sound path and your permission.", "planned"),
-        TutorialFeature("remote", "Universal remote controls", "For compatible devices; controls vary by model.", "planned"),
+        TutorialFeature("remote", "Universal remote control", "For compatible devices; controls vary by model.", "planned"),
         TutorialFeature("loud_sounds", "Reduce sudden loud sounds", "Bounded volume, mute and comfort controls.", "planned"),
         TutorialFeature("presets", "Dialogue and Night sound presets", "Listening options for qualified sound outputs.", "planned"),
         TutorialFeature("equalizer", "Custom equalizer", "Bass, midrange and treble on supported devices.", "planned"),
         TutorialFeature("captions", "Captions, subtitles and audio description", "When the media supplies compatible tracks.", "planned"),
         TutorialFeature("languages", "Audio and caption languages", "Choose from the tracks supplied by the media.", "planned"),
-        TutorialFeature("voice", "Voice requests", "Requests require confirmation and eligible controls.", "planned"),
+        TutorialFeature("voice", "Voice activated control", "Requests require confirmation and eligible controls.", "planned"),
         TutorialFeature("profiles", "Personal sound profiles and saved settings", "Save and restore confirmed preferences.", "planned"),
         TutorialFeature("undo", "Undo changes and restore settings", "For eligible changes with a known earlier setting.", "planned"),
         TutorialFeature("history", "Session history and sound insights", "Real observations and gaps; examples are labeled.", "planned"),
@@ -100,11 +100,10 @@ object TutorialContent {
         TutorialFeature("status", "Optional alerts, haptics and status widgets", "Readable status with freshness and coverage gaps.", "planned"),
         TutorialFeature("suggestions", "Explainable suggestions and session recipes", "Optional suggestions that you can review or dismiss.", "planned"),
         TutorialFeature("accessories", "Compatible speakers, headphones and accessories", "Integrations depend on the exact device and route.", "planned"),
-        TutorialFeature("setup", "Picture guides and photo-assisted setup", "Photo hints help you choose the matching picture guide.", "preview"),
         TutorialFeature("input", "Voice input display and recognized words", "Review the recognized words on your phone.", "preview"),
     )
     val featuredIDs: List<String> = listOf("series_intro", "commercial_volume", "remote")
-    val pictureContinueRoutes: List<String> = listOf("samsung_ok", "samsung_pin", "lg_pair", "google_remote", "google_setup", "tcl_models", "google_fast", "google_samsung", "google_lg", "google_roku", "google_vidaa", "google_vizio", "google_legacy", "samsung_alexa", "lg_alexa", "sony_new", "sony_legacy", "roku_alexa", "vidaa_google", "vidaa_alexa", "vizio_pair", "vizio_account", "vizio_assist", "fire_alexa", "lg_account5", "lg_account6", "google_legacy_add", "fire_setup")
+    val pictureContinueRoutes: List<String> = listOf("samsung_ok", "samsung_pin", "lg_pair", "google_remote", "google_setup", "tcl_models", "google_fast", "google_samsung", "google_lg", "google_roku", "google_vidaa", "google_vizio", "google_legacy", "samsung_alexa", "lg_alexa", "sony_new", "sony_legacy", "roku_alexa", "vidaa_google", "vidaa_alexa", "vizio_pair", "vizio_account", "vizio_assist", "fire_alexa", "lg_account5", "lg_account6", "google_legacy_add", "fire_setup", "roku_phone")
     const val previewNotice = "Picture guide"
     const val startLabel = "Start picture setup"
     const val moreFeaturesLabel = "More features"

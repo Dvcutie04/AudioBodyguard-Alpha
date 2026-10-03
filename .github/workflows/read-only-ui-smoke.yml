@@ -163,6 +163,8 @@ jobs:
             artifacts/ui/android/roku_settings_picture.png
             artifacts/ui/android/roku_about_picture.png
             artifacts/ui/android/roku_ip_picture.png
+            artifacts/ui/android/roku_phone_intro.png
+            artifacts/ui/android/roku_phone_picture.png
             artifacts/ui/android/roku-frame-summary.txt
             artifacts/ui/android/roku-*-frames*.txt
             artifacts/ui/android/roku-*-frames.json

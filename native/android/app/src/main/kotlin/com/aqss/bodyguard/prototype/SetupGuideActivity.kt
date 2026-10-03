@@ -61,7 +61,8 @@ class SetupGuideActivity : Activity() {
         skin = InterfaceTheme(this, dark)
         groupId = (savedInstanceState?.getString("group") ?: intent.getStringExtra("group") ?: "")
             .takeIf { id -> SetupContent.groups.any { it.id == id } } ?: ""
-        routeId = if (savedInstanceState == null && groupId == "voice") "voice" else savedInstanceState?.getString("route")?.takeIf { group?.routes?.contains(it) == true }
+        routeId = if (savedInstanceState == null) (intent.getStringExtra("route") ?: if (groupId == "voice") "voice" else null)?.takeIf { group?.routes?.contains(it) == true }
+            else savedInstanceState.getString("route")?.takeIf { group?.routes?.contains(it) == true }
         index = if (savedInstanceState == null && groupId == "voice") 0 else (savedInstanceState?.getInt("index", -1) ?: -1).takeIf { it == -1 || route?.steps?.indices?.contains(it) == true } ?: -1
         mismatch = savedInstanceState?.getBoolean("mismatch", false) ?: false
         root = column().apply { setBackgroundColor(skin.background) }
@@ -178,9 +179,9 @@ class SetupGuideActivity : Activity() {
         backButton.text = if (mismatch) "Return to step" else "Back"
         nextButton.visibility = if (route != null && !mismatch) View.VISIBLE else View.GONE
         if (route != null && !mismatch) nextButton.text = if (index < 0) {
-            if (resumeIndex(route) == null) "Start guide" else "Resume guide"
+            if (resumeIndex(route) == null) { if (route.id == "roku_phone") "Start part two" else "Start guide" } else "Resume guide"
         } else if (index == route.steps.lastIndex) {
-            if (route.id == "voice") "Open Voice check" else "Finish guide"
+            if (route.id == "voice") "Open Voice check" else if (route.id in listOf("roku_network", "roku_model")) "Finish part one" else if (route.id == "roku_phone") "Finish part two" else "Finish guide"
         } else "Next"
         scroll.post {
             // Ignore callbacks for a replaced step or an Activity that is closing.
@@ -194,6 +195,9 @@ class SetupGuideActivity : Activity() {
         val route = route ?: return
         if (mismatch || isFinishing) return
         if (index == route.steps.lastIndex) {
+            if (route.id in listOf("roku_network", "roku_model") && !intent.getBooleanExtra("returnToPhoneStep", false)) {
+                saveProgress(route, null); routeId = "roku_phone"; index = -1; render(); return
+            }
             if (route.id == "voice" && !intent.getBooleanExtra("returnToVoice", false)) startActivity(Intent(this, InputAssistanceActivity::class.java).putExtra("mode", "voice").putExtra("dark", skin.dark))
             saveProgress(route, null)
             if (route.id != "voice") setResult(RESULT_OK, Intent().putExtra(COMPLETED_ROUTE, route.id))

@@ -129,7 +129,7 @@ capture_ui beginner_step_1
 assert_tutorial_label beginner_step_1 "Step 1 of 6"
 assert_only_guide beginner_step_1
 assert_tutorial_label beginner_step_1 "Both connections are required"
-assert_tutorial_label beginner_step_1 "What we're building"
+if python3 tools/check_android_simulation_ui.py --assert-label "$artifact_dir/beginner_step_1.xml" "What we're building" 2>/dev/null; then exit 1; fi
 if python3 tools/check_android_simulation_ui.py --assert-label "$artifact_dir/beginner_step_1.xml" "does not monitor or change TV audio" 2>/dev/null; then exit 1; fi
 if python3 tools/check_android_simulation_ui.py --assert-label "$artifact_dir/beginner_step_1.xml" "Planned controls" 2>/dev/null; then exit 1; fi
 assert_tutorial_label beginner_step_1 "1. Connect to your TV or home device"
@@ -137,11 +137,11 @@ assert_tutorial_label beginner_step_1 "2. Connect to your phone"
 adb shell input swipe 500 1350 500 950 650
 assert_scroll_label "Skip series intros" welcome_features
 assert_scroll_label "Lower volume during commercials" welcome_features_commercials
-assert_scroll_label "Universal remote controls" welcome_features_remote
+assert_scroll_label "Universal remote control" welcome_features_remote
 if python3 tools/check_android_simulation_ui.py --assert-label "$artifact_dir/welcome_features_remote.xml" "Voice input display and recognized words" 2>/dev/null; then exit 1; fi
 tap_scroll_label "More features" welcome_more_features
 assert_scroll_label "Voice input display and recognized words" welcome_features_last
-assert_scroll_label "Explore picture guides for your TV and phone" welcome_features_note
+if python3 tools/check_android_simulation_ui.py --assert-label "$artifact_dir/welcome_features_last.xml" "Picture guides and photo-assisted setup" 2>/dev/null; then exit 1; fi
 tap_tutorial_label "Start picture setup" beginner_begin
 capture_ui beginner_step_2
 assert_only_guide beginner_step_2
@@ -365,7 +365,13 @@ tap_tutorial_label "Next" roku_ip roku-step-4-to-5-frames
 capture_ui roku_ip_picture
 complete_frame_evidence roku-step-4-to-5-frames
 assert_tutorial_label roku_ip_picture "Step 5 of 5"
-tap_tutorial_label "Finish guide" roku_finish
+tap_tutorial_label "Finish part one" roku_finish
+capture_ui roku_phone_intro
+assert_tutorial_label roku_phone_intro "2. Connect to your phone (Roku)"
+tap_tutorial_label "Start part two" roku_phone_begin
+capture_ui roku_phone_picture
+assert_tutorial_label roku_phone_picture "Step 1 of 5"
+tap_tutorial_label "Close" roku_phone_close
 adb shell dumpsys gfxinfo com.aqss.bodyguard.prototype > "$artifact_dir/roku-frame-summary.txt"
 tap_tutorial_label "Home" roku_home
 

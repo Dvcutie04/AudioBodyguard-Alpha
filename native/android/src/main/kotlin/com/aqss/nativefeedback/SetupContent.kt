@@ -5,7 +5,7 @@ data class SetupGroup(val id: String, val title: String, val routes: List<String
 data class SetupStep(val title: String, val instruction: String, val surface: String, val screen: String, val items: List<String>, val focus: Int, val action: String, val note: String)
 data class SetupRoute(val id: String, val title: String, val appliesTo: String, val models: List<String>, val sources: List<String>, val steps: List<SetupStep>)
 object SetupContent {
-    const val reviewedAt = "2026-10-01"
+    const val reviewedAt = "2026-10-02"
     val sources: List<SetupSource> = listOf(
         SetupSource("samsung_pair", "Samsung: add a TV to SmartThings", "https://www.samsung.com/us/support/answer/ANS10005262/"),
         SetupSource("samsung_assist", "Samsung: Google and Alexa account linking", "https://www.samsung.com/us/support/answer/ANS10006871/"),
@@ -36,12 +36,13 @@ object SetupContent {
         SetupSource("roku_brands", "Roku: manufacturer support and System About", "https://support.roku.com/en-us/article/get-manufacturer-support-for-your-roku-tv"),
         SetupSource("philips_remote", "Philips: voice remote pairing for documented Google TV models", "https://www.usa.philips.com/c-f/XC000020869/how-do-i-troubleshoot-the-remote-control-for-my-philips-google-tv"),
         SetupSource("fire_setup", "Amazon: Fire TV Smart TV account setup", "https://digprjsurvey.amazon.com/csad/help/node/GFH3K8GVLXYTBZ63"),
+        SetupSource("roku_mobile", "Roku: connect the official phone app", "https://support.roku.com/article/article/install-the-mobile-app"),
     )
     val groups: List<SetupGroup> = listOf(
         SetupGroup("samsung", "Samsung", listOf("samsung_ok", "samsung_pin", "samsung_model_new", "samsung_model_old", "google_samsung", "samsung_alexa", "google_legacy", "google_legacy_add", "identify")),
         SetupGroup("lg", "LG", listOf("lg_pair", "lg_account5", "lg_account6", "lg_model_new", "lg_model_mid", "lg_model_2020", "lg_model_old", "google_lg", "lg_alexa", "google_legacy", "google_legacy_add", "identify")),
         SetupGroup("sony", "Sony", listOf("google_remote", "sony_new", "sony_legacy", "google_setup", "google_fast", "identify")),
-        SetupGroup("tcl", "TCL", listOf("roku_network", "roku_model", "tcl_models", "google_remote", "google_setup", "google_fast", "roku_alexa", "google_roku", "fire_alexa", "google_legacy", "google_legacy_add", "identify")),
+        SetupGroup("tcl", "TCL", listOf("roku_network", "roku_model", "tcl_models", "google_remote", "google_setup", "google_fast", "roku_alexa", "google_roku", "fire_alexa", "google_legacy", "google_legacy_add", "identify", "roku_phone")),
         SetupGroup("hisense", "Hisense", listOf("roku_model", "roku_network", "vidaa_google", "vidaa_alexa", "google_remote", "google_setup", "roku_alexa", "google_roku", "fire_alexa", "identify")),
         SetupGroup("vizio", "Vizio", listOf("vizio_pair", "vizio_account", "vizio_assist", "google_vizio", "identify")),
         SetupGroup("other", "Another brand", listOf("identify", "google_remote", "google_setup", "roku_alexa", "google_legacy", "google_legacy_add", "fire_alexa")),
@@ -51,12 +52,12 @@ object SetupContent {
         SetupGroup("both", "Google Home + Alexa", listOf("google_samsung", "google_lg", "google_roku", "google_vidaa", "google_vizio", "google_legacy", "google_legacy_add", "google_setup", "google_fast", "google_remote", "vidaa_google", "lg_account5", "lg_account6", "samsung_alexa", "lg_alexa", "sony_new", "sony_legacy", "roku_alexa", "vidaa_alexa", "vizio_assist", "fire_alexa")),
         SetupGroup("neither", "Neither / not sure", listOf("identify", "samsung_ok", "lg_pair", "google_remote", "vizio_pair")),
         SetupGroup("voice", "Voice check", listOf("voice")),
-        SetupGroup("tcl_roku", "TCL • Roku TV", listOf("roku_network", "roku_model", "roku_alexa", "google_roku", "identify")),
+        SetupGroup("tcl_roku", "TCL • Roku TV", listOf("roku_network", "roku_model", "roku_alexa", "google_roku", "identify", "roku_phone")),
         SetupGroup("tcl_google", "TCL • Google TV / Android TV", listOf("tcl_models", "google_remote", "google_setup", "google_fast", "google_legacy", "google_legacy_add", "identify")),
         SetupGroup("tcl_fire", "TCL • Fire TV", listOf("fire_setup", "fire_alexa", "identify")),
         SetupGroup("philips", "Philips", listOf("philips_voice_remote", "google_remote", "google_setup", "roku_model", "roku_network", "roku_alexa", "google_roku", "identify")),
         SetupGroup("sharp", "Sharp — Roku TV models", listOf("roku_model", "roku_network", "roku_alexa", "google_roku", "identify")),
-        SetupGroup("roku", "Roku-branded TV", listOf("roku_model", "roku_network", "roku_alexa", "google_roku", "identify")),
+        SetupGroup("roku", "Roku-branded TV", listOf("roku_model", "roku_network", "roku_alexa", "google_roku", "identify", "roku_phone")),
         SetupGroup("insignia", "Insignia — match Roku TV or Fire TV", listOf("roku_model", "roku_network", "fire_setup", "fire_alexa", "roku_alexa", "google_roku", "identify")),
     )
     val routes: List<SetupRoute> = listOf(
@@ -452,14 +453,14 @@ object SetupContent {
             SetupStep("Open Settings", "Use the remote’s up or down arrow until Settings is highlighted on the TV. Press the right arrow. Look for the white Settings bar in the picture.", "tv", "Roku • Home", listOf("Home", "Settings", "Streaming Store"), 1, "settings", "Compare the highlighted menu with your TV. If it differs, open My screen looks different."),
             SetupStep("Choose Network", "In Settings, use up or down to select Network. Press the right arrow to open the column on the right. The picture highlights Network.", "tv", "Roku • Settings", listOf("Network", "Remotes & devices", "Theme", "Display type", "System"), 0, "select", "Compare the highlighted menu with your TV. If it differs, open My screen looks different."),
             SetupStep("Open About", "In the right-hand column, select About and press the right arrow. Look for the highlighted About row in the picture.", "tv", "Roku • Network", listOf("About", "Check connection", "Set up connection", "Bandwidth saver"), 0, "select", "Compare the highlighted menu with your TV. If it differs, open My screen looks different."),
-            SetupStep("Read your ip address", "Look for IP address in the information panel. This is your TV’s address on your home network. Read the numbers on your own TV, not the example picture.", "tv", "Roku • Network • About", listOf("Status — read on your TV", "Connection type — read on your TV", "IP address — read on your TV"), 2, "check", "You have found information, not paired Audio Bodyguard. Close this guide or choose an assistant guide next."),
+            SetupStep("Read your ip address", "Look for IP address in the information panel. This is your TV’s address on your home network. Read the numbers on your own TV, not the example picture.", "tv", "Roku • Network • About", listOf("Status — read on your TV", "Connection type — read on your TV", "IP address — read on your TV"), 2, "check", "Next: use the picture guide to connect your phone with the official Roku app."),
         )),
         SetupRoute("roku_model", "Find my exact model (Roku TV)", "Roku TV menus with Settings on the left and a submenu on the right. Match the blue Roku screen before starting. Exact model and software artwork must be checked on your own TV.", listOf(), listOf("tcl_roku_model", "roku_brands"), listOf(
             SetupStep("Start with the TV remote", "Press the house-shaped Home button on your TV remote. The picture marks that button.", "tv", "Roku • Home", listOf("Home button"), 0, "home", "Compare the highlighted menu with your TV. If it differs, open My screen looks different."),
             SetupStep("Open Settings", "Use the remote’s up or down arrow until Settings is highlighted on the TV. Press the right arrow. Look for the white Settings bar in the picture.", "tv", "Roku • Home", listOf("Home", "Settings", "Streaming Store"), 1, "settings", "Compare the highlighted menu with your TV. If it differs, open My screen looks different."),
             SetupStep("Choose System", "In Settings, use up or down to select System. Press the right arrow to open the column on the right. The picture highlights System.", "tv", "Roku • Settings", listOf("Accessibility", "Audio", "Home screen", "System", "Power"), 3, "select", "Compare the highlighted menu with your TV. If it differs, open My screen looks different."),
             SetupStep("Open About", "In the right-hand column, select About and press the right arrow. Look for the highlighted About row in the picture.", "tv", "Roku • System", listOf("About", "Power", "System update", "Advanced system settings"), 0, "select", "Compare the highlighted menu with your TV. If it differs, open My screen looks different."),
-            SetupStep("Read your model", "Look for Model in the information panel. Copy the full model name and software version from your own TV. A Roku model code and a TCL model number may both appear.", "tv", "Roku • System • About", listOf("Model — read on your TV", "Software version — read on your TV"), 0, "check", "You have found information, not paired Audio Bodyguard. Close this guide or choose an assistant guide next."),
+            SetupStep("Read your model", "Look for Model in the information panel. Copy the full model name and software version from your own TV. A Roku model code and a TCL model number may both appear.", "tv", "Roku • System • About", listOf("Model — read on your TV", "Software version — read on your TV"), 0, "check", "Next: use the picture guide to connect your phone with the official Roku app."),
         )),
         SetupRoute("philips_voice_remote", "Philips Google TV — pair the voice remote", "Philips Google TV models listed in the manufacturer article. Button combinations are specific to this remote family; do not use them on a different remote.", listOf("43PUL7652/F7", "50PUL7552/F7", "55PUL7552/F7"), listOf("philips_remote"), listOf(
             SetupStep("Start with your TV home screen", "Press Home on your Philips remote. Use this guide only for the documented Google TV models.", "tv", "Philips Google TV", listOf("Home"), 0, "home", "Use the numbered highlight on your real device. This illustration does not confirm a connection to Audio Bodyguard."),
@@ -482,6 +483,13 @@ object SetupContent {
             SetupStep("Read the account approval screen", "For Amazon account sign-in, use the QR code on your TV or visit the exact address shown on its screen, such as amazon.com/code.", "both", "Amazon account setup", listOf("TV QR code / amazon.com/code"), 0, "scan", "Use the numbered highlight on your real device. This illustration does not confirm a connection to Audio Bodyguard."),
             SetupStep("Enter the TV verification code", "On your own phone or computer, sign in to the official Amazon page and enter the verification code shown on your own TV. Never use a code drawn in an example.", "phone", "Amazon device approval", listOf("Enter code from your TV", "Approve your TV"), 0, "type", "Use the numbered highlight on your real device. This illustration does not confirm a connection to Audio Bodyguard."),
             SetupStep("Check setup on your TV", "Return to the TV and follow its remaining prompts until its Home screen appears. If approval did not finish, use My screen looks different.", "tv", "Fire TV Home", listOf("Home screen on your TV"), 0, "check", "Use the numbered highlight on your real device. This illustration does not confirm a connection to Audio Bodyguard."),
+        )),
+        SetupRoute("roku_phone", "2. Connect to your phone (Roku)", "Roku TV and the official Roku remote app on an iPhone or Android phone. Your TV and phone need the same Wi-Fi network.", listOf(), listOf("roku_mobile"), listOf(
+            SetupStep("Get the Roku app", "On your phone, open the App Store or Google Play. Find the official Roku remote app and install it.", "phone", "App Store or Google Play", listOf("Search for Roku", "Official Roku app", "Install"), 1, "tap", "Check the publisher in the store before installing."),
+            SetupStep("Check your Wi-Fi", "In phone Settings, connect to the same Wi-Fi network as your Roku TV.", "phone", "Phone • Wi-Fi", listOf("Wi-Fi", "Your home network", "Connected"), 1, "check", "The phone and TV need the same network for the Roku app to discover the TV."),
+            SetupStep("Open the Roku app", "Open the Roku app on your phone, sign in if prompted, and let its device search finish.", "phone", "Roku mobile app", listOf("Open Roku", "Sign in if prompted", "Wait for devices"), 2, "wait", "Follow the app’s own prompts if its menu looks different."),
+            SetupStep("Select your Roku TV", "When your TV appears in the Roku app’s device list, tap your TV.", "phone", "Roku • Devices", listOf("Devices", "Your Roku TV", "Select your TV"), 1, "tap", "If your TV is missing, compare the Wi-Fi network on both devices and open the official instructions."),
+            SetupStep("Check the phone remote", "In the Roku app, open Remote and check whether it responds on your own TV.", "phone", "Roku • Remote", listOf("Your Roku TV", "Remote", "Check on your TV"), 1, "check", "Only your own TV can show whether the Roku app connection worked."),
         )),
     )
 }

@@ -87,18 +87,18 @@ public enum AQSSTutorialContent {
         AQSSConnectionStage(number: 1, title: "Connect to your TV or home device", detail: "Pair the device and approve access on its screen or in its official home app.", targets: ["chooseTV", "chooseHome", "connectionPlan"]),
         AQSSConnectionStage(number: 2, title: "Connect to your phone", detail: "Link your iPhone or Android phone, then check its permissions and sound connection.", targets: ["connectionCheck"]),
     ]
-    public static let featureTitle = "What we're building"
+    public static let featureTitle = "Features"
     public static let featureNote = "Explore picture guides for your TV and phone, plus photo hints and voice input."
     public static let features: [AQSSTutorialFeature] = [
         AQSSTutorialFeature(id: "series_intro", title: "Skip series intros", detail: "On supported players with a confirmed intro segment.", availability: "planned"),
         AQSSTutorialFeature(id: "commercial_volume", title: "Lower volume during commercials", detail: "With an eligible sound path and your permission.", availability: "planned"),
-        AQSSTutorialFeature(id: "remote", title: "Universal remote controls", detail: "For compatible devices; controls vary by model.", availability: "planned"),
+        AQSSTutorialFeature(id: "remote", title: "Universal remote control", detail: "For compatible devices; controls vary by model.", availability: "planned"),
         AQSSTutorialFeature(id: "loud_sounds", title: "Reduce sudden loud sounds", detail: "Bounded volume, mute and comfort controls.", availability: "planned"),
         AQSSTutorialFeature(id: "presets", title: "Dialogue and Night sound presets", detail: "Listening options for qualified sound outputs.", availability: "planned"),
         AQSSTutorialFeature(id: "equalizer", title: "Custom equalizer", detail: "Bass, midrange and treble on supported devices.", availability: "planned"),
         AQSSTutorialFeature(id: "captions", title: "Captions, subtitles and audio description", detail: "When the media supplies compatible tracks.", availability: "planned"),
         AQSSTutorialFeature(id: "languages", title: "Audio and caption languages", detail: "Choose from the tracks supplied by the media.", availability: "planned"),
-        AQSSTutorialFeature(id: "voice", title: "Voice requests", detail: "Requests require confirmation and eligible controls.", availability: "planned"),
+        AQSSTutorialFeature(id: "voice", title: "Voice activated control", detail: "Requests require confirmation and eligible controls.", availability: "planned"),
         AQSSTutorialFeature(id: "profiles", title: "Personal sound profiles and saved settings", detail: "Save and restore confirmed preferences.", availability: "planned"),
         AQSSTutorialFeature(id: "undo", title: "Undo changes and restore settings", detail: "For eligible changes with a known earlier setting.", availability: "planned"),
         AQSSTutorialFeature(id: "history", title: "Session history and sound insights", detail: "Real observations and gaps; examples are labeled.", availability: "planned"),
@@ -109,11 +109,10 @@ public enum AQSSTutorialContent {
         AQSSTutorialFeature(id: "status", title: "Optional alerts, haptics and status widgets", detail: "Readable status with freshness and coverage gaps.", availability: "planned"),
         AQSSTutorialFeature(id: "suggestions", title: "Explainable suggestions and session recipes", detail: "Optional suggestions that you can review or dismiss.", availability: "planned"),
         AQSSTutorialFeature(id: "accessories", title: "Compatible speakers, headphones and accessories", detail: "Integrations depend on the exact device and route.", availability: "planned"),
-        AQSSTutorialFeature(id: "setup", title: "Picture guides and photo-assisted setup", detail: "Photo hints help you choose the matching picture guide.", availability: "preview"),
         AQSSTutorialFeature(id: "input", title: "Voice input display and recognized words", detail: "Review the recognized words on your phone.", availability: "preview"),
     ]
     public static let featuredIDs: [String] = ["series_intro", "commercial_volume", "remote"]
-    public static let pictureContinueRoutes: [String] = ["samsung_ok", "samsung_pin", "lg_pair", "google_remote", "google_setup", "tcl_models", "google_fast", "google_samsung", "google_lg", "google_roku", "google_vidaa", "google_vizio", "google_legacy", "samsung_alexa", "lg_alexa", "sony_new", "sony_legacy", "roku_alexa", "vidaa_google", "vidaa_alexa", "vizio_pair", "vizio_account", "vizio_assist", "fire_alexa", "lg_account5", "lg_account6", "google_legacy_add", "fire_setup"]
+    public static let pictureContinueRoutes: [String] = ["samsung_ok", "samsung_pin", "lg_pair", "google_remote", "google_setup", "tcl_models", "google_fast", "google_samsung", "google_lg", "google_roku", "google_vidaa", "google_vizio", "google_legacy", "samsung_alexa", "lg_alexa", "sony_new", "sony_legacy", "roku_alexa", "vidaa_google", "vidaa_alexa", "vizio_pair", "vizio_account", "vizio_assist", "fire_alexa", "lg_account5", "lg_account6", "google_legacy_add", "fire_setup", "roku_phone"]
     public static let previewNotice = "Picture guide"
     public static let startLabel = "Start picture setup"
     public static let moreFeaturesLabel = "More features"
