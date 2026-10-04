@@ -39,13 +39,19 @@ def build():
     data=validate(json.loads((ROOT/'contracts/setup_guides_v1.json').read_text()))
     routes={r['id']:r for r in data['routes']};sources={s['id']:s for s in data['sources']}
     out=['<!doctype html><html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Audio Bodyguard picture directions</title><style>body{margin:0;background:#080f20;color:#f5f8ff;font:18px/1.55 system-ui}main{max-width:1040px;margin:auto;padding:24px}a{color:#61dbe8}h1,h2,h3{line-height:1.2}nav{display:flex;flex-wrap:wrap;gap:12px}nav a,summary{padding:14px;background:#1b2943;border:1px solid #536c96;border-radius:12px}section{margin:30px 0}details{margin:14px 0}summary{cursor:pointer;font-weight:700}ol{padding:0;list-style:none}.step{padding:20px;margin:16px 0;border:1px solid #536c96;border-radius:16px;background:#111c30}svg{display:block;width:100%;max-width:680px;height:auto}.badge{color:#61dbe8}.note{color:#b8c6df;font-size:16px}button{padding:12px;font:inherit}*:focus-visible{outline:3px solid #fff}@media print{body{background:white;color:black}.step{break-inside:avoid;background:white}nav{display:none}}</style><main><h1>Follow one highlighted picture at a time</h1><p>Choose your TV brand or app, then the menu that matches your device. Complete each action on your TV or official app. The numbered white highlight marks the next choice.</p><p class="note">These are diagrams, not photographs of every firmware version. Roku Settings uses the menu arrangement in the supplied photo. Model examples are documented examples, not a claim of exact artwork or Audio Bodyguard compatibility. Account approval and remote pairing happen in the official TV/app; this companion never connects or controls a device.</p><nav aria-label="TV brands and apps">']
-    groups=[g for g in data['groups'] if g['id'] not in ('both','neither') and not g['id'].startswith('tcl_')]
+    groups=[g for g in data['groups'] if g['id'] not in ('both','neither') and '_' not in g['id']]
     for g in groups:out.append(f'<a href="#brand-{esc(g["id"])}">{esc(g["title"])}</a>')
     out.append('</nav>')
     for g in groups:
-        out.append(f'<section id="brand-{esc(g["id"])}"><h2>{esc(g["title"])}</h2><p>Match the operating system, model, or menu name before choosing a guide.</p><ul>')
-        for id in g['routes']:out.append(f'<li><a href="#guide-{esc(id)}">{esc(routes[id]["title"])}</a></li>')
-        out.append('</ul></section>')
+        out.append(f'<section id="brand-{esc(g["id"])}"><h2>{esc(g["title"])}</h2><p>Match the operating system, model, or menu name before choosing a guide.</p>')
+        platforms=[p for p in data['groups'] if p['id'].startswith(g['id']+'_')]
+        for platform in platforms or [g]:
+            if platforms:out.append(f'<details><summary>{esc(platform["title"])}</summary>')
+            out.append('<ul>')
+            for id in platform['routes']:out.append(f'<li><a href="#guide-{esc(id)}">{esc(routes[id]["title"])}</a></li>')
+            out.append('</ul>')
+            if platforms:out.append('</details>')
+        out.append('</section>')
     out.append('<h2>Picture directions</h2>')
     for r in data['routes']:
         out.append(f'<details id="guide-{esc(r["id"])}"><summary>{esc(r["title"])} · {len(r["steps"])} pictures</summary><p>{esc(r["applies_to"])}</p>')

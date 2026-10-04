@@ -121,6 +121,21 @@ def test_pin_picture_highlights_input_before_a_separate_confirmation_picture():
     assert steps[entry + 1]['items'][steps[entry + 1]['focus']] == 'Next'
 
 
+def test_primary_phone_pairing_includes_installation_and_lg_network_confirmation():
+    routes = setup_routes()
+    for identifier, app in [('samsung_ok', 'SmartThings'), ('samsung_pin', 'SmartThings'), ('lg_pair', 'LG ThinQ'), ('google_remote', 'Google TV'), ('vizio_pair', 'VIZIO Mobile')]:
+        step = routes[identifier]['steps'][1]
+        assert step['surface'] == 'phone'
+        assert step['screen'] == 'App Store or Google Play'
+        assert app in step['instruction']
+        assert 'install' in step['instruction'].lower()
+    lg = routes['lg_pair']['steps']
+    select_device = next(i for i, step in enumerate(lg) if step['screen'] == 'Add a Device')
+    assert lg[select_device + 1]['items'][lg[select_device + 1]['focus']] == 'Next'
+    assert 'same Wi-Fi' in lg[select_device + 1]['instruction']
+    assert lg[select_device + 2]['screen'] == 'Select Device'
+
+
 def test_faster_google_setup_states_platform_limits_and_checks_the_tv_result():
     route = setup_routes()['google_fast']
     assert 'iOS 17' in route['applies_to'] and 'Android 9' in route['applies_to']

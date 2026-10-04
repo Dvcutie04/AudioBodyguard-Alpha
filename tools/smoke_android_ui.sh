@@ -107,7 +107,7 @@ tap_scroll_label() {
 
 assert_scroll_label() {
     local label="$1" capture="$2"
-    for attempt in 1 2 3 4 5 6; do
+    for attempt in {1..12}; do
         capture_ui "$capture"
         if python3 tools/check_android_simulation_ui.py --assert-label "$artifact_dir/$capture.xml" "$label" 2>/dev/null; then return 0; fi
         adb shell input swipe 500 1600 500 450 900
@@ -178,8 +178,8 @@ tap_scroll_label "Show Samsung steps" setup_from_plan
 tap_scroll_label "Samsung — TV shows OK approval" setup_samsung_route
 tap_tutorial_label "Start guide" setup_samsung_begin
 capture_ui setup_pair_step_1
-assert_tutorial_label setup_pair_step_1 "Step 1 of 16"
-for step in {2..14}; do tap_tutorial_label "Next" "setup_samsung_next_$step"; done
+assert_tutorial_label setup_pair_step_1 "Step 1 of 17"
+for step in {2..15}; do tap_tutorial_label "Next" "setup_samsung_next_$step"; done
 capture_ui setup_tv_approval
 assert_tutorial_label setup_tv_approval "Approve on the television"
 tap_scroll_label "More details" setup_approval_details
@@ -188,7 +188,7 @@ capture_ui setup_mismatch
 assert_tutorial_label setup_mismatch "Find the right screen"
 tap_tutorial_label "Return to step" setup_mismatch_return
 capture_ui setup_approval_retained
-assert_tutorial_label setup_approval_retained "Step 14 of 16"
+assert_tutorial_label setup_approval_retained "Step 15 of 17"
 tap_tutorial_label "Next" setup_after_approval
 tap_tutorial_label "Next" setup_result
 capture_ui setup_last
@@ -480,5 +480,8 @@ capture_ui large_text_tutorial
 assert_tutorial_label large_text_tutorial "Step 1 of 6"
 tap_tutorial_label "Exit tutorial" large_close
 capture_ui large_text_closed
-assert_tutorial_label large_text_closed "Pages · Devices"
+assert_tutorial_label large_text_closed "Pages · Home"
+tap_tutorial_label "Back to previous page" large_return_previous
+capture_ui large_previous_page
+assert_tutorial_label large_previous_page "Pages · Devices"
 echo "ANDROID_THEME_UI_OBSERVED: sequential six-step guide, simple defaults, optional details, choice gating, tailored plan, completion, replay, persisted exit, five pages, unknown coverage, unavailable controls, six readiness steps, labeled example, themes, future explanation, tutorial routing, previous-page Back, lifecycle, rotation and large text passed"

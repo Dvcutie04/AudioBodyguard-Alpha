@@ -348,11 +348,13 @@ final class AQSSReadOnlyUITests: XCTestCase {
         label("Find the right screen", app)
         app.buttons["setup-back"].tap(); label("Step 3 of 12", app)
         app.buttons["setup-close"].tap(); label("Step 4 of 6", app)
-        tap("Show Google Home steps", app); tap("SmartThings → Google Home", app)
+        tap("Show Google Home steps", app)
+        XCTAssertFalse(app.buttons["setup-route-google_samsung"].exists)
+        tap("first setup with Google Home", app)
         app.buttons["setup-next"].tap()
         for _ in 0..<4 { app.buttons["setup-next"].tap() }
-        label("Choose the provider path", app)
-        screenshot("Google Home illustrated provider linking", app)
+        label("Open Devices", app)
+        screenshot("Google Home setup matches the selected TCL system", app)
         app.buttons["setup-close"].tap(); exit(app)
         tab("settings", app); tap("More features", app); tap("Voice requests", app)
         app.alerts.buttons["Show voice steps"].tap()
@@ -374,7 +376,7 @@ final class AQSSReadOnlyUITests: XCTestCase {
         tap("Samsung — TV shows OK approval", app); app.buttons["setup-next"].tap()
         XCTAssertFalse(app.staticTexts["Use your real device. This picture is an illustration."].exists)
         XCTAssertFalse(app.staticTexts.containing(NSPredicate(format: "label CONTAINS %@", "Illustrations may differ from your screen")).firstMatch.exists)
-        for _ in 0..<13 { app.buttons["setup-next"].tap() }
+        for _ in 0..<14 { app.buttons["setup-next"].tap() }
         label("Approve on the television", app)
         screenshot("Samsung illustrated TV approval", app)
         app.buttons["setup-next"].tap(); app.buttons["setup-next"].tap()
@@ -397,7 +399,7 @@ final class AQSSReadOnlyUITests: XCTestCase {
         app.buttons["setup-close"].tap(); label("Step 4 of 6", app)
         tap("Show Samsung steps", app); tap("Samsung — TV shows OK approval", app)
         app.buttons["setup-next"].tap()
-        for _ in 0..<15 { app.buttons["setup-next"].tap() }
+        for _ in 0..<16 { app.buttons["setup-next"].tap() }
         label("Check the actual result", app)
         app.buttons["setup-next"].tap()
         label("Step 5 of 6", app); label("2. Connect to your phone", app)
@@ -494,9 +496,10 @@ final class AQSSReadOnlyUITests: XCTestCase {
         label("Step 1 of 6", app); assertOnlyGuide(app)
         screenshot("Largest text contextual guide", app)
         exit(app); XCTAssertTrue(app.buttons["page-picker"].isHittable)
+        app.buttons["page-back"].tap(); label("DEVICES", app)
         tap("Illustrated setup guides", app); tap("Samsung", app)
         tap("Samsung — TV shows OK approval", app); app.buttons["setup-next"].tap()
-        label("Step 1 of 16", app)
+        label("Step 1 of 17", app)
         XCTAssertTrue(app.buttons["setup-close"].isHittable)
         XCTAssertTrue(app.buttons["setup-next"].isHittable)
         XCTAssertGreaterThanOrEqual(app.buttons["setup-next"].frame.height, 44)

@@ -45,8 +45,10 @@ struct SetupGuidesView: View {
         guard ["google", "alexa", "both"].contains(groupID),
               let tv = AQSSSetupContent.groups.first(where: { $0.id == deviceGroup }) else { return original }
         let routes = original.routes.filter { tv.routes.contains($0) }
-        let primary = routes.contains("vizio_" + groupID) ? ["vizio_" + groupID] : original.primaryRoutes.filter { routes.contains($0) }
-        return AQSSSetupGroup(id: original.id, title: original.title + " • " + tv.title, routes: routes, primaryRoutes: primary.isEmpty ? Array(routes.prefix(1)) : primary)
+        let vizio = ["vizio_google", "vizio_alexa"].filter { routes.contains($0) }
+        let primary = vizio.isEmpty ? original.primaryRoutes.filter { routes.contains($0) } : vizio
+        let preferred = ["vidaa_google", "vidaa_alexa", "google_setup", "sony_new", "fire_alexa"].filter { routes.contains($0) }
+        return AQSSSetupGroup(id: original.id, title: original.title + " • " + tv.title, routes: routes, primaryRoutes: primary.isEmpty ? Array((preferred.isEmpty ? routes : preferred).prefix(3)) : primary)
     }
     private var route: AQSSSetupRoute? { AQSSSetupContent.routes.first { $0.id == routeID } }
     private var step: AQSSSetupStep? {

@@ -816,6 +816,20 @@
           "note": "A network name or IP address alone does not identify or authorize a TV."
         },
         {
+          "title": "Install SmartThings",
+          "instruction": "Open your phone’s app store. Find the official SmartThings app and install it. If already installed, continue.",
+          "surface": "phone",
+          "screen": "App Store or Google Play",
+          "items": [
+            "Search",
+            "SmartThings",
+            "Install"
+          ],
+          "focus": 2,
+          "action": "tap",
+          "note": "Check that this is the official app from the TV or app maker. Use your real phone for any download or account approval."
+        },
+        {
           "title": "Use the official account screen",
           "instruction": "Sign in to SmartThings with the same Samsung account used on your TV.",
           "surface": "phone",
@@ -1024,6 +1038,20 @@
           "focus": 0,
           "action": "check",
           "note": "A network name or IP address alone does not identify or authorize a TV."
+        },
+        {
+          "title": "Install SmartThings",
+          "instruction": "Open your phone’s app store. Find the official SmartThings app and install it. If already installed, continue.",
+          "surface": "phone",
+          "screen": "App Store or Google Play",
+          "items": [
+            "Search",
+            "SmartThings",
+            "Install"
+          ],
+          "focus": 2,
+          "action": "tap",
+          "note": "Check that this is the official app from the TV or app maker. Use your real phone for any download or account approval."
         },
         {
           "title": "Use the official account screen",
@@ -1571,6 +1599,20 @@
           "note": "A network name or IP address alone does not identify or authorize a TV."
         },
         {
+          "title": "Install LG ThinQ",
+          "instruction": "Open your phone’s app store. Find the official LG ThinQ app and install it. If already installed, continue.",
+          "surface": "phone",
+          "screen": "App Store or Google Play",
+          "items": [
+            "Search",
+            "LG ThinQ",
+            "Install"
+          ],
+          "focus": 2,
+          "action": "tap",
+          "note": "Check that this is the official app from the TV or app maker. Use your real phone for any download or account approval."
+        },
+        {
           "title": "Use the official account screen",
           "instruction": "Sign in inside LG ThinQ. Review the account name before continuing.",
           "surface": "phone",
@@ -1606,6 +1648,20 @@
           "focus": 0,
           "action": "tap",
           "note": "Use your real device. This picture is an illustration."
+        },
+        {
+          "title": "Confirm the same network",
+          "instruction": "Check that the TV is on and your phone uses the same Wi-Fi. Then tap Next.",
+          "surface": "phone",
+          "screen": "ThinQ • Before connecting",
+          "items": [
+            "TV is on",
+            "Same Wi-Fi",
+            "Next"
+          ],
+          "focus": 2,
+          "action": "tap",
+          "note": "LG places this confirmation after Select Device and before the TV list. Follow the screen in your actual ThinQ version."
         },
         {
           "title": "Choose your LG TV",
@@ -1717,6 +1773,20 @@
           "focus": 0,
           "action": "check",
           "note": "A network name or IP address alone does not identify or authorize a TV."
+        },
+        {
+          "title": "Install Google TV",
+          "instruction": "Open your phone’s app store. Find the official Google TV app and install it. If already installed, continue.",
+          "surface": "phone",
+          "screen": "App Store or Google Play",
+          "items": [
+            "Search",
+            "Google TV",
+            "Install"
+          ],
+          "focus": 2,
+          "action": "tap",
+          "note": "Check that this is the official app from the TV or app maker. Use your real phone for any download or account approval."
         },
         {
           "title": "Open Google TV",
@@ -4144,6 +4214,20 @@
           "note": "A network name or IP address alone does not identify or authorize a TV."
         },
         {
+          "title": "Install VIZIO Mobile",
+          "instruction": "Open your phone’s app store. Find the official VIZIO Mobile app and install it. If already installed, continue.",
+          "surface": "phone",
+          "screen": "App Store or Google Play",
+          "items": [
+            "Search",
+            "VIZIO Mobile",
+            "Install"
+          ],
+          "focus": 2,
+          "action": "tap",
+          "note": "Check that this is the official app from the TV or app maker. Use your real phone for any download or account approval."
+        },
+        {
           "title": "Open the official VIZIO app",
           "instruction": "Open VIZIO Mobile on your phone.",
           "surface": "phone",
@@ -4154,6 +4238,19 @@
           "focus": 0,
           "action": "tap",
           "note": "Use your real device. This picture is an illustration."
+        },
+        {
+          "title": "Sign in to VIZIO",
+          "instruction": "Sign in or create your VIZIO Account in VIZIO Mobile. Use the account you want for this TV.",
+          "surface": "phone",
+          "screen": "VIZIO Mobile • Account",
+          "items": [
+            "Sign in",
+            "Create account"
+          ],
+          "focus": 0,
+          "action": "tap",
+          "note": "The current official VIZIO page requires an account for VIZIO Mobile functionality. Enter account details only in the official app."
         },
         {
           "title": "Open the device selector",

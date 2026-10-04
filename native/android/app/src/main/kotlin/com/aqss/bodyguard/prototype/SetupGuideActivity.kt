@@ -64,8 +64,10 @@ class SetupGuideActivity : Activity() {
         val tv = SetupContent.groups.firstOrNull { it.id == (selectedSystem ?: intent.getStringExtra("deviceGroup")) }
         if (groupId !in listOf("google", "alexa", "both") || tv == null) return original
         val routes = original.routes.filter { it in tv.routes }
-        val primary = if ("vizio_$groupId" in routes) listOf("vizio_$groupId") else original.primaryRoutes.filter { it in routes }
-        return original.copy(title = "${original.title} • ${tv.title}", routes = routes, primaryRoutes = primary.ifEmpty { routes.take(1) })
+        val vizio = listOf("vizio_google", "vizio_alexa").filter { it in routes }
+        val primary = if (vizio.isEmpty()) original.primaryRoutes.filter { it in routes } else vizio
+        val preferred = listOf("vidaa_google", "vidaa_alexa", "google_setup", "sony_new", "fire_alexa").filter { it in routes }
+        return original.copy(title = "${original.title} • ${tv.title}", routes = routes, primaryRoutes = primary.ifEmpty { (preferred.ifEmpty { routes }).take(3) })
     }
     private val route get() = SetupContent.routes.firstOrNull { it.id == routeId }
     private val phoneRoute get() = when (Build.MANUFACTURER.lowercase()) { "samsung" -> "phone_galaxy"; "google" -> "phone_pixel"; else -> null }

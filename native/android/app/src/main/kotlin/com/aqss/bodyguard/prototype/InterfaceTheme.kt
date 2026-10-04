@@ -52,11 +52,12 @@ class InterfaceTheme(val activity: Activity, val dark: Boolean) {
         val list = LinearLayout(activity).apply { orientation = LinearLayout.VERTICAL; setPadding(dp(20), dp(10), dp(20), dp(10)) }
         val scroll = ScrollView(activity).apply { addView(list); setBackgroundColor(this@InterfaceTheme.background) }
         val dialog = AlertDialog.Builder(activity).setTitle(title).setView(scroll).create()
-        for ((label, action) in items + ("Cancel" to {})) {
+        for ((label, action) in items) {
             list.addView(Button(activity).apply {
                 text = label; style(this); setOnClickListener { dialog.dismiss(); action() }
             }, LinearLayout.LayoutParams(-1, -2).apply { bottomMargin = dp(10) })
         }
+        list.addView(roseButton(activity, this, "Cancel") { dialog.dismiss() }, LinearLayout.LayoutParams(-1, -2))
         dialog.show()
     }
 
