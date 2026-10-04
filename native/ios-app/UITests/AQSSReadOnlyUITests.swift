@@ -68,7 +68,13 @@ final class AQSSReadOnlyUITests: XCTestCase {
         XCTAssertTrue(app.buttons["exit-tutorial"].isHittable)
     }
     private func tab(_ id: String, _ app: XCUIApplication) { app.buttons["tab-\(id)"].tap() }
-    private func jump(_ title: String, _ app: XCUIApplication) { app.buttons["Jump to"].tap(); tap(title, app) }
+    private func jump(_ title: String, _ app: XCUIApplication) {
+        app.buttons["Jump to"].tap(); tap(title, app)
+        // Wait for the native sheet animation before choosing the next scroll
+        // surface. Its outgoing menu otherwise captures the next lookup.
+        let dismissed = XCTNSPredicateExpectation(predicate: NSPredicate(format: "exists == false"), object: app.scrollViews["menu-scroll"])
+        XCTAssertEqual(XCTWaiter.wait(for: [dismissed], timeout: 5), .completed, "Jump menu did not dismiss")
+    }
     private func screenshot(_ name: String, _ app: XCUIApplication) {
         let shot = XCTAttachment(screenshot: app.screenshot()); shot.name = name; shot.lifetime = .keepAlways; add(shot)
     }
