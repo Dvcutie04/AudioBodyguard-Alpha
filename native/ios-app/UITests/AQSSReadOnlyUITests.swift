@@ -383,7 +383,8 @@ final class AQSSReadOnlyUITests: XCTestCase {
         label("Check the actual result", app)
         app.buttons["setup-next"].tap()
         label("No qualified device connected", app)
-        tap("Illustrated setup guides", app); tap("Amazon Alexa", app); tap("Roku TV → Alexa", app)
+        tap("Illustrated setup guides", app); tap("Roku-branded TV", app)
+        tap("Other setup options", app); tap("Roku TV → Alexa", app)
         app.buttons["setup-next"].tap()
         for _ in 0..<6 { app.buttons["setup-next"].tap() }
         label("Review Roku approval", app)
