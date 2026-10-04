@@ -124,7 +124,7 @@ private struct ReadOnlyHomeView: View {
                     header
                     ScrollView {
                         VStack(alignment: .leading, spacing: 22) {
-                        pageHeading.id("page-heading")
+                            pageHeading.id("page-heading")
                             pageContent
                         }.frame(maxWidth: 680, alignment: .leading).padding(20).frame(maxWidth: .infinity)
                     }.clipped().id(page).accessibilityIdentifier("home-scroll")
@@ -136,8 +136,12 @@ private struct ReadOnlyHomeView: View {
             .onChange(of: navigationRequest) { request in
                 DispatchQueue.main.async {
                     guard request == navigationRequest, scenePhase == .active else { return }
-                    proxy.scrollTo(navigationTarget, anchor: .top)
-                    focusedElement = .destination(navigationTarget)
+                    // A new page's ScrollView identity already starts at the top.
+                    // Scrolling its heading again can remove the content padding.
+                    if navigationTarget != "page-heading" {
+                        proxy.scrollTo(navigationTarget, anchor: .top)
+                        focusedElement = .destination(navigationTarget)
+                    }
                 }
             }
             .sheet(isPresented: $voiceCheckVisible) { VoiceCheckView(theme: theme) }
@@ -266,10 +270,12 @@ private struct ReadOnlyHomeView: View {
             destinationCard("Voice check", subtitle: "See microphone activity and recognized words", icon: "waveform") { voiceCheckVisible = true }
             card(target: "options") {
                 Text("Sound options").font(.title2.bold()).accessibilityAddTraits(.isHeader)
-                Text("Explore each control. A qualified device and observed result are needed before audio can change.").foregroundColor(theme.muted)
                 action(optionsExpanded ? "Hide options" : "Options", icon: "slider.horizontal.3") { closeTutorial(restore: false); optionsExpanded.toggle() }
                     .accessibilityValue(optionsExpanded ? "Expanded" : "Collapsed")
-                helpButton("Help with options", topic: "sound")
+                if optionsExpanded {
+                    Text("Explore each control. A qualified device and observed result are needed before audio can change.").foregroundColor(theme.muted)
+                    helpButton("Help with options", topic: "sound")
+                }
             }
             if optionsExpanded {
                 section("Volume", detail: "Unavailable", explanation: "No qualified device volume control is connected.", target: "volume", icon: "speaker.wave.2")
@@ -285,7 +291,6 @@ private struct ReadOnlyHomeView: View {
                 section("Defaults and Undo", detail: "Unavailable", explanation: "No confirmed device settings or verified change are available to save, restore, or undo.", target: "defaults", icon: "arrow.uturn.backward")
             }
             section("Captions", detail: "Not observed", explanation: "No authored caption track has been discovered or selected.", target: "captions", icon: "text.bubble")
-            destinationCard("Advanced options", subtitle: "Device, privacy & background details", icon: "gearshape.2") { jump("advanced") }
         }
     }
 
@@ -352,7 +357,6 @@ private struct ReadOnlyHomeView: View {
         VStack(alignment: .leading, spacing: 18) {
             card(target: "appearance") {
                 Text("Appearance").font(.title2.bold()).accessibilityAddTraits(.isHeader)
-                Text("One visual language, in the light that suits you.").foregroundColor(theme.muted)
                 ForEach(["midnight", "daylight", "system"], id: \.self) { value in
                     Button { appearance = value } label: {
                         HStack { Image(systemName: value == "midnight" ? "moon.stars" : value == "daylight" ? "sun.max" : "circle.lefthalf.filled"); Text(value.capitalized); Spacer(); if appearance == value { Image(systemName: "checkmark") } }.frame(maxWidth: .infinity, minHeight: 44)
@@ -363,7 +367,7 @@ private struct ReadOnlyHomeView: View {
                 Text("Advanced options").font(.title2.bold()).accessibilityAddTraits(.isHeader)
                 action(advancedExpanded ? "Hide advanced options" : "Advanced options", icon: "gearshape.2") { closeTutorial(restore: false); advancedExpanded.toggle() }
                     .accessibilityValue(advancedExpanded ? "Expanded" : "Collapsed")
-                helpButton("Help with advanced options", topic: "advanced")
+                if advancedExpanded { helpButton("Help with advanced options", topic: "advanced") }
             }
             if advancedExpanded {
                 section("Device and route", detail: "Unknown", explanation: "No qualified output hardware or route has been identified.", target: "route", icon: "hifispeaker")

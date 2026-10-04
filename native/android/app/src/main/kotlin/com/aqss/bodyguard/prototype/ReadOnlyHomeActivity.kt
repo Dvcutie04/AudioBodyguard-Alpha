@@ -351,9 +351,11 @@ class ReadOnlyHomeActivity : Activity() {
         destination("Voice check", "See microphone activity and recognized words") { openInputTool("voice") }
         card("options") { c ->
             label(c, "Sound options", 22f, bold = true)
-            label(c, "Explore each control. A qualified device and observed result are needed before audio can change.", 16f, skin.muted)
             action(c, if (optionsExpanded) "Hide options" else "Options", expanded = optionsExpanded) { tutorial.close(false); optionsExpanded = !optionsExpanded; renderPage(true) }
-            action(c, "Help with options") { tutorial.start("sound") }
+            if (optionsExpanded) {
+                label(c, "Explore each control. A qualified device and observed result are needed before audio can change.", 16f, skin.muted)
+                action(c, "Help with options") { tutorial.start("sound") }
+            }
         }
         if (optionsExpanded) {
             section("Volume", "Unavailable", "No qualified device volume control is connected.", "volume")
@@ -371,7 +373,6 @@ class ReadOnlyHomeActivity : Activity() {
             section("Defaults and Undo", "Unavailable", "No confirmed device settings or verified change are available to save, restore, or undo.", "defaults")
         }
         section("Captions", "Not observed", "No authored caption track has been discovered or selected.", "captions")
-        destination("Advanced options", "Device, privacy & background details") { jump("advanced") }
     }
     private fun devicesPage() {
         destination("TV photo setup", "Read a model label or Network settings photo") { openInputTool("photo") }
@@ -433,7 +434,6 @@ class ReadOnlyHomeActivity : Activity() {
     private fun settingsPage() {
         card("appearance") { c ->
             label(c, "Appearance", 22f, bold = true)
-            label(c, "One visual language, in the light that suits you.", 16f, skin.muted)
             for (value in listOf("midnight", "daylight", "system")) {
                 c.addView(button(value.replaceFirstChar { it.uppercase() } + if (appearance == value) "  ✓" else "", primary = appearance == value) {
                     val state = Bundle(); savePresentation(state); tutorial.pause(); appearance = value; build(state)
@@ -443,7 +443,7 @@ class ReadOnlyHomeActivity : Activity() {
         card("advanced") { c ->
             label(c, "Advanced options", 22f, bold = true)
             action(c, if (advancedExpanded) "Hide advanced options" else "Advanced options", expanded = advancedExpanded) { tutorial.close(false); advancedExpanded = !advancedExpanded; renderPage(true) }
-            action(c, "Help with advanced options") { tutorial.start("advanced") }
+            if (advancedExpanded) action(c, "Help with advanced options") { tutorial.start("advanced") }
         }
         if (advancedExpanded) {
             section("Device and route", "Unknown", "No qualified output hardware or route has been identified.", "route")

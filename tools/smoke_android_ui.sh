@@ -399,6 +399,7 @@ if python3 tools/check_android_simulation_ui.py --assert-label "$artifact_dir/si
 tap_tutorial_label "Sound" back_sound
 capture_ui simple_sound
 if python3 tools/check_android_simulation_ui.py --assert-label "$artifact_dir/simple_sound.xml" "Dialogue preset" 2>/dev/null; then exit 1; fi
+if python3 tools/check_android_simulation_ui.py --assert-label "$artifact_dir/simple_sound.xml" "A qualified device and observed result" 2>/dev/null; then exit 1; fi
 tap_scroll_label "Options" back_sound_options
 tap_tutorial_label "Settings" back_settings
 adb shell input keyevent KEYCODE_BACK
