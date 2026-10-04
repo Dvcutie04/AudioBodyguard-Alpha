@@ -1,6 +1,33 @@
 import XCTest
 
 final class AQSSReadOnlyUITests: XCTestCase {
+    func testConnectedDemoAppearanceKeepsPhysicalReadinessUnverified() throws {
+        #if AQSS_CONNECTED_DEMO
+        let app = launch(true)
+        label("HOME", app)
+        XCTAssertEqual(app.staticTexts["connection-status"].label, "Connected")
+        XCTAssertEqual(app.staticTexts["connection-demo-notice"].label, "Appetize demo")
+        XCTAssertEqual(app.images["connection-head"].label, "AI head. Connected appearance demonstration.")
+        screenshot("Connected demo colored head and doubled outlined rose", app)
+        tap("Status details", app)
+        label("Unknown physical state", app); label("No output observation", app)
+        label("No physical TV connection or audio protection is verified.", app)
+        screenshot("Connected appearance keeps physical status unverified", app)
+        tap("Hide status details", app)
+        tab("devices", app)
+        app.buttons["page-back"].tap()
+        XCTAssertEqual(app.staticTexts["connection-status"].label, "Connected")
+        tap("TV & smart-home guide", app); label("Step 1 of 6", app)
+        next(app); label("Step 2 of 6", app)
+        exit(app); label("HOME", app)
+        XCTAssertEqual(app.staticTexts["connection-status"].label, "Connected")
+        tap("Back to Tutorial", app); label("Step 2 of 6", app)
+        screenshot("Connected demo exact tutorial resume", app)
+        #else
+        throw XCTSkip("Connected appearance is tested only in the separate Simulator demo build.")
+        #endif
+    }
+
     func testRoseExitResumesTheExactTutorialAndHeadStaysDisconnected() {
         let app = launch(true)
         next(app); tap("LG", app); next(app); tap("Google Home", app); next(app)

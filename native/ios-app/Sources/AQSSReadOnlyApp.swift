@@ -6,6 +6,15 @@ struct AQSSReadOnlyApp: App {
     var body: some Scene { WindowGroup { ReadOnlyHomeView() } }
 }
 
+/// A separate Simulator presentation build; never evidence or authorization.
+private enum AppPreviewMode {
+    #if AQSS_CONNECTED_DEMO && targetEnvironment(simulator)
+    static let connectedDemo = true
+    #else
+    static let connectedDemo = false
+    #endif
+}
+
 struct AppTheme {
     let dark: Bool
     private var tokens: [String: UInt32] { AQSSInterfaceContent.palettes[dark ? "midnight" : "daylight"]! }
@@ -53,8 +62,14 @@ struct RoseButton: View {
     var body: some View {
         Button(action: action) {
             HStack(spacing: 8) {
-                Image("TribalRose").resizable().scaledToFit().frame(width: 26, height: 34)
-                    .accessibilityHidden(true)
+                ZStack {
+                    ForEach(0..<4) { corner in
+                        Image("TribalRose").renderingMode(.template).resizable().scaledToFit()
+                            .foregroundColor(.white.opacity(0.4))
+                            .offset(x: corner % 2 == 0 ? -0.6 : 0.6, y: corner < 2 ? -0.6 : 0.6)
+                    }
+                    Image("TribalRose").resizable().scaledToFit()
+                }.frame(width: 52, height: 68).accessibilityHidden(true)
                 if !compact && !textSize.isAccessibilitySize { Text(title).fixedSize(horizontal: false, vertical: true) }
             }.frame(minWidth: 44, minHeight: 44)
         }.buttonStyle(AppButtonStyle(theme: theme)).accessibilityLabel(title)
@@ -63,6 +78,7 @@ struct RoseButton: View {
 
 struct ConnectionHeadView: View {
     let connected: Bool
+    var demonstration = false
     @Environment(\.scenePhase) private var scenePhase
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @State private var breathing = false
@@ -71,7 +87,7 @@ struct ConnectionHeadView: View {
         Image("ConnectionHead").resizable().scaledToFit().frame(maxWidth: 210)
             .saturation(connected ? 1 : 0)
             .scaleEffect(breathing ? 1.015 : 1)
-            .accessibilityLabel(connected ? "AI head. Verified connection active." : "AI head. Connection not verified. Black and white.")
+            .accessibilityLabel(demonstration ? "AI head. Connected appearance demonstration." : connected ? "AI head. Verified connection active." : "AI head. Connection not verified. Black and white.")
             .accessibilityIdentifier("connection-head")
             .onAppear { updateAnimation() }
             .onChange(of: animate) { _ in updateAnimation() }
@@ -228,7 +244,7 @@ private struct ReadOnlyHomeView: View {
         }
         .preferredColorScheme(appearance == "system" ? nil : appearance == "daylight" ? .light : .dark)
         .onAppear {
-            if !checkedFirstVisit { checkedFirstVisit = true; if !guideDismissed { startTutorial("getting_started") } }
+            if !checkedFirstVisit { checkedFirstVisit = true; if !guideDismissed && !AppPreviewMode.connectedDemo { startTutorial("getting_started") } }
             if scenePhase == .active { audioHints.start() }
         }
         .onDisappear { audioHints.stop() }
@@ -279,9 +295,15 @@ private struct ReadOnlyHomeView: View {
     private var homePage: some View {
         VStack(spacing: 16) {
             card(target: "welcome") {
-                ConnectionHeadView(connected: coverage.state == .active).frame(maxWidth: .infinity)
-                Text(coverage.state == .active ? "Connection active" : "Connection not verified")
+                ConnectionHeadView(connected: AppPreviewMode.connectedDemo || coverage.state == .active, demonstration: AppPreviewMode.connectedDemo)
+                    .frame(maxWidth: .infinity)
+                Text(AppPreviewMode.connectedDemo || coverage.state == .active ? "Connected" : "Connection not verified")
                     .font(.headline).frame(maxWidth: .infinity).accessibilityAddTraits(.isHeader)
+                    .accessibilityIdentifier("connection-status")
+                if AppPreviewMode.connectedDemo {
+                    Text("Appetize demo").font(.caption).foregroundColor(theme.muted)
+                        .frame(maxWidth: .infinity).accessibilityIdentifier("connection-demo-notice")
+                }
                 action(beginnerTourFinished ? "Replay connection guide" : "TV & smart-home guide", icon: "arrow.right.circle", primary: true) { startTutorial("getting_started") }
                     .accessibilityIdentifier("start-beginner-tour")
                 if pausedGuide != nil {
@@ -293,7 +315,8 @@ private struct ReadOnlyHomeView: View {
                     VStack(alignment: .leading, spacing: 12) {
                         Text(coverageTitle).font(.headline).foregroundColor(theme.warning)
                         Text("No output observation").font(.subheadline)
-                        Text("This preview has no verified TV connection. Setup pictures explain the official apps.").font(.callout).foregroundColor(theme.muted)
+                        Text(AppPreviewMode.connectedDemo ? "The colored head demonstrates a connected appearance. No physical TV connection or audio protection is verified." : "This preview has no verified TV connection. Setup pictures explain the official apps.")
+                            .font(.callout).foregroundColor(theme.muted)
                         action("Review readiness", icon: "checklist") { jump("capability"); checklistExpanded = true }
                     }.id("coverage")
                 }

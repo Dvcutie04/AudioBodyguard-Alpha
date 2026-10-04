@@ -4,10 +4,13 @@ import android.animation.ObjectAnimator
 import android.animation.ValueAnimator
 import android.app.Activity
 import android.graphics.Canvas
+import android.graphics.Color
 import android.graphics.ColorMatrix
 import android.graphics.ColorMatrixColorFilter
 import android.graphics.ColorFilter
 import android.graphics.PixelFormat
+import android.graphics.PorterDuff
+import android.graphics.PorterDuffColorFilter
 import android.graphics.drawable.Drawable
 import android.view.View
 import android.widget.Button
@@ -17,15 +20,16 @@ internal fun roseButton(activity: Activity, skin: InterfaceTheme, title: String,
     text = if (compact || activity.resources.configuration.fontScale >= 1.5f) "" else title
     contentDescription = title
     skin.style(this)
-    val art = AspectFitArtwork(activity.resources.getDrawable(R.drawable.tribal_rose, activity.theme))
-    art.setBounds(0, 0, skin.dp(26), skin.dp(34))
+    val art = AspectFitArtwork(activity.resources.getDrawable(R.drawable.tribal_rose, activity.theme).mutate(), activity.resources.displayMetrics.density * .6f)
+    art.setBounds(0, 0, skin.dp(52), skin.dp(68))
     setCompoundDrawables(art, null, null, null)
     compoundDrawablePadding = skin.dp(if (compact) 0 else 8)
     setOnClickListener { action() }
 }
 
 /** Keep the full transparent rose silhouette inside its button icon bounds. */
-private class AspectFitArtwork(private val artwork: Drawable) : Drawable() {
+private class AspectFitArtwork(private val artwork: Drawable, private val outlineRadius: Float) : Drawable() {
+    private val outline = PorterDuffColorFilter(Color.argb(102, 255, 255, 255), PorterDuff.Mode.SRC_IN)
     override fun draw(canvas: Canvas) {
         val scale = minOf(bounds.width().toFloat() / artwork.intrinsicWidth, bounds.height().toFloat() / artwork.intrinsicHeight)
         val checkpoint = canvas.save()
@@ -33,6 +37,16 @@ private class AspectFitArtwork(private val artwork: Drawable) : Drawable() {
         canvas.translate(bounds.exactCenterX() - artwork.intrinsicWidth * scale / 2, bounds.exactCenterY() - artwork.intrinsicHeight * scale / 2)
         canvas.scale(scale, scale)
         artwork.setBounds(0, 0, artwork.intrinsicWidth, artwork.intrinsicHeight)
+        val originalFilter = artwork.colorFilter
+        artwork.colorFilter = outline
+        val offset = outlineRadius / scale
+        for (x in floatArrayOf(-offset, offset)) for (y in floatArrayOf(-offset, offset)) {
+            val edge = canvas.save()
+            canvas.translate(x, y)
+            artwork.draw(canvas)
+            canvas.restoreToCount(edge)
+        }
+        artwork.colorFilter = originalFilter
         artwork.draw(canvas)
         canvas.restoreToCount(checkpoint)
     }
