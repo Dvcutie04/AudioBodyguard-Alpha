@@ -215,7 +215,7 @@ struct SetupGuidesView: View {
                 }
                 if !route.models.isEmpty {
                     Text("Documented model examples: \(route.models.joined(separator: ", "))").font(.callout)
-                } else { Text("Menu-family guide · match your TV’s exact model.").font(.callout) }
+                } else { Text("Menu-family guide · compare with your device.").font(.callout) }
                 Text("Labels, layout and services can differ by country, software and language. Compare each picture with your own screen.").font(.callout)
                 control("My screen looks different", icon: "questionmark.circle", id: "setup-mismatch") { remember(); mismatch = true; detailsExpanded = false; referencesExpanded = false }
                 control(referencesExpanded ? "Hide reference links" : "Reference links", icon: "doc.text", id: "setup-references") { referencesExpanded.toggle() }
@@ -239,8 +239,8 @@ struct SetupGuidesView: View {
     }
     private var mismatchContent: some View {
         VStack(alignment: .leading, spacing: 16) {
-            Image(systemName: "tv.and.mediabox").font(.system(size: 40)).foregroundColor(theme.violet).accessibilityHidden(true)
-            Text("Choose the name or menu that matches your TV.")
+            Image(systemName: route?.id.hasPrefix("phone_") == true ? "iphone" : "tv.and.mediabox").font(.system(size: 40)).foregroundColor(theme.violet).accessibilityHidden(true)
+            Text("Choose the name or menu that matches your device.")
             control("Choose another model or menu", icon: "rectangle.stack", id: "setup-other-menu") { remember(); routeID = nil; index = -1; mismatch = false; pickerExpanded = true; detailsExpanded = false }
             control("Choose another TV or app", icon: "tv", id: "setup-other-group") { chooseGroup("") }
             if let route = route {

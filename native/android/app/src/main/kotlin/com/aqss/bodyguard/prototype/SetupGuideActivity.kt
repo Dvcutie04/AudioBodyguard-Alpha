@@ -272,7 +272,7 @@ class SetupGuideActivity : Activity() {
             words(content, "Use the official setup screens for passwords and approvals.", color = skin.muted)
             if (route.id in listOf("roku_network", "roku_model")) action(content, "I’m already in Settings") { remember(); index = 2; detailsExpanded = false; referencesExpanded = false; render() }
             if (resumeIndex(route) != null) action(content, "Start from the beginning") { remember(); saveProgress(route, null); index = 0; detailsExpanded = false; render() }
-            words(content, if (route.models.isEmpty()) "Menu-family guide · match your TV’s exact model." else "Documented model examples: ${route.models.joinToString()}", color = skin.muted)
+            words(content, if (route.models.isEmpty()) "Menu-family guide · compare with your device." else "Documented model examples: ${route.models.joinToString()}", color = skin.muted)
             words(content, "Labels, layout and services can differ by country, software and language. Compare each picture with your own screen.", color = skin.muted)
             action(content, "My screen looks different") { remember(); mismatch = true; detailsExpanded = false; referencesExpanded = false; render() }
             action(content, if (referencesExpanded) "Hide reference links" else "Reference links") { referencesExpanded = !referencesExpanded; render(true) }
@@ -291,7 +291,7 @@ class SetupGuideActivity : Activity() {
         } }
     }
     private fun mismatchContent(route: SetupRoute?) {
-        words(content, "Choose the name or menu that matches your TV.")
+        words(content, "Choose the name or menu that matches your device.")
         action(content, "Choose another model or menu") { remember(); routeId = null; index = -1; mismatch = false; pickerExpanded = true; detailsExpanded = false; render() }
         action(content, "Choose another TV or app") { chooseGroup("") }
         if (route != null) {
