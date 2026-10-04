@@ -89,7 +89,7 @@ struct SetupGuidesView: View {
                         Text("Start here. Follow one picture at a time.").foregroundColor(theme.muted)
                         ForEach(group.primaryRoutes, id: \.self) { id in
                             if let route = AQSSSetupContent.routes.first(where: { $0.id == id }) {
-                                control(id == "roku_network" ? "Start TV setup" : route.title, icon: "rectangle.stack", id: "setup-route-\(id)") { chooseRoute(id) }
+                                control(id == "roku_network" ? "Start TV setup" : route.title, icon: "rectangle.stack", id: "setup-route-\(id)", primary: group.primaryRoutes.count == 1) { chooseRoute(id) }
                             }
                         }
                         if group.routes.contains(where: { !group.primaryRoutes.contains($0) }) {
@@ -150,7 +150,7 @@ struct SetupGuidesView: View {
         pickerExpanded = false
         referencesExpanded = false
     }
-    private func control(_ title: String, icon: String, id: String, action: @escaping () -> Void) -> some View {
+    private func control(_ title: String, icon: String, id: String, primary: Bool = false, action: @escaping () -> Void) -> some View {
         Button(action: action) {
             HStack(alignment: .center, spacing: 12) {
                 if !textSize.isAccessibilitySize { Image(systemName: icon).accessibilityHidden(true) }
@@ -158,7 +158,7 @@ struct SetupGuidesView: View {
                 Spacer(minLength: 0)
                 if !textSize.isAccessibilitySize { Image(systemName: "chevron.right").accessibilityHidden(true) }
             }.frame(maxWidth: .infinity, minHeight: 44, alignment: .leading)
-        }.buttonStyle(AppButtonStyle(theme: theme)).accessibilityIdentifier(id)
+        }.buttonStyle(AppButtonStyle(theme: theme, primary: primary)).accessibilityIdentifier(id)
     }
     @ViewBuilder private func navigationLabel(_ title: String, icon: String) -> some View {
         if textSize.isAccessibilitySize {
@@ -176,7 +176,7 @@ struct SetupGuidesView: View {
         if detailsExpanded {
             VStack(alignment: .leading, spacing: 14) {
                 Text(route.appliesTo).font(.callout)
-                Text("Use your TV’s setup screens or the official app for passwords and approvals.").font(.callout)
+                Text("Use the official setup screens for passwords and approvals.").font(.callout)
                 if route.id == "roku_network" || route.id == "roku_model" {
                     control("I’m already in Settings", icon: "gearshape", id: "setup-skip-home") { remember(); index = 2; detailsExpanded = false; referencesExpanded = false }
                 }
@@ -247,7 +247,7 @@ struct SetupGuidesView: View {
                         .frame(maxWidth: .infinity, minHeight: 44)
                 }.buttonStyle(AppButtonStyle(theme: theme, primary: true)).accessibilityIdentifier("setup-next")
             }
-        }.padding(16).background(theme.surface)
+        }.frame(maxWidth: .infinity, alignment: .leading).padding(16).background(theme.surface)
     }
     private func goBack() {
         guard let previous = history.popLast() else { dismiss(); return }

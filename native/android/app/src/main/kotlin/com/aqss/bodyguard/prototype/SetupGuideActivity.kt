@@ -130,8 +130,8 @@ class SetupGuideActivity : Activity() {
     private fun button(title: String, primary: Boolean = false, action: () -> Unit) = Button(this).apply {
         text = title; skin.style(this, primary); setOnClickListener { action() }
     }
-    private fun action(box: LinearLayout, title: String, block: () -> Unit) {
-        box.addView(button(title, action = block).apply { gravity = Gravity.START or Gravity.CENTER_VERTICAL }, LinearLayout.LayoutParams(-1, -2).apply { bottomMargin = dp(10) })
+    private fun action(box: LinearLayout, title: String, primary: Boolean = false, block: () -> Unit) {
+        box.addView(button(title, primary, block).apply { gravity = Gravity.START or Gravity.CENTER_VERTICAL }, LinearLayout.LayoutParams(-1, -2).apply { bottomMargin = dp(10) })
     }
     private fun chooseGroup(id: String) {
         remember(); groupId = id; routeId = if (id == "voice") "voice" else null; index = if (id == "voice") 0 else -1; mismatch = false; detailsExpanded = false; pickerExpanded = false; referencesExpanded = false; render()
@@ -194,7 +194,7 @@ class SetupGuideActivity : Activity() {
                 val selectedGroup = group!!
                 words(content, "Start here. Follow one picture at a time.", color = skin.muted)
                 selectedGroup.primaryRoutes.forEach { id -> SetupContent.routes.firstOrNull { it.id == id }?.let { guide ->
-                    action(content, if (id == "roku_network") "Start TV setup" else guide.title) { chooseRoute(id) }
+                    action(content, if (id == "roku_network") "Start TV setup" else guide.title, selectedGroup.primaryRoutes.size == 1) { chooseRoute(id) }
                 } }
                 if (selectedGroup.routes.any { it !in selectedGroup.primaryRoutes }) action(content, if (pickerExpanded) "Hide other options" else "Other setup options") { pickerExpanded = !pickerExpanded; render(true) }
                 if (pickerExpanded) selectedGroup.routes.filter { it !in selectedGroup.primaryRoutes }.forEach { id -> SetupContent.routes.firstOrNull { it.id == id }?.let { guide -> action(content, guide.title) { chooseRoute(id) } } }
@@ -243,7 +243,7 @@ class SetupGuideActivity : Activity() {
         action(content, if (detailsExpanded) "Hide details" else "More details") { detailsExpanded = !detailsExpanded; render(true) }
         if (detailsExpanded) {
             words(content, route.appliesTo, color = skin.muted)
-            words(content, "Use your TV’s setup screens or the official app for passwords and approvals.", color = skin.muted)
+            words(content, "Use the official setup screens for passwords and approvals.", color = skin.muted)
             if (route.id in listOf("roku_network", "roku_model")) action(content, "I’m already in Settings") { remember(); index = 2; detailsExpanded = false; referencesExpanded = false; render() }
             if (resumeIndex(route) != null) action(content, "Start from the beginning") { remember(); saveProgress(route, null); index = 0; detailsExpanded = false; render() }
             words(content, if (route.models.isEmpty()) "Menu-family guide · match your TV’s exact model." else "Documented model examples: ${route.models.joinToString()}", color = skin.muted)
