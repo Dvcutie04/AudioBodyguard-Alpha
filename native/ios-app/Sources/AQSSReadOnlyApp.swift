@@ -43,6 +43,49 @@ struct AppButtonStyle: ButtonStyle {
     }
 }
 
+/// The owner's exact artwork, rendered inside a normal accessible control.
+struct RoseButton: View {
+    let title: String
+    let theme: AppTheme
+    var compact = false
+    let action: () -> Void
+    @Environment(\.dynamicTypeSize) private var textSize
+    var body: some View {
+        Button(action: action) {
+            HStack(spacing: 8) {
+                Image("TribalRose").resizable().scaledToFill().frame(width: 26, height: 34).clipped()
+                    .clipShape(RoundedRectangle(cornerRadius: 5)).accessibilityHidden(true)
+                if !compact && !textSize.isAccessibilitySize { Text(title).fixedSize(horizontal: false, vertical: true) }
+            }.frame(minWidth: 44, minHeight: 44)
+        }.buttonStyle(AppButtonStyle(theme: theme)).accessibilityLabel(title)
+    }
+}
+
+struct ConnectionHeadView: View {
+    let connected: Bool
+    let theme: AppTheme
+    @Environment(\.scenePhase) private var scenePhase
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @State private var breathing = false
+    private var animate: Bool { connected && scenePhase == .active && !reduceMotion }
+    var body: some View {
+        Image("ConnectionHead").resizable().scaledToFit().frame(maxWidth: 210)
+            .clipShape(RoundedRectangle(cornerRadius: 28))
+            .saturation(connected ? 1 : 0)
+            .scaleEffect(breathing ? 1.015 : 1)
+            .shadow(color: connected ? theme.accent.opacity(breathing ? 0.5 : 0.2) : .clear, radius: breathing ? 18 : 8)
+            .accessibilityLabel(connected ? "AI head. Verified connection active." : "AI head. Connection not verified. Black and white.")
+            .accessibilityIdentifier("connection-head")
+            .onAppear { updateAnimation() }
+            .onChange(of: animate) { _ in updateAnimation() }
+            .onDisappear { breathing = false }
+    }
+    private func updateAnimation() {
+        withAnimation(nil) { breathing = false }
+        if animate { withAnimation(.easeInOut(duration: 1.8).repeatForever(autoreverses: true)) { breathing = true } }
+    }
+}
+
 private struct ReadOnlyHomeView: View {
     @Environment(\.scenePhase) private var scenePhase
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
@@ -54,6 +97,7 @@ private struct ReadOnlyHomeView: View {
     @State private var voiceCheckVisible = false
     @State private var photoCheckVisible = false
     @State private var setupRequest: SetupGuideRequest?
+    @State private var selectedSetupSystem: String?
     @State private var pictureTarget: String?
     @State private var completedPictureRoute: String?
     @State private var moreFeatures = false
@@ -87,6 +131,7 @@ private struct ReadOnlyHomeView: View {
     @AppStorage("aqssGuideDismissedV1") private var guideDismissed = false
     @State private var checkedFirstVisit = false
     @State private var guide = AQSSGuideProgress()
+    @State private var pausedGuide: AQSSGuideProgress?
     private var tutorialTopicID: String? { guide.topicID }
     private var tutorialIndex: Int { guide.index }
     @State private var beginnerTourFinished = false
@@ -152,7 +197,7 @@ private struct ReadOnlyHomeView: View {
                 }
                 pictureTarget = nil; completedPictureRoute = nil
                 if voiceAfterGuide { voiceAfterGuide = false; voiceCheckVisible = true }
-            }) { request in SetupGuidesView(theme: theme, initialGroup: request.group, onVoiceCheck: { voiceAfterGuide = true }, onPartOne: { route in
+            }) { request in SetupGuidesView(theme: theme, initialGroup: request.group, deviceGroup: request.deviceGroup, returningToTutorial: tutorialTopicID != nil, onDeviceGroupSelected: { selectedSetupSystem = $0 }, onVoiceCheck: { voiceAfterGuide = true }, onPartOne: { route in
                 if pictureTarget == "connectionPlan" && guide.completePictures(expectedTarget: "connectionPlan", routeID: route) { pictureTarget = "connectionCheck" }
             }, onFinish: { completedPictureRoute = $0 }) }
             .sheet(isPresented: $navigationVisible) {
@@ -192,12 +237,15 @@ private struct ReadOnlyHomeView: View {
         .onDisappear { audioHints.stop() }
         .onChange(of: scenePhase) { phase in if phase == .active { audioHints.start() } else { audioHints.stop() } }
         .onChange(of: tutorialStepKey) { _ in moreFeatures = false; tutorialHelp = false }
+        .onChange(of: guide.selections["chooseTV"]) { brand in
+            if let brand = brand, let selected = selectedSetupSystem, selected != brand && !selected.hasPrefix(brand + "_") { selectedSetupSystem = nil }
+        }
     }
 
     private func showSetup(_ group: String = "") {
         completedPictureRoute = nil
         pictureTarget = tutorialTopicID == "getting_started" && ["connectionPlan", "connectionCheck"].contains(tutorialStep?.target ?? "") ? tutorialStep?.target : nil
-        setupRequest = SetupGuideRequest(group: group)
+        setupRequest = SetupGuideRequest(group: group, deviceGroup: selectedSetupSystem ?? guide.selected("chooseTV")?.id ?? "")
     }
 
     private var header: some View {
@@ -210,7 +258,7 @@ private struct ReadOnlyHomeView: View {
             Spacer(minLength: 0)
             Button { navigationVisible = true } label: { Image(systemName: "square.grid.2x2").frame(width: 24, height: 24).contentShape(Rectangle()) }
                 .accessibilityLabel("Jump to").accessibilityIdentifier("section-navigation")
-            Button { helpVisible = true } label: { Label("Help", systemImage: "questionmark.circle").font(.subheadline.weight(.semibold)).frame(minWidth: 44, minHeight: 24).contentShape(Rectangle()) }
+            RoseButton(title: "Help", theme: theme) { helpVisible = true }
                 .accessibilityLabel("Help & tutorials").accessibilityIdentifier("tutorial-help").accessibilityFocused($focusedElement, equals: .help)
         }.buttonStyle(AppButtonStyle(theme: theme)).padding(.horizontal, 20).padding(.vertical, 4).foregroundColor(theme.accent).background(theme.background)
     }
@@ -232,28 +280,26 @@ private struct ReadOnlyHomeView: View {
     }
 
     private var homePage: some View {
-        VStack(spacing: 20) {
+        VStack(spacing: 16) {
             card(target: "welcome") {
-                badge(showTourFinished ? "TOUR FINISHED" : "YOUR TV & SMART HOME", color: theme.violet)
-                Text(showTourFinished ? "Explore at your pace." : "Meet Audio Bodyguard.").font(.title2.bold()).accessibilityAddTraits(.isHeader)
-                if tutorialTopicID == "getting_started" {
-                    Text("Use Next in the guide below to continue.").font(.headline).foregroundColor(theme.accent)
-                } else {
-                    action(beginnerTourFinished ? "Replay connection guide" : "TV & smart-home guide", icon: "arrow.right.circle", primary: true) { startTutorial("getting_started") }
-                        .accessibilityIdentifier("start-beginner-tour")
-                }
-            }
-            card(target: "coverage") {
-                HStack(alignment: .top) {
-                    VStack(alignment: .leading, spacing: 12) {
-                        Text("COVERAGE").font(.caption.weight(.bold)).tracking(2).foregroundColor(theme.muted)
-                        Text(coverageTitle).font(.title2.bold()).foregroundColor(theme.warning).accessibilityAddTraits(.isHeader)
-                        if detailSections.contains("coverage") { Text("No output observation").font(.subheadline.weight(.semibold)) }
-                    }
-                    Spacer(minLength: 4)
+                ConnectionHeadView(connected: coverage.state == .active, theme: theme).frame(maxWidth: .infinity)
+                Text(coverage.state == .active ? "Connection active" : "Connection not verified")
+                    .font(.headline).frame(maxWidth: .infinity).accessibilityAddTraits(.isHeader)
+                action(beginnerTourFinished ? "Replay connection guide" : "TV & smart-home guide", icon: "arrow.right.circle", primary: true) { startTutorial("getting_started") }
+                    .accessibilityIdentifier("start-beginner-tour")
+                if pausedGuide != nil {
+                    RoseButton(title: "Back to Tutorial", theme: theme) { resumeTutorial() }
+                        .accessibilityIdentifier("resume-tutorial")
                 }
                 action(detailSections.contains("coverage") ? "Hide status details" : "Status details", icon: "info.circle") { toggleDetails("coverage") }
-                if detailSections.contains("coverage") { action("Review readiness", icon: "checklist") { jump("capability"); checklistExpanded = true } }
+                if detailSections.contains("coverage") {
+                    VStack(alignment: .leading, spacing: 12) {
+                        Text(coverageTitle).font(.headline).foregroundColor(theme.warning)
+                        Text("No output observation").font(.subheadline)
+                        Text("This preview has no verified TV connection. Setup pictures explain the official apps.").font(.callout).foregroundColor(theme.muted)
+                        action("Review readiness", icon: "checklist") { jump("capability"); checklistExpanded = true }
+                    }.id("coverage")
+                }
             }
         }
     }
@@ -451,7 +497,10 @@ private struct ReadOnlyHomeView: View {
         }.buttonStyle(AppButtonStyle(theme: theme))
     }
     private func menuSheet<Content: View>(_ title: String, @ViewBuilder content: () -> Content) -> some View {
-        ScrollView { VStack(alignment: .leading, spacing: 16) { Text(title).font(.title2.bold()); content() }.padding(20) }
+        ScrollView { VStack(alignment: .leading, spacing: 16) {
+            HStack { Text(title).font(.title2.bold()); Spacer(); RoseButton(title: "Back", theme: theme, compact: true) { helpVisible = false; navigationVisible = false; pagesVisible = false } }
+            content()
+        }.padding(20) }
             .background(theme.background).foregroundColor(theme.text).accessibilityIdentifier("menu-scroll")
     }
 
@@ -490,6 +539,7 @@ private struct ReadOnlyHomeView: View {
     private func startTutorial(_ id: String) {
         if tutorialTopicID == nil { previousPage = page }
         guard guide.start(id) else { return }
+        pausedGuide = nil
         showingExample = false; chartValuesVisible = false
     }
     private func closeTutorial(restore: Bool = true) {
@@ -498,14 +548,26 @@ private struct ReadOnlyHomeView: View {
         guide.close()
         if restore { page = previousPage; focusedElement = .help }
     }
+    private func exitToHome() {
+        pausedGuide = guide
+        if page != "home" { rememberPage() }
+        closeTutorial(restore: false)
+        page = "home"; navigationTarget = "page-heading"; navigationRequest += 1
+    }
+    private func resumeTutorial() {
+        if let saved = pausedGuide {
+            previousPage = page; guide = saved; pausedGuide = nil
+            moreFeatures = false; tutorialHelp = false
+        } else { startTutorial("getting_started") }
+    }
     private func tutorialPanel(topic: AQSSTutorialTopic, step: AQSSTutorialStep) -> some View {
         VStack(spacing: 0) {
             VStack(alignment: .leading, spacing: 4) {
                 HStack {
                     Text("Step \(tutorialIndex + 1) of \(topic.steps.count)").font(.subheadline.weight(.semibold)).foregroundColor(theme.muted)
                     Spacer(minLength: 8)
-                    Button { closeTutorial() } label: { Label("Exit", systemImage: "xmark") }
-                        .buttonStyle(AppButtonStyle(theme: theme)).accessibilityLabel("Exit tutorial").accessibilityIdentifier("exit-tutorial")
+                    RoseButton(title: "Exit Home", theme: theme) { exitToHome() }
+                        .accessibilityIdentifier("exit-tutorial")
                 }
                 if topic.id == "getting_started" { Text(AQSSTutorialContent.previewNotice).font(.caption).foregroundColor(theme.muted) }
             }.padding(.horizontal, 20).padding(.vertical, 10)
@@ -537,6 +599,9 @@ private struct ReadOnlyHomeView: View {
                             .accessibilityLabel(choice.title).accessibilityValue(guide.selected(step.target)?.id == choice.id ? "Selected" : "Not selected")
                     }
                     if ["connectionPlan", "connectionCheck"].contains(step.target) {
+                        if step.target == "connectionCheck" {
+                            action("Phone Wi-Fi pictures", icon: "wifi", primary: true) { showSetup("phone") }
+                        }
                         ForEach(["chooseTV", "chooseHome"], id: \.self) { target in
                             if let selected = guide.selected(target), !["both", "neither"].contains(selected.id) {
                                 action("Show \(selected.title) steps", icon: target == "chooseTV" ? "tv" : "iphone") { showSetup(selected.id) }

@@ -1,0 +1,43 @@
+package com.aqss.bodyguard.prototype
+
+import android.animation.ObjectAnimator
+import android.animation.ValueAnimator
+import android.app.Activity
+import android.graphics.ColorMatrix
+import android.graphics.ColorMatrixColorFilter
+import android.view.View
+import android.widget.Button
+import android.widget.ImageView
+
+internal fun roseButton(activity: Activity, skin: InterfaceTheme, title: String, compact: Boolean = false, action: () -> Unit): Button = Button(activity).apply {
+    text = if (compact || activity.resources.configuration.fontScale >= 1.5f) "" else title
+    contentDescription = title
+    skin.style(this)
+    val art = activity.resources.getDrawable(R.drawable.tribal_rose, activity.theme)
+    art.setBounds(0, 0, skin.dp(44), skin.dp(28))
+    setCompoundDrawables(art, null, null, null)
+    compoundDrawablePadding = skin.dp(if (compact) 0 else 8)
+    setOnClickListener { action() }
+}
+
+/** No tutorial or button can set this view's evidence-backed connection input. */
+internal class ConnectionHeadView(activity: Activity, private val connected: Boolean) : ImageView(activity) {
+    private var pulse: ObjectAnimator? = null
+    init {
+        setImageResource(R.drawable.connection_head)
+        scaleType = ScaleType.FIT_CENTER
+        if (!connected) colorFilter = ColorMatrixColorFilter(ColorMatrix().apply { setSaturation(0f) })
+        contentDescription = if (connected) "AI head. Verified connection active." else "AI head. Connection not verified. Black and white."
+    }
+    override fun onAttachedToWindow() { super.onAttachedToWindow(); updatePulse() }
+    override fun onWindowVisibilityChanged(visibility: Int) { super.onWindowVisibilityChanged(visibility); updatePulse() }
+    override fun onDetachedFromWindow() { pulse?.cancel(); pulse = null; alpha = 1f; super.onDetachedFromWindow() }
+    private fun updatePulse() {
+        pulse?.cancel(); pulse = null; alpha = 1f
+        if (connected && isAttachedToWindow && windowVisibility == View.VISIBLE && ValueAnimator.areAnimatorsEnabled()) {
+            pulse = ObjectAnimator.ofFloat(this, "alpha", 1f, .82f).apply {
+                duration = 1800; repeatCount = ValueAnimator.INFINITE; repeatMode = ValueAnimator.REVERSE; start()
+            }
+        }
+    }
+}

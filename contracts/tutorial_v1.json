@@ -555,7 +555,9 @@
       "lg_account6",
       "google_legacy_add",
       "fire_setup",
-      "roku_phone"
+      "roku_phone",
+      "vizio_google",
+      "vizio_alexa"
     ]
   }
 }

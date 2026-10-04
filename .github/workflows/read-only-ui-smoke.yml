@@ -148,6 +148,9 @@ jobs:
           name: aqss-android-review-screenshots
           path: |
             artifacts/ui/android/home.png
+            artifacts/ui/android/rose_home.png
+            artifacts/ui/android/setup_alexa_for_samsung.png
+            artifacts/ui/android/tutorial_exact_resume.png
             artifacts/ui/android/beginner_step_1.png
             artifacts/ui/android/welcome_features.png
             artifacts/ui/android/welcome_features_last.png

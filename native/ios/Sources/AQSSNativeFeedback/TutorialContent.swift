@@ -112,7 +112,7 @@ public enum AQSSTutorialContent {
         AQSSTutorialFeature(id: "input", title: "Voice input display and recognized words", detail: "Review the recognized words on your phone.", availability: "preview"),
     ]
     public static let featuredIDs: [String] = ["series_intro", "commercial_volume", "remote"]
-    public static let pictureContinueRoutes: [String] = ["samsung_ok", "samsung_pin", "lg_pair", "google_remote", "google_setup", "tcl_models", "google_fast", "google_samsung", "google_lg", "google_roku", "google_vidaa", "google_vizio", "google_legacy", "samsung_alexa", "lg_alexa", "sony_new", "sony_legacy", "roku_alexa", "vidaa_google", "vidaa_alexa", "vizio_pair", "vizio_account", "vizio_assist", "fire_alexa", "lg_account5", "lg_account6", "google_legacy_add", "fire_setup", "roku_phone"]
+    public static let pictureContinueRoutes: [String] = ["samsung_ok", "samsung_pin", "lg_pair", "google_remote", "google_setup", "tcl_models", "google_fast", "google_samsung", "google_lg", "google_roku", "google_vidaa", "google_vizio", "google_legacy", "samsung_alexa", "lg_alexa", "sony_new", "sony_legacy", "roku_alexa", "vidaa_google", "vidaa_alexa", "vizio_pair", "vizio_account", "vizio_assist", "fire_alexa", "lg_account5", "lg_account6", "google_legacy_add", "fire_setup", "roku_phone", "vizio_google", "vizio_alexa"]
     public static let previewNotice = "Picture guide"
     public static let startLabel = "Start picture setup"
     public static let moreFeaturesLabel = "More features"

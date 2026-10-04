@@ -101,7 +101,7 @@
     {
       "id": "vizio_pair",
       "title": "VIZIO: mobile pairing and voice assistants",
-      "url": "https://www.vizio.com/en/mobile"
+      "url": "https://www.vizio.com/en/vizio-mobile-app"
     },
     {
       "id": "vizio_account",
@@ -152,6 +152,21 @@
       "id": "roku_mobile",
       "title": "Roku: connect the official phone app",
       "url": "https://support.roku.com/article/article/install-the-mobile-app"
+    },
+    {
+      "id": "iphone_wifi",
+      "title": "Apple: iPhone Wi-Fi settings",
+      "url": "https://support.apple.com/en-us/111107"
+    },
+    {
+      "id": "pixel_wifi",
+      "title": "Google: Pixel Wi-Fi settings",
+      "url": "https://support.google.com/pixelphone/answer/2819519?hl=en"
+    },
+    {
+      "id": "galaxy_wifi",
+      "title": "Samsung: Galaxy Wi-Fi menus (Canada)",
+      "url": "https://www.samsung.com/ca/support/mobile-devices/connect-your-samsung-galaxy-to-the-internet/"
     }
   ],
   "groups": [
@@ -246,7 +261,8 @@
         "roku_alexa",
         "google_roku",
         "fire_alexa",
-        "identify"
+        "identify",
+        "roku_phone"
       ],
       "primary_routes": [
         "roku_network",
@@ -262,7 +278,9 @@
         "vizio_account",
         "vizio_assist",
         "google_vizio",
-        "identify"
+        "identify",
+        "vizio_google",
+        "vizio_alexa"
       ],
       "primary_routes": [
         "vizio_pair"
@@ -310,7 +328,8 @@
         "google_remote",
         "vidaa_google",
         "lg_account5",
-        "lg_account6"
+        "lg_account6",
+        "vizio_google"
       ],
       "primary_routes": [
         "google_samsung",
@@ -328,10 +347,10 @@
         "sony_legacy",
         "roku_alexa",
         "vidaa_alexa",
-        "vizio_assist",
         "fire_alexa",
         "lg_account5",
-        "lg_account6"
+        "lg_account6",
+        "vizio_alexa"
       ],
       "primary_routes": [
         "samsung_alexa",
@@ -363,7 +382,9 @@
         "roku_alexa",
         "vidaa_alexa",
         "vizio_assist",
-        "fire_alexa"
+        "fire_alexa",
+        "vizio_google",
+        "vizio_alexa"
       ],
       "primary_routes": [
         "google_samsung",
@@ -449,7 +470,8 @@
         "roku_network",
         "roku_alexa",
         "google_roku",
-        "identify"
+        "identify",
+        "roku_phone"
       ],
       "primary_routes": [
         "philips_voice_remote",
@@ -464,7 +486,8 @@
         "roku_network",
         "roku_alexa",
         "google_roku",
-        "identify"
+        "identify",
+        "roku_phone"
       ],
       "primary_routes": [
         "roku_model"
@@ -495,10 +518,133 @@
         "fire_alexa",
         "roku_alexa",
         "google_roku",
-        "identify"
+        "identify",
+        "roku_phone"
       ],
       "primary_routes": [
         "roku_network",
+        "fire_setup"
+      ]
+    },
+    {
+      "id": "phone",
+      "title": "Phone Wi-Fi setup",
+      "routes": [
+        "phone_iphone",
+        "phone_pixel",
+        "phone_galaxy"
+      ],
+      "primary_routes": [
+        "phone_iphone",
+        "phone_pixel",
+        "phone_galaxy"
+      ]
+    },
+    {
+      "id": "hisense_roku",
+      "title": "Hisense • Roku TV",
+      "routes": [
+        "roku_network",
+        "roku_model",
+        "roku_phone",
+        "roku_alexa",
+        "google_roku",
+        "identify"
+      ],
+      "primary_routes": [
+        "roku_network"
+      ]
+    },
+    {
+      "id": "hisense_google",
+      "title": "Hisense • Google TV / Android TV",
+      "routes": [
+        "google_remote",
+        "google_setup",
+        "google_fast",
+        "identify"
+      ],
+      "primary_routes": [
+        "google_remote"
+      ]
+    },
+    {
+      "id": "hisense_vidaa",
+      "title": "Hisense • VIDAA (43A6GV / U5 documented)",
+      "routes": [
+        "vidaa_google",
+        "vidaa_alexa",
+        "google_vidaa",
+        "identify"
+      ],
+      "primary_routes": [
+        "vidaa_google"
+      ]
+    },
+    {
+      "id": "hisense_fire",
+      "title": "Hisense • Fire TV",
+      "routes": [
+        "fire_setup",
+        "fire_alexa",
+        "identify"
+      ],
+      "primary_routes": [
+        "fire_setup"
+      ]
+    },
+    {
+      "id": "philips_google",
+      "title": "Philips • Google TV / Android TV",
+      "routes": [
+        "google_remote",
+        "philips_voice_remote",
+        "google_setup",
+        "identify"
+      ],
+      "primary_routes": [
+        "google_remote"
+      ]
+    },
+    {
+      "id": "philips_roku",
+      "title": "Philips • Roku TV",
+      "routes": [
+        "roku_network",
+        "roku_model",
+        "roku_phone",
+        "roku_alexa",
+        "google_roku",
+        "identify"
+      ],
+      "primary_routes": [
+        "roku_network"
+      ]
+    },
+    {
+      "id": "insignia_roku",
+      "title": "Insignia • Roku TV",
+      "routes": [
+        "roku_network",
+        "roku_model",
+        "roku_phone",
+        "roku_alexa",
+        "google_roku",
+        "identify"
+      ],
+      "primary_routes": [
+        "roku_network"
+      ]
+    },
+    {
+      "id": "insignia_fire",
+      "title": "Insignia • Fire TV",
+      "routes": [
+        "fire_setup",
+        "fire_alexa",
+        "identify"
+      ],
+      "primary_routes": [
         "fire_setup"
       ]
     }
@@ -671,7 +817,7 @@
         },
         {
           "title": "Use the official account screen",
-          "instruction": "Sign in inside SmartThings. Review the account name before continuing.",
+          "instruction": "Sign in to SmartThings with the same Samsung account used on your TV.",
           "surface": "phone",
           "screen": "SmartThings",
           "items": [
@@ -881,7 +1027,7 @@
         },
         {
           "title": "Use the official account screen",
-          "instruction": "Sign in inside SmartThings. Review the account name before continuing.",
+          "instruction": "Sign in to SmartThings with the same Samsung account used on your TV.",
           "surface": "phone",
           "screen": "SmartThings",
           "items": [
@@ -5343,6 +5489,463 @@
           "focus": 1,
           "action": "check",
           "note": "Only your own TV can show whether the Roku app connection worked."
+        }
+      ]
+    },
+    {
+      "id": "phone_iphone",
+      "title": "iPhone — connect to your home Wi-Fi",
+      "applies_to": "iPhone Settings → Wi-Fi. Choose the same home network used by your TV.",
+      "models": [],
+      "sources": [
+        "iphone_wifi"
+      ],
+      "steps": [
+        {
+          "title": "Open iPhone Settings",
+          "instruction": "Find the Settings app on your iPhone and open it.",
+          "surface": "phone",
+          "screen": "iPhone • Home",
+          "items": [
+            "Settings"
+          ],
+          "focus": 0,
+          "action": "tap",
+          "note": "Match this illustrated menu to your phone. If labels differ, use the official reference."
+        },
+        {
+          "title": "Open Wi-Fi",
+          "instruction": "In Settings, tap Wi-Fi.",
+          "surface": "phone",
+          "screen": "iPhone • Settings",
+          "items": [
+            "Wi-Fi",
+            "Bluetooth"
+          ],
+          "focus": 0,
+          "action": "tap",
+          "note": "Match this illustrated menu to your phone. If labels differ, use the official reference."
+        },
+        {
+          "title": "Turn on Wi-Fi",
+          "instruction": "If Wi-Fi is off, tap its switch to turn it on.",
+          "surface": "phone",
+          "screen": "iPhone • Wi-Fi",
+          "items": [
+            "Wi-Fi switch"
+          ],
+          "focus": 0,
+          "action": "tap",
+          "note": "Match this illustrated menu to your phone. If labels differ, use the official reference."
+        },
+        {
+          "title": "Choose the TV’s network",
+          "instruction": "Tap the home network name that your TV uses.",
+          "surface": "phone",
+          "screen": "iPhone • Wi-Fi",
+          "items": [
+            "Your TV’s home network"
+          ],
+          "focus": 0,
+          "action": "tap",
+          "note": "Match this illustrated menu to your phone. If labels differ, use the official reference."
+        },
+        {
+          "title": "Enter the Wi-Fi password",
+          "instruction": "If asked, type your home Wi-Fi password. Then tap Join.",
+          "surface": "phone",
+          "screen": "iPhone • Wi-Fi password",
+          "items": [
+            "Password",
+            "Join"
+          ],
+          "focus": 1,
+          "action": "type",
+          "note": "Match this illustrated menu to your phone. If labels differ, use the official reference."
+        },
+        {
+          "title": "Check the iPhone connection",
+          "instruction": "Look for a blue checkmark beside your home network and the Wi-Fi icon at the top.",
+          "surface": "phone",
+          "screen": "iPhone • Wi-Fi",
+          "items": [
+            "✓ Your home network"
+          ],
+          "focus": 0,
+          "action": "check",
+          "note": "This checks phone Wi-Fi only. It does not establish an Audio Bodyguard device connection."
+        }
+      ]
+    },
+    {
+      "id": "phone_pixel",
+      "title": "Google Pixel — connect to your home Wi-Fi",
+      "applies_to": "Pixel phones with Network & internet → Internet; some steps require Android 11 or newer.",
+      "models": [],
+      "sources": [
+        "pixel_wifi"
+      ],
+      "steps": [
+        {
+          "title": "Open Pixel Settings",
+          "instruction": "Open Settings on your Google Pixel.",
+          "surface": "phone",
+          "screen": "Pixel • Home",
+          "items": [
+            "Settings"
+          ],
+          "focus": 0,
+          "action": "tap",
+          "note": "Match this illustrated menu to your phone. If labels differ, use the official reference."
+        },
+        {
+          "title": "Open Network & internet",
+          "instruction": "In Settings, tap Network & internet.",
+          "surface": "phone",
+          "screen": "Pixel • Settings",
+          "items": [
+            "Network & internet",
+            "Connected devices"
+          ],
+          "focus": 0,
+          "action": "tap",
+          "note": "Match this illustrated menu to your phone. If labels differ, use the official reference."
+        },
+        {
+          "title": "Open Internet",
+          "instruction": "Tap Internet.",
+          "surface": "phone",
+          "screen": "Pixel • Network & internet",
+          "items": [
+            "Internet"
+          ],
+          "focus": 0,
+          "action": "tap",
+          "note": "Match this illustrated menu to your phone. If labels differ, use the official reference."
+        },
+        {
+          "title": "Turn on Wi-Fi",
+          "instruction": "If Wi-Fi is off, tap its switch to turn it on.",
+          "surface": "phone",
+          "screen": "Pixel • Internet",
+          "items": [
+            "Wi-Fi switch"
+          ],
+          "focus": 0,
+          "action": "tap",
+          "note": "Match this illustrated menu to your phone. If labels differ, use the official reference."
+        },
+        {
+          "title": "Choose the TV’s network",
+          "instruction": "Tap the home network name that your TV uses.",
+          "surface": "phone",
+          "screen": "Pixel • Internet",
+          "items": [
+            "Your TV’s home network"
+          ],
+          "focus": 0,
+          "action": "tap",
+          "note": "Match this illustrated menu to your phone. If labels differ, use the official reference."
+        },
+        {
+          "title": "Enter the Wi-Fi password",
+          "instruction": "If asked, enter your home Wi-Fi password and follow the connection prompt.",
+          "surface": "phone",
+          "screen": "Pixel • Wi-Fi password",
+          "items": [
+            "Password",
+            "Connect"
+          ],
+          "focus": 1,
+          "action": "type",
+          "note": "Match this illustrated menu to your phone. If labels differ, use the official reference."
+        },
+        {
+          "title": "Check the Pixel connection",
+          "instruction": "Look for Connected below your home network name.",
+          "surface": "phone",
+          "screen": "Pixel • Internet",
+          "items": [
+            "Your home network — Connected"
+          ],
+          "focus": 0,
+          "action": "check",
+          "note": "These pictures are for Pixel menus. Other Android brands may use different menus."
+        }
+      ]
+    },
+    {
+      "id": "phone_galaxy",
+      "title": "Samsung Galaxy — connect to your home Wi-Fi",
+      "applies_to": "Galaxy phones with Settings → Connections → Wi-Fi. The source documents Canadian models; labels can vary.",
+      "models": [],
+      "sources": [
+        "galaxy_wifi"
+      ],
+      "steps": [
+        {
+          "title": "Open Galaxy Settings",
+          "instruction": "Open Settings on your Samsung Galaxy.",
+          "surface": "phone",
+          "screen": "Galaxy • Home",
+          "items": [
+            "Settings"
+          ],
+          "focus": 0,
+          "action": "tap",
+          "note": "Match this illustrated menu to your phone. If labels differ, use the official reference."
+        },
+        {
+          "title": "Open Connections",
+          "instruction": "In Settings, tap Connections.",
+          "surface": "phone",
+          "screen": "Galaxy • Settings",
+          "items": [
+            "Connections",
+            "Sounds and vibration"
+          ],
+          "focus": 0,
+          "action": "tap",
+          "note": "Match this illustrated menu to your phone. If labels differ, use the official reference."
+        },
+        {
+          "title": "Open Wi-Fi",
+          "instruction": "Tap Wi-Fi.",
+          "surface": "phone",
+          "screen": "Galaxy • Connections",
+          "items": [
+            "Wi-Fi",
+            "Bluetooth"
+          ],
+          "focus": 0,
+          "action": "tap",
+          "note": "Match this illustrated menu to your phone. If labels differ, use the official reference."
+        },
+        {
+          "title": "Turn on Wi-Fi",
+          "instruction": "If Wi-Fi is off, tap its switch to turn it on.",
+          "surface": "phone",
+          "screen": "Galaxy • Wi-Fi",
+          "items": [
+            "Wi-Fi switch"
+          ],
+          "focus": 0,
+          "action": "tap",
+          "note": "Match this illustrated menu to your phone. If labels differ, use the official reference."
+        },
+        {
+          "title": "Choose the TV’s network",
+          "instruction": "Tap the home network name that your TV uses.",
+          "surface": "phone",
+          "screen": "Galaxy • Wi-Fi",
+          "items": [
+            "Your TV’s home network"
+          ],
+          "focus": 0,
+          "action": "tap",
+          "note": "Match this illustrated menu to your phone. If labels differ, use the official reference."
+        },
+        {
+          "title": "Enter the Wi-Fi password",
+          "instruction": "If asked, type your home Wi-Fi password, then tap Connect.",
+          "surface": "phone",
+          "screen": "Galaxy • Wi-Fi password",
+          "items": [
+            "Password",
+            "Connect"
+          ],
+          "focus": 1,
+          "action": "type",
+          "note": "Match this illustrated menu to your phone. If labels differ, use the official reference."
+        },
+        {
+          "title": "Check the Galaxy connection",
+          "instruction": "Look under Current network. Your home network should show Connected.",
+          "surface": "phone",
+          "screen": "Galaxy • Wi-Fi",
+          "items": [
+            "Current network",
+            "Your home network — Connected"
+          ],
+          "focus": 1,
+          "action": "check",
+          "note": "Wi-Fi connection is separate from TV pairing and Audio Bodyguard protection."
+        }
+      ]
+    },
+    {
+      "id": "vizio_google",
+      "title": "VIZIO → Google Home",
+      "applies_to": "VIZIO TVs with the Account linking option for Google Home. Follow the official app prompts when labels vary.",
+      "models": [],
+      "sources": [
+        "vizio_pair",
+        "vizio_account",
+        "google_link"
+      ],
+      "steps": [
+        {
+          "title": "Check the TV in VIZIO Mobile",
+          "instruction": "Use the paired TV and the VIZIO account associated with it.",
+          "surface": "phone",
+          "screen": "VIZIO Mobile",
+          "items": [
+            "Your TV"
+          ],
+          "focus": 0,
+          "action": "check",
+          "note": "Use your real device. This picture is an illustration."
+        },
+        {
+          "title": "Prepare the assistant app",
+          "instruction": "Sign in to Google Home on the same phone.",
+          "surface": "phone",
+          "screen": "Google Home",
+          "items": [
+            "Google Home"
+          ],
+          "focus": 0,
+          "action": "tap",
+          "note": "Open Google Home or Amazon Alexa according to the assistant you chose; the picture does not select one for you."
+        },
+        {
+          "title": "Return to VIZIO Account",
+          "instruction": "In VIZIO Mobile, open the Account tab.",
+          "surface": "phone",
+          "screen": "VIZIO Mobile",
+          "items": [
+            "Account"
+          ],
+          "focus": 0,
+          "action": "tap",
+          "note": "Use your real device. This picture is an illustration."
+        },
+        {
+          "title": "Choose assistant linking",
+          "instruction": "Start the partner-linking option offered for Google Home.",
+          "surface": "phone",
+          "screen": "VIZIO Account",
+          "items": [
+            "Link Google Home"
+          ],
+          "focus": 0,
+          "action": "tap",
+          "note": "This is a descriptive highlight. Choose the actual linking option for your assistant in VIZIO Mobile; labels vary."
+        },
+        {
+          "title": "Review the official handoff",
+          "instruction": "Continue to Google Home and approve the intended VIZIO account access.",
+          "surface": "phone",
+          "screen": "Provider approval",
+          "items": [
+            "Account",
+            "Requested access",
+            "Continue"
+          ],
+          "focus": 2,
+          "action": "check",
+          "note": "Use your real device. This picture is an illustration."
+        },
+        {
+          "title": "Check the actual result",
+          "instruction": "Look in Google Home for your TV. If it is missing, use “My screen looks different”.",
+          "surface": "phone",
+          "screen": "Google Home",
+          "items": [
+            "Your TV appears",
+            "TV missing? Get help"
+          ],
+          "focus": 0,
+          "action": "check",
+          "note": "Finishing this guide does not connect Audio Bodyguard or activate protection."
+        }
+      ]
+    },
+    {
+      "id": "vizio_alexa",
+      "title": "VIZIO → Amazon Alexa",
+      "applies_to": "VIZIO TVs with the Account linking option for Amazon Alexa. Follow the official app prompts when labels vary.",
+      "models": [],
+      "sources": [
+        "vizio_pair",
+        "vizio_account",
+        "google_link"
+      ],
+      "steps": [
+        {
+          "title": "Check the TV in VIZIO Mobile",
+          "instruction": "Use the paired TV and the VIZIO account associated with it.",
+          "surface": "phone",
+          "screen": "VIZIO Mobile",
+          "items": [
+            "Your TV"
+          ],
+          "focus": 0,
+          "action": "check",
+          "note": "Use your real device. This picture is an illustration."
+        },
+        {
+          "title": "Prepare the assistant app",
+          "instruction": "Sign in to Amazon Alexa on the same phone.",
+          "surface": "phone",
+          "screen": "Amazon Alexa",
+          "items": [
+            "Amazon Alexa"
+          ],
+          "focus": 0,
+          "action": "tap",
+          "note": "Open Google Home or Amazon Alexa according to the assistant you chose; the picture does not select one for you."
+        },
+        {
+          "title": "Return to VIZIO Account",
+          "instruction": "In VIZIO Mobile, open the Account tab.",
+          "surface": "phone",
+          "screen": "VIZIO Mobile",
+          "items": [
+            "Account"
+          ],
+          "focus": 0,
+          "action": "tap",
+          "note": "Use your real device. This picture is an illustration."
+        },
+        {
+          "title": "Choose assistant linking",
+          "instruction": "Start the partner-linking option offered for Amazon Alexa.",
+          "surface": "phone",
+          "screen": "VIZIO Account",
+          "items": [
+            "Link Amazon Alexa"
+          ],
+          "focus": 0,
+          "action": "tap",
+          "note": "This is a descriptive highlight. Choose the actual linking option for your assistant in VIZIO Mobile; labels vary."
+        },
+        {
+          "title": "Review the official handoff",
+          "instruction": "Continue to Amazon Alexa and approve the intended VIZIO account access.",
+          "surface": "phone",
+          "screen": "Provider approval",
+          "items": [
+            "Account",
+            "Requested access",
+            "Continue"
+          ],
+          "focus": 2,
+          "action": "check",
+          "note": "Use your real device. This picture is an illustration."
+        },
+        {
+          "title": "Check the actual result",
+          "instruction": "Look in Amazon Alexa for your TV. If it is missing, use “My screen looks different”.",
+          "surface": "phone",
+          "screen": "Amazon Alexa",
+          "items": [
+            "Your TV appears",
+            "TV missing? Get help"
+          ],
+          "focus": 0,
+          "action": "check",
+          "note": "Finishing this guide does not connect Audio Bodyguard or activate protection."
         }
       ]
     }

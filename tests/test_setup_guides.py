@@ -90,6 +90,28 @@ def test_roku_tv_part_one_leads_to_official_phone_app_pictures():
     assert any(source['id'] == 'roku_mobile' and source['url'].startswith('https://support.roku.com/') for source in data['sources'])
 
 
+def test_every_roku_tv_group_can_restore_the_phone_handoff_after_rotation():
+    data = json.loads((Path(__file__).resolve().parents[1] / 'contracts/setup_guides_v1.json').read_text())
+    for group in data['groups']:
+        if {'roku_network', 'roku_model'} & set(group['routes']):
+            assert 'roku_phone' in group['routes'], group['id']
+
+
+def test_phone_wifi_guides_keep_the_three_system_menus_separate():
+    routes = setup_routes()
+    iphone = routes['phone_iphone']['steps']
+    pixel = routes['phone_pixel']['steps']
+    galaxy = routes['phone_galaxy']['steps']
+    assert 'Wi-Fi' in iphone[1]['items']
+    assert 'Network & internet' in pixel[1]['items']
+    assert 'Internet' in pixel[2]['items']
+    assert 'Connections' in galaxy[1]['items']
+    assert 'Wi-Fi' in galaxy[2]['items']
+    assert 'checkmark' in iphone[-1]['instruction']
+    assert 'Connected' in pixel[-1]['instruction']
+    assert all(step['surface'] == 'phone' for route in (iphone, pixel, galaxy) for step in route)
+
+
 def test_pin_picture_highlights_input_before_a_separate_confirmation_picture():
     steps = setup_routes()['lg_pair']['steps']
     entry = next(i for i, step in enumerate(steps) if step['title'] == 'Enter the real PIN')

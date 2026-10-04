@@ -104,7 +104,7 @@ struct VoiceCheckView: View {
     @State private var setupVisible = false
     var body: some View {
         VStack(spacing: 12) {
-            HStack { Text("Voice check").font(.title2.bold()); Spacer(); Button("Close") { voice.clear(); dismiss() }.buttonStyle(AppButtonStyle(theme: theme)) }.padding()
+            HStack { Text("Voice check").font(.title2.bold()); Spacer(); RoseButton(title: "Close", theme: theme) { voice.clear(); dismiss() } }.padding()
             ScrollView {
                 VStack(alignment: .leading, spacing: 18) {
                     Text("See what your phone hears").font(.title.bold())
@@ -188,7 +188,7 @@ struct TVPhotoView: View {
     @State private var cameraNotice = ""
     var body: some View {
         VStack {
-            HStack { Text("TV photo setup").font(.title2.bold()); Spacer(); Button("Close") { photo.clear(); dismiss() }.buttonStyle(AppButtonStyle(theme: theme)) }.padding()
+            HStack { Text("TV photo setup").font(.title2.bold()); Spacer(); RoseButton(title: "Close", theme: theme) { photo.clear(); dismiss() } }.padding()
             ScrollView {
                 VStack(alignment: .leading, spacing: 18) {
                     Image(systemName: "tv").font(.system(size: 42)).foregroundColor(theme.violet).accessibilityHidden(true)

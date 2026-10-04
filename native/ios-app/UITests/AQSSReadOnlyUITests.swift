@@ -1,6 +1,24 @@
 import XCTest
 
 final class AQSSReadOnlyUITests: XCTestCase {
+    func testRoseExitResumesTheExactTutorialAndHeadStaysDisconnected() {
+        let app = launch(true)
+        next(app); tap("LG", app); next(app); tap("Google Home", app); next(app)
+        label("Step 4 of 6", app)
+        tap("Show Google Home steps", app)
+        XCTAssertTrue(app.buttons["setup-route-google_lg"].exists)
+        XCTAssertFalse(app.buttons["setup-route-google_samsung"].exists)
+        XCTAssertFalse(app.buttons["setup-route-google_roku"].exists)
+        XCTAssertEqual(app.buttons["setup-close"].label, "Back to Tutorial")
+        app.buttons["setup-close"].tap(); label("Step 4 of 6", app)
+        exit(app); label("HOME", app); label("Connection not verified", app)
+        XCTAssertTrue(app.images["connection-head"].label.contains("Black and white"))
+        tap("Back to Tutorial", app); label("Step 4 of 6", app)
+        app.buttons["Back"].tap(); label("Step 3 of 6", app)
+        XCTAssertEqual(app.buttons["choice-google"].value as? String, "Selected")
+        screenshot("Rose navigation returns to the exact tutorial", app)
+    }
+
     private func label(_ text: String, _ app: XCUIApplication) {
         XCTAssertTrue(app.staticTexts.containing(NSPredicate(format: "label CONTAINS %@", text)).firstMatch.waitForExistence(timeout: 10), "Missing: \(text)")
     }
@@ -68,7 +86,7 @@ final class AQSSReadOnlyUITests: XCTestCase {
         XCTAssertFalse(app.alerts.firstMatch.exists)
         screenshot("TV photo setup idle", app)
         app.buttons["Close"].firstMatch.tap()
-        tab("home", app); label("Unknown physical state", app)
+        tab("home", app); label("Connection not verified", app)
     }
 
     func testAllFivePagesKeepHelpAndTruthfulEmptyStates() {
@@ -77,7 +95,7 @@ final class AQSSReadOnlyUITests: XCTestCase {
         XCTAssertFalse(app.staticTexts.containing(NSPredicate(format: "label CONTAINS %@", "does not monitor or change TV audio")).firstMatch.exists)
         screenshot("00 Beginner welcome", app)
         jump("Coverage", app)
-        label("Unknown physical state", app); label("No output observation", app)
+        label("Connection not verified", app); label("No output observation", app)
         screenshot("01 Midnight Home", app)
         for (id, title) in [("sound", "SOUND"), ("devices", "DEVICES"), ("insights", "INSIGHTS"), ("settings", "SETTINGS")] {
             tab(id, app); label(title, app)
@@ -89,7 +107,7 @@ final class AQSSReadOnlyUITests: XCTestCase {
         tap("Cancel", app)
         jump("Readiness checklist", app); label("Six setup checks unknown", app)
         jump("Session transfer", app); label("No supported endpoint or verified transfer path", app)
-        tab("home", app); label("Unknown physical state", app)
+        tab("home", app); label("Connection not verified", app)
     }
 
     func testFirstVisitHasOnePathChoiceGatesTailoredPlanAndReplay() {
@@ -148,7 +166,7 @@ final class AQSSReadOnlyUITests: XCTestCase {
         XCTAssertTrue(app.buttons["setup-from-samsung"].exists)
         next(app); label("Step 6 of 6", app)
         next(app); XCTAssertTrue(app.buttons["tab-home"].isHittable)
-        label("TOUR FINISHED", app)
+        label("Connection not verified", app)
         app.buttons["start-beginner-tour"].tap(); label("Step 1 of 6", app)
         next(app); XCTAssertFalse(app.buttons["guide-next"].isEnabled)
         exit(app); tab("sound", app)
@@ -190,7 +208,8 @@ final class AQSSReadOnlyUITests: XCTestCase {
         next(app); label("Step 3 of 4", app)
         app.buttons["Back"].tap(); label("Step 2 of 4", app)
         XCUIDevice.shared.press(.home); app.activate(); label("Step 2 of 4", app)
-        exit(app); label("SETTINGS", app)
+        exit(app); label("HOME", app)
+        app.buttons["page-back"].tap(); label("SETTINGS", app)
         jump("Privacy and storage", app); label("No audio files saved by this app", app)
         app.buttons["Help & tutorials"].tap(); tap("Sound options", app)
         next(app); label("Step 2 of 4", app); screenshot("Contextual Sound guide", app)
@@ -208,10 +227,10 @@ final class AQSSReadOnlyUITests: XCTestCase {
         XCTAssertEqual(app.buttons["Daylight"].value as? String, "Selected")
         XCTAssertFalse(app.staticTexts["Explore the direction. These features are not active."].exists)
         screenshot("Daylight Settings", app)
-        tab("home", app); screenshot("Daylight Home", app); label("Unknown physical state", app)
+        tab("home", app); screenshot("Daylight Home", app); label("Connection not verified", app)
         tab("settings", app); tap("Midnight", app); tap("More features", app)
         tap("Voice requests", app); label("Voice control requires device authority and checked output", app); app.buttons["Got it"].tap()
-        tab("home", app); label("Unknown physical state", app)
+        tab("home", app); label("Connection not verified", app)
     }
 
     func testRokuPicturesResumeAndFinishWithoutClaimingConnection() {
@@ -247,7 +266,7 @@ final class AQSSReadOnlyUITests: XCTestCase {
         app.buttons["setup-next"].tap(); label("Step 1 of 5", app)
         screenshot("Roku phone app setup begins", app)
         app.buttons["setup-close"].tap()
-        tab("home", app); label("Unknown physical state", app)
+        tab("home", app); label("Connection not verified", app)
     }
 
     func testSimpleDefaultsAndBackRestoreTheActualPreviousPage() {
@@ -288,7 +307,7 @@ final class AQSSReadOnlyUITests: XCTestCase {
         app.buttons["page-back"].tap(); label("SOUND", app)
         label("Dialogue preset", app)
         app.buttons["page-back"].tap(); label("DEVICES", app)
-        app.buttons["page-back"].tap(); label("Unknown physical state", app)
+        app.buttons["page-back"].tap(); label("Connection not verified", app)
         label("No output observation", app)
         screenshot("Back restores previous page and details", app)
         tab("devices", app); tab("home", app)
@@ -346,7 +365,7 @@ final class AQSSReadOnlyUITests: XCTestCase {
         app.buttons["setup-next"].tap()
         label("Microphone off", app); label("No words recognized yet", app)
         app.buttons["Close"].firstMatch.tap()
-        tab("home", app); label("Unknown physical state", app)
+        tab("home", app); label("Connection not verified", app)
     }
 
     func testIllustratedApprovalFinishesWithoutClaimingConnection() {
@@ -368,7 +387,7 @@ final class AQSSReadOnlyUITests: XCTestCase {
         label("Review Roku approval", app)
         screenshot("Alexa illustrated account approval", app)
         app.buttons["setup-close"].tap()
-        tab("home", app); label("Unknown physical state", app)
+        tab("home", app); label("Connection not verified", app)
     }
 
     func testFinishedPairingPicturesAdvanceLocallyAndCloseKeepsThePhoneStep() {
@@ -389,12 +408,12 @@ final class AQSSReadOnlyUITests: XCTestCase {
         screenshot("Picture completion continues to phone setup", app)
         tap("Show Samsung steps", app); tap("Samsung — TV shows OK approval", app)
         app.buttons["setup-close"].tap(); label("Step 5 of 6", app)
-        exit(app); label("Unknown physical state", app)
+        exit(app); label("Connection not verified", app)
     }
 
     func testNewBrandPicturesAreReachable() {
         let app = launch()
-        tab("devices", app); tap("Illustrated setup guides", app); tap("Philips", app)
+        tab("devices", app); tap("Illustrated setup guides", app); tap("Philips", app); tap("Google TV / Android TV", app); tap("Other setup options", app)
         tap("Philips Google TV — pair the voice remote", app)
         app.buttons["setup-next"].tap()
         label("Start with your TV home screen", app)
@@ -402,7 +421,7 @@ final class AQSSReadOnlyUITests: XCTestCase {
         label("Open the profile menu", app)
         screenshot("Philips illustrated profile choice", app)
         app.buttons["setup-close"].tap()
-        tab("home", app); label("Unknown physical state", app)
+        tab("home", app); label("Connection not verified", app)
     }
 
     func testIllustratedGuideKeepsScrollContainerAndResetsPosition() {

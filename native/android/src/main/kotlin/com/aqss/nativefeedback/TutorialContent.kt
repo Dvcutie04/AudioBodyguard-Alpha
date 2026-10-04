@@ -103,7 +103,7 @@ object TutorialContent {
         TutorialFeature("input", "Voice input display and recognized words", "Review the recognized words on your phone.", "preview"),
     )
     val featuredIDs: List<String> = listOf("series_intro", "commercial_volume", "remote")
-    val pictureContinueRoutes: List<String> = listOf("samsung_ok", "samsung_pin", "lg_pair", "google_remote", "google_setup", "tcl_models", "google_fast", "google_samsung", "google_lg", "google_roku", "google_vidaa", "google_vizio", "google_legacy", "samsung_alexa", "lg_alexa", "sony_new", "sony_legacy", "roku_alexa", "vidaa_google", "vidaa_alexa", "vizio_pair", "vizio_account", "vizio_assist", "fire_alexa", "lg_account5", "lg_account6", "google_legacy_add", "fire_setup", "roku_phone")
+    val pictureContinueRoutes: List<String> = listOf("samsung_ok", "samsung_pin", "lg_pair", "google_remote", "google_setup", "tcl_models", "google_fast", "google_samsung", "google_lg", "google_roku", "google_vidaa", "google_vizio", "google_legacy", "samsung_alexa", "lg_alexa", "sony_new", "sony_legacy", "roku_alexa", "vidaa_google", "vidaa_alexa", "vizio_pair", "vizio_account", "vizio_assist", "fire_alexa", "lg_account5", "lg_account6", "google_legacy_add", "fire_setup", "roku_phone", "vizio_google", "vizio_alexa")
     const val previewNotice = "Picture guide"
     const val startLabel = "Start picture setup"
     const val moreFeaturesLabel = "More features"

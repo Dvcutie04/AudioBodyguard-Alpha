@@ -159,6 +159,21 @@ tap_scroll_label "Amazon Alexa" beginner_home_choice
 tap_tutorial_label "Next" beginner_to_plan
 capture_ui beginner_step_4
 assert_tutorial_label beginner_step_4 "1. Connect to your TV or home device"
+tap_scroll_label "Show Amazon Alexa steps" setup_alexa_scoped
+capture_ui setup_alexa_for_samsung
+assert_tutorial_label setup_alexa_for_samsung "Samsung / SmartThings → Alexa"
+if python3 tools/check_android_simulation_ui.py --assert-label "$artifact_dir/setup_alexa_for_samsung.xml" "LG ThinQ → Alexa" 2>/dev/null; then exit 1; fi
+if python3 tools/check_android_simulation_ui.py --assert-label "$artifact_dir/setup_alexa_for_samsung.xml" "Roku TV → Alexa" 2>/dev/null; then exit 1; fi
+tap_tutorial_label "Back to Tutorial" setup_alexa_close
+capture_ui setup_alexa_plan_return
+assert_tutorial_label setup_alexa_plan_return "Step 4 of 6"
+tap_tutorial_label "Exit tutorial" tutorial_exit_home
+capture_ui rose_home
+assert_tutorial_label rose_home "Connection not verified"
+assert_tutorial_label rose_home "AI head. Connection not verified. Black and white."
+tap_scroll_label "Back to Tutorial" tutorial_resume
+capture_ui tutorial_exact_resume
+assert_tutorial_label tutorial_exact_resume "Step 4 of 6"
 tap_scroll_label "Show Samsung steps" setup_from_plan
 tap_scroll_label "Samsung — TV shows OK approval" setup_samsung_route
 tap_tutorial_label "Start guide" setup_samsung_begin
@@ -189,7 +204,7 @@ assert_scroll_label "official phone app" phone_help_limits
 tap_scroll_label "Hide help" phone_help_close
 tap_scroll_label "Show Samsung steps" setup_from_phone
 tap_scroll_label "Samsung — TV shows OK approval" setup_phone_route
-tap_tutorial_label "Close" setup_phone_cancel
+tap_tutorial_label "Back to Tutorial" setup_phone_cancel
 capture_ui phone_cancelled_return
 assert_tutorial_label phone_cancelled_return "Step 5 of 6"
 tap_tutorial_label "Back" beginner_phone_back
@@ -208,7 +223,7 @@ capture_ui beginner_step_6
 assert_only_guide beginner_step_6
 tap_tutorial_label "Open full app" beginner_finish
 capture_ui beginner_finished
-assert_tutorial_label beginner_finished "TOUR FINISHED"
+assert_tutorial_label beginner_finished "Connection not verified"
 tap_tutorial_label "Replay connection guide" beginner_replay
 capture_ui beginner_replayed
 assert_tutorial_label beginner_replayed "Step 1 of 6"
@@ -283,7 +298,7 @@ tap_tutorial_label "Daylight" theme_daylight
 capture_ui daylight_settings
 tap_tutorial_label "Home" theme_home
 capture_ui daylight_home
-assert_tutorial_label daylight_home "Unknown physical state"
+assert_tutorial_label daylight_home "Connection not verified"
 tap_tutorial_label "Settings" theme_settings
 tap_tutorial_label "Midnight" theme_midnight
 tap_scroll_label "More features" future_open
@@ -349,7 +364,7 @@ adb shell settings put system user_rotation 0
 capture_ui portrait_tutorial
 tap_tutorial_label "Exit tutorial" guide_close
 capture_ui restored_home
-assert_tutorial_label restored_home "Unknown physical state"
+assert_tutorial_label restored_home "Connection not verified"
 
 tap_tutorial_label "Devices" roku_devices
 tap_scroll_label "Illustrated setup guides. TV pairing, Google Home & Alexa · one picture at a time" roku_open
@@ -418,11 +433,13 @@ capture_ui page_back_devices
 assert_tutorial_label page_back_devices "DEVICES"
 tap_tutorial_label "Back to previous page" page_back_home_button
 capture_ui page_back_home
-assert_tutorial_label page_back_home "Unknown physical state"
+assert_tutorial_label page_back_home "Connection not verified"
 
 tap_tutorial_label "Devices" philips_devices
 tap_scroll_label "Illustrated setup guides. TV pairing, Google Home & Alexa · one picture at a time" philips_open
 tap_scroll_label "Philips" philips_brand
+tap_scroll_label "Google TV / Android TV" philips_platform
+tap_scroll_label "Other setup options" philips_other
 tap_scroll_label "Philips Google TV — pair the voice remote" philips_route
 tap_tutorial_label "Start guide" philips_start
 tap_tutorial_label "Next" philips_profile

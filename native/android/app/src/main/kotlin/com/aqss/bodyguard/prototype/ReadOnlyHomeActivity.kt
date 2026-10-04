@@ -36,6 +36,7 @@ import java.util.ArrayDeque
 class ReadOnlyHomeActivity : Activity() {
     companion object { private const val PICTURE_REQUEST = 4101 }
     private var pendingPictureTarget: String? = null
+    private var selectedSetupSystem: String? = null
     private var page = "home"
     private var optionsExpanded = false
     private var advancedExpanded = false
@@ -84,6 +85,7 @@ class ReadOnlyHomeActivity : Activity() {
         savedInstanceState?.getParcelableArrayList<Bundle>("pageHistory")?.takeLast(32)?.forEach { pageHistory.addLast(it) }
         beginnerTourFinished = savedInstanceState?.getBoolean("beginnerTourFinished") ?: false
         pendingPictureTarget = savedInstanceState?.getString("pendingPictureTarget")?.takeIf { it in listOf("connectionPlan", "connectionCheck") }
+        selectedSetupSystem = savedInstanceState?.getString("selectedSetupSystem")
         require(coverage.state == SessionState.UNKNOWN_PHYSICAL_STATE && coverage.reason == "NO_OBSERVATION")
         build(savedInstanceState)
     }
@@ -100,7 +102,7 @@ class ReadOnlyHomeActivity : Activity() {
         brand = TextView(this).apply { text = if (resources.configuration.fontScale >= 1.5f) "AQSS" else "BODYGUARD"; textSize = 12f; setTypeface(null, Typeface.BOLD); setTextColor(skin.accent); letterSpacing = .13f }
         header.addView(brand, LinearLayout.LayoutParams(0, -2, 1f))
         header.addView(button("Jump to") { tutorial.chooseSection() }, LinearLayout.LayoutParams(-2, -2).apply { marginEnd = dp(8) })
-        help = button("Help") { tutorial.chooseTopic() }.apply { contentDescription = "Help & tutorials" }
+        help = roseButton(this, skin, "Help") { tutorial.chooseTopic() }.apply { contentDescription = "Help & tutorials" }
         header.addView(help)
         root.addView(header)
         val body = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL }
@@ -124,7 +126,7 @@ class ReadOnlyHomeActivity : Activity() {
                 if (area == "checklist") checklistExpanded = true
                 renderPage()
             },
-            restorePage = { previous -> page = previous; renderPage() },
+            restorePage = { previous -> if (page != previous) rememberPage(); page = previous; renderPage() },
             focusHelp = { help.requestFocus(); help.sendAccessibilityEvent(android.view.accessibility.AccessibilityEvent.TYPE_VIEW_FOCUSED) },
             finished = { id -> if (id == "getting_started") beginnerTourFinished = true },
             stateChanged = {
@@ -305,33 +307,32 @@ class ReadOnlyHomeActivity : Activity() {
 
     private fun homePage() {
         card("welcome") { c ->
-            val showFinished = beginnerTourFinished && !tutorial.isBeginner
-            label(c, if (showFinished) "TOUR FINISHED" else "YOUR TV & SMART HOME", 12f, skin.violet, true)
-            label(c, if (showFinished) "Explore at your pace." else "Meet Audio Bodyguard.", 23f, bold = true)
-            if (tutorial.isBeginner) label(c, "Use Next in the guide below to continue.", 17f, skin.accent, true)
-            else action(c, if (beginnerTourFinished) "Replay connection guide" else "TV & smart-home guide", true) { tutorial.start("getting_started") }
-        }
-        card("coverage") { c ->
-            label(c, "COVERAGE", 12f, skin.muted, true)
-            val row = LinearLayout(this).apply { gravity = Gravity.CENTER_VERTICAL }
-            val words = vertical()
-            row.addView(words, LinearLayout.LayoutParams(0, -2, 1f))
-            label(words, "Unknown physical state", 23f, skin.warning, true)
-            if ("coverage" in detailSections) label(words, "No output observation", 15f, skin.text, true)
-            c.addView(row)
+            c.addView(ConnectionHeadView(this, coverage.state == SessionState.ACTIVE), LinearLayout.LayoutParams(-1, dp(220)).apply { bottomMargin = dp(12) })
+            label(c, if (coverage.state == SessionState.ACTIVE) "Connection active" else "Connection not verified", 18f, bold = true)
+            action(c, if (beginnerTourFinished) "Replay connection guide" else "TV & smart-home guide", true) { tutorial.start("getting_started") }
+            if (tutorial.hasPausedTutorial) c.addView(roseButton(this, skin, "Back to Tutorial") { tutorial.returnToTutorial() }, LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(8) })
             action(c, if ("coverage" in detailSections) "Hide status details" else "Status details", expanded = "coverage" in detailSections) { toggleDetails("coverage") }
-            if ("coverage" in detailSections) action(c, "Review readiness", true) { checklistExpanded = true; jump("capability") }
+            if ("coverage" in detailSections) {
+                label(c, "Unknown physical state", 18f, skin.warning, true)
+                label(c, "No output observation", 15f)
+                label(c, "This preview has no verified TV connection. Setup pictures explain the official apps.", 15f, skin.muted)
+                targets["coverage"] = c
+                action(c, "Review readiness", true) { checklistExpanded = true; jump("capability") }
+            }
         }
     }
     private fun openSetup(group: String = "") {
         pendingPictureTarget = tutorial.pictureTarget
         @Suppress("DEPRECATION")
-        startActivityForResult(Intent(this, SetupGuideActivity::class.java).putExtra("group", group).putExtra("dark", skin.dark), PICTURE_REQUEST)
+        val currentBrand = tutorial.selectedTV
+        val remembered = selectedSetupSystem?.takeIf { currentBrand.isEmpty() || it == currentBrand || it.startsWith(currentBrand + "_") }
+        startActivityForResult(Intent(this, SetupGuideActivity::class.java).putExtra("group", group).putExtra("deviceGroup", remembered ?: currentBrand).putExtra("returningToTutorial", tutorial.isActive).putExtra("dark", skin.dark), PICTURE_REQUEST)
     }
     @Deprecated("Existing framework Activity shell; validates local learning results only")
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
         super.onActivityResult(requestCode, resultCode, data)
         if (requestCode != PICTURE_REQUEST) return
+        data?.getStringExtra(SetupGuideActivity.SELECTED_SYSTEM)?.takeIf { id -> com.aqss.nativefeedback.SetupContent.groups.any { it.id == id } }?.let { selectedSetupSystem = it }
         val expected = pendingPictureTarget
         pendingPictureTarget = null
         if (resultCode == RESULT_OK && expected != null && ::tutorial.isInitialized) {
@@ -489,6 +490,7 @@ class ReadOnlyHomeActivity : Activity() {
         outState.putParcelableArrayList("pageHistory", ArrayList(pageHistory))
         outState.putBoolean("beginnerTourFinished", beginnerTourFinished)
         outState.putString("pendingPictureTarget", pendingPictureTarget)
+        outState.putString("selectedSetupSystem", selectedSetupSystem)
         tutorial.save(outState)
     }
     override fun onSaveInstanceState(outState: Bundle) { savePresentation(outState); super.onSaveInstanceState(outState) }

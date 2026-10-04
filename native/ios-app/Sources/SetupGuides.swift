@@ -3,6 +3,7 @@ import SwiftUI
 struct SetupGuideRequest: Identifiable {
     let id = UUID()
     let group: String
+    var deviceGroup = ""
 }
 
 /// Local, illustrative instructions. No device session, credentials or control API.
@@ -14,6 +15,9 @@ struct SetupGuidesView: View {
     ]
     let theme: AppTheme
     let initialGroup: String
+    var deviceGroup = ""
+    var returningToTutorial = false
+    var onDeviceGroupSelected: ((String) -> Void)? = nil
     var onVoiceCheck: (() -> Void)? = nil
     var onPartOne: ((String) -> Void)? = nil
     var onFinish: ((String) -> Void)? = nil
@@ -36,11 +40,32 @@ struct SetupGuidesView: View {
     @State private var history: [Location] = []
     @StateObject private var progress = SetupProgressStore()
     @AccessibilityFocusState private var headingFocused: String?
-    private var group: AQSSSetupGroup? { AQSSSetupContent.groups.first { $0.id == groupID } }
+    private var group: AQSSSetupGroup? {
+        guard let original = AQSSSetupContent.groups.first(where: { $0.id == groupID }) else { return nil }
+        guard ["google", "alexa", "both"].contains(groupID),
+              let tv = AQSSSetupContent.groups.first(where: { $0.id == deviceGroup }) else { return original }
+        let routes = original.routes.filter { tv.routes.contains($0) }
+        let primary = routes.contains("vizio_" + groupID) ? ["vizio_" + groupID] : original.primaryRoutes.filter { routes.contains($0) }
+        return AQSSSetupGroup(id: original.id, title: original.title + " • " + tv.title, routes: routes, primaryRoutes: primary.isEmpty ? Array(routes.prefix(1)) : primary)
+    }
     private var route: AQSSSetupRoute? { AQSSSetupContent.routes.first { $0.id == routeID } }
-    private var step: AQSSSetupStep? { guard let route = route, route.steps.indices.contains(index) else { return nil }; return route.steps[index] }
+    private var step: AQSSSetupStep? {
+        guard let route = route, route.steps.indices.contains(index) else { return nil }
+        let step = route.steps[index]
+        guard step.screen == "App Store or Google Play" else { return step }
+        return AQSSSetupStep(title: step.title, instruction: step.instruction.replacingOccurrences(of: "App Store or Google Play", with: "App Store"), surface: step.surface, screen: "iPhone • App Store", items: step.items.map { $0 == "Install" ? "Get" : $0 }, focus: step.focus, action: step.action, note: step.note)
+    }
     private var key: String { "\(groupID)-\(routeID ?? "")-\(index)-\(mismatch)" }
     private var title: String { mismatch ? "Find the right screen" : step?.title ?? route?.title ?? (group == nil ? "Choose your TV or app" : group!.title) }
+    private var platforms: [(String, String)] {
+        switch groupID {
+        case "tcl": return [("Roku TV", "tcl_roku"), ("Google TV / Android TV", "tcl_google"), ("Fire TV", "tcl_fire")]
+        case "hisense": return [("Roku TV", "hisense_roku"), ("Google TV / Android TV", "hisense_google"), ("VIDAA", "hisense_vidaa"), ("Fire TV", "hisense_fire")]
+        case "philips": return [("Google TV / Android TV", "philips_google"), ("Roku TV", "philips_roku")]
+        case "insignia": return [("Roku TV", "insignia_roku"), ("Fire TV", "insignia_fire")]
+        default: return []
+        }
+    }
 
     var body: some View {
         VStack(spacing: 0) {
@@ -51,8 +76,8 @@ struct SetupGuidesView: View {
                             .font(.headline).accessibilityLabel("Step \(index + 1) of \(route.steps.count)").accessibilityIdentifier("setup-progress")
                     } else { Label("Illustrated setup", systemImage: "rectangle.stack").font(.headline) }
                     Spacer(minLength: 8)
-                    Button { dismiss() } label: { navigationLabel("Close", icon: "xmark") }
-                        .buttonStyle(AppButtonStyle(theme: theme)).accessibilityIdentifier("setup-close")
+                    RoseButton(title: returningToTutorial ? "Back to Tutorial" : "Close", theme: theme) { dismiss() }
+                        .accessibilityIdentifier("setup-close")
                 }
                 if let route = route, index >= 0 {
                     ProgressView(value: Double(index + 1), total: Double(route.steps.count)).tint(theme.accent).accessibilityHidden(true)
@@ -79,14 +104,15 @@ struct SetupGuidesView: View {
                                 control("My screen looks different", icon: "questionmark.circle", id: "setup-mismatch") { remember(); mismatch = true; detailsExpanded = false; referencesExpanded = false }
                             }
                         } else { introduction(route) }
-                    } else if groupID == "tcl" {
+                    } else if !platforms.isEmpty {
                         Text("Choose the name on your TV’s home screen.").foregroundColor(theme.muted)
-                        platformChoice("Roku TV", subtitle: "Roku name · left menu and right panel", group: "tcl_roku", blue: true)
-                        platformChoice("Google TV / Android TV", subtitle: "Google name · app tiles and a settings gear", group: "tcl_google", blue: false)
-                        platformChoice("Fire TV", subtitle: "Fire TV name · Amazon account", group: "tcl_fire", blue: false)
+                        ForEach(platforms, id: \.1) { name, id in
+                            platformChoice(name, subtitle: "The TV must show " + name, group: id, blue: id.hasSuffix("_roku"))
+                        }
                     }
                     else if let group = group {
-                        Text("Start here. Follow one picture at a time.").foregroundColor(theme.muted)
+                        Text(group.routes.isEmpty ? "No documented route for this combination. Choose the system shown on your TV." : "Start here. Follow one picture at a time.").foregroundColor(theme.muted)
+                        if group.routes.isEmpty { control("Choose another TV or app", icon: "tv", id: "setup-other-group") { chooseGroup("") } }
                         ForEach(group.primaryRoutes, id: \.self) { id in
                             if let route = AQSSSetupContent.routes.first(where: { $0.id == id }) {
                                 control(id == "roku_network" ? "Start TV setup" : route.title, icon: "rectangle.stack", id: "setup-route-\(id)", primary: group.primaryRoutes.count == 1) { chooseRoute(id) }
@@ -104,7 +130,7 @@ struct SetupGuidesView: View {
                         }
                     } else {
                         Text("Choose a name to start the pictures.").foregroundColor(theme.muted)
-                        ForEach(AQSSSetupContent.groups.filter { !["both", "neither"].contains($0.id) && !$0.id.hasPrefix("tcl_") }, id: \.id) { item in
+                        ForEach(AQSSSetupContent.groups.filter { !["both", "neither"].contains($0.id) && !$0.id.contains("_") }, id: \.id) { item in
                             control(item.title, icon: item.id == "voice" ? "mic" : ["google", "alexa"].contains(item.id) ? "house" : "tv", id: "setup-group-\(item.id)") { chooseGroup(item.id) }
                         }
                     }
@@ -143,12 +169,13 @@ struct SetupGuidesView: View {
     private func chooseGroup(_ id: String, recording: Bool = true) {
         if recording { remember() }
         groupID = AQSSSetupContent.groups.contains { $0.id == id } ? id : ""
-        routeID = groupID == "voice" ? "voice" : nil
+        routeID = groupID == "voice" ? "voice" : groupID == "phone" ? "phone_iphone" : nil
         index = groupID == "voice" ? 0 : -1
         mismatch = false
         detailsExpanded = false
         pickerExpanded = false
         referencesExpanded = false
+        if !["", "google", "alexa", "both", "neither", "phone", "voice"].contains(groupID) { onDeviceGroupSelected?(groupID) }
     }
     private func control(_ title: String, icon: String, id: String, primary: Bool = false, action: @escaping () -> Void) -> some View {
         Button(action: action) {
@@ -167,16 +194,17 @@ struct SetupGuidesView: View {
         } else { Label(title, systemImage: icon) }
     }
     @ViewBuilder private func introduction(_ route: AQSSSetupRoute) -> some View {
-        HStack(spacing: 20) { Image(systemName: "tv"); Image(systemName: "arrow.right"); Image(systemName: "iphone") }
+        HStack(spacing: 20) { Image(systemName: route.id.hasPrefix("phone_") ? "wifi" : "tv"); Image(systemName: "arrow.right"); Image(systemName: "iphone") }
             .font(.system(size: 36)).foregroundColor(theme.violet).accessibilityHidden(true)
-        Text(route.id == "roku_phone" ? "Keep your phone and TV on the same Wi-Fi." : route.steps.first?.surface == "tv" ? "Have your TV remote ready." : "Have your phone and TV ready.").font(.body)
+        Text(route.id.hasPrefix("phone_") ? "Have your phone and home Wi-Fi password ready." : route.id == "roku_phone" ? "Keep your phone and TV on the same Wi-Fi." : route.steps.first?.surface == "tv" ? "Have your TV remote ready." : "Have your phone and TV ready.").font(.body)
         Text("\(route.steps.count) pictures. One step at a time.").foregroundColor(theme.accent)
+        Text(route.appliesTo).font(.caption).foregroundColor(theme.muted)
         if let saved = resumeIndex(route) { Text("Continue at picture \(saved + 1).").foregroundColor(theme.accent) }
         disclosure("More details", id: "setup-details") { detailsExpanded.toggle() }
         if detailsExpanded {
             VStack(alignment: .leading, spacing: 14) {
-                Text(route.appliesTo).font(.callout)
                 Text("Use the official setup screens for passwords and approvals.").font(.callout)
+                control("Phone Wi-Fi pictures", icon: "wifi", id: "setup-phone-wifi") { chooseGroup("phone") }
                 if route.id == "roku_network" || route.id == "roku_model" {
                     control("I’m already in Settings", icon: "gearshape", id: "setup-skip-home") { remember(); index = 2; detailsExpanded = false; referencesExpanded = false }
                 }
@@ -253,6 +281,7 @@ struct SetupGuidesView: View {
         guard let previous = history.popLast() else { dismiss(); return }
         groupID = previous.group; routeID = previous.route; index = previous.index; mismatch = previous.mismatch
         detailsExpanded = previous.details; pickerExpanded = previous.picker; referencesExpanded = previous.references
+        if !["", "google", "alexa", "both", "neither", "phone", "voice"].contains(groupID) { onDeviceGroupSelected?(groupID) }
     }
 }
 

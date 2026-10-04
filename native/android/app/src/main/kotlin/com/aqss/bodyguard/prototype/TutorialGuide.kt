@@ -36,6 +36,9 @@ class TutorialGuide(
     private val content = column()
     private val controls = column()
     private var previousPage = "home"
+    private var pausedTutorial: Bundle? = null
+    val hasPausedTutorial get() = pausedTutorial != null
+    val selectedTV get() = guide.selected("chooseTV")?.id ?: ""
     private var moreFeatures = false
     private var helpExpanded = false
     private var renderVersion = 0
@@ -86,7 +89,7 @@ class TutorialGuide(
     }
     fun start(id: String) {
         if (!isActive) previousPage = currentPage()
-        if (guide.start(id)) render()
+        if (guide.start(id)) { pausedTutorial = null; render() }
     }
     private fun render(preserveScroll: Boolean = false) {
         val topic = guide.topic ?: return
@@ -97,7 +100,7 @@ class TutorialGuide(
         header.removeAllViews(); content.removeAllViews(); controls.removeAllViews()
         val top = LinearLayout(activity).apply { gravity = Gravity.CENTER_VERTICAL }
         top.addView(TextView(activity).apply { text = "Step ${guide.index + 1} of ${topic.steps.size}"; textSize = 15f; setTextColor(skin.muted); setTypeface(null, Typeface.BOLD) }, LinearLayout.LayoutParams(0, -2, 1f))
-        top.addView(button("Exit") { close() }.apply { contentDescription = "Exit tutorial" })
+        top.addView(roseButton(activity, skin, "Exit Home") { exitToHome() }.apply { contentDescription = "Exit tutorial" })
         header.addView(top)
         if (isBeginner) text(header, TutorialContent.previewNotice, 12f, skin.muted).setPadding(0, dp(4), 0, 0)
         content.addView(TextView(activity).apply {
@@ -127,6 +130,7 @@ class TutorialGuide(
             }, LinearLayout.LayoutParams(-1, -2).apply { bottomMargin = dp(10) })
         }
         if (step.target in listOf("connectionPlan", "connectionCheck")) {
+            if (step.target == "connectionCheck") content.addView(button("Phone Wi-Fi pictures", primary = true) { openSetup("phone") }, LinearLayout.LayoutParams(-1, -2).apply { bottomMargin = dp(12) })
             for (target in listOf("chooseTV", "chooseHome")) guide.selected(target)?.takeIf { it.id !in listOf("both", "neither") }?.let { selected ->
                 content.addView(button("Show ${selected.title} steps") { openSetup(selected.id) }, LinearLayout.LayoutParams(-1, -2).apply { bottomMargin = dp(12) })
             }
@@ -219,12 +223,25 @@ class TutorialGuide(
         stateChanged()
         if (restore) { restorePage(previousPage); focusHelp() }
     }
+    private fun exitToHome() {
+        val saved = Bundle()
+        pausedTutorial = null; save(saved); pausedTutorial = saved
+        close(restore = false); restorePage("home"); focusHelp()
+    }
+    fun returnToTutorial() {
+        val saved = pausedTutorial
+        if (saved == null) { start("getting_started"); return }
+        pausedTutorial = null
+        saved.putString("tutorialPreviousPage", currentPage())
+        restore(saved)
+    }
     fun back() {
         if (guide.index > 0) { guide.back(); render() } else close()
     }
     fun pause() { /* No animation or timer to stop. */ }
     fun resume() { if (isActive) { footer.visibility = View.VISIBLE; stateChanged() } }
     fun save(bundle: Bundle) {
+        pausedTutorial?.let { bundle.putBundle("pausedTutorial", it) }
         guide.topicId?.let { id ->
             bundle.putString("tutorialTopic", id); bundle.putInt("tutorialIndex", guide.index)
             bundle.putString("tutorialPreviousPage", previousPage)
@@ -232,6 +249,7 @@ class TutorialGuide(
         }
     }
     fun restore(bundle: Bundle?) {
+        pausedTutorial = bundle?.getBundle("pausedTutorial")
         val id = bundle?.getString("tutorialTopic") ?: return
         val saved = TutorialContent.choices.keys.mapNotNull { key -> bundle.getString("guide-$key")?.let { key to it } }.toMap()
         guide.restore(id, bundle.getInt("tutorialIndex"), saved)

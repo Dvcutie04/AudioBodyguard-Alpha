@@ -30,6 +30,7 @@ class SetupGuideActivity : Activity() {
     companion object {
         const val COMPLETED_ROUTE = "completedPictureRoute"
         const val COMPLETED_TV_ROUTE = "completedTVPictureRoute"
+        const val SELECTED_SYSTEM = "selectedSetupSystem"
         private val repeatedPictureNotes = setOf(
             "Use your real device. This picture is an illustration.",
             "Finishing this guide does not connect Audio Bodyguard or activate protection.",
@@ -56,9 +57,25 @@ class SetupGuideActivity : Activity() {
     private var referencesExpanded = false
     private val history = ArrayDeque<Bundle>()
     private var completedTVRoute: String? = null
+    private var selectedSystem: String? = null
     private var backCallback: OnBackInvokedCallback? = null
-    private val group get() = SetupContent.groups.firstOrNull { it.id == groupId }
+    private val group get(): com.aqss.nativefeedback.SetupGroup? {
+        val original = SetupContent.groups.firstOrNull { it.id == groupId } ?: return null
+        val tv = SetupContent.groups.firstOrNull { it.id == (selectedSystem ?: intent.getStringExtra("deviceGroup")) }
+        if (groupId !in listOf("google", "alexa", "both") || tv == null) return original
+        val routes = original.routes.filter { it in tv.routes }
+        val primary = if ("vizio_$groupId" in routes) listOf("vizio_$groupId") else original.primaryRoutes.filter { it in routes }
+        return original.copy(title = "${original.title} • ${tv.title}", routes = routes, primaryRoutes = primary.ifEmpty { routes.take(1) })
+    }
     private val route get() = SetupContent.routes.firstOrNull { it.id == routeId }
+    private val phoneRoute get() = when (Build.MANUFACTURER.lowercase()) { "samsung" -> "phone_galaxy"; "google" -> "phone_pixel"; else -> null }
+    private val platforms get() = when (groupId) {
+        "tcl" -> listOf("Roku TV" to "tcl_roku", "Google TV / Android TV" to "tcl_google", "Fire TV" to "tcl_fire")
+        "hisense" -> listOf("Roku TV" to "hisense_roku", "Google TV / Android TV" to "hisense_google", "VIDAA" to "hisense_vidaa", "Fire TV" to "hisense_fire")
+        "philips" -> listOf("Google TV / Android TV" to "philips_google", "Roku TV" to "philips_roku")
+        "insignia" -> listOf("Roku TV" to "insignia_roku", "Fire TV" to "insignia_fire")
+        else -> emptyList()
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         val dark = intent.getBooleanExtra("dark", true)
@@ -67,8 +84,9 @@ class SetupGuideActivity : Activity() {
         skin = InterfaceTheme(this, dark)
         groupId = (savedInstanceState?.getString("group") ?: intent.getStringExtra("group") ?: "")
             .takeIf { id -> SetupContent.groups.any { it.id == id } } ?: ""
-        routeId = if (savedInstanceState == null && groupId == "voice") "voice" else savedInstanceState?.getString("route")?.takeIf { group?.routes?.contains(it) == true }
+        routeId = if (savedInstanceState == null && groupId == "voice") "voice" else if (savedInstanceState == null && groupId == "phone") phoneRoute else savedInstanceState?.getString("route")?.takeIf { group?.routes?.contains(it) == true }
         completedTVRoute = savedInstanceState?.getString("completedTVRoute")?.takeIf { it in listOf("roku_network", "roku_model") }
+        selectedSystem = savedInstanceState?.getString(SELECTED_SYSTEM) ?: intent.getStringExtra("deviceGroup")
         completedTVRoute?.let { setResult(RESULT_OK, Intent().putExtra(COMPLETED_TV_ROUTE, it)) }
         index = if (savedInstanceState == null && groupId == "voice") 0 else (savedInstanceState?.getInt("index", -1) ?: -1).takeIf { it == -1 || route?.steps?.indices?.contains(it) == true } ?: -1
         mismatch = savedInstanceState?.getBoolean("mismatch", false) ?: false
@@ -86,7 +104,7 @@ class SetupGuideActivity : Activity() {
         val topRow = LinearLayout(this).apply { gravity = Gravity.CENTER_VERTICAL }
         progressLabel = TextView(this).apply { textSize = 17f; setTextColor(skin.text); setTypeface(null, Typeface.BOLD) }
         topRow.addView(progressLabel, LinearLayout.LayoutParams(0, -2, 1f))
-        topRow.addView(button("Close") { finish() }); header.addView(topRow)
+        topRow.addView(roseButton(this, skin, if (intent.getBooleanExtra("returningToTutorial", false)) "Back to Tutorial" else "Close") { finish() }); header.addView(topRow)
         progressBar = ProgressBar(this, null, android.R.attr.progressBarStyleHorizontal).apply {
             progressTintList = android.content.res.ColorStateList.valueOf(skin.accent)
             importantForAccessibility = View.IMPORTANT_FOR_ACCESSIBILITY_NO
@@ -134,7 +152,7 @@ class SetupGuideActivity : Activity() {
         box.addView(button(title, primary, block).apply { gravity = Gravity.START or Gravity.CENTER_VERTICAL }, LinearLayout.LayoutParams(-1, -2).apply { bottomMargin = dp(10) })
     }
     private fun chooseGroup(id: String) {
-        remember(); groupId = id; routeId = if (id == "voice") "voice" else null; index = if (id == "voice") 0 else -1; mismatch = false; detailsExpanded = false; pickerExpanded = false; referencesExpanded = false; render()
+        remember(); groupId = id; routeId = if (id == "voice") "voice" else if (id == "phone") phoneRoute else null; index = if (id == "voice") 0 else -1; mismatch = false; detailsExpanded = false; pickerExpanded = false; referencesExpanded = false; render()
     }
     private fun location() = Bundle().apply {
         putString("group", groupId); putString("route", routeId); putInt("index", index); putBoolean("mismatch", mismatch)
@@ -157,9 +175,13 @@ class SetupGuideActivity : Activity() {
     private fun render(preserveScroll: Boolean = false) {
         val oldScroll = if (preserveScroll) scroll.scrollY else 0
         val version = ++renderVersion
+        if (groupId !in listOf("", "google", "alexa", "both", "neither", "phone", "voice")) selectedSystem = groupId
+        setResult(RESULT_OK, resultPayload())
         content.removeAllViews()
         val route = route
-        val step = route?.steps?.getOrNull(index)
+        val step = route?.steps?.getOrNull(index)?.let { original ->
+            if (original.screen == "App Store or Google Play") original.copy(screen = "Android • Google Play", instruction = original.instruction.replace("App Store or Google Play", "Google Play")) else original
+        }
         if (route != null && route.id != "voice" && step != null && !mismatch) saveProgress(route, index)
         progressLabel.text = if (route != null && index >= 0) "Step ${index + 1} of ${route.steps.size}" else "Illustrated setup"
         progressBar.visibility = if (route != null && index >= 0) View.VISIBLE else View.GONE
@@ -181,9 +203,9 @@ class SetupGuideActivity : Activity() {
                 }
             }
             route != null -> intro(route)
-            groupId == "tcl" -> {
+            platforms.isNotEmpty() -> {
                 words(content, "Choose the name on your TV’s home screen.", color = skin.muted)
-                for ((id, name) in listOf("tcl_roku" to "Roku TV", "tcl_google" to "Google TV / Android TV", "tcl_fire" to "Fire TV")) {
+                for ((name, id) in platforms) {
                     content.addView(button(name) { chooseGroup(id) }.apply {
                         setCompoundDrawablesWithIntrinsicBounds(InterfaceSymbol(skin, "tv", skin.accent), null, null, null)
                         compoundDrawablePadding = dp(12); gravity = Gravity.START or Gravity.CENTER_VERTICAL; minHeight = dp(64)
@@ -192,7 +214,8 @@ class SetupGuideActivity : Activity() {
             }
             group != null -> {
                 val selectedGroup = group!!
-                words(content, "Start here. Follow one picture at a time.", color = skin.muted)
+                words(content, if (selectedGroup.routes.isEmpty()) "No documented route for this combination. Choose the system shown on your TV." else "Start here. Follow one picture at a time.", color = skin.muted)
+                if (selectedGroup.routes.isEmpty()) action(content, "Choose another TV or app") { chooseGroup("") }
                 selectedGroup.primaryRoutes.forEach { id -> SetupContent.routes.firstOrNull { it.id == id }?.let { guide ->
                     action(content, if (id == "roku_network") "Start TV setup" else guide.title, selectedGroup.primaryRoutes.size == 1) { chooseRoute(id) }
                 } }
@@ -201,7 +224,7 @@ class SetupGuideActivity : Activity() {
             }
             else -> {
                 words(content, "Choose a name to start the pictures.", color = skin.muted)
-                SetupContent.groups.filter { it.id !in listOf("both", "neither") && !it.id.startsWith("tcl_") }.forEach { choice -> action(content, choice.title) { chooseGroup(choice.id) } }
+                SetupContent.groups.filter { it.id !in listOf("both", "neither") && !it.id.contains("_") }.forEach { choice -> action(content, choice.title) { chooseGroup(choice.id) } }
             }
         }
         backButton.visibility = if (group != null || route != null || history.isNotEmpty()) View.VISIBLE else View.GONE
@@ -227,22 +250,23 @@ class SetupGuideActivity : Activity() {
             if (route.id in listOf("roku_network", "roku_model")) {
                 remember()
                 saveProgress(route, null); completedTVRoute = route.id
-                setResult(RESULT_OK, Intent().putExtra(COMPLETED_TV_ROUTE, route.id))
+            setResult(RESULT_OK, resultPayload())
                 routeId = "roku_phone"; index = -1; detailsExpanded = false; referencesExpanded = false; render(); return
             }
             if (route.id == "voice" && !intent.getBooleanExtra("returnToVoice", false)) startActivity(Intent(this, InputAssistanceActivity::class.java).putExtra("mode", "voice").putExtra("dark", skin.dark))
             saveProgress(route, null)
-            if (route.id != "voice") setResult(RESULT_OK, Intent().putExtra(COMPLETED_TV_ROUTE, completedTVRoute).putExtra(COMPLETED_ROUTE, route.id))
+            if (route.id != "voice") setResult(RESULT_OK, resultPayload().putExtra(COMPLETED_ROUTE, route.id))
             finish()
         } else { remember(); index = if (index < 0) resumeIndex(route) ?: 0 else index + 1; detailsExpanded = false; referencesExpanded = false; render() }
     }
     private fun intro(route: SetupRoute) {
-        words(content, if (route.id == "roku_phone") "Keep your phone and TV on the same Wi-Fi." else if (route.steps.first().surface == "tv") "Have your TV remote ready." else "Have your phone and TV ready.")
+        words(content, if (route.id.startsWith("phone_")) "Have your phone and home Wi-Fi password ready." else if (route.id == "roku_phone") "Keep your phone and TV on the same Wi-Fi." else if (route.steps.first().surface == "tv") "Have your TV remote ready." else "Have your phone and TV ready.")
         words(content, "${route.steps.size} pictures. One step at a time.", 18f, skin.accent)
+        words(content, route.appliesTo, 13f, skin.muted)
         resumeIndex(route)?.let { saved -> words(content, "Continue at picture ${saved + 1}.", color = skin.accent) }
         action(content, if (detailsExpanded) "Hide details" else "More details") { detailsExpanded = !detailsExpanded; render(true) }
         if (detailsExpanded) {
-            words(content, route.appliesTo, color = skin.muted)
+            action(content, "Phone Wi-Fi pictures") { chooseGroup("phone") }
             words(content, "Use the official setup screens for passwords and approvals.", color = skin.muted)
             if (route.id in listOf("roku_network", "roku_model")) action(content, "I’m already in Settings") { remember(); index = 2; detailsExpanded = false; referencesExpanded = false; render() }
             if (resumeIndex(route) != null) action(content, "Start from the beginning") { remember(); saveProgress(route, null); index = 0; detailsExpanded = false; render() }
@@ -253,6 +277,7 @@ class SetupGuideActivity : Activity() {
             if (referencesExpanded) sources(route)
         }
     }
+    private fun resultPayload() = Intent().putExtra(SELECTED_SYSTEM, selectedSystem).putExtra(COMPLETED_TV_ROUTE, completedTVRoute)
     private fun sources(route: SetupRoute) {
         words(content, "Manufacturer references", 18f, bold = true)
         route.sources.forEach { id -> SetupContent.sources.firstOrNull { it.id == id }?.let { source ->
@@ -371,7 +396,7 @@ class SetupGuideActivity : Activity() {
     @Deprecated("Compatibility for Android 12 and earlier")
     override fun onBackPressed() { back() }
     override fun onSaveInstanceState(outState: Bundle) {
-        outState.putAll(location()); outState.putString("completedTVRoute", completedTVRoute); outState.putParcelableArrayList("setupHistory", ArrayList(history)); super.onSaveInstanceState(outState)
+        outState.putAll(location()); outState.putString("completedTVRoute", completedTVRoute); outState.putString(SELECTED_SYSTEM, selectedSystem); outState.putParcelableArrayList("setupHistory", ArrayList(history)); super.onSaveInstanceState(outState)
     }
     override fun onDestroy() {
         if (Build.VERSION.SDK_INT >= 33) backCallback?.let { onBackInvokedDispatcher.unregisterOnBackInvokedCallback(it) }
