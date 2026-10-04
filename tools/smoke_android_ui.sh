@@ -202,6 +202,24 @@ if python3 tools/check_android_simulation_ui.py --assert-label "$artifact_dir/se
 tap_scroll_label "Need help?" phone_help_open
 assert_scroll_label "official phone app" phone_help_limits
 tap_scroll_label "Hide help" phone_help_close
+tap_scroll_label "Phone Wi-Fi pictures" phone_wifi_open
+capture_ui pixel_wifi_intro
+assert_tutorial_label pixel_wifi_intro "Google Pixel — connect to your home Wi-Fi"
+tap_tutorial_label "Start guide" pixel_wifi_start
+tap_tutorial_label "Next" pixel_wifi_settings
+capture_ui pixel_wifi_picture
+assert_tutorial_label pixel_wifi_picture "Network & internet"
+tap_scroll_label "More details" pixel_wifi_details
+tap_scroll_label "My screen looks different" pixel_wifi_mismatch
+tap_scroll_label "Choose another model or menu" phone_wifi_choose_system
+tap_scroll_label "Samsung Galaxy — connect to your home Wi-Fi" galaxy_wifi_open
+tap_tutorial_label "Start guide" galaxy_wifi_start
+tap_tutorial_label "Next" galaxy_wifi_settings
+capture_ui galaxy_wifi_picture
+assert_tutorial_label galaxy_wifi_picture "Connections"
+tap_tutorial_label "Back to Tutorial" phone_wifi_close
+capture_ui phone_wifi_plan_return
+assert_tutorial_label phone_wifi_plan_return "Step 5 of 6"
 tap_scroll_label "Show Samsung steps" setup_from_phone
 tap_scroll_label "Samsung — TV shows OK approval" setup_phone_route
 tap_tutorial_label "Back to Tutorial" setup_phone_cancel
