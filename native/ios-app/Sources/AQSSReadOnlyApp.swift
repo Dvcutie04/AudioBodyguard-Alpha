@@ -70,7 +70,7 @@ struct RoseButton: View {
                     }
                     Image("TribalRose").resizable().scaledToFit()
                 }.frame(width: 52, height: 68).accessibilityHidden(true)
-                if !compact && !textSize.isAccessibilitySize { Text(title).fixedSize(horizontal: false, vertical: true) }
+                if !compact && !textSize.isAccessibilitySize { Text(title).fixedSize(horizontal: title == "Help", vertical: true) }
             }.frame(minWidth: 44, minHeight: 44)
         }.buttonStyle(AppButtonStyle(theme: theme)).accessibilityLabel(title)
     }
@@ -267,7 +267,9 @@ private struct ReadOnlyHomeView: View {
                 Button { backPage() } label: { Image(systemName: "arrow.left").frame(width: 24, height: 24) }.accessibilityLabel("Back").accessibilityIdentifier("page-back")
             }
             Image(systemName: "waveform.path").font(.title2).foregroundColor(theme.accent).accessibilityHidden(true)
-            if !textSize.isAccessibilitySize && pageHistory.isEmpty { Text("BODYGUARD").font(.caption.weight(.bold)).tracking(2) }
+            if !textSize.isAccessibilitySize && pageHistory.isEmpty {
+                Text("BODYGUARD").font(.caption.weight(.bold)).tracking(2).lineLimit(1).minimumScaleFactor(0.8)
+            }
             Spacer(minLength: 0)
             Button { navigationVisible = true } label: { Image(systemName: "square.grid.2x2").frame(width: 24, height: 24).contentShape(Rectangle()) }
                 .accessibilityLabel("Jump to").accessibilityIdentifier("section-navigation")
