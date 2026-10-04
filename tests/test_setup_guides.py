@@ -4,6 +4,19 @@ import json
 from pathlib import Path
 
 
+def test_default_setup_choices_are_bounded_and_extra_routes_are_preserved():
+    root = Path(__file__).resolve().parents[1]
+    data = json.loads((root / 'contracts/setup_guides_v1.json').read_text())
+    groups = {group['id']: group for group in data['groups']}
+    for group in groups.values():
+        primary = group['primary_routes']
+        assert 1 <= len(primary) <= 3
+        assert len(primary) == len(set(primary))
+        assert set(primary) <= set(group['routes'])
+    assert groups['tcl_roku']['primary_routes'] == ['roku_network']
+    assert {'roku_model', 'roku_alexa', 'google_roku', 'roku_phone'} <= set(groups['tcl_roku']['routes'])
+
+
 def test_every_existing_tv_and_assistant_choice_has_an_illustrated_route():
     generator = importlib.import_module('tools.generate_setup_guides')
     root = Path(__file__).resolve().parents[1]
@@ -25,6 +38,31 @@ def test_every_existing_tv_and_assistant_choice_has_an_illustrated_route():
             assert 0 <= step['focus'] < len(step['items'])
     for path, content in generator.sources(data).items():
         assert path.read_text() == content
+
+
+def test_generator_rejects_missing_unknown_duplicate_or_unbounded_primary_choices():
+    generator = importlib.import_module('tools.generate_setup_guides')
+    root = Path(__file__).resolve().parents[1]
+    raw = (root / 'contracts/setup_guides_v1.json').read_text()
+    for invalid in ([], ['invented'], ['roku_network', 'roku_network'], ['roku_network', 'roku_model', 'roku_alexa', 'google_roku']):
+        data = json.loads(raw)
+        group = next(group for group in data['groups'] if group['id'] == 'tcl_roku')
+        group['primary_routes'] = invalid
+        try:
+            generator.validate(data)
+        except ValueError:
+            continue
+        raise AssertionError(f'invalid primary choices accepted: {invalid}')
+
+
+def test_roku_default_instructions_are_short_and_keep_context_in_optional_notes():
+    routes = setup_routes()
+    for identifier in ('roku_network', 'roku_model'):
+        for step in routes[identifier]['steps']:
+            assert len(step['instruction'].split()) <= 18
+            assert step['note']
+    assert 'IP address' in routes['roku_network']['steps'][-1]['instruction']
+    assert 'Model' in routes['roku_model']['steps'][-1]['instruction']
 
 
 def setup_routes():

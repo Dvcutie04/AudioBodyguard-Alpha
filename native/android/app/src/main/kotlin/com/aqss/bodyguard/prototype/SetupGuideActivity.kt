@@ -23,6 +23,7 @@ import android.window.OnBackInvokedDispatcher
 import com.aqss.nativefeedback.SetupContent
 import com.aqss.nativefeedback.SetupRoute
 import com.aqss.nativefeedback.SetupStep
+import java.util.ArrayDeque
 
 /** Local illustrated instructions. Finishing a guide changes no connection state. */
 class SetupGuideActivity : Activity() {
@@ -51,6 +52,9 @@ class SetupGuideActivity : Activity() {
     private var index = -1
     private var mismatch = false
     private var detailsExpanded = false
+    private var pickerExpanded = false
+    private var referencesExpanded = false
+    private val history = ArrayDeque<Bundle>()
     private var completedTVRoute: String? = null
     private var backCallback: OnBackInvokedCallback? = null
     private val group get() = SetupContent.groups.firstOrNull { it.id == groupId }
@@ -68,6 +72,12 @@ class SetupGuideActivity : Activity() {
         completedTVRoute?.let { setResult(RESULT_OK, Intent().putExtra(COMPLETED_TV_ROUTE, it)) }
         index = if (savedInstanceState == null && groupId == "voice") 0 else (savedInstanceState?.getInt("index", -1) ?: -1).takeIf { it == -1 || route?.steps?.indices?.contains(it) == true } ?: -1
         mismatch = savedInstanceState?.getBoolean("mismatch", false) ?: false
+        detailsExpanded = savedInstanceState?.getBoolean("details") ?: false
+        pickerExpanded = savedInstanceState?.getBoolean("picker") ?: false
+        referencesExpanded = savedInstanceState?.getBoolean("references") ?: false
+        @Suppress("DEPRECATION")
+        val savedHistory = savedInstanceState?.getParcelableArrayList<Bundle>("setupHistory")
+        savedHistory?.takeLast(100)?.let { history.addAll(it) }
         root = column().apply { setBackgroundColor(skin.background) }
         header = column().apply { setPadding(dp(16), dp(12), dp(16), dp(12)); setBackgroundColor(skin.surface) }
         content = column().apply { setPadding(dp(20), dp(20), dp(20), dp(20)) }
@@ -124,7 +134,18 @@ class SetupGuideActivity : Activity() {
         box.addView(button(title, action = block).apply { gravity = Gravity.START or Gravity.CENTER_VERTICAL }, LinearLayout.LayoutParams(-1, -2).apply { bottomMargin = dp(10) })
     }
     private fun chooseGroup(id: String) {
-        groupId = id; routeId = if (id == "voice") "voice" else null; index = if (id == "voice") 0 else -1; mismatch = false; detailsExpanded = false; render()
+        remember(); groupId = id; routeId = if (id == "voice") "voice" else null; index = if (id == "voice") 0 else -1; mismatch = false; detailsExpanded = false; pickerExpanded = false; referencesExpanded = false; render()
+    }
+    private fun location() = Bundle().apply {
+        putString("group", groupId); putString("route", routeId); putInt("index", index); putBoolean("mismatch", mismatch)
+        putBoolean("details", detailsExpanded); putBoolean("picker", pickerExpanded); putBoolean("references", referencesExpanded)
+    }
+    private fun remember() {
+        if (history.size >= 100) history.removeFirst()
+        history.addLast(location())
+    }
+    private fun chooseRoute(id: String) {
+        remember(); routeId = id; index = -1; mismatch = false; detailsExpanded = false; referencesExpanded = false; render()
     }
     private fun resumeIndex(route: SetupRoute): Int? = getSharedPreferences("aqss-presentation", MODE_PRIVATE).getInt("setup-progress-${route.id}", -1).takeIf { route.id != "voice" && it in route.steps.indices }
     private fun saveProgress(route: SetupRoute, value: Int?) {
@@ -133,7 +154,8 @@ class SetupGuideActivity : Activity() {
         if (value == null) edit.remove("setup-progress-${route.id}") else edit.putInt("setup-progress-${route.id}", value)
         edit.apply()
     }
-    private fun render() {
+    private fun render(preserveScroll: Boolean = false) {
+        val oldScroll = if (preserveScroll) scroll.scrollY else 0
         val version = ++renderVersion
         content.removeAllViews()
         val route = route
@@ -142,7 +164,7 @@ class SetupGuideActivity : Activity() {
         progressLabel.text = if (route != null && index >= 0) "Step ${index + 1} of ${route.steps.size}" else "Illustrated setup"
         progressBar.visibility = if (route != null && index >= 0) View.VISIBLE else View.GONE
         if (route != null && index >= 0) { progressBar.max = route.steps.size; progressBar.setProgress(index + 1, false) }
-        val heading = words(content, if (mismatch) "My screen looks different" else step?.title ?: route?.title ?: if (group == null) "Choose your TV or app" else "Match your model or menu", 28f, bold = true).apply {
+        val heading = words(content, if (mismatch) "Find the right screen" else step?.title ?: route?.title ?: group?.title ?: "Choose your TV or app", 28f, bold = true).apply {
             if (Build.VERSION.SDK_INT >= 28) isAccessibilityHeading = true
             accessibilityLiveRegion = View.ACCESSIBILITY_LIVE_REGION_POLITE
         }
@@ -152,13 +174,15 @@ class SetupGuideActivity : Activity() {
                 words(content, when (step.surface) { "tv" -> "On your TV · use the remote"; "both" -> "Your TV + your phone"; else -> "On your phone" }, 15f, skin.accent, true)
                 words(content, step.instruction, 16f, bold = true)
                 content.addView(if (route.id == "roku_network" || route.id == "roku_model") rokuIllustration(step, index + 1) else if (route.id == "philips_voice_remote" && index in 1..2) profileIllustration(step, index + 1) else illustration(step, index + 1), LinearLayout.LayoutParams(-1, -2).apply { bottomMargin = dp(18) })
-                if (step.note !in repeatedPictureNotes) words(content, step.note, color = skin.muted)
-                action(content, "My screen looks different") { mismatch = true; render() }
+                action(content, if (detailsExpanded) "Hide details" else "More details") { detailsExpanded = !detailsExpanded; render(true) }
+                if (detailsExpanded) {
+                    if (step.note !in repeatedPictureNotes) words(content, step.note, color = skin.muted)
+                    action(content, "My screen looks different") { remember(); mismatch = true; detailsExpanded = false; referencesExpanded = false; render() }
+                }
             }
             route != null -> intro(route)
             groupId == "tcl" -> {
-                words(content, "Which home screen is on your TCL TV?", 20f, bold = true)
-                words(content, "Choose the name that matches your TV. A blue Roku Settings menu means Roku TV.", color = skin.muted)
+                words(content, "Choose the name on your TV’s home screen.", color = skin.muted)
                 for ((id, name) in listOf("tcl_roku" to "Roku TV", "tcl_google" to "Google TV / Android TV", "tcl_fire" to "Fire TV")) {
                     content.addView(button(name) { chooseGroup(id) }.apply {
                         setCompoundDrawablesWithIntrinsicBounds(InterfaceSymbol(skin, "tv", skin.accent), null, null, null)
@@ -167,18 +191,20 @@ class SetupGuideActivity : Activity() {
                 }
             }
             group != null -> {
-                words(content, group!!.title, 20f, skin.accent, true)
-                words(content, "Match the setup screen and exact TV model before following the pictures.", color = skin.muted)
-                group!!.routes.forEach { id -> SetupContent.routes.firstOrNull { it.id == id }?.let { guide ->
-                    action(content, guide.title) { routeId = id; index = -1; render() }
+                val selectedGroup = group!!
+                words(content, "Start here. Follow one picture at a time.", color = skin.muted)
+                selectedGroup.primaryRoutes.forEach { id -> SetupContent.routes.firstOrNull { it.id == id }?.let { guide ->
+                    action(content, if (id == "roku_network") "Start TV setup" else guide.title) { chooseRoute(id) }
                 } }
+                if (selectedGroup.routes.any { it !in selectedGroup.primaryRoutes }) action(content, if (pickerExpanded) "Hide other options" else "Other setup options") { pickerExpanded = !pickerExpanded; render(true) }
+                if (pickerExpanded) selectedGroup.routes.filter { it !in selectedGroup.primaryRoutes }.forEach { id -> SetupContent.routes.firstOrNull { it.id == id }?.let { guide -> action(content, guide.title) { chooseRoute(id) } } }
             }
             else -> {
-                words(content, "Follow one picture at a time. The numbered arrow marks the next choice; TV, remote and phone symbols show which device to use.", color = skin.muted)
+                words(content, "Choose a name to start the pictures.", color = skin.muted)
                 SetupContent.groups.filter { it.id !in listOf("both", "neither") && !it.id.startsWith("tcl_") }.forEach { choice -> action(content, choice.title) { chooseGroup(choice.id) } }
             }
         }
-        backButton.visibility = if (group != null || route != null) View.VISIBLE else View.GONE
+        backButton.visibility = if (group != null || route != null || history.isNotEmpty()) View.VISIBLE else View.GONE
         backButton.text = if (mismatch) "Return to step" else "Back"
         nextButton.visibility = if (route != null && !mismatch) View.VISIBLE else View.GONE
         if (route != null && !mismatch) nextButton.text = if (index < 0) {
@@ -189,8 +215,8 @@ class SetupGuideActivity : Activity() {
         scroll.post {
             // Ignore callbacks for a replaced step or an Activity that is closing.
             if (version == renderVersion && !isFinishing && !isDestroyed) {
-                scroll.scrollTo(0, 0)
-                heading.sendAccessibilityEvent(android.view.accessibility.AccessibilityEvent.TYPE_VIEW_FOCUSED)
+                scroll.scrollTo(0, oldScroll)
+                if (!preserveScroll) heading.sendAccessibilityEvent(android.view.accessibility.AccessibilityEvent.TYPE_VIEW_FOCUSED)
             }
         }
     }
@@ -199,50 +225,52 @@ class SetupGuideActivity : Activity() {
         if (mismatch || isFinishing) return
         if (index == route.steps.lastIndex) {
             if (route.id in listOf("roku_network", "roku_model")) {
+                remember()
                 saveProgress(route, null); completedTVRoute = route.id
                 setResult(RESULT_OK, Intent().putExtra(COMPLETED_TV_ROUTE, route.id))
-                routeId = "roku_phone"; index = -1; render(); return
+                routeId = "roku_phone"; index = -1; detailsExpanded = false; referencesExpanded = false; render(); return
             }
             if (route.id == "voice" && !intent.getBooleanExtra("returnToVoice", false)) startActivity(Intent(this, InputAssistanceActivity::class.java).putExtra("mode", "voice").putExtra("dark", skin.dark))
             saveProgress(route, null)
             if (route.id != "voice") setResult(RESULT_OK, Intent().putExtra(COMPLETED_TV_ROUTE, completedTVRoute).putExtra(COMPLETED_ROUTE, route.id))
             finish()
-        } else { index = if (index < 0) resumeIndex(route) ?: 0 else index + 1; render() }
+        } else { remember(); index = if (index < 0) resumeIndex(route) ?: 0 else index + 1; detailsExpanded = false; referencesExpanded = false; render() }
     }
     private fun intro(route: SetupRoute) {
-        if (route.id == "roku_network" || route.id == "roku_model") action(content, "I’m already in Settings") { index = 2; render() }
-        words(content, "Before you begin", 19f, bold = true)
-        words(content, route.appliesTo)
-        words(content, "${route.steps.size} pictures · one action at a time", 18f, skin.accent, true)
-        words(content, "Use your TV maker’s app for passwords and approvals.")
-        resumeIndex(route)?.let { saved ->
-            words(content, "You stopped at picture ${saved + 1}. Tap Resume guide to continue there.", color = skin.accent)
-            action(content, "Start from the beginning") { saveProgress(route, null); index = 0; render() }
-        }
-        action(content, if (detailsExpanded) "Hide details" else "Details & official instructions") { detailsExpanded = !detailsExpanded; render() }
+        words(content, if (route.id == "roku_phone") "Keep your phone and TV on the same Wi-Fi." else if (route.steps.first().surface == "tv") "Have your TV remote ready." else "Have your phone and TV ready.")
+        words(content, "${route.steps.size} pictures. One step at a time.", 18f, skin.accent)
+        resumeIndex(route)?.let { saved -> words(content, "Continue at picture ${saved + 1}.", color = skin.accent) }
+        action(content, if (detailsExpanded) "Hide details" else "More details") { detailsExpanded = !detailsExpanded; render(true) }
         if (detailsExpanded) {
+            words(content, route.appliesTo, color = skin.muted)
+            words(content, "Use your TV maker’s app for passwords and approvals.", color = skin.muted)
+            if (route.id in listOf("roku_network", "roku_model")) action(content, "I’m already in Settings") { remember(); index = 2; detailsExpanded = false; referencesExpanded = false; render() }
+            if (resumeIndex(route) != null) action(content, "Start from the beginning") { remember(); saveProgress(route, null); index = 0; detailsExpanded = false; render() }
             words(content, if (route.models.isEmpty()) "Menu-family guide · match your TV’s exact model." else "Documented model examples: ${route.models.joinToString()}", color = skin.muted)
             words(content, "Labels, layout and services can differ by country, software and language. Compare each picture with your own screen.", color = skin.muted)
-            sources(route)
+            action(content, "My screen looks different") { remember(); mismatch = true; detailsExpanded = false; referencesExpanded = false; render() }
+            action(content, if (referencesExpanded) "Hide reference links" else "Reference links") { referencesExpanded = !referencesExpanded; render(true) }
+            if (referencesExpanded) sources(route)
         }
-        action(content, "My screen looks different") { mismatch = true; render() }
     }
     private fun sources(route: SetupRoute) {
-        words(content, "Official instructions", 18f, bold = true)
+        words(content, "Manufacturer references", 18f, bold = true)
         route.sources.forEach { id -> SetupContent.sources.firstOrNull { it.id == id }?.let { source ->
-            action(content, source.title + " ↗") {
+            words(content, source.title, color = skin.muted)
+            action(content, "Open reference in browser") {
                 try { startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(source.url))) }
                 catch (_: android.content.ActivityNotFoundException) { AlertDialog.Builder(this).setTitle("Open official instructions").setMessage(source.url).setPositiveButton("Close", null).show() }
             }
         } }
     }
     private fun mismatchContent(route: SetupRoute?) {
-        words(content, "Pause at this step. Check the full model, TV software and country. Look for the same menu meaning or icon in your language.")
-        words(content, "If the option, TV or permission request is absent, use the manufacturer’s instructions below.")
-        if (route != null) sources(route)
-        action(content, "Choose another model or menu") { routeId = null; index = -1; mismatch = false; render() }
+        words(content, "Choose the name or menu that matches your TV.")
+        action(content, "Choose another model or menu") { remember(); routeId = null; index = -1; mismatch = false; pickerExpanded = true; detailsExpanded = false; render() }
         action(content, "Choose another TV or app") { chooseGroup("") }
-        words(content, "You can close this guide at any time. Your current place is preserved while viewing this help.", color = skin.muted)
+        if (route != null) {
+            action(content, if (detailsExpanded) "Hide details" else "More details") { detailsExpanded = !detailsExpanded; render(true) }
+            if (detailsExpanded) { words(content, route.appliesTo); sources(route) }
+        }
     }
     private fun rokuIllustration(step: SetupStep, number: Int): View {
         val box = column().apply { setPadding(dp(14), dp(14), dp(14), dp(14)); background = skin.shape(skin.raised, 18)
@@ -335,19 +363,15 @@ class SetupGuideActivity : Activity() {
         return box
     }
     private fun back() {
-        when {
-            mismatch -> mismatch = false
-            index >= 0 -> index--
-            routeId != null -> routeId = null
-            groupId.isNotEmpty() -> groupId = if (groupId.startsWith("tcl_")) "tcl" else ""
-            else -> { finish(); return }
-        }
+        val previous = history.pollLast() ?: run { finish(); return }
+        groupId = previous.getString("group") ?: ""; routeId = previous.getString("route"); index = previous.getInt("index", -1); mismatch = previous.getBoolean("mismatch")
+        detailsExpanded = previous.getBoolean("details"); pickerExpanded = previous.getBoolean("picker"); referencesExpanded = previous.getBoolean("references")
         render()
     }
     @Deprecated("Compatibility for Android 12 and earlier")
     override fun onBackPressed() { back() }
     override fun onSaveInstanceState(outState: Bundle) {
-        outState.putString("group", groupId); outState.putString("route", routeId); outState.putInt("index", index); outState.putBoolean("mismatch", mismatch); outState.putString("completedTVRoute", completedTVRoute); super.onSaveInstanceState(outState)
+        outState.putAll(location()); outState.putString("completedTVRoute", completedTVRoute); outState.putParcelableArrayList("setupHistory", ArrayList(history)); super.onSaveInstanceState(outState)
     }
     override fun onDestroy() {
         if (Build.VERSION.SDK_INT >= 33) backCallback?.let { onBackInvokedDispatcher.unregisterOnBackInvokedCallback(it) }

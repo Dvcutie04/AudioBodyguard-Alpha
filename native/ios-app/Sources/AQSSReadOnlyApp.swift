@@ -62,11 +62,21 @@ private struct ReadOnlyHomeView: View {
     @State private var pendingSetupGroup: String?
     @State private var futureID = ""
     @State private var pagesVisible = false
-    @State private var optionsExpanded = true
-    @State private var advancedExpanded = true
+    @State private var optionsExpanded = false
+    @State private var advancedExpanded = false
+    @State private var deviceDetails = false
+    @State private var futureDetails = false
+    @State private var detailSections: Set<String> = []
+    private struct PageLocation {
+        let page, target: String
+        let options, advanced, checklist, devices, future: Bool
+        let details: Set<String>
+        let example, chartValues: Bool
+    }
+    @State private var pageHistory: [PageLocation] = []
     @State private var checklistExpanded = false
     @State private var navigationVisible = false
-    @State private var navigationTarget = "coverage"
+    @State private var navigationTarget = "page-heading"
     @State private var navigationRequest = 0
     @State private var helpVisible = false
     @State private var showingExample = false
@@ -114,7 +124,7 @@ private struct ReadOnlyHomeView: View {
                     header
                     ScrollView {
                         VStack(alignment: .leading, spacing: 22) {
-                            pageHeading
+                        pageHeading.id("page-heading")
                             pageContent
                         }.frame(maxWidth: 680, alignment: .leading).padding(20).frame(maxWidth: .infinity)
                     }.clipped().id(page).accessibilityIdentifier("home-scroll")
@@ -186,8 +196,11 @@ private struct ReadOnlyHomeView: View {
 
     private var header: some View {
         HStack(spacing: 10) {
+            if !pageHistory.isEmpty {
+                Button { backPage() } label: { Image(systemName: "arrow.left").frame(width: 24, height: 24) }.accessibilityLabel("Back").accessibilityIdentifier("page-back")
+            }
             Image(systemName: "waveform.path").font(.title2).foregroundColor(theme.accent).accessibilityHidden(true)
-            if !textSize.isAccessibilitySize { Text("BODYGUARD").font(.caption.weight(.bold)).tracking(2) }
+            if !textSize.isAccessibilitySize && pageHistory.isEmpty { Text("BODYGUARD").font(.caption.weight(.bold)).tracking(2) }
             Spacer(minLength: 0)
             Button { navigationVisible = true } label: { Image(systemName: "square.grid.2x2").frame(width: 24, height: 24).contentShape(Rectangle()) }
                 .accessibilityLabel("Jump to").accessibilityIdentifier("section-navigation")
@@ -231,17 +244,12 @@ private struct ReadOnlyHomeView: View {
                     VStack(alignment: .leading, spacing: 12) {
                         Text("COVERAGE").font(.caption.weight(.bold)).tracking(2).foregroundColor(theme.muted)
                         Text(coverageTitle).font(.title2.bold()).foregroundColor(theme.warning).accessibilityAddTraits(.isHeader)
-                        Text("No output observation").font(.subheadline.weight(.semibold))
+                        if detailSections.contains("coverage") { Text("No output observation").font(.subheadline.weight(.semibold)) }
                     }
                     Spacer(minLength: 4)
-                    if !textSize.isAccessibilitySize { OrbitMark(theme: theme).frame(width: 96, height: 96).accessibilityHidden(true) }
                 }
-                action("Review readiness", icon: "checklist", primary: true) { jump("capability"); checklistExpanded = true }
-            }
-            VStack(alignment: .leading, spacing: 12) {
-                Text("Explore your space").font(.title3.bold()).accessibilityAddTraits(.isHeader)
-                destinationCard("Sound controls", subtitle: "Presets, captions & equalizer", icon: "slider.horizontal.3") { openPage("sound") }
-                destinationCard("Insights", subtitle: "Trends, evidence & examples", icon: "chart.xyaxis.line") { openPage("insights") }
+                action(detailSections.contains("coverage") ? "Hide status details" : "Status details", icon: "info.circle") { toggleDetails("coverage") }
+                if detailSections.contains("coverage") { action("Review readiness", icon: "checklist") { jump("capability"); checklistExpanded = true } }
             }
         }
     }
@@ -283,16 +291,13 @@ private struct ReadOnlyHomeView: View {
 
     private var devicesPage: some View {
         VStack(alignment: .leading, spacing: 18) {
-            connectionStages(currentTarget: nil)
             destinationCard("TV photo setup", subtitle: "Read a model label or Network settings photo", icon: "camera") { photoCheckVisible = true }
             destinationCard("Illustrated setup guides", subtitle: "TV pairing, Google Home & Alexa · one picture at a time", icon: "rectangle.stack") { showSetup() }
+            Text("No qualified device connected").font(.subheadline).foregroundColor(theme.muted)
+            action(deviceDetails ? "Hide device details" : "More device details", icon: "info.circle") { deviceDetails.toggle() }
+            if deviceDetails {
             helpButton("TV & smart-home guide", topic: "getting_started")
-            card {
-                badge("PATH NOT QUALIFIED", color: theme.warning)
-                HStack { pathNode("iphone", title: "This app"); Image(systemName: "ellipsis").foregroundColor(theme.muted); pathNode("hifispeaker", title: "Output needed") }.accessibilityElement(children: .combine)
-                Text("No qualified device connected").font(.title3.bold())
-                Text("Connection, permission and physical observation must all be established. This diagram shows the requirements.").foregroundColor(theme.muted)
-            }
+            connectionStages(currentTarget: nil)
             card(target: "capability") {
                 Text("Readiness checklist").font(.title2.bold()).accessibilityAddTraits(.isHeader)
                 Text(capabilityTitle).foregroundColor(theme.warning)
@@ -309,6 +314,7 @@ private struct ReadOnlyHomeView: View {
             section("Foreground OS hint", detail: audioHints.lastHint, explanation: "Only this app's notifications while active. These cannot verify playback, another app's route, or physical output.", target: "hint", icon: "info.circle")
             section("Move this session", detail: "Unavailable", explanation: "No supported endpoint or verified transfer path is connected. Moving between iPhone and Android needs qualification in both directions.", target: "handoff", icon: "arrow.left.arrow.right")
             helpButton("Help with session transfer", topic: "handoff")
+            }
         }
     }
 
@@ -333,16 +339,12 @@ private struct ReadOnlyHomeView: View {
                 } else {
                     Image(systemName: "waveform.path").font(.system(size: 42, weight: .light)).foregroundColor(theme.violet).padding(.vertical, 18).frame(maxWidth: .infinity).accessibilityHidden(true)
                     Text("No measurements yet").font(.title3.bold())
-                    Text("A qualified observation source is needed before a real trend can appear. Missing measurements cannot establish safe audio.").foregroundColor(theme.muted)
+                    action(detailSections.contains("trends") ? "Hide measurement details" : "Measurement details", icon: "info.circle") { toggleDetails("trends") }
+                    if detailSections.contains("trends") { Text("A qualified observation source is needed before a real trend can appear. Missing measurements cannot establish safe audio.").foregroundColor(theme.muted) }
                     action("Explore an example", icon: "chart.xyaxis.line", primary: true) { chartValuesVisible = false; showingExample = true }
                 }
             }
             section("Session history", detail: "No observed events", explanation: "A missing history cannot establish continuous coverage. Requests and verified results will need distinct records.", target: "history", icon: "clock")
-            card {
-                Text("Read the whole picture").font(.title3.bold())
-                Text("Future insights need source, time and verification context. Unknown intervals must remain visible.").foregroundColor(theme.muted)
-                action("Review requirements", icon: "checklist") { jump("capability") }
-            }
         }
     }
 
@@ -370,11 +372,13 @@ private struct ReadOnlyHomeView: View {
                 section("Privacy and storage", detail: "No audio files saved by this app", explanation: "Appearance and guide dismissal stay on this phone. Voice check uses the microphone only after you start it. Audio, recognized words and photo details are not saved by AQSS or uploaded. Closing the tool clears its details.", target: "privacy", icon: "lock.shield")
                 section("Move this session option", detail: "Unavailable", explanation: "No authorized endpoint or verified transfer path is connected.", target: "handoffOption", icon: "arrow.left.arrow.right")
             }
-            Text("On the horizon").font(.title2.bold()).accessibilityAddTraits(.isHeader)
+            action(futureDetails ? "Hide more features" : "More features", icon: "list.bullet") { futureDetails.toggle() }
+            if futureDetails {
             ForEach(AQSSInterfaceContent.future, id: \.id) { feature in
                 destinationCard(feature.title, subtitle: feature.detail, icon: feature.id == "voice" ? "mic" : feature.id == "profiles" ? "person.crop.circle" : feature.id == "supervisor" ? "moon" : "doc.text") {
                     futureID = feature.id; futureTitle = feature.title; futureExplanation = feature.explanation; futureVisible = true
                 }
+            }
             }
             Button("Browse all tutorials") { helpVisible = true }.buttonStyle(AppButtonStyle(theme: theme))
         }
@@ -421,7 +425,9 @@ private struct ReadOnlyHomeView: View {
         card(target: target) {
             HStack(alignment: .top) { Image(systemName: icon).foregroundColor(theme.violet).font(.title3).accessibilityHidden(true); Text(title).font(.title3.bold()).accessibilityAddTraits(.isHeader) }
             Text(detail).font(.headline).foregroundColor(detail.contains("Unknown") || detail == "Unavailable" ? theme.warning : theme.text)
-            Text(explanation).foregroundColor(theme.muted)
+            action(detailSections.contains(target) ? "Hide details" : "More details", icon: "info.circle") { toggleDetails(target) }
+                .accessibilityIdentifier("details-" + target)
+            if detailSections.contains(target) { Text(explanation).foregroundColor(theme.muted) }
         }
     }
     private func preset(_ title: String, detail: String, icon: String) -> some View {
@@ -446,17 +452,33 @@ private struct ReadOnlyHomeView: View {
     }
 
     private func openPage(_ id: String) {
-        closeTutorial(restore: false); showingExample = false; page = id
-        if id == "sound" { optionsExpanded = true }
-        if id == "settings" { advancedExpanded = true }
+        guard page != id else { return }
+        rememberPage(); closeTutorial(restore: false); showingExample = false; page = id
+        optionsExpanded = false; advancedExpanded = false; checklistExpanded = false; deviceDetails = false; futureDetails = false
+        navigationTarget = "page-heading"; navigationRequest += 1
+    }
+    private func toggleDetails(_ id: String) { if !detailSections.insert(id).inserted { detailSections.remove(id) } }
+    private func rememberPage() {
+        if pageHistory.count >= 32 { pageHistory.removeFirst() }
+        pageHistory.append(PageLocation(page: page, target: navigationTarget, options: optionsExpanded, advanced: advancedExpanded, checklist: checklistExpanded, devices: deviceDetails, future: futureDetails, details: detailSections, example: showingExample, chartValues: chartValuesVisible))
+    }
+    private func backPage() {
+        guard let previous = pageHistory.popLast() else { return }
+        page = previous.page; optionsExpanded = previous.options; advancedExpanded = previous.advanced; checklistExpanded = previous.checklist
+        deviceDetails = previous.devices; futureDetails = previous.future; detailSections = previous.details
+        showingExample = previous.example; chartValuesVisible = previous.chartValues
+        navigationTarget = previous.target; navigationRequest += 1
     }
     private func reveal(_ target: String, area: String? = nil) {
         page = AQSSInterfaceContent.targetPages[target] ?? "home"
         if page == "sound" { optionsExpanded = true }
         if page == "settings" { advancedExpanded = true }
+        if page == "devices" { deviceDetails = true }
+        detailSections.insert(target)
         if area == "checklist" { checklistExpanded = true }
     }
     private func jump(_ target: String) {
+        if (AQSSInterfaceContent.targetPages[target] ?? "home") != page { rememberPage() }
         closeTutorial(restore: false); showingExample = false; reveal(target)
         navigationTarget = target; navigationRequest += 1
     }
@@ -469,8 +491,6 @@ private struct ReadOnlyHomeView: View {
         guard tutorialTopicID != nil else { return }
         if tutorialTopicID == "getting_started" { guideDismissed = true }
         guide.close()
-        // Leaving guidance reveals the complete interface, including collapsed groups.
-        optionsExpanded = true; advancedExpanded = true; checklistExpanded = true
         if restore { page = previousPage; focusedElement = .help }
     }
     private func tutorialPanel(topic: AQSSTutorialTopic, step: AQSSTutorialStep) -> some View {

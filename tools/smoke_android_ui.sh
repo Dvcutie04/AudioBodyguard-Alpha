@@ -165,9 +165,10 @@ assert_tutorial_label setup_pair_step_1 "Step 1 of 16"
 for step in {2..14}; do tap_tutorial_label "Next" "setup_samsung_next_$step"; done
 capture_ui setup_tv_approval
 assert_tutorial_label setup_tv_approval "Approve on the television"
+tap_scroll_label "More details" setup_approval_details
 tap_scroll_label "My screen looks different" setup_mismatch_open
 capture_ui setup_mismatch
-assert_tutorial_label setup_mismatch "Pause at this step"
+assert_tutorial_label setup_mismatch "Find the right screen"
 tap_tutorial_label "Return to step" setup_mismatch_return
 capture_ui setup_approval_retained
 assert_tutorial_label setup_approval_retained "Step 14 of 16"
@@ -226,11 +227,10 @@ assert_tutorial_label sound "Sound, on your terms."
 tap_tutorial_label "Jump to" jump_volume_open
 tap_tutorial_label "Sound options" jump_volume
 capture_ui sound_options
-adb shell input swipe 500 1600 500 450 900
-capture_ui sound_presets
-assert_tutorial_label sound_presets "No qualified device volume control"
-assert_tutorial_label sound_presets "Dialogue preset"
-assert_tutorial_label sound_presets "Night preset"
+tap_scroll_label "More details" volume_details
+assert_scroll_label "No qualified device volume control" sound_volume_detail
+assert_scroll_label "Dialogue preset" sound_presets
+assert_scroll_label "Night preset" sound_night_preset
 tap_tutorial_label "Devices" nav_devices
 capture_ui devices
 assert_scroll_label "No qualified device connected" devices
@@ -247,6 +247,9 @@ for step in 1 2 3 4 5 6; do
     if [[ "$step" -eq 1 ]]; then tap_tutorial_label "Begin" readiness_begin; elif [[ "$step" -lt 6 ]]; then tap_tutorial_label "Next" readiness_next; fi
 done
 adb shell input keyevent KEYCODE_BACK
+capture_ui readiness_back
+assert_tutorial_label readiness_back "Step 5 of 6"
+tap_tutorial_label "Exit tutorial" readiness_exit
 capture_ui readiness_closed
 if python3 tools/check_android_simulation_ui.py --assert-label "$artifact_dir/readiness_closed.xml" "Exit tutorial" 2>/dev/null; then exit 1; fi
 
@@ -275,7 +278,7 @@ capture_ui daylight_home
 assert_tutorial_label daylight_home "Unknown physical state"
 tap_tutorial_label "Settings" theme_settings
 tap_tutorial_label "Midnight" theme_midnight
-tap_scroll_label "Hide advanced options" advanced_close
+tap_scroll_label "More features" future_open
 tap_scroll_label "Voice requests. Planned · proposal only" future_voice
 capture_ui future_voice_detail
 assert_tutorial_label future_voice_detail "Voice control requires device authority and checked output"
@@ -344,10 +347,20 @@ tap_tutorial_label "Devices" roku_devices
 tap_scroll_label "Illustrated setup guides. TV pairing, Google Home & Alexa · one picture at a time" roku_open
 tap_scroll_label "TCL" roku_brand
 tap_scroll_label "Roku TV" roku_platform
-tap_scroll_label "Find my IP address (Roku TV)" roku_network
+capture_ui roku_simple_picker
+if python3 tools/check_android_simulation_ui.py --assert-label "$artifact_dir/roku_simple_picker.xml" "Find my exact model (Roku TV)" 2>/dev/null; then exit 1; fi
+tap_scroll_label "Start TV setup" roku_network
+capture_ui roku_simple_intro
+if python3 tools/check_android_simulation_ui.py --assert-label "$artifact_dir/roku_simple_intro.xml" "Open reference in browser" 2>/dev/null; then exit 1; fi
+tap_scroll_label "More details" roku_details
 tap_scroll_label "I’m already in Settings" roku_settings
 capture_ui roku_settings_picture
 assert_tutorial_label roku_settings_picture "Step 3 of 5"
+adb shell input keyevent KEYCODE_BACK
+capture_ui roku_back_to_intro
+assert_tutorial_label roku_back_to_intro "I’m already in Settings"
+if python3 tools/check_android_simulation_ui.py --assert-label "$artifact_dir/roku_back_to_intro.xml" "Step 2 of 5" 2>/dev/null; then exit 1; fi
+tap_scroll_label "I’m already in Settings" roku_settings_again
 tap_tutorial_label "Next" roku_about roku-step-3-to-4-frames reset
 capture_ui roku_about_picture
 complete_frame_evidence roku-step-3-to-4-frames
@@ -356,7 +369,7 @@ tap_tutorial_label "Close" roku_close
 tap_scroll_label "Illustrated setup guides. TV pairing, Google Home & Alexa · one picture at a time" roku_reopen
 tap_scroll_label "TCL" roku_rebrand
 tap_scroll_label "Roku TV" roku_replatform
-tap_scroll_label "Find my IP address (Roku TV)" roku_reroute
+tap_scroll_label "Start TV setup" roku_reroute
 tap_tutorial_label "Resume guide" roku_resume roku-resume-frames
 capture_ui roku_resumed
 complete_frame_evidence roku-resume-frames
@@ -368,12 +381,35 @@ assert_tutorial_label roku_ip_picture "Step 5 of 5"
 tap_tutorial_label "Finish part one" roku_finish
 capture_ui roku_phone_intro
 assert_tutorial_label roku_phone_intro "2. Connect to your phone (Roku)"
+adb shell input keyevent KEYCODE_BACK
+capture_ui roku_phone_back_to_tv
+assert_tutorial_label roku_phone_back_to_tv "Step 5 of 5"
+tap_tutorial_label "Finish part one" roku_phone_again
 tap_tutorial_label "Start part two" roku_phone_begin
 capture_ui roku_phone_picture
 assert_tutorial_label roku_phone_picture "Step 1 of 5"
 tap_tutorial_label "Close" roku_phone_close
 adb shell dumpsys gfxinfo com.aqss.bodyguard.prototype > "$artifact_dir/roku-frame-summary.txt"
 tap_tutorial_label "Home" roku_home
+
+# Page Back follows visited pages, not an expansion menu or the Home shortcut.
+tap_tutorial_label "Devices" back_devices
+capture_ui simple_devices
+if python3 tools/check_android_simulation_ui.py --assert-label "$artifact_dir/simple_devices.xml" "Six setup checks unknown" 2>/dev/null; then exit 1; fi
+tap_tutorial_label "Sound" back_sound
+capture_ui simple_sound
+if python3 tools/check_android_simulation_ui.py --assert-label "$artifact_dir/simple_sound.xml" "Dialogue preset" 2>/dev/null; then exit 1; fi
+tap_scroll_label "Options" back_sound_options
+tap_tutorial_label "Settings" back_settings
+adb shell input keyevent KEYCODE_BACK
+capture_ui page_back_sound
+assert_tutorial_label page_back_sound "Sound, on your terms."
+adb shell input keyevent KEYCODE_BACK
+capture_ui page_back_devices
+assert_tutorial_label page_back_devices "A clear path to sound."
+tap_tutorial_label "Back to previous page" page_back_home_button
+capture_ui page_back_home
+assert_tutorial_label page_back_home "Unknown physical state"
 
 tap_tutorial_label "Devices" philips_devices
 tap_scroll_label "Illustrated setup guides. TV pairing, Google Home & Alexa · one picture at a time" philips_open
@@ -399,6 +435,7 @@ capture_ui large_text_devices
 tap_scroll_label "Illustrated setup guides. TV pairing, Google Home & Alexa · one picture at a time" setup_large_open
 tap_scroll_label "TCL" setup_large_tcl
 tap_scroll_label "Google TV / Android TV" setup_large_platform
+tap_scroll_label "Other setup options" setup_large_more_options
 tap_scroll_label "TCL QM851G / Q651G / QM891G — first setup" setup_large_route
 tap_tutorial_label "Start guide" setup_large_start
 capture_ui setup_large_step
@@ -418,4 +455,4 @@ assert_tutorial_label large_text_tutorial "Step 1 of 6"
 tap_tutorial_label "Exit tutorial" large_close
 capture_ui large_text_closed
 assert_tutorial_label large_text_closed "Pages · Devices"
-echo "ANDROID_THEME_UI_OBSERVED: sequential seven-step guide, hidden later controls, choice gating, tailored plan, completion, replay, persisted exit, five pages, unknown coverage, unavailable controls, six readiness steps, labeled example, themes, future explanation, tutorial routing, Back, lifecycle, rotation and large text passed"
+echo "ANDROID_THEME_UI_OBSERVED: sequential six-step guide, simple defaults, optional details, choice gating, tailored plan, completion, replay, persisted exit, five pages, unknown coverage, unavailable controls, six readiness steps, labeled example, themes, future explanation, tutorial routing, previous-page Back, lifecycle, rotation and large text passed"

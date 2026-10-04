@@ -168,6 +168,10 @@
         "google_legacy",
         "google_legacy_add",
         "identify"
+      ],
+      "primary_routes": [
+        "samsung_ok",
+        "samsung_pin"
       ]
     },
     {
@@ -186,6 +190,9 @@
         "google_legacy",
         "google_legacy_add",
         "identify"
+      ],
+      "primary_routes": [
+        "lg_pair"
       ]
     },
     {
@@ -198,6 +205,9 @@
         "google_setup",
         "google_fast",
         "identify"
+      ],
+      "primary_routes": [
+        "google_remote"
       ]
     },
     {
@@ -217,6 +227,10 @@
         "google_legacy_add",
         "identify",
         "roku_phone"
+      ],
+      "primary_routes": [
+        "roku_network",
+        "google_remote"
       ]
     },
     {
@@ -233,6 +247,11 @@
         "google_roku",
         "fire_alexa",
         "identify"
+      ],
+      "primary_routes": [
+        "roku_network",
+        "google_remote",
+        "vidaa_google"
       ]
     },
     {
@@ -244,6 +263,9 @@
         "vizio_assist",
         "google_vizio",
         "identify"
+      ],
+      "primary_routes": [
+        "vizio_pair"
       ]
     },
     {
@@ -257,12 +279,18 @@
         "google_legacy",
         "google_legacy_add",
         "fire_alexa"
+      ],
+      "primary_routes": [
+        "identify"
       ]
     },
     {
       "id": "unsure",
       "title": "Not sure / no TV",
       "routes": [
+        "identify"
+      ],
+      "primary_routes": [
         "identify"
       ]
     },
@@ -283,6 +311,11 @@
         "vidaa_google",
         "lg_account5",
         "lg_account6"
+      ],
+      "primary_routes": [
+        "google_samsung",
+        "google_lg",
+        "google_roku"
       ]
     },
     {
@@ -299,6 +332,11 @@
         "fire_alexa",
         "lg_account5",
         "lg_account6"
+      ],
+      "primary_routes": [
+        "samsung_alexa",
+        "lg_alexa",
+        "roku_alexa"
       ]
     },
     {
@@ -326,6 +364,11 @@
         "vidaa_alexa",
         "vizio_assist",
         "fire_alexa"
+      ],
+      "primary_routes": [
+        "google_samsung",
+        "samsung_alexa",
+        "google_roku"
       ]
     },
     {
@@ -337,12 +380,18 @@
         "lg_pair",
         "google_remote",
         "vizio_pair"
+      ],
+      "primary_routes": [
+        "identify"
       ]
     },
     {
       "id": "voice",
       "title": "Voice check",
       "routes": [
+        "voice"
+      ],
+      "primary_routes": [
         "voice"
       ]
     },
@@ -356,6 +405,9 @@
         "google_roku",
         "identify",
         "roku_phone"
+      ],
+      "primary_routes": [
+        "roku_network"
       ]
     },
     {
@@ -369,6 +421,9 @@
         "google_legacy",
         "google_legacy_add",
         "identify"
+      ],
+      "primary_routes": [
+        "google_remote"
       ]
     },
     {
@@ -378,6 +433,9 @@
         "fire_setup",
         "fire_alexa",
         "identify"
+      ],
+      "primary_routes": [
+        "fire_setup"
       ]
     },
     {
@@ -392,6 +450,10 @@
         "roku_alexa",
         "google_roku",
         "identify"
+      ],
+      "primary_routes": [
+        "philips_voice_remote",
+        "google_remote"
       ]
     },
     {
@@ -403,6 +465,9 @@
         "roku_alexa",
         "google_roku",
         "identify"
+      ],
+      "primary_routes": [
+        "roku_model"
       ]
     },
     {
@@ -415,6 +480,9 @@
         "google_roku",
         "identify",
         "roku_phone"
+      ],
+      "primary_routes": [
+        "roku_network"
       ]
     },
     {
@@ -428,6 +496,10 @@
         "roku_alexa",
         "google_roku",
         "identify"
+      ],
+      "primary_routes": [
+        "roku_network",
+        "fire_setup"
       ]
     }
   ],
@@ -4790,7 +4862,7 @@
       "steps": [
         {
           "title": "Start with the TV remote",
-          "instruction": "Press the house-shaped Home button on your TV remote. The picture marks that button.",
+          "instruction": "Press the Home button on your TV remote.",
           "surface": "tv",
           "screen": "Roku • Home",
           "items": [
@@ -4798,11 +4870,11 @@
           ],
           "focus": 0,
           "action": "home",
-          "note": "Compare the highlighted menu with your TV. If it differs, open My screen looks different."
+          "note": "Press the house-shaped Home button on your TV remote. The picture marks that button. Compare the highlighted menu with your TV. If it differs, open My screen looks different."
         },
         {
           "title": "Open Settings",
-          "instruction": "Use the remote’s up or down arrow until Settings is highlighted on the TV. Press the right arrow. Look for the white Settings bar in the picture.",
+          "instruction": "Highlight Settings with the up or down arrow. Then press the right arrow.",
           "surface": "tv",
           "screen": "Roku • Home",
           "items": [
@@ -4812,11 +4884,11 @@
           ],
           "focus": 1,
           "action": "settings",
-          "note": "Compare the highlighted menu with your TV. If it differs, open My screen looks different."
+          "note": "Use the remote’s up or down arrow until Settings is highlighted on the TV. Press the right arrow. Look for the white Settings bar in the picture. Compare the highlighted menu with your TV. If it differs, open My screen looks different."
         },
         {
           "title": "Choose Network",
-          "instruction": "In Settings, use up or down to select Network. Press the right arrow to open the column on the right. The picture highlights Network.",
+          "instruction": "Highlight Network. Press the right arrow.",
           "surface": "tv",
           "screen": "Roku • Settings",
           "items": [
@@ -4828,11 +4900,11 @@
           ],
           "focus": 0,
           "action": "select",
-          "note": "Compare the highlighted menu with your TV. If it differs, open My screen looks different."
+          "note": "In Settings, use up or down to select Network. Press the right arrow to open the column on the right. The picture highlights Network. Compare the highlighted menu with your TV. If it differs, open My screen looks different."
         },
         {
           "title": "Open About",
-          "instruction": "In the right-hand column, select About and press the right arrow. Look for the highlighted About row in the picture.",
+          "instruction": "Highlight About in the right column. Press the right arrow.",
           "surface": "tv",
           "screen": "Roku • Network",
           "items": [
@@ -4843,11 +4915,11 @@
           ],
           "focus": 0,
           "action": "select",
-          "note": "Compare the highlighted menu with your TV. If it differs, open My screen looks different."
+          "note": "In the right-hand column, select About and press the right arrow. Look for the highlighted About row in the picture. Compare the highlighted menu with your TV. If it differs, open My screen looks different."
         },
         {
-          "title": "Read your ip address",
-          "instruction": "Look for IP address in the information panel. This is your TV’s address on your home network. Read the numbers on your own TV, not the example picture.",
+          "title": "Read your TV address",
+          "instruction": "Find IP address on your TV. Read the numbers there.",
           "surface": "tv",
           "screen": "Roku • Network • About",
           "items": [
@@ -4857,7 +4929,7 @@
           ],
           "focus": 2,
           "action": "check",
-          "note": "Next: use the picture guide to connect your phone with the official Roku app."
+          "note": "Look for IP address in the information panel. This is your TV’s address on your home network. Read the numbers on your own TV, not the example picture. Next: use the picture guide to connect your phone with the official Roku app."
         }
       ]
     },
@@ -4873,7 +4945,7 @@
       "steps": [
         {
           "title": "Start with the TV remote",
-          "instruction": "Press the house-shaped Home button on your TV remote. The picture marks that button.",
+          "instruction": "Press the Home button on your TV remote.",
           "surface": "tv",
           "screen": "Roku • Home",
           "items": [
@@ -4881,11 +4953,11 @@
           ],
           "focus": 0,
           "action": "home",
-          "note": "Compare the highlighted menu with your TV. If it differs, open My screen looks different."
+          "note": "Press the house-shaped Home button on your TV remote. The picture marks that button. Compare the highlighted menu with your TV. If it differs, open My screen looks different."
         },
         {
           "title": "Open Settings",
-          "instruction": "Use the remote’s up or down arrow until Settings is highlighted on the TV. Press the right arrow. Look for the white Settings bar in the picture.",
+          "instruction": "Highlight Settings with the up or down arrow. Then press the right arrow.",
           "surface": "tv",
           "screen": "Roku • Home",
           "items": [
@@ -4895,11 +4967,11 @@
           ],
           "focus": 1,
           "action": "settings",
-          "note": "Compare the highlighted menu with your TV. If it differs, open My screen looks different."
+          "note": "Use the remote’s up or down arrow until Settings is highlighted on the TV. Press the right arrow. Look for the white Settings bar in the picture. Compare the highlighted menu with your TV. If it differs, open My screen looks different."
         },
         {
           "title": "Choose System",
-          "instruction": "In Settings, use up or down to select System. Press the right arrow to open the column on the right. The picture highlights System.",
+          "instruction": "Highlight System. Press the right arrow.",
           "surface": "tv",
           "screen": "Roku • Settings",
           "items": [
@@ -4911,11 +4983,11 @@
           ],
           "focus": 3,
           "action": "select",
-          "note": "Compare the highlighted menu with your TV. If it differs, open My screen looks different."
+          "note": "In Settings, use up or down to select System. Press the right arrow to open the column on the right. The picture highlights System. Compare the highlighted menu with your TV. If it differs, open My screen looks different."
         },
         {
           "title": "Open About",
-          "instruction": "In the right-hand column, select About and press the right arrow. Look for the highlighted About row in the picture.",
+          "instruction": "Highlight About in the right column. Press the right arrow.",
           "surface": "tv",
           "screen": "Roku • System",
           "items": [
@@ -4926,11 +4998,11 @@
           ],
           "focus": 0,
           "action": "select",
-          "note": "Compare the highlighted menu with your TV. If it differs, open My screen looks different."
+          "note": "In the right-hand column, select About and press the right arrow. Look for the highlighted About row in the picture. Compare the highlighted menu with your TV. If it differs, open My screen looks different."
         },
         {
           "title": "Read your model",
-          "instruction": "Look for Model in the information panel. Copy the full model name and software version from your own TV. A Roku model code and a TCL model number may both appear.",
+          "instruction": "Find Model on your TV. Read the full name there.",
           "surface": "tv",
           "screen": "Roku • System • About",
           "items": [
@@ -4939,7 +5011,7 @@
           ],
           "focus": 0,
           "action": "check",
-          "note": "Next: use the picture guide to connect your phone with the official Roku app."
+          "note": "Look for Model in the information panel. Copy the full model name and software version from your own TV. A Roku model code and a TCL model number may both appear. Next: use the picture guide to connect your phone with the official Roku app."
         }
       ]
     },

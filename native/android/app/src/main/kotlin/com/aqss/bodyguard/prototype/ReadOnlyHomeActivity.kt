@@ -30,15 +30,20 @@ import com.aqss.nativefeedback.SessionEvidenceView
 import com.aqss.nativefeedback.SessionState
 import com.aqss.nativefeedback.TutorialContent
 import com.aqss.nativefeedback.InterfaceContent
+import java.util.ArrayDeque
 
 /** Presentation only: navigation and appearance cannot authorize an audio action. */
 class ReadOnlyHomeActivity : Activity() {
     companion object { private const val PICTURE_REQUEST = 4101 }
     private var pendingPictureTarget: String? = null
     private var page = "home"
-    private var optionsExpanded = true
-    private var advancedExpanded = true
+    private var optionsExpanded = false
+    private var advancedExpanded = false
     private var checklistExpanded = false
+    private var deviceDetails = false
+    private var futureDetails = false
+    private val detailSections = mutableSetOf<String>()
+    private val pageHistory = ArrayDeque<Bundle>()
     private var showingExample = false
     private var chartValuesVisible = false
     private var beginnerTourFinished = false
@@ -49,6 +54,8 @@ class ReadOnlyHomeActivity : Activity() {
     private lateinit var nav: LinearLayout
     private lateinit var tutorial: TutorialGuide
     private lateinit var help: Button
+    private lateinit var pageBack: Button
+    private lateinit var brand: TextView
     private val targets = mutableMapOf<String, View>()
     private var backCallback: OnBackInvokedCallback? = null
     private var hintView: TextView? = null
@@ -65,9 +72,16 @@ class ReadOnlyHomeActivity : Activity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         page = savedInstanceState?.getString("page")?.takeIf { id -> InterfaceContent.pages.any { it.id == id } } ?: "home"
-        optionsExpanded = savedInstanceState?.getBoolean("optionsExpanded", true) ?: true
-        advancedExpanded = savedInstanceState?.getBoolean("advancedExpanded", true) ?: true
+        optionsExpanded = savedInstanceState?.getBoolean("optionsExpanded") ?: false
+        advancedExpanded = savedInstanceState?.getBoolean("advancedExpanded") ?: false
         checklistExpanded = savedInstanceState?.getBoolean("checklistExpanded") ?: false
+        deviceDetails = savedInstanceState?.getBoolean("deviceDetails") ?: false
+        futureDetails = savedInstanceState?.getBoolean("futureDetails") ?: false
+        showingExample = savedInstanceState?.getBoolean("showingExample") ?: false
+        chartValuesVisible = savedInstanceState?.getBoolean("chartValuesVisible") ?: false
+        detailSections.addAll(savedInstanceState?.getStringArrayList("detailSections") ?: emptyList())
+        @Suppress("DEPRECATION")
+        savedInstanceState?.getParcelableArrayList<Bundle>("pageHistory")?.takeLast(32)?.forEach { pageHistory.addLast(it) }
         beginnerTourFinished = savedInstanceState?.getBoolean("beginnerTourFinished") ?: false
         pendingPictureTarget = savedInstanceState?.getString("pendingPictureTarget")?.takeIf { it in listOf("connectionPlan", "connectionCheck") }
         require(coverage.state == SessionState.UNKNOWN_PHYSICAL_STATE && coverage.reason == "NO_OBSERVATION")
@@ -81,7 +95,10 @@ class ReadOnlyHomeActivity : Activity() {
         hintText = getString(R.string.hint_waiting)
         root = vertical().apply { setBackgroundColor(skin.background) }
         val header = LinearLayout(this).apply { gravity = Gravity.CENTER_VERTICAL; setPadding(dp(16), dp(4), dp(16), dp(4)) }
-        header.addView(TextView(this).apply { text = if (resources.configuration.fontScale >= 1.5f) "AQSS" else "BODYGUARD"; textSize = 12f; setTypeface(null, Typeface.BOLD); setTextColor(skin.accent); letterSpacing = .13f }, LinearLayout.LayoutParams(0, -2, 1f))
+        pageBack = button("‹ Back") { backPage() }.apply { contentDescription = "Back to previous page" }
+        header.addView(pageBack, LinearLayout.LayoutParams(-2, -2).apply { marginEnd = dp(8) })
+        brand = TextView(this).apply { text = if (resources.configuration.fontScale >= 1.5f) "AQSS" else "BODYGUARD"; textSize = 12f; setTypeface(null, Typeface.BOLD); setTextColor(skin.accent); letterSpacing = .13f }
+        header.addView(brand, LinearLayout.LayoutParams(0, -2, 1f))
         header.addView(button("Jump to") { tutorial.chooseSection() }, LinearLayout.LayoutParams(-2, -2).apply { marginEnd = dp(8) })
         help = button("Help") { tutorial.chooseTopic() }.apply { contentDescription = "Help & tutorials" }
         header.addView(help)
@@ -93,15 +110,17 @@ class ReadOnlyHomeActivity : Activity() {
         scroll.addView(column, ViewGroup.LayoutParams(-1, -2))
         body.addView(scroll, LinearLayout.LayoutParams(-1, 0, 1f))
         tutorial = TutorialGuide(this, scroll, targets, skin,
-            setExpansion = { options, advanced, checklist -> optionsExpanded = options; advancedExpanded = advanced; checklistExpanded = checklist },
             currentPage = { page },
             openSetup = { group -> openSetup(group) },
             navigate = { target, area ->
+                if ((InterfaceContent.targetPages[target] ?: "home") != page) rememberPage()
                 showingExample = false
                 chartValuesVisible = false
                 page = InterfaceContent.targetPages[target] ?: "home"
                 if (page == "sound") optionsExpanded = true
                 if (page == "settings") advancedExpanded = true
+                if (page == "devices") deviceDetails = true
+                detailSections.add(target)
                 if (area == "checklist") checklistExpanded = true
                 renderPage()
             },
@@ -158,6 +177,7 @@ class ReadOnlyHomeActivity : Activity() {
             setSystemBars(dark)
         }
         renderPage(); tutorial.restore(saved)
+        saved?.getInt("scrollY")?.let { y -> scroll.post { scroll.scrollTo(0, y) } }
         if (!tutorial.isActive && !getSharedPreferences("aqss-presentation", MODE_PRIVATE).getBoolean("guideDismissedV1", false)) tutorial.start("getting_started")
         syncBackCallback()
     }
@@ -198,7 +218,8 @@ class ReadOnlyHomeActivity : Activity() {
     private fun section(title: String, detail: String, explanation: String, target: String) = card(target) { c ->
         label(c, title, 20f, bold = true)
         label(c, detail, 16f, if (detail.contains("Unknown") || detail == "Unavailable") skin.warning else skin.text, true)
-        label(c, explanation, 15f, skin.muted)
+        action(c, if (target in detailSections) "Hide details" else "More details", expanded = target in detailSections) { toggleDetails(target) }
+        if (target in detailSections) label(c, explanation, 15f, skin.muted)
     }
     private fun destination(title: String, subtitle: String, action: () -> Unit) {
         column.addView(button("$title\n$subtitle    ›", action = action).apply { gravity = Gravity.START or Gravity.CENTER_VERTICAL; contentDescription = "$title. $subtitle" }, LinearLayout.LayoutParams(-1, -2).apply { bottomMargin = dp(16) })
@@ -220,6 +241,8 @@ class ReadOnlyHomeActivity : Activity() {
             else -> homePage()
         }
         renderNav(); syncBackCallback()
+        pageBack.visibility = if (pageHistory.isEmpty()) View.GONE else View.VISIBLE
+        brand.text = if (pageHistory.isEmpty()) { if (resources.configuration.fontScale >= 1.5f) "AQSS" else "BODYGUARD" } else ""
         tutorial.refreshHighlight()
         if (preserveScroll) scroll.post { scroll.scrollTo(0, previousScroll) }
     }
@@ -247,10 +270,37 @@ class ReadOnlyHomeActivity : Activity() {
         }
     }
     private fun openPage(id: String) {
+        if (id == page) return
+        rememberPage()
         tutorial.close(restore = false); showingExample = false; chartValuesVisible = false; page = id
-        if (id == "sound") optionsExpanded = true
-        if (id == "settings") advancedExpanded = true
+        optionsExpanded = false; advancedExpanded = false; checklistExpanded = false; deviceDetails = false; futureDetails = false
         renderPage()
+    }
+    private fun location() = Bundle().apply {
+        putString("page", page); putInt("scrollY", scroll.scrollY)
+        putBoolean("optionsExpanded", optionsExpanded); putBoolean("advancedExpanded", advancedExpanded)
+        putBoolean("checklistExpanded", checklistExpanded); putBoolean("deviceDetails", deviceDetails); putBoolean("futureDetails", futureDetails)
+        putStringArrayList("detailSections", ArrayList(detailSections))
+        putBoolean("showingExample", showingExample); putBoolean("chartValuesVisible", chartValuesVisible)
+    }
+    private fun rememberPage() {
+        pageHistory.addLast(location())
+        if (pageHistory.size > 32) pageHistory.removeFirst()
+    }
+    private fun backPage(): Boolean {
+        val previous = pageHistory.pollLast() ?: return false
+        page = previous.getString("page") ?: "home"
+        optionsExpanded = previous.getBoolean("optionsExpanded"); advancedExpanded = previous.getBoolean("advancedExpanded")
+        checklistExpanded = previous.getBoolean("checklistExpanded"); deviceDetails = previous.getBoolean("deviceDetails"); futureDetails = previous.getBoolean("futureDetails")
+        detailSections.clear(); detailSections.addAll(previous.getStringArrayList("detailSections") ?: emptyList())
+        showingExample = previous.getBoolean("showingExample"); chartValuesVisible = previous.getBoolean("chartValuesVisible")
+        renderPage()
+        scroll.post { scroll.scrollTo(0, previous.getInt("scrollY")) }
+        return true
+    }
+    private fun toggleDetails(target: String) {
+        if (!detailSections.remove(target)) detailSections.add(target)
+        renderPage(true)
     }
     private fun jump(target: String) { tutorial.jump(target) }
 
@@ -268,14 +318,11 @@ class ReadOnlyHomeActivity : Activity() {
             val words = vertical()
             row.addView(words, LinearLayout.LayoutParams(0, -2, 1f))
             label(words, "Unknown physical state", 23f, skin.warning, true)
-            label(words, "No output observation", 15f, skin.text, true)
-            if (resources.configuration.fontScale < 1.5f) row.addView(InterfaceGraphic(this, skin, "orbit"), LinearLayout.LayoutParams(dp(90), dp(90)))
+            if ("coverage" in detailSections) label(words, "No output observation", 15f, skin.text, true)
             c.addView(row)
-            action(c, "Review readiness", true) { checklistExpanded = true; jump("capability") }
+            action(c, if ("coverage" in detailSections) "Hide status details" else "Status details", expanded = "coverage" in detailSections) { toggleDetails("coverage") }
+            if ("coverage" in detailSections) action(c, "Review readiness", true) { checklistExpanded = true; jump("capability") }
         }
-        label(column, "Explore your space", 20f, bold = true)
-        destination("Sound controls", "Presets, captions & equalizer") { openPage("sound") }
-        destination("Insights", "Trends, evidence & examples") { openPage("insights") }
     }
     private fun openSetup(group: String = "") {
         pendingPictureTarget = tutorial.pictureTarget
@@ -327,16 +374,13 @@ class ReadOnlyHomeActivity : Activity() {
         destination("Advanced options", "Device, privacy & background details") { jump("advanced") }
     }
     private fun devicesPage() {
-        column.addView(tutorial.connectionOverview(), LinearLayout.LayoutParams(-1, -2).apply { bottomMargin = dp(18) })
         destination("TV photo setup", "Read a model label or Network settings photo") { openInputTool("photo") }
         destination("Illustrated setup guides", "TV pairing, Google Home & Alexa · one picture at a time") { openSetup() }
+        label(column, "No qualified device connected", 16f, skin.muted)
+        action(column, if (deviceDetails) "Hide device details" else "More device details", expanded = deviceDetails) { deviceDetails = !deviceDetails; renderPage(true) }
+        if (!deviceDetails) return
         action(column, "TV & smart-home guide") { tutorial.start("getting_started") }
-        card { c ->
-            label(c, "PATH NOT QUALIFIED", 12f, skin.warning, true)
-            label(c, "This app   ···   Output needed", 21f, skin.accent, true)
-            label(c, "No qualified device connected", 18f, bold = true)
-            label(c, "Connection, permission and physical observation must all be established. This diagram shows the requirements.", 16f, skin.muted)
-        }
+        column.addView(tutorial.connectionOverview(), LinearLayout.LayoutParams(-1, -2).apply { bottomMargin = dp(18) })
         card("capability") { c ->
             label(c, "Readiness checklist", 22f, bold = true)
             label(c, if (capability.label == "UNKNOWN" && !capability.canActuate && capability.reasons.size == 6) "Six setup checks unknown" else "Unavailable — checklist unconfirmed", 17f, skin.warning)
@@ -379,16 +423,12 @@ class ReadOnlyHomeActivity : Activity() {
             } else {
                 c.addView(InterfaceGraphic(this, skin, "wave"), LinearLayout.LayoutParams(-1, dp(70)))
                 label(c, "No measurements yet", 21f, bold = true)
-                label(c, "A qualified observation source is needed before a real trend can appear. Missing measurements cannot establish safe audio.", 16f, skin.muted)
+                action(c, if ("trends" in detailSections) "Hide measurement details" else "Measurement details", expanded = "trends" in detailSections) { toggleDetails("trends") }
+                if ("trends" in detailSections) label(c, "A qualified observation source is needed before a real trend can appear. Missing measurements cannot establish safe audio.", 16f, skin.muted)
                 action(c, "Explore an example", true) { showingExample = true; renderPage() }
             }
         }
         section("Session history", "No observed events", "A missing history cannot establish continuous coverage. Requests and verified results will need distinct records.", "history")
-        card { c ->
-            label(c, "Read the whole picture", 20f, bold = true)
-            label(c, "Future insights need source, time and verification context. Unknown intervals must remain visible.", 16f, skin.muted)
-            action(c, "Review requirements") { jump("capability") }
-        }
     }
     private fun settingsPage() {
         card("appearance") { c ->
@@ -412,8 +452,8 @@ class ReadOnlyHomeActivity : Activity() {
             section("Privacy and storage", "No audio files saved by this app", "Appearance and guide dismissal stay on this phone. Voice check uses the microphone only after you start it. Audio, recognized words and photo details are not saved by AQSS or uploaded. Closing the tool clears its details.", "privacy")
             section("Move this session option", "Unavailable", "No authorized endpoint or verified transfer path is connected.", "handoffOption")
         }
-        label(column, "On the horizon", 22f, bold = true)
-        InterfaceContent.future.forEach { f ->
+        action(column, if (futureDetails) "Hide more features" else "More features", expanded = futureDetails) { futureDetails = !futureDetails; renderPage(true) }
+        if (futureDetails) InterfaceContent.future.forEach { f ->
             destination(f.title, f.detail) {
                 val dialog = AlertDialog.Builder(this).setTitle(f.title).setMessage(f.explanation).setPositiveButton("Got it", null)
                 if (f.id == "voice") dialog.setNeutralButton("Show voice steps") { _, _ -> openSetup("voice") }
@@ -424,19 +464,16 @@ class ReadOnlyHomeActivity : Activity() {
     }
     private fun handleLocalBack(): Boolean {
         when {
-            tutorial.isActive -> tutorial.close()
+            tutorial.isActive -> tutorial.back()
             showingExample -> { showingExample = false; chartValuesVisible = false; renderPage() }
-            page == "settings" && advancedExpanded -> { advancedExpanded = false; renderPage() }
-            page == "sound" && optionsExpanded -> { optionsExpanded = false; renderPage() }
-            page == "devices" && checklistExpanded -> { checklistExpanded = false; renderPage() }
-            page != "home" -> openPage("home")
+            pageHistory.isNotEmpty() -> backPage()
             else -> return false
         }
         return true
     }
     private fun syncBackCallback() {
         if (Build.VERSION.SDK_INT < 33 || !::tutorial.isInitialized) return
-        val needed = tutorial.isActive || page != "home"
+        val needed = tutorial.isActive || showingExample || pageHistory.isNotEmpty()
         if (needed && backCallback == null) {
             val callback = OnBackInvokedCallback { handleLocalBack() }
             onBackInvokedDispatcher.registerOnBackInvokedCallback(OnBackInvokedDispatcher.PRIORITY_DEFAULT, callback); backCallback = callback
@@ -449,10 +486,10 @@ class ReadOnlyHomeActivity : Activity() {
         backCallback = null; super.onDestroy()
     }
     private fun savePresentation(outState: Bundle) {
-        outState.putString("page", page)
+        outState.putAll(location())
+        outState.putParcelableArrayList("pageHistory", ArrayList(pageHistory))
         outState.putBoolean("beginnerTourFinished", beginnerTourFinished)
         outState.putString("pendingPictureTarget", pendingPictureTarget)
-        outState.putBoolean("optionsExpanded", optionsExpanded); outState.putBoolean("advancedExpanded", advancedExpanded); outState.putBoolean("checklistExpanded", checklistExpanded)
         tutorial.save(outState)
     }
     override fun onSaveInstanceState(outState: Bundle) { savePresentation(outState); super.onSaveInstanceState(outState) }

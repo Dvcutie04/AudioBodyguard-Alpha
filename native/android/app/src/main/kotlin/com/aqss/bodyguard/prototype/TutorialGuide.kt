@@ -19,7 +19,6 @@ class TutorialGuide(
     private val scroll: ScrollView,
     private val targets: Map<String, View>,
     private val skin: InterfaceTheme,
-    private val setExpansion: (Boolean, Boolean, Boolean) -> Unit,
     private val currentPage: () -> String,
     private val openSetup: (String) -> Unit,
     private val navigate: (String, String?) -> Unit,
@@ -210,9 +209,11 @@ class TutorialGuide(
     fun close(restore: Boolean = true) {
         if (!isActive) return
         guide.close(); footer.visibility = View.GONE
-        setExpansion(true, true, true)
         stateChanged()
         if (restore) { restorePage(previousPage); focusHelp() }
+    }
+    fun back() {
+        if (guide.index > 0) { guide.back(); render() } else close()
     }
     fun pause() { /* No animation or timer to stop. */ }
     fun resume() { if (isActive) { footer.visibility = View.VISIBLE; stateChanged() } }
