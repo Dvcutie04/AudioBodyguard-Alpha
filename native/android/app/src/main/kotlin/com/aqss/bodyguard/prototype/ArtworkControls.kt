@@ -52,10 +52,11 @@ internal class ConnectionHeadView(activity: Activity, private val connected: Boo
     }
     override fun onAttachedToWindow() { super.onAttachedToWindow(); updatePulse() }
     override fun onWindowVisibilityChanged(visibility: Int) { super.onWindowVisibilityChanged(visibility); updatePulse() }
+    override fun onVisibilityChanged(changedView: View, visibility: Int) { super.onVisibilityChanged(changedView, visibility); updatePulse() }
     override fun onDetachedFromWindow() { pulse?.cancel(); pulse = null; alpha = 1f; super.onDetachedFromWindow() }
     private fun updatePulse() {
         pulse?.cancel(); pulse = null; alpha = 1f
-        if (connected && isAttachedToWindow && windowVisibility == View.VISIBLE && ValueAnimator.areAnimatorsEnabled()) {
+        if (connected && isShown && isAttachedToWindow && windowVisibility == View.VISIBLE && ValueAnimator.areAnimatorsEnabled()) {
             pulse = ObjectAnimator.ofFloat(this, "alpha", 1f, .82f).apply {
                 duration = 1800; repeatCount = ValueAnimator.INFINITE; repeatMode = ValueAnimator.REVERSE; start()
             }

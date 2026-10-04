@@ -103,7 +103,7 @@ final class AQSSReadOnlyUITests: XCTestCase {
             screenshot("Page \(id)", app)
         }
         XCTAssertFalse(app.staticTexts["Make space for you."].exists)
-        tap("Help & tutorials", app); label("Make space for you.", app)
+        app.buttons["Help & tutorials"].tap(); label("Make space for you.", app)
         tap("Cancel", app)
         jump("Readiness checklist", app); label("Six setup checks unknown", app)
         jump("Session transfer", app); label("No supported endpoint or verified transfer path", app)
