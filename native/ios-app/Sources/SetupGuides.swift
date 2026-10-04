@@ -176,7 +176,7 @@ struct SetupGuidesView: View {
         if detailsExpanded {
             VStack(alignment: .leading, spacing: 14) {
                 Text(route.appliesTo).font(.callout)
-                Text("Use your TV maker’s app for passwords and approvals.").font(.callout)
+                Text("Use your TV’s setup screens or the official app for passwords and approvals.").font(.callout)
                 if route.id == "roku_network" || route.id == "roku_model" {
                     control("I’m already in Settings", icon: "gearshape", id: "setup-skip-home") { remember(); index = 2; detailsExpanded = false; referencesExpanded = false }
                 }

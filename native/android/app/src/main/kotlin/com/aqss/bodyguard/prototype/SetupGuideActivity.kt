@@ -243,7 +243,7 @@ class SetupGuideActivity : Activity() {
         action(content, if (detailsExpanded) "Hide details" else "More details") { detailsExpanded = !detailsExpanded; render(true) }
         if (detailsExpanded) {
             words(content, route.appliesTo, color = skin.muted)
-            words(content, "Use your TV maker’s app for passwords and approvals.", color = skin.muted)
+            words(content, "Use your TV’s setup screens or the official app for passwords and approvals.", color = skin.muted)
             if (route.id in listOf("roku_network", "roku_model")) action(content, "I’m already in Settings") { remember(); index = 2; detailsExpanded = false; referencesExpanded = false; render() }
             if (resumeIndex(route) != null) action(content, "Start from the beginning") { remember(); saveProgress(route, null); index = 0; detailsExpanded = false; render() }
             words(content, if (route.models.isEmpty()) "Menu-family guide · match your TV’s exact model." else "Documented model examples: ${route.models.joinToString()}", color = skin.muted)
