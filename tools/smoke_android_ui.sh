@@ -204,6 +204,12 @@ assert_scroll_label "official phone app" phone_help_limits
 tap_scroll_label "Hide help" phone_help_close
 tap_scroll_label "Phone Wi-Fi pictures" phone_wifi_open
 capture_ui pixel_wifi_intro
+# The emulator identifies itself as a generic Android device on some images.
+# That correctly opens the phone chooser instead of assuming Pixel menus.
+if python3 tools/check_android_simulation_ui.py --assert-label "$artifact_dir/pixel_wifi_intro.xml" "Phone Wi-Fi setup" 2>/dev/null; then
+    tap_scroll_label "Google Pixel — connect to your home Wi-Fi" pixel_wifi_choose
+    capture_ui pixel_wifi_intro
+fi
 assert_tutorial_label pixel_wifi_intro "Google Pixel — connect to your home Wi-Fi"
 tap_tutorial_label "Start guide" pixel_wifi_start
 tap_tutorial_label "Next" pixel_wifi_settings
