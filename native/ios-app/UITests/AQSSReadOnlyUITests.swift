@@ -412,7 +412,8 @@ final class AQSSReadOnlyUITests: XCTestCase {
         tap("Phone Wi-Fi pictures", app)
         label("iPhone — connect to your home Wi-Fi", app)
         app.buttons["setup-next"].tap(); label("Step 1 of 6", app)
-        app.buttons["setup-next"].tap(); label("iPhone • Settings", app)
+        app.buttons["setup-next"].tap()
+        XCTAssertTrue(app.otherElements["setup-illustration"].label.contains("iPhone • Settings"))
         screenshot("iPhone Wi-Fi uses the iPhone Settings menu", app)
         for _ in 0..<4 { app.buttons["setup-next"].tap() }
         label("blue checkmark", app)
