@@ -43,7 +43,7 @@ struct AppButtonStyle: ButtonStyle {
     }
 }
 
-/// The owner's exact artwork, rendered inside a normal accessible control.
+/// Background-free rose artwork, rendered inside a normal accessible control.
 struct RoseButton: View {
     let title: String
     let theme: AppTheme
@@ -53,8 +53,8 @@ struct RoseButton: View {
     var body: some View {
         Button(action: action) {
             HStack(spacing: 8) {
-                Image("TribalRose").resizable().scaledToFill().frame(width: 26, height: 34).clipped()
-                    .clipShape(RoundedRectangle(cornerRadius: 5)).accessibilityHidden(true)
+                Image("TribalRose").resizable().scaledToFit().frame(width: 26, height: 34)
+                    .accessibilityHidden(true)
                 if !compact && !textSize.isAccessibilitySize { Text(title).fixedSize(horizontal: false, vertical: true) }
             }.frame(minWidth: 44, minHeight: 44)
         }.buttonStyle(AppButtonStyle(theme: theme)).accessibilityLabel(title)
@@ -63,17 +63,14 @@ struct RoseButton: View {
 
 struct ConnectionHeadView: View {
     let connected: Bool
-    let theme: AppTheme
     @Environment(\.scenePhase) private var scenePhase
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @State private var breathing = false
     private var animate: Bool { connected && scenePhase == .active && !reduceMotion }
     var body: some View {
         Image("ConnectionHead").resizable().scaledToFit().frame(maxWidth: 210)
-            .clipShape(RoundedRectangle(cornerRadius: 28))
             .saturation(connected ? 1 : 0)
             .scaleEffect(breathing ? 1.015 : 1)
-            .shadow(color: connected ? theme.accent.opacity(breathing ? 0.5 : 0.2) : .clear, radius: breathing ? 18 : 8)
             .accessibilityLabel(connected ? "AI head. Verified connection active." : "AI head. Connection not verified. Black and white.")
             .accessibilityIdentifier("connection-head")
             .onAppear { updateAnimation() }
@@ -282,7 +279,7 @@ private struct ReadOnlyHomeView: View {
     private var homePage: some View {
         VStack(spacing: 16) {
             card(target: "welcome") {
-                ConnectionHeadView(connected: coverage.state == .active, theme: theme).frame(maxWidth: .infinity)
+                ConnectionHeadView(connected: coverage.state == .active).frame(maxWidth: .infinity)
                 Text(coverage.state == .active ? "Connection active" : "Connection not verified")
                     .font(.headline).frame(maxWidth: .infinity).accessibilityAddTraits(.isHeader)
                 action(beginnerTourFinished ? "Replay connection guide" : "TV & smart-home guide", icon: "arrow.right.circle", primary: true) { startTutorial("getting_started") }

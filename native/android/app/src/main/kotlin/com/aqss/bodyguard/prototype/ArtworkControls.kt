@@ -17,17 +17,17 @@ internal fun roseButton(activity: Activity, skin: InterfaceTheme, title: String,
     text = if (compact || activity.resources.configuration.fontScale >= 1.5f) "" else title
     contentDescription = title
     skin.style(this)
-    val art = CenterCroppedArtwork(activity.resources.getDrawable(R.drawable.tribal_rose, activity.theme))
+    val art = AspectFitArtwork(activity.resources.getDrawable(R.drawable.tribal_rose, activity.theme))
     art.setBounds(0, 0, skin.dp(26), skin.dp(34))
     setCompoundDrawables(art, null, null, null)
     compoundDrawablePadding = skin.dp(if (compact) 0 else 8)
     setOnClickListener { action() }
 }
 
-/** Crop only when drawing the button; keep the supplied JPEG unchanged. */
-private class CenterCroppedArtwork(private val artwork: Drawable) : Drawable() {
+/** Keep the full transparent rose silhouette inside its button icon bounds. */
+private class AspectFitArtwork(private val artwork: Drawable) : Drawable() {
     override fun draw(canvas: Canvas) {
-        val scale = maxOf(bounds.width().toFloat() / artwork.intrinsicWidth, bounds.height().toFloat() / artwork.intrinsicHeight)
+        val scale = minOf(bounds.width().toFloat() / artwork.intrinsicWidth, bounds.height().toFloat() / artwork.intrinsicHeight)
         val checkpoint = canvas.save()
         canvas.clipRect(bounds)
         canvas.translate(bounds.exactCenterX() - artwork.intrinsicWidth * scale / 2, bounds.exactCenterY() - artwork.intrinsicHeight * scale / 2)

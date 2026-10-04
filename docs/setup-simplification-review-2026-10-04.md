@@ -2,7 +2,7 @@
 
 Home now presents the supplied head image, one connection status, and the connection guide. Status explanations, planned features, readiness, references and troubleshooting remain behind explicit controls. Repeated coverage cards and the default feature catalogue are removed from Home. No existing useful setup route is deleted.
 
-The supplied purple tribal rose appears in the root Help control, tutorial Exit Home, setup Back to Tutorial/Close, input-tool Close and the native menu dismissal controls. The original JPEGs are unchanged on both platforms. The head is grayscale while connection evidence is unavailable. Color and a gentle animation require the validated coverage state to be ACTIVE; completing pictures cannot change that state. Animation respects inactive/background state and reduced-motion settings.
+The supplied purple tribal rose appears in the root Help control, tutorial Exit Home, setup Back to Tutorial/Close, input-tool Close and the native menu dismissal controls. Background-removal derivatives are now packaged as transparent PNGs on both platforms; the original uploads are retained. The head is grayscale while connection evidence is unavailable. Color and a gentle animation require the validated coverage state to be ACTIVE; completing pictures cannot change that state. Animation respects inactive/background state and reduced-motion settings.
 
 ## Pass 1 — chronology and primary-source scope
 
@@ -41,3 +41,20 @@ Checked every final step's screen, instruction, surface, action and highlight ag
 Every guide step renders its own numbered schematic. No photographed TV menu from another brand is inserted. Roku uses its documented left-menu/right-panel arrangement; the documented Philips profile menu uses the upper-right position. The supplied head and rose are interface artwork, never instructional TV photos.
 
 These are labelled illustrations, not verified photographs of every model or firmware. Exact hardware/photo fidelity remains unverified without the physical model, country, firmware and official app version. Native build/walkthrough/screenshot evidence is reported separately for the delivered commit in draft PR #32. The preview has no verified physical TV connection or audio protection.
+
+## Final sweep — transparent artwork
+
+The owner supplied IMG_5234.jpeg as the rose-button presentation reference and IMG_5227.jpeg as the isolated head reference. Image-edit mode with a transparent background produced the cutouts; no instructional TV/phone picture was replaced with generated artwork.
+
+| Artwork | Native PNG copies | Alpha inspection |
+|---|---|---|
+| Purple tribal rose | iOS `TribalRose.imageset/TribalRose.png`; Android `drawable-nodpi/tribal_rose.png` | RGBA, 1202 × 1308; all four corner pixels have alpha 0. |
+| Humanoid head | iOS `ConnectionHead.imageset/ConnectionHead.png`; Android `drawable-nodpi/connection_head.png` | RGBA, 1287 × 1222; transparent margin around the head, neck and shoulders; all four corners have alpha 0. |
+
+Both color and grayscale head states render the same PNG. Native saturation filters change color without replacing its alpha channel. The iOS rectangular image mask and outer glow were removed. Both platforms fit the complete rose inside the control instead of cropping its tip or curls. The ordinary button surface remains, as requested in the presentation reference.
+
+Final rose edit prompt: preserve the purple/lilac/black tribal design, proportions and ribbon shapes; clean the alpha matte, white background residue and detached speckles; preserve fine curled strands; leave transparent margins and interior gaps; add no background, frame, text, UI or shadow.
+
+Final head edit prompt: extract the supplied IMG_5227 head, neck and small shoulder silhouette; replace the white background and right border with alpha; preserve the robot face, clear cranium and cyan/blue/pink/violet/warm-yellow lights; add no new facial features, background, halo, shadow or detached speckles; retain transparent margins for both color and grayscale use.
+
+The final instruction sweep again checks all 45 routes / 389 steps against the already-reviewed menu-family scope, chronological highlights and route/source references. Phone menus, conditional assistant choices and native App Store/Google Play labels remain separate. Previous-page history and exact tutorial resume are rechecked by the native walkthroughs for the delivered commit; this does not establish physical hardware compatibility.
