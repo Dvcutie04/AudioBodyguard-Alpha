@@ -185,11 +185,11 @@ jobs:
             SWIFT_ACTIVE_COMPILATION_CONDITIONS=AQSS_CONNECTED_DEMO \
             PRODUCT_BUNDLE_IDENTIFIER=com.aqss.bodyguard.prototype.demo \
             'INFOPLIST_KEY_CFBundleDisplayName=Audio Bodyguard Demo' \
-            INFOPLIST_KEY_AQSSPreviewMode=CONNECTED_UI_DEMO \
             ARCHS=arm64 ONLY_ACTIVE_ARCH=NO CODE_SIGNING_ALLOWED=NO build
           app="$RUNNER_TEMP/aqss-connected-demo-derived/Build/Products/Release-iphonesimulator/AQSSReadOnly.app"
           lipo "$app/AQSSReadOnly" -verify_arch arm64
           test "$(/usr/libexec/PlistBuddy -c 'Print :CFBundleIdentifier' "$app/Info.plist")" = 'com.aqss.bodyguard.prototype.demo'
+          /usr/libexec/PlistBuddy -c 'Add :AQSSPreviewMode string CONNECTED_UI_DEMO' "$app/Info.plist"
           test "$(/usr/libexec/PlistBuddy -c 'Print :AQSSPreviewMode' "$app/Info.plist")" = 'CONNECTED_UI_DEMO'
           ditto -c -k --keepParent "$app" "$RUNNER_TEMP/AudioBodyguard-Connected-Demo.app.zip"
           python3 - <<'PYTHON'
