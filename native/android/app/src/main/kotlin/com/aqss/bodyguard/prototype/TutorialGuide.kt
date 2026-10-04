@@ -69,10 +69,10 @@ class TutorialGuide(
         parent.addView(view, LinearLayout.LayoutParams(-1, -2)); return view
     }
     private fun button(label: String, primary: Boolean = false, action: () -> Unit) = Button(activity).apply { text = label; skin.style(this, primary); setOnClickListener { action() } }
-    fun chooseTopic() = skin.menu("Choose a tutorial", listOf("About this page" to {
+    fun chooseTopic() = skin.menu("Choose a tutorial", listOf<Pair<String, () -> Unit>>("About this page" to {
         val page = InterfaceContent.pages.single { it.id == currentPage() }
         AlertDialog.Builder(activity).setTitle(page.headline).setMessage(page.subtitle).setPositiveButton("Close", null).show()
-    }, "Illustrated setup guides" to { openSetup("") }, "Voice check — step by step" to { openSetup("voice") }) + TutorialContent.topics.map { it.title to { start(it.id) } })
+    }, "Illustrated setup guides" to { openSetup("") }, "Voice check — step by step" to { openSetup("voice") }) + TutorialContent.topics.map { it.title to { start(it.id); Unit } })
     fun chooseSection() {
         val entries = listOf("Start here" to "welcome", "Coverage" to "coverage", "Readiness checklist" to "capability", "Sound options" to "options", "Advanced options" to "advanced", "Captions" to "captions", "Session history" to "history", "Foreground OS hint" to "hint", "Privacy and storage" to "privacy", "Session transfer" to "handoff")
         skin.menu("Jump to a section", entries.map { it.first to { jump(it.second) } })
