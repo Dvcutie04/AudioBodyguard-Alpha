@@ -5240,7 +5240,7 @@
         },
         {
           "title": "Enter the TV verification code",
-          "instruction": "On your own phone or computer, sign in to the official Amazon page and enter the verification code shown on your own TV. Never use a code drawn in an example.",
+          "instruction": "On your phone or computer, sign in to Amazon and enter the code shown on your TV.",
           "surface": "phone",
           "screen": "Amazon device approval",
           "items": [
@@ -5249,7 +5249,7 @@
           ],
           "focus": 0,
           "action": "type",
-          "note": "Use the numbered highlight on your real device. This illustration does not confirm a connection to Audio Bodyguard."
+          "note": "On your own phone or computer, sign in to the official Amazon page and enter the verification code shown on your own TV. Never use a code drawn in an example."
         },
         {
           "title": "Check setup on your TV",

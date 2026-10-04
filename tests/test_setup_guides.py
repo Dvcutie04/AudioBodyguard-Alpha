@@ -65,6 +65,12 @@ def test_roku_default_instructions_are_short_and_keep_context_in_optional_notes(
     assert 'Model' in routes['roku_model']['steps'][-1]['instruction']
 
 
+def test_picture_instructions_fit_a_short_reading_step():
+    for route in setup_routes().values():
+        for number, step in enumerate(route['steps'], 1):
+            assert len(step['instruction'].split()) <= 30, (route['id'], number)
+
+
 def setup_routes():
     root = Path(__file__).resolve().parents[1]
     return {route['id']: route for route in json.loads((root / 'contracts/setup_guides_v1.json').read_text())['routes']}

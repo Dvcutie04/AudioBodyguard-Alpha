@@ -134,12 +134,14 @@ if python3 tools/check_android_simulation_ui.py --assert-label "$artifact_dir/be
 if python3 tools/check_android_simulation_ui.py --assert-label "$artifact_dir/beginner_step_1.xml" "Planned controls" 2>/dev/null; then exit 1; fi
 assert_tutorial_label beginner_step_1 "1. Connect to your TV or home device"
 assert_tutorial_label beginner_step_1 "2. Connect to your phone"
-adb shell input swipe 500 1350 500 950 650
+if python3 tools/check_android_simulation_ui.py --assert-label "$artifact_dir/beginner_step_1.xml" "Skip series intros" 2>/dev/null; then exit 1; fi
+assert_tutorial_label beginner_step_1 "Start picture setup"
+tap_scroll_label "More features" welcome_more_features
+capture_ui welcome_features
+assert_tutorial_label welcome_features "Planned"
 assert_scroll_label "Skip series intros" welcome_features
 assert_scroll_label "Lower volume during commercials" welcome_features_commercials
 assert_scroll_label "Universal remote control" welcome_features_remote
-if python3 tools/check_android_simulation_ui.py --assert-label "$artifact_dir/welcome_features_remote.xml" "Voice input display and recognized words" 2>/dev/null; then exit 1; fi
-tap_scroll_label "More features" welcome_more_features
 assert_scroll_label "Voice input display and recognized words" welcome_features_last
 if python3 tools/check_android_simulation_ui.py --assert-label "$artifact_dir/welcome_features_last.xml" "Picture guides and photo-assisted setup" 2>/dev/null; then exit 1; fi
 tap_tutorial_label "Start picture setup" beginner_begin
@@ -223,7 +225,7 @@ assert_tutorial_label coverage "Unknown physical state"
 assert_tutorial_label coverage "No output observation"
 tap_tutorial_label "Sound" nav_sound
 capture_ui sound
-assert_tutorial_label sound "Sound, on your terms."
+assert_tutorial_label sound "SOUND"
 tap_tutorial_label "Jump to" jump_volume_open
 tap_tutorial_label "Sound options" jump_volume
 capture_ui sound_options
@@ -271,6 +273,12 @@ capture_ui example_closed
 assert_tutorial_label example_closed "No measurements yet"
 tap_tutorial_label "Settings" nav_settings
 capture_ui settings
+if python3 tools/check_android_simulation_ui.py --assert-label "$artifact_dir/settings.xml" "Make space for you." 2>/dev/null; then exit 1; fi
+tap_tutorial_label "Help & tutorials" settings_help
+tap_tutorial_label "About this page" settings_about
+capture_ui settings_about_text
+assert_tutorial_label settings_about_text "Make space for you."
+adb shell input keyevent KEYCODE_BACK
 tap_tutorial_label "Daylight" theme_daylight
 capture_ui daylight_settings
 tap_tutorial_label "Home" theme_home
@@ -404,10 +412,10 @@ tap_scroll_label "Options" back_sound_options
 tap_tutorial_label "Settings" back_settings
 adb shell input keyevent KEYCODE_BACK
 capture_ui page_back_sound
-assert_tutorial_label page_back_sound "Sound, on your terms."
+assert_tutorial_label page_back_sound "SOUND"
 adb shell input keyevent KEYCODE_BACK
 capture_ui page_back_devices
-assert_tutorial_label page_back_devices "A clear path to sound."
+assert_tutorial_label page_back_devices "DEVICES"
 tap_tutorial_label "Back to previous page" page_back_home_button
 capture_ui page_back_home
 assert_tutorial_label page_back_home "Unknown physical state"

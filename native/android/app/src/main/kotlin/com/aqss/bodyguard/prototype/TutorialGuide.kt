@@ -1,6 +1,7 @@
 package com.aqss.bodyguard.prototype
 
 import android.app.Activity
+import android.app.AlertDialog
 import android.graphics.Typeface
 import android.os.Build
 import android.os.Bundle
@@ -12,6 +13,7 @@ import android.widget.ScrollView
 import android.widget.TextView
 import com.aqss.nativefeedback.GuideProgress
 import com.aqss.nativefeedback.TutorialContent
+import com.aqss.nativefeedback.InterfaceContent
 
 /** A dedicated, one-task screen. Choices are explanations, never device commands. */
 class TutorialGuide(
@@ -64,7 +66,10 @@ class TutorialGuide(
         parent.addView(view, LinearLayout.LayoutParams(-1, -2)); return view
     }
     private fun button(label: String, primary: Boolean = false, action: () -> Unit) = Button(activity).apply { text = label; skin.style(this, primary); setOnClickListener { action() } }
-    fun chooseTopic() = skin.menu("Choose a tutorial", listOf("Illustrated setup guides" to { openSetup("") }, "Voice check — step by step" to { openSetup("voice") }) + TutorialContent.topics.map { it.title to { start(it.id) } })
+    fun chooseTopic() = skin.menu("Choose a tutorial", listOf("About this page" to {
+        val page = InterfaceContent.pages.single { it.id == currentPage() }
+        AlertDialog.Builder(activity).setTitle(page.headline).setMessage(page.subtitle).setPositiveButton("Close", null).show()
+    }, "Illustrated setup guides" to { openSetup("") }, "Voice check — step by step" to { openSetup("voice") }) + TutorialContent.topics.map { it.title to { start(it.id) } })
     fun chooseSection() {
         val entries = listOf("Start here" to "welcome", "Coverage" to "coverage", "Readiness checklist" to "capability", "Sound options" to "options", "Advanced options" to "advanced", "Captions" to "captions", "Session history" to "history", "Foreground OS hint" to "hint", "Privacy and storage" to "privacy", "Session transfer" to "handoff")
         skin.menu("Jump to a section", entries.map { it.first to { jump(it.second) } })
@@ -134,10 +139,10 @@ class TutorialGuide(
         if (isBeginner && step.target == "welcome") {
             content.addView(featureCatalog())
         } else if (step.example.isNotEmpty()) {
-            if (isBeginner) content.addView(button(if (helpExpanded) "Hide help" else TutorialContent.helpLabel) { helpExpanded = !helpExpanded; render(true) }.apply {
+            content.addView(button(if (helpExpanded) "Hide help" else TutorialContent.helpLabel) { helpExpanded = !helpExpanded; render(true) }.apply {
                 if (Build.VERSION.SDK_INT >= 30) stateDescription = if (helpExpanded) "Expanded" else "Collapsed"
             }, LinearLayout.LayoutParams(-1, -2))
-            if (!isBeginner || helpExpanded) {
+            if (helpExpanded) {
                 val example = column().apply { setPadding(dp(16), dp(16), dp(16), dp(6)); background = skin.shape(skin.surface) }
                 text(example, step.example, color = skin.muted)
                 if (isBeginner && step.target in listOf("connectionPlan", "connectionCheck")) listOf("chooseTV", "chooseHome").forEach { target ->
@@ -160,18 +165,20 @@ class TutorialGuide(
         return box
     }
     private fun featureCatalog(): LinearLayout {
-        val box = column().apply { setPadding(dp(18), dp(18), dp(18), dp(6)); background = skin.shape(skin.surface) }
-        TutorialContent.features.filter { moreFeatures || it.id in TutorialContent.featuredIDs }.forEach { feature ->
+        val box = column()
+        box.addView(button(if (moreFeatures) "Fewer features" else TutorialContent.moreFeaturesLabel) { moreFeatures = !moreFeatures; render(true) }.apply {
+            if (Build.VERSION.SDK_INT >= 30) stateDescription = if (moreFeatures) "Expanded" else "Collapsed"
+        }, LinearLayout.LayoutParams(-1, -2))
+        if (moreFeatures) TutorialContent.features.forEach { feature ->
             val row = column()
-            text(row, feature.title, 16f, bold = true).apply { gravity = Gravity.CENTER; setPadding(0, 0, 0, dp(3)) }
-            row.setPadding(0, 0, 0, dp(10))
+            text(row, feature.title, 16f, bold = true)
+            text(row, if (feature.availability == "preview") "Preview" else "Planned", 14f, skin.accent, true)
+            text(row, feature.detail, color = skin.muted)
+            row.setPadding(0, dp(12), 0, 0)
             row.importantForAccessibility = View.IMPORTANT_FOR_ACCESSIBILITY_YES
             row.contentDescription = "${feature.title}. ${if (feature.availability == "preview") "Explore in this preview" else "Planned"}. ${feature.detail}"
             box.addView(row, LinearLayout.LayoutParams(-1, -2))
         }
-        box.addView(button(if (moreFeatures) "Fewer features" else TutorialContent.moreFeaturesLabel) { moreFeatures = !moreFeatures; render(true) }.apply {
-            if (Build.VERSION.SDK_INT >= 30) stateDescription = if (moreFeatures) "Expanded" else "Collapsed"
-        }, LinearLayout.LayoutParams(-1, -2))
         return box
     }
     private fun refreshChoices() {

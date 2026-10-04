@@ -171,6 +171,8 @@ private struct ReadOnlyHomeView: View {
                 if let group = pendingSetupGroup { pendingSetupGroup = nil; showSetup(group) }
             }) {
                 menuSheet("Choose a tutorial") {
+                    Text(currentPage.headline).font(.headline)
+                    Text(currentPage.subtitle).foregroundColor(theme.muted)
                     action("Illustrated setup guides", icon: "rectangle.stack") { pendingSetupGroup = ""; helpVisible = false }
                     action("Voice check — step by step", icon: "mic") { pendingSetupGroup = "voice"; helpVisible = false }
                     ForEach(AQSSTutorialContent.topics, id: \.id) { topic in action(topic.title, icon: "questionmark.circle") { helpVisible = false; startTutorial(topic.id) } }
@@ -214,11 +216,9 @@ private struct ReadOnlyHomeView: View {
     }
 
     private var pageHeading: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            Text(currentPage.title.uppercased()).tracking(2).font(.caption.weight(.bold)).foregroundColor(theme.accent)
-            Text(currentPage.headline).font(.largeTitle.bold()).fixedSize(horizontal: false, vertical: true).accessibilityAddTraits(.isHeader)
-            Text(currentPage.subtitle).font(.body).foregroundColor(theme.muted)
-        }.accessibilityIdentifier("page-\(page)")
+        Text(currentPage.title.uppercased()).font(.title.bold())
+            .fixedSize(horizontal: false, vertical: true).accessibilityAddTraits(.isHeader)
+            .accessibilityIdentifier("page-\(page)")
     }
 
     @ViewBuilder private var pageContent: some View {
@@ -459,6 +459,7 @@ private struct ReadOnlyHomeView: View {
         guard page != id else { return }
         rememberPage(); closeTutorial(restore: false); showingExample = false; page = id
         optionsExpanded = false; advancedExpanded = false; checklistExpanded = false; deviceDetails = false; futureDetails = false
+        detailSections.removeAll()
         navigationTarget = "page-heading"; navigationRequest += 1
     }
     private func toggleDetails(_ id: String) { if !detailSections.insert(id).inserted { detailSections.remove(id) } }
@@ -553,7 +554,7 @@ private struct ReadOnlyHomeView: View {
                     if topic.id == "getting_started" && step.target == "welcome" {
                         featureCatalog
                     } else if !step.example.isEmpty {
-                        if topic.id == "getting_started" {
+                        if !step.example.isEmpty {
                             Button { tutorialHelp.toggle() } label: {
                                 Label(tutorialHelp ? "Hide help" : AQSSTutorialContent.helpLabel, systemImage: tutorialHelp ? "chevron.up" : "chevron.down")
                                     .frame(maxWidth: .infinity, minHeight: 44, alignment: .leading)
@@ -568,9 +569,6 @@ private struct ReadOnlyHomeView: View {
                                     }
                                 }.padding(14).background(theme.surface).clipShape(RoundedRectangle(cornerRadius: 14))
                             }
-                        } else {
-                            Text(step.example).font(.callout).foregroundColor(theme.muted).fixedSize(horizontal: false, vertical: true)
-                                .padding(18).frame(maxWidth: .infinity, alignment: .leading).background(theme.surface).clipShape(RoundedRectangle(cornerRadius: 18))
                         }
                     }
                 }.frame(maxWidth: 640, alignment: .leading).padding(20).frame(maxWidth: .infinity)
@@ -611,16 +609,20 @@ private struct ReadOnlyHomeView: View {
     }
 
     private var featureCatalog: some View {
-        VStack(spacing: 12) {
-            ForEach(AQSSTutorialContent.features.filter { moreFeatures || AQSSTutorialContent.featuredIDs.contains($0.id) }, id: \.id) { feature in
-                VStack(spacing: 3) {
-                    Text(feature.title).font(.callout.weight(.semibold)).fixedSize(horizontal: false, vertical: true)
-                }.accessibilityElement(children: .combine).accessibilityHint(feature.detail)
-            }
+        VStack(alignment: .leading, spacing: 12) {
             Button(moreFeatures ? "Fewer features" : AQSSTutorialContent.moreFeaturesLabel) { moreFeatures.toggle() }
                 .buttonStyle(AppButtonStyle(theme: theme)).accessibilityIdentifier("more-features")
                 .accessibilityValue(moreFeatures ? "Expanded" : "Collapsed")
-        }.multilineTextAlignment(.center).padding(18).frame(maxWidth: .infinity).background(theme.surface).clipShape(RoundedRectangle(cornerRadius: 18))
+            if moreFeatures {
+            ForEach(AQSSTutorialContent.features, id: \.id) { feature in
+                VStack(alignment: .leading, spacing: 3) {
+                    Text(feature.title).font(.callout.weight(.semibold)).fixedSize(horizontal: false, vertical: true)
+                    Text(feature.availability == "preview" ? "Preview" : "Planned").font(.subheadline.weight(.semibold)).foregroundColor(theme.accent)
+                    Text(feature.detail).font(.callout).foregroundColor(theme.muted)
+                }.accessibilityElement(children: .combine)
+            }
+            }
+        }.frame(maxWidth: .infinity, alignment: .leading)
             .accessibilityIdentifier("welcome-feature-catalog")
     }
 

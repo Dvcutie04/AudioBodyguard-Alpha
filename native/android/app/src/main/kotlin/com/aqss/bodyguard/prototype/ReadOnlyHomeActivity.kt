@@ -230,9 +230,7 @@ class ReadOnlyHomeActivity : Activity() {
         if (::tutorial.isInitialized) tutorial.detachTarget()
         hintView = null; targets.clear(); column.removeAllViews(); scroll.scrollTo(0, 0)
         val current = InterfaceContent.pages.single { it.id == page }
-        label(column, current.title.uppercase(), 12f, skin.accent, true)
-        label(column, current.headline, 30f, bold = true)
-        label(column, current.subtitle, 16f, skin.muted).setPadding(0, 0, 0, dp(22))
+        label(column, current.title.uppercase(), 28f, bold = true).setPadding(0, 0, 0, dp(18))
         when (page) {
             "sound" -> soundPage()
             "devices" -> devicesPage()
@@ -274,6 +272,7 @@ class ReadOnlyHomeActivity : Activity() {
         rememberPage()
         tutorial.close(restore = false); showingExample = false; chartValuesVisible = false; page = id
         optionsExpanded = false; advancedExpanded = false; checklistExpanded = false; deviceDetails = false; futureDetails = false
+        detailSections.clear()
         renderPage()
     }
     private fun location() = Bundle().apply {
