@@ -53,6 +53,8 @@ The owner supplied IMG_5234.jpeg as the rose-button presentation reference and I
 
 Both color and grayscale head states render the same PNG. Native saturation filters change color without replacing its alpha channel. The iOS rectangular image mask and outer glow were removed. Both platforms fit the complete rose inside the control instead of cropping its tip or curls. The ordinary button surface remains, as requested in the presentation reference.
 
+The first final native run passed both walkthroughs, but its screenshot review caught an iOS header overflow beside the long Back to Tutorial label. The step counter and introductory label now allow their full vertical height and have layout priority, allowing the return label to wrap when needed. The existing TCL/Google Home walkthrough checks that the two-digit step counter stays inside the screen and does not overlap the return button. Final screenshots and delivered packages are taken from the subsequent successful revision.
+
 Final rose edit prompt: preserve the purple/lilac/black tribal design, proportions and ribbon shapes; clean the alpha matte, white background residue and detached speckles; preserve fine curled strands; leave transparent margins and interior gaps; add no background, frame, text, UI or shadow.
 
 Final head edit prompt: extract the supplied IMG_5227 head, neck and small shoulder silhouette; replace the white background and right border with alpha; preserve the robot face, clear cranium and cyan/blue/pink/violet/warm-yellow lights; add no new facial features, background, halo, shadow or detached speckles; retain transparent margins for both color and grayscale use.

@@ -75,8 +75,9 @@ struct SetupGuidesView: View {
                 HStack {
                     if let route = route, index >= 0 {
                         Text(textSize.isAccessibilitySize ? "\(index + 1) / \(route.steps.count)" : "Step \(index + 1) of \(route.steps.count)")
+                            .fixedSize(horizontal: false, vertical: true).layoutPriority(1)
                             .font(.headline).accessibilityLabel("Step \(index + 1) of \(route.steps.count)").accessibilityIdentifier("setup-progress")
-                    } else { Label("Illustrated setup", systemImage: "rectangle.stack").font(.headline) }
+                    } else { Label("Illustrated setup", systemImage: "rectangle.stack").font(.headline).fixedSize(horizontal: false, vertical: true).layoutPriority(1) }
                     Spacer(minLength: 8)
                     RoseButton(title: returningToTutorial ? "Back to Tutorial" : "Close", theme: theme) { dismiss() }
                         .accessibilityIdentifier("setup-close")

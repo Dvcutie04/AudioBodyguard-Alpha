@@ -360,6 +360,10 @@ final class AQSSReadOnlyUITests: XCTestCase {
         app.buttons["setup-next"].tap()
         for _ in 0..<4 { app.buttons["setup-next"].tap() }
         label("Open Devices", app)
+        let progress = app.staticTexts["setup-progress"]
+        XCTAssertEqual(progress.label, "Step 5 of 12")
+        XCTAssertGreaterThanOrEqual(progress.frame.minX, app.frame.minX, "Step counter must stay inside the screen")
+        XCTAssertLessThanOrEqual(progress.frame.maxX, app.buttons["setup-close"].frame.minX, "Step counter must not overlap Back to Tutorial")
         screenshot("Google Home setup matches the selected TCL system", app)
         app.buttons["setup-close"].tap(); exit(app)
         tab("settings", app); tap("More features", app); tap("Voice requests", app)
