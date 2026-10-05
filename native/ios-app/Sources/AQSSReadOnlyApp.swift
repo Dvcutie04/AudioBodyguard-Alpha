@@ -183,7 +183,7 @@ private struct ReadOnlyHomeView: View {
                             pageHeading.id("page-heading")
                             pageContent
                         }.frame(maxWidth: 680, alignment: .leading).padding(20).frame(maxWidth: .infinity)
-                    }.clipped().id(page).accessibilityIdentifier("home-scroll")
+                    }.clipped().id(page == "settings" && advancedExpanded ? "settings-advanced" : page).accessibilityIdentifier("home-scroll")
                     navigationBar
                 }
             }
@@ -205,19 +205,22 @@ private struct ReadOnlyHomeView: View {
             .sheet(item: $settingHelp, onDismiss: {
                 if let group = pendingSetupGroup { pendingSetupGroup = nil; showSetup(group) }
             }) { item in
-                ScrollView {
-                    VStack(alignment: .leading, spacing: 20) {
-                        HStack(alignment: .top) {
-                            Text(item.title).font(.title2.bold()).accessibilityAddTraits(.isHeader)
-                            Spacer(minLength: 8)
-                            RoseButton(title: "Back", theme: theme, compact: true) { settingHelp = nil }
-                        }
+                VStack(spacing: 0) {
+                    HStack(alignment: .top, spacing: 12) {
+                        Text(item.title).font(.title2.bold()).fixedSize(horizontal: false, vertical: true)
+                            .frame(maxWidth: .infinity, alignment: .leading).accessibilityAddTraits(.isHeader)
+                        RoseButton(title: "Back", theme: theme, compact: true) { settingHelp = nil }
+                            .accessibilityIdentifier("setting-help-close")
+                    }.padding(20)
+                    ScrollView {
+                      VStack(alignment: .leading, spacing: 20) {
                         Text(item.explanation).fixedSize(horizontal: false, vertical: true)
                         if item.id == "voice" {
                             action("Show voice steps", icon: "mic") { pendingSetupGroup = "voice"; settingHelp = nil }
                         }
-                    }.padding(20)
-                }.background(theme.background).foregroundColor(theme.text).accessibilityIdentifier("menu-scroll")
+                      }.frame(maxWidth: .infinity, alignment: .leading).padding(20)
+                    }.accessibilityIdentifier("setting-help-scroll")
+                }.background(theme.background).foregroundColor(theme.text)
             }
             .sheet(item: $setupRequest, onDismiss: {
                 if let target = pictureTarget, let route = completedPictureRoute {

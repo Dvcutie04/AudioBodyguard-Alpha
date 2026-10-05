@@ -402,9 +402,11 @@ class ReadOnlyHomeActivity : Activity() {
         }
         if (checklistExpanded) TutorialContent.topics.single { it.id == "readiness" }.steps.forEach { section(it.title, "Unknown", it.explanation, it.target) }
         card("hint") { c ->
-            label(c, "Foreground OS hint", 20f, bold = true)
+            val heading = LinearLayout(this).apply { gravity = Gravity.CENTER_VERTICAL }
+            label(heading, "Foreground OS hint", 20f, bold = true).layoutParams = LinearLayout.LayoutParams(0, -2, 1f)
+            heading.addView(question("Foreground OS hint", "Only this app's callbacks while active. These cannot verify playback, another app's route, or physical output.", "hint"))
+            c.addView(heading)
             hintView = label(c, hintText, 16f)
-            label(c, "Only this app's callbacks while active. These cannot verify playback, another app's route, or physical output.", 15f, skin.muted)
         }
         section("Move this session", "Unavailable", "No supported endpoint or verified transfer path is connected. Moving between iPhone and Android needs qualification in both directions.", "handoff")
         action(column, "Help with session transfer") { tutorial.start("handoff") }

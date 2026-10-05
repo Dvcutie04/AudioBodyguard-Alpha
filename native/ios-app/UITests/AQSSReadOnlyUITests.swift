@@ -60,7 +60,7 @@ final class AQSSReadOnlyUITests: XCTestCase {
     private func tap(_ title: String, _ app: XCUIApplication) {
         // Match within the active surface. A sheet can coexist with an
         // identically named button on the page underneath it.
-        let scroll = app.scrollViews["setup-scroll"].exists ? app.scrollViews["setup-scroll"] : app.scrollViews["menu-scroll"].exists ? app.scrollViews["menu-scroll"] : app.scrollViews["guide-scroll"].exists ? app.scrollViews["guide-scroll"] : app.scrollViews["home-scroll"]
+        let scroll = app.scrollViews["setup-scroll"].exists ? app.scrollViews["setup-scroll"] : app.scrollViews["setting-help-scroll"].exists ? app.scrollViews["setting-help-scroll"] : app.scrollViews["menu-scroll"].exists ? app.scrollViews["menu-scroll"] : app.scrollViews["guide-scroll"].exists ? app.scrollViews["guide-scroll"] : app.scrollViews["home-scroll"]
         let button = scroll.buttons.matching(NSPredicate(format: "label CONTAINS %@", title)).firstMatch
         guard button.waitForExistence(timeout: 10) else { screenshot("Missing \(title)", app); XCTFail("Missing button: \(title)"); return }
         // isHittable can be true for a sliver of a button whose center lies
@@ -111,8 +111,10 @@ final class AQSSReadOnlyUITests: XCTestCase {
         XCTAssertEqual(XCTWaiter.wait(for: [dismissed], timeout: 5), .completed, "Jump menu did not dismiss")
     }
     private func dismissSettingHelp(_ app: XCUIApplication) {
-        app.buttons["Back"].firstMatch.tap()
-        let dismissed = XCTNSPredicateExpectation(predicate: NSPredicate(format: "exists == false"), object: app.scrollViews["menu-scroll"])
+        let close = app.buttons["setting-help-close"]
+        XCTAssertTrue(close.isHittable)
+        close.tap()
+        let dismissed = XCTNSPredicateExpectation(predicate: NSPredicate(format: "exists == false"), object: app.scrollViews["setting-help-scroll"])
         XCTAssertEqual(XCTWaiter.wait(for: [dismissed], timeout: 5), .completed)
     }
     private func screenshot(_ name: String, _ app: XCUIApplication) {
@@ -148,11 +150,11 @@ final class AQSSReadOnlyUITests: XCTestCase {
             XCTAssertTrue(app.buttons["Help & tutorials"].isHittable)
             screenshot("Page \(id)", app)
         }
-        XCTAssertFalse(app.staticTexts["Make space for you."].exists)
-        app.buttons["Help & tutorials"].tap(); label("Make space for you.", app)
+        XCTAssertFalse(app.staticTexts["Choose an appearance or open Advanced Settings."].exists)
+        app.buttons["Help & tutorials"].tap(); label("Choose an appearance or open Advanced Settings.", app)
         tap("Cancel", app)
         jump("Readiness checklist", app); label("Six setup checks unknown", app)
-        jump("Session transfer", app); label("No supported endpoint or verified transfer path", app)
+        jump("Session transfer", app); tap("About Move this session", app); label("No supported endpoint or verified transfer path", app); dismissSettingHelp(app)
         tab("home", app); label("Connection not verified", app)
     }
 
@@ -294,6 +296,7 @@ final class AQSSReadOnlyUITests: XCTestCase {
         XCTAssertEqual(XCTWaiter.wait(for: [dismissed], timeout: 5), .completed)
         tap("Advanced Settings", app)
         XCTAssertTrue(app.switches["setting-captions"].isHittable)
+        screenshot("Largest text Advanced Settings opens at the first switch", app)
         tap("About Captions", app); label("verified connection", app)
         screenshot("Largest text setting help stays readable", app)
         dismissSettingHelp(app)

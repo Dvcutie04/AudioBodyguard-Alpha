@@ -37,7 +37,7 @@ object TutorialContent {
             TutorialStep("route", "advanced", "Identify the output path", "Qualify the device and check its active sound output path.", "Example: A connected speaker may not be the speaker currently used by a player."),
             TutorialStep("physical", "advanced", "Require physical observation", "Confirm sound at the speakers independently of command messages.", "Example: sending “lower the volume” is only a request. A separate check must confirm the intended speaker really became quieter."),
             TutorialStep("background", "advanced", "Understand background limits", "This screen receives foreground hints. Review coverage again when returning to the app.", "Example: Events while the screen is hidden remain unknown."),
-            TutorialStep("privacy", "advanced", "Know what this tour stores", "Appearance and your guide choice stay on this phone. TV choices and tutorial progress clear when you leave.", "Example: Closing the tour lets you reopen any topic from its first step."),
+            TutorialStep("privacy", "advanced", "Know what this tour stores", "Appearance and guide dismissal are saved on this phone. TV choices and tutorial progress stay in memory while the app is open.", "Example: Exit Home pauses your step. Back to Tutorial resumes it. Starting another tutorial clears the old paused step."),
         )),
         TutorialTopic("handoff", "Session transfer", listOf(
             TutorialStep("handoffOption", "advanced", "Check transfer eligibility", "Moving a session is unavailable. A transfer requires authorized endpoints and a verified path between them.", "Example: Two phones signed in to an account are not, by themselves, a qualified transfer path."),

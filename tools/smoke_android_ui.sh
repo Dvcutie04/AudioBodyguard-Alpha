@@ -297,8 +297,10 @@ if python3 tools/check_android_simulation_ui.py --assert-label "$artifact_dir/re
 
 tap_tutorial_label "Jump to" handoff_open
 tap_tutorial_label "Session transfer" handoff_jump
+tap_scroll_label "About Move this session" handoff_help
 capture_ui handoff
 assert_tutorial_label handoff "No supported endpoint or verified transfer path"
+adb shell input keyevent KEYCODE_BACK
 tap_tutorial_label "Insights" nav_insights
 capture_ui insights
 assert_tutorial_label insights "No measurements yet"

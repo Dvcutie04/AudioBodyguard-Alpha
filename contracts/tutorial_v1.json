@@ -340,8 +340,8 @@
           "target": "privacy",
           "area": "advanced",
           "title": "Know what this tour stores",
-          "explanation": "Appearance and your guide choice stay on this phone. TV choices and tutorial progress clear when you leave.",
-          "example": "Example: Closing the tour lets you reopen any topic from its first step."
+          "explanation": "Appearance and guide dismissal are saved on this phone. TV choices and tutorial progress stay in memory while the app is open.",
+          "example": "Example: Exit Home pauses your step. Back to Tutorial resumes it. Starting another tutorial clears the old paused step."
         }
       ]
     },
