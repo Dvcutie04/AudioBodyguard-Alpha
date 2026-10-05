@@ -369,7 +369,7 @@ tap_scroll_label "Advanced Settings" future_open
 tap_scroll_label "About Voice requests" future_voice
 capture_ui future_voice_detail
 assert_tutorial_label future_voice_detail "Voice control requires device authority and checked output"
-tap_tutorial_label "Show voice steps" future_voice_help
+tap_scroll_label "Show voice steps" future_voice_help
 capture_ui setup_voice_first
 assert_tutorial_label setup_voice_first "Step 1 of 9"
 for step in 2 3 4 5; do tap_tutorial_label "Next" "setup_voice_next_$step"; done

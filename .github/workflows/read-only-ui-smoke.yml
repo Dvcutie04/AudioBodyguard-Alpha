@@ -276,6 +276,8 @@ jobs:
             artifacts/ui/android/setting_attempt_cyan.png
             artifacts/ui/android/setting_attempt_reset.png
             artifacts/ui/android/setting_caption_help.png
+            artifacts/ui/android/future_voice_detail.png
+            artifacts/ui/android/future_voice_help.png
             artifacts/ui/android/setting_nested_back.png
             artifacts/ui/android/large_advanced_settings.png
             artifacts/ui/android/large_setting_help_text.png
