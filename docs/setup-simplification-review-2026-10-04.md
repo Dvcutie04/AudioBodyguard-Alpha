@@ -84,3 +84,5 @@ Review 1 checks the requested switch truth table, timing, exclusive presets and 
 The cross-reference sweep corrected the privacy tutorial's stale claim that leaving clears progress: Exit Home pauses the current step and Back to Tutorial resumes it; starting a different tutorial clears the old paused step. TV choices and progress remain in memory while the app is open, while appearance and guide dismissal are saved. Native walkthroughs explicitly open each new [?] explanation rather than expecting the removed default text to remain visible.
 
 Advanced Settings has a separate scroll identity so its first control is visible on entry at large text sizes. The iOS explanation sheet keeps its original-white-rose Back control outside the scrolling explanation, with a distinct accessibility identifier to distinguish it from the page underneath.
+
+The Android screenshot/hierarchy sweep caught custom switches reported as non-clickable. They now explicitly enable click handling. The walkthrough requires enabled, clickable, checkable switch semantics and runs the switch/help/nested-Back checks before the longer system-guide walkthrough.

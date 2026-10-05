@@ -17,7 +17,7 @@ internal class SettingSwitchControl(activity: Activity, private val skin: Interf
         buttonDrawable = null
         minimumWidth = skin.dp(64); minimumHeight = skin.dp(48)
         setPadding(0, 0, 0, 0)
-        isFocusable = true
+        isClickable = true; isFocusable = true
     }
     override fun getAccessibilityClassName(): CharSequence = "android.widget.Switch"
     override fun setChecked(checked: Boolean) {

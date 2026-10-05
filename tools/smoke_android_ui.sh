@@ -125,6 +125,43 @@ assert "Exit tutorial" in labels, labels
 assert not labels.intersection({"Home", "Sound", "Devices", "Insights", "Settings", "Help & tutorials", "Jump to"}), labels
 CHECK
 }
+assert_settings_controls() {
+    tap_tutorial_label "Exit tutorial" settings_initial_exit
+    tap_tutorial_label "Settings" settings_initial_open
+    # Nested Settings Back must return to Settings, then to the previous page.
+    tap_scroll_label "Advanced Settings" advanced_open
+    capture_ui advanced_settings
+    assert_tutorial_label advanced_settings "Captions"
+    assert_tutorial_label advanced_settings "About Captions"
+    python3 tools/check_android_simulation_ui.py --assert-switch "$artifact_dir/advanced_settings.xml" "Captions" false
+    tap_scroll_label "Captions" setting_attempt
+    adb exec-out screencap -p > "$artifact_dir/setting_attempt_cyan.png"
+    capture_ui setting_attempt_state
+    python3 tools/check_android_simulation_ui.py --assert-switch "$artifact_dir/setting_attempt_state.xml" "Captions" true
+    assert_tutorial_label setting_attempt_state "Not connected."
+    sleep 2
+    capture_ui setting_attempt_reset
+    python3 tools/check_android_simulation_ui.py --assert-switch "$artifact_dir/setting_attempt_reset.xml" "Captions" false
+    if python3 tools/check_android_simulation_ui.py --assert-label "$artifact_dir/setting_attempt_reset.xml" "Not connected." 2>/dev/null; then exit 1; fi
+    tap_scroll_label "About Captions" setting_help
+    capture_ui setting_caption_help
+    assert_tutorial_label setting_caption_help "verified connection"
+    adb shell input keyevent KEYCODE_BACK
+    capture_ui setting_help_return
+    python3 tools/check_android_simulation_ui.py --assert-switch "$artifact_dir/setting_help_return.xml" "Captions" false
+    adb shell input keyevent KEYCODE_BACK
+    capture_ui setting_nested_back
+    assert_tutorial_label setting_nested_back "SETTINGS"
+    assert_tutorial_label setting_nested_back "Appearance"
+    adb shell input keyevent KEYCODE_BACK
+    capture_ui setting_previous_back
+    assert_tutorial_label setting_previous_back "Connection not verified"
+}
+
+# Check the changed switch controls before the longer guide walkthrough.
+assert_settings_controls
+adb shell pm clear com.aqss.bodyguard.prototype
+adb shell am start -W -n com.aqss.bodyguard.prototype/.ReadOnlyHomeActivity
 capture_ui beginner_step_1
 assert_tutorial_label beginner_step_1 "Step 1 of 6"
 assert_only_guide beginner_step_1
@@ -315,30 +352,6 @@ capture_ui example_closed
 assert_tutorial_label example_closed "No measurements yet"
 tap_tutorial_label "Settings" nav_settings
 capture_ui settings
-# Nested Settings Back must return to Settings, then to the previous page.
-tap_scroll_label "Advanced Settings" advanced_open
-capture_ui advanced_settings
-assert_tutorial_label advanced_settings "Captions"
-assert_tutorial_label advanced_settings "About Captions"
-tap_scroll_label "Captions" setting_attempt
-adb exec-out screencap -p > "$artifact_dir/setting_attempt_cyan.png"
-capture_ui setting_attempt_state
-python3 tools/check_android_simulation_ui.py --assert-switch "$artifact_dir/setting_attempt_state.xml" "Captions" true
-assert_tutorial_label setting_attempt_state "Not connected."
-sleep 2
-capture_ui setting_attempt_reset
-python3 tools/check_android_simulation_ui.py --assert-switch "$artifact_dir/setting_attempt_reset.xml" "Captions" false
-if python3 tools/check_android_simulation_ui.py --assert-label "$artifact_dir/setting_attempt_reset.xml" "Not connected." 2>/dev/null; then exit 1; fi
-tap_scroll_label "About Captions" setting_help
-capture_ui setting_caption_help
-assert_tutorial_label setting_caption_help "verified connection"
-adb shell input keyevent KEYCODE_BACK
-capture_ui setting_help_return
-python3 tools/check_android_simulation_ui.py --assert-switch "$artifact_dir/setting_help_return.xml" "Captions" false
-adb shell input keyevent KEYCODE_BACK
-capture_ui setting_nested_back
-assert_tutorial_label setting_nested_back "SETTINGS"
-assert_tutorial_label setting_nested_back "Appearance"
 if python3 tools/check_android_simulation_ui.py --assert-label "$artifact_dir/settings.xml" "Make space for you." 2>/dev/null; then exit 1; fi
 tap_tutorial_label "Help & tutorials" settings_help
 tap_tutorial_label "About this page" settings_about

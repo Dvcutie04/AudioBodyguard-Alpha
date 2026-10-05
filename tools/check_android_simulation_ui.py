@@ -123,7 +123,7 @@ if __name__ == "__main__":
     if len(sys.argv) == 5 and sys.argv[1] == "--assert-switch":
         nodes = ET.parse(Path(sys.argv[2])).getroot().iter()
         target = next((node for node in nodes if node.get("class") == "android.widget.Switch" and node.get("content-desc") == sys.argv[3]), None)
-        if target is None or target.get("checkable") != "true" or target.get("checked") != sys.argv[4]:
+        if target is None or target.get("checkable") != "true" or target.get("clickable") != "true" or target.get("enabled") != "true" or target.get("checked") != sys.argv[4]:
             raise SystemExit(f"Switch {sys.argv[3]} did not have checked={sys.argv[4]}")
         raise SystemExit(0)
     if len(sys.argv) == 3 and sys.argv[1] == "--valid-hierarchy":
