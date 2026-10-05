@@ -2,19 +2,28 @@
 package com.aqss.nativefeedback
 data class InterfacePage(val id: String, val title: String, val icon: String, val headline: String, val subtitle: String)
 data class InterfaceFeature(val id: String, val title: String, val detail: String, val explanation: String)
+data class InterfaceSetting(val id: String, val title: String, val icon: String, val explanation: String)
 object InterfaceContent {
     val pages = listOf(
         InterfacePage("home", "Home", "shield.lefthalf.filled", "Your listening space.", "New here? Follow the TV and phone picture guide below."),
         InterfacePage("sound", "Sound", "slider.horizontal.3", "Sound, on your terms.", "Explore volume, presets, equalizer and captions."),
         InterfacePage("devices", "Devices", "hifispeaker", "A clear path to sound.", "Choose your device and follow its picture guide."),
         InterfacePage("insights", "Insights", "chart.xyaxis.line", "Know what happened.", "Explore sample graphs and session evidence."),
-        InterfacePage("settings", "Settings", "gearshape", "Make space for you.", "Choose your theme, find help and explore more features."),
+        InterfacePage("settings", "Settings", "gearshape", "Settings", "Choose an appearance or open Advanced Settings."),
     )
     val future = listOf(
         InterfaceFeature("voice", "Voice requests", "Planned · proposal only", "Explore voice input and recognized words in Sound. Voice control requires device authority and checked output."),
         InterfaceFeature("profiles", "Personal sound profiles", "Planned · verified settings", "Planned profiles: save and restore confirmed preferences on supported devices."),
         InterfaceFeature("supervisor", "Background protection", "Research · device trials needed", "Background support depends on platform rules and a qualified output path. Review coverage when you return."),
         InterfaceFeature("support", "Private support report", "Planned · review before sharing", "Planned support reports: review a small, redacted record before choosing to share it."),
+    )
+    val settings = listOf(
+        InterfaceSetting("captions", "Captions", "captions.bubble", "Show a supported caption track on a connected device. This preview cannot select or display a device caption track. A verified connection is required. When disconnected, a tap shows cyan and “Not connected.” for two seconds, then turns off. With a verified connection, it stays cyan until you turn it off or the connection is lost."),
+        InterfaceSetting("dialogue", "Dialogue preset", "bubble.left.and.bubble.right", "Request the device’s speech-focused preset. Dialogue and Night are separate choices; only one can stay on. This preview does not change the sound. A verified connection is required. When disconnected, a tap shows cyan and “Not connected.” for two seconds, then turns off. With a verified connection, it stays cyan until you turn it off or the connection is lost."),
+        InterfaceSetting("night", "Night preset", "moon", "Request the device’s quieter listening preset. Night and Dialogue are separate choices; only one can stay on. This preview does not change the sound. A verified connection is required. When disconnected, a tap shows cyan and “Not connected.” for two seconds, then turns off. With a verified connection, it stays cyan until you turn it off or the connection is lost."),
+        InterfaceSetting("background", "Background monitoring", "moon.zzz", "Check for supported monitoring while the app is away. Platform permission and a qualified output path are also needed. This preview receives foreground hints only; events while away are unknown. A verified connection is required. When disconnected, a tap shows cyan and “Not connected.” for two seconds, then turns off. With a verified connection, it stays cyan until you turn it off or the connection is lost."),
+        InterfaceSetting("voice", "Voice requests", "mic", "Request a supported device action using your voice. Voice control requires device authority and checked output. This preview lets you try the separate Voice check tool; recognized words do not control a TV. A verified connection is required. When disconnected, a tap shows cyan and “Not connected.” for two seconds, then turns off. With a verified connection, it stays cyan until you turn it off or the connection is lost."),
+        InterfaceSetting("profiles", "Personal sound profiles", "person.crop.circle", "Save and restore confirmed settings on a supported device. This preview does not save or restore device sound settings. A verified connection is required. When disconnected, a tap shows cyan and “Not connected.” for two seconds, then turns off. With a verified connection, it stays cyan until you turn it off or the connection is lost."),
     )
     val palettes = mapOf(
         "midnight" to mapOf("background" to 0xFF080F20.toInt(), "surface" to 0xFF121D33.toInt(), "raised" to 0xFF1A2842.toInt(), "text" to 0xFFF1F5FF.toInt(), "muted" to 0xFFADBDD7.toInt(), "accent" to 0xFF64DAE8.toInt(), "violet" to 0xFFB4A0FF.toInt(), "warning" to 0xFFF9CB80.toInt(), "outline" to 0xFF536A91.toInt(), "control" to 0xFF64DAE8.toInt(), "controlText" to 0xFF080F20.toInt(), "controlBorder" to 0xFF006774.toInt()),

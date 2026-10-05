@@ -311,9 +311,9 @@
         {
           "target": "advanced",
           "area": "advanced",
-          "title": "Open Advanced options",
-          "explanation": "Choose Settings to explore device checks, background options and privacy.",
-          "example": "Example: to learn what is stored on your phone, open Settings and read Privacy and storage."
+          "title": "Open Advanced Settings",
+          "explanation": "Open Settings, then Advanced Settings. Tap [?] beside a setting to learn how it works.",
+          "example": "Example: a disconnected switch shows cyan and “Not connected.” for two seconds, then returns to off."
         },
         {
           "target": "route",

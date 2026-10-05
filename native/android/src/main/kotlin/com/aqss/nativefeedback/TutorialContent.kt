@@ -33,7 +33,7 @@ object TutorialContent {
             TutorialStep("history", "home", "Look for a verified change", "Review session evidence before using Undo.", "Example: A successful button tap is not a verified audio change."),
         )),
         TutorialTopic("advanced", "Advanced and privacy", listOf(
-            TutorialStep("advanced", "advanced", "Open Advanced options", "Choose Settings to explore device checks, background options and privacy.", "Example: to learn what is stored on your phone, open Settings and read Privacy and storage."),
+            TutorialStep("advanced", "advanced", "Open Advanced Settings", "Open Settings, then Advanced Settings. Tap [?] beside a setting to learn how it works.", "Example: a disconnected switch shows cyan and “Not connected.” for two seconds, then returns to off."),
             TutorialStep("route", "advanced", "Identify the output path", "Qualify the device and check its active sound output path.", "Example: A connected speaker may not be the speaker currently used by a player."),
             TutorialStep("physical", "advanced", "Require physical observation", "Confirm sound at the speakers independently of command messages.", "Example: sending “lower the volume” is only a request. A separate check must confirm the intended speaker really became quieter."),
             TutorialStep("background", "advanced", "Understand background limits", "This screen receives foreground hints. Review coverage again when returning to the app.", "Example: Events while the screen is hidden remain unknown."),

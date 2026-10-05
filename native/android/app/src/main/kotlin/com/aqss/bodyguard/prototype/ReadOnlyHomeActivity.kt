@@ -13,6 +13,7 @@ import android.os.Bundle
 import android.os.Build
 import android.os.Handler
 import android.os.Looper
+import android.os.SystemClock
 import android.view.Gravity
 import android.view.View
 import android.view.ViewGroup
@@ -30,6 +31,8 @@ import com.aqss.nativefeedback.SessionEvidenceView
 import com.aqss.nativefeedback.SessionState
 import com.aqss.nativefeedback.TutorialContent
 import com.aqss.nativefeedback.InterfaceContent
+import com.aqss.nativefeedback.InterfaceSetting
+import com.aqss.nativefeedback.SettingSwitchState
 import java.util.ArrayDeque
 
 /** Presentation only: navigation and appearance cannot authorize an audio action. */
@@ -40,9 +43,16 @@ class ReadOnlyHomeActivity : Activity() {
     private var page = "home"
     private var optionsExpanded = false
     private var advancedExpanded = false
+    private val settingSwitches = SettingSwitchState()
+    private val settingHandler = Handler(Looper.getMainLooper())
+    private val settingControls = mutableMapOf<String, Pair<SettingSwitchControl, TextView>>()
+    private var refreshingSettings = false
+    private val settingsConnectionVerified get() = coverage.state == SessionState.ACTIVE && capability.label == "AVAILABLE_FOR_REVIEW"
+    private val settingReset = Runnable {
+        settingSwitches.expire(settingClock()); refreshSettingControls(); scheduleSettingReset()
+    }
     private var checklistExpanded = false
     private var deviceDetails = false
-    private var futureDetails = false
     private val detailSections = mutableSetOf<String>()
     private val pageHistory = ArrayDeque<Bundle>()
     private var showingExample = false
@@ -77,7 +87,6 @@ class ReadOnlyHomeActivity : Activity() {
         advancedExpanded = savedInstanceState?.getBoolean("advancedExpanded") ?: false
         checklistExpanded = savedInstanceState?.getBoolean("checklistExpanded") ?: false
         deviceDetails = savedInstanceState?.getBoolean("deviceDetails") ?: false
-        futureDetails = savedInstanceState?.getBoolean("futureDetails") ?: false
         showingExample = savedInstanceState?.getBoolean("showingExample") ?: false
         chartValuesVisible = savedInstanceState?.getBoolean("chartValuesVisible") ?: false
         detailSections.addAll(savedInstanceState?.getStringArrayList("detailSections") ?: emptyList())
@@ -115,7 +124,8 @@ class ReadOnlyHomeActivity : Activity() {
             currentPage = { page },
             openSetup = { group -> openSetup(group) },
             navigate = { target, area ->
-                if ((InterfaceContent.targetPages[target] ?: "home") != page) rememberPage()
+                val destination = InterfaceContent.targetPages[target] ?: "home"
+                if (destination != page || (destination == "settings" && !advancedExpanded && target != "appearance")) rememberPage()
                 showingExample = false
                 chartValuesVisible = false
                 page = InterfaceContent.targetPages[target] ?: "home"
@@ -218,10 +228,11 @@ class ReadOnlyHomeActivity : Activity() {
         }, LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(8) })
     }
     private fun section(title: String, detail: String, explanation: String, target: String) = card(target) { c ->
-        label(c, title, 20f, bold = true)
+        val heading = LinearLayout(this).apply { gravity = Gravity.CENTER_VERTICAL }
+        label(heading, title, 20f, bold = true).layoutParams = LinearLayout.LayoutParams(0, -2, 1f)
+        heading.addView(question(title, explanation, target))
+        c.addView(heading)
         label(c, detail, 16f, if (detail.contains("Unknown") || detail == "Unavailable") skin.warning else skin.text, true)
-        action(c, if (target in detailSections) "Hide details" else "More details", expanded = target in detailSections) { toggleDetails(target) }
-        if (target in detailSections) label(c, explanation, 15f, skin.muted)
     }
     private fun destination(title: String, subtitle: String, action: () -> Unit) {
         column.addView(button("$title\n$subtitle    ›", action = action).apply { gravity = Gravity.START or Gravity.CENTER_VERTICAL; contentDescription = "$title. $subtitle" }, LinearLayout.LayoutParams(-1, -2).apply { bottomMargin = dp(16) })
@@ -230,9 +241,9 @@ class ReadOnlyHomeActivity : Activity() {
     private fun renderPage(preserveScroll: Boolean = false) {
         val previousScroll = if (preserveScroll) scroll.scrollY else 0
         if (::tutorial.isInitialized) tutorial.detachTarget()
-        hintView = null; targets.clear(); column.removeAllViews(); scroll.scrollTo(0, 0)
+        hintView = null; settingControls.clear(); targets.clear(); column.removeAllViews(); scroll.scrollTo(0, 0)
         val current = InterfaceContent.pages.single { it.id == page }
-        label(column, current.title.uppercase(), 28f, bold = true).setPadding(0, 0, 0, dp(18))
+        label(column, if (page == "settings" && advancedExpanded) "Advanced Settings" else current.title.uppercase(), 28f, bold = true).setPadding(0, 0, 0, dp(18))
         when (page) {
             "sound" -> soundPage()
             "devices" -> devicesPage()
@@ -273,14 +284,14 @@ class ReadOnlyHomeActivity : Activity() {
         if (id == page) return
         rememberPage()
         tutorial.close(restore = false); showingExample = false; chartValuesVisible = false; page = id
-        optionsExpanded = false; advancedExpanded = false; checklistExpanded = false; deviceDetails = false; futureDetails = false
+        optionsExpanded = false; advancedExpanded = false; checklistExpanded = false; deviceDetails = false
         detailSections.clear()
         renderPage()
     }
     private fun location() = Bundle().apply {
         putString("page", page); putInt("scrollY", scroll.scrollY)
         putBoolean("optionsExpanded", optionsExpanded); putBoolean("advancedExpanded", advancedExpanded)
-        putBoolean("checklistExpanded", checklistExpanded); putBoolean("deviceDetails", deviceDetails); putBoolean("futureDetails", futureDetails)
+        putBoolean("checklistExpanded", checklistExpanded); putBoolean("deviceDetails", deviceDetails)
         putStringArrayList("detailSections", ArrayList(detailSections))
         putBoolean("showingExample", showingExample); putBoolean("chartValuesVisible", chartValuesVisible)
     }
@@ -292,7 +303,7 @@ class ReadOnlyHomeActivity : Activity() {
         val previous = pageHistory.pollLast() ?: return false
         page = previous.getString("page") ?: "home"
         optionsExpanded = previous.getBoolean("optionsExpanded"); advancedExpanded = previous.getBoolean("advancedExpanded")
-        checklistExpanded = previous.getBoolean("checklistExpanded"); deviceDetails = previous.getBoolean("deviceDetails"); futureDetails = previous.getBoolean("futureDetails")
+        checklistExpanded = previous.getBoolean("checklistExpanded"); deviceDetails = previous.getBoolean("deviceDetails")
         detailSections.clear(); detailSections.addAll(previous.getStringArrayList("detailSections") ?: emptyList())
         showingExample = previous.getBoolean("showingExample"); chartValuesVisible = previous.getBoolean("chartValuesVisible")
         renderPage()
@@ -353,7 +364,6 @@ class ReadOnlyHomeActivity : Activity() {
             label(c, "Sound options", 22f, bold = true)
             action(c, if (optionsExpanded) "Hide options" else "Options", expanded = optionsExpanded) { tutorial.close(false); optionsExpanded = !optionsExpanded; renderPage(true) }
             if (optionsExpanded) {
-                label(c, "Explore each control. A qualified device and observed result are needed before audio can change.", 16f, skin.muted)
                 action(c, "Help with options") { tutorial.start("sound") }
             }
         }
@@ -362,11 +372,12 @@ class ReadOnlyHomeActivity : Activity() {
             card("sound") { c ->
                 label(c, "UNAVAILABLE", 12f, skin.warning, true)
                 label(c, "Sound presets", 22f, bold = true)
-                label(c, "Device support determines which presets can be proposed.", 16f, skin.muted)
-                label(c, "Dialogue preset", 20f, skin.violet, true)
-                label(c, "A proposed speech-focused setting", 15f, skin.muted)
-                label(c, "Night preset", 20f, skin.violet, true)
-                label(c, "A proposed quieter listening setting", 15f, skin.muted)
+                for (id in listOf("dialogue", "night")) {
+                    val item = InterfaceContent.settings.single { it.id == id }
+                    val row = LinearLayout(this).apply { gravity = Gravity.CENTER_VERTICAL }
+                    label(row, item.title, 20f, bold = true).layoutParams = LinearLayout.LayoutParams(0, -2, 1f)
+                    row.addView(question(item.title, item.explanation, id)); c.addView(row)
+                }
             }
             section("Custom Equalizer", "Unavailable", "Frequency-band adjustments need a qualified device capability. No bands are being changed.", "equalizer")
             section("Captions option", "Unavailable", "No authored caption track or selectable caption mode is connected.", "captionOption")
@@ -432,35 +443,122 @@ class ReadOnlyHomeActivity : Activity() {
         section("Session history", "No observed events", "A missing history cannot establish continuous coverage. Requests and verified results will need distinct records.", "history")
     }
     private fun settingsPage() {
+        if (advancedExpanded) {
+            whiteSettingsCard("advanced") { c ->
+                InterfaceContent.settings.forEachIndexed { index, item ->
+                    settingRow(c, item)
+                    if (index != InterfaceContent.settings.lastIndex) settingsDivider(c)
+                }
+            }
+            whiteSettingsCard { c ->
+                settingInfo(c, "Device and route", "Unknown", "No qualified output hardware or route has been identified. Use the matching device guide, then independently verify its output path.", "route")
+                settingsDivider(c)
+                settingInfo(c, "Physical output", "Unknown", "No independent observation is available. Options cannot verify audible output. A completed guide or an app button does not prove a physical connection.", "physical")
+                settingsDivider(c)
+                settingInfo(c, "Privacy and storage", "", "No audio files saved by this app. Appearance and guide dismissal stay on this phone. Voice check uses the microphone only after you start it. Audio, recognized words and photo details are not saved by AQSS or uploaded. Closing the tool clears its details.", "privacy")
+                settingsDivider(c)
+                settingInfo(c, "Move this session", "Unavailable", "No authorized endpoint or verified transfer path is connected. Moving a session between iPhone and Android requires qualification in both directions.", "handoffOption")
+                settingsDivider(c)
+                settingInfo(c, "Private support report", "Planned", InterfaceContent.future.single { it.id == "support" }.explanation, "support")
+            }
+            action(column, "Advanced Settings tutorial") { tutorial.start("advanced") }
+            return
+        }
         card("appearance") { c ->
-            label(c, "Appearance", 22f, bold = true)
+            val heading = LinearLayout(this).apply { gravity = Gravity.CENTER_VERTICAL }
+            label(heading, "Appearance", 22f, bold = true).layoutParams = LinearLayout.LayoutParams(0, -2, 1f)
+            heading.addView(question("Appearance", "Midnight uses a dark background. Daylight uses a light background. System follows your phone’s appearance. This choice is saved on this phone and works without a TV connection.", "appearance"))
+            c.addView(heading)
             for (value in listOf("midnight", "daylight", "system")) {
                 c.addView(button(value.replaceFirstChar { it.uppercase() } + if (appearance == value) "  ✓" else "", primary = appearance == value) {
                     val state = Bundle(); savePresentation(state); tutorial.pause(); appearance = value; build(state)
                 }.apply { contentDescription = value.replaceFirstChar { it.uppercase() }; isSelected = appearance == value }, LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(8) })
             }
         }
-        card("advanced") { c ->
-            label(c, "Advanced options", 22f, bold = true)
-            action(c, if (advancedExpanded) "Hide advanced options" else "Advanced options", expanded = advancedExpanded) { tutorial.close(false); advancedExpanded = !advancedExpanded; renderPage(true) }
-            if (advancedExpanded) action(c, "Help with advanced options") { tutorial.start("advanced") }
-        }
-        if (advancedExpanded) {
-            section("Device and route", "Unknown", "No qualified output hardware or route has been identified.", "route")
-            section("Physical output", "Unknown physical state", "No independent observation is available. Options cannot verify audible output.", "physical")
-            section("Background monitoring", "Unavailable", "Only foreground hints are received; changes while away are unknown.", "background")
-            section("Privacy and storage", "No audio files saved by this app", "Appearance and guide dismissal stay on this phone. Voice check uses the microphone only after you start it. Audio, recognized words and photo details are not saved by AQSS or uploaded. Closing the tool clears its details.", "privacy")
-            section("Move this session option", "Unavailable", "No authorized endpoint or verified transfer path is connected.", "handoffOption")
-        }
-        action(column, if (futureDetails) "Hide more features" else "More features", expanded = futureDetails) { futureDetails = !futureDetails; renderPage(true) }
-        if (futureDetails) InterfaceContent.future.forEach { f ->
-            destination(f.title, f.detail) {
-                val dialog = AlertDialog.Builder(this).setTitle(f.title).setMessage(f.explanation).setPositiveButton("Got it", null)
-                if (f.id == "voice") dialog.setNeutralButton("Show voice steps") { _, _ -> openSetup("voice") }
-                dialog.show()
+        action(column, "Advanced Settings") { rememberPage(); tutorial.close(false); advancedExpanded = true; renderPage() }
+    }
+
+    private fun question(title: String, explanation: String, target: String, light: Boolean = false): Button = button("[?]") {
+        val content = vertical().apply { setPadding(dp(20), dp(14), dp(20), dp(14)); setBackgroundColor(skin.background) }
+        val holder = ScrollView(this).apply { addView(content) }
+        val dialog = AlertDialog.Builder(this).setView(holder).create()
+        val heading = LinearLayout(this).apply { gravity = Gravity.CENTER_VERTICAL }
+        label(heading, title, 22f, bold = true).layoutParams = LinearLayout.LayoutParams(0, -2, 1f)
+        heading.addView(roseButton(this, skin, "Back", compact = true) { dialog.dismiss() })
+        content.addView(heading)
+        label(content, explanation, 17f)
+        if (target == "voice") action(content, "Show voice steps") { dialog.dismiss(); openSetup("voice") }
+        dialog.show()
+    }.apply {
+        contentDescription = "About $title"; tag = "help-$target"
+        if (light) { setTextColor(Color.BLACK); background = skin.shape(Color.WHITE, 8) }
+        layoutParams = LinearLayout.LayoutParams(dp(48), dp(48))
+        setTextSize(android.util.TypedValue.COMPLEX_UNIT_DIP, 18f)
+        setPadding(0, 0, 0, 0)
+    }
+    private fun whiteSettingsCard(target: String? = null, content: (LinearLayout) -> Unit) {
+        val c = vertical().apply { setPadding(dp(14), dp(4), dp(14), dp(4)); background = skin.shape(Color.WHITE, 20) }
+        column.addView(c, LinearLayout.LayoutParams(-1, -2).apply { bottomMargin = dp(18) })
+        target?.let { targets[it] = c }; content(c)
+    }
+    private fun settingsDivider(parent: LinearLayout) { parent.addView(View(this).apply { setBackgroundColor(Color.rgb(222, 222, 224)) }, LinearLayout.LayoutParams(-1, dp(1))) }
+    private fun settingRow(parent: LinearLayout, item: InterfaceSetting) {
+        val box = vertical().apply { setPadding(0, dp(8), 0, dp(8)) }
+        val row = LinearLayout(this).apply { gravity = Gravity.CENTER_VERTICAL }
+        val title = TextView(this).apply { text = item.title; textSize = 17f; setTextColor(Color.BLACK); setTypeface(null, Typeface.BOLD) }
+        val control = SettingSwitchControl(this, skin).apply {
+            contentDescription = item.title; tag = "setting-${item.id}"
+            isChecked = settingSwitches.isOn(item.id)
+            setOnCheckedChangeListener { _, _ ->
+                if (!refreshingSettings) {
+                    settingSwitches.press(item.id, settingsConnectionVerified, settingClock())
+                    refreshSettingControls(); scheduleSettingReset()
+                }
             }
         }
-        action(column, "Browse all tutorials") { tutorial.chooseTopic() }
+        if (resources.configuration.fontScale >= 1.5f) {
+            box.addView(title)
+            row.addView(question(item.title, item.explanation, item.id, true))
+            row.addView(View(this), LinearLayout.LayoutParams(0, 1, 1f))
+        } else {
+            row.addView(title, LinearLayout.LayoutParams(0, -2, 1f))
+            row.addView(question(item.title, item.explanation, item.id, true))
+        }
+        row.addView(control, LinearLayout.LayoutParams(dp(64), dp(48)))
+        box.addView(row)
+        val prompt = TextView(this).apply {
+            text = "Not connected."; textSize = 15f; setTextColor(Color.BLACK)
+            accessibilityLiveRegion = View.ACCESSIBILITY_LIVE_REGION_POLITE
+            visibility = if (settingSwitches.isAttempting(item.id)) View.VISIBLE else View.GONE
+        }
+        box.addView(prompt); parent.addView(box); targets[item.id] = box
+        settingControls[item.id] = control to prompt
+        refreshSettingControls()
+    }
+    private fun settingInfo(parent: LinearLayout, title: String, detail: String, explanation: String, target: String) {
+        val row = LinearLayout(this).apply { gravity = Gravity.CENTER_VERTICAL; setPadding(0, dp(8), 0, dp(8)) }
+        val words = vertical()
+        label(words, title, 17f, Color.BLACK, true)
+        if (detail.isNotEmpty()) label(words, detail, 15f, Color.DKGRAY)
+        row.addView(words, LinearLayout.LayoutParams(0, -2, 1f)); row.addView(question(title, explanation, target, true))
+        parent.addView(row); targets[target] = row
+    }
+    private fun settingClock() = SystemClock.elapsedRealtime() / 1000.0
+    private fun refreshSettingControls() {
+        refreshingSettings = true
+        settingControls.forEach { (id, pair) ->
+            pair.first.isChecked = settingSwitches.isOn(id)
+            if (Build.VERSION.SDK_INT >= 30) pair.first.stateDescription = if (settingSwitches.isAttempting(id)) "On temporarily. Not connected." else if (settingSwitches.isOn(id)) "On" else "Off"
+            pair.second.visibility = if (settingSwitches.isAttempting(id)) View.VISIBLE else View.GONE
+        }
+        refreshingSettings = false
+    }
+    private fun scheduleSettingReset() {
+        settingHandler.removeCallbacks(settingReset)
+        settingSwitches.nextExpiry?.let { expiry -> settingHandler.postDelayed(settingReset, ((expiry - settingClock()) * 1000).toLong().coerceAtLeast(1)) }
+    }
+    private fun resetSettingSwitches() {
+        settingHandler.removeCallbacks(settingReset); settingSwitches.connectionLost(); refreshSettingControls()
     }
     private fun handleLocalBack(): Boolean {
         when {
@@ -482,6 +580,7 @@ class ReadOnlyHomeActivity : Activity() {
     @Deprecated("Legacy Back fallback for Android 8–12")
     override fun onBackPressed() { if (!handleLocalBack()) super.onBackPressed() }
     override fun onDestroy() {
+        resetSettingSwitches()
         if (Build.VERSION.SDK_INT >= 33) backCallback?.let { onBackInvokedDispatcher.unregisterOnBackInvokedCallback(it) }
         backCallback = null; super.onDestroy()
     }
@@ -523,6 +622,7 @@ class ReadOnlyHomeActivity : Activity() {
     }
 
     override fun onStop() {
+        resetSettingSwitches()
         tutorial.pause()
         observationEpoch += 1
         observing = false

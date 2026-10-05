@@ -16,10 +16,13 @@ shells.
 
 Both shells expose an expandable **Sound options** section with Volume, Captions,
 Sound preset, Dialogue, Night, Custom Equalizer, and Defaults and Undo. A
-second **Advanced options** button shows device/route, physical-output,
-background-monitoring, privacy, and handoff explanations. Expanding or hiding
-these sections only changes local presentation. Every audio option explicitly
-says **Unavailable** and the physical state remains **Unknown physical state**.
+second **Advanced Settings** page holds device/route, physical-output,
+background-monitoring, privacy, and handoff options. The October 5 Settings
+revision uses white switch rows and [?] help.
+A disconnected switch briefly shows cyan and **Not connected.** for two seconds,
+then returns to off. A lasting on state requires verified connection and reviewed
+capability inputs; the native prototypes have neither. These changes affect only
+local presentation, and physical state remains **Unknown physical state**.
 There are no sliders, audio commands, saved audio settings, new permissions, or
 background execution. The Python capability model also includes Dialogue and
 Night as extra preset choices, gated by semantic preset capability; those

@@ -35,7 +35,7 @@ network requests, or profile writes are added by opening it.
 
 | Approach | Assessment |
 | --- | --- |
-| Interactive audio sliders, switches, or background protection toggle | Rejected for this stage: no qualified adapter or observed output; a visible enabled control would imply unsupported functionality. |
+| Interactive audio sliders or switches that stay enabled without a verified connection | Rejected for this stage: no qualified adapter or observed output; a lasting enabled control would imply unsupported functionality. The owner's October 5 revision authorizes a two-second cyan attempt followed by automatic off, with an explicit Not connected prompt. |
 | A separate third-party settings SDK | Adds binary size and state without improving the existing contract. |
 | Local expandable Options / Advanced options, with passive details | Selected: minimal CPU and storage, no wakeups or permissions; menu text can be tested in both simulators. |
 

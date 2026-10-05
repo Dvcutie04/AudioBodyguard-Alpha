@@ -268,8 +268,9 @@ assert_tutorial_label sound "SOUND"
 tap_tutorial_label "Jump to" jump_volume_open
 tap_tutorial_label "Sound options" jump_volume
 capture_ui sound_options
-tap_scroll_label "More details" volume_details
+tap_scroll_label "About Volume" volume_details
 assert_scroll_label "No qualified device volume control" sound_volume_detail
+adb shell input keyevent KEYCODE_BACK
 assert_scroll_label "Dialogue preset" sound_presets
 assert_scroll_label "Night preset" sound_night_preset
 tap_tutorial_label "Devices" nav_devices
@@ -312,11 +313,35 @@ capture_ui example_closed
 assert_tutorial_label example_closed "No measurements yet"
 tap_tutorial_label "Settings" nav_settings
 capture_ui settings
+# Nested Settings Back must return to Settings, then to the previous page.
+tap_scroll_label "Advanced Settings" advanced_open
+capture_ui advanced_settings
+assert_tutorial_label advanced_settings "Captions"
+assert_tutorial_label advanced_settings "About Captions"
+tap_scroll_label "Captions" setting_attempt
+adb exec-out screencap -p > "$artifact_dir/setting_attempt_cyan.png"
+capture_ui setting_attempt_state
+python3 tools/check_android_simulation_ui.py --assert-switch "$artifact_dir/setting_attempt_state.xml" "Captions" true
+assert_tutorial_label setting_attempt_state "Not connected."
+sleep 2
+capture_ui setting_attempt_reset
+python3 tools/check_android_simulation_ui.py --assert-switch "$artifact_dir/setting_attempt_reset.xml" "Captions" false
+if python3 tools/check_android_simulation_ui.py --assert-label "$artifact_dir/setting_attempt_reset.xml" "Not connected." 2>/dev/null; then exit 1; fi
+tap_scroll_label "About Captions" setting_help
+capture_ui setting_caption_help
+assert_tutorial_label setting_caption_help "verified connection"
+adb shell input keyevent KEYCODE_BACK
+capture_ui setting_help_return
+python3 tools/check_android_simulation_ui.py --assert-switch "$artifact_dir/setting_help_return.xml" "Captions" false
+adb shell input keyevent KEYCODE_BACK
+capture_ui setting_nested_back
+assert_tutorial_label setting_nested_back "SETTINGS"
+assert_tutorial_label setting_nested_back "Appearance"
 if python3 tools/check_android_simulation_ui.py --assert-label "$artifact_dir/settings.xml" "Make space for you." 2>/dev/null; then exit 1; fi
 tap_tutorial_label "Help & tutorials" settings_help
 tap_tutorial_label "About this page" settings_about
 capture_ui settings_about_text
-assert_tutorial_label settings_about_text "Make space for you."
+assert_tutorial_label settings_about_text "Choose an appearance or open Advanced Settings."
 adb shell input keyevent KEYCODE_BACK
 tap_tutorial_label "Daylight" theme_daylight
 capture_ui daylight_settings
@@ -325,8 +350,8 @@ capture_ui daylight_home
 assert_tutorial_label daylight_home "Connection not verified"
 tap_tutorial_label "Settings" theme_settings
 tap_tutorial_label "Midnight" theme_midnight
-tap_scroll_label "More features" future_open
-tap_scroll_label "Voice requests. Planned · proposal only" future_voice
+tap_scroll_label "Advanced Settings" future_open
+tap_scroll_label "About Voice requests" future_voice
 capture_ui future_voice_detail
 assert_tutorial_label future_voice_detail "Voice control requires device authority and checked output"
 tap_tutorial_label "Show voice steps" future_voice_help
@@ -342,9 +367,11 @@ assert_tutorial_label setup_voice_ready "Microphone off"
 tap_tutorial_label "Close" setup_voice_close
 tap_tutorial_label "Jump to" privacy_open
 tap_tutorial_label "Privacy and storage" privacy_jump
+tap_scroll_label "About Privacy and storage" privacy_help
 capture_ui privacy
 assert_tutorial_label privacy "No audio files saved by this app"
 assert_tutorial_label privacy "Appearance and guide dismissal stay on this phone"
+adb shell input keyevent KEYCODE_BACK
 
 tap_tutorial_label "Sound" input_sound
  tap_scroll_label "Voice check. See microphone activity and recognized words" input_voice
@@ -508,4 +535,21 @@ assert_tutorial_label large_text_closed "Pages · Home"
 tap_tutorial_label "Back to previous page" large_return_previous
 capture_ui large_previous_page
 assert_tutorial_label large_previous_page "Pages · Devices"
+tap_tutorial_label "Pages · Devices" large_settings_pages
+tap_tutorial_label "Settings" large_settings
+tap_scroll_label "Advanced Settings" large_advanced
+capture_ui large_advanced_settings
+python3 tools/check_android_simulation_ui.py --assert-switch "$artifact_dir/large_advanced_settings.xml" "Captions" false
+tap_scroll_label "About Captions" large_setting_help
+capture_ui large_setting_help_text
+assert_tutorial_label large_setting_help_text "verified connection"
+adb shell input keyevent KEYCODE_BACK
+tap_scroll_label "Captions" large_setting_attempt
+adb shell input keyevent KEYCODE_HOME
+adb shell am start -W -n com.aqss.bodyguard.prototype/.ReadOnlyHomeActivity
+capture_ui large_setting_background_reset
+python3 tools/check_android_simulation_ui.py --assert-switch "$artifact_dir/large_setting_background_reset.xml" "Captions" false
+adb shell input keyevent KEYCODE_BACK
+capture_ui large_settings_back
+assert_tutorial_label large_settings_back "Appearance"
 echo "ANDROID_THEME_UI_OBSERVED: sequential six-step guide, simple defaults, optional details, choice gating, tailored plan, completion, replay, persisted exit, five pages, unknown coverage, unavailable controls, six readiness steps, labeled example, themes, future explanation, tutorial routing, previous-page Back, lifecycle, rotation and large text passed"

@@ -64,6 +64,17 @@ class InterfaceContentTests(unittest.TestCase):
                 with self.assertRaises(ValueError):
                     validate(data)
 
+    def test_settings_describe_the_verified_gate_and_preview_without_dispatch_fields(self):
+        for item in self.data["settings"]:
+            self.assertIn("verified connection", item["explanation"])
+            self.assertIn("two seconds", item["explanation"])
+            self.assertIn("This preview", item["explanation"])
+            self.assertIn("[?]", next(t for t in json.loads((ROOT / "contracts/tutorial_v1.json").read_text())["topics"] if t["id"] == "advanced")["steps"][0]["explanation"])
+        data = copy.deepcopy(self.data)
+        data["settings"][0]["action"] = "select_captions"
+        with self.assertRaisesRegex(ValueError, "descriptions only"):
+            validate(data)
+
     def test_every_tutorial_target_has_a_real_page(self):
         tutorials = json.loads((ROOT / "contracts/tutorial_v1.json").read_text())
         targets = {step["target"] for topic in tutorials["topics"] for step in topic["steps"]}

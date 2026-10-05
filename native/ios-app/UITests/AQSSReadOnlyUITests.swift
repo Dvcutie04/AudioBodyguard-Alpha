@@ -8,7 +8,7 @@ final class AQSSReadOnlyUITests: XCTestCase {
         XCTAssertEqual(app.staticTexts["connection-status"].label, "Connected")
         XCTAssertEqual(app.staticTexts["connection-demo-notice"].label, "Appetize demo")
         XCTAssertEqual(app.images["connection-head"].label, "AI head. Connected appearance demonstration.")
-        screenshot("Connected demo colored head and doubled outlined rose", app)
+        screenshot("Connected demo colored head and original white rose", app)
         tap("Status details", app)
         label("Unknown physical state", app); label("No output observation", app)
         label("No physical TV connection or audio protection is verified.", app)
@@ -17,6 +17,14 @@ final class AQSSReadOnlyUITests: XCTestCase {
         tab("devices", app)
         app.buttons["page-back"].tap()
         XCTAssertEqual(app.staticTexts["connection-status"].label, "Connected")
+        tab("settings", app); tap("Advanced Settings", app)
+        app.switches["setting-captions"].tap()
+        let attempt = app.staticTexts["not-connected-captions"]
+        XCTAssertTrue(attempt.waitForExistence(timeout: 1))
+        let reset = XCTNSPredicateExpectation(predicate: NSPredicate(format: "exists == false"), object: attempt)
+        XCTAssertEqual(XCTWaiter.wait(for: [reset], timeout: 3.5), .completed)
+        XCTAssertTrue(["Off", "0"].contains(app.switches["setting-captions"].value as? String ?? ""), "Demo artwork must not authorize a setting")
+        tab("home", app)
         tap("TV & smart-home guide", app); label("Step 1 of 6", app)
         next(app); label("Step 2 of 6", app)
         exit(app); label("HOME", app)
@@ -101,6 +109,11 @@ final class AQSSReadOnlyUITests: XCTestCase {
         // surface. Its outgoing menu otherwise captures the next lookup.
         let dismissed = XCTNSPredicateExpectation(predicate: NSPredicate(format: "exists == false"), object: app.scrollViews["menu-scroll"])
         XCTAssertEqual(XCTWaiter.wait(for: [dismissed], timeout: 5), .completed, "Jump menu did not dismiss")
+    }
+    private func dismissSettingHelp(_ app: XCUIApplication) {
+        app.buttons["Back"].firstMatch.tap()
+        let dismissed = XCTNSPredicateExpectation(predicate: NSPredicate(format: "exists == false"), object: app.scrollViews["menu-scroll"])
+        XCTAssertEqual(XCTWaiter.wait(for: [dismissed], timeout: 5), .completed)
     }
     private func screenshot(_ name: String, _ app: XCUIApplication) {
         let shot = XCTAttachment(screenshot: app.screenshot()); shot.name = name; shot.lifetime = .keepAlways; add(shot)
@@ -216,19 +229,75 @@ final class AQSSReadOnlyUITests: XCTestCase {
     func testOptionsAndAdvancedRemainUnavailable() {
         let app = launch(); tab("sound", app)
         XCTAssertFalse(app.staticTexts["Dialogue preset"].exists)
-        tap("Options", app); tap("More details", app)
+        tap("Options", app); tap("About Volume", app)
         label("No qualified device volume control", app)
+        dismissSettingHelp(app)
         label("Dialogue preset", app); label("Night preset", app)
         label("Custom Equalizer", app); label("Defaults and Undo", app)
-        jump("Advanced options", app)
-        tap("More details", app)
-        // Physical output is a separate optional explanation.
-        tap("More details", app)
+        jump("Advanced Settings", app)
+        XCTAssertFalse(app.staticTexts.containing(NSPredicate(format: "label CONTAINS %@", "No independent observation is available")).firstMatch.exists)
+        tap("About Physical output", app)
         label("No independent observation is available", app)
+        dismissSettingHelp(app)
         jump("Privacy and storage", app)
+        tap("About Privacy and storage", app)
         label("No audio files saved by this app", app)
         label("Appearance and guide dismissal stay on this phone", app)
         screenshot("Advanced privacy", app)
+        dismissSettingHelp(app)
+    }
+
+    func testAdvancedSwitchAttemptResetsAfterTwoSecondsAndHelpReturnsToCaller() {
+        let app = launch(); tab("settings", app)
+        XCTAssertFalse(app.switches["setting-captions"].exists)
+        tap("Advanced Settings", app)
+        let captions = app.switches["setting-captions"]
+        XCTAssertTrue(captions.isHittable)
+        XCTAssertFalse(app.staticTexts.containing(NSPredicate(format: "label CONTAINS %@", "Show a supported caption track")).firstMatch.exists)
+        screenshot("Advanced Settings concise white switch rows", app)
+        captions.tap()
+        let prompt = app.staticTexts["not-connected-captions"]
+        XCTAssertTrue(prompt.waitForExistence(timeout: 1))
+        screenshot("Cyan disconnected attempt with two-second prompt", app)
+        let reset = XCTNSPredicateExpectation(predicate: NSPredicate(format: "exists == false"), object: prompt)
+        XCTAssertEqual(XCTWaiter.wait(for: [reset], timeout: 3.5), .completed)
+        XCTAssertTrue(["Off", "0"].contains(captions.value as? String ?? ""), "Attempt must end off")
+        tap("About Captions", app); label("verified connection", app)
+        screenshot("Caption explanation hidden behind question button", app)
+        dismissSettingHelp(app)
+        XCTAssertTrue(captions.isHittable)
+        XCTAssertFalse(prompt.exists)
+        app.buttons["page-back"].tap(); label("SETTINGS", app)
+        XCTAssertTrue(app.buttons["Daylight"].exists)
+        XCTAssertFalse(captions.exists)
+        app.buttons["page-back"].tap(); label("Connection not verified", app)
+    }
+
+    func testAdvancedSwitchResetSurvivesNavigationBackgroundAndLargestText() {
+        let app = launch(); tab("settings", app); tap("Advanced Settings", app)
+        app.switches["setting-captions"].tap()
+        tab("devices", app)
+        app.buttons["page-back"].tap()
+        let prompt = app.staticTexts["not-connected-captions"]
+        let reset = XCTNSPredicateExpectation(predicate: NSPredicate(format: "exists == false"), object: prompt)
+        XCTAssertEqual(XCTWaiter.wait(for: [reset], timeout: 3.5), .completed)
+        XCTAssertTrue(["Off", "0"].contains(app.switches["setting-captions"].value as? String ?? ""))
+        app.switches["setting-captions"].tap()
+        XCUIDevice.shared.press(.home); app.activate()
+        XCTAssertFalse(prompt.exists)
+        XCTAssertTrue(["Off", "0"].contains(app.switches["setting-captions"].value as? String ?? ""))
+        app.terminate()
+        app.launchArguments = ["-aqssGuideDismissedV1", "YES", "-UIPreferredContentSizeCategoryName", "UICTContentSizeCategoryAccessibilityXXXL"]
+        app.launch()
+        app.buttons["page-picker"].tap(); tap("Settings", app)
+        let dismissed = XCTNSPredicateExpectation(predicate: NSPredicate(format: "exists == false"), object: app.scrollViews["menu-scroll"])
+        XCTAssertEqual(XCTWaiter.wait(for: [dismissed], timeout: 5), .completed)
+        tap("Advanced Settings", app)
+        XCTAssertTrue(app.switches["setting-captions"].isHittable)
+        tap("About Captions", app); label("verified connection", app)
+        screenshot("Largest text setting help stays readable", app)
+        dismissSettingHelp(app)
+        screenshot("Largest text switch controls remain reachable", app)
     }
 
     func testExitAtWelcomeAndContextualGuideRestoreFullApp() {
@@ -243,7 +312,7 @@ final class AQSSReadOnlyUITests: XCTestCase {
         XCUIDevice.shared.press(.home); app.activate(); label("Step 2 of 4", app)
         exit(app); label("HOME", app)
         app.buttons["page-back"].tap(); label("SETTINGS", app)
-        jump("Privacy and storage", app); label("No audio files saved by this app", app)
+        jump("Privacy and storage", app); tap("About Privacy and storage", app); label("No audio files saved by this app", app); dismissSettingHelp(app)
         app.buttons["Help & tutorials"].tap(); tap("Sound options", app)
         next(app); label("Step 2 of 4", app); screenshot("Contextual Sound guide", app)
         exit(app); XCTAssertTrue(app.buttons["Help & tutorials"].isHittable)
@@ -261,8 +330,8 @@ final class AQSSReadOnlyUITests: XCTestCase {
         XCTAssertFalse(app.staticTexts["Explore the direction. These features are not active."].exists)
         screenshot("Daylight Settings", app)
         tab("home", app); screenshot("Daylight Home", app); label("Connection not verified", app)
-        tab("settings", app); tap("Midnight", app); tap("More features", app)
-        tap("Voice requests", app); label("Voice control requires device authority and checked output", app); app.buttons["Got it"].tap()
+        tab("settings", app); tap("Midnight", app); tap("Advanced Settings", app)
+        tap("About Voice requests", app); label("Voice control requires device authority and checked output", app); dismissSettingHelp(app)
         tab("home", app); label("Connection not verified", app)
     }
 
@@ -393,8 +462,8 @@ final class AQSSReadOnlyUITests: XCTestCase {
         XCTAssertLessThanOrEqual(progress.frame.maxX, app.buttons["setup-close"].frame.minX, "Step counter must not overlap Back to Tutorial")
         screenshot("Google Home setup matches the selected TCL system", app)
         app.buttons["setup-close"].tap(); exit(app)
-        tab("settings", app); tap("More features", app); tap("Voice requests", app)
-        app.alerts.buttons["Show voice steps"].tap()
+        tab("settings", app); tap("Advanced Settings", app); tap("About Voice requests", app)
+        tap("Show voice steps", app)
         label("Step 1 of 9", app)
         for _ in 0..<4 { app.buttons["setup-next"].tap() }
         label("Speak and watch the meter", app)

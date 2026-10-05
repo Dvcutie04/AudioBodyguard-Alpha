@@ -74,7 +74,7 @@ class TutorialGuide(
         AlertDialog.Builder(activity).setTitle(page.headline).setMessage(page.subtitle).setPositiveButton("Close", null).show()
     }, "Illustrated setup guides" to { openSetup("") }, "Voice check — step by step" to { openSetup("voice") }) + TutorialContent.topics.map { it.title to { start(it.id); Unit } })
     fun chooseSection() {
-        val entries = listOf("Start here" to "welcome", "Coverage" to "coverage", "Readiness checklist" to "capability", "Sound options" to "options", "Advanced options" to "advanced", "Captions" to "captions", "Session history" to "history", "Foreground OS hint" to "hint", "Privacy and storage" to "privacy", "Session transfer" to "handoff")
+        val entries = listOf("Start here" to "welcome", "Coverage" to "coverage", "Readiness checklist" to "capability", "Sound options" to "options", "Advanced Settings" to "advanced", "Captions" to "captions", "Session history" to "history", "Foreground OS hint" to "hint", "Privacy and storage" to "privacy", "Session transfer" to "handoff")
         skin.menu("Jump to a section", entries.map { it.first to { jump(it.second) } })
     }
     fun jump(target: String) {
