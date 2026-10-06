@@ -46,6 +46,8 @@ def button_coordinates(path: str, label: str) -> None:
     bounds = re.fullmatch(r"\[(\d+),(\d+)\]\[(\d+),(\d+)\]", button.get("bounds", "")) if button is not None else None
     if bounds is not None:
         left, top, right, bottom = map(int, bounds.groups())
+        if right <= left or bottom <= top:
+            return
         # A hierarchy can report a clickable row at the screen edge even
         # when a tap there is intercepted by Android's system navigation.
         screen_bottom = max(
@@ -56,7 +58,10 @@ def button_coordinates(path: str, label: str) -> None:
         center_y = (top + bottom) // 2
         # A native dialog reports its own window bounds, not the full display.
         # Its lower rows are still safely above system navigation.
-        native_dialog = any(node.get("resource-id") == "android:id/alertTitle" for node in nodes)
+        native_dialog = any(node.get("resource-id") in {
+            "android:id/alertTitle", "android:id/parentPanel",
+            "android:id/customPanel", "android:id/custom",
+        } for node in nodes)
         # Tutorial footer controls are laid out above consumed system insets.
         footer_labels = {"Jump to", "Help & tutorials", "Back", "Begin", "Next", "Done", "Start guide", "Start part two", "Resume guide", "Finish guide", "Finish part one", "Finish part two", "Return to step", "Open Voice check", "Open full app", "Exit tutorial", "Close tutorial", "Back to Tutorial", "Exit Home", "Help", "Home", "Sound", "Devices", "Insights", "Settings", "Pages · Home", "Pages · Devices", "Pages · Settings"}
         if center_y < screen_bottom * 0.85 or label in footer_labels or label == "Start picture setup" or native_dialog:
