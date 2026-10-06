@@ -131,14 +131,7 @@ class TutorialGuide(
         }
         if (step.target in listOf("connectionPlan", "connectionCheck")) {
             if (step.target == "connectionCheck") content.addView(button("Phone Wi-Fi pictures", primary = true) { openSetup("phone") }, LinearLayout.LayoutParams(-1, -2).apply { bottomMargin = dp(12) })
-            for (target in listOf("chooseTV", "chooseHome")) guide.selected(target)?.takeIf { it.id !in listOf("both", "neither") }?.let { selected ->
-                content.addView(button("Show ${selected.title} steps") { openSetup(selected.id) }, LinearLayout.LayoutParams(-1, -2).apply { bottomMargin = dp(12) })
-            }
-            if (guide.selected("chooseHome")?.id == "both") listOf("alexa", "google").forEach { id ->
-                TutorialContent.choices["chooseHome"]?.firstOrNull { it.id == id }?.let { choice ->
-                    content.addView(button("Show ${choice.title} steps") { openSetup(id) }, LinearLayout.LayoutParams(-1, -2).apply { bottomMargin = dp(12) })
-                }
-            }
+            if (step.target == "connectionPlan") selectedConnectionActions(content, primaryTV = true)
         }
         if (isBeginner && step.target == "welcome") {
             content.addView(featureCatalog())
@@ -152,12 +145,23 @@ class TutorialGuide(
                 if (isBeginner && step.target in listOf("connectionPlan", "connectionCheck")) listOf("chooseTV", "chooseHome").forEach { target ->
                     guide.selected(target)?.let { text(example, it.detail, color = skin.muted) }
                 }
+                if (step.target == "connectionCheck") selectedConnectionActions(example, primaryTV = false)
                 content.addView(example)
             }
         }
         renderControls()
         footer.visibility = View.VISIBLE; stateChanged()
         reading.post { if (version == renderVersion && !activity.isFinishing && !activity.isDestroyed) reading.scrollTo(0, oldScroll) }
+    }
+    private fun selectedConnectionActions(parent: LinearLayout, primaryTV: Boolean) {
+        for (target in listOf("chooseTV", "chooseHome")) guide.selected(target)?.takeIf { it.id !in listOf("both", "neither") }?.let { selected ->
+            parent.addView(button("Show ${selected.title} steps", primary = primaryTV && target == "chooseTV") { openSetup(selected.id) }, LinearLayout.LayoutParams(-1, -2).apply { bottomMargin = dp(12) })
+        }
+        if (guide.selected("chooseHome")?.id == "both") listOf("alexa", "google").forEach { id ->
+            TutorialContent.choices["chooseHome"]?.firstOrNull { it.id == id }?.let { choice ->
+                parent.addView(button("Show ${choice.title} steps") { openSetup(id) }, LinearLayout.LayoutParams(-1, -2).apply { bottomMargin = dp(12) })
+            }
+        }
     }
     fun connectionOverview(currentTarget: String? = null): LinearLayout {
         val box = column().apply { setPadding(dp(16), dp(16), dp(16), dp(6)); background = skin.shape(skin.surface) }
@@ -209,7 +213,7 @@ class TutorialGuide(
         if (guide.index > 0) row.addView(button("Back") { guide.back(); render() }, LinearLayout.LayoutParams(-2, -2).apply { marginEnd = dp(12) })
         if (guide.canContinue) {
             val label = if (guide.isLast) { if (isBeginner) "Open full app" else "Done" } else if (guide.index == 0) { if (isBeginner) TutorialContent.startLabel else "Begin" } else "Next"
-            row.addView(button(label, primary = true) {
+            row.addView(button(label, primary = step.target !in listOf("connectionPlan", "connectionCheck")) {
                 if (guide.isLast) { finished(topic.id); close() } else { guide.next(); render() }
             }, LinearLayout.LayoutParams(0, -2, 1f))
         }

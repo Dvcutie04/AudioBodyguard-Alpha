@@ -61,6 +61,7 @@ class SetupGuideActivity : Activity() {
     private var backCallback: OnBackInvokedCallback? = null
     private val group get(): com.aqss.nativefeedback.SetupGroup? {
         val original = SetupContent.groups.firstOrNull { it.id == groupId } ?: return null
+        if (groupId == "phone") return original.copy(routes = original.routes.filter { it != "phone_iphone" }, primaryRoutes = original.primaryRoutes.filter { it != "phone_iphone" })
         val tv = SetupContent.groups.firstOrNull { it.id == (selectedSystem ?: intent.getStringExtra("deviceGroup")) }
         if (groupId !in listOf("google", "alexa", "both") || tv == null) return original
         val routes = original.routes.filter { it in tv.routes }
@@ -71,6 +72,12 @@ class SetupGuideActivity : Activity() {
     }
     private val route get() = SetupContent.routes.firstOrNull { it.id == routeId }
     private val phoneRoute get() = when (Build.MANUFACTURER.lowercase()) { "samsung" -> "phone_galaxy"; "google" -> "phone_pixel"; else -> null }
+    private fun startingRoute(): String? = when {
+        groupId == "voice" -> "voice"
+        groupId == "phone" -> phoneRoute
+        platforms.isNotEmpty() -> null
+        else -> group?.primaryRoutes?.singleOrNull()
+    }
     private val platforms get() = when (groupId) {
         "tcl" -> listOf("Roku TV" to "tcl_roku", "Google TV / Android TV" to "tcl_google", "Fire TV" to "tcl_fire")
         "hisense" -> listOf("Roku TV" to "hisense_roku", "Google TV / Android TV" to "hisense_google", "VIDAA" to "hisense_vidaa", "Fire TV" to "hisense_fire")
@@ -86,9 +93,9 @@ class SetupGuideActivity : Activity() {
         skin = InterfaceTheme(this, dark)
         groupId = (savedInstanceState?.getString("group") ?: intent.getStringExtra("group") ?: "")
             .takeIf { id -> SetupContent.groups.any { it.id == id } } ?: ""
-        routeId = if (savedInstanceState == null && groupId == "voice") "voice" else if (savedInstanceState == null && groupId == "phone") phoneRoute else savedInstanceState?.getString("route")?.takeIf { group?.routes?.contains(it) == true }
-        completedTVRoute = savedInstanceState?.getString("completedTVRoute")?.takeIf { it in listOf("roku_network", "roku_model") }
         selectedSystem = savedInstanceState?.getString(SELECTED_SYSTEM) ?: intent.getStringExtra("deviceGroup")
+        routeId = if (savedInstanceState == null) startingRoute() else savedInstanceState.getString("route")?.takeIf { group?.routes?.contains(it) == true }
+        completedTVRoute = savedInstanceState?.getString("completedTVRoute")?.takeIf { it in listOf("roku_network", "roku_model") }
         completedTVRoute?.let { setResult(RESULT_OK, Intent().putExtra(COMPLETED_TV_ROUTE, it)) }
         index = if (savedInstanceState == null && groupId == "voice") 0 else (savedInstanceState?.getInt("index", -1) ?: -1).takeIf { it == -1 || route?.steps?.indices?.contains(it) == true } ?: -1
         mismatch = savedInstanceState?.getBoolean("mismatch", false) ?: false
@@ -154,7 +161,7 @@ class SetupGuideActivity : Activity() {
         box.addView(button(title, primary, block).apply { gravity = Gravity.START or Gravity.CENTER_VERTICAL }, LinearLayout.LayoutParams(-1, -2).apply { bottomMargin = dp(10) })
     }
     private fun chooseGroup(id: String) {
-        remember(); groupId = id; routeId = if (id == "voice") "voice" else if (id == "phone") phoneRoute else null; index = if (id == "voice") 0 else -1; mismatch = false; detailsExpanded = false; pickerExpanded = false; referencesExpanded = false; render()
+        remember(); groupId = id; routeId = startingRoute(); index = if (id == "voice") 0 else -1; mismatch = false; detailsExpanded = false; pickerExpanded = false; referencesExpanded = false; render()
     }
     private fun location() = Bundle().apply {
         putString("group", groupId); putString("route", routeId); putInt("index", index); putBoolean("mismatch", mismatch)
@@ -198,10 +205,12 @@ class SetupGuideActivity : Activity() {
                 words(content, when (step.surface) { "tv" -> "On your TV · use the remote"; "both" -> "Your TV + your phone"; else -> "On your phone" }, 15f, skin.accent, true)
                 words(content, step.instruction, 16f, bold = true)
                 content.addView(if (route.id == "roku_network" || route.id == "roku_model") rokuIllustration(step, index + 1) else if (route.id == "philips_voice_remote" && index in 1..2) profileIllustration(step, index + 1) else illustration(step, index + 1), LinearLayout.LayoutParams(-1, -2).apply { bottomMargin = dp(18) })
-                action(content, if (detailsExpanded) "Hide details" else "More details") { detailsExpanded = !detailsExpanded; render(true) }
+                action(content, if (detailsExpanded) "Hide help" else "Need help?") { detailsExpanded = !detailsExpanded; render(true) }
                 if (detailsExpanded) {
                     if (step.note !in repeatedPictureNotes) words(content, step.note, color = skin.muted)
                     action(content, "My screen looks different") { remember(); mismatch = true; detailsExpanded = false; referencesExpanded = false; render() }
+                    action(content, if (referencesExpanded) "Hide reference links" else "Reference links") { referencesExpanded = !referencesExpanded; render(true) }
+                    if (referencesExpanded) sources(route)
                 }
             }
             route != null -> intro(route)
@@ -212,6 +221,11 @@ class SetupGuideActivity : Activity() {
                         setCompoundDrawablesWithIntrinsicBounds(InterfaceSymbol(skin, "tv", skin.accent), null, null, null)
                         compoundDrawablePadding = dp(12); gravity = Gravity.START or Gravity.CENTER_VERTICAL; minHeight = dp(64)
                     }, LinearLayout.LayoutParams(-1, -2).apply { bottomMargin = dp(12) })
+                }
+                action(content, if (detailsExpanded) "Hide help" else "Need help?") { detailsExpanded = !detailsExpanded; render(true) }
+                if (detailsExpanded) {
+                    words(content, "Match the name on your TV’s Home screen. If you’re unsure, use the identification pictures.", color = skin.muted)
+                    action(content, "Help identify my TV") { chooseRoute("identify") }
                 }
             }
             group != null -> {
@@ -266,9 +280,12 @@ class SetupGuideActivity : Activity() {
         words(content, "${route.steps.size} pictures. One step at a time.", 18f, skin.accent)
         words(content, route.appliesTo, 13f, skin.muted)
         resumeIndex(route)?.let { saved -> words(content, "Continue at picture ${saved + 1}.", color = skin.accent) }
-        action(content, if (detailsExpanded) "Hide details" else "More details") { detailsExpanded = !detailsExpanded; render(true) }
+        action(content, if (detailsExpanded) "Hide help" else "Need help?") { detailsExpanded = !detailsExpanded; render(true) }
         if (detailsExpanded) {
-            action(content, "Phone Wi-Fi pictures") { chooseGroup("phone") }
+            if (!route.id.startsWith("phone_")) action(content, "Phone Wi-Fi pictures") { chooseGroup("phone") }
+            if ((group?.routes?.size ?: 0) > 1) action(content, "Other setup options") {
+                remember(); routeId = null; index = -1; mismatch = false; detailsExpanded = false; pickerExpanded = true; referencesExpanded = false; render()
+            }
             words(content, "Use the official setup screens for passwords and approvals.", color = skin.muted)
             if (route.id in listOf("roku_network", "roku_model")) action(content, "I’m already in Settings") { remember(); index = 2; detailsExpanded = false; referencesExpanded = false; render() }
             if (resumeIndex(route) != null) action(content, "Start from the beginning") { remember(); saveProgress(route, null); index = 0; detailsExpanded = false; render() }
@@ -295,7 +312,7 @@ class SetupGuideActivity : Activity() {
         action(content, "Choose another model or menu") { remember(); routeId = null; index = -1; mismatch = false; pickerExpanded = true; detailsExpanded = false; render() }
         action(content, "Choose another TV or app") { chooseGroup("") }
         if (route != null) {
-            action(content, if (detailsExpanded) "Hide details" else "More details") { detailsExpanded = !detailsExpanded; render(true) }
+            action(content, if (detailsExpanded) "Hide help" else "Need help?") { detailsExpanded = !detailsExpanded; render(true) }
             if (detailsExpanded) { words(content, route.appliesTo); sources(route) }
         }
     }

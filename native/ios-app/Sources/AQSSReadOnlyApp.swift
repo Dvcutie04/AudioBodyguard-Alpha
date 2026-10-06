@@ -276,7 +276,10 @@ private struct ReadOnlyHomeView: View {
     private func showSetup(_ group: String = "") {
         completedPictureRoute = nil
         pictureTarget = tutorialTopicID == "getting_started" && ["connectionPlan", "connectionCheck"].contains(tutorialStep?.target ?? "") ? tutorialStep?.target : nil
-        setupRequest = SetupGuideRequest(group: group, deviceGroup: selectedSetupSystem ?? guide.selected("chooseTV")?.id ?? "")
+        let remembered = selectedSetupSystem.flatMap { id in
+            AQSSSetupContent.groups.contains(where: { $0.id == id }) && !group.isEmpty && id.hasPrefix(group + "_") ? id : nil
+        }
+        setupRequest = SetupGuideRequest(group: remembered ?? group, deviceGroup: selectedSetupSystem ?? guide.selected("chooseTV")?.id ?? "")
     }
 
     private var header: some View {
@@ -711,19 +714,7 @@ private struct ReadOnlyHomeView: View {
                         if step.target == "connectionCheck" {
                             action("Phone Wi-Fi pictures", icon: "wifi", primary: true) { showSetup("phone") }
                         }
-                        ForEach(["chooseTV", "chooseHome"], id: \.self) { target in
-                            if let selected = guide.selected(target), !["both", "neither"].contains(selected.id) {
-                                action("Show \(selected.title) steps", icon: target == "chooseTV" ? "tv" : "iphone") { showSetup(selected.id) }
-                                    .accessibilityIdentifier("setup-from-\(selected.id)")
-                            }
-                        }
-                        if guide.selected("chooseHome")?.id == "both" {
-                            ForEach(["alexa", "google"], id: \.self) { id in
-                                if let choice = AQSSTutorialContent.choices["chooseHome"]?.first(where: { $0.id == id }) {
-                                    action("Show \(choice.title) steps", icon: "iphone") { showSetup(id) }
-                                }
-                            }
-                        }
+                        if step.target == "connectionPlan" { selectedConnectionActions(primaryTV: true) }
                     }
                     if topic.id == "getting_started" && step.target == "welcome" {
                         featureCatalog
@@ -740,6 +731,7 @@ private struct ReadOnlyHomeView: View {
                                         ForEach(["chooseTV", "chooseHome"], id: \.self) { target in
                                             if let selected = guide.selected(target) { Text(selected.detail).font(.callout).foregroundColor(theme.muted) }
                                         }
+                                        if step.target == "connectionCheck" { selectedConnectionActions(primaryTV: false) }
                                     }
                                 }.padding(14).background(theme.surface).clipShape(RoundedRectangle(cornerRadius: 14))
                             }
@@ -754,13 +746,28 @@ private struct ReadOnlyHomeView: View {
                 }
                 HStack(spacing: 12) {
                     if tutorialIndex > 0 { Button("Back") { guide.back() }.buttonStyle(AppButtonStyle(theme: theme)) }
-                    action(guide.isLast ? (topic.id == "getting_started" ? "Open full app" : "Done") : (tutorialIndex == 0 ? (topic.id == "getting_started" ? AQSSTutorialContent.startLabel : "Begin") : "Next"), icon: "arrow.right", primary: true) {
+                    action(guide.isLast ? (topic.id == "getting_started" ? "Open full app" : "Done") : (tutorialIndex == 0 ? (topic.id == "getting_started" ? AQSSTutorialContent.startLabel : "Begin") : "Next"), icon: "arrow.right", primary: !["connectionPlan", "connectionCheck"].contains(step.target)) {
                         guard guide.canContinue else { return }
                         if guide.isLast { if topic.id == "getting_started" { beginnerTourFinished = true }; closeTutorial() }
                         else { _ = guide.next() }
                     }.disabled(!guide.canContinue).accessibilityIdentifier("guide-next")
                 }
             }.padding(16).background(theme.surface)
+        }
+    }
+    @ViewBuilder private func selectedConnectionActions(primaryTV: Bool) -> some View {
+        ForEach(["chooseTV", "chooseHome"], id: \.self) { target in
+            if let selected = guide.selected(target), !["both", "neither"].contains(selected.id) {
+                action("Show \(selected.title) steps", icon: target == "chooseTV" ? "tv" : "house", primary: primaryTV && target == "chooseTV") { showSetup(selected.id) }
+                    .accessibilityIdentifier("setup-from-\(selected.id)")
+            }
+        }
+        if guide.selected("chooseHome")?.id == "both" {
+            ForEach(["alexa", "google"], id: \.self) { id in
+                if let choice = AQSSTutorialContent.choices["chooseHome"]?.first(where: { $0.id == id }) {
+                    action("Show \(choice.title) steps", icon: "house") { showSetup(id) }
+                }
+            }
         }
     }
 

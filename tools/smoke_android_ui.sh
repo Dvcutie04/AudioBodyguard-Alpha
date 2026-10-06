@@ -219,7 +219,7 @@ assert_tutorial_label setup_pair_step_1 "Step 1 of 17"
 for step in {2..15}; do tap_tutorial_label "Next" "setup_samsung_next_$step"; done
 capture_ui setup_tv_approval
 assert_tutorial_label setup_tv_approval "Approve on the television"
-tap_scroll_label "More details" setup_approval_details
+tap_scroll_label "Need help?" setup_approval_details
 tap_scroll_label "My screen looks different" setup_mismatch_open
 capture_ui setup_mismatch
 assert_tutorial_label setup_mismatch "Find the right screen"
@@ -235,6 +235,8 @@ capture_ui setup_plan_return
 assert_tutorial_label setup_plan_return "Step 5 of 6"
 assert_tutorial_label setup_plan_return "2. Connect to your phone"
 assert_tutorial_label setup_plan_return "follow the pictures"
+if python3 tools/check_android_simulation_ui.py --assert-label "$artifact_dir/setup_plan_return.xml" "Show Samsung steps" 2>/dev/null; then exit 1; fi
+if python3 tools/check_android_simulation_ui.py --assert-label "$artifact_dir/setup_plan_return.xml" "Show Amazon Alexa steps" 2>/dev/null; then exit 1; fi
 if python3 tools/check_android_simulation_ui.py --assert-label "$artifact_dir/setup_plan_return.xml" "Not connected · Audio protection is not active" 2>/dev/null; then exit 1; fi
 tap_scroll_label "Need help?" phone_help_open
 assert_scroll_label "official phone app" phone_help_limits
@@ -244,6 +246,7 @@ capture_ui pixel_wifi_intro
 # The emulator identifies itself as a generic Android device on some images.
 # That correctly opens the phone chooser instead of assuming Pixel menus.
 if python3 tools/check_android_simulation_ui.py --assert-label "$artifact_dir/pixel_wifi_intro.xml" "Phone Wi-Fi setup" 2>/dev/null; then
+    if python3 tools/check_android_simulation_ui.py --assert-label "$artifact_dir/pixel_wifi_intro.xml" "iPhone — connect to your home Wi-Fi" 2>/dev/null; then exit 1; fi
     tap_scroll_label "Google Pixel — connect to your home Wi-Fi" pixel_wifi_choose
     capture_ui pixel_wifi_intro
 fi
@@ -252,7 +255,7 @@ tap_tutorial_label "Start guide" pixel_wifi_start
 tap_tutorial_label "Next" pixel_wifi_settings
 capture_ui pixel_wifi_picture
 assert_tutorial_label pixel_wifi_picture "Network & internet"
-tap_scroll_label "More details" pixel_wifi_details
+tap_scroll_label "Need help?" pixel_wifi_details
 tap_scroll_label "My screen looks different" pixel_wifi_mismatch
 tap_scroll_label "Choose another model or menu" phone_wifi_choose_system
 tap_scroll_label "Samsung Galaxy — connect to your home Wi-Fi" galaxy_wifi_open
@@ -263,11 +266,16 @@ assert_tutorial_label galaxy_wifi_picture "Connections"
 tap_tutorial_label "Back to Tutorial" phone_wifi_close
 capture_ui phone_wifi_plan_return
 assert_tutorial_label phone_wifi_plan_return "Step 5 of 6"
+tap_scroll_label "Need help?" phone_previous_steps_help
 tap_scroll_label "Show Samsung steps" setup_from_phone
 tap_scroll_label "Samsung — TV shows OK approval" setup_phone_route
 tap_tutorial_label "Back to Tutorial" setup_phone_cancel
 capture_ui phone_cancelled_return
 assert_tutorial_label phone_cancelled_return "Step 5 of 6"
+assert_tutorial_label phone_cancelled_return "Show Samsung steps"
+tap_scroll_label "Hide help" phone_previous_steps_close
+capture_ui phone_simple_again
+if python3 tools/check_android_simulation_ui.py --assert-label "$artifact_dir/phone_simple_again.xml" "Show Samsung steps" 2>/dev/null; then exit 1; fi
 tap_tutorial_label "Back" beginner_phone_back
 capture_ui beginner_tailored_plan
 assert_tutorial_label beginner_tailored_plan "Step 4 of 6"
@@ -436,13 +444,23 @@ assert_tutorial_label restored_home "Connection not verified"
 tap_tutorial_label "Devices" roku_devices
 tap_scroll_label "Illustrated setup guides. TV pairing, Google Home & Alexa · one picture at a time" roku_open
 tap_scroll_label "TCL" roku_brand
+tap_scroll_label "Need help?" roku_platform_help
+tap_scroll_label "Help identify my TV" roku_identify
+capture_ui tv_identification_intro
+assert_tutorial_label tv_identification_intro "Start guide"
+adb shell input keyevent KEYCODE_BACK
+capture_ui tv_platform_help_return
+assert_tutorial_label tv_platform_help_return "Roku TV"
+assert_tutorial_label tv_platform_help_return "Help identify my TV"
+tap_scroll_label "Hide help" roku_platform_help_close
 tap_scroll_label "Roku TV" roku_platform
 capture_ui roku_simple_picker
+assert_tutorial_label roku_simple_picker "Start guide"
+if python3 tools/check_android_simulation_ui.py --assert-label "$artifact_dir/roku_simple_picker.xml" "Start TV setup" 2>/dev/null; then exit 1; fi
 if python3 tools/check_android_simulation_ui.py --assert-label "$artifact_dir/roku_simple_picker.xml" "Find my exact model (Roku TV)" 2>/dev/null; then exit 1; fi
-tap_scroll_label "Start TV setup" roku_network
 capture_ui roku_simple_intro
 if python3 tools/check_android_simulation_ui.py --assert-label "$artifact_dir/roku_simple_intro.xml" "Open reference in browser" 2>/dev/null; then exit 1; fi
-tap_scroll_label "More details" roku_details
+tap_scroll_label "Need help?" roku_details
 tap_scroll_label "I’m already in Settings" roku_settings
 capture_ui roku_settings_picture
 assert_tutorial_label roku_settings_picture "Step 3 of 5"
@@ -459,7 +477,6 @@ tap_tutorial_label "Close" roku_close
 tap_scroll_label "Illustrated setup guides. TV pairing, Google Home & Alexa · one picture at a time" roku_reopen
 tap_scroll_label "TCL" roku_rebrand
 tap_scroll_label "Roku TV" roku_replatform
-tap_scroll_label "Start TV setup" roku_reroute
 tap_tutorial_label "Resume guide" roku_resume roku-resume-frames
 capture_ui roku_resumed
 complete_frame_evidence roku-resume-frames
@@ -506,6 +523,7 @@ tap_tutorial_label "Devices" philips_devices
 tap_scroll_label "Illustrated setup guides. TV pairing, Google Home & Alexa · one picture at a time" philips_open
 tap_scroll_label "Philips" philips_brand
 tap_scroll_label "Google TV / Android TV" philips_platform
+tap_scroll_label "Need help?" philips_primary_help
 tap_scroll_label "Other setup options" philips_other
 tap_scroll_label "Philips Google TV — pair the voice remote" philips_route
 tap_tutorial_label "Start guide" philips_start
@@ -528,6 +546,7 @@ capture_ui large_text_devices
 tap_scroll_label "Illustrated setup guides. TV pairing, Google Home & Alexa · one picture at a time" setup_large_open
 tap_scroll_label "TCL" setup_large_tcl
 tap_scroll_label "Google TV / Android TV" setup_large_platform
+tap_scroll_label "Need help?" setup_large_primary_help
 tap_scroll_label "Other setup options" setup_large_more_options
 tap_scroll_label "TCL QM851G / Q651G / QM891G — first setup" setup_large_route
 tap_tutorial_label "Start guide" setup_large_start

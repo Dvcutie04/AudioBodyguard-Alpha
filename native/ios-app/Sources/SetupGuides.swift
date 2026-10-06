@@ -42,6 +42,9 @@ struct SetupGuidesView: View {
     @AccessibilityFocusState private var headingFocused: String?
     private var group: AQSSSetupGroup? {
         guard let original = AQSSSetupContent.groups.first(where: { $0.id == groupID }) else { return nil }
+        if groupID == "phone" {
+            return AQSSSetupGroup(id: original.id, title: original.title, routes: ["phone_iphone"], primaryRoutes: ["phone_iphone"])
+        }
         guard ["google", "alexa", "both"].contains(groupID),
               let tv = AQSSSetupContent.groups.first(where: { $0.id == deviceGroup }) else { return original }
         let routes = original.routes.filter { tv.routes.contains($0) }
@@ -101,16 +104,23 @@ struct SetupGuidesView: View {
                             } else if route.id == "philips_voice_remote" && [1, 2].contains(index) {
                                 ProfileMenuIllustration(step: step, number: index + 1, theme: theme)
                             } else { SetupScreenIllustration(step: step, number: index + 1, theme: theme) }
-                            disclosure("More details", id: "setup-step-details") { detailsExpanded.toggle() }
+                            disclosure("Need help?", id: "setup-step-details") { detailsExpanded.toggle() }
                             if detailsExpanded {
                                 if !Self.repeatedPictureNotes.contains(step.note) { Text(step.note).font(.callout).foregroundColor(theme.muted) }
                                 control("My screen looks different", icon: "questionmark.circle", id: "setup-mismatch") { remember(); mismatch = true; detailsExpanded = false; referencesExpanded = false }
+                                control(referencesExpanded ? "Hide reference links" : "Reference links", icon: "doc.text", id: "setup-step-references") { referencesExpanded.toggle() }
+                                if referencesExpanded { sources(route) }
                             }
                         } else { introduction(route) }
                     } else if !platforms.isEmpty {
                         Text("Choose the name on your TV’s home screen.").foregroundColor(theme.muted)
                         ForEach(platforms, id: \.1) { name, id in
                             platformChoice(name, subtitle: "The TV must show " + name, group: id, blue: id.hasSuffix("_roku"))
+                        }
+                        disclosure("Need help?", id: "setup-platform-help") { detailsExpanded.toggle() }
+                        if detailsExpanded {
+                            Text("Match the name on your TV’s Home screen. If you’re unsure, use the identification pictures.").font(.callout).foregroundColor(theme.muted)
+                            control("Help identify my TV", icon: "tv", id: "setup-identify") { chooseRoute("identify") }
                         }
                     }
                     else if let group = group {
@@ -178,6 +188,9 @@ struct SetupGuidesView: View {
         detailsExpanded = false
         pickerExpanded = false
         referencesExpanded = false
+        if routeID == nil, platforms.isEmpty, let primary = group?.primaryRoutes, primary.count == 1 {
+            routeID = primary[0]
+        }
         if !["", "google", "alexa", "both", "neither", "phone", "voice"].contains(groupID) { onDeviceGroupSelected?(groupID) }
     }
     private func control(_ title: String, icon: String, id: String, primary: Bool = false, action: @escaping () -> Void) -> some View {
@@ -203,11 +216,18 @@ struct SetupGuidesView: View {
         Text("\(route.steps.count) pictures. One step at a time.").foregroundColor(theme.accent)
         Text(route.appliesTo).font(.caption).foregroundColor(theme.muted)
         if let saved = resumeIndex(route) { Text("Continue at picture \(saved + 1).").foregroundColor(theme.accent) }
-        disclosure("More details", id: "setup-details") { detailsExpanded.toggle() }
+        disclosure("Need help?", id: "setup-details") { detailsExpanded.toggle() }
         if detailsExpanded {
             VStack(alignment: .leading, spacing: 14) {
                 Text("Use the official setup screens for passwords and approvals.").font(.callout)
-                control("Phone Wi-Fi pictures", icon: "wifi", id: "setup-phone-wifi") { chooseGroup("phone") }
+                if !route.id.hasPrefix("phone_") {
+                    control("Phone Wi-Fi pictures", icon: "wifi", id: "setup-phone-wifi") { chooseGroup("phone") }
+                }
+                if let group = group, group.routes.count > 1 {
+                    control("Other setup options", icon: "rectangle.stack", id: "setup-intro-options") {
+                        remember(); routeID = nil; index = -1; mismatch = false; detailsExpanded = false; pickerExpanded = true; referencesExpanded = false
+                    }
+                }
                 if route.id == "roku_network" || route.id == "roku_model" {
                     control("I’m already in Settings", icon: "gearshape", id: "setup-skip-home") { remember(); index = 2; detailsExpanded = false; referencesExpanded = false }
                 }
@@ -225,7 +245,7 @@ struct SetupGuidesView: View {
         }
     }
     private func disclosure(_ title: String, id: String, action: @escaping () -> Void) -> some View {
-        Button(action: action) { Label(detailsExpanded ? "Hide details" : title, systemImage: detailsExpanded ? "chevron.up" : "chevron.down").frame(maxWidth: .infinity, minHeight: 44, alignment: .leading) }
+        Button(action: action) { Label(detailsExpanded ? "Hide help" : title, systemImage: "questionmark.circle").frame(maxWidth: .infinity, minHeight: 44, alignment: .leading) }
             .buttonStyle(AppButtonStyle(theme: theme)).accessibilityIdentifier(id).accessibilityValue(detailsExpanded ? "Expanded" : "Collapsed")
     }
     @ViewBuilder private func sources(_ route: AQSSSetupRoute) -> some View {
@@ -245,7 +265,7 @@ struct SetupGuidesView: View {
             control("Choose another model or menu", icon: "rectangle.stack", id: "setup-other-menu") { remember(); routeID = nil; index = -1; mismatch = false; pickerExpanded = true; detailsExpanded = false }
             control("Choose another TV or app", icon: "tv", id: "setup-other-group") { chooseGroup("") }
             if let route = route {
-                disclosure("More details", id: "setup-mismatch-details") { detailsExpanded.toggle() }
+                disclosure("Need help?", id: "setup-mismatch-details") { detailsExpanded.toggle() }
                 if detailsExpanded { Text(route.appliesTo); sources(route) }
             }
         }
