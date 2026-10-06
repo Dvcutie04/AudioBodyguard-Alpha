@@ -24,6 +24,13 @@ def svg(step, number, route):
         for i,s in enumerate(left): row(36,80+i*54,272,s,(number==2 and s=='Settings') or (number==3 and s==('System' if model else 'Network')))
         if number>=3:
             for i,s in enumerate(right):row(324,80+i*54,272,s,number==4 and s=='About' or number==5 and i==step['focus'])
+    elif route['id']=='vizio_walmart' and number==3:
+        text(28,52,'On your TV: Connect your Walmart account',size=22)
+        rect(28,78,420,260,'#243958');text(48,113,'TV screen',size=19)
+        row(48,142,380,'TV QR code',True)
+        rect(216,338,44,12,'#536c96');rect(178,350,120,7,'#536c96')
+        text(458,115,'Phone camera',size=17)
+        rect(476,140,128,192,'#243958');text(491,195,'Scan the',size=18);text(491,221,'TV code',size=18)
     elif route['id']=='philips_voice_remote' and number in (2,3):
         text(30,54,'Google TV',size=25);row(418,25,195,'Profile',number==2)
         text(30,110,'For you · Apps');rect(30,142,125,78,'#243958');rect(169,142,125,78,'#243958');rect(307,142,96,78,'#243958')

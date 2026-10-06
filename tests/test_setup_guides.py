@@ -187,6 +187,17 @@ def test_new_vizio_account_and_phone_pairing_follow_distinct_official_codes():
     assert 'google_link' not in routes['vizio_alexa']['sources']
 
 
+def test_vizio_qr_picture_puts_the_code_on_the_tv():
+    from tools.export_picture_guide import svg
+
+    route = setup_routes()['vizio_walmart']
+    picture = ElementTree.fromstring(svg(route['steps'][2], 3, route))
+    labels = [node.text for node in picture.findall('.//text') if node.text]
+    assert 'TV screen' in labels
+    assert 'Phone camera' in labels
+    assert '3 → TV QR code' in labels
+
+
 def test_faster_google_setup_states_platform_limits_and_checks_the_tv_result():
     route = setup_routes()['google_fast']
     assert 'iOS 17' in route['applies_to'] and 'Android 9' in route['applies_to']

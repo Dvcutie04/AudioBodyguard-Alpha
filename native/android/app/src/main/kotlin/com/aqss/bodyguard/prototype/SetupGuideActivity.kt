@@ -208,7 +208,7 @@ class SetupGuideActivity : Activity() {
             route != null && step != null -> {
                 words(content, when (step.surface) { "tv" -> "On your TV · use the remote"; "both" -> "Your TV + your phone"; else -> "On your phone" }, 15f, skin.accent, true)
                 words(content, step.instruction, 16f, bold = true)
-                content.addView(if (route.id == "roku_network" || route.id == "roku_model") rokuIllustration(step, index + 1, route.id) else if (route.id == "philips_voice_remote" && index in 1..2) profileIllustration(step, index + 1) else illustration(step, index + 1), LinearLayout.LayoutParams(-1, -2).apply { bottomMargin = dp(18) })
+                content.addView(if (route.id == "roku_network" || route.id == "roku_model") rokuIllustration(step, index + 1, route.id) else if (route.id == "philips_voice_remote" && index in 1..2) profileIllustration(step, index + 1) else illustration(step, index + 1, route.id == "vizio_walmart" && index == 2), LinearLayout.LayoutParams(-1, -2).apply { bottomMargin = dp(18) })
                 action(content, if (detailsExpanded) "Hide help" else "Need help?") { detailsExpanded = !detailsExpanded; render(true) }
                 if (detailsExpanded) {
                     if (step.note !in repeatedPictureNotes) words(content, step.note, color = skin.muted)
@@ -380,17 +380,18 @@ class SetupGuideActivity : Activity() {
         return box
     }
 
-    private fun illustration(step: SetupStep, number: Int): View {
+    private fun illustration(step: SetupStep, number: Int, showsTVCode: Boolean): View {
+        val screenOnTV = step.surface == "tv" || showsTVCode
         val box = column().apply {
             setPadding(dp(14), dp(14), dp(14), dp(14)); background = skin.shape(skin.raised, 22)
             importantForAccessibility = View.IMPORTANT_FOR_ACCESSIBILITY_YES
-            contentDescription = "Illustration $number. ${step.surface}: ${step.screen}. Highlighted: ${step.items[step.focus]}. Action: ${step.action}. ${step.instruction}"
+            contentDescription = "Illustration $number. ${if (showsTVCode) "TV screen with code; scan it with the phone camera" else step.surface}: ${step.screen}. Highlighted: ${step.items[step.focus]}. Action: ${step.action}. ${step.instruction}"
         }
         words(box, "Illustration", 11f, skin.muted, true).importantForAccessibility = View.IMPORTANT_FOR_ACCESSIBILITY_NO
         if (step.surface == "both") box.addView(SetupActionPicture(this, skin, "both", step.action), LinearLayout.LayoutParams(-1, dp(64)))
-        val screen = column().apply { setPadding(dp(12), dp(12), dp(12), dp(12)); background = skin.shape(skin.surface, if (step.surface == "tv") 12 else 26, true); importantForAccessibility = View.IMPORTANT_FOR_ACCESSIBILITY_NO_HIDE_DESCENDANTS }
+        val screen = column().apply { setPadding(dp(12), dp(12), dp(12), dp(12)); background = skin.shape(skin.surface, if (screenOnTV) 12 else 26, true); importantForAccessibility = View.IMPORTANT_FOR_ACCESSIBILITY_NO_HIDE_DESCENDANTS }
         box.addView(screen, LinearLayout.LayoutParams(-1, -2).apply { if (step.surface == "phone") { marginStart = dp(10); marginEnd = dp(10) } })
-        if (step.surface != "tv") words(screen, "9:41                         ● ▰", 10f, skin.muted)
+        if (!screenOnTV) words(screen, "9:41                         ● ▰", 10f, skin.muted)
         words(screen, step.screen, 17f, bold = true)
         step.items.forEachIndexed { i, item ->
             val row = LinearLayout(this).apply {
@@ -403,7 +404,7 @@ class SetupGuideActivity : Activity() {
             row.addView(TextView(this).apply { text = if (i == step.focus) "←" else "›"; textSize = 20f; setTextColor(ink) }, LinearLayout.LayoutParams(dp(22), -2))
             screen.addView(row, LinearLayout.LayoutParams(-1, -2).apply { bottomMargin = dp(8) })
         }
-        if (step.surface == "tv") {
+        if (screenOnTV) {
             box.addView(View(this).apply { setBackgroundColor(skin.outline) }, LinearLayout.LayoutParams(dp(14), dp(12)).apply { gravity = Gravity.CENTER })
             box.addView(View(this).apply { background = skin.shape(skin.outline, 4) }, LinearLayout.LayoutParams(dp(90), dp(4)).apply { gravity = Gravity.CENTER })
         } else screen.addView(View(this).apply { background = skin.shape(skin.muted, 4) }, LinearLayout.LayoutParams(dp(70), dp(4)).apply { gravity = Gravity.CENTER; topMargin = dp(8) })

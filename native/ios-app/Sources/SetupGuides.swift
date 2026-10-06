@@ -103,7 +103,7 @@ struct SetupGuidesView: View {
                                 RokuMenuIllustration(step: step, number: index + 1, routeID: route.id, theme: theme)
                             } else if route.id == "philips_voice_remote" && [1, 2].contains(index) {
                                 ProfileMenuIllustration(step: step, number: index + 1, theme: theme)
-                            } else { SetupScreenIllustration(step: step, number: index + 1, theme: theme) }
+                            } else { SetupScreenIllustration(step: step, number: index + 1, theme: theme, showsTVCode: route.id == "vizio_walmart" && index == 2) }
                             disclosure("Need help?", id: "setup-step-details") { detailsExpanded.toggle() }
                             if detailsExpanded {
                                 if !Self.repeatedPictureNotes.contains(step.note) { Text(step.note).font(.callout).foregroundColor(theme.muted) }
@@ -339,6 +339,8 @@ private struct SetupScreenIllustration: View {
     let step: AQSSSetupStep
     let number: Int
     let theme: AppTheme
+    let showsTVCode: Bool
+    private var screenOnTV: Bool { step.surface == "tv" || showsTVCode }
     private var glyph: String {
         switch step.action {
         case "home": return "house.fill"
@@ -363,12 +365,12 @@ private struct SetupScreenIllustration: View {
                 }.foregroundColor(theme.violet).padding(.vertical, 6)
             }
             VStack(spacing: 0) {
-                if step.surface != "tv" {
+                if !screenOnTV {
                     HStack { Text("9:41"); Spacer(); Image(systemName: "wifi"); Image(systemName: "battery.100") }
                         .font(.caption2).padding(.horizontal, 16).padding(.top, 10).foregroundColor(theme.muted)
                 }
                 HStack {
-                    Image(systemName: step.action == "settings" ? "gearshape" : step.surface == "tv" ? "tv" : "square.grid.2x2")
+                    Image(systemName: step.action == "settings" ? "gearshape" : screenOnTV ? "tv" : "square.grid.2x2")
                     Text(step.screen).font(.headline).fixedSize(horizontal: false, vertical: true)
                     Spacer(minLength: 0)
                 }.padding(14).foregroundColor(theme.text)
@@ -390,11 +392,11 @@ private struct SetupScreenIllustration: View {
                             .overlay(RoundedRectangle(cornerRadius: 9).stroke(i == step.focus ? theme.controlBorder : theme.outline, lineWidth: i == step.focus ? 2 : 1))
                     }
                 }.padding(12)
-                if step.surface != "tv" { Capsule().fill(theme.muted).frame(width: 70, height: 4).padding(10) }
-            }.background(theme.surface).clipShape(RoundedRectangle(cornerRadius: step.surface == "tv" ? 12 : 26))
-                .overlay(RoundedRectangle(cornerRadius: step.surface == "tv" ? 12 : 26).stroke(theme.outline, lineWidth: 3))
+                if !screenOnTV { Capsule().fill(theme.muted).frame(width: 70, height: 4).padding(10) }
+            }.background(theme.surface).clipShape(RoundedRectangle(cornerRadius: screenOnTV ? 12 : 26))
+                .overlay(RoundedRectangle(cornerRadius: screenOnTV ? 12 : 26).stroke(theme.outline, lineWidth: 3))
                 .padding(.horizontal, step.surface == "phone" ? 12 : 0)
-            if step.surface == "tv" {
+            if screenOnTV {
                 VStack(spacing: 0) { Rectangle().fill(theme.outline).frame(width: 14, height: 12); Capsule().fill(theme.outline).frame(width: 90, height: 4) }
             }
             HStack(spacing: 20) {
@@ -409,7 +411,7 @@ private struct SetupScreenIllustration: View {
             }.foregroundColor(theme.violet).padding(.top, 4)
         }.padding(14).background(theme.raised.opacity(0.7)).clipShape(RoundedRectangle(cornerRadius: 22))
             .accessibilityElement(children: .ignore)
-            .accessibilityLabel("Illustration \(number). \(step.surface == "tv" ? "TV screen" : step.surface == "both" ? "TV and phone" : "Phone screen"): \(step.screen). Highlighted: \(step.items[step.focus]). Action: \(step.action). \(step.instruction)")
+            .accessibilityLabel("Illustration \(number). \(showsTVCode ? "TV screen with code; scan it with the phone camera" : step.surface == "tv" ? "TV screen" : step.surface == "both" ? "TV and phone" : "Phone screen"): \(step.screen). Highlighted: \(step.items[step.focus]). Action: \(step.action). \(step.instruction)")
             .accessibilityIdentifier("setup-illustration")
     }
 }
