@@ -516,26 +516,6 @@ assert_tutorial_label roku_model_system_picture "Highlight System"
 tap_tutorial_label "Close" model_close
 tap_tutorial_label "Home" model_home
 
-# Newer VIZIO TVs show the My Hub account QR sequence before phone pairing.
-tap_tutorial_label "Devices" vizio_devices
-tap_scroll_label "Illustrated setup guides. TV pairing, Google Home & Alexa · one picture at a time" vizio_open
-tap_scroll_label "Vizio" vizio_brand
-capture_ui vizio_choices
-assert_tutorial_label vizio_choices "VIZIO newer TV — My Hub account, then phone"
-tap_scroll_label "VIZIO newer TV — My Hub account, then phone" vizio_select
-tap_tutorial_label "Start guide" vizio_start
-tap_tutorial_label "Next" vizio_hub
-capture_ui vizio_my_hub_picture
-assert_tutorial_label vizio_my_hub_picture "Step 2 of 14"
-tap_tutorial_label "Next" vizio_qr
-capture_ui vizio_account_qr_picture
-assert_tutorial_label vizio_account_qr_picture "Step 3 of 14"
-tap_tutorial_label "Next" vizio_signin
-capture_ui vizio_walmart_signin_picture
-assert_tutorial_label vizio_walmart_signin_picture "Step 4 of 14"
-tap_tutorial_label "Close" vizio_close
-tap_tutorial_label "Home" vizio_home
-
 # Reopening the main phone action resumes this user's already-selected Roku
 # phone guide instead of sending them through a generic Wi-Fi walkthrough.
 tap_scroll_label "TV & smart-home guide" roku_replay_guide
@@ -565,6 +545,27 @@ adb shell input keyevent KEYCODE_BACK
 capture_ui roku_main_phone_back
 assert_tutorial_label roku_main_phone_back "Step 5 of 6"
 tap_tutorial_label "Exit tutorial" roku_replay_exit
+
+# Check the VIZIO account path after the Roku resume flow, so choosing VIZIO
+# does not replace the saved Roku system before that replay assertion.
+tap_tutorial_label "Devices" vizio_devices
+tap_scroll_label "Illustrated setup guides. TV pairing, Google Home & Alexa · one picture at a time" vizio_open
+tap_scroll_label "Vizio" vizio_brand
+capture_ui vizio_choices
+assert_tutorial_label vizio_choices "VIZIO newer TV — My Hub account, then phone"
+tap_scroll_label "VIZIO newer TV — My Hub account, then phone" vizio_select
+tap_tutorial_label "Start guide" vizio_start
+tap_tutorial_label "Next" vizio_hub
+capture_ui vizio_my_hub_picture
+assert_tutorial_label vizio_my_hub_picture "Step 2 of 14"
+tap_tutorial_label "Next" vizio_qr
+capture_ui vizio_account_qr_picture
+assert_tutorial_label vizio_account_qr_picture "Step 3 of 14"
+tap_tutorial_label "Next" vizio_signin
+capture_ui vizio_walmart_signin_picture
+assert_tutorial_label vizio_walmart_signin_picture "Step 4 of 14"
+tap_tutorial_label "Close" vizio_close
+tap_tutorial_label "Home" vizio_home
 
 # Page Back follows visited pages, not an expansion menu or the Home shortcut.
 tap_tutorial_label "Devices" back_devices
