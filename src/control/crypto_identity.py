@@ -9,6 +9,8 @@ class KeyVerifier:
         self._secret_key = secret_key
 
     def verify(self, data: bytes, signature: str) -> bool:
+        if not isinstance(signature, str) or not signature.isascii():
+            return False
         expected = hmac.new(self._secret_key, data, hashlib.sha256).hexdigest()
         return hmac.compare_digest(expected, signature)
 

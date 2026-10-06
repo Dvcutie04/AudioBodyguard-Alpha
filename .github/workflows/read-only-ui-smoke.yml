@@ -23,10 +23,59 @@ jobs:
           set -euo pipefail
           simulator_udid="$(xcrun simctl list devices available -j | python3 -c 'import json,sys; devices=json.load(sys.stdin)["devices"]; print(next(d["udid"] for group in devices.values() for d in group if d["name"].startswith("iPhone") and d.get("isAvailable", True)))')"
           xcodebuild -project native/ios-app/AQSSReadOnly.xcodeproj \
-            -scheme AQSSReadOnly -configuration Debug \
+            -scheme AQSSReadOnly -configuration Release \
             -destination "platform=iOS Simulator,id=$simulator_udid" \
             -resultBundlePath "$RUNNER_TEMP/aqss-read-only-ui.xcresult" \
             CODE_SIGNING_ALLOWED=NO test
+      - name: Export compact iOS screenshot evidence
+        if: always()
+        shell: bash
+        run: |
+          python3 - "$RUNNER_TEMP/aqss-read-only-ui.xcresult" "$RUNNER_TEMP/aqss-ios-screenshots" <<'PYTHON'
+          import json, pathlib, subprocess, sys
+          result, destination = sys.argv[1:]
+          if not pathlib.Path(result).exists():
+              raise SystemExit(0)
+          out = pathlib.Path(destination)
+          out.mkdir(parents=True, exist_ok=True)
+          seen = set()
+          exported = set()
+          def get(identifier=None):
+              args = ["xcrun", "xcresulttool", "get", "--path", result, "--format", "json"]
+              if identifier:
+                  args += ["--id", identifier]
+              return json.loads(subprocess.check_output(args))
+          def walk(value):
+              if isinstance(value, list):
+                  for child in value:
+                      walk(child)
+              elif isinstance(value, dict):
+                  if "payloadRef" in value and value.get("uniformTypeIdentifier", {}).get("_value") == "public.png":
+                      identifier = value["payloadRef"]["id"]["_value"]
+                      if identifier not in exported:
+                          exported.add(identifier)
+                          name = value.get("name", {}).get("_value", "Screenshot")
+                          filename = str(len(exported)).zfill(3) + "-" + "".join(c if c.isalnum() or c in "-_" else "-" for c in name)[:100] + ".png"
+                          subprocess.run(["xcrun", "xcresulttool", "export", "--type", "file", "--path", result, "--id", identifier, "--output-path", str(out / filename)], check=True)
+                  for key, child in value.items():
+                      if key in ("testsRef", "summaryRef") and isinstance(child, dict):
+                          identifier = child.get("id", {}).get("_value")
+                          if identifier and identifier not in seen:
+                              seen.add(identifier)
+                              walk(get(identifier))
+                      else:
+                          walk(child)
+          walk(get())
+          print("Exported", len(exported), "PNG screenshots")
+          PYTHON
+      - name: Keep compact iOS screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: aqss-ios-screenshots
+          path: ${{ runner.temp }}/aqss-ios-screenshots/
+          if-no-files-found: ignore
+          retention-days: 7
       - name: Keep XCUITest result and screenshot attachment
         if: always()
         uses: actions/upload-artifact@v4
@@ -34,6 +83,139 @@ jobs:
           name: aqss-ios-simulator-ui
           path: ${{ runner.temp }}/aqss-read-only-ui.xcresult
           if-no-files-found: ignore
+          retention-days: 7
+      - name: Build and package ARM iOS Simulator app for browser inspection
+        shell: bash
+        run: |
+          set -euo pipefail
+          xcodebuild -project native/ios-app/AQSSReadOnly.xcodeproj \
+            -scheme AQSSReadOnly -configuration Release -sdk iphonesimulator \
+            -destination 'generic/platform=iOS Simulator' \
+            -derivedDataPath "$RUNNER_TEMP/aqss-browser-derived" \
+            ARCHS=arm64 ONLY_ACTIVE_ARCH=NO CODE_SIGNING_ALLOWED=NO build
+          app="$RUNNER_TEMP/aqss-browser-derived/Build/Products/Release-iphonesimulator/AQSSReadOnly.app"
+          test -f "$app/Info.plist"
+          lipo "$app/AQSSReadOnly" -verify_arch arm64
+          test "$(/usr/libexec/PlistBuddy -c 'Print :CFBundleIdentifier' "$app/Info.plist")" = 'com.aqss.bodyguard.prototype'
+          ditto -c -k --keepParent "$app" "$RUNNER_TEMP/AQSSReadOnly-iOS-SIMULATION.app.zip"
+      - name: Keep unsigned iOS Simulator app for browser inspection
+        uses: actions/upload-artifact@v4
+        with:
+          name: aqss-ios-simulation-app-${{ github.run_id }}
+          path: ${{ runner.temp }}/AQSSReadOnly-iOS-SIMULATION.app.zip
+          if-no-files-found: error
+          retention-days: 7
+
+  ios-connected-demo:
+    name: Verify and package connected appearance for Appetize
+    runs-on: macos-14
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Test connected appearance without changing physical readiness
+        shell: bash
+        run: |
+          set -euo pipefail
+          simulator_udid="$(xcrun simctl list devices available -j | python3 -c 'import json,sys; devices=json.load(sys.stdin)["devices"]; print(next(d["udid"] for group in devices.values() for d in group if d["name"].startswith("iPhone") and d.get("isAvailable", True)))')"
+          xcodebuild -project native/ios-app/AQSSReadOnly.xcodeproj \
+            -scheme AQSSReadOnly -configuration Release \
+            -destination "platform=iOS Simulator,id=$simulator_udid" \
+            -resultBundlePath "$RUNNER_TEMP/aqss-connected-demo.xcresult" \
+            -only-testing:AQSSReadOnlyUITests/AQSSReadOnlyUITests/testConnectedDemoAppearanceKeepsPhysicalReadinessUnverified \
+            SWIFT_ACTIVE_COMPILATION_CONDITIONS=AQSS_CONNECTED_DEMO CODE_SIGNING_ALLOWED=NO test
+      - name: Export connected-demo screenshots
+        if: always()
+        shell: bash
+        run: |
+          python3 - "$RUNNER_TEMP/aqss-connected-demo.xcresult" "$RUNNER_TEMP/aqss-connected-demo-screenshots" <<'PYTHON'
+          import json, pathlib, subprocess, sys
+          result, destination = sys.argv[1:]
+          if not pathlib.Path(result).exists():
+              raise SystemExit(0)
+          out = pathlib.Path(destination)
+          out.mkdir(parents=True, exist_ok=True)
+          seen = set()
+          exported = set()
+          def get(identifier=None):
+              args = ["xcrun", "xcresulttool", "get", "--path", result, "--format", "json"]
+              if identifier:
+                  args += ["--id", identifier]
+              return json.loads(subprocess.check_output(args))
+          def walk(value):
+              if isinstance(value, list):
+                  for child in value:
+                      walk(child)
+              elif isinstance(value, dict):
+                  if "payloadRef" in value and value.get("uniformTypeIdentifier", {}).get("_value") == "public.png":
+                      identifier = value["payloadRef"]["id"]["_value"]
+                      if identifier not in exported:
+                          exported.add(identifier)
+                          name = value.get("name", {}).get("_value", "Screenshot")
+                          filename = str(len(exported)).zfill(3) + "-" + "".join(c if c.isalnum() or c in "-_" else "-" for c in name)[:100] + ".png"
+                          subprocess.run(["xcrun", "xcresulttool", "export", "--type", "file", "--path", result, "--id", identifier, "--output-path", str(out / filename)], check=True)
+                  for key, child in value.items():
+                      if key in ("testsRef", "summaryRef") and isinstance(child, dict):
+                          identifier = child.get("id", {}).get("_value")
+                          if identifier and identifier not in seen:
+                              seen.add(identifier)
+                              walk(get(identifier))
+                      else:
+                          walk(child)
+          walk(get())
+          print("Exported", len(exported), "PNG screenshots")
+          PYTHON
+      - name: Keep connected-demo screenshot evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: aqss-ios-connected-demo-screenshots
+          path: ${{ runner.temp }}/aqss-connected-demo-screenshots/
+          if-no-files-found: error
+          retention-days: 7
+      - name: Build the separate ARM iOS Simulator connected demo
+        shell: bash
+        run: |
+          set -euo pipefail
+          xcodebuild -project native/ios-app/AQSSReadOnly.xcodeproj \
+            -scheme AQSSReadOnly -configuration Release -sdk iphonesimulator \
+            -destination 'generic/platform=iOS Simulator' \
+            -derivedDataPath "$RUNNER_TEMP/aqss-connected-demo-derived" \
+            SWIFT_ACTIVE_COMPILATION_CONDITIONS=AQSS_CONNECTED_DEMO \
+            PRODUCT_BUNDLE_IDENTIFIER=com.aqss.bodyguard.prototype.demo \
+            'INFOPLIST_KEY_CFBundleDisplayName=Audio Bodyguard Demo' \
+            ARCHS=arm64 ONLY_ACTIVE_ARCH=NO CODE_SIGNING_ALLOWED=NO build
+          app="$RUNNER_TEMP/aqss-connected-demo-derived/Build/Products/Release-iphonesimulator/AQSSReadOnly.app"
+          lipo "$app/AQSSReadOnly" -verify_arch arm64
+          test "$(/usr/libexec/PlistBuddy -c 'Print :CFBundleIdentifier' "$app/Info.plist")" = 'com.aqss.bodyguard.prototype.demo'
+          /usr/libexec/PlistBuddy -c 'Add :AQSSPreviewMode string CONNECTED_UI_DEMO' "$app/Info.plist"
+          test "$(/usr/libexec/PlistBuddy -c 'Print :AQSSPreviewMode' "$app/Info.plist")" = 'CONNECTED_UI_DEMO'
+          ditto -c -k --keepParent "$app" "$RUNNER_TEMP/AudioBodyguard-Connected-Demo.app.zip"
+          python3 - <<'PYTHON'
+          import hashlib, json, os, pathlib
+          temporary = pathlib.Path(os.environ["RUNNER_TEMP"])
+          package = temporary / "AudioBodyguard-Connected-Demo.app.zip"
+          manifest = {
+              "evidence_scope": "CONNECTED_UI_DEMO_ONLY",
+              "source_revision": os.environ["GITHUB_SHA"],
+              "workflow_run_id": os.environ["GITHUB_RUN_ID"],
+              "bundle_id": "com.aqss.bodyguard.prototype.demo",
+              "platform": "iphonesimulator",
+              "physical_connection_verified": False,
+              "package_sha256": hashlib.sha256(package.read_bytes()).hexdigest(),
+          }
+          (temporary / "connected-demo-provenance.json").write_text(json.dumps(manifest, indent=2) + "\n")
+          print(json.dumps(manifest))
+          PYTHON
+      - name: Keep Appetize connected-demo package and provenance
+        uses: actions/upload-artifact@v4
+        with:
+          name: aqss-ios-connected-demo-app-${{ github.run_id }}
+          path: |
+            ${{ runner.temp }}/AudioBodyguard-Connected-Demo.app.zip
+            ${{ runner.temp }}/connected-demo-provenance.json
+          if-no-files-found: error
           retention-days: 7
 
   android-emulator:
@@ -71,6 +253,71 @@ jobs:
           arch: x86_64
           profile: pixel_7_pro
           script: bash tools/smoke_android_ui.sh
+      - name: Keep compact Android review screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: aqss-android-review-screenshots
+          path: |
+            artifacts/ui/android/home.png
+            artifacts/ui/android/rose_home.png
+            artifacts/ui/android/setup_alexa_for_samsung.png
+            artifacts/ui/android/tutorial_exact_resume.png
+            artifacts/ui/android/pixel_wifi_picture.png
+            artifacts/ui/android/galaxy_wifi_picture.png
+            artifacts/ui/android/beginner_step_1.png
+            artifacts/ui/android/welcome_features.png
+            artifacts/ui/android/welcome_features_last.png
+            artifacts/ui/android/beginner_step_5.png
+            artifacts/ui/android/setup_plan_return.png
+            artifacts/ui/android/phone_cancelled_return.png
+            artifacts/ui/android/settings.png
+            artifacts/ui/android/advanced_settings.png
+            artifacts/ui/android/setting_attempt_cyan.png
+            artifacts/ui/android/setting_attempt_reset.png
+            artifacts/ui/android/setting_caption_help.png
+            artifacts/ui/android/future_voice_detail.png
+            artifacts/ui/android/future_voice_help.png
+            artifacts/ui/android/setting_nested_back.png
+            artifacts/ui/android/large_advanced_settings.png
+            artifacts/ui/android/large_setting_help_text.png
+            artifacts/ui/android/large_setting_background_reset.png
+            artifacts/ui/android/large_setting_background_reset.xml
+            artifacts/ui/android/setting_attempt_state.xml
+            artifacts/ui/android/setting_attempt_reset.xml
+            artifacts/ui/android/activity-state.txt
+            artifacts/ui/android/window-state.txt
+            artifacts/ui/android/daylight_settings.png
+            artifacts/ui/android/daylight_home.png
+            artifacts/ui/android/setup_tv_approval.png
+            artifacts/ui/android/setup_large_step.png
+            artifacts/ui/android/beginner_tv_selected.png
+            artifacts/ui/android/roku_settings_picture.png
+            artifacts/ui/android/roku_model_system_picture.png
+            artifacts/ui/android/roku_about_picture.png
+            artifacts/ui/android/roku_ip_picture.png
+            artifacts/ui/android/vizio_my_hub_picture.png
+            artifacts/ui/android/vizio_account_qr_picture.png
+            artifacts/ui/android/vizio_walmart_signin_picture.png
+            artifacts/ui/android/roku_phone_intro.png
+            artifacts/ui/android/roku_phone_picture.png
+            artifacts/ui/android/roku_main_phone_resume.png
+            artifacts/ui/android/roku_main_phone_back.png
+            artifacts/ui/android/roku_remembered_system.png
+            artifacts/ui/android/tv_platform_help_return.png
+            artifacts/ui/android/roku-frame-summary.txt
+            artifacts/ui/android/roku-*-frames*.txt
+            artifacts/ui/android/roku-*-frames.json
+            artifacts/ui/android/philips_profile_picture.png
+          if-no-files-found: ignore
+          retention-days: 7
+      - name: Keep Android simulation APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: aqss-android-simulation-apk-${{ github.run_id }}
+          path: native/android/app/build/outputs/apk/debug/app-debug.apk
+          if-no-files-found: error
+          retention-days: 7
       - name: Keep Android UI hierarchy and screenshots
         if: always()
         uses: actions/upload-artifact@v4

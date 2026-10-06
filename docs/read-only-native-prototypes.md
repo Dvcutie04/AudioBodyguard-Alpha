@@ -1,8 +1,8 @@
 # P1 read-only native simulation shells
 
 The iOS SwiftUI target in `native/ios-app` and Android Views app module in
-`native/android/app` display the same limited message at launch: **SIMULATION —
-no audio path connected**, **Unknown physical state**, and **No output
+`native/android/app` display a **PREVIEW** label and the same limited message
+at launch: **Unknown physical state**, and **No output
 observation**. Both use the existing native read-only session projector with
 no evidence sample. They show explanatory coverage, capability, caption,
 history and next-step text. An additional foreground-only hint is sourced
@@ -14,12 +14,89 @@ permission, endpoint command, live session history, background service,
 automatic recovery, cross-platform handoff, or ability to actuate from these
 shells.
 
+Both shells expose an expandable **Sound options** section with Volume, Captions,
+Sound preset, Dialogue, Night, Custom Equalizer, and Defaults and Undo. A
+second **Advanced Settings** page holds device/route, physical-output,
+background-monitoring, privacy, and handoff options. The October 5 Settings
+revision uses white switch rows and [?] help.
+A disconnected switch briefly shows cyan and **Not connected.** for two seconds,
+then returns to off. A lasting on state requires verified connection and reviewed
+capability inputs; the native prototypes have neither. These changes affect only
+local presentation, and physical state remains **Unknown physical state**.
+There are no sliders, audio commands, saved audio settings, new permissions, or
+background execution. The Python capability model also includes Dialogue and
+Night as extra preset choices, gated by semantic preset capability; those
+model choices do not connect or enable the native preview. The [options menu
+research and staged checks](options-menu-research.md) record the decision.
+
+## Contextual tutorials
+
+**Help & tutorials** stays in the header above the scrolling content in both shells. It
+opens seven replayable topics: Home and coverage, Sound options, Captions,
+Defaults and undo, Advanced and privacy, Session transfer, and Readiness
+checklist. Options, Advanced options, and the checklist also have direct help
+buttons. A tour scrolls to and outlines
+the actual section, shows one explanation and labeled example at a time, and
+offers Back, Next, Close and Done. Closing restores the page and section expansion that
+was present before the tour; changing a menu directly ends the tour and keeps
+that navigation choice. Choosing a topic starts it from step one.
+
+Tutorial text is generated for both platforms from
+`contracts/tutorial_v1.json`; verify with
+`python tools/generate_tutorial_content.py --check`. The contract only admits
+presentation fields and known view targets. The guide never produces a
+control request, saves a profile, or supplies physical evidence. Progress is
+temporary; Android restores it across Activity recreation. No tutorial
+telemetry, video asset, repeated animation, polling, or new permission is
+introduced. SwiftUI Reduce Motion and Android's animator-enabled setting
+disable the optional transitions. The [research brief](tutorial-research.md)
+records sources, alternatives, and remaining installed-device accessibility
+and usability checks. Simulator walkthroughs are UI evidence only.
+
 Both shells also invoke their native read-only capability projector with six
 explicitly unknown prerequisites: hardware, qualification, permission, route,
 runtime and independent observation. The checklist therefore displays six
 unknowns and cannot offer a control. The move-session explanation says that
 no handoff path is available; it is a static statement about this disconnected
 prototype, not a live evaluation or opening of the endpoint handoff barrier.
+
+**Jump to** stays beside Help and opens a native section picker, including
+coverage, options, advanced, readiness, captions, history, hints, privacy, and
+session transfer. Navigation expands only the selected area and ends an active
+tour. The expandable readiness checklist explains each of the six unknown
+requirements using the same content as its tutorial. It cannot mark a check
+complete or request a permission. Android Back closes the tutorial first,
+then the nested menu/checklist, before using the system's root Back behavior.
+Swift button hit areas include their padding; both platforms expose section
+headings and expansion state for accessibility. See the [native app audit and
+research backlog](native-app-audit-2026-09-27.md) for scope and validation limits.
+
+## Five-page themed interface
+
+Home summarizes unknown coverage and opens readiness. Sound groups the
+unavailable audio options and captions. Devices explains the unqualified path,
+six prerequisites, foreground hints and session transfer. Insights shows
+missing measurements/history and an optional synthetic relative-level chart.
+Settings groups appearance, advanced details, privacy, future explanations and
+tutorials. Every page retains Help, Jump to, and a simulation footer. Labeled
+tabs become a native page picker at accessibility text sizes.
+On wide Android windows, the tutorial appears beside the page so its controls
+and the highlighted section can be viewed together.
+
+Midnight, Daylight and System share `contracts/interface_v1.json`, generated
+into both platforms by `python tools/generate_interface_content.py --check`.
+Validation checks normal text contrast and bounds the example samples; it
+rejects measured-unit labels and action fields. The chart's values are invented
+and cannot enter a session projector. Its accessible description and optional
+text values expose the same eight samples. Closing it restores the empty state.
+
+Appearance is the only persisted preference: one local string, selected from
+the three appearance choices. Tutorial and example progress are temporary.
+Planned voice, profile, supervisor and support-report cards open explanations;
+they do not request permission, listen, discover devices, export data, or make
+control requests. Native vector decoration introduces no repeated animation,
+new dependency or media download. The [interface research brief](interface-design-research-2026-09-28.md)
+records source quality, alternatives and remaining measurements.
 
 ## Read-only native hints
 

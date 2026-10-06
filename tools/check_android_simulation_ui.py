@@ -2,8 +2,32 @@
 
 import sys
 import re
+import subprocess
+import time
 import xml.etree.ElementTree as ET
 from pathlib import Path
+
+
+def root_activity_stopped(dump: str) -> bool:
+    records = re.split(r"(?m)(?=^\s*\*\s*Hist\s+#)", dump)
+    states = []
+    for record in records:
+        heading = next((line for line in record.splitlines() if line.strip()), "")
+        if "com.aqss.bodyguard.prototype" in heading and "ReadOnlyHomeActivity" in heading:
+            state = re.search(r"\b(?:state|mState)=(\w+)", record)
+            states.append(state.group(1) if state else None)
+    return bool(states) and all(state == "STOPPED" for state in states)
+
+
+def wait_for_root_background() -> None:
+    deadline = time.monotonic() + 8
+    while time.monotonic() < deadline:
+        result = subprocess.run(["adb", "shell", "dumpsys", "activity", "activities"], capture_output=True, text=True, check=True)
+        if root_activity_stopped(result.stdout):
+            print("ANDROID_BACKGROUND_CONFIRMED: root activity STOPPED")
+            return
+        time.sleep(0.1)
+    raise SystemExit("AQSS root activity did not reach STOPPED after Home")
 
 
 def valid_hierarchy(path: str) -> bool:
@@ -28,7 +52,47 @@ def launcher_close_coordinates(path: str) -> None:
     print((left + right) // 2, (top + bottom) // 2)
 
 
-def main(paths: list[str]) -> None:
+def button_coordinates(path: str, label: str) -> None:
+    nodes = list(ET.parse(Path(path)).getroot().iter())
+    parents = {child: parent for parent in nodes for child in parent}
+    def actionable(node):
+        # Illustration labels can say Next/Close too. Only a real control or
+        # a label inside a clickable row may receive the navigation tap.
+        current = node
+        while current is not None:
+            if current.get("enabled") == "false":
+                return False
+            if current.get("clickable") == "true" or current.get("class", "").endswith("Button"):
+                return True
+            current = parents.get(current)
+        return False
+    button = next((node for node in nodes if (node.get("text", "").casefold() == label.casefold() or node.get("content-desc", "").casefold() == label.casefold()) and node.get("package") == "com.aqss.bodyguard.prototype" and actionable(node)), None)
+    bounds = re.fullmatch(r"\[(\d+),(\d+)\]\[(\d+),(\d+)\]", button.get("bounds", "")) if button is not None else None
+    if bounds is not None:
+        left, top, right, bottom = map(int, bounds.groups())
+        if right <= left or bottom <= top:
+            return
+        # A hierarchy can report a clickable row at the screen edge even
+        # when a tap there is intercepted by Android's system navigation.
+        screen_bottom = max(
+            (int(match.group(4)) for node in nodes
+             if (match := re.fullmatch(r"\[(\d+),(\d+)\]\[(\d+),(\d+)\]", node.get("bounds", "")))),
+            default=0,
+        )
+        center_y = (top + bottom) // 2
+        # A native dialog reports its own window bounds, not the full display.
+        # Its lower rows are still safely above system navigation.
+        native_dialog = any(node.get("resource-id") in {
+            "android:id/alertTitle", "android:id/parentPanel",
+            "android:id/customPanel", "android:id/custom",
+        } for node in nodes)
+        # Tutorial footer controls are laid out above consumed system insets.
+        footer_labels = {"Jump to", "Help & tutorials", "Back", "Begin", "Next", "Done", "Start guide", "Start part two", "Resume guide", "Finish guide", "Finish part one", "Finish part two", "Return to step", "Open Voice check", "Open full app", "Exit tutorial", "Close tutorial", "Back to Tutorial", "Exit Home", "Help", "Home", "Sound", "Devices", "Insights", "Settings", "Pages · Home", "Pages · Devices", "Pages · Settings"}
+        if center_y < screen_bottom * 0.85 or label in footer_labels or label == "Start picture setup" or native_dialog:
+            print((left + right) // 2, center_y)
+
+
+def main(paths: list[str], *, options: bool = False) -> None:
     labels = []
     for path in paths:
         root = ET.parse(Path(path)).getroot()
@@ -40,11 +104,20 @@ def main(paths: list[str]) -> None:
         )
 
     expected = (
-        "SIMULATION — no audio path connected",
+        "SIMULATION · No audio path connected",
         "Unknown physical state",
         "No output observation",
         "Six setup checks unknown",
-        "Moving a session between phones is not available here",
+        "No supported endpoint or verified transfer path",
+    ) if not options else (
+        "Sound options",
+        "Volume",
+        "Unavailable",
+        "Dialogue preset",
+        "Night preset",
+        "Unknown physical state",
+        "No independent observation is available",
+        "Background monitoring",
     )
     launcher_titles = ("Pixel Launcher isn't responding", "Quickstep isn't responding")
     if any(title in text for text in labels for title in launcher_titles):
@@ -52,14 +125,50 @@ def main(paths: list[str]) -> None:
     missing = [label for label in expected if not any(label in text for text in labels)]
     if missing:
         raise SystemExit(f"Android emulator UI missing expected labels: {missing}")
-    print("ANDROID_SIMULATION_UI_OBSERVED: launch and uncertainty labels visible")
+    print("ANDROID_SIMULATION_UI_OBSERVED: " + ("read-only options visible" if options else "launch and uncertainty labels visible"))
 
 
 if __name__ == "__main__":
+    if len(sys.argv) == 4 and sys.argv[1] == "--assert-tutorial-target":
+        nodes = list(ET.parse(Path(sys.argv[2])).getroot().iter())
+        def bounds(node):
+            match = re.fullmatch(r"\[(\d+),(\d+)\]\[(\d+),(\d+)\]", node.get("bounds", ""))
+            return tuple(map(int, match.groups())) if match else None
+        panels = [bounds(node) for node in nodes if node.get("text", "").startswith("Tutorial — ")]
+        panel = next((b for b in panels if b), None)
+        target = next((node for node in nodes if node.get("text") == sys.argv[3]), None)
+        box = bounds(target) if target is not None else None
+        separated = box is not None and panel is not None and (box[3] <= panel[1] or box[2] <= panel[0])
+        # UiAutomator may retain a heading clipped to a single pixel. Such a
+        # sliver is not a readable highlighted target on this emulator matrix.
+        if box is None or box[3] - box[1] < 32 or box[2] - box[0] < 32 or not separated:
+            raise SystemExit(f"Tutorial target is not visible beside or above its guide: {sys.argv[3]}")
+        raise SystemExit(0)
+    if len(sys.argv) == 4 and sys.argv[1] == "--assert-label":
+        nodes = ET.parse(Path(sys.argv[2])).getroot().iter()
+        if not any(sys.argv[3] in (node.get("text", "") + node.get("content-desc", "")) for node in nodes):
+            raise SystemExit(f"Android tutorial missing label: {sys.argv[3]}")
+        raise SystemExit(0)
+    if len(sys.argv) == 5 and sys.argv[1] == "--assert-switch":
+        nodes = ET.parse(Path(sys.argv[2])).getroot().iter()
+        target = next((node for node in nodes if node.get("class") == "android.widget.Switch" and node.get("content-desc") == sys.argv[3]), None)
+        if target is None or target.get("checkable") != "true" or target.get("clickable") != "true" or target.get("enabled") != "true" or target.get("checked") != sys.argv[4]:
+            observed = None if target is None else {key: target.get(key) for key in ("checkable", "clickable", "enabled", "checked", "bounds")}
+            raise SystemExit(f"Switch {sys.argv[3]} did not have checked={sys.argv[4]}; observed={observed}")
+        raise SystemExit(0)
+    if len(sys.argv) == 2 and sys.argv[1] == "--wait-background":
+        wait_for_root_background()
+        raise SystemExit(0)
     if len(sys.argv) == 3 and sys.argv[1] == "--valid-hierarchy":
         raise SystemExit(0 if valid_hierarchy(sys.argv[2]) else 1)
     if len(sys.argv) == 3 and sys.argv[1] == "--launcher-close-coordinates":
         launcher_close_coordinates(sys.argv[2])
+        raise SystemExit(0)
+    if len(sys.argv) == 4 and sys.argv[1] == "--text-tap-coordinates":
+        button_coordinates(sys.argv[2], sys.argv[3])
+        raise SystemExit(0)
+    if len(sys.argv) >= 4 and sys.argv[1] == "--options-menu":
+        main(sys.argv[2:], options=True)
         raise SystemExit(0)
     if len(sys.argv) != 3:
         raise SystemExit("usage: check_android_simulation_ui.py TOP.xml BOTTOM.xml")
