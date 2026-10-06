@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "mode": "illustrated_guidance_only",
-  "reviewed_at": "2026-10-02",
+  "reviewed_at": "2026-10-06",
   "sources": [
     {
       "id": "samsung_pair",
@@ -59,11 +59,6 @@
       "url": "https://support.google.com/googlehome/answer/9159862?hl=en"
     },
     {
-      "id": "google_hub",
-      "title": "Google Home: supported TVs with Home Hub",
-      "url": "https://support.google.com/googlehome/answer/15681130?hl=en"
-    },
-    {
       "id": "tcl_setup",
       "title": "TCL: Google TV first setup",
       "url": "https://support.tcl.com/en_US/set-up-your-tcl-google-tv-device-remote"
@@ -101,12 +96,27 @@
     {
       "id": "vizio_pair",
       "title": "VIZIO: mobile pairing and voice assistants",
-      "url": "https://www.vizio.com/en/vizio-mobile-app"
+      "url": "https://www.vizio.com/en/mobile"
     },
     {
       "id": "vizio_account",
       "title": "VIZIO: TV account linking and six-digit code",
       "url": "https://www.vizio.com/en/vizio-account/link-your-tv"
+    },
+    {
+      "id": "vizio_new_account",
+      "title": "VIZIO: newer TV My Hub and Walmart account QR setup",
+      "url": "https://www.vizio.com/en/overview-account"
+    },
+    {
+      "id": "vizio_alexa",
+      "title": "VIZIO: Amazon Alexa support on VIZIO OS",
+      "url": "https://www.vizio.com/en/alexa"
+    },
+    {
+      "id": "vizio_google",
+      "title": "VIZIO: Google Assistant support on VIZIO OS",
+      "url": "https://www.vizio.com/en/google"
     },
     {
       "id": "fire_alexa",
@@ -121,7 +131,7 @@
     {
       "id": "voice",
       "title": "Audio Bodyguard: foreground voice-check behavior",
-      "url": "https://github.com/Dvcutie04/AudioBodyguard-Alpha/blob/codex/voice-photo-assistance/docs/voice-photo-research-2026-09-29.md"
+      "url": "https://github.com/Dvcutie04/AudioBodyguard-Alpha/blob/codex/illustrated-setup-guides/docs/voice-photo-research-2026-09-29.md"
     },
     {
       "id": "tcl_roku_model",
@@ -275,6 +285,7 @@
       "title": "Vizio",
       "routes": [
         "vizio_pair",
+        "vizio_walmart",
         "vizio_account",
         "vizio_assist",
         "google_vizio",
@@ -283,7 +294,8 @@
         "vizio_alexa"
       ],
       "primary_routes": [
-        "vizio_pair"
+        "vizio_pair",
+        "vizio_walmart"
       ]
     },
     {
@@ -4195,7 +4207,7 @@
     {
       "id": "vizio_pair",
       "title": "Vizio — pair the phone (4-digit code)",
-      "applies_to": "For TVs supported by the current VIZIO mobile app. The four-digit pairing code is different from the six-digit VIZIO account-link code.",
+      "applies_to": "For TVs supported by VIZIO Mobile. Follow the account name your app requests. A four-digit phone pairing code differs from the six-digit legacy account-link code.",
       "models": [],
       "sources": [
         "vizio_pair"
@@ -4240,8 +4252,8 @@
           "note": "Use your real device. This picture is an illustration."
         },
         {
-          "title": "Sign in to VIZIO",
-          "instruction": "Sign in or create your VIZIO Account in VIZIO Mobile. Use the account you want for this TV.",
+          "title": "Sign in to VIZIO Mobile",
+          "instruction": "Sign in with the account requested by VIZIO Mobile. On newer TVs, this may be your Walmart account.",
           "surface": "phone",
           "screen": "VIZIO Mobile • Account",
           "items": [
@@ -4250,7 +4262,192 @@
           ],
           "focus": 0,
           "action": "tap",
-          "note": "The current official VIZIO page requires an account for VIZIO Mobile functionality. Enter account details only in the official app."
+          "note": "Follow the account name shown in the official app. Enter passwords only there."
+        },
+        {
+          "title": "Open the device selector",
+          "instruction": "Search for your TV in the device selector.",
+          "surface": "phone",
+          "screen": "VIZIO Mobile",
+          "items": [
+            "Device selector"
+          ],
+          "focus": 0,
+          "action": "tap",
+          "note": "Use your real device. This picture is an illustration."
+        },
+        {
+          "title": "Choose your TV",
+          "instruction": "Select the television in front of you.",
+          "surface": "phone",
+          "screen": "Devices",
+          "items": [
+            "Your VIZIO TV"
+          ],
+          "focus": 0,
+          "action": "tap",
+          "note": "Use your real device. This picture is an illustration."
+        },
+        {
+          "title": "Read the four-digit TV code",
+          "instruction": "Keep the pairing code visible on your TV.",
+          "surface": "tv",
+          "screen": "Pair phone",
+          "items": [
+            "4-digit code: ••••"
+          ],
+          "focus": 0,
+          "action": "check",
+          "note": "Use your real device. This picture is an illustration."
+        },
+        {
+          "title": "Enter that code on the phone",
+          "instruction": "Type the TV’s four-digit code into VIZIO Mobile.",
+          "surface": "phone",
+          "screen": "VIZIO pairing",
+          "items": [
+            "Enter 4-digit code"
+          ],
+          "focus": 0,
+          "action": "type",
+          "note": "Use your real device. This picture is an illustration."
+        },
+        {
+          "title": "Check the actual result",
+          "instruction": "Look in VIZIO Mobile for your TV. If it is missing, use “My screen looks different”.",
+          "surface": "phone",
+          "screen": "VIZIO Mobile",
+          "items": [
+            "Your TV appears",
+            "TV missing? Get help"
+          ],
+          "focus": 0,
+          "action": "check",
+          "note": "Finishing this guide does not connect Audio Bodyguard or activate protection."
+        }
+      ]
+    },
+    {
+      "id": "vizio_walmart",
+      "title": "VIZIO newer TV — My Hub account, then phone",
+      "applies_to": "For newer VIZIO TVs showing My Hub → Connect your Walmart account. First link the TV account, then pair VIZIO Mobile using the separate four-digit code. If the TV shows Extras → VIZIO Account, choose that legacy guide instead.",
+      "models": [],
+      "sources": [
+        "vizio_new_account",
+        "vizio_pair"
+      ],
+      "steps": [
+        {
+          "title": "Open My Hub",
+          "instruction": "On the TV, open My Hub from the left menu.",
+          "surface": "tv",
+          "screen": "VIZIO Home",
+          "items": [
+            "Home",
+            "My Hub"
+          ],
+          "focus": 1,
+          "action": "select",
+          "note": "Use this guide only if My Hub appears on your TV."
+        },
+        {
+          "title": "Start the account setup",
+          "instruction": "Select Connect your Walmart account on the TV.",
+          "surface": "tv",
+          "screen": "My Hub",
+          "items": [
+            "Connect your Walmart account"
+          ],
+          "focus": 0,
+          "action": "select",
+          "note": "This route applies to newer VIZIO TVs that show this label."
+        },
+        {
+          "title": "Scan the TV code",
+          "instruction": "Scan the QR code on your TV with your phone camera.",
+          "surface": "both",
+          "screen": "Connect your Walmart account",
+          "items": [
+            "TV QR code"
+          ],
+          "focus": 0,
+          "action": "scan",
+          "note": "Scan the code on your own TV. The illustration is not a working QR code."
+        },
+        {
+          "title": "Sign in on your phone",
+          "instruction": "On the official page opened by the TV code, sign in or create a Walmart account.",
+          "surface": "phone",
+          "screen": "Walmart account sign-in",
+          "items": [
+            "Sign in / Create account"
+          ],
+          "focus": 0,
+          "action": "tap",
+          "note": "Enter your password only on the official page opened by your TV code."
+        },
+        {
+          "title": "Check the account result",
+          "instruction": "Check the TV for the account setup result. Continue after the official screen finishes.",
+          "surface": "both",
+          "screen": "VIZIO TV • Account status",
+          "items": [
+            "Account setup result"
+          ],
+          "focus": 0,
+          "action": "check",
+          "note": "This is a descriptive picture, not an exact button. If setup is incomplete, follow the prompts on your TV."
+        },
+        {
+          "title": "Use the same home Wi-Fi",
+          "instruction": "Keep the TV on. Connect your phone to the same home Wi-Fi.",
+          "surface": "both",
+          "screen": "Wi-Fi",
+          "items": [
+            "Phone + TV → same Wi-Fi"
+          ],
+          "focus": 0,
+          "action": "check",
+          "note": "A network name or IP address alone does not identify or authorize a TV."
+        },
+        {
+          "title": "Install VIZIO Mobile",
+          "instruction": "Open your phone’s app store. Find the official VIZIO Mobile app and install it. If already installed, continue.",
+          "surface": "phone",
+          "screen": "App Store or Google Play",
+          "items": [
+            "Search",
+            "VIZIO Mobile",
+            "Install"
+          ],
+          "focus": 2,
+          "action": "tap",
+          "note": "Check that this is the official app from the TV or app maker. Use your real phone for any download or account approval."
+        },
+        {
+          "title": "Open the official VIZIO app",
+          "instruction": "Open VIZIO Mobile on your phone.",
+          "surface": "phone",
+          "screen": "Phone apps",
+          "items": [
+            "VIZIO"
+          ],
+          "focus": 0,
+          "action": "tap",
+          "note": "Use your real device. This picture is an illustration."
+        },
+        {
+          "title": "Sign in to VIZIO Mobile",
+          "instruction": "Sign in to VIZIO Mobile with your linked Walmart account.",
+          "surface": "phone",
+          "screen": "VIZIO Mobile • Account",
+          "items": [
+            "Sign in",
+            "Create account"
+          ],
+          "focus": 0,
+          "action": "tap",
+          "note": "If the app shows another account path, follow its official prompt or choose another VIZIO guide."
         },
         {
           "title": "Open the device selector",
@@ -4318,7 +4515,7 @@
     {
       "id": "vizio_account",
       "title": "Vizio — link the TV account (6-digit code)",
-      "applies_to": "For TVs with Extras → VIZIO Account. Stop if this menu is absent; older VIA models and other software may use a different route.",
+      "applies_to": "For TVs showing Extras → VIZIO Account. Newer TVs showing My Hub → Connect your Walmart account use the separate guide. Stop if neither menu is present.",
       "models": [],
       "sources": [
         "vizio_account"
@@ -4428,17 +4625,18 @@
     {
       "id": "vizio_assist",
       "title": "Vizio → Google Home or Alexa",
-      "applies_to": "Pair VIZIO Mobile and link the VIZIO account first. The current VIZIO app starts supported partner linking from Account. Names vary by app version.",
+      "applies_to": "Pair VIZIO Mobile with your TV first. Start supported partner linking from Account in that app. Choose the assistant you use; labels vary by app version.",
       "models": [],
       "sources": [
         "vizio_pair",
-        "vizio_account",
-        "google_link"
+        "vizio_new_account",
+        "google_link",
+        "vizio_alexa"
       ],
       "steps": [
         {
           "title": "Check the TV in VIZIO Mobile",
-          "instruction": "Use the paired TV and the VIZIO account associated with it.",
+          "instruction": "Use the TV and account paired in VIZIO Mobile.",
           "surface": "phone",
           "screen": "VIZIO Mobile",
           "items": [
@@ -4446,7 +4644,7 @@
           ],
           "focus": 0,
           "action": "check",
-          "note": "Use your real device. This picture is an illustration."
+          "note": "Use the account the official VIZIO app requests for your TV."
         },
         {
           "title": "Prepare the assistant app",
@@ -4476,17 +4674,17 @@
           "title": "Choose assistant linking",
           "instruction": "Start the partner-linking option offered for Google Home or Alexa.",
           "surface": "phone",
-          "screen": "VIZIO Account",
+          "screen": "VIZIO Mobile • Account",
           "items": [
-            "Link your chosen assistant"
+            "Your chosen assistant option"
           ],
           "focus": 0,
           "action": "tap",
-          "note": "This is a descriptive highlight. Choose the actual linking option for your assistant in VIZIO Mobile; labels vary."
+          "note": "This is a descriptive highlight. Choose the actual assistant option in VIZIO Mobile; labels vary."
         },
         {
           "title": "Review the official handoff",
-          "instruction": "Continue to the assistant app and approve the intended VIZIO account access.",
+          "instruction": "Continue to the assistant app and approve the intended account access.",
           "surface": "phone",
           "screen": "Provider approval",
           "items": [
@@ -5877,13 +6075,13 @@
       "models": [],
       "sources": [
         "vizio_pair",
-        "vizio_account",
+        "vizio_google",
         "google_link"
       ],
       "steps": [
         {
           "title": "Check the TV in VIZIO Mobile",
-          "instruction": "Use the paired TV and the VIZIO account associated with it.",
+          "instruction": "Use the TV and account paired in VIZIO Mobile.",
           "surface": "phone",
           "screen": "VIZIO Mobile",
           "items": [
@@ -5891,7 +6089,7 @@
           ],
           "focus": 0,
           "action": "check",
-          "note": "Use your real device. This picture is an illustration."
+          "note": "Use the account the official VIZIO app requests for your TV."
         },
         {
           "title": "Prepare the assistant app",
@@ -5903,7 +6101,7 @@
           ],
           "focus": 0,
           "action": "tap",
-          "note": "Open Google Home or Amazon Alexa according to the assistant you chose; the picture does not select one for you."
+          "note": "Open the official Google Home app. This route is only for Google Home."
         },
         {
           "title": "Return to VIZIO Account",
@@ -5921,17 +6119,17 @@
           "title": "Choose assistant linking",
           "instruction": "Start the partner-linking option offered for Google Home.",
           "surface": "phone",
-          "screen": "VIZIO Account",
+          "screen": "VIZIO Mobile • Account",
           "items": [
-            "Link Google Home"
+            "Google Home option"
           ],
           "focus": 0,
           "action": "tap",
-          "note": "This is a descriptive highlight. Choose the actual linking option for your assistant in VIZIO Mobile; labels vary."
+          "note": "This is a descriptive highlight. Choose the actual assistant option in VIZIO Mobile; labels vary."
         },
         {
           "title": "Review the official handoff",
-          "instruction": "Continue to Google Home and approve the intended VIZIO account access.",
+          "instruction": "Continue to Google Home and approve the intended account access.",
           "surface": "phone",
           "screen": "Provider approval",
           "items": [
@@ -5965,13 +6163,12 @@
       "models": [],
       "sources": [
         "vizio_pair",
-        "vizio_account",
-        "google_link"
+        "vizio_alexa"
       ],
       "steps": [
         {
           "title": "Check the TV in VIZIO Mobile",
-          "instruction": "Use the paired TV and the VIZIO account associated with it.",
+          "instruction": "Use the TV and account paired in VIZIO Mobile.",
           "surface": "phone",
           "screen": "VIZIO Mobile",
           "items": [
@@ -5979,7 +6176,7 @@
           ],
           "focus": 0,
           "action": "check",
-          "note": "Use your real device. This picture is an illustration."
+          "note": "Use the account the official VIZIO app requests for your TV."
         },
         {
           "title": "Prepare the assistant app",
@@ -5991,7 +6188,7 @@
           ],
           "focus": 0,
           "action": "tap",
-          "note": "Open Google Home or Amazon Alexa according to the assistant you chose; the picture does not select one for you."
+          "note": "Open the official Amazon Alexa app. This route is only for Amazon Alexa."
         },
         {
           "title": "Return to VIZIO Account",
@@ -6009,17 +6206,17 @@
           "title": "Choose assistant linking",
           "instruction": "Start the partner-linking option offered for Amazon Alexa.",
           "surface": "phone",
-          "screen": "VIZIO Account",
+          "screen": "VIZIO Mobile • Account",
           "items": [
-            "Link Amazon Alexa"
+            "Amazon Alexa option"
           ],
           "focus": 0,
           "action": "tap",
-          "note": "This is a descriptive highlight. Choose the actual linking option for your assistant in VIZIO Mobile; labels vary."
+          "note": "This is a descriptive highlight. Choose the actual assistant option in VIZIO Mobile; labels vary."
         },
         {
           "title": "Review the official handoff",
-          "instruction": "Continue to Amazon Alexa and approve the intended VIZIO account access.",
+          "instruction": "Continue to Amazon Alexa and approve the intended account access.",
           "surface": "phone",
           "screen": "Provider approval",
           "items": [

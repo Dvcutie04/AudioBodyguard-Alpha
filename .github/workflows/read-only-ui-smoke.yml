@@ -293,8 +293,12 @@ jobs:
             artifacts/ui/android/setup_large_step.png
             artifacts/ui/android/beginner_tv_selected.png
             artifacts/ui/android/roku_settings_picture.png
+            artifacts/ui/android/roku_model_system_picture.png
             artifacts/ui/android/roku_about_picture.png
             artifacts/ui/android/roku_ip_picture.png
+            artifacts/ui/android/vizio_my_hub_picture.png
+            artifacts/ui/android/vizio_account_qr_picture.png
+            artifacts/ui/android/vizio_walmart_signin_picture.png
             artifacts/ui/android/roku_phone_intro.png
             artifacts/ui/android/roku_phone_picture.png
             artifacts/ui/android/roku_main_phone_resume.png

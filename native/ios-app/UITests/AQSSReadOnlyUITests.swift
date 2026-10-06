@@ -401,6 +401,11 @@ final class AQSSReadOnlyUITests: XCTestCase {
         tap("Find my exact model", app)
         XCTAssertFalse(app.buttons["setup-references"].exists)
         screenshot("Simple model guide introduction", app)
+        for number in 1...3 {
+            app.buttons["setup-next"].tap(); label("Step \(number) of 5", app)
+        }
+        screenshot("Roku model picture highlights System", app)
+        for _ in 1...3 { app.buttons["setup-back"].tap() }
         tap("Need help?", app)
         XCTAssertTrue(app.buttons["setup-references"].exists)
         XCTAssertFalse(app.links.firstMatch.exists)
@@ -431,6 +436,21 @@ final class AQSSReadOnlyUITests: XCTestCase {
         screenshot("Back restores previous page and details", app)
         tab("devices", app); tab("home", app)
         XCTAssertFalse(app.staticTexts["No output observation"].exists)
+    }
+
+    func testNewVizioTVShowsAccountThenPhonePicturesInOrder() {
+        let app = launch()
+        tab("devices", app); tap("Illustrated setup guides", app); tap("Vizio", app)
+        tap("VIZIO newer TV", app)
+        label("VIZIO newer TV — My Hub account, then phone", app)
+        for number in 1...14 {
+            app.buttons["setup-next"].tap(); label("Step \(number) of 14", app)
+            if [2, 3, 4, 7, 9, 13, 14].contains(number) {
+                screenshot("VIZIO newer TV picture \(number)", app)
+            }
+        }
+        XCTAssertEqual(app.buttons["setup-next"].label, "Finish guide")
+        app.buttons["setup-close"].tap(); label("DEVICES", app)
     }
 
     func testRokuPartOneImmediatelyOpensPhonePicturesInFirstVisit() {

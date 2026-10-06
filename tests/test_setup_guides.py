@@ -2,6 +2,7 @@
 import importlib
 import json
 from pathlib import Path
+from xml.etree import ElementTree
 
 
 def test_default_setup_choices_are_bounded_and_extra_routes_are_preserved():
@@ -63,6 +64,15 @@ def test_roku_default_instructions_are_short_and_keep_context_in_optional_notes(
             assert step['note']
     assert 'IP address' in routes['roku_network']['steps'][-1]['instruction']
     assert 'Model' in routes['roku_model']['steps'][-1]['instruction']
+
+
+def test_roku_model_system_picture_highlights_system_instead_of_network():
+    from tools.export_picture_guide import svg
+
+    route = setup_routes()['roku_model']
+    picture = ElementTree.fromstring(svg(route['steps'][2], 3, route))
+    highlights = [node.text for node in picture.findall('.//text') if node.text and '3 → ' in node.text]
+    assert highlights == ['3 → System']
 
 
 def test_picture_instructions_fit_a_short_reading_step():
@@ -134,6 +144,23 @@ def test_primary_phone_pairing_includes_installation_and_lg_network_confirmation
     assert lg[select_device + 1]['items'][lg[select_device + 1]['focus']] == 'Next'
     assert 'same Wi-Fi' in lg[select_device + 1]['instruction']
     assert lg[select_device + 2]['screen'] == 'Select Device'
+
+
+def test_new_vizio_account_and_phone_pairing_follow_distinct_official_codes():
+    data = json.loads((Path(__file__).resolve().parents[1] / 'contracts/setup_guides_v1.json').read_text())
+    routes = setup_routes()
+    sources = {source['id']: source['url'] for source in data['sources']}
+    new = routes['vizio_walmart']
+    assert new['sources'] == ['vizio_new_account', 'vizio_pair']
+    assert [step['items'][step['focus']] for step in new['steps'][:4]] == [
+        'My Hub', 'Connect your Walmart account', 'TV QR code', 'Sign in / Create account'
+    ]
+    assert new['steps'][-2]['items'][new['steps'][-2]['focus']] == 'Enter 4-digit code'
+    assert '6-digit code' in routes['vizio_account']['steps'][-2]['items'][0]
+    assert 'vizio_walmart' in next(group for group in data['groups'] if group['id'] == 'vizio')['primary_routes']
+    assert sources['vizio_pair'] == 'https://www.vizio.com/en/mobile'
+    assert sources['vizio_new_account'] == 'https://www.vizio.com/en/overview-account'
+    assert 'google_link' not in routes['vizio_alexa']['sources']
 
 
 def test_faster_google_setup_states_platform_limits_and_checks_the_tv_result():

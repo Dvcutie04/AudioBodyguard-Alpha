@@ -208,7 +208,7 @@ class SetupGuideActivity : Activity() {
             route != null && step != null -> {
                 words(content, when (step.surface) { "tv" -> "On your TV · use the remote"; "both" -> "Your TV + your phone"; else -> "On your phone" }, 15f, skin.accent, true)
                 words(content, step.instruction, 16f, bold = true)
-                content.addView(if (route.id == "roku_network" || route.id == "roku_model") rokuIllustration(step, index + 1) else if (route.id == "philips_voice_remote" && index in 1..2) profileIllustration(step, index + 1) else illustration(step, index + 1), LinearLayout.LayoutParams(-1, -2).apply { bottomMargin = dp(18) })
+                content.addView(if (route.id == "roku_network" || route.id == "roku_model") rokuIllustration(step, index + 1, route.id) else if (route.id == "philips_voice_remote" && index in 1..2) profileIllustration(step, index + 1) else illustration(step, index + 1), LinearLayout.LayoutParams(-1, -2).apply { bottomMargin = dp(18) })
                 action(content, if (detailsExpanded) "Hide help" else "Need help?") { detailsExpanded = !detailsExpanded; render(true) }
                 if (detailsExpanded) {
                     if (step.note !in repeatedPictureNotes) words(content, step.note, color = skin.muted)
@@ -320,7 +320,7 @@ class SetupGuideActivity : Activity() {
             if (detailsExpanded) { words(content, route.appliesTo); sources(route) }
         }
     }
-    private fun rokuIllustration(step: SetupStep, number: Int): View {
+    private fun rokuIllustration(step: SetupStep, number: Int, routeId: String): View {
         val box = column().apply { setPadding(dp(14), dp(14), dp(14), dp(14)); background = skin.shape(skin.raised, 18)
             importantForAccessibility = View.IMPORTANT_FOR_ACCESSIBILITY_YES
             contentDescription = "Roku picture $number. Left menu and right panel. Highlighted: ${step.items[step.focus]}. ${step.instruction}" }
@@ -336,7 +336,7 @@ class SetupGuideActivity : Activity() {
         val columns = LinearLayout(this).apply { gravity = Gravity.TOP }
         val left = column(); val right = column()
         columns.addView(left, LinearLayout.LayoutParams(0, -2, 1f).apply { marginEnd = dp(8) }); columns.addView(right, LinearLayout.LayoutParams(0, -2, 1f)); panel.addView(columns)
-        val model = step.screen.contains("System")
+        val model = routeId == "roku_model"
         fun row(parent: LinearLayout, label: String, selected: Boolean) {
             parent.addView(TextView(this).apply {
                 text = if (selected) "$number → $label" else label; textSize = 12f

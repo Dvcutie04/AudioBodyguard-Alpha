@@ -100,7 +100,7 @@ struct SetupGuidesView: View {
                                 .font(.subheadline.weight(.semibold)).foregroundColor(theme.accent)
                             Text(step.instruction).font(.body.weight(.medium)).fixedSize(horizontal: false, vertical: true)
                             if route.id == "roku_network" || route.id == "roku_model" {
-                                RokuMenuIllustration(step: step, number: index + 1, theme: theme)
+                                RokuMenuIllustration(step: step, number: index + 1, routeID: route.id, theme: theme)
                             } else if route.id == "philips_voice_remote" && [1, 2].contains(index) {
                                 ProfileMenuIllustration(step: step, number: index + 1, theme: theme)
                             } else { SetupScreenIllustration(step: step, number: index + 1, theme: theme) }
@@ -419,9 +419,10 @@ private struct SetupScreenIllustration: View {
 private struct RokuMenuIllustration: View {
     let step: AQSSSetupStep
     let number: Int
+    let routeID: String
     let theme: AppTheme
     private var about: Bool { number >= 4 }
-    private var model: Bool { step.screen.contains("System") }
+    private var model: Bool { routeID == "roku_model" }
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
             Text("Picture \(number) · Roku menu layout").font(.caption).foregroundColor(theme.muted)

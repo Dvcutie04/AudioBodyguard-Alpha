@@ -499,6 +499,41 @@ tap_tutorial_label "Close" roku_phone_close
 adb shell dumpsys gfxinfo com.aqss.bodyguard.prototype > "$artifact_dir/roku-frame-summary.txt"
 tap_tutorial_label "Home" roku_home
 
+# The alternate Roku model route must show System in picture 3. The Network
+# picture belongs only to the IP-address route exercised above.
+tap_scroll_label "Illustrated setup guides. TV pairing, Google Home & Alexa · one picture at a time" model_open
+tap_scroll_label "Roku-branded TV" model_brand
+tap_scroll_label "Need help?" model_help
+tap_scroll_label "Other setup options" model_options
+tap_scroll_label "Find my exact model (Roku TV)" model_select
+tap_tutorial_label "Start guide" model_start
+tap_tutorial_label "Next" model_home_picture
+tap_tutorial_label "Next" model_settings_picture
+capture_ui roku_model_system_picture
+assert_tutorial_label roku_model_system_picture "Step 3 of 5"
+assert_tutorial_label roku_model_system_picture "Highlight System"
+tap_tutorial_label "Close" model_close
+tap_tutorial_label "Home" model_home
+
+# Newer VIZIO TVs show the My Hub account QR sequence before phone pairing.
+tap_scroll_label "Illustrated setup guides. TV pairing, Google Home & Alexa · one picture at a time" vizio_open
+tap_scroll_label "Vizio" vizio_brand
+capture_ui vizio_choices
+assert_tutorial_label vizio_choices "VIZIO newer TV — My Hub account, then phone"
+tap_scroll_label "VIZIO newer TV — My Hub account, then phone" vizio_select
+tap_tutorial_label "Start guide" vizio_start
+tap_tutorial_label "Next" vizio_hub
+capture_ui vizio_my_hub_picture
+assert_tutorial_label vizio_my_hub_picture "Step 2 of 14"
+tap_tutorial_label "Next" vizio_qr
+capture_ui vizio_account_qr_picture
+assert_tutorial_label vizio_account_qr_picture "Step 3 of 14"
+tap_tutorial_label "Next" vizio_signin
+capture_ui vizio_walmart_signin_picture
+assert_tutorial_label vizio_walmart_signin_picture "Step 4 of 14"
+tap_tutorial_label "Close" vizio_close
+tap_tutorial_label "Home" vizio_home
+
 # Reopening the main phone action resumes this user's already-selected Roku
 # phone guide instead of sending them through a generic Wi-Fi walkthrough.
 tap_scroll_label "TV & smart-home guide" roku_replay_guide
