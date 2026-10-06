@@ -130,7 +130,7 @@ class TutorialGuide(
             }, LinearLayout.LayoutParams(-1, -2).apply { bottomMargin = dp(10) })
         }
         if (step.target in listOf("connectionPlan", "connectionCheck")) {
-            if (step.target == "connectionCheck") content.addView(button("Phone Wi-Fi pictures", primary = true) { openSetup("phone") }, LinearLayout.LayoutParams(-1, -2).apply { bottomMargin = dp(12) })
+            if (step.target == "connectionCheck") content.addView(button("Phone pictures", primary = true) { openSetup("phone") }, LinearLayout.LayoutParams(-1, -2).apply { bottomMargin = dp(12) })
             if (step.target == "connectionPlan") selectedConnectionActions(content, primaryTV = true)
         }
         if (isBeginner && step.target == "welcome") {

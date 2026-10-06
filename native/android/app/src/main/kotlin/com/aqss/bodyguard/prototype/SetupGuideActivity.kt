@@ -94,7 +94,11 @@ class SetupGuideActivity : Activity() {
         groupId = (savedInstanceState?.getString("group") ?: intent.getStringExtra("group") ?: "")
             .takeIf { id -> SetupContent.groups.any { it.id == id } } ?: ""
         selectedSystem = savedInstanceState?.getString(SELECTED_SYSTEM) ?: intent.getStringExtra("deviceGroup")
-        routeId = if (savedInstanceState == null) startingRoute() else savedInstanceState.getString("route")?.takeIf { group?.routes?.contains(it) == true }
+        val companion = if (savedInstanceState == null && groupId == "phone") SetupContent.groups.firstOrNull {
+            it.id == selectedSystem && "roku_phone" in it.routes && it.primaryRoutes.isNotEmpty() && it.primaryRoutes.all { route -> route in listOf("roku_network", "roku_model") }
+        } else null
+        if (companion != null) groupId = companion.id
+        routeId = if (savedInstanceState == null) { if (companion != null) "roku_phone" else startingRoute() } else savedInstanceState.getString("route")?.takeIf { group?.routes?.contains(it) == true }
         completedTVRoute = savedInstanceState?.getString("completedTVRoute")?.takeIf { it in listOf("roku_network", "roku_model") }
         completedTVRoute?.let { setResult(RESULT_OK, Intent().putExtra(COMPLETED_TV_ROUTE, it)) }
         index = if (savedInstanceState == null && groupId == "voice") 0 else (savedInstanceState?.getInt("index", -1) ?: -1).takeIf { it == -1 || route?.steps?.indices?.contains(it) == true } ?: -1

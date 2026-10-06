@@ -712,7 +712,7 @@ private struct ReadOnlyHomeView: View {
                     }
                     if ["connectionPlan", "connectionCheck"].contains(step.target) {
                         if step.target == "connectionCheck" {
-                            action("Phone Wi-Fi pictures", icon: "wifi", primary: true) { showSetup("phone") }
+                            action("Phone pictures", icon: "iphone", primary: true) { showSetup("phone") }
                         }
                         if step.target == "connectionPlan" { selectedConnectionActions(primaryTV: true) }
                     }

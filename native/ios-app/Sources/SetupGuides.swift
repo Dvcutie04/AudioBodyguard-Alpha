@@ -151,7 +151,16 @@ struct SetupGuidesView: View {
             }
             footer
         }.background(theme.background.ignoresSafeArea()).foregroundColor(theme.text)
-            .onAppear { if !initialized { initialized = true; chooseGroup(initialGroup, recording: false) } }
+            .onAppear {
+                if !initialized {
+                    initialized = true
+                    if initialGroup == "phone", let tv = AQSSSetupContent.groups.first(where: { $0.id == deviceGroup }),
+                       tv.routes.contains("roku_phone"), !tv.primaryRoutes.isEmpty,
+                       tv.primaryRoutes.allSatisfy({ ["roku_network", "roku_model"].contains($0) }) {
+                        chooseGroup(tv.id, recording: false); routeID = "roku_phone"
+                    } else { chooseGroup(initialGroup, recording: false) }
+                }
+            }
             .onChange(of: index) { value in
                 if let route = route, route.id != "voice", route.steps.indices.contains(value) { writeProgress(route.id, value) }
             }

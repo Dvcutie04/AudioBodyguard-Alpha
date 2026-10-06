@@ -241,7 +241,7 @@ if python3 tools/check_android_simulation_ui.py --assert-label "$artifact_dir/se
 tap_scroll_label "Need help?" phone_help_open
 assert_scroll_label "official phone app" phone_help_limits
 tap_scroll_label "Hide help" phone_help_close
-tap_scroll_label "Phone Wi-Fi pictures" phone_wifi_open
+tap_scroll_label "Phone pictures" phone_wifi_open
 capture_ui pixel_wifi_intro
 # The emulator identifies itself as a generic Android device on some images.
 # That correctly opens the phone chooser instead of assuming Pixel menus.
@@ -498,6 +498,36 @@ assert_tutorial_label roku_phone_picture "Step 1 of 5"
 tap_tutorial_label "Close" roku_phone_close
 adb shell dumpsys gfxinfo com.aqss.bodyguard.prototype > "$artifact_dir/roku-frame-summary.txt"
 tap_tutorial_label "Home" roku_home
+
+# Reopening the main phone action resumes this user's already-selected Roku
+# phone guide instead of sending them through a generic Wi-Fi walkthrough.
+tap_scroll_label "TV & smart-home guide" roku_replay_guide
+tap_tutorial_label "Start picture setup" roku_replay_begin
+tap_scroll_label "TCL" roku_replay_tv
+tap_tutorial_label "Next" roku_replay_home
+tap_scroll_label "Neither / not sure" roku_replay_assistant
+tap_tutorial_label "Next" roku_replay_plan
+tap_scroll_label "Show TCL steps" roku_replay_pictures
+capture_ui roku_remembered_system
+assert_tutorial_label roku_remembered_system "Start guide"
+if python3 tools/check_android_simulation_ui.py --assert-label "$artifact_dir/roku_remembered_system.xml" "Google TV / Android TV" 2>/dev/null; then exit 1; fi
+tap_scroll_label "Need help?" roku_replay_details
+tap_scroll_label "I’m already in Settings" roku_replay_settings
+tap_tutorial_label "Next" roku_replay_about
+tap_tutorial_label "Next" roku_replay_ip
+tap_tutorial_label "Finish part one" roku_replay_finish_tv
+tap_tutorial_label "Back to Tutorial" roku_replay_pause_phone
+capture_ui roku_main_phone_step
+assert_tutorial_label roku_main_phone_step "Step 5 of 6"
+tap_scroll_label "Phone pictures" roku_main_phone_open
+capture_ui roku_main_phone_resume
+assert_tutorial_label roku_main_phone_resume "2. Connect to your phone (Roku)"
+assert_tutorial_label roku_main_phone_resume "Resume guide"
+if python3 tools/check_android_simulation_ui.py --assert-label "$artifact_dir/roku_main_phone_resume.xml" "Google Pixel — connect to your home Wi-Fi" 2>/dev/null; then exit 1; fi
+adb shell input keyevent KEYCODE_BACK
+capture_ui roku_main_phone_back
+assert_tutorial_label roku_main_phone_back "Step 5 of 6"
+tap_tutorial_label "Exit tutorial" roku_replay_exit
 
 # Page Back follows visited pages, not an expansion menu or the Home shortcut.
 tap_tutorial_label "Devices" back_devices
