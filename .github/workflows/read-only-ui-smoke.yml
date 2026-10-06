@@ -282,6 +282,11 @@ jobs:
             artifacts/ui/android/large_advanced_settings.png
             artifacts/ui/android/large_setting_help_text.png
             artifacts/ui/android/large_setting_background_reset.png
+            artifacts/ui/android/large_setting_background_reset.xml
+            artifacts/ui/android/setting_attempt_state.xml
+            artifacts/ui/android/setting_attempt_reset.xml
+            artifacts/ui/android/activity-state.txt
+            artifacts/ui/android/window-state.txt
             artifacts/ui/android/daylight_settings.png
             artifacts/ui/android/daylight_home.png
             artifacts/ui/android/setup_tv_approval.png

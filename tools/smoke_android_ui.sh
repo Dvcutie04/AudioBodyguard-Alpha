@@ -414,6 +414,7 @@ capture_ui guide_3
 assert_tutorial_label guide_3 "Step 3 of 4"
 tap_tutorial_label "Back" guide_back
 adb shell input keyevent KEYCODE_HOME
+python3 tools/check_android_simulation_ui.py --wait-background
 adb shell am start -W -n com.aqss.bodyguard.prototype/.ReadOnlyHomeActivity
 capture_ui guide_return
 assert_tutorial_label guide_return "Step 2 of 4"
@@ -561,6 +562,7 @@ assert_tutorial_label large_setting_help_text "verified connection"
 adb shell input keyevent KEYCODE_BACK
 tap_scroll_label "Captions" large_setting_attempt
 adb shell input keyevent KEYCODE_HOME
+python3 tools/check_android_simulation_ui.py --wait-background
 adb shell am start -W -n com.aqss.bodyguard.prototype/.ReadOnlyHomeActivity
 capture_ui large_setting_background_reset
 python3 tools/check_android_simulation_ui.py --assert-switch "$artifact_dir/large_setting_background_reset.xml" "Captions" false

@@ -2,8 +2,32 @@
 
 import sys
 import re
+import subprocess
+import time
 import xml.etree.ElementTree as ET
 from pathlib import Path
+
+
+def root_activity_stopped(dump: str) -> bool:
+    records = re.split(r"(?m)(?=^\s*\*\s*Hist\s+#)", dump)
+    states = []
+    for record in records:
+        heading = next((line for line in record.splitlines() if line.strip()), "")
+        if "com.aqss.bodyguard.prototype" in heading and "ReadOnlyHomeActivity" in heading:
+            state = re.search(r"\b(?:state|mState)=(\w+)", record)
+            states.append(state.group(1) if state else None)
+    return bool(states) and all(state == "STOPPED" for state in states)
+
+
+def wait_for_root_background() -> None:
+    deadline = time.monotonic() + 8
+    while time.monotonic() < deadline:
+        result = subprocess.run(["adb", "shell", "dumpsys", "activity", "activities"], capture_output=True, text=True, check=True)
+        if root_activity_stopped(result.stdout):
+            print("ANDROID_BACKGROUND_CONFIRMED: root activity STOPPED")
+            return
+        time.sleep(0.1)
+    raise SystemExit("AQSS root activity did not reach STOPPED after Home")
 
 
 def valid_hierarchy(path: str) -> bool:
@@ -129,7 +153,11 @@ if __name__ == "__main__":
         nodes = ET.parse(Path(sys.argv[2])).getroot().iter()
         target = next((node for node in nodes if node.get("class") == "android.widget.Switch" and node.get("content-desc") == sys.argv[3]), None)
         if target is None or target.get("checkable") != "true" or target.get("clickable") != "true" or target.get("enabled") != "true" or target.get("checked") != sys.argv[4]:
-            raise SystemExit(f"Switch {sys.argv[3]} did not have checked={sys.argv[4]}")
+            observed = None if target is None else {key: target.get(key) for key in ("checkable", "clickable", "enabled", "checked", "bounds")}
+            raise SystemExit(f"Switch {sys.argv[3]} did not have checked={sys.argv[4]}; observed={observed}")
+        raise SystemExit(0)
+    if len(sys.argv) == 2 and sys.argv[1] == "--wait-background":
+        wait_for_root_background()
         raise SystemExit(0)
     if len(sys.argv) == 3 and sys.argv[1] == "--valid-hierarchy":
         raise SystemExit(0 if valid_hierarchy(sys.argv[2]) else 1)

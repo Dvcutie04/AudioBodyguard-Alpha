@@ -1,5 +1,5 @@
 """A tutorial drawing must never be mistaken for an actionable native button."""
-from tools.check_android_simulation_ui import button_coordinates
+from tools.check_android_simulation_ui import button_coordinates, root_activity_stopped
 
 
 def test_next_taps_real_footer_instead_of_the_illustrated_label(tmp_path, capsys):
@@ -46,3 +46,35 @@ def test_custom_dialog_does_not_tap_a_zero_size_offscreen_action(tmp_path, capsy
     </node></hierarchy>''')
     button_coordinates(str(page), 'Show voice steps')
     assert capsys.readouterr().out == ''
+
+
+def test_launcher_resumed_does_not_prove_root_activity_stopped():
+    dump = '''mResumedActivity: ActivityRecord{123 com.android.launcher3/.Launcher}
+        * Hist #1: ActivityRecord{456 com.aqss.bodyguard.prototype/.ReadOnlyHomeActivity}
+          state=STOPPING visibleRequested=false
+        * Hist #0: ActivityRecord{123 com.android.launcher3/.Launcher}
+          state=RESUMED
+    '''
+    assert not root_activity_stopped(dump)
+
+
+def test_background_wait_requires_the_specific_root_activity_stopped():
+    dump = '''* Hist #2: ActivityRecord{123 com.aqss.bodyguard.prototype/.VoiceCheckActivity}
+          state=STOPPED
+        * Hist #1: ActivityRecord{456 com.aqss.bodyguard.prototype/.ReadOnlyHomeActivity}
+          state=RESUMED
+    '''
+    assert not root_activity_stopped(dump)
+    assert root_activity_stopped(dump.replace('state=RESUMED', 'state=STOPPED'))
+
+
+def test_a_stopped_duplicate_does_not_hide_a_resumed_root_activity():
+    dump = '''
+        * Hist #2: ActivityRecord{123 com.aqss.bodyguard.prototype/.ReadOnlyHomeActivity}
+          state=STOPPED
+
+        * Hist #1: ActivityRecord{456 com.aqss.bodyguard.prototype/.ReadOnlyHomeActivity}
+          mState=RESUMED
+    '''
+    assert not root_activity_stopped(dump)
+    assert root_activity_stopped(dump.replace('mState=RESUMED', 'mState=STOPPED'))
