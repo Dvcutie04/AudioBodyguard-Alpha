@@ -187,15 +187,21 @@ def test_new_vizio_account_and_phone_pairing_follow_distinct_official_codes():
     assert 'google_link' not in routes['vizio_alexa']['sources']
 
 
-def test_vizio_qr_picture_puts_the_code_on_the_tv():
-    from tools.export_picture_guide import svg
+def test_tv_codes_and_results_appear_on_the_tv_in_all_both_device_pictures():
+    from tools.export_picture_guide import TV_SCREEN_PICTURES, svg
 
-    route = setup_routes()['vizio_walmart']
-    picture = ElementTree.fromstring(svg(route['steps'][2], 3, route))
-    labels = [node.text for node in picture.findall('.//text') if node.text]
-    assert 'TV screen' in labels
-    assert 'Phone camera' in labels
-    assert '3 → TV QR code' in labels
+    routes = setup_routes()
+    for identifier, numbers in TV_SCREEN_PICTURES.items():
+        route = routes[identifier]
+        for number in numbers:
+            step = route['steps'][number - 1]
+            assert step['surface'] == 'both'
+            picture = ElementTree.fromstring(svg(step, number, route))
+            labels = [node.text for node in picture.findall('.//text') if node.text]
+            assert 'TV screen' in labels, (identifier, number)
+            assert any(label.startswith(f'{number} → ') for label in labels), (identifier, number)
+            if step['action'] == 'scan':
+                assert 'Phone camera' in labels, (identifier, number)
 
 
 def test_faster_google_setup_states_platform_limits_and_checks_the_tv_result():

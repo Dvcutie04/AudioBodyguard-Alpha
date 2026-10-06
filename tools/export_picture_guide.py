@@ -5,6 +5,9 @@ import textwrap
 from pathlib import Path
 from tools.generate_setup_guides import validate
 ROOT = Path(__file__).resolve().parents[1]
+TV_SCREEN_PICTURES = {'google_fast': {4}, 'sony_new': {5, 10},
+                      'vizio_walmart': {3, 5}, 'vizio_account': {7},
+                      'fire_setup': {5, 6}}
 
 def esc(s): return html.escape(str(s), quote=True)
 def svg(step, number, route):
@@ -24,13 +27,17 @@ def svg(step, number, route):
         for i,s in enumerate(left): row(36,80+i*54,272,s,(number==2 and s=='Settings') or (number==3 and s==('System' if model else 'Network')))
         if number>=3:
             for i,s in enumerate(right):row(324,80+i*54,272,s,number==4 and s=='About' or number==5 and i==step['focus'])
-    elif route['id']=='vizio_walmart' and number==3:
-        text(28,52,'On your TV: Connect your Walmart account',size=22)
+    elif number in TV_SCREEN_PICTURES.get(route['id'], set()):
+        text(28,52,'On your TV: '+step['screen'][:34],size=22)
         rect(28,78,420,260,'#243958');text(48,113,'TV screen',size=19)
-        row(48,142,380,'TV QR code',True)
+        row(48,142,380,label,True)
         rect(216,338,44,12,'#536c96');rect(178,350,120,7,'#536c96')
-        text(458,115,'Phone camera',size=17)
-        rect(476,140,128,192,'#243958');text(491,195,'Scan the',size=18);text(491,221,'TV code',size=18)
+        if step['action']=='check':text(466,166,'Check the TV',size=18)
+        else:
+            text(458,115,'Phone camera' if step['action']=='scan' else 'Phone app',size=17)
+            rect(476,140,128,192,'#243958')
+            text(491,195,'Scan the' if step['action']=='scan' else 'Enter the',size=18)
+            text(491,221,'TV code',size=18)
     elif route['id']=='philips_voice_remote' and number in (2,3):
         text(30,54,'Google TV',size=25);row(418,25,195,'Profile',number==2)
         text(30,110,'For you · Apps');rect(30,142,125,78,'#243958');rect(169,142,125,78,'#243958');rect(307,142,96,78,'#243958')

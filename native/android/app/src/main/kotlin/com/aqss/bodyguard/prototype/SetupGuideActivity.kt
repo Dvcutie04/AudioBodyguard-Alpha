@@ -36,6 +36,11 @@ class SetupGuideActivity : Activity() {
             "Finishing this guide does not connect Audio Bodyguard or activate protection.",
             "Use the numbered highlight on your real device. This illustration does not confirm a connection to Audio Bodyguard."
         )
+        private val tvScreenPictures = mapOf(
+            "google_fast" to setOf(4), "sony_new" to setOf(5, 10),
+            "vizio_walmart" to setOf(3, 5), "vizio_account" to setOf(7),
+            "fire_setup" to setOf(5, 6)
+        )
     }
     private lateinit var skin: InterfaceTheme
     private lateinit var root: LinearLayout
@@ -208,7 +213,7 @@ class SetupGuideActivity : Activity() {
             route != null && step != null -> {
                 words(content, when (step.surface) { "tv" -> "On your TV · use the remote"; "both" -> "Your TV + your phone"; else -> "On your phone" }, 15f, skin.accent, true)
                 words(content, step.instruction, 16f, bold = true)
-                content.addView(if (route.id == "roku_network" || route.id == "roku_model") rokuIllustration(step, index + 1, route.id) else if (route.id == "philips_voice_remote" && index in 1..2) profileIllustration(step, index + 1) else illustration(step, index + 1, route.id == "vizio_walmart" && index == 2), LinearLayout.LayoutParams(-1, -2).apply { bottomMargin = dp(18) })
+                content.addView(if (route.id == "roku_network" || route.id == "roku_model") rokuIllustration(step, index + 1, route.id) else if (route.id == "philips_voice_remote" && index in 1..2) profileIllustration(step, index + 1) else illustration(step, index + 1, index + 1 in (tvScreenPictures[route.id] ?: emptySet())), LinearLayout.LayoutParams(-1, -2).apply { bottomMargin = dp(18) })
                 action(content, if (detailsExpanded) "Hide help" else "Need help?") { detailsExpanded = !detailsExpanded; render(true) }
                 if (detailsExpanded) {
                     if (step.note !in repeatedPictureNotes) words(content, step.note, color = skin.muted)
@@ -380,12 +385,12 @@ class SetupGuideActivity : Activity() {
         return box
     }
 
-    private fun illustration(step: SetupStep, number: Int, showsTVCode: Boolean): View {
-        val screenOnTV = step.surface == "tv" || showsTVCode
+    private fun illustration(step: SetupStep, number: Int, showsTVScreen: Boolean): View {
+        val screenOnTV = step.surface == "tv" || showsTVScreen
         val box = column().apply {
             setPadding(dp(14), dp(14), dp(14), dp(14)); background = skin.shape(skin.raised, 22)
             importantForAccessibility = View.IMPORTANT_FOR_ACCESSIBILITY_YES
-            contentDescription = "Illustration $number. ${if (showsTVCode) "TV screen with code; scan it with the phone camera" else step.surface}: ${step.screen}. Highlighted: ${step.items[step.focus]}. Action: ${step.action}. ${step.instruction}"
+            contentDescription = "Illustration $number. ${if (showsTVScreen) "TV screen; use your phone where the step asks" else step.surface}: ${step.screen}. Highlighted: ${step.items[step.focus]}. Action: ${step.action}. ${step.instruction}"
         }
         words(box, "Illustration", 11f, skin.muted, true).importantForAccessibility = View.IMPORTANT_FOR_ACCESSIBILITY_NO
         if (step.surface == "both") box.addView(SetupActionPicture(this, skin, "both", step.action), LinearLayout.LayoutParams(-1, dp(64)))

@@ -8,6 +8,10 @@ struct SetupGuideRequest: Identifiable {
 
 /// Local, illustrative instructions. No device session, credentials or control API.
 struct SetupGuidesView: View {
+    private static let tvScreenPictures: [String: Set<Int>] = [
+        "google_fast": [4], "sony_new": [5, 10], "vizio_walmart": [3, 5],
+        "vizio_account": [7], "fire_setup": [5, 6]
+    ]
     private static let repeatedPictureNotes: Set<String> = [
         "Use your real device. This picture is an illustration.",
         "Finishing this guide does not connect Audio Bodyguard or activate protection.",
@@ -103,7 +107,7 @@ struct SetupGuidesView: View {
                                 RokuMenuIllustration(step: step, number: index + 1, routeID: route.id, theme: theme)
                             } else if route.id == "philips_voice_remote" && [1, 2].contains(index) {
                                 ProfileMenuIllustration(step: step, number: index + 1, theme: theme)
-                            } else { SetupScreenIllustration(step: step, number: index + 1, theme: theme, showsTVCode: route.id == "vizio_walmart" && index == 2) }
+                            } else { SetupScreenIllustration(step: step, number: index + 1, theme: theme, showsTVScreen: Self.tvScreenPictures[route.id]?.contains(index + 1) == true) }
                             disclosure("Need help?", id: "setup-step-details") { detailsExpanded.toggle() }
                             if detailsExpanded {
                                 if !Self.repeatedPictureNotes.contains(step.note) { Text(step.note).font(.callout).foregroundColor(theme.muted) }
@@ -339,8 +343,8 @@ private struct SetupScreenIllustration: View {
     let step: AQSSSetupStep
     let number: Int
     let theme: AppTheme
-    let showsTVCode: Bool
-    private var screenOnTV: Bool { step.surface == "tv" || showsTVCode }
+    let showsTVScreen: Bool
+    private var screenOnTV: Bool { step.surface == "tv" || showsTVScreen }
     private var glyph: String {
         switch step.action {
         case "home": return "house.fill"
@@ -411,7 +415,7 @@ private struct SetupScreenIllustration: View {
             }.foregroundColor(theme.violet).padding(.top, 4)
         }.padding(14).background(theme.raised.opacity(0.7)).clipShape(RoundedRectangle(cornerRadius: 22))
             .accessibilityElement(children: .ignore)
-            .accessibilityLabel("Illustration \(number). \(showsTVCode ? "TV screen with code; scan it with the phone camera" : step.surface == "tv" ? "TV screen" : step.surface == "both" ? "TV and phone" : "Phone screen"): \(step.screen). Highlighted: \(step.items[step.focus]). Action: \(step.action). \(step.instruction)")
+            .accessibilityLabel("Illustration \(number). \(showsTVScreen ? "TV screen; use your phone where the step asks" : step.surface == "tv" ? "TV screen" : step.surface == "both" ? "TV and phone" : "Phone screen"): \(step.screen). Highlighted: \(step.items[step.focus]). Action: \(step.action). \(step.instruction)")
             .accessibilityIdentifier("setup-illustration")
     }
 }
