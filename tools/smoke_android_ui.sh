@@ -499,23 +499,6 @@ tap_tutorial_label "Close" roku_phone_close
 adb shell dumpsys gfxinfo com.aqss.bodyguard.prototype > "$artifact_dir/roku-frame-summary.txt"
 tap_tutorial_label "Home" roku_home
 
-# The alternate Roku model route must show System in picture 3. The Network
-# picture belongs only to the IP-address route exercised above.
-tap_tutorial_label "Devices" model_devices
-tap_scroll_label "Illustrated setup guides. TV pairing, Google Home & Alexa · one picture at a time" model_open
-tap_scroll_label "Roku-branded TV" model_brand
-tap_scroll_label "Need help?" model_help
-tap_scroll_label "Other setup options" model_options
-tap_scroll_label "Find my exact model (Roku TV)" model_select
-tap_tutorial_label "Start guide" model_start
-tap_tutorial_label "Next" model_home_picture
-tap_tutorial_label "Next" model_settings_picture
-capture_ui roku_model_system_picture
-assert_tutorial_label roku_model_system_picture "Step 3 of 5"
-assert_tutorial_label roku_model_system_picture "Highlight System"
-tap_tutorial_label "Close" model_close
-tap_tutorial_label "Home" model_home
-
 # Reopening the main phone action resumes this user's already-selected Roku
 # phone guide instead of sending them through a generic Wi-Fi walkthrough.
 tap_scroll_label "TV & smart-home guide" roku_replay_guide
@@ -546,8 +529,23 @@ capture_ui roku_main_phone_back
 assert_tutorial_label roku_main_phone_back "Step 5 of 6"
 tap_tutorial_label "Exit tutorial" roku_replay_exit
 
-# Check the VIZIO account path after the Roku resume flow, so choosing VIZIO
-# does not replace the saved Roku system before that replay assertion.
+# Explore alternate model and brand guides only after checking the saved TCL
+# replay, because choosing a different category updates the active selection.
+tap_tutorial_label "Devices" model_devices
+tap_scroll_label "Illustrated setup guides. TV pairing, Google Home & Alexa · one picture at a time" model_open
+tap_scroll_label "Roku-branded TV" model_brand
+tap_scroll_label "Need help?" model_help
+tap_scroll_label "Other setup options" model_options
+tap_scroll_label "Find my exact model (Roku TV)" model_select
+tap_tutorial_label "Start guide" model_start
+tap_tutorial_label "Next" model_home_picture
+tap_tutorial_label "Next" model_settings_picture
+capture_ui roku_model_system_picture
+assert_tutorial_label roku_model_system_picture "Step 3 of 5"
+assert_tutorial_label roku_model_system_picture "Highlight System"
+tap_tutorial_label "Close" model_close
+tap_tutorial_label "Home" model_home
+
 tap_tutorial_label "Devices" vizio_devices
 tap_scroll_label "Illustrated setup guides. TV pairing, Google Home & Alexa · one picture at a time" vizio_open
 tap_scroll_label "Vizio" vizio_brand
