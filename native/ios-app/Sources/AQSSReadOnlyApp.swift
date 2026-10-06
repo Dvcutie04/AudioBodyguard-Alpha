@@ -689,7 +689,7 @@ private struct ReadOnlyHomeView: View {
                 VStack(alignment: .leading, spacing: 16) {
                     HStack(spacing: 18) {
                         Image(systemName: "iphone")
-                        Image(systemName: step.target == "chooseHome" ? "house" : "tv")
+                        if step.target != "connectionCheck" { Image(systemName: step.target == "chooseHome" ? "house" : "tv") }
                         if step.target == "welcome" { Image(systemName: "hifispeaker") }
                     }.font(.system(size: 32, weight: .light)).foregroundColor(theme.violet).accessibilityHidden(true)
                     Text(step.title).font(.largeTitle.bold()).fixedSize(horizontal: false, vertical: true)

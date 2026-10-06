@@ -104,7 +104,8 @@ class TutorialGuide(
         header.addView(top)
         if (isBeginner) text(header, TutorialContent.previewNotice, 12f, skin.muted).setPadding(0, dp(4), 0, 0)
         content.addView(TextView(activity).apply {
-            setCompoundDrawablesWithIntrinsicBounds(InterfaceSymbol(skin, if (step.target == "chooseHome") "house" else "tv", skin.violet), null, null, null)
+            val symbol = when (step.target) { "connectionCheck" -> "phone"; "chooseHome" -> "house"; else -> "tv" }
+            setCompoundDrawablesWithIntrinsicBounds(InterfaceSymbol(skin, symbol, skin.violet), null, null, null)
             importantForAccessibility = View.IMPORTANT_FOR_ACCESSIBILITY_NO
             setPadding(0, dp(6), 0, dp(12))
         }, LinearLayout.LayoutParams(-1, dp(52)))

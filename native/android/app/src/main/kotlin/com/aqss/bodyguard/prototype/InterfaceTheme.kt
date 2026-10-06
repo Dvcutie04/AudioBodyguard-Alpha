@@ -117,6 +117,11 @@ class InterfaceSymbol(private val skin: InterfaceTheme, private val kind: String
         canvas.translate(bounds.left.toFloat(), bounds.top.toFloat())
         canvas.scale(bounds.width() / 24f, bounds.height() / 24f)
         when (kind) {
+            "phone", "iphone" -> {
+                canvas.drawRoundRect(6f, 1.5f, 18f, 22.5f, 2.5f, 2.5f, paint)
+                canvas.drawLine(10f, 4.5f, 14f, 4.5f, paint)
+                canvas.drawLine(10f, 19.5f, 14f, 19.5f, paint)
+            }
             "tv" -> {
                 canvas.drawRoundRect(2f, 3f, 22f, 17f, 2f, 2f, paint)
                 canvas.drawLine(12f, 17f, 12f, 21f, paint); canvas.drawLine(7f, 21f, 17f, 21f, paint)

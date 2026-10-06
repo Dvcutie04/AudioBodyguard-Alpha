@@ -4,7 +4,7 @@ The owner asked for a clearer start-to-finish connection process, minimal text, 
 
 ## Review 1: one current task
 
-The phone stage now has one prominent picture action. TV and selected Google Home/Alexa instructions remain available in its Need help panel, rather than competing with the phone task. The TV stage emphasizes its TV picture action; selected assistant paths remain separate. The tutorial's optional Next action has secondary styling on these two screens, so it does not compete with the picture action. Exit Home and exact Back to Tutorial remain available.
+The phone stage now has one prominent picture action and a phone symbol on both native platforms. TV and selected Google Home/Alexa instructions remain available in its Need help panel, rather than competing with the phone task. The TV stage emphasizes its TV picture action; selected assistant paths remain separate. The tutorial's optional Next action has secondary styling on these two screens, so it does not compete with the picture action. Exit Home and exact Back to Tutorial remain available.
 
 Every setup introduction and numbered picture uses Need help / Hide help. The iPhone uses a question-mark symbol. TV-system selection now offers identification pictures when the user is unsure. Model/applicability information remains visible before starting, and required passwords, permissions and approvals remain in the numbered directions. Each picture's help also exposes manufacturer references without requiring a browser detour to complete setup.
 
