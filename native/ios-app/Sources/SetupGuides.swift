@@ -433,7 +433,7 @@ private struct RokuMenuIllustration: View {
                 }
             } else {
                 VStack(alignment: .leading, spacing: 14) {
-                    Text(number == 2 ? "Roku • Home" : "Roku • Settings").font(.system(size: 20, weight: .semibold))
+                    Text(step.screen).font(.system(size: 20, weight: .semibold))
                     HStack(alignment: .top, spacing: 12) {
                         VStack(alignment: .leading, spacing: 6) {
                             if number == 2 {

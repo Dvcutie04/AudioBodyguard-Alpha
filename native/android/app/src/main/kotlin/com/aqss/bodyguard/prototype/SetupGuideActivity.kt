@@ -332,7 +332,7 @@ class SetupGuideActivity : Activity() {
         }
         val blue = android.graphics.Color.rgb(5, 56, 145)
         val panel = column().apply { setPadding(dp(12), dp(12), dp(12), dp(12)); background = skin.shape(blue, 10); importantForAccessibility = View.IMPORTANT_FOR_ACCESSIBILITY_NO_HIDE_DESCENDANTS }
-        words(panel, if (number == 2) "Roku • Home" else "Roku • Settings", 18f, android.graphics.Color.WHITE, true)
+        words(panel, step.screen, 18f, android.graphics.Color.WHITE, true)
         val columns = LinearLayout(this).apply { gravity = Gravity.TOP }
         val left = column(); val right = column()
         columns.addView(left, LinearLayout.LayoutParams(0, -2, 1f).apply { marginEnd = dp(8) }); columns.addView(right, LinearLayout.LayoutParams(0, -2, 1f)); panel.addView(columns)

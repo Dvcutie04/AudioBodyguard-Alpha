@@ -75,6 +75,30 @@ def test_roku_model_system_picture_highlights_system_instead_of_network():
     assert highlights == ['3 → System']
 
 
+def test_roku_pictures_name_the_actual_menu_at_each_step():
+    from tools.export_picture_guide import svg
+
+    for identifier in ('roku_model', 'roku_network'):
+        route = setup_routes()[identifier]
+        for number in range(2, 6):
+            step = route['steps'][number - 1]
+            picture = ElementTree.fromstring(svg(step, number, route))
+            labels = [node.text for node in picture.findall('.//text')]
+            assert step['screen'] in labels, (identifier, number)
+
+
+def test_every_picture_has_one_numbered_action_and_matching_accessible_label():
+    from tools.export_picture_guide import svg
+
+    for route in setup_routes().values():
+        for number, step in enumerate(route['steps'], 1):
+            picture = ElementTree.fromstring(svg(step, number, route))
+            highlighted = [node.text for node in picture.findall('.//text')
+                           if node.text and node.text.startswith(f'{number} → ')]
+            assert len(highlighted) == 1, (route['id'], number)
+            assert step['items'][step['focus']] in picture.attrib['aria-label'], (route['id'], number)
+
+
 def test_picture_instructions_fit_a_short_reading_step():
     for route in setup_routes().values():
         for number, step in enumerate(route['steps'], 1):

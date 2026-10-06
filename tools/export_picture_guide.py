@@ -17,7 +17,7 @@ def svg(step, number, route):
         rect(x,y,w,48,'#ffffff' if selected else '#243958')
         for j,line in enumerate(textwrap.wrap(s, 25 if w<300 else 42)[:2]): text(x+12,y+21+j*19,(f'{number} → ' if selected and j==0 else '')+line,'#071321' if selected else '#f8fbff',16)
     if route['id'] in ('roku_network','roku_model') and number > 1:
-        rect(18,18,604,348,'#063e97');text(36,58,'Roku • Home' if number==2 else 'Roku • Settings',size=27)
+        rect(18,18,604,348,'#063e97');text(36,58,step['screen'],size=27)
         model=route['id']=='roku_model'
         left=['Home','Settings','Streaming Store'] if number==2 else ['Accessibility','Audio','Home screen','System','Power'] if model else ['Network','Remotes & devices','Theme','Display type','TV inputs']
         right=step['items'] if number==5 else ['About','Power','System update'] if model else ['About','Check connection','Set up connection','Bandwidth saver']

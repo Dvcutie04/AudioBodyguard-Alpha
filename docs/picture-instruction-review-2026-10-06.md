@@ -19,3 +19,5 @@ The old VIZIO Mobile URL redirected away from VIZIO; the catalogue now links to 
 These pictures are **labeled instructional schematics**. They are not verified photographs of each TV model, firmware, country, or current app build. The model/mismatch action and source links remain available when the actual screen differs. Hardware testing with the exact devices is required before claiming photograph-level fidelity or successful physical pairing.
 
 The focused Roku highlight and VIZIO account-path regressions were first reproduced as failures, then passed after correction. Generator parity, 403 offline picture matches, shell syntax and diff whitespace checks pass locally. Native simulator and emulator results are recorded in draft PR #32 for the delivered commit.
+
+A final cross-check also aligned each Roku diagram's on-picture menu heading with the numbered step: **Home → Settings → Network/System → About**, according to the selected route. The Android walkthrough returns to **Devices** before reopening the guide catalogue from Home, matching the actual navigation.
