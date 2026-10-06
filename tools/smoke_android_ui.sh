@@ -501,6 +501,7 @@ tap_tutorial_label "Home" roku_home
 
 # The alternate Roku model route must show System in picture 3. The Network
 # picture belongs only to the IP-address route exercised above.
+tap_tutorial_label "Devices" model_devices
 tap_scroll_label "Illustrated setup guides. TV pairing, Google Home & Alexa · one picture at a time" model_open
 tap_scroll_label "Roku-branded TV" model_brand
 tap_scroll_label "Need help?" model_help
@@ -516,6 +517,7 @@ tap_tutorial_label "Close" model_close
 tap_tutorial_label "Home" model_home
 
 # Newer VIZIO TVs show the My Hub account QR sequence before phone pairing.
+tap_tutorial_label "Devices" vizio_devices
 tap_scroll_label "Illustrated setup guides. TV pairing, Google Home & Alexa · one picture at a time" vizio_open
 tap_scroll_label "Vizio" vizio_brand
 capture_ui vizio_choices
