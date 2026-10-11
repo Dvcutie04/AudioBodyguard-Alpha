@@ -340,7 +340,7 @@
           "target": "privacy",
           "area": "advanced",
           "title": "Know what this tour stores",
-          "explanation": "Appearance and guide dismissal are saved on this phone. TV choices and tutorial progress stay in memory while the app is open.",
+          "explanation": "Appearance, guide dismissal and picture-guide progress are saved on this phone. Voice and photo details clear when you close the tool.",
           "example": "Example: Exit Home pauses your step. Back to Tutorial resumes it. Starting another tutorial clears the old paused step."
         }
       ]

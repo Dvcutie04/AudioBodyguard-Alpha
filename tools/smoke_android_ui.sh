@@ -404,7 +404,7 @@ tap_tutorial_label "Privacy and storage" privacy_jump
 tap_scroll_label "About Privacy and storage" privacy_help
 capture_ui privacy
 assert_tutorial_label privacy "No audio files saved by this app"
-assert_tutorial_label privacy "Appearance and guide dismissal stay on this phone"
+assert_tutorial_label privacy "Appearance and guide progress stay on this phone"
 adb shell input keyevent KEYCODE_BACK
 
 tap_tutorial_label "Sound" input_sound
