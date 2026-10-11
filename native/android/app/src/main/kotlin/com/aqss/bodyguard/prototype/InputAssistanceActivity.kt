@@ -226,7 +226,7 @@ class InputAssistanceActivity : Activity() {
                             photoExtra?.text = "Model: ${hints.model ?: "Not identified"}\nTV IP hint: ${hints.address ?: "Not identified"}"
                             photoBrand = hints.brand
                             val choice = TutorialContent.choices["chooseTV"]?.firstOrNull { it.id == hints.brand?.lowercase() }
-                            useBrand?.apply { text = "Use ${choice?.title ?: "brand"} and continue"; visibility = if (choice == null) View.GONE else View.VISIBLE }
+                            useBrand?.apply { this.text = "Use ${choice?.title ?: "brand"} and continue"; visibility = if (choice == null) View.GONE else View.VISIBLE }
                             status.text = "Check these details. Text recognition can make mistakes. Nothing is connected."
                         }
                     }

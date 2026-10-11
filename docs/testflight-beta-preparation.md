@@ -73,7 +73,7 @@ same SHA before the signed job can start. The workflow:
 - assigns build number `run_number.run_attempt`, so retries use a new number;
 - archives the physical-device app with the connected appearance demo excluded;
 - uses Xcode automatic provisioning and cloud signing with the configured key;
-- exports an internal-only IPA and checks its signature, embedded profile,
+- requests an internal-only export and checks the IPA's signature, embedded profile,
   platform, bundle/version/build identity and required privacy manifest;
 - validates with Apple, uploads and records the exact signed IPA SHA-256;
 - retains only non-secret provenance and deletes temporary keys, profiles,
@@ -93,8 +93,10 @@ upload has already worked.
 
 ## Install and test before broader invitations
 
-In App Store Connect, wait for the uploaded build to finish processing. Review
-and answer any export-compliance questions for the actual native app. Create
+In App Store Connect, wait for the uploaded build to finish processing and
+confirm that Apple labels it **Internal** before adding it to a group. The
+export setting alone does not prove Apple's processed build classification.
+Review and answer any export-compliance questions for the actual native app. Create
 an internal group for the owner, add the processed build and enter **What to
 Test** using [the beta testing notes](#what-to-test). Add the owner as the
 initial tester, then accept the TestFlight invitation on the iPhone. Developer
