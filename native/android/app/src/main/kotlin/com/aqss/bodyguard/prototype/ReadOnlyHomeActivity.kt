@@ -37,7 +37,7 @@ import java.util.ArrayDeque
 
 /** Presentation only: navigation and appearance cannot authorize an audio action. */
 class ReadOnlyHomeActivity : Activity() {
-    companion object { private const val PICTURE_REQUEST = 4101 }
+    companion object { private const val PICTURE_REQUEST = 4101; private const val PHOTO_REQUEST = 4102 }
     private var pendingPictureTarget: String? = null
     private var selectedSetupSystem: String? = null
     private var page = "home"
@@ -123,6 +123,7 @@ class ReadOnlyHomeActivity : Activity() {
         tutorial = TutorialGuide(this, scroll, targets, skin,
             currentPage = { page },
             openSetup = { group -> openSetup(group) },
+            openPhoto = { openInputTool("photo", fromTutorial = true) },
             navigate = { target, area ->
                 val destination = InterfaceContent.targetPages[target] ?: "home"
                 if (destination != page || (destination == "settings" && !advancedExpanded && target != "appearance")) rememberPage()
@@ -343,6 +344,10 @@ class ReadOnlyHomeActivity : Activity() {
     @Deprecated("Existing framework Activity shell; validates local learning results only")
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
         super.onActivityResult(requestCode, resultCode, data)
+        if (requestCode == PHOTO_REQUEST) {
+            if (resultCode == RESULT_OK && ::tutorial.isInitialized) tutorial.useSuggestedTV(data?.getStringExtra("suggestedBrand"))
+            return
+        }
         if (requestCode != PICTURE_REQUEST) return
         data?.getStringExtra(SetupGuideActivity.SELECTED_SYSTEM)?.takeIf { id -> com.aqss.nativefeedback.SetupContent.groups.any { it.id == id } }?.let { selectedSetupSystem = it }
         val expected = pendingPictureTarget
@@ -355,8 +360,12 @@ class ReadOnlyHomeActivity : Activity() {
             }
         }
     }
-    private fun openInputTool(mode: String) {
-        startActivity(android.content.Intent(this, InputAssistanceActivity::class.java).putExtra("mode", mode).putExtra("dark", skin.dark))
+    @Suppress("DEPRECATION")
+    private fun openInputTool(mode: String, fromTutorial: Boolean = false) {
+        val intent = Intent(this, InputAssistanceActivity::class.java).putExtra("mode", mode).putExtra("dark", skin.dark).putExtra("fromTutorial", fromTutorial)
+        if (fromTutorial) {
+            startActivityForResult(intent, PHOTO_REQUEST)
+        } else startActivity(intent)
     }
 
     private fun soundPage() {
@@ -458,7 +467,7 @@ class ReadOnlyHomeActivity : Activity() {
                 settingsDivider(c)
                 settingInfo(c, "Physical output", "Unknown", "No independent observation is available. Options cannot verify audible output. A completed guide or an app button does not prove a physical connection.", "physical")
                 settingsDivider(c)
-                settingInfo(c, "Privacy and storage", "", "No audio files saved by this app. Appearance and guide dismissal stay on this phone. Voice check uses the microphone only after you start it. Audio, recognized words and photo details are not saved by AQSS or uploaded. Closing the tool clears its details.", "privacy")
+                settingInfo(c, "Privacy and storage", "", "No audio files saved by this app. Appearance and guide progress stay on this phone. Voice check uses the microphone only after you start it. Audio, recognized words and photo details are not saved by AQSS or uploaded. Closing the tool clears its details.", "privacy")
                 settingsDivider(c)
                 settingInfo(c, "Move this session", "Unavailable", "No authorized endpoint or verified transfer path is connected. Moving a session between iPhone and Android requires qualification in both directions.", "handoffOption")
                 settingsDivider(c)

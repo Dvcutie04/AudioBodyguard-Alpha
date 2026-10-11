@@ -1,18 +1,30 @@
 # P1 read-only native simulation shells
 
 The iOS SwiftUI target in `native/ios-app` and Android Views app module in
-`native/android/app` display a **PREVIEW** label and the same limited message
-at launch: **Unknown physical state**, and **No output
-observation**. Both use the existing native read-only session projector with
+`native/android/app` show **Connection not verified** on Home. The first-visit
+guide explains the preview scope; **Status details** reveals **Unknown physical
+state** and **No output observation**. Both use the existing native read-only session projector with
 no evidence sample. They show explanatory coverage, capability, caption,
 history and next-step text. An additional foreground-only hint is sourced
 from this app's iOS audio-session notifications or Android's connected-device
 inventory callback. A notification can be missing, late, or unrelated to any
 owned player. The hint does not enter the session projector and cannot change
-**Unknown physical state**. There is no player, OS audio capture, microphone
-permission, endpoint command, live session history, background service,
+**Unknown physical state**. There is no player, capture of another app's output,
+endpoint command, live session history, background service,
 automatic recovery, cross-platform handoff, or ability to actuate from these
 shells.
+
+Optional **Voice check** requests microphone access only after Start; iOS also
+requests speech authorization. Recognition requires an available on-device
+recognizer, has a 30-second limit and has no cloud fallback. Listening stops on
+exit/background and interruptions; Android also stops on Activity pause.
+Microphone bars and recognized words are input hints, not measured audible
+output, syllable analysis or a command sent to a TV. **TV photo setup** reads a
+chosen image on the phone and suggests only unambiguous brand/model/IP text.
+iOS asks before using the camera; Android opens the system camera or picker.
+The user must confirm the suggested brand. Camera thumbnails can be too small
+for reliable OCR; a full gallery image is the fallback. Closing these tools
+clears their displayed details. The user's original gallery image is separate.
 
 Both shells expose an expandable **Sound options** section with Volume, Captions,
 Sound preset, Dialogue, Night, Custom Equalizer, and Defaults and Undo. A
@@ -23,8 +35,9 @@ A disconnected switch briefly shows cyan and **Not connected.** for two seconds,
 then returns to off. A lasting on state requires verified connection and reviewed
 capability inputs; the native prototypes have neither. These changes affect only
 local presentation, and physical state remains **Unknown physical state**.
-There are no sliders, audio commands, saved audio settings, new permissions, or
-background execution. The Python capability model also includes Dialogue and
+There are no sliders, audio commands, saved audio settings, or background
+execution from these switches. The separate input tools above have their own
+permission prompts. The Python capability model also includes Dialogue and
 Night as extra preset choices, gated by semantic preset capability; those
 model choices do not connect or enable the native preview. The [options menu
 research and staged checks](options-menu-research.md) record the decision.
@@ -32,7 +45,7 @@ research and staged checks](options-menu-research.md) record the decision.
 ## Contextual tutorials
 
 **Help & tutorials** stays in the header above the scrolling content in both shells. It
-opens seven replayable topics: Home and coverage, Sound options, Captions,
+opens replayable topics: connection setup, Home and coverage, Sound options, Captions,
 Defaults and undo, Advanced and privacy, Session transfer, and Readiness
 checklist. Options, Advanced options, and the checklist also have direct help
 buttons. A tour scrolls to and outlines
@@ -78,10 +91,10 @@ unavailable audio options and captions. Devices explains the unqualified path,
 six prerequisites, foreground hints and session transfer. Insights shows
 missing measurements/history and an optional synthetic relative-level chart.
 Settings groups appearance, advanced details, privacy, future explanations and
-tutorials. Every page retains Help, Jump to, and a simulation footer. Labeled
+tutorial access. The main pages retain Help and Jump to; tutorial steps offer
+their own contextual help. Labeled
 tabs become a native page picker at accessibility text sizes.
-On wide Android windows, the tutorial appears beside the page so its controls
-and the highlighted section can be viewed together.
+The connection tutorial presents one current task on its own page.
 
 Midnight, Daylight and System share `contracts/interface_v1.json`, generated
 into both platforms by `python tools/generate_interface_content.py --check`.
@@ -90,12 +103,14 @@ rejects measured-unit labels and action fields. The chart's values are invented
 and cannot enter a session projector. Its accessible description and optional
 text values expose the same eight samples. Closing it restores the empty state.
 
-Appearance is the only persisted preference: one local string, selected from
-the three appearance choices. Tutorial and example progress are temporary.
-Planned voice, profile, supervisor and support-report cards open explanations;
-they do not request permission, listen, discover devices, export data, or make
-control requests. Native vector decoration introduces no repeated animation,
-new dependency or media download. The [interface research brief](interface-design-research-2026-09-28.md)
+Appearance, first-visit guide dismissal and validated per-route setup bookmarks
+are persisted locally. Tutorial choices and synthetic examples are presentation
+state; Android can restore them after Activity recreation. Guide completion
+does not record a verified connection. Planned profile, supervisor and
+support-report cards open explanations; they do not make control requests.
+The separate connected artwork demonstration is compiled only for an iOS
+Simulator and is never enabled on an iPhone device build. It respects Reduce
+Motion. The [interface research brief](interface-design-research-2026-09-28.md)
 records source quality, alternatives and remaining measurements.
 
 ## Read-only native hints
@@ -110,7 +125,8 @@ when the Android Activity stops. A new foreground visit clears the previous
 hint; callbacks from a prior visit cannot repopulate it. At most one volatile
 hint is displayed, with no audio or device identifier stored. There is no
 assertion that an added callback is a new connection, no current-route
-assertion, background service, polling, mic permission, or claim of
+assertion, background service, polling, permission request from the hint
+observer, or claim of
 notification completeness. The iOS and Android
 events have different scopes, despite the shared uncertainty vocabulary.
 
@@ -133,7 +149,11 @@ input and do not establish such a source.
 
 The simulator and APK builds establish that packages compile, not that they
 run on actual devices. Native app IDs and minimum OS values are provisional.
-No signing, store submission or mic/audio authorization occurs in CI. The
+No signing or store submission occurs in CI; synthetic UI tests do not establish
+actual device permission or audio behavior. The iOS app includes
+`PrivacyInfo.xcprivacy` for app-local UserDefaults (`CA92.1`) and elapsed-time
+measurement (`35F9.1`). The unsigned device preflight checks the manifest inside
+the archived app. The
 repository's production endpoint factory still rejects, and
 `EndpointHandoffBarrier.is_ready()` still returns false. A functional release
 requires N2b physical endpoint/observer inventory, N3 qualification, N4

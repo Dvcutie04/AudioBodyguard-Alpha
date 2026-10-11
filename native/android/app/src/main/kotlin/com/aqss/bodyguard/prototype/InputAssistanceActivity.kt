@@ -11,6 +11,7 @@ import android.speech.*
 import android.view.View
 import android.widget.*
 import com.aqss.nativefeedback.TVPhotoHints
+import com.aqss.nativefeedback.TutorialContent
 import com.google.mlkit.vision.common.InputImage
 import com.google.mlkit.vision.text.TextRecognition
 import com.google.mlkit.vision.text.latin.TextRecognizerOptions
@@ -35,6 +36,8 @@ class InputAssistanceActivity : Activity() {
     private val worker = Executors.newSingleThreadExecutor()
     private var instructions: TextView? = null
     private var photoBrand: String? = null
+    private var useBrand: Button? = null
+    private var photoExtra: TextView? = null
     private val expiry = Runnable { stopVoice("30-second limit reached. Tap Start to try again.") }
     private val isVoice get() = intent.getStringExtra("mode") == "voice"
 
@@ -141,7 +144,7 @@ class InputAssistanceActivity : Activity() {
     }
     private fun photoPage() {
         label("Find your TV details", true)
-        label("Take a clear picture of the model label, or the TV’s Network / IP settings screen. Avoid passwords. Do not move a heavy or wall-mounted TV: use its About screen instead.")
+        label(if (intent.getBooleanExtra("fromTutorial", false)) "Photograph the TV’s model label or About screen. Keep passwords out of the picture." else "Take a clear picture of the model label, or the TV’s Network / IP settings screen. Avoid passwords. Do not move a heavy or wall-mounted TV: use its About screen instead.")
         action("Take a TV photo", primary = true) {
             try { startActivityForResult(Intent(MediaStore.ACTION_IMAGE_CAPTURE), 52) }
             catch (_: Exception) { status.text = "Camera unavailable. Take a photo in your Camera app, then choose it below." }
@@ -151,16 +154,26 @@ class InputAssistanceActivity : Activity() {
             catch (_: Exception) { status.text = "No photo picker available. Use the instructions below." }
         }
         status = label("No photo selected", true)
-        details = label("Brand: Not identified\nModel: Not identified\nTV IP hint: Not identified")
-        label("Photo hints · confirm the model and network details on your TV.")
-        action("Illustrated setup guides") { openSetup(photoBrand?.lowercase() ?: "") }
-        action("Show connection instructions") { instructions?.visibility = if (instructions?.visibility == View.VISIBLE) View.GONE else View.VISIBLE }
+        details = label("Brand: Not identified")
+        photoExtra = label("Model: Not identified\nTV IP hint: Not identified").apply {
+            if (intent.getBooleanExtra("fromTutorial", false)) visibility = View.GONE
+        }
+        label("Check the suggested details on your TV. A photo does not connect it.")
+        if (intent.getBooleanExtra("fromTutorial", false)) {
+            useBrand = action("Use brand and continue", primary = true) {
+                photoBrand?.lowercase()?.let { id ->
+                    setResult(RESULT_OK, Intent().putExtra("suggestedBrand", id)); finish()
+                }
+            }.apply { visibility = View.GONE }
+            action("Show photo details") { photoExtra?.visibility = if (photoExtra?.visibility == View.VISIBLE) View.GONE else View.VISIBLE }
+        } else action("Illustrated setup guides") { openSetup(photoBrand?.lowercase() ?: "") }
+        action("Need help?") { instructions?.visibility = if (instructions?.visibility == View.VISIBLE) View.GONE else View.VISIBLE }
         instructions = label("1. Open Settings on the TV. Look for About, Support or Device information to find its model. Menu names differ.\n\n2. Look for Network, Connection or Network status, then IP settings. Photograph the IP address row — not Gateway or DNS. The back label usually does not show the current IP.\n\n3. Put the phone and TV on the same home Wi-Fi. Avoid a guest network. IP addresses can change and do not prove TV identity.\n\n4. Supported Samsung models use SmartThings and may ask for approval on the TV. For Alexa or Google Home, add/link a supported TV inside that app and follow its approval steps.").apply { visibility = View.GONE }
         action("Clear photo details") { clearPhoto() }
         label("Text recognition stays on this phone. Details clear on close. Manage the original in your camera or gallery app. Choose the full photo if text looks small.")
     }
     private fun clearPhoto() {
-        photoBrand = null; photoGeneration++; status.text = "No photo selected"; details.text = "Brand: Not identified\nModel: Not identified\nTV IP hint: Not identified"
+        photoBrand = null; photoGeneration++; status.text = "No photo selected"; details.text = "Brand: Not identified"; photoExtra?.text = "Model: Not identified\nTV IP hint: Not identified"; useBrand?.visibility = View.GONE
     }
     @Deprecated("Platform callback retained for API 26 compatibility")
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
@@ -209,8 +222,11 @@ class InputAssistanceActivity : Activity() {
                         if (!isDestroyed && token == photoGeneration) {
                             val text = result.textBlocks.flatMap { it.lines }.take(100).joinToString("\n") { it.text }
                             val hints = TVPhotoHints(text)
-                            details.text = "Brand: ${hints.brand ?: "Not identified"}\nModel: ${hints.model ?: "Not identified"}\nTV IP hint: ${hints.address ?: "Not identified"}"
+                            details.text = "Brand: ${hints.brand ?: "Not identified"}"
+                            photoExtra?.text = "Model: ${hints.model ?: "Not identified"}\nTV IP hint: ${hints.address ?: "Not identified"}"
                             photoBrand = hints.brand
+                            val choice = TutorialContent.choices["chooseTV"]?.firstOrNull { it.id == hints.brand?.lowercase() }
+                            useBrand?.apply { text = "Use ${choice?.title ?: "brand"} and continue"; visibility = if (choice == null) View.GONE else View.VISIBLE }
                             status.text = "Check these details. Text recognition can make mistakes. Nothing is connected."
                         }
                     }

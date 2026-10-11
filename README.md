@@ -6,6 +6,16 @@ Audio Bodyguard Alpha is the development repository for AQSS-36-OMEGA. It contai
 
 The alpha includes simulations, mocks, and synthetic conformance tests. Passing software tests do not establish physical output containment, acoustic safety, or production readiness. The endpoint handoff barrier and production execution guard intentionally remain closed.
 
+The [2026-10-11 pre-beta audit](docs/pre-beta-audit-2026-10-11.md) records local
+repairs and **1,867 passing Python tests plus 19 subtests**. Fresh native CI,
+a signed TestFlight build and actual phone trials remain required before beta
+invitations. The current beta scope is the read-only interface and setup guides.
+
+The [internal TestFlight preparation](docs/testflight-beta-preparation.md)
+automates checks on an exact reviewed source revision and provides a manually
+requested signing/upload lane after Apple account and signing setup. It does
+not invite testers or certify physical protection.
+
 ## Current a-Shell baseline
 
 The source baseline comes from the verified a-Shell exports supplied on September 24, 2026: 423 original paths plus 18 supplement paths. Every exported file is accounted for in the [synchronization manifest](docs/a-shell-sync-manifest.json): 431 retain their exact bytes, nine have documented maintenance fixes, and one unused corrupt Python module was retired. This records the supplied snapshots; later edits on the phone require another synchronization.
@@ -22,7 +32,7 @@ The [read-only UI smoke workflow](.github/workflows/read-only-ui-smoke.yml) now 
 
 The [iPhone device preflight](.github/workflows/iphoneos-device-preflight.yml) is a separate, unsigned arm64 archive check for the read-only shell; it does not make an installable build. The [P1 trial protocol](docs/p1-installed-device-trial.md) accepts an independently recorded TestFlight install with signed build provenance while keeping protection and physical-output claims unqualified.
 
-The native shells include Options, Advanced options, seven contextual tutorials,
+The native shells include Options, Advanced options, contextual tutorials,
 and persistent **Jump to** / **Help & tutorials** buttons. An expandable readiness
 checklist explains all six unknown prerequisites without enabling controls.
 The [native app audit](docs/native-app-audit-2026-09-27.md) records accessibility,
@@ -33,8 +43,10 @@ The native interface now groups these features into **Home, Sound, Devices,
 Insights and Settings**, with a shared Midnight/Daylight/System theme. Help
 and section navigation remain available on every page. Insights has an honest
 empty state and an optional, explicitly synthetic example with text values;
-planned features open prerequisite explanations. Only appearance is saved
-locally. See the [interface research and design](docs/interface-design-research-2026-09-28.md).
+planned features open prerequisite explanations. Appearance, first-visit guide
+dismissal and numbered setup bookmarks are saved locally. Voice check and TV
+photo setup are optional foreground input tools; their results cannot authorize
+device control. See the [interface research and design](docs/interface-design-research-2026-09-28.md).
 
 The native launch experience uses the owner's white Audio Bodyguard artwork,
 including its purple/black rose and Silicon Workforce credit. iOS displays it
@@ -70,6 +82,10 @@ python3.13 -m venv .venv
 . .venv/bin/activate
 python -m pip install -r requirements.txt
 python tools/generate_native_feedback_contracts.py --check
+python tools/generate_interface_content.py --check
+python tools/generate_tutorial_content.py --check
+python tools/generate_setup_guides.py --check
+python tools/export_picture_guide.py --check
 PYTHONPATH=. python -m pytest -q
 ```
 

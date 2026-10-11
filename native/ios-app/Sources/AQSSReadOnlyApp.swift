@@ -104,11 +104,13 @@ private struct ReadOnlyHomeView: View {
     @State private var page = "home"
     @State private var voiceCheckVisible = false
     @State private var photoCheckVisible = false
+    @State private var suggestedTVBrand: String?
     @State private var setupRequest: SetupGuideRequest?
     @State private var selectedSetupSystem: String?
     @State private var pictureTarget: String?
     @State private var completedPictureRoute: String?
     @State private var moreFeatures = false
+    @State private var moreTVBrands = false
     @State private var tutorialHelp = false
     @State private var voiceAfterGuide = false
     @State private var pendingSetupGroup: String?
@@ -201,7 +203,16 @@ private struct ReadOnlyHomeView: View {
                 }
             }
             .sheet(isPresented: $voiceCheckVisible) { VoiceCheckView(theme: theme) }
-            .sheet(isPresented: $photoCheckVisible) { TVPhotoView(theme: theme) }
+            .sheet(isPresented: $photoCheckVisible, onDismiss: {
+                guard let brand = suggestedTVBrand else { return }
+                suggestedTVBrand = nil
+                guard tutorialStep?.target == "chooseTV", guide.select(brand) else { return }
+                _ = guide.next()
+            }) {
+                TVPhotoView(theme: theme, onUseBrand: tutorialStep?.target == "chooseTV" ? { brand in
+                    suggestedTVBrand = brand
+                } : nil)
+            }
             .sheet(item: $settingHelp, onDismiss: {
                 if let group = pendingSetupGroup { pendingSetupGroup = nil; showSetup(group) }
             }) { item in
@@ -267,7 +278,7 @@ private struct ReadOnlyHomeView: View {
             else { audioHints.stop(); resetSettingSwitches() }
         }
         .onChange(of: settingsConnectionVerified) { verified in if !verified { resetSettingSwitches() } }
-        .onChange(of: tutorialStepKey) { _ in moreFeatures = false; tutorialHelp = false }
+        .onChange(of: tutorialStepKey) { _ in moreFeatures = false; moreTVBrands = false; tutorialHelp = false }
         .onChange(of: guide.selections["chooseTV"]) { brand in
             if let brand = brand, let selected = selectedSetupSystem, selected != brand && !selected.hasPrefix(brand + "_") { selectedSetupSystem = nil }
         }
@@ -471,7 +482,7 @@ private struct ReadOnlyHomeView: View {
                     Divider()
                     settingInfo("Physical output", detail: "Unknown", explanation: "No independent observation is available. Options cannot verify audible output. A completed guide or an app button does not prove a physical connection.", target: "physical")
                     Divider()
-                    settingInfo("Privacy and storage", explanation: "No audio files saved by this app. Appearance and guide dismissal stay on this phone. Voice check uses the microphone only after you start it. Audio, recognized words and photo details are not saved by AQSS or uploaded. Closing the tool clears its details.", target: "privacy")
+                    settingInfo("Privacy and storage", explanation: "No audio files saved by this app. Appearance and guide progress stay on this phone. Voice check uses the microphone only after you start it. Audio, recognized words and photo details are not saved by AQSS or uploaded. Closing the tool clears its details.", target: "privacy")
                     Divider()
                     settingInfo("Move this session", detail: "Unavailable", explanation: "No authorized endpoint or verified transfer path is connected. Moving a session between iPhone and Android requires qualification in both directions.", target: "handoffOption")
                     Divider()
@@ -699,16 +710,24 @@ private struct ReadOnlyHomeView: View {
                     else if topic.id == "getting_started", let stage = AQSSTutorialContent.connectionStages.first(where: { $0.targets.contains(step.target) }), !["connectionPlan", "connectionCheck"].contains(step.target) {
                         Text("Connection \(stage.number) of 2").font(.caption.weight(.semibold)).foregroundColor(theme.accent)
                     }
-                    ForEach(guide.choices, id: \.id) { choice in
-                        Button { _ = guide.select(choice.id) } label: {
-                            HStack(spacing: 14) {
-                                Image(systemName: choice.icon == "speaker" ? "hifispeaker" : choice.icon).font(.title2).accessibilityHidden(true)
-                                Text(choice.title).fixedSize(horizontal: false, vertical: true)
-                                Spacer(minLength: 0)
-                                if guide.selected(step.target)?.id == choice.id { Image(systemName: "checkmark.circle.fill").accessibilityHidden(true) }
-                            }.frame(maxWidth: .infinity, minHeight: 44, alignment: .leading)
-                        }.buttonStyle(AppButtonStyle(theme: theme, primary: guide.selected(step.target)?.id == choice.id)).accessibilityIdentifier("choice-\(choice.id)")
-                            .accessibilityLabel(choice.title).accessibilityValue(guide.selected(step.target)?.id == choice.id ? "Selected" : "Not selected")
+                    if topic.id == "getting_started" && ["chooseTV", "chooseHome"].contains(step.target) {
+                        tutorialExplanation(step)
+                    }
+                    if topic.id == "getting_started" && step.target == "chooseTV" {
+                        action("Identify TV from a photo", icon: "camera") { suggestedTVBrand = nil; photoCheckVisible = true }
+                            .accessibilityIdentifier("identify-tv-photo")
+                    }
+                    ForEach(visibleTutorialChoices(for: step).filter { $0.id != "unsure" }, id: \.id) { choice in
+                        tutorialChoice(choice, target: step.target)
+                    }
+                    if topic.id == "getting_started" && step.target == "chooseTV" {
+                        Button(moreTVBrands ? "Fewer TV brands" : "More TV brands") { moreTVBrands.toggle() }
+                            .buttonStyle(AppButtonStyle(theme: theme))
+                            .accessibilityIdentifier("more-tv-brands")
+                            .accessibilityValue(moreTVBrands ? "Expanded" : "Collapsed")
+                        if let unsure = guide.choices.first(where: { $0.id == "unsure" }) {
+                            tutorialChoice(unsure, target: step.target)
+                        }
                     }
                     if ["connectionPlan", "connectionCheck"].contains(step.target) {
                         if step.target == "connectionCheck" {
@@ -718,24 +737,8 @@ private struct ReadOnlyHomeView: View {
                     }
                     if topic.id == "getting_started" && step.target == "welcome" {
                         featureCatalog
-                    } else if !step.example.isEmpty {
-                        if !step.example.isEmpty {
-                            Button { tutorialHelp.toggle() } label: {
-                                Label(tutorialHelp ? "Hide help" : AQSSTutorialContent.helpLabel, systemImage: tutorialHelp ? "chevron.up" : "chevron.down")
-                                    .frame(maxWidth: .infinity, minHeight: 44, alignment: .leading)
-                            }.buttonStyle(AppButtonStyle(theme: theme)).accessibilityValue(tutorialHelp ? "Expanded" : "Collapsed")
-                            if tutorialHelp {
-                                VStack(alignment: .leading, spacing: 12) {
-                                    Text(step.example).font(.callout).foregroundColor(theme.muted).fixedSize(horizontal: false, vertical: true)
-                                    if ["connectionPlan", "connectionCheck"].contains(step.target) {
-                                        ForEach(["chooseTV", "chooseHome"], id: \.self) { target in
-                                            if let selected = guide.selected(target) { Text(selected.detail).font(.callout).foregroundColor(theme.muted) }
-                                        }
-                                        if step.target == "connectionCheck" { selectedConnectionActions(primaryTV: false) }
-                                    }
-                                }.padding(14).background(theme.surface).clipShape(RoundedRectangle(cornerRadius: 14))
-                            }
-                        }
+                    } else if !["chooseTV", "chooseHome"].contains(step.target) {
+                        tutorialExplanation(step)
                     }
                 }.frame(maxWidth: 640, alignment: .leading).padding(20).frame(maxWidth: .infinity)
             }
@@ -753,6 +756,42 @@ private struct ReadOnlyHomeView: View {
                     }.disabled(!guide.canContinue).accessibilityIdentifier("guide-next")
                 }
             }.padding(16).background(theme.surface)
+        }
+    }
+    private func visibleTutorialChoices(for step: AQSSTutorialStep) -> [AQSSTutorialChoice] {
+        guard step.target == "chooseTV", !moreTVBrands else { return guide.choices }
+        let featured: Set<String> = ["samsung", "lg", "sony", "tcl", "unsure"]
+        let selected = guide.selected("chooseTV")?.id
+        return guide.choices.filter { featured.contains($0.id) || $0.id == selected }
+    }
+    private func tutorialChoice(_ choice: AQSSTutorialChoice, target: String) -> some View {
+        Button { _ = guide.select(choice.id) } label: {
+            HStack(spacing: 14) {
+                Image(systemName: choice.icon == "speaker" ? "hifispeaker" : choice.icon).font(.title2).accessibilityHidden(true)
+                Text(choice.title).fixedSize(horizontal: false, vertical: true)
+                Spacer(minLength: 0)
+                if guide.selected(target)?.id == choice.id { Image(systemName: "checkmark.circle.fill").accessibilityHidden(true) }
+            }.frame(maxWidth: .infinity, minHeight: 44, alignment: .leading)
+        }.buttonStyle(AppButtonStyle(theme: theme, primary: guide.selected(target)?.id == choice.id)).accessibilityIdentifier("choice-\(choice.id)")
+            .accessibilityLabel(choice.title).accessibilityValue(guide.selected(target)?.id == choice.id ? "Selected" : "Not selected")
+    }
+    @ViewBuilder private func tutorialExplanation(_ step: AQSSTutorialStep) -> some View {
+        if !step.example.isEmpty {
+            Button { tutorialHelp.toggle() } label: {
+                Label(tutorialHelp ? "Hide help" : AQSSTutorialContent.helpLabel, systemImage: tutorialHelp ? "chevron.up" : "chevron.down")
+                    .frame(maxWidth: .infinity, minHeight: 44, alignment: .leading)
+            }.buttonStyle(AppButtonStyle(theme: theme)).accessibilityValue(tutorialHelp ? "Expanded" : "Collapsed")
+            if tutorialHelp {
+                VStack(alignment: .leading, spacing: 12) {
+                    Text(step.example).font(.callout).foregroundColor(theme.muted).fixedSize(horizontal: false, vertical: true)
+                    if ["connectionPlan", "connectionCheck"].contains(step.target) {
+                        ForEach(["chooseTV", "chooseHome"], id: \.self) { target in
+                            if let selected = guide.selected(target) { Text(selected.detail).font(.callout).foregroundColor(theme.muted) }
+                        }
+                        if step.target == "connectionCheck" { selectedConnectionActions(primaryTV: false) }
+                    }
+                }.padding(14).background(theme.surface).clipShape(RoundedRectangle(cornerRadius: 14))
+            }
         }
     }
     @ViewBuilder private func selectedConnectionActions(primaryTV: Bool) -> some View {

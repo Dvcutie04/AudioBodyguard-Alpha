@@ -185,6 +185,17 @@ tap_tutorial_label "Start picture setup" beginner_begin
 capture_ui beginner_step_2
 assert_only_guide beginner_step_2
 if python3 tools/check_android_simulation_ui.py --text-tap-coordinates "$artifact_dir/beginner_step_2.xml" "Next" | grep -q '[0-9]'; then exit 1; fi
+if python3 tools/check_android_simulation_ui.py --assert-label "$artifact_dir/beginner_step_2.xml" "Philips" 2>/dev/null; then exit 1; fi
+tap_scroll_label "Identify TV from a photo" beginner_photo_open
+capture_ui beginner_photo
+assert_tutorial_label beginner_photo "Find your TV details"
+adb shell input keyevent KEYCODE_BACK
+capture_ui beginner_photo_return
+assert_tutorial_label beginner_photo_return "Step 2 of 6"
+tap_scroll_label "More TV brands" beginner_more_brands
+assert_scroll_label "Philips" beginner_extra_brands
+tap_scroll_label "Fewer TV brands" beginner_fewer_brands
+adb shell input swipe 500 350 500 1600 500
 tap_scroll_label "Samsung" beginner_tv
 capture_ui beginner_tv_selected
 assert_tutorial_label beginner_tv_selected "Selected: Samsung"

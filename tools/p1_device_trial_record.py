@@ -114,7 +114,7 @@ def assess(record, *, expected_revision=None):
         elif coverage != "UNKNOWN_PHYSICAL_STATE":
             unsafe.append(f"{case}: {coverage} displayed without an owned output or observer")
         for key, label in (
-            ("simulation_label_visible", "SIMULATION"),
+            ("simulation_label_visible", "Preview/simulation explanation"),
             ("no_output_observation_visible", "No output observation"),
         ):
             if row.get(key) is False:

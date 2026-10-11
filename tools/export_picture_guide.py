@@ -1,9 +1,13 @@
 """Build an offline, numbered picture companion from the shared native catalog."""
+import argparse
 import html
 import json
 import textwrap
 from pathlib import Path
-from tools.generate_setup_guides import validate
+if __package__ in (None, ""):
+    from generate_setup_guides import validate
+else:
+    from .generate_setup_guides import validate
 ROOT = Path(__file__).resolve().parents[1]
 TV_SCREEN_PICTURES = {'google_fast': {4}, 'sony_new': {5, 10},
                       'vizio_walmart': {3, 5}, 'vizio_account': {7},
@@ -49,8 +53,7 @@ def svg(step, number, route):
     text(28,398,('TV remote: arrows + OK' if step['surface']=='tv' else 'TV + phone' if step['surface']=='both' else 'On your phone')+' · '+step['action'],color='#60d8e5',size=19)
     pieces.append('</svg>');return ''.join(pieces)
 
-def build():
-    data=validate(json.loads((ROOT/'contracts/setup_guides_v1.json').read_text()))
+def render(data):
     routes={r['id']:r for r in data['routes']};sources={s['id']:s for s in data['sources']}
     out=['<!doctype html><html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Audio Bodyguard picture directions</title><style>body{margin:0;background:#080f20;color:#f5f8ff;font:18px/1.55 system-ui}main{max-width:1040px;margin:auto;padding:24px}a{color:#61dbe8}h1,h2,h3{line-height:1.2}nav{display:flex;flex-wrap:wrap;gap:12px}nav a,summary{padding:14px;background:#1b2943;border:1px solid #536c96;border-radius:12px}section{margin:30px 0}details{margin:14px 0}summary{cursor:pointer;font-weight:700}ol{padding:0;list-style:none}.step{padding:20px;margin:16px 0;border:1px solid #536c96;border-radius:16px;background:#111c30}svg{display:block;width:100%;max-width:680px;height:auto}.badge{color:#61dbe8}.note{color:#b8c6df;font-size:16px}button{padding:12px;font:inherit}*:focus-visible{outline:3px solid #fff}@media print{body{background:white;color:black}.step{break-inside:avoid;background:white}nav{display:none}}</style><main><h1>Follow one highlighted picture at a time</h1><p>Choose your TV brand or app, then the menu that matches your device. Complete each action on your TV or official app. The numbered white highlight marks the next choice.</p><p class="note">These are diagrams, not photographs of every firmware version. Roku Settings uses the menu arrangement in the supplied photo. Model examples are documented examples, not a claim of exact artwork or Audio Bodyguard compatibility. Account approval and remote pairing happen in the official TV/app; this companion never connects or controls a device.</p><nav aria-label="TV brands and apps">']
     groups=[g for g in data['groups'] if g['id'] not in ('both','neither') and '_' not in g['id']]
@@ -77,6 +80,26 @@ def build():
         for id in r['sources']:out.append(f'<li><a href="{esc(sources[id]["url"])}">{esc(sources[id]["title"])}</a></li>')
         out.append('</ul><a href="#">Back to brands</a></details>')
     out.append('''<script>function reveal(){const el=document.getElementById(location.hash.slice(1));if(el&&el.tagName==='DETAILS'){el.open=true;el.scrollIntoView();}}addEventListener('hashchange',reveal);reveal();</script></main></html>''')
-    p=ROOT/'docs/picture-guide.html';t=p.with_suffix('.html.tmp');assert not t.exists();t.write_text(''.join(out));t.replace(p)
-    print(f'{len(routes)} routes / {sum(len(r["steps"]) for r in routes.values())} numbered pictures; {p.stat().st_size} bytes')
-if __name__=='__main__':build()
+    return ''.join(out)
+
+
+def build(*, check=False):
+    data = validate(json.loads((ROOT/'contracts/setup_guides_v1.json').read_text(encoding='utf-8')))
+    content = render(data)
+    path = ROOT/'docs/picture-guide.html'
+    if check:
+        if not path.is_file() or path.read_bytes() != content.encode('utf-8'):
+            raise SystemExit(f'Regenerate {path}')
+        print('OFFLINE_PICTURE_GUIDE_CURRENT')
+        return
+    temporary = path.with_suffix('.html.tmp')
+    assert not temporary.exists()
+    temporary.write_text(content, encoding='utf-8')
+    temporary.replace(path)
+    print(f'{len(data["routes"])} routes / {sum(len(r["steps"]) for r in data["routes"])} numbered pictures; {path.stat().st_size} bytes')
+
+
+if __name__ == '__main__':
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--check', action='store_true')
+    build(check=parser.parse_args().check)

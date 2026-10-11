@@ -179,13 +179,19 @@ final class PhotoCheck: ObservableObject {
 
 struct TVPhotoView: View {
     let theme: AppTheme
+    var onUseBrand: ((String) -> Void)? = nil
     @Environment(\.dismiss) private var dismiss
     @StateObject private var photo = PhotoCheck()
     @State private var gallery = false
     @State private var camera = false
     @State private var instructions = false
+    @State private var detailsExpanded = false
     @State private var setupRequest: SetupGuideRequest?
     @State private var cameraNotice = ""
+    private var suggestedChoice: AQSSTutorialChoice? {
+        guard let brand = photo.hints.brand?.lowercased() else { return nil }
+        return AQSSTutorialContent.choices["chooseTV"]?.first { $0.id == brand }
+    }
     var body: some View {
         VStack {
             HStack { Text("TV photo setup").font(.title2.bold()); Spacer(); RoseButton(title: "Close", theme: theme) { photo.clear(); dismiss() } }.padding()
@@ -193,7 +199,9 @@ struct TVPhotoView: View {
                 VStack(alignment: .leading, spacing: 18) {
                     Image(systemName: "tv").font(.system(size: 42)).foregroundColor(theme.violet).accessibilityHidden(true)
                     Text("Find your TV details").font(.title.bold())
-                    Text("Take a clear picture of the TV’s model label, or its Network / IP settings screen. Avoid including passwords. You do not need to move a heavy or wall-mounted TV: use its About screen instead.")
+                    Text(onUseBrand == nil
+                         ? "Take a clear picture of the TV’s model label, or its Network / IP settings screen. Avoid including passwords. You do not need to move a heavy or wall-mounted TV: use its About screen instead."
+                         : "Photograph the TV’s model label or About screen. Keep passwords out of the picture.")
                     Button("Take a TV photo") {
                         guard UIImagePickerController.isSourceTypeAvailable(.camera) else { cameraNotice = "Camera unavailable here. Take a photo with your phone and choose it below."; return }
                         AVCaptureDevice.requestAccess(for: .video) { allowed in DispatchQueue.main.async {
@@ -204,11 +212,22 @@ struct TVPhotoView: View {
                     if !cameraNotice.isEmpty { Text(cameraNotice).foregroundColor(theme.warning) }
                     Text(photo.status).font(.headline).accessibilityIdentifier("photo-status")
                     Text("Brand: \(photo.hints.brand ?? "Not identified")")
-                    Text("Model: \(photo.hints.model ?? "Not identified")")
-                    Text("TV IP hint: \(photo.hints.address ?? "Not identified")")
-                    Text("Photo hints · confirm the model and network details on your TV.").font(.caption).foregroundColor(theme.muted)
-                    Button("Illustrated setup guides") { setupRequest = SetupGuideRequest(group: photo.hints.brand?.lowercased() ?? "") }.buttonStyle(AppButtonStyle(theme: theme))
-                    Button(instructions ? "Hide connection instructions" : "Show connection instructions") { instructions.toggle() }.buttonStyle(AppButtonStyle(theme: theme))
+                    if let choice = suggestedChoice, let onUseBrand = onUseBrand {
+                        Button("Use \(choice.title) and continue") { onUseBrand(choice.id); photo.clear(); dismiss() }
+                            .buttonStyle(AppButtonStyle(theme: theme, primary: true))
+                            .accessibilityIdentifier("photo-use-brand")
+                    }
+                    if onUseBrand == nil || detailsExpanded {
+                        Text("Model: \(photo.hints.model ?? "Not identified")")
+                        Text("TV IP hint: \(photo.hints.address ?? "Not identified")")
+                    }
+                    Text("Check the suggested details on your TV. A photo does not connect it.").font(.caption).foregroundColor(theme.muted)
+                    if onUseBrand != nil {
+                        Button(detailsExpanded ? "Hide photo details" : "Show photo details") { detailsExpanded.toggle() }.buttonStyle(AppButtonStyle(theme: theme))
+                    } else {
+                        Button("Illustrated setup guides") { setupRequest = SetupGuideRequest(group: photo.hints.brand?.lowercased() ?? "") }.buttonStyle(AppButtonStyle(theme: theme))
+                    }
+                    Button(instructions ? "Hide help" : "Need help?") { instructions.toggle() }.buttonStyle(AppButtonStyle(theme: theme))
                     if instructions {
                         Text("1. On your TV, open Settings. Look for About, Support or Device information to find the model. Menu names differ by TV.")
                         Text("2. Look for Network, Connection or Network status, then IP settings. Photograph the row labeled IP address — not Gateway or DNS. A label on the back usually does not show the current IP address.")

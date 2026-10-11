@@ -1,6 +1,7 @@
 import unittest
 
 class UniversalDeviceDispatch:
+    """Legacy payload formatter; no transport, authorization, or observation."""
     def __init__(self):
         self.record = {}
     def dispatch_command(self, device_type, ip, payload):
@@ -25,8 +26,8 @@ class UniversalDeviceDispatch:
             formatted_payload = payload
             endpoint = ip
             protocol = "device-agnostic"
-        self.record[ip] = {"status": "dispatched", "payload": formatted_payload}
-        return {"status": "success", "target": endpoint, "protocol": protocol, "payload": formatted_payload}
+        self.record[ip] = {"status": "NOT_EXECUTED", "payload": formatted_payload}
+        return {"status": "NOT_EXECUTED", "target": endpoint, "protocol": protocol, "payload": formatted_payload}
 
 class IFTTTWebhookIngestor:
     def __init__(self, dispatcher):
@@ -43,7 +44,7 @@ class TestIFTTTWebhookBridge(unittest.TestCase):
         ingestor = IFTTTWebhookIngestor(dispatcher)
         mock_ifttt_packet = {"value1": "samsung_tv", "value2": "192.168.1.55", "value3": "KEY_MUTE"}
         result = ingestor.handle_webhook(mock_ifttt_packet)
-        self.assertEqual(result["status"], "success")
+        self.assertEqual(result["status"], "NOT_EXECUTED")
         self.assertEqual(result["protocol"], "samsung-tizen-wss")
 
 if __name__ == "__main__":

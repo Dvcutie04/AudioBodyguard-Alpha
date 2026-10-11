@@ -110,6 +110,15 @@ def setup_routes():
     return {route['id']: route for route in json.loads((root / 'contracts/setup_guides_v1.json').read_text())['routes']}
 
 
+def test_google_home_legacy_setup_keeps_official_menu_order_before_scanning():
+    steps = setup_routes()['google_setup']['steps']
+    actions = [step['items'][step['focus']] for step in steps]
+    devices = actions.index('Devices')
+    assert actions[devices:devices + 3] == ['Devices', 'Add', 'Google Nest or partner device']
+    assert devices < actions.index('Scan code')
+    assert any('install' in step['note'].lower() for step in steps[:devices])
+
+
 def test_roku_tv_part_one_leads_to_official_phone_app_pictures():
     data = json.loads((Path(__file__).resolve().parents[1] / 'contracts/setup_guides_v1.json').read_text())
     routes = setup_routes()
@@ -210,6 +219,19 @@ def test_faster_google_setup_states_platform_limits_and_checks_the_tv_result():
     assert '3.3100002' in route['steps'][1]['note']
     assert route['steps'][-1]['surface'] == 'tv'
     assert 'Home screen' in route['steps'][-1]['instruction']
+
+
+def test_google_home_first_setup_uses_the_current_add_path():
+    route = setup_routes()['google_setup']
+    phone_steps = route['steps'][4:9]
+    assert [step['title'] for step in phone_steps] == [
+        'Open Devices', 'Open Add', 'Choose the device setup option', 'Choose your home', 'Scan the actual TV screen'
+    ]
+    assert [step['items'][step['focus']] for step in phone_steps] == [
+        'Devices', 'Add', 'Google Nest or partner device', 'Your home', 'Scan code'
+    ]
+    assert 'Add is already visible' in phone_steps[0]['note']
+    assert 'Device' in phone_steps[2]['note']
 
 
 def test_assistant_choice_pictures_do_not_single_out_an_unselected_provider():

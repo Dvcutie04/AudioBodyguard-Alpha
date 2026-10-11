@@ -1934,11 +1934,11 @@
           ],
           "focus": 0,
           "action": "tap",
-          "note": "Use your real device. This picture is an illustration."
+          "note": "Install or update the official Google Home app from the App Store or Google Play before this step."
         },
         {
           "title": "Open Devices",
-          "instruction": "In Google Home, open Devices.",
+          "instruction": "In Google Home, tap Devices at the bottom.",
           "surface": "phone",
           "screen": "Google Home",
           "items": [
@@ -1946,13 +1946,13 @@
           ],
           "focus": 0,
           "action": "tap",
-          "note": "Use your real device. This picture is an illustration."
+          "note": "If Add is already visible in your version, continue to the next picture. Otherwise open Devices first."
         },
         {
           "title": "Open Add",
-          "instruction": "Tap Add.",
+          "instruction": "In Google Home, tap Add.",
           "surface": "phone",
-          "screen": "Devices",
+          "screen": "Google Home",
           "items": [
             "Add"
           ],
@@ -1961,8 +1961,8 @@
           "note": "Use your real device. This picture is an illustration."
         },
         {
-          "title": "Choose a Google partner device",
-          "instruction": "Select Google Nest or partner device.",
+          "title": "Choose the device setup option",
+          "instruction": "Tap Google Nest or partner device.",
           "surface": "phone",
           "screen": "Add",
           "items": [
@@ -1970,13 +1970,13 @@
           ],
           "focus": 0,
           "action": "tap",
-          "note": "Use your real device. This picture is an illustration."
+          "note": "Older versions may say Set up device or Device. If your menu differs, use My screen looks different."
         },
         {
           "title": "Choose your home",
           "instruction": "Select the home where this TV belongs.",
           "surface": "phone",
-          "screen": "Choose a home",
+          "screen": "Google Nest or partner device",
           "items": [
             "Your home"
           ],
@@ -1986,9 +1986,9 @@
         },
         {
           "title": "Scan the actual TV screen",
-          "instruction": "Tap Scan code, grant camera access if you agree, then scan the TV code.",
+          "instruction": "Tap Scan code, then scan the QR code on your real TV.",
           "surface": "phone",
-          "screen": "Set up device",
+          "screen": "Choose a home",
           "items": [
             "Scan code"
           ],

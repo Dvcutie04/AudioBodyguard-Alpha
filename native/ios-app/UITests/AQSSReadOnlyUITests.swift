@@ -1,6 +1,24 @@
 import XCTest
 
 final class AQSSReadOnlyUITests: XCTestCase {
+    func testTVChoiceOffersPhotoAndKeepsOtherBrandsOnDemand() {
+        let app = launch(true)
+        next(app); label("Step 2 of 6", app)
+        XCTAssertTrue(app.buttons["identify-tv-photo"].exists)
+        XCTAssertFalse(app.buttons["choice-philips"].exists)
+        tap("Identify TV from a photo", app)
+        label("Find your TV details", app)
+        app.buttons["Close"].tap()
+        XCTAssertEqual(XCTWaiter.wait(for: [XCTNSPredicateExpectation(predicate: NSPredicate(format: "exists == false"), object: app.buttons["Close"])], timeout: 5), .completed)
+        label("Step 2 of 6", app)
+        tap("More TV brands", app)
+        tap("Philips", app)
+        next(app); label("Step 3 of 6", app)
+        app.buttons["Back"].tap(); label("Step 2 of 6", app)
+        XCTAssertEqual(app.buttons["choice-philips"].value as? String, "Selected")
+        screenshot("Optional brands and photo return preserve the TV choice", app)
+    }
+
     func testConnectedDemoAppearanceKeepsPhysicalReadinessUnverified() throws {
         #if AQSS_CONNECTED_DEMO
         let app = launch(true)
@@ -253,7 +271,7 @@ final class AQSSReadOnlyUITests: XCTestCase {
         jump("Privacy and storage", app)
         tap("About Privacy and storage", app)
         label("No audio files saved by this app", app)
-        label("Appearance and guide dismissal stay on this phone", app)
+        label("Appearance and guide progress stay on this phone", app)
         screenshot("Advanced privacy", app)
         dismissSettingHelp(app)
     }
@@ -517,6 +535,8 @@ final class AQSSReadOnlyUITests: XCTestCase {
         XCTAssertEqual(progress.label, "Step 5 of 12")
         XCTAssertGreaterThanOrEqual(progress.frame.minX, app.frame.minX, "Step counter must stay inside the screen")
         XCTAssertLessThanOrEqual(progress.frame.maxX, app.buttons["setup-close"].frame.minX, "Step counter must not overlap Back to Tutorial")
+        app.buttons["setup-next"].tap(); label("Open Add", app)
+        app.buttons["setup-next"].tap(); label("Google Nest or partner device", app)
         screenshot("Google Home setup matches the selected TCL system", app)
         app.buttons["setup-close"].tap(); exit(app)
         tab("settings", app); tap("Advanced Settings", app); tap("About Voice requests", app)

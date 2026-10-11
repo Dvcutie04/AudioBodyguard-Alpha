@@ -13,6 +13,8 @@ import android.widget.ScrollView
 import android.widget.TextView
 import com.aqss.nativefeedback.GuideProgress
 import com.aqss.nativefeedback.TutorialContent
+import com.aqss.nativefeedback.TutorialChoice
+import com.aqss.nativefeedback.TutorialStep
 import com.aqss.nativefeedback.InterfaceContent
 
 /** A dedicated, one-task screen. Choices are explanations, never device commands. */
@@ -23,6 +25,7 @@ class TutorialGuide(
     private val skin: InterfaceTheme,
     private val currentPage: () -> String,
     private val openSetup: (String) -> Unit,
+    private val openPhoto: () -> Unit,
     private val navigate: (String, String?) -> Unit,
     private val restorePage: (String) -> Unit,
     private val focusHelp: () -> Unit,
@@ -40,12 +43,17 @@ class TutorialGuide(
     val hasPausedTutorial get() = pausedTutorial != null
     val selectedTV get() = guide.selected("chooseTV")?.id ?: ""
     private var moreFeatures = false
+    private var moreTVBrands = false
     private var helpExpanded = false
     private var renderVersion = 0
     private val choiceButtons = mutableMapOf<String, Button>()
     val isActive get() = guide.topicId != null
     val isBeginner get() = guide.topicId == "getting_started"
     val pictureTarget get() = guide.step?.target?.takeIf { isBeginner && it in listOf("connectionPlan", "connectionCheck") }
+    fun useSuggestedTV(brand: String?): Boolean {
+        if (!isBeginner || guide.step?.target != "chooseTV" || brand == null || !guide.select(brand)) return false
+        guide.next(); render(); return true
+    }
     fun completePictures(expectedTarget: String, routeId: String): Boolean {
         if (!guide.completePictures(expectedTarget, routeId)) return false
         render(); return true
@@ -96,7 +104,7 @@ class TutorialGuide(
         val step = guide.step ?: return
         val oldScroll = if (preserveScroll) reading.scrollY else 0
         val version = ++renderVersion
-        if (!preserveScroll) { moreFeatures = false; helpExpanded = false }
+        if (!preserveScroll) { moreFeatures = false; moreTVBrands = false; helpExpanded = false }
         header.removeAllViews(); content.removeAllViews(); controls.removeAllViews()
         val top = LinearLayout(activity).apply { gravity = Gravity.CENTER_VERTICAL }
         top.addView(TextView(activity).apply { text = "Step ${guide.index + 1} of ${topic.steps.size}"; textSize = 15f; setTextColor(skin.muted); setTypeface(null, Typeface.BOLD) }, LinearLayout.LayoutParams(0, -2, 1f))
@@ -118,8 +126,13 @@ class TutorialGuide(
         else if (isBeginner && step.target !in listOf("connectionPlan", "connectionCheck")) TutorialContent.connectionStages.firstOrNull { step.target in it.targets }?.let {
             text(content, "Connection ${it.number} of 2", 12f, skin.accent, true)
         }
+        if (isBeginner && step.target in listOf("chooseTV", "chooseHome")) appendHelp(step)
         choiceButtons.clear()
-        guide.choices.forEach { choice ->
+        if (isBeginner && step.target == "chooseTV") {
+            content.addView(button("Identify TV from a photo") { openPhoto() }, LinearLayout.LayoutParams(-1, -2).apply { bottomMargin = dp(10) })
+        }
+        val featured = setOf("samsung", "lg", "sony", "tcl", "unsure")
+        val addChoice: (TutorialChoice) -> Unit = { choice ->
             val selected = guide.selected(step.target)?.id == choice.id
             content.addView(button(choice.title + if (selected) "  ✓" else "", primary = selected) { if (guide.selected(step.target)?.id != choice.id) { guide.select(choice.id); refreshChoices(); renderControls() } }.apply {
                 choiceButtons[choice.id] = this
@@ -130,29 +143,38 @@ class TutorialGuide(
                 if (Build.VERSION.SDK_INT >= 30) stateDescription = if (selected) "Selected" else "Not selected"
             }, LinearLayout.LayoutParams(-1, -2).apply { bottomMargin = dp(10) })
         }
+        guide.choices.filter { (step.target != "chooseTV" || moreTVBrands || it.id in featured || it.id == selectedTV) && it.id != "unsure" }.forEach(addChoice)
+        if (isBeginner && step.target == "chooseTV") {
+            content.addView(button(if (moreTVBrands) "Fewer TV brands" else "More TV brands") {
+                moreTVBrands = !moreTVBrands; render(true)
+            }.apply { if (Build.VERSION.SDK_INT >= 30) stateDescription = if (moreTVBrands) "Expanded" else "Collapsed" }, LinearLayout.LayoutParams(-1, -2).apply { bottomMargin = dp(10) })
+            guide.choices.firstOrNull { it.id == "unsure" }?.let(addChoice)
+        }
         if (step.target in listOf("connectionPlan", "connectionCheck")) {
             if (step.target == "connectionCheck") content.addView(button("Phone pictures", primary = true) { openSetup("phone") }, LinearLayout.LayoutParams(-1, -2).apply { bottomMargin = dp(12) })
             if (step.target == "connectionPlan") selectedConnectionActions(content, primaryTV = true)
         }
         if (isBeginner && step.target == "welcome") {
             content.addView(featureCatalog())
-        } else if (step.example.isNotEmpty()) {
-            content.addView(button(if (helpExpanded) "Hide help" else TutorialContent.helpLabel) { helpExpanded = !helpExpanded; render(true) }.apply {
-                if (Build.VERSION.SDK_INT >= 30) stateDescription = if (helpExpanded) "Expanded" else "Collapsed"
-            }, LinearLayout.LayoutParams(-1, -2))
-            if (helpExpanded) {
-                val example = column().apply { setPadding(dp(16), dp(16), dp(16), dp(6)); background = skin.shape(skin.surface) }
-                text(example, step.example, color = skin.muted)
-                if (isBeginner && step.target in listOf("connectionPlan", "connectionCheck")) listOf("chooseTV", "chooseHome").forEach { target ->
-                    guide.selected(target)?.let { text(example, it.detail, color = skin.muted) }
-                }
-                if (step.target == "connectionCheck") selectedConnectionActions(example, primaryTV = false)
-                content.addView(example)
-            }
-        }
+        } else if (step.target !in listOf("chooseTV", "chooseHome")) appendHelp(step)
         renderControls()
         footer.visibility = View.VISIBLE; stateChanged()
         reading.post { if (version == renderVersion && !activity.isFinishing && !activity.isDestroyed) reading.scrollTo(0, oldScroll) }
+    }
+    private fun appendHelp(step: TutorialStep) {
+        if (step.example.isEmpty()) return
+        content.addView(button(if (helpExpanded) "Hide help" else TutorialContent.helpLabel) { helpExpanded = !helpExpanded; render(true) }.apply {
+            if (Build.VERSION.SDK_INT >= 30) stateDescription = if (helpExpanded) "Expanded" else "Collapsed"
+        }, LinearLayout.LayoutParams(-1, -2))
+        if (helpExpanded) {
+            val example = column().apply { setPadding(dp(16), dp(16), dp(16), dp(6)); background = skin.shape(skin.surface) }
+            text(example, step.example, color = skin.muted)
+            if (isBeginner && step.target in listOf("connectionPlan", "connectionCheck")) listOf("chooseTV", "chooseHome").forEach { target ->
+                guide.selected(target)?.let { text(example, it.detail, color = skin.muted) }
+            }
+            if (step.target == "connectionCheck") selectedConnectionActions(example, primaryTV = false)
+            content.addView(example)
+        }
     }
     private fun selectedConnectionActions(parent: LinearLayout, primaryTV: Boolean) {
         for (target in listOf("chooseTV", "chooseHome")) guide.selected(target)?.takeIf { it.id !in listOf("both", "neither") }?.let { selected ->

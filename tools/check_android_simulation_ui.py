@@ -104,7 +104,7 @@ def main(paths: list[str], *, options: bool = False) -> None:
         )
 
     expected = (
-        "SIMULATION · No audio path connected",
+        "This preview has no verified TV connection. Setup pictures explain the official apps.",
         "Unknown physical state",
         "No output observation",
         "Six setup checks unknown",

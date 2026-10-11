@@ -18,8 +18,9 @@ def cmd_worker():
         if item is None: break
         action, proto, ip, trigger = item
         TVDriver.dispatch(proto, ip, action)
-        print(f"[DISPATCH OK] {action} -> {proto.upper()} ({ip})", flush=True)
-        evt_queue.put((trigger, action, proto, ip))
+        # The legacy stub cannot produce a physical receipt. Do not publish
+        # its formatted proposal into the action event log.
+        print("[NOT_EXECUTED] Legacy proposal has no authorized output transport", flush=True)
         cmd_queue.task_done()
 
 def evt_worker():

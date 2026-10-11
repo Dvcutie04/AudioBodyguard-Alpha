@@ -49,8 +49,9 @@ adb install -r native/android/app/build/outputs/apk/debug/app-debug.apk
 
 Launch `Audio Bodyguard — Simulation` on the handset. Confirm that `adb devices`
 identified a physical test device before recording evidence. The Android debug
-APK is only a prototype build and is not a Play release. Do not enable microphone
-access or claim control of another app during this read-only trial.
+APK is only a prototype build and is not a Play release. Keep microphone tools
+closed during the six core cases below. Test the optional Voice check and TV
+photo setup separately; neither can verify or control another app's output.
 
 ## Observe and record
 
@@ -65,14 +66,24 @@ An Android added callback can be the initial connected-device inventory.
 The iOS hint refers only to this app's audio-session notifications; the Android
 hint refers to connected-device inventory. Neither verifies a selected route.
 
+The current Home screen says **Connection not verified**. Dismiss or exit the
+first-visit guide, return to Home and open **Status details** before recording
+each case. Check **Unknown physical state**, **No output observation** and
+**This preview has no verified TV connection. Setup pictures explain the
+official apps.** Reopen details after a restart if needed. The existing record
+field `simulation_label_visible` means that this preview explanation was
+actually visible; it does not require a literal `SIMULATION` banner. Keep the
+field names unchanged for the existing checker. A connected-appearance
+Simulator demonstration cannot be substituted for a physical-device trial.
+
 | Case | Action and question to answer |
 | --- | --- |
-| `fresh_launch` | Open the app from a stopped process. Is the simulation label visible, coverage UNKNOWN, and output unobserved? |
+| `fresh_launch` | Open the app from a stopped process. Is Connection not verified shown? Open Status details and record the preview explanation, unknown physical state and no output observation. |
 | `foreground_attach` | While the app is visible, attach a test audio device. Record the external event time, any callback display time, and a miss if no callback appears. |
 | `foreground_detach` | While visible, detach it; record the same evidence and keep the UI UNKNOWN even if a callback appears. |
 | `background_resume` | Show a foreground hint, hide the app, change the device set, and return. Check whether a previous-visit hint was reused; absence of callbacks while hidden establishes no continuity. |
 | `process_restart` | Terminate and relaunch the app, not merely hide and reopen it. Does it avoid restoring a previous hint or showing ACTIVE? |
-| `accessible_large_text` | On iOS use VoiceOver and enlarged text; on Android use TalkBack and enlarged font. Read the simulation, coverage, source-scope and handoff text, and check clipping/reading order. Record any confusion or inability to operate the screen. |
+| `accessible_large_text` | On iOS use VoiceOver and enlarged text; on Android use TalkBack and enlarged font. Open Status details and read the preview, coverage, source-scope and handoff text. Check clipping/reading order and record any confusion or inability to operate the screen. |
 
 For every case, record `performed: true` only after doing the action;
 `simulation_label_visible` and `no_output_observation_visible` reflect what was
@@ -110,3 +121,21 @@ The existing [N2b qualification record](n2b-lab-qualification-record.md) has
 empty hardware, driver, output route, independent capture and time-domain
 fields. Populate those from an actual owned lab host before designing a real
 output adapter. This P1 trial does not fill them by implication.
+
+## Separate connection and input-tool checks
+
+After the core cases, record a separate usability trial from a fresh launch:
+select the actual TV system and phone type, follow the numbered guide, try
+Help and My screen looks different, leave and resume a step, and return to
+Home. A beginner should be able to do this without someone explaining where
+to tap. Record wrong turns, unclear pictures and any assistance required;
+passing source checks does not establish junior-high usability or exact
+firmware screen matches.
+
+For Voice check and TV photo setup, exercise permission denial, cancellation,
+background/foreground, interruption and reopening. Confirm listening stops
+on exit and that unavailable on-device recognition gives an explanation.
+Try an unclear image and conflicting brand text: neither should become a
+verified connection. Check that the user confirms the suggested TV brand and
+that closing the tools clears displayed input details. Keep these observations
+separate from the six-case schema; they do not establish physical protection.
