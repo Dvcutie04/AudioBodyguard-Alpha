@@ -1,0 +1,267 @@
+name: Audio Bodyguard internal TestFlight preparation
+
+on:
+  push:
+    branches: ["main"]
+  workflow_dispatch:
+    inputs:
+      source_revision:
+        description: Exact 40-character source SHA already merged into main
+        type: string
+        required: true
+      version:
+        description: App version matching App Store Connect
+        type: string
+        default: "0.1.0"
+        required: true
+      upload:
+        description: Sign and upload after all checks pass (requires Apple setup)
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+concurrency:
+  group: aqss-testflight-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  identify-source:
+    runs-on: ubuntu-latest
+    outputs:
+      revision: ${{ steps.identity.outputs.revision }}
+      tree: ${{ steps.identity.outputs.tree }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.source_revision || github.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+      - id: identity
+        name: Validate the selected reviewed source
+        env:
+          SELECTED_REVISION: ${{ inputs.source_revision || github.sha }}
+          RELEASE_VERSION: ${{ inputs.version || '0.1.0' }}
+        run: |
+          python3 - <<'PY'
+          import os, re, subprocess
+          revision = os.environ['SELECTED_REVISION']
+          if os.environ['GITHUB_REF'] != 'refs/heads/main':
+              raise SystemExit('Run this workflow from main')
+          if not re.fullmatch(r'[0-9a-f]{40}', revision):
+              raise SystemExit('Select an exact source commit SHA')
+          if not re.fullmatch(r'[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}', os.environ['RELEASE_VERSION']):
+              raise SystemExit('App version must have three numeric components')
+          def git(*args):
+              return subprocess.check_output(['git', *args], text=True).strip()
+          if git('rev-parse', 'HEAD') != revision:
+              raise SystemExit('Checkout did not match the selected source')
+          subprocess.run(['git', 'merge-base', '--is-ancestor', revision, 'origin/main'], check=True)
+          with open(os.environ['GITHUB_OUTPUT'], 'a') as out:
+              out.write('revision='+revision+'\n'+'tree='+git('rev-parse', 'HEAD^{tree}')+'\n')
+          PY
+
+  core-checks:
+    needs: identify-source
+    uses: ./.github/workflows/ci.yml
+    with:
+      source_revision: ${{ needs.identify-source.outputs.revision }}
+
+  native-walkthroughs:
+    needs: identify-source
+    uses: ./.github/workflows/read-only-ui-smoke.yml
+    with:
+      source_revision: ${{ needs.identify-source.outputs.revision }}
+
+  device-preflight:
+    needs: identify-source
+    uses: ./.github/workflows/iphoneos-device-preflight.yml
+    with:
+      source_revision: ${{ needs.identify-source.outputs.revision }}
+
+  checked-candidate:
+    needs: [identify-source, core-checks, native-walkthroughs, device-preflight]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Record the software checks without asserting device qualification
+        env:
+          SOURCE_REVISION: ${{ needs.identify-source.outputs.revision }}
+          SOURCE_TREE: ${{ needs.identify-source.outputs.tree }}
+        run: |
+          python3 - <<'PY'
+          import json, os
+          report = {
+              'evidence_scope': 'SOFTWARE_BETA_CHECKS_ONLY',
+              'source_revision': os.environ['SOURCE_REVISION'],
+              'source_tree_sha': os.environ['SOURCE_TREE'],
+              'workflow_run_id': os.environ['GITHUB_RUN_ID'],
+              'workflow_attempt': os.environ['GITHUB_RUN_ATTEMPT'],
+              'signed_upload_performed': False,
+              'physical_phone_trial_performed': False,
+              'physical_protection_qualified': False,
+          }
+          with open('beta-candidate.json', 'w') as out:
+              json.dump(report, out, indent=2, sort_keys=True)
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: aqss-checked-beta-candidate-${{ github.run_id }}
+          path: beta-candidate.json
+          retention-days: 7
+
+  signed-upload:
+    if: ${{ inputs.upload }}
+    needs: [identify-source, core-checks, native-walkthroughs, device-preflight]
+    runs-on: macos-15
+    timeout-minutes: 35
+    environment: testflight-internal
+    env:
+      DEVELOPER_DIR: /Applications/Xcode_26.3.app/Contents/Developer
+      RELEASE_VERSION: ${{ inputs.version }}
+      SOURCE_REVISION: ${{ needs.identify-source.outputs.revision }}
+      SOURCE_TREE: ${{ needs.identify-source.outputs.tree }}
+      IOS_BUNDLE_ID: ${{ vars.IOS_BUNDLE_ID }}
+      APPLE_TEAM_ID: ${{ vars.APPLE_TEAM_ID }}
+      ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
+      ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
+      ASC_PRIVATE_KEY_P8_BASE64: ${{ secrets.ASC_PRIVATE_KEY_P8_BASE64 }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.identify-source.outputs.revision }}
+          persist-credentials: false
+      - name: Select private runner temporary storage
+        run: |
+          python3 - <<'PY'
+          import os, pathlib
+          task = pathlib.Path(os.environ['RUNNER_TEMP'])/('aqss-testflight-'+os.environ['GITHUB_RUN_ID']+'-'+os.environ['GITHUB_RUN_ATTEMPT'])
+          with open(os.environ['GITHUB_ENV'], 'a') as out:
+              out.write('TASK_DIR='+str(task)+'\n')
+          PY
+      - name: Validate signing setup and write the private key to runner temporary storage
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          import base64, os, pathlib, re, subprocess, uuid
+          required = ['IOS_BUNDLE_ID', 'APPLE_TEAM_ID', 'ASC_KEY_ID', 'ASC_ISSUER_ID', 'ASC_PRIVATE_KEY_P8_BASE64']
+          missing = [name for name in required if not os.environ.get(name)]
+          if missing:
+              raise SystemExit('Configure testflight-internal first; missing settings: '+', '.join(missing))
+          if not re.fullmatch(r'[A-Za-z0-9-]+(?:\.[A-Za-z0-9-]+)+', os.environ['IOS_BUNDLE_ID']) or os.environ['IOS_BUNDLE_ID'].endswith('.demo'):
+              raise SystemExit('Use the registered ordinary app bundle ID')
+          for name in ['APPLE_TEAM_ID', 'ASC_KEY_ID']:
+              if not re.fullmatch(r'[A-Z0-9]{10}', os.environ[name]):
+                  raise SystemExit('Invalid '+name)
+          uuid.UUID(os.environ['ASC_ISSUER_ID'])
+          if subprocess.check_output(['git', 'rev-parse', 'HEAD'], text=True).strip() != os.environ['SOURCE_REVISION']:
+              raise SystemExit('Signing checkout does not match the tested source')
+          if subprocess.check_output(['git', 'rev-parse', 'HEAD^{tree}'], text=True).strip() != os.environ['SOURCE_TREE']:
+              raise SystemExit('Signing tree does not match the tested source')
+          build = os.environ['GITHUB_RUN_NUMBER']+'.'+os.environ['GITHUB_RUN_ATTEMPT']
+          if not re.fullmatch(r'[1-9][0-9]{0,3}\.[1-9][0-9]?', build):
+              raise SystemExit('Run/attempt exceeds the supported build number format')
+          task = pathlib.Path(os.environ['TASK_DIR']); task.mkdir(mode=0o700)
+          keys = task/'private_keys'; keys.mkdir(mode=0o700)
+          try:
+              key = base64.b64decode(os.environ['ASC_PRIVATE_KEY_P8_BASE64'], validate=True)
+          except Exception:
+              raise SystemExit('Private key secret must be one-line base64')
+          if b'-----BEGIN PRIVATE KEY-----' not in key:
+              raise SystemExit('Private key secret is not a downloaded .p8 key')
+          path = keys/('AuthKey_'+os.environ['ASC_KEY_ID']+'.p8'); path.write_bytes(key); path.chmod(0o600)
+          with open(os.environ['GITHUB_ENV'], 'a') as out:
+              out.write('BUILD_NUMBER='+build+'\nAPI_PRIVATE_KEYS_DIR='+str(keys)+'\n')
+          PY
+      - name: Create temporary signing keychain
+        shell: bash
+        run: |
+          set -euo pipefail
+          signing_password="$(openssl rand -hex 32)"
+          echo "::add-mask::$signing_password"
+          security create-keychain -p "$signing_password" "$TASK_DIR/signing.keychain-db"
+          security set-keychain-settings -lut 21600 "$TASK_DIR/signing.keychain-db"
+          security unlock-keychain -p "$signing_password" "$TASK_DIR/signing.keychain-db"
+          security list-keychains -d user -s "$TASK_DIR/signing.keychain-db" login.keychain-db
+          security default-keychain -d user -s "$TASK_DIR/signing.keychain-db"
+      - name: Archive and export the ordinary physical-device app
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -d "$DEVELOPER_DIR"
+          xcodebuild -version
+          xcodebuild -project native/ios-app/AQSSReadOnly.xcodeproj -scheme AQSSReadOnly \
+            -configuration Release -sdk iphoneos -destination 'generic/platform=iOS' \
+            -archivePath "$TASK_DIR/AQSSReadOnly.xcarchive" \
+            -allowProvisioningUpdates -authenticationKeyPath "$API_PRIVATE_KEYS_DIR/AuthKey_$ASC_KEY_ID.p8" \
+            -authenticationKeyID "$ASC_KEY_ID" -authenticationKeyIssuerID "$ASC_ISSUER_ID" \
+            DEVELOPMENT_TEAM="$APPLE_TEAM_ID" PRODUCT_BUNDLE_IDENTIFIER="$IOS_BUNDLE_ID" \
+            MARKETING_VERSION="$RELEASE_VERSION" CURRENT_PROJECT_VERSION="$BUILD_NUMBER" \
+            CODE_SIGN_STYLE=Automatic SWIFT_ACTIVE_COMPILATION_CONDITIONS= archive
+          python3 - <<'PY'
+          import os, pathlib, plistlib
+          options = {'method': 'app-store-connect', 'destination': 'export',
+                     'signingStyle': 'automatic', 'teamID': os.environ['APPLE_TEAM_ID'],
+                     'manageAppVersionAndBuildNumber': False, 'testFlightInternalTestingOnly': True}
+          (pathlib.Path(os.environ['TASK_DIR'])/'ExportOptions.plist').write_bytes(plistlib.dumps(options))
+          PY
+          xcodebuild -exportArchive -archivePath "$TASK_DIR/AQSSReadOnly.xcarchive" \
+            -exportPath "$TASK_DIR/export" -exportOptionsPlist "$TASK_DIR/ExportOptions.plist" \
+            -allowProvisioningUpdates -authenticationKeyPath "$API_PRIVATE_KEYS_DIR/AuthKey_$ASC_KEY_ID.p8" \
+            -authenticationKeyID "$ASC_KEY_ID" -authenticationKeyIssuerID "$ASC_ISSUER_ID"
+      - name: Verify the exported IPA and validate it with Apple
+        shell: bash
+        run: |
+          set -euo pipefail
+          IPA="$TASK_DIR/export/AQSSReadOnly.ipa"
+          test -f "$IPA"
+          ditto -x -k "$IPA" "$TASK_DIR/signed-ipa"
+          APP="$TASK_DIR/signed-ipa/Payload/AQSSReadOnly.app"
+          codesign --verify --deep --strict "$APP"
+          security cms -D -i "$APP/embedded.mobileprovision" > "$TASK_DIR/profile.plist"
+          python3 tools/testflight_package.py --ipa "$IPA" --profile "$TASK_DIR/profile.plist" \
+            --bundle-id "$IOS_BUNDLE_ID" --team-id "$APPLE_TEAM_ID" --version "$RELEASE_VERSION" \
+            --build-number "$BUILD_NUMBER" --revision "$SOURCE_REVISION" --tree-sha "$SOURCE_TREE" \
+            --workflow-run-id "$GITHUB_RUN_ID" --workflow-attempt "$GITHUB_RUN_ATTEMPT" \
+            --output "$RUNNER_TEMP/testflight-upload-provenance.json"
+          xcrun altool --validate-app --file "$IPA" --type ios --apiKey "$ASC_KEY_ID" --apiIssuer "$ASC_ISSUER_ID"
+      - name: Upload to Apple without inviting testers
+        shell: bash
+        run: |
+          set -euo pipefail
+          xcrun altool --upload-app --file "$TASK_DIR/export/AQSSReadOnly.ipa" \
+            --type ios --apiKey "$ASC_KEY_ID" --apiIssuer "$ASC_ISSUER_ID"
+          python3 - <<'PY'
+          import json, os, pathlib, subprocess
+          path = pathlib.Path(os.environ['RUNNER_TEMP'])/'testflight-upload-provenance.json'
+          report = json.loads(path.read_text())
+          report.update(evidence_scope='SIGNED_IPA_UPLOAD_ACCEPTED_PROCESSING_UNVERIFIED',
+                        delivery_status='UPLOAD_ACCEPTED_PROCESSING_UNVERIFIED',
+                        xcode_version=subprocess.check_output(['xcodebuild', '-version'], text=True).splitlines()[0].removeprefix('Xcode '),
+                        iphoneos_sdk_version=subprocess.check_output(['xcrun', '--sdk', 'iphoneos', '--show-sdk-version'], text=True).strip())
+          path.write_text(json.dumps(report, indent=2, sort_keys=True)+'\n')
+          PY
+      - name: Retain only non-secret package provenance
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: aqss-testflight-provenance-${{ github.run_id }}
+          path: ${{ runner.temp }}/testflight-upload-provenance.json
+          if-no-files-found: ignore
+          retention-days: 7
+      - name: Remove temporary keychain, keys, profiles and signed packages
+        if: always()
+        shell: bash
+        run: |
+          if [ -n "${TASK_DIR:-}" ]; then
+            security delete-keychain "$TASK_DIR/signing.keychain-db" 2>/dev/null || true
+          fi
+          python3 - <<'PY'
+          import os, pathlib, shutil
+          if not os.environ.get('TASK_DIR'):
+              raise SystemExit(0)
+          task = pathlib.Path(os.environ['TASK_DIR'])
+          parent = pathlib.Path(os.environ['RUNNER_TEMP'])
+          if task.parent == parent and task.name.startswith('aqss-testflight-'):
+              shutil.rmtree(task, ignore_errors=True)
+          PY

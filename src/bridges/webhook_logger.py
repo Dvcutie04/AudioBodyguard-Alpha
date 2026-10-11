@@ -16,8 +16,9 @@ class IFTTTWebhookLogger:
         try:
             with urllib.request.urlopen(req, timeout=3.0) as resp:
                 return {"status": "success", "code": resp.code}
-        except Exception as e:
-            return {"status": "error", "message": str(e)}
+        except Exception:
+            # urllib errors can include the URL, which contains the secret key.
+            return {"status": "error", "message": "Webhook delivery failed; no delivery receipt is available."}
 
 class WebhookManager:
     @staticmethod

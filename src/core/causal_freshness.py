@@ -5,6 +5,12 @@ class ValidationResult:
     is_fresh: bool
 
 class CausalFreshnessValidator:
+    """Unimplemented legacy validator; it cannot establish freshness.
+
+    Callers must use a qualified evidence validator before authorization.
+    Kept import-compatible for old research callers, always failing closed.
+    """
+
     def __init__(self, max_tdl_us=500000, expected_version="v1.0.0"): pass
     def validate(self, **kwargs):
-        return ValidationResult(is_fresh=True)
+        return ValidationResult(is_fresh=False)

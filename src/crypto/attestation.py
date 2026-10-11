@@ -31,6 +31,24 @@ class ActionAttestor:
 
     @staticmethod
     def verify_attestation(attestation: dict, secret_key: bytes) -> bool:
-        serialized = json.dumps(attestation["payload"], sort_keys=True).encode("utf-8")
-        expected_sig = hmac.new(secret_key, serialized, hashlib.sha256).hexdigest()
-        return hmac.compare_digest(expected_sig, attestation["signature"])
+        if type(attestation) is not dict or set(attestation) != {"payload", "signature"}:
+            return False
+        payload = attestation["payload"]
+        signature = attestation["signature"]
+        fields = {"proposal_id", "sequence_num", "state_version", "decision", "confidence", "policy_version", "software_identity", "timestamp_ns", "nonce"}
+        if type(payload) is not dict or set(payload) != fields:
+            return False
+        if type(signature) is not str or len(signature) != 64 or any(c not in "0123456789abcdef" for c in signature):
+            return False
+        if any(type(payload[k]) is not str or not payload[k].strip() or len(payload[k]) > 256 for k in fields - {"sequence_num", "timestamp_ns", "confidence"}):
+            return False
+        if any(type(payload[k]) is not int or not 0 < payload[k] < 2**63 for k in ("sequence_num", "timestamp_ns")):
+            return False
+        if type(payload["confidence"]) not in (int, float) or not 0 <= payload["confidence"] <= 1:
+            return False
+        try:
+            serialized = json.dumps(payload, sort_keys=True, allow_nan=False).encode("utf-8")
+            expected_sig = hmac.new(secret_key, serialized, hashlib.sha256).hexdigest()
+            return hmac.compare_digest(expected_sig, signature)
+        except (TypeError, ValueError, UnicodeError):
+            return False

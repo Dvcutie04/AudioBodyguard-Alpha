@@ -17,7 +17,18 @@ class MediaControlOptionKey(Enum):
     VOLUME = "VOLUME"
     CAPTIONS = "CAPTIONS"
     EQ_PRESET = "EQ_PRESET"
+    DIALOGUE_PRESET = "DIALOGUE_PRESET"
+    NIGHT_PRESET = "NIGHT_PRESET"
     EQ_BANDS = "EQ_BANDS"
+
+
+@unique
+class MediaControlAdvancedOptionKey(Enum):
+    CAPABILITY_DETAILS = "CAPABILITY_DETAILS"
+    PHYSICAL_STATE = "PHYSICAL_STATE"
+    BACKGROUND_MONITORING = "BACKGROUND_MONITORING"
+    PRIVACY_AND_STORAGE = "PRIVACY_AND_STORAGE"
+    SESSION_HANDOFF = "SESSION_HANDOFF"
 
 
 @unique
@@ -77,6 +88,22 @@ class MediaControlOption:
 
 
 @dataclass(frozen=True, slots=True)
+class MediaControlAdvancedOption:
+    """Read-only explanation; never a request, authorization or physical observation."""
+
+    key: MediaControlAdvancedOptionKey
+    title: str
+    detail: str
+    explanation: str
+
+    def __post_init__(self) -> None:
+        if type(self.key) is not MediaControlAdvancedOptionKey:
+            raise ValueError("invalid advanced option key")
+        if not all(_nonblank(value) for value in (self.title, self.detail, self.explanation)):
+            raise ValueError("invalid advanced option text")
+
+
+@dataclass(frozen=True, slots=True)
 class MediaControlRecoveryState:
     has_recommended_profile: bool
     has_saved_default: bool
@@ -123,6 +150,7 @@ class MediaControlOptionsMenu:
     device_detail: str
     items: tuple[MediaControlOption, ...]
     recovery_actions: tuple[MediaControlRecoveryAction, ...]
+    advanced_items: tuple[MediaControlAdvancedOption, ...] = ()
 
     def item(self, key: MediaControlOptionKey) -> MediaControlOption:
         if type(key) is not MediaControlOptionKey:
@@ -136,6 +164,11 @@ class MediaControlOptionsMenu:
         if type(key) is not MediaControlRecoveryActionKey:
             raise ValueError("invalid recovery action key")
         return next(action for action in self.recovery_actions if action.key is key)
+
+    def advanced(self, key: MediaControlAdvancedOptionKey) -> MediaControlAdvancedOption:
+        if type(key) is not MediaControlAdvancedOptionKey:
+            raise ValueError("invalid advanced option key")
+        return next(item for item in self.advanced_items if item.key is key)
 
     @classmethod
     def for_manifest(
@@ -195,6 +228,20 @@ class MediaControlOptionsMenu:
                 "Sound Preset",
                 "Choose Dialogue, Music, Night, or Flat when presets are supported.",
                 "Example: Use Dialogue to make speech easier to understand.",
+                manifest.eq_capability is EqCapability.SEMANTIC_PRESETS,
+            ),
+            option(
+                MediaControlOptionKey.DIALOGUE_PRESET,
+                "Dialogue preset",
+                "Propose the existing Dialogue sound preset for this device.",
+                "Example: Choose Dialogue while listening to spoken content.",
+                manifest.eq_capability is EqCapability.SEMANTIC_PRESETS,
+            ),
+            option(
+                MediaControlOptionKey.NIGHT_PRESET,
+                "Night preset",
+                "Propose the existing Night sound preset for this device.",
+                "Example: Choose Night for quieter listening.",
                 manifest.eq_capability is EqCapability.SEMANTIC_PRESETS,
             ),
             option(
@@ -261,4 +308,36 @@ class MediaControlOptionsMenu:
                 "No personal default to reset",
             ),
         )
-        return cls(device.display_name, device_detail, items, recovery_actions)
+        advanced_items = (
+            MediaControlAdvancedOption(
+                MediaControlAdvancedOptionKey.CAPABILITY_DETAILS,
+                "Declared device capabilities",
+                f"Captions: {manifest.caption_capability.value}; sound: {manifest.eq_capability.value}",
+                "Manifest metadata only. A declared control is not proof of authorization, playback, or physical output.",
+            ),
+            MediaControlAdvancedOption(
+                MediaControlAdvancedOptionKey.PHYSICAL_STATE,
+                "Physical output",
+                "Unknown physical state",
+                "This menu receives no independent physical observation.",
+            ),
+            MediaControlAdvancedOption(
+                MediaControlAdvancedOptionKey.BACKGROUND_MONITORING,
+                "Background monitoring",
+                "Unavailable",
+                "This menu cannot establish continuous monitoring while the app is away.",
+            ),
+            MediaControlAdvancedOption(
+                MediaControlAdvancedOptionKey.PRIVACY_AND_STORAGE,
+                "Privacy and preferences",
+                "No raw audio in this menu",
+                "Personal defaults are managed separately by the device profile store.",
+            ),
+            MediaControlAdvancedOption(
+                MediaControlAdvancedOptionKey.SESSION_HANDOFF,
+                "Move this session",
+                "Unavailable",
+                "A media control capability manifest does not authorize a phone-to-phone handoff.",
+            ),
+        )
+        return cls(device.display_name, device_detail, items, recovery_actions, advanced_items)

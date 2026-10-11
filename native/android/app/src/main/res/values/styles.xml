@@ -1,0 +1,20 @@
+<resources>
+    <style name="AQSSLaunchTheme" parent="android:style/Theme.Material.Light.NoActionBar">
+        <item name="android:windowBackground">#FFFFFF</item>
+        <item name="android:windowLightStatusBar">true</item>
+        <item name="android:windowLightNavigationBar">true</item>
+    </style>
+    <style name="AQSSReadOnlyTheme" parent="android:style/Theme.Material.Light.NoActionBar">
+        <item name="android:colorAccent">#006774</item>
+        <item name="android:windowLightStatusBar">true</item>
+        <item name="android:windowLightNavigationBar">true</item>
+        <item name="android:fontFamily">sans</item>
+    </style>
+    <style name="AQSSMidnightTheme" parent="android:style/Theme.Material.NoActionBar">
+        <item name="android:colorAccent">#64DAE8</item>
+        <item name="android:windowBackground">#080F20</item>
+        <item name="android:windowLightStatusBar">false</item>
+        <item name="android:windowLightNavigationBar">false</item>
+        <item name="android:fontFamily">sans</item>
+    </style>
+</resources>

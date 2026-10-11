@@ -1,0 +1,151 @@
+{
+  "schema_version": 1,
+  "mode": "presentation_only",
+  "pages": [
+    {
+      "id": "home",
+      "title": "Home",
+      "icon": "shield.lefthalf.filled",
+      "headline": "Your listening space.",
+      "subtitle": "New here? Follow the TV and phone picture guide below."
+    },
+    {
+      "id": "sound",
+      "title": "Sound",
+      "icon": "slider.horizontal.3",
+      "headline": "Sound, on your terms.",
+      "subtitle": "Explore volume, presets, equalizer and captions."
+    },
+    {
+      "id": "devices",
+      "title": "Devices",
+      "icon": "hifispeaker",
+      "headline": "A clear path to sound.",
+      "subtitle": "Choose your device and follow its picture guide."
+    },
+    {
+      "id": "insights",
+      "title": "Insights",
+      "icon": "chart.xyaxis.line",
+      "headline": "Know what happened.",
+      "subtitle": "Explore sample graphs and session evidence."
+    },
+    {
+      "id": "settings",
+      "title": "Settings",
+      "icon": "gearshape",
+      "headline": "Settings",
+      "subtitle": "Choose an appearance or open Advanced Settings."
+    }
+  ],
+  "palettes": {
+    "midnight": {
+      "background": "080F20",
+      "surface": "121D33",
+      "raised": "1A2842",
+      "text": "F1F5FF",
+      "muted": "ADBDD7",
+      "accent": "64DAE8",
+      "violet": "B4A0FF",
+      "warning": "F9CB80",
+      "outline": "536A91",
+      "control": "64DAE8",
+      "controlText": "080F20",
+      "controlBorder": "006774"
+    },
+    "daylight": {
+      "background": "F2F5FC",
+      "surface": "FFFFFF",
+      "raised": "E5ECF8",
+      "text": "132238",
+      "muted": "42546F",
+      "accent": "006774",
+      "violet": "6543AD",
+      "warning": "855000",
+      "outline": "667D9C",
+      "control": "64DAE8",
+      "controlText": "080F20",
+      "controlBorder": "006774"
+    }
+  },
+  "example": {
+    "kind": "synthetic_example",
+    "label": "EXAMPLE · synthetic data",
+    "title": "Illustrative signal trend",
+    "unit": "Relative level (0–100)",
+    "values": [
+      18,
+      24,
+      21,
+      64,
+      40,
+      30,
+      45,
+      25
+    ]
+  },
+  "future": [
+    {
+      "id": "voice",
+      "title": "Voice requests",
+      "detail": "Planned · proposal only",
+      "explanation": "Explore voice input and recognized words in Sound. Voice control requires device authority and checked output."
+    },
+    {
+      "id": "profiles",
+      "title": "Personal sound profiles",
+      "detail": "Planned · verified settings",
+      "explanation": "Planned profiles: save and restore confirmed preferences on supported devices."
+    },
+    {
+      "id": "supervisor",
+      "title": "Background protection",
+      "detail": "Research · device trials needed",
+      "explanation": "Background support depends on platform rules and a qualified output path. Review coverage when you return."
+    },
+    {
+      "id": "support",
+      "title": "Private support report",
+      "detail": "Planned · review before sharing",
+      "explanation": "Planned support reports: review a small, redacted record before choosing to share it."
+    }
+  ],
+  "settings": [
+    {
+      "id": "captions",
+      "title": "Captions",
+      "icon": "captions.bubble",
+      "explanation": "Show a supported caption track on a connected device. This preview cannot select or display a device caption track. A verified connection is required. When disconnected, a tap shows cyan and “Not connected.” for two seconds, then turns off. With a verified connection, it stays cyan until you turn it off or the connection is lost."
+    },
+    {
+      "id": "dialogue",
+      "title": "Dialogue preset",
+      "icon": "bubble.left.and.bubble.right",
+      "explanation": "Request the device’s speech-focused preset. Dialogue and Night are separate choices; only one can stay on. This preview does not change the sound. A verified connection is required. When disconnected, a tap shows cyan and “Not connected.” for two seconds, then turns off. With a verified connection, it stays cyan until you turn it off or the connection is lost."
+    },
+    {
+      "id": "night",
+      "title": "Night preset",
+      "icon": "moon",
+      "explanation": "Request the device’s quieter listening preset. Night and Dialogue are separate choices; only one can stay on. This preview does not change the sound. A verified connection is required. When disconnected, a tap shows cyan and “Not connected.” for two seconds, then turns off. With a verified connection, it stays cyan until you turn it off or the connection is lost."
+    },
+    {
+      "id": "background",
+      "title": "Background monitoring",
+      "icon": "moon.zzz",
+      "explanation": "Check for supported monitoring while the app is away. Platform permission and a qualified output path are also needed. This preview receives foreground hints only; events while away are unknown. A verified connection is required. When disconnected, a tap shows cyan and “Not connected.” for two seconds, then turns off. With a verified connection, it stays cyan until you turn it off or the connection is lost."
+    },
+    {
+      "id": "voice",
+      "title": "Voice requests",
+      "icon": "mic",
+      "explanation": "Request a supported device action using your voice. Voice control requires device authority and checked output. This preview lets you try the separate Voice check tool; recognized words do not control a TV. A verified connection is required. When disconnected, a tap shows cyan and “Not connected.” for two seconds, then turns off. With a verified connection, it stays cyan until you turn it off or the connection is lost."
+    },
+    {
+      "id": "profiles",
+      "title": "Personal sound profiles",
+      "icon": "person.crop.circle",
+      "explanation": "Save and restore confirmed settings on a supported device. This preview does not save or restore device sound settings. A verified connection is required. When disconnected, a tap shows cyan and “Not connected.” for two seconds, then turns off. With a verified connection, it stays cyan until you turn it off or the connection is lost."
+    }
+  ]
+}

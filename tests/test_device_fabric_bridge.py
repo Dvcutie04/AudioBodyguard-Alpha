@@ -1003,7 +1003,7 @@ async def test_bridge_converted_world_state_stale_never_reaches_adapter(env,monk
     adapter=CountingAdapter()
     bridge.adapter=adapter
     pre=adapter.device.state
-    observed=datetime(2026,9,3,12,0,0,tzinfo=timezone.utc)
+    observed=datetime.fromtimestamp(intent.created_at-2.0,tz=timezone.utc)
     world=WorldStateSnapshot(
         target_id=intent.device_id,
         epoch=63,
@@ -1025,7 +1025,7 @@ async def test_bridge_converted_world_state_stale_never_reaches_adapter(env,monk
         authorized_epoch=63,
         max_world_state_age_ms=1000,
     )
-    monkeypatch.setattr("src.device_fabric.precondition_gate.time.time",lambda: observed.timestamp()+2.0)
+    monkeypatch.setattr("src.device_fabric.precondition_gate.time.time",lambda: intent.created_at)
 
     result=await bridge.authorize_and_commit(intent,lease,physical,snapshot,pre)
 

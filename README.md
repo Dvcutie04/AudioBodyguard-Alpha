@@ -6,6 +6,16 @@ Audio Bodyguard Alpha is the development repository for AQSS-36-OMEGA. It contai
 
 The alpha includes simulations, mocks, and synthetic conformance tests. Passing software tests do not establish physical output containment, acoustic safety, or production readiness. The endpoint handoff barrier and production execution guard intentionally remain closed.
 
+The [2026-10-11 pre-beta audit](docs/pre-beta-audit-2026-10-11.md) records local
+repairs and **1,867 passing Python tests plus 19 subtests**. Fresh native CI,
+a signed TestFlight build and actual phone trials remain required before beta
+invitations. The current beta scope is the read-only interface and setup guides.
+
+The [internal TestFlight preparation](docs/testflight-beta-preparation.md)
+automates checks on an exact reviewed source revision and provides a manually
+requested signing/upload lane after Apple account and signing setup. It does
+not invite testers or certify physical protection.
+
 ## Current a-Shell baseline
 
 The source baseline comes from the verified a-Shell exports supplied on September 24, 2026: 423 original paths plus 18 supplement paths. Every exported file is accounted for in the [synchronization manifest](docs/a-shell-sync-manifest.json): 431 retain their exact bytes, nine have documented maintenance fixes, and one unused corrupt Python module was retired. This records the supplied snapshots; later edits on the phone require another synchronization.
@@ -21,6 +31,28 @@ The merged reference increment adds **read-only session evidence projections** f
 The [read-only UI smoke workflow](.github/workflows/read-only-ui-smoke.yml) now launches the iOS app in an iPhone Simulator using XCUITest and the Android APK in an API 35 emulator. [The PR #22 run](https://github.com/Dvcutie04/AudioBodyguard-Alpha/actions/runs/36288934014) passed both jobs, asserting visible simulation, unknown coverage, no output observation, unknown prerequisites, and unavailable handoff. The first iOS run exposed a missing app bundle version; it was fixed before the passing rerun. These are simulator UI observations, not real-device installation, accessibility qualification, or physical audio evidence.
 
 The [iPhone device preflight](.github/workflows/iphoneos-device-preflight.yml) is a separate, unsigned arm64 archive check for the read-only shell; it does not make an installable build. The [P1 trial protocol](docs/p1-installed-device-trial.md) accepts an independently recorded TestFlight install with signed build provenance while keeping protection and physical-output claims unqualified.
+
+The native shells include Options, Advanced options, contextual tutorials,
+and persistent **Jump to** / **Help & tutorials** buttons. An expandable readiness
+checklist explains all six unknown prerequisites without enabling controls.
+The [native app audit](docs/native-app-audit-2026-09-27.md) records accessibility,
+navigation and read-only contract improvements, their tests, and the staged
+research required for future background and physical-output features.
+
+The native interface now groups these features into **Home, Sound, Devices,
+Insights and Settings**, with a shared Midnight/Daylight/System theme. Help
+and section navigation remain available on every page. Insights has an honest
+empty state and an optional, explicitly synthetic example with text values;
+planned features open prerequisite explanations. Appearance, first-visit guide
+dismissal and numbered setup bookmarks are saved locally. Voice check and TV
+photo setup are optional foreground input tools; their results cannot authorize
+device control. See the [interface research and design](docs/interface-design-research-2026-09-28.md).
+
+The native launch experience uses the owner's white Audio Bodyguard artwork,
+including its purple/black rose and Silicon Workforce credit. iOS displays it
+from a static launch storyboard; Android transitions from its required system
+splash to the full artwork during the first frame. There is no fixed loading
+delay. See the [launch-artwork evidence and test plan](docs/launch-artwork-research-2026-09-28.md).
 
 The merged increment passed **1,678 Python tests locally** with the generated feedback contracts current and the 45 scripted C lab cases passing both normal and sanitizer runs. [Hosted CI for the merged main revision](https://github.com/Dvcutie04/AudioBodyguard-Alpha/actions/runs/36276387177) passed Python, Swift, Android and the scripted C lab. The user then fast-forwarded the a-Shell checkout to `0997133` and reported **1,678 Python tests passed in 5.90 seconds**, `NATIVE_CONTRACTS_CURRENT` and a clean status. The warning is the existing external dateutil deprecation. Neither run qualifies physical output.
 
@@ -50,6 +82,10 @@ python3.13 -m venv .venv
 . .venv/bin/activate
 python -m pip install -r requirements.txt
 python tools/generate_native_feedback_contracts.py --check
+python tools/generate_interface_content.py --check
+python tools/generate_tutorial_content.py --check
+python tools/generate_setup_guides.py --check
+python tools/export_picture_guide.py --check
 PYTHONPATH=. python -m pytest -q
 ```
 

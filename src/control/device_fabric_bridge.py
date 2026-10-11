@@ -1,5 +1,7 @@
 from __future__ import annotations
+import asyncio
 import hashlib
+import json
 import math
 import time
 from inspect import iscoroutinefunction
@@ -138,16 +140,28 @@ class Gen3DeviceFabricBridge:
         return hashlib.sha256(intent.canonical_bytes).hexdigest()
 
     def _translate_state(self,intent: SignedActionIntent,pre_state: DeviceState) -> DeviceState:
+        if type(intent.parameters) is not dict or any(type(key) is not str for key in intent.parameters) or not isinstance(intent.operation,str):
+            raise PhysicalCommitRejected("Invalid operation parameters")
+        try:
+            json.dumps(intent.parameters,allow_nan=False)
+        except (TypeError,ValueError,OverflowError):
+            raise PhysicalCommitRejected("Invalid operation parameters") from None
         state=DeviceState(power=pre_state.power,volume=pre_state.volume,muted=pre_state.muted,input_source=pre_state.input_source,channel=pre_state.channel,custom_state=dict(pre_state.custom_state),playback_position_seconds=pre_state.playback_position_seconds)
         p=dict(intent.parameters)
         op=intent.operation.upper()
-        if op=="SET_POWER" and "power" in p: state.power=bool(p["power"])
+        if op=="SET_POWER" and set(p)=={"power"}:
+            if type(p["power"]) is not bool: raise PhysicalCommitRejected("Invalid power value")
+            state.power=p["power"]
         elif op=="SET_VOLUME" and set(p) == {"volume_percent"}:
             value=p["volume_percent"]
             if type(value) is not int or not 0<=value<=100:
                 raise PhysicalCommitRejected("Invalid volume percent")
             state.volume=value
-        elif op=="SET_VOLUME" and set(p) == {"volume"}: state.volume=p["volume"]
+        elif op=="SET_VOLUME" and set(p) == {"volume"}:
+            value=p["volume"]
+            if type(value) not in (int,float) or not 0<=value<=100:
+                raise PhysicalCommitRejected("Invalid volume value")
+            state.volume=value
         elif op=="SET_EQ_BANDS" and set(p) == {"bands"}:
             bands=p["bands"]
             if type(bands) is not list or not 1<=len(bands)<=10:
@@ -180,9 +194,17 @@ class Gen3DeviceFabricBridge:
             if type(enabled) is not bool:
                 raise PhysicalCommitRejected("Invalid captions enabled value")
             state.custom_state["captions_enabled"]=enabled
-        elif op=="SET_MUTED" and "muted" in p: state.muted=bool(p["muted"])
-        elif op=="SET_INPUT_SOURCE" and "input_source" in p: state.input_source=str(p["input_source"])
-        elif op=="SET_CHANNEL" and "channel" in p: state.channel=str(p["channel"])
+        elif op=="SET_MUTED" and set(p)=={"muted"}:
+            if type(p["muted"]) is not bool: raise PhysicalCommitRejected("Invalid muted value")
+            state.muted=p["muted"]
+        elif op=="SET_INPUT_SOURCE" and set(p)=={"input_source"}:
+            if type(p["input_source"]) is not str or not p["input_source"].strip():
+                raise PhysicalCommitRejected("Invalid input source")
+            state.input_source=p["input_source"]
+        elif op=="SET_CHANNEL" and set(p)=={"channel"}:
+            if type(p["channel"]) is not str or not p["channel"].strip():
+                raise PhysicalCommitRejected("Invalid channel")
+            state.channel=p["channel"]
         elif op=="SET_PLAYBACK_POSITION" and "playback_position_seconds" in p:
             value=p["playback_position_seconds"]
             current=pre_state.playback_position_seconds
@@ -373,44 +395,55 @@ class Gen3DeviceFabricBridge:
         except PhysicalTransportTimeout:
             self._record_indeterminate(intent,target,expected_pre_state,auth_digest,lease.payload_digest,snapshot.epoch)
             return BridgeResult("FAILED",intent.intent_id,rejection="UNKNOWN_PHYSICAL_STATE",authorization_digest=auth_digest,transaction_id=intent.transaction_id,capability_digest=lease.payload_digest)
-        except Exception: return BridgeResult("FAILED",intent.intent_id,rejection="COMMIT_EXECUTION_FAILED",authorization_digest=auth_digest,transaction_id=intent.transaction_id,capability_digest=lease.payload_digest)
+        except asyncio.CancelledError:
+            self._record_indeterminate(intent,target,expected_pre_state,auth_digest,lease.payload_digest,snapshot.epoch)
+            raise
+        except Exception:
+            self._record_indeterminate(intent,target,expected_pre_state,auth_digest,lease.payload_digest,snapshot.epoch)
+            return BridgeResult("FAILED",intent.intent_id,rejection="COMMIT_EXECUTION_FAILED",authorization_digest=auth_digest,transaction_id=intent.transaction_id,capability_digest=lease.payload_digest)
         try: precondition_result=isinstance(result,PreconditionResult)
         except Exception: return BridgeResult("FAILED",intent.intent_id,receipt=result,rejection="COMMIT_RESULT_INVALID",authorization_digest=auth_digest,transaction_id=intent.transaction_id,capability_digest=lease.payload_digest)
         if precondition_result:
             return BridgeResult("REJECTED",intent.intent_id,rejection=result,authorization_digest=auth_digest,transaction_id=intent.transaction_id,capability_digest=lease.payload_digest)
         receipt=result
+
+        def failed_commit(**details):
+            # Submission may already have changed hardware. A failed receipt or
+            # observation cannot certify unchanged physical state.
+            self._record_indeterminate(intent,target,expected_pre_state,auth_digest,lease.payload_digest,snapshot.epoch)
+            return BridgeResult("FAILED",intent.intent_id,**details)
         try:
             receipt_intent_id=getattr(receipt,"intent_id",intent.intent_id)
         except Exception:
-            return BridgeResult("FAILED",intent.intent_id,receipt=receipt,rejection="RECEIPT_INTENT_MISMATCH",authorization_digest=auth_digest,transaction_id=intent.transaction_id,capability_digest=lease.payload_digest)
+            return failed_commit(receipt=receipt,rejection="RECEIPT_INTENT_MISMATCH",authorization_digest=auth_digest,transaction_id=intent.transaction_id,capability_digest=lease.payload_digest)
         try:
             receipt_intent_mismatch=receipt_intent_id!=intent.intent_id
         except Exception:
-            return BridgeResult("FAILED",intent.intent_id,receipt=receipt,rejection="RECEIPT_INTENT_MISMATCH",authorization_digest=auth_digest,transaction_id=intent.transaction_id,capability_digest=lease.payload_digest)
-        if receipt_intent_mismatch: return BridgeResult("FAILED",intent.intent_id,receipt=receipt,rejection="RECEIPT_INTENT_MISMATCH",authorization_digest=auth_digest,transaction_id=intent.transaction_id,capability_digest=lease.payload_digest)
+            return failed_commit(receipt=receipt,rejection="RECEIPT_INTENT_MISMATCH",authorization_digest=auth_digest,transaction_id=intent.transaction_id,capability_digest=lease.payload_digest)
+        if receipt_intent_mismatch: return failed_commit(receipt=receipt,rejection="RECEIPT_INTENT_MISMATCH",authorization_digest=auth_digest,transaction_id=intent.transaction_id,capability_digest=lease.payload_digest)
         try:
             receipt_device_id=getattr(receipt,"device_id",device_id)
         except Exception:
-            return BridgeResult("FAILED",intent.intent_id,receipt=receipt,rejection="RECEIPT_DEVICE_MISMATCH",authorization_digest=auth_digest,transaction_id=intent.transaction_id,capability_digest=lease.payload_digest)
+            return failed_commit(receipt=receipt,rejection="RECEIPT_DEVICE_MISMATCH",authorization_digest=auth_digest,transaction_id=intent.transaction_id,capability_digest=lease.payload_digest)
         try:
             receipt_device_mismatch=receipt_device_id!=device_id
         except Exception:
-            return BridgeResult("FAILED",intent.intent_id,receipt=receipt,rejection="RECEIPT_DEVICE_MISMATCH",authorization_digest=auth_digest,transaction_id=intent.transaction_id,capability_digest=lease.payload_digest)
-        if receipt_device_mismatch: return BridgeResult("FAILED",intent.intent_id,receipt=receipt,rejection="RECEIPT_DEVICE_MISMATCH",authorization_digest=auth_digest,transaction_id=intent.transaction_id,capability_digest=lease.payload_digest)
+            return failed_commit(receipt=receipt,rejection="RECEIPT_DEVICE_MISMATCH",authorization_digest=auth_digest,transaction_id=intent.transaction_id,capability_digest=lease.payload_digest)
+        if receipt_device_mismatch: return failed_commit(receipt=receipt,rejection="RECEIPT_DEVICE_MISMATCH",authorization_digest=auth_digest,transaction_id=intent.transaction_id,capability_digest=lease.payload_digest)
         try:
             receipt_transaction_id=getattr(receipt,"transaction_id","")
         except Exception:
-            return BridgeResult("FAILED",intent.intent_id,receipt=receipt,rejection="RECEIPT_TRANSACTION_MISMATCH",authorization_digest=auth_digest,transaction_id=intent.transaction_id,capability_digest=lease.payload_digest)
-        if receipt_transaction_id!=intent.transaction_id: return BridgeResult("FAILED",intent.intent_id,receipt=receipt,rejection="RECEIPT_TRANSACTION_MISMATCH",authorization_digest=auth_digest,transaction_id=intent.transaction_id,capability_digest=lease.payload_digest)
+            return failed_commit(receipt=receipt,rejection="RECEIPT_TRANSACTION_MISMATCH",authorization_digest=auth_digest,transaction_id=intent.transaction_id,capability_digest=lease.payload_digest)
+        if receipt_transaction_id!=intent.transaction_id: return failed_commit(receipt=receipt,rejection="RECEIPT_TRANSACTION_MISMATCH",authorization_digest=auth_digest,transaction_id=intent.transaction_id,capability_digest=lease.payload_digest)
         try:
             receipt_capability_digest=getattr(receipt,"capability_digest","")
         except Exception:
-            return BridgeResult("FAILED",intent.intent_id,receipt=receipt,rejection="RECEIPT_CAPABILITY_MISMATCH",authorization_digest=auth_digest,transaction_id=intent.transaction_id,capability_digest=lease.payload_digest)
-        if receipt_capability_digest!=lease.payload_digest: return BridgeResult("FAILED",intent.intent_id,receipt=receipt,rejection="RECEIPT_CAPABILITY_MISMATCH",authorization_digest=auth_digest,transaction_id=intent.transaction_id,capability_digest=lease.payload_digest)
+            return failed_commit(receipt=receipt,rejection="RECEIPT_CAPABILITY_MISMATCH",authorization_digest=auth_digest,transaction_id=intent.transaction_id,capability_digest=lease.payload_digest)
+        if receipt_capability_digest!=lease.payload_digest: return failed_commit(receipt=receipt,rejection="RECEIPT_CAPABILITY_MISMATCH",authorization_digest=auth_digest,transaction_id=intent.transaction_id,capability_digest=lease.payload_digest)
         try:
             rs=getattr(receipt,"status",None)
         except Exception:
-            return BridgeResult("FAILED",intent.intent_id,receipt=receipt,authorization_digest=auth_digest,transaction_id=intent.transaction_id,capability_digest=lease.payload_digest)
+            return failed_commit(receipt=receipt,authorization_digest=auth_digest,transaction_id=intent.transaction_id,capability_digest=lease.payload_digest)
         verification=None
         verified_state=None
         if rs is ActuationStatus.REJECTED:
@@ -418,12 +451,12 @@ class Gen3DeviceFabricBridge:
         try:
             executed_status=rs in (ActuationStatus.EXECUTED,ActuationStatus.COMMITTED)
         except Exception:
-            return BridgeResult("FAILED",intent.intent_id,receipt=receipt,authorization_digest=auth_digest,transaction_id=intent.transaction_id,capability_digest=lease.payload_digest)
+            return failed_commit(receipt=receipt,authorization_digest=auth_digest,transaction_id=intent.transaction_id,capability_digest=lease.payload_digest)
         if executed_status and (post_state_observer is None or post_state_observer is _POST_STATE_OBSERVER_UNSET):
             try:
                 status={ActuationStatus.EXECUTED:"EXECUTED",ActuationStatus.COMMITTED:"EXECUTED"}.get(rs,"FAILED")
             except Exception:
-                return BridgeResult("FAILED",intent.intent_id,receipt=receipt,authorization_digest=auth_digest,transaction_id=intent.transaction_id,capability_digest=lease.payload_digest)
+                return failed_commit(receipt=receipt,authorization_digest=auth_digest,transaction_id=intent.transaction_id,capability_digest=lease.payload_digest)
             return BridgeResult(status,intent.intent_id,receipt=receipt,authorization_digest=auth_digest,transaction_id=intent.transaction_id,capability_digest=lease.payload_digest,verification=None)
         if executed_status:
             try:
@@ -441,29 +474,34 @@ class Gen3DeviceFabricBridge:
                     raise ValueError("stale post-state observation epoch")
                 observed_state=observed_snapshot.state
                 if observed_state is None or observed_state.state_digest!=target.state_digest:
-                    return BridgeResult("FAILED",intent.intent_id,receipt=receipt,rejection="POST_STATE_MISMATCH",authorization_digest=auth_digest,transaction_id=intent.transaction_id,capability_digest=lease.payload_digest)
+                    return failed_commit(receipt=receipt,rejection="POST_STATE_MISMATCH",authorization_digest=auth_digest,transaction_id=intent.transaction_id,capability_digest=lease.payload_digest)
                 observed_snapshot_evidence_digest=getattr(observed_snapshot,"evidence_digest","")
                 if media_operation:
                     post_state_evidence_mismatch=type(observed_snapshot_evidence_digest) is not str or not observed_snapshot_evidence_digest.strip() or observed_snapshot_evidence_digest!=observed_state_evidence_digest
                 else:
                     post_state_evidence_mismatch=observed_snapshot_evidence_digest not in ("",None) and (type(observed_snapshot_evidence_digest) is not str or not observed_snapshot_evidence_digest.strip() or observed_snapshot_evidence_digest!=observed_state_evidence_digest)
                 if post_state_evidence_mismatch:
-                    return BridgeResult("FAILED",intent.intent_id,receipt=receipt,rejection="POST_STATE_EVIDENCE_MISMATCH",authorization_digest=auth_digest,transaction_id=intent.transaction_id,capability_digest=lease.payload_digest)
+                    return failed_commit(receipt=receipt,rejection="POST_STATE_EVIDENCE_MISMATCH",authorization_digest=auth_digest,transaction_id=intent.transaction_id,capability_digest=lease.payload_digest)
+            except asyncio.CancelledError:
+                self._record_indeterminate(intent,target,expected_pre_state,auth_digest,lease.payload_digest,snapshot.epoch)
+                raise
+            except PhysicalRecoveryPersistenceError:
+                raise
             except Exception:
-                return BridgeResult("FAILED",intent.intent_id,receipt=receipt,rejection="POST_STATE_MISMATCH",authorization_digest=auth_digest,transaction_id=intent.transaction_id,capability_digest=lease.payload_digest)
+                return failed_commit(receipt=receipt,rejection="POST_STATE_MISMATCH",authorization_digest=auth_digest,transaction_id=intent.transaction_id,capability_digest=lease.payload_digest)
             try:
                 receipt_id=getattr(receipt,"receipt_id","")
-                if not isinstance(receipt_id,str) or not receipt_id.strip():
-                    return BridgeResult("FAILED",intent.intent_id,receipt=receipt,authorization_digest=auth_digest,transaction_id=intent.transaction_id,capability_digest=lease.payload_digest)
             except Exception:
-                return BridgeResult("FAILED",intent.intent_id,receipt=receipt,authorization_digest=auth_digest,transaction_id=intent.transaction_id,capability_digest=lease.payload_digest)
+                return failed_commit(receipt=receipt,authorization_digest=auth_digest,transaction_id=intent.transaction_id,capability_digest=lease.payload_digest)
+            if not isinstance(receipt_id,str) or not receipt_id.strip():
+                return failed_commit(receipt=receipt,authorization_digest=auth_digest,transaction_id=intent.transaction_id,capability_digest=lease.payload_digest)
             try:
                 verification=PhysicalVerificationRecord(intent_id=intent.intent_id,device_id=device_id,receipt_id=receipt_id,expected_state_digest=target.state_digest,observed_state_digest=observed_state.state_digest,authorization_digest=auth_digest,transaction_id=intent.transaction_id,capability_digest=lease.payload_digest,world_state_evidence_digest=world_state_evidence_digest or "",observed_state_evidence_digest=observed_state_evidence_digest or "",world_state_epoch=snapshot.epoch,observed_state_epoch=observed_snapshot.epoch,verification_status=VerificationStatus.VERIFIED)
                 verified_media_control_operation=op in ("set_eq_bands","set_eq_preset","set_captions_enabled") or (op=="set_volume" and set(dict(intent.parameters))=={"volume_percent"})
                 if verified_media_control_operation and type(observed_snapshot_evidence_digest) is str and observed_snapshot_evidence_digest.strip() and observed_snapshot_evidence_digest==observed_state_evidence_digest:
                     verified_state=VerifiedMediaControlState.from_physical_verification(observed_snapshot,verification)
             except Exception:
-                return BridgeResult("FAILED",intent.intent_id,receipt=receipt,authorization_digest=auth_digest,transaction_id=intent.transaction_id,capability_digest=lease.payload_digest)
+                return failed_commit(receipt=receipt,authorization_digest=auth_digest,transaction_id=intent.transaction_id,capability_digest=lease.payload_digest)
         undo_candidate=None
         if verified_state is not None and prior_state is not None:
             try:
@@ -473,7 +511,9 @@ class Gen3DeviceFabricBridge:
         try:
             status={ActuationStatus.EXECUTED:"EXECUTED",ActuationStatus.COMMITTED:"EXECUTED",ActuationStatus.DUPLICATE_ABSORBED:"DUPLICATE_ABSORBED",ActuationStatus.REJECTED:"REJECTED",ActuationStatus.FAILED:"FAILED"}.get(rs,"FAILED")
         except Exception:
-            return BridgeResult("FAILED",intent.intent_id,receipt=receipt,authorization_digest=auth_digest,transaction_id=intent.transaction_id,capability_digest=lease.payload_digest)
+            return failed_commit(receipt=receipt,authorization_digest=auth_digest,transaction_id=intent.transaction_id,capability_digest=lease.payload_digest)
+        if status=="FAILED":
+            return failed_commit(receipt=receipt,authorization_digest=auth_digest,transaction_id=intent.transaction_id,capability_digest=lease.payload_digest)
         return BridgeResult(status,intent.intent_id,receipt=receipt,authorization_digest=auth_digest,transaction_id=intent.transaction_id,capability_digest=lease.payload_digest,verification=verification,verified_state=verified_state,prior_state=prior_state if verified_state is not None else None,undo_candidate=undo_candidate)
 
     async def authorize_and_execute(self,intent: SignedActionIntent,lease: SignedCapabilityLease,pre_state: DeviceState) -> BridgeResult:
@@ -523,10 +563,18 @@ class Gen3DeviceFabricBridge:
         except PhysicalTransportTimeout:
             self._record_indeterminate(intent,target,pre_state,auth_digest,lease.payload_digest)
             return BridgeResult("FAILED",intent.intent_id,rejection="UNKNOWN_PHYSICAL_STATE",authorization_digest=auth_digest,transaction_id=intent.transaction_id,capability_digest=lease.payload_digest)
+        except asyncio.CancelledError:
+            self._record_indeterminate(intent,target,pre_state,auth_digest,lease.payload_digest)
+            raise
         except Exception as exc:
+            self._record_indeterminate(intent,target,pre_state,auth_digest,lease.payload_digest)
             return BridgeResult("FAILED",intent.intent_id,rejection=type(exc).__name__+": "+str(exc),authorization_digest=auth_digest,transaction_id=intent.transaction_id,capability_digest=lease.payload_digest)
-        if getattr(receipt,"intent_id",intent.intent_id)!=intent.intent_id: return BridgeResult("FAILED",intent.intent_id,receipt=receipt,rejection="RECEIPT_INTENT_MISMATCH",authorization_digest=auth_digest,transaction_id=intent.transaction_id,capability_digest=lease.payload_digest)
-        if getattr(receipt,"device_id",device_id)!=device_id: return BridgeResult("FAILED",intent.intent_id,receipt=receipt,rejection="RECEIPT_DEVICE_MISMATCH",authorization_digest=auth_digest,transaction_id=intent.transaction_id,capability_digest=lease.payload_digest)
+        def failed_legacy_commit(**details):
+            self._record_indeterminate(intent,target,pre_state,auth_digest,lease.payload_digest)
+            return BridgeResult("FAILED",intent.intent_id,**details)
+
+        if getattr(receipt,"intent_id",intent.intent_id)!=intent.intent_id: return failed_legacy_commit(receipt=receipt,rejection="RECEIPT_INTENT_MISMATCH",authorization_digest=auth_digest,transaction_id=intent.transaction_id,capability_digest=lease.payload_digest)
+        if getattr(receipt,"device_id",device_id)!=device_id: return failed_legacy_commit(receipt=receipt,rejection="RECEIPT_DEVICE_MISMATCH",authorization_digest=auth_digest,transaction_id=intent.transaction_id,capability_digest=lease.payload_digest)
         rs=getattr(receipt,"status",None)
         if rs==ActuationStatus.EXECUTED: status="EXECUTED"
         elif rs==ActuationStatus.COMMITTED: status="COMMITTED"
@@ -534,6 +582,8 @@ class Gen3DeviceFabricBridge:
         elif rs==ActuationStatus.REJECTED: status="REJECTED"
         elif rs==ActuationStatus.FAILED: status="FAILED"
         else: status="FAILED"
+        if status=="FAILED":
+            return failed_legacy_commit(receipt=receipt,authorization_digest=auth_digest,transaction_id=intent.transaction_id,capability_digest=lease.payload_digest)
         return BridgeResult(status,intent.intent_id,receipt=receipt,authorization_digest=auth_digest,transaction_id=intent.transaction_id,capability_digest=lease.payload_digest)
 
 

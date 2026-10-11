@@ -22,6 +22,11 @@ local.properties
 artifacts/ui/
 
 # Local credentials and shell/editor state
+*.p8
+*.p12
+*.mobileprovision
+*.xcarchive/
+*.ipa
 .env
 .env.*
 !.env.example

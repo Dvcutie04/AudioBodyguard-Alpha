@@ -201,3 +201,19 @@ def test_cache_reports_allocated_memory_including_failed_unload():
     assert cache.allocated_memory_mb()==56
     assert cache.evict(ready) is True
     assert cache.allocated_memory_mb()==32
+
+
+def test_invalid_memory_accounting_cannot_poison_budget_or_residency():
+    import pytest
+    from src.edge.model_cache import ModelCache
+    for value in (float('nan'), float('inf'), -1, True, '64', None):
+        cache = ModelCache(max_memory_mb=64)
+        with pytest.raises(ValueError):
+            cache.register(('bad', 'v1'), object(), memory_mb=value, unload=lambda model: None)
+        assert cache.allocated_memory_mb() == 0
+        assert cache.resident_models() == frozenset()
+        if value is not None:  # None explicitly means an unlimited budget.
+            with pytest.raises(ValueError):
+                cache.set_memory_budget(value)
+            with pytest.raises(ValueError):
+                ModelCache(max_memory_mb=value)

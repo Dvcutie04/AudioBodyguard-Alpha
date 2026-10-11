@@ -2,10 +2,17 @@ name: AQSS read-only iPhone device preflight
 
 on:
   workflow_dispatch:
+  workflow_call:
+    inputs:
+      source_revision:
+        type: string
+        required: false
+        default: ""
   pull_request:
     paths:
       - ".github/workflows/iphoneos-device-preflight.yml"
       - "native/ios-app/**"
+      - "native/ios/**"
 
 permissions:
   contents: read
@@ -20,6 +27,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           persist-credentials: false
+          ref: ${{ inputs.source_revision || '' }}
 
       - name: Verify device toolchain
         shell: bash
@@ -31,6 +39,14 @@ jobs:
           SDK_VERSION="$(xcrun --sdk iphoneos --show-sdk-version)"
           [[ "${XCODE_VERSION%%.*}" -ge 26 ]]
           [[ "${SDK_VERSION%%.*}" -ge 26 ]]
+          python3 - <<'PY'
+          import subprocess
+          help_text = subprocess.check_output(['xcodebuild', '-help'], stderr=subprocess.STDOUT, text=True)
+          for option in ['-authenticationKeyPath', '-authenticationKeyID', '-authenticationKeyIssuerID', 'testFlightInternalTestingOnly', 'app-store-connect']:
+              if option not in help_text:
+                  raise SystemExit('Required beta export option is unavailable: '+option)
+          print('TestFlight signing/export options are present in this Xcode toolchain')
+          PY
 
       - name: Archive the physical-device app without signing
         shell: bash
@@ -52,7 +68,7 @@ jobs:
           test -f "$APP/Assets.car"
           lipo "$APP/AQSSReadOnly" -verify_arch arm64
           test "$(/usr/libexec/PlistBuddy -c 'Print :CFBundleIdentifier' "$APP/Info.plist")" = 'com.aqss.bodyguard.prototype'
-          test "$(/usr/libexec/PlistBuddy -c 'Print :CFBundleDisplayName' "$APP/Info.plist")" = 'AQSS Simulation'
+          test "$(/usr/libexec/PlistBuddy -c 'Print :CFBundleDisplayName' "$APP/Info.plist")" = 'Audio Bodyguard'
           test "$(/usr/libexec/PlistBuddy -c 'Print :CFBundleVersion' "$APP/Info.plist")" = '1'
           if codesign -dv "$APP" >/dev/null 2>&1; then
             echo 'Unexpected signature on unsigned device preflight' >&2
@@ -71,6 +87,14 @@ jobs:
           archive = temporary / "AQSSReadOnly-unsigned-device.xcarchive.zip"
           app = temporary / "AQSSReadOnly.xcarchive/Products/Applications/AQSSReadOnly.app"
           metadata = plistlib.loads((app / "Info.plist").read_bytes())
+          privacy_bytes = (app / "PrivacyInfo.xcprivacy").read_bytes()
+          privacy = plistlib.loads(privacy_bytes)
+          reasons = {
+              entry["NSPrivacyAccessedAPIType"]: set(entry["NSPrivacyAccessedAPITypeReasons"])
+              for entry in privacy["NSPrivacyAccessedAPITypes"]
+          }
+          assert "CA92.1" in reasons["NSPrivacyAccessedAPICategoryUserDefaults"]
+          assert "35F9.1" in reasons["NSPrivacyAccessedAPICategorySystemBootTime"]
           toolchain = subprocess.check_output(["xcodebuild", "-version"], text=True).splitlines()[0]
           sdk = subprocess.check_output(["xcrun", "--sdk", "iphoneos", "--show-sdk-version"], text=True).strip()
           digest = hashlib.sha256()
@@ -79,7 +103,8 @@ jobs:
                   digest.update(chunk)
           manifest = {
               "evidence_scope": "UNSIGNED_DEVICE_BUILD_ONLY",
-              "source_revision": os.environ["GITHUB_SHA"],
+              "source_revision": subprocess.check_output(["git", "rev-parse", "HEAD"], text=True).strip(),
+              "source_tree_sha": subprocess.check_output(["git", "rev-parse", "HEAD^{tree}"], text=True).strip(),
               "workflow_run_id": os.environ["GITHUB_RUN_ID"],
               "workflow_attempt": os.environ["GITHUB_RUN_ATTEMPT"],
               "xcode_version": toolchain.removeprefix("Xcode "),
@@ -88,6 +113,7 @@ jobs:
               "app_version": metadata["CFBundleShortVersionString"],
               "build_number": metadata["CFBundleVersion"],
               "archive_zip_sha256": digest.hexdigest(),
+              "privacy_manifest_sha256": hashlib.sha256(privacy_bytes).hexdigest(),
           }
           (temporary / "device-build-provenance.json").write_text(json.dumps(manifest, indent=2, sort_keys=True) + "\n", encoding="utf-8")
           print(json.dumps(manifest, indent=2, sort_keys=True))

@@ -2,6 +2,12 @@ name: AQSS-36-OMEGA CI Pipeline
 
 on:
   workflow_dispatch:
+  workflow_call:
+    inputs:
+      source_revision:
+        type: string
+        required: false
+        default: ""
   push:
     branches: [ "main", "master", "aqss/**" ]
   pull_request:
@@ -23,6 +29,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           persist-credentials: false
+          ref: ${{ inputs.source_revision || '' }}
 
       - name: Set up Python 3.13
         uses: actions/setup-python@v5
@@ -37,6 +44,15 @@ jobs:
       - name: Verify generated native contracts
         run: python tools/generate_native_feedback_contracts.py --check
 
+      - name: Verify shared interface content and contrast
+        run: python tools/generate_interface_content.py --check
+
+      - name: Verify tutorials, setup catalogs and offline pictures
+        run: |
+          python tools/generate_tutorial_content.py --check
+          python tools/generate_setup_guides.py --check
+          python tools/export_picture_guide.py --check
+
       - name: Run deterministic safety and full pytest suite
         env:
           PYTHONPATH: .
@@ -50,6 +66,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           persist-credentials: false
+          ref: ${{ inputs.source_revision || '' }}
       - name: Compile and run deterministic owner checks
         run: sh native/lab/owned_output/run_tests.sh
       - name: Check owner memory and undefined behavior
@@ -65,6 +82,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           persist-credentials: false
+          ref: ${{ inputs.source_revision || '' }}
       - name: Compile and test Swift contract
         run: swift test --package-path native/ios
       - name: Compile read-only iOS simulator application
@@ -78,6 +96,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           persist-credentials: false
+          ref: ${{ inputs.source_revision || '' }}
       - name: Set up Java 17
         uses: actions/setup-java@v4
         with:

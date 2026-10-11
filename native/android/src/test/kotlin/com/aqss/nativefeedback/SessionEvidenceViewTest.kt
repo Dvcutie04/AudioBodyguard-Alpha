@@ -14,10 +14,22 @@ import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFailsWith
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
 class SessionEvidenceViewTest {
+    @Test
+    fun callersCannotTurnAReadOnlyProjectionIntoActuationPermission() {
+        val view = CapabilityView("AVAILABLE_FOR_REVIEW", emptyList())
+        assertFalse(view.canActuate)
+        assertFailsWith<IllegalArgumentException> {
+            CapabilityView("AVAILABLE_FOR_REVIEW", emptyList(), canActuate = true)
+        }
+        assertFailsWith<IllegalArgumentException> { view.copy(canActuate = true) }
+        assertFalse(view.copy(label = "UNKNOWN").canActuate)
+    }
+
     private fun fixture(): JsonObject {
         val cwd = Path.of(System.getProperty("user.dir"))
         val candidates = listOf(

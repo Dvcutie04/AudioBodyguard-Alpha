@@ -1,5 +1,7 @@
 class TVDriver:
+    """Reference stub with no physical transport or execution authority."""
+
     @staticmethod
     def dispatch(p, ip, c):
-        print(f"[{p.upper()}] Dispatched {c} to {ip}")
-        return True
+        print(f"[NOT_EXECUTED] Legacy TV proposal: {c} ({p}, {ip})")
+        return False

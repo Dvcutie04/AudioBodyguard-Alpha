@@ -38,7 +38,11 @@ data class CapabilityView(
     val label: String,
     val reasons: List<String>,
     val canActuate: Boolean = false,
-)
+) {
+    init {
+        require(!canActuate) { "A read-only capability projection cannot authorize actuation" }
+    }
+}
 
 object SessionEvidenceView {
     private val safeReasons = setOf(

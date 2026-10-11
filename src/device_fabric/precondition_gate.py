@@ -30,11 +30,15 @@ class PreconditionGate:
             return PreconditionResult.AUTH_EXPIRED
         if lease.expires_at is not None and now >= lease.expires_at.timestamp():
             return PreconditionResult.AUTH_EXPIRED
-        if intent.deadline_at and now >= intent.deadline_at:
+        if (type(intent.deadline_at) not in (int, float) or not math.isfinite(intent.deadline_at)
+                or intent.deadline_at < 0 or (intent.deadline_at != 0 and now >= intent.deadline_at)):
             return PreconditionResult.INTENT_EXPIRED
         if lease.authorized_epoch != snapshot.epoch:
             return PreconditionResult.EPOCH_DRIFT
-        if not math.isfinite(snapshot.observed_at):
+        if any(type(value) not in (int, float) or not math.isfinite(value) or value < 0 for value in
+               (lease.max_clock_skew_ms, lease.max_world_state_age_ms)):
+            return PreconditionResult.WORLD_STATE_STALE
+        if type(snapshot.observed_at) not in (int, float) or not math.isfinite(snapshot.observed_at):
             return PreconditionResult.WORLD_STATE_STALE
         if lease.max_clock_skew_ms > 0 and (snapshot.observed_at - now) * 1000.0 > lease.max_clock_skew_ms:
             return PreconditionResult.WORLD_STATE_STALE

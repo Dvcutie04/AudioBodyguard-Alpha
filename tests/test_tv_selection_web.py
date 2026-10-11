@@ -105,3 +105,38 @@ def test_server_construction_requires_and_enforces_authorized_profile(tmp_path):
         ui.sync({"events":[event]})
     assert ui.store.feedback_history("profile_1")==[]
     assert ui.store.feedback_history("profile_2")==[]
+
+
+@pytest.mark.parametrize("choice", ["rating", "keep_this_tv"])
+def test_direct_feedback_cannot_bypass_profile_authorization(tmp_path, choice):
+    from src.interface.tv_selection_web import build_ui
+    ui = build_ui(tmp_path / "preferences.sqlite3", "profile_1")
+    before = ui.store.get("profile_2")
+    with pytest.raises(ValueError):
+        ui.submit(dict(profile_id="profile_2", device_id="tv_b", approved=True, choice=choice))
+    assert ui.store.get("profile_2") == before
+    assert ui.store.feedback_history("profile_2") == []
+    assert ui.submit(dict(profile_id="profile_1", device_id="tv_b", approved=True, choice=choice)) == {"ok": True}
+
+
+def test_bound_server_does_not_render_another_profile(tmp_path):
+    from src.interface.tv_selection_web import build_ui
+    ui = build_ui(tmp_path / "preferences.sqlite3", "profile_1")
+    with pytest.raises(ValueError):
+        ui.render("profile_2", "tv_b")
+
+
+@pytest.mark.parametrize("profile", [None, "", " "])
+def test_server_cannot_start_without_a_bound_profile(tmp_path, profile):
+    from src.interface.tv_selection_web import build_ui
+    with pytest.raises(ValueError):
+        build_ui(tmp_path / "preferences.sqlite3", profile)
+
+
+def test_identifiers_cannot_close_the_inline_script(tmp_path):
+    ui = TVSelectionWebUI(TVSelectionPreferences(tmp_path / 'preferences.sqlite3'))
+    attack = '</script><script>alert(1)</script>'
+    page = ui.render(attack, attack)
+    assert page.count('</script>') == 1
+    assert '<script>alert(1)' not in page
+    assert '\\u003c/script\\u003e' in page

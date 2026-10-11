@@ -114,3 +114,56 @@ def test_rejects_untrusted_issuer(crypto_env):
     rogue_intent = SignedActionIntent(**{**raw_intent, "issuer_id": rogue_governor.key_id}, signature=rogue_sig)
     result = firewall.validate_intent(rogue_intent, lease)
     assert result == AuthRejectionCode.AUTH_ISSUER_UNKNOWN
+
+
+def test_firewall_rejects_tampered_lease_signature_without_consuming_nonce(crypto_env):
+    _, firewall, lease, intent, _, _ = crypto_env
+    signature = lease.signature
+    lease.signature = "forged"
+    assert isinstance(firewall.validate_intent(intent, lease), AuthRejectionCode)
+    assert not firewall.seen_nonces
+    lease.signature = signature
+    assert firewall.validate_intent(intent, lease) is intent
+
+
+@pytest.mark.parametrize("field,value", [
+    ("created_at", float("nan")), ("expires_at", float("nan")),
+    ("expires_at", float("inf")), ("created_at", True),
+])
+def test_firewall_rejects_invalid_signed_validity_times(crypto_env, field, value):
+    key, firewall, lease, intent, _, _ = crypto_env
+    setattr(intent, field, value)
+    intent.signature = key.sign(intent.canonical_bytes)
+    assert isinstance(firewall.validate_intent(intent, lease), AuthRejectionCode)
+    assert not firewall.seen_nonces
+
+
+def test_firewall_rejects_future_intent_and_exact_expiry(crypto_env, monkeypatch):
+    _, firewall, lease, intent, _, _ = crypto_env
+    monkeypatch.setattr("src.control.intent_firewall.time.time", lambda: intent.created_at - 1)
+    assert isinstance(firewall.validate_intent(intent, lease), AuthRejectionCode)
+    monkeypatch.setattr("src.control.intent_firewall.time.time", lambda: intent.expires_at)
+    assert firewall.validate_intent(intent, lease) is AuthRejectionCode.AUTH_EXPIRED
+    assert not firewall.seen_nonces
+
+
+def test_firewall_rejects_intent_outliving_its_lease(crypto_env):
+    key, firewall, lease, intent, _, _ = crypto_env
+    intent.expires_at = lease.expires_at + 1
+    intent.signature = key.sign(intent.canonical_bytes)
+    assert isinstance(firewall.validate_intent(intent, lease), AuthRejectionCode)
+
+
+def test_firewall_rejects_protocol_mismatch(crypto_env):
+    key, firewall, lease, intent, _, _ = crypto_env
+    intent.protocol_version = "different-protocol"
+    intent.signature = key.sign(intent.canonical_bytes)
+    assert isinstance(firewall.validate_intent(intent, lease), AuthRejectionCode)
+
+
+@pytest.mark.parametrize("signature", [None, 7, "\u2603"])
+def test_firewall_rejects_malformed_signature_without_raising(crypto_env, signature):
+    _, firewall, lease, intent, _, _ = crypto_env
+    intent.signature = signature
+    assert isinstance(firewall.validate_intent(intent, lease), AuthRejectionCode)
+    assert not firewall.seen_nonces
