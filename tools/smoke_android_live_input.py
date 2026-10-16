@@ -21,10 +21,21 @@ def main():
         return subprocess.check_output(["adb", *command], timeout=timeout, stdin=subprocess.DEVNULL)
 
     def screen(name):
-        adb("shell", "uiautomator", "dump", "/sdcard/aqss-live-input.xml")
-        data = adb("exec-out", "cat", "/sdcard/aqss-live-input.xml")
-        (out / f"{name}.xml").write_bytes(data)
-        return ET.fromstring(data)
+        for attempt in range(4):
+            adb("shell", "rm", "-f", "/sdcard/aqss-live-input.xml")
+            try:
+                adb("shell", "uiautomator", "dump", "/sdcard/aqss-live-input.xml")
+                data = adb("exec-out", "cat", "/sdcard/aqss-live-input.xml")
+                root = ET.fromstring(data)
+                if root.tag == "hierarchy" and root.find("node") is not None:
+                    (out / f"{name}.xml").write_bytes(data)
+                    return root
+            except (ET.ParseError, subprocess.CalledProcessError, subprocess.TimeoutExpired):
+                pass
+            print(f"UI hierarchy unavailable for {name}; bounded retry {attempt + 1}/4", flush=True)
+            time.sleep(2)
+        screenshot(f"{name}-missing-hierarchy")
+        raise AssertionError(f"No valid UI hierarchy for {name} after four attempts")
 
     def has(root, text):
         return any(text in node.get("text", "") for node in root.iter("node"))

@@ -72,5 +72,32 @@ this new feature.
 
 ## Verification
 
-Results will be recorded after the focused PCM/window tests, Android builds
-and available lifecycle/UI checks complete.
+- The five new PCM/window tests first failed compilation because their
+  implementations were absent. After implementation, all **23 Kotlin tests**
+  passed, including the existing contracts and new arithmetic/freshness cases.
+- The local Python suite passed **1,879 tests plus 19 subtests**. The **41**
+  focused input/repository boundary checks passed again after compatibility
+  edits. These counts overlap and must not be added.
+- Java 17 / Gradle 8.13 / API 36 built `:app:assembleLiveInput` and passed
+  `:app:lintLiveInput`: **0 errors, 139 nonfatal warnings**. Warnings include
+  existing platform-view conventions and English UI strings. Existing guarded
+  Insets access was made explicit for lint; platform Back handlers and the
+  intentional platform-only ImageView are documented with narrow annotations.
+- [Hosted CI for the code revision](https://github.com/Dvcutie04/AudioBodyguard-Alpha/actions/runs/38834770814)
+  passed Python, Android, Swift/iOS simulator compilation and the scripted C lab.
+- The first Android 16 UI run installed and launched the new Activity, then
+  stopped at a test-runner case mismatch: the platform's **DON’T ALLOW** button
+  was uppercase. A second run encountered a missing UI hierarchy at cold launch.
+  The runner now matches labels without case sensitivity and uses four bounded
+  hierarchy attempts, refusing to infer any result from missing or stale XML.
+  The [Android 16 lifecycle workflow](https://github.com/Dvcutie04/AudioBodyguard-Alpha/actions/workflows/android-live-input.yml)
+  retains the current result and UI evidence; inspect the run for the runtime
+  result rather than inferring it from compilation. A local software-rendered
+  emulator did not finish Android service startup and provides no UI pass.
+- The deliverable is `AudioBodyguard-Live-Input-Test-0.2.apk`, version code **2**,
+  target API **36**, min API **26**, with ARM64, ARMv7, x86 and x86-64 libraries.
+  Its APK v2 signature verifies. SHA-256:
+  `8542c251bdbc99dd38fb3bb9ee6ae34da2d728220194616d80f59db86eb23ced`.
+
+The VL68 Pro microphone trial, calibrated acoustic measurements, resource
+measurements and physical protection qualification remain unreported.
