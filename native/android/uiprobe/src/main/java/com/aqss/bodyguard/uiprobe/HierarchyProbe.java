@@ -3,11 +3,14 @@ package com.aqss.bodyguard.uiprobe;
 import android.app.Activity;
 import android.app.Instrumentation;
 import android.app.UiAutomation;
+import android.accessibilityservice.AccessibilityServiceInfo;
 import android.graphics.Rect;
 import android.os.Bundle;
+import android.os.SystemClock;
 import android.util.Base64;
 import android.util.Xml;
 import android.view.accessibility.AccessibilityNodeInfo;
+import android.view.accessibility.AccessibilityWindowInfo;
 import java.io.StringWriter;
 import java.nio.charset.StandardCharsets;
 import org.xmlpull.v1.XmlSerializer;
@@ -20,7 +23,24 @@ public final class HierarchyProbe extends Instrumentation {
         Bundle result = new Bundle();
         try {
             UiAutomation observer = getUiAutomation(UiAutomation.FLAG_DONT_SUPPRESS_ACCESSIBILITY_SERVICES);
-            AccessibilityNodeInfo root = observer.getRootInActiveWindow();
+            AccessibilityServiceInfo info = observer.getServiceInfo();
+            info.flags |= AccessibilityServiceInfo.FLAG_RETRIEVE_INTERACTIVE_WINDOWS;
+            observer.setServiceInfo(info);
+            AccessibilityNodeInfo root = null;
+            // Connection can precede the initial window snapshot. Wait for a real root,
+            // not for the live accessibility event stream to become idle.
+            long deadline = SystemClock.uptimeMillis() + 3000;
+            while (SystemClock.uptimeMillis() < deadline) {
+                root = observer.getRootInActiveWindow();
+                if (root == null) {
+                    for (AccessibilityWindowInfo window : observer.getWindows()) {
+                        if (window.isActive()) { root = window.getRoot(); if (root != null) break; }
+                    }
+                }
+                if (root != null && root.refresh() && root.isVisibleToUser()) break;
+                root = null;
+                SystemClock.sleep(100);
+            }
             if (root == null) throw new IllegalStateException("No active window root");
             StringWriter text = new StringWriter();
             XmlSerializer xml = Xml.newSerializer();
