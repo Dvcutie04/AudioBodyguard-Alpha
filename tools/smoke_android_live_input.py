@@ -4,6 +4,7 @@ from pathlib import Path
 import argparse
 import base64
 import re
+import shlex
 import subprocess
 import time
 import xml.etree.ElementTree as ET
@@ -22,10 +23,13 @@ def main():
     def adb(*command, timeout=45):
         return subprocess.check_output(["adb", *command], timeout=timeout, stdin=subprocess.DEVNULL)
 
-    def screen(name):
+    def screen(name, click=None):
         for attempt in range(4):
             try:
-                output = adb("shell", "am", "instrument", "-w", "com.aqss.bodyguard.uiprobe/.HierarchyProbe").decode()
+                command = ["am", "instrument", "-w"]
+                if click is not None:
+                    command += ["-e", "click", click]
+                output = adb("shell", shlex.join([*command, "com.aqss.bodyguard.uiprobe/.HierarchyProbe"])).decode()
                 (out / f"{name}-probe-{attempt}.txt").write_text(output)
                 encoded = re.search(r"^INSTRUMENTATION_RESULT: hierarchy=(.+)$", output, re.MULTILINE)
                 if encoded is None:
@@ -34,7 +38,7 @@ def main():
                 root = ET.fromstring(data)
                 if root.tag == "hierarchy" and root.find("node") is not None:
                     (out / f"{name}.xml").write_bytes(data)
-                    return root
+                    return root, "INSTRUMENTATION_RESULT: clicked=true" in output
             except (ValueError, ET.ParseError, subprocess.CalledProcessError, subprocess.TimeoutExpired):
                 pass
             print(f"UI hierarchy unavailable for {name}; bounded retry {attempt + 1}/4", flush=True)
@@ -47,21 +51,16 @@ def main():
 
     def wait_for(text, name):
         for _ in range(6):
-            root = screen(name)
+            root, _ = screen(name)
             if has(root, text):
                 return root
             time.sleep(1)
         raise AssertionError(f"Missing label: {text}")
 
     def tap(text, name, optional=False):
-        root = screen(name)
-        for node in root.iter("node"):
-            if text.casefold() in (node.get("text", "").casefold(), node.get("content-desc", "").casefold()):
-                bounds = list(map(int, re.findall(r"\d+", node.get("bounds", ""))))
-                assert len(bounds) == 4
-                x1, y1, x2, y2 = bounds
-                adb("shell", "input", "tap", str((x1 + x2) // 2), str((y1 + y2) // 2))
-                return True
+        _, clicked = screen(name, click=text)
+        if clicked:
+            return True
         if optional:
             return False
         raise AssertionError(f"Missing tap target: {text}")
@@ -88,14 +87,14 @@ def main():
     denied = tap("Don’t allow", "permission_deny", optional=True) or tap("Don't allow", "permission_deny_ascii", optional=True)
     assert denied, "Expected a microphone permission prompt"
     wait_for("Microphone permission denied", "permission_denied")
-    assert has(screen("denied_has_no_input"), "No live input")
+    assert has(screen("denied_has_no_input")[0], "No live input")
     adb("shell", "pm", "grant", package, "android.permission.RECORD_AUDIO")
     tap("Start sound check", "start_capture")
     wait_for("Microphone samples received", "receiving_samples")
     screenshot("receiving_samples")
     tap("Stop sound check", "manual_stop")
     wait_for("Microphone stopped", "stopped")
-    assert has(screen("stopped_no_input"), "No live input")
+    assert has(screen("stopped_no_input")[0], "No live input")
     screenshot("stopped")
 
     tap("Start sound check", "restart_before_background")
@@ -104,7 +103,7 @@ def main():
     time.sleep(1)
     launch()
     wait_for("Microphone stopped when you left", "returned_stopped")
-    assert has(screen("returned_no_input"), "No live input")
+    assert has(screen("returned_no_input")[0], "No live input")
     appops = adb("shell", "cmd", "appops", "get", package, "RECORD_AUDIO").decode()
     (out / "after-background-appops.txt").write_text(appops)
     assert "(running)" not in appops, appops
@@ -114,7 +113,7 @@ def main():
     adb("shell", "settings", "put", "system", "accelerometer_rotation", "0")
     adb("shell", "settings", "put", "system", "user_rotation", "1")
     wait_for("Microphone off", "rotated_stopped")
-    assert has(screen("rotation_no_input"), "No live input")
+    assert has(screen("rotation_no_input")[0], "No live input")
     adb("shell", "settings", "put", "system", "user_rotation", "0")
     wait_for("Microphone off", "portrait_stopped")
 
@@ -126,7 +125,7 @@ def main():
         time.sleep(min(5, 31 - (time.monotonic() - started)))
         print("Waiting for the 30-second stop", flush=True)
     wait_for("30-second check finished", "time_limit")
-    assert has(screen("time_limit_no_input"), "No live input")
+    assert has(screen("time_limit_no_input")[0], "No live input")
     screenshot("time_limit")
     adb("shell", "input", "keyevent", "KEYCODE_BACK")
     wait_for("Voice check", "back_to_sound")

@@ -13,11 +13,17 @@ import android.view.accessibility.AccessibilityNodeInfo;
 import android.view.accessibility.AccessibilityWindowInfo;
 import java.io.StringWriter;
 import java.nio.charset.StandardCharsets;
+import java.util.Locale;
 import org.xmlpull.v1.XmlSerializer;
 
 /** Separate test-only process: observe the current window without waiting for changing input to stop. */
 public final class HierarchyProbe extends Instrumentation {
-    @Override public void onCreate(Bundle arguments) { super.onCreate(arguments); start(); }
+    private String requestedClick;
+    @Override public void onCreate(Bundle arguments) {
+        super.onCreate(arguments);
+        requestedClick = arguments == null ? null : arguments.getString("click");
+        start();
+    }
 
     @Override public void onStart() {
         Bundle result = new Bundle();
@@ -53,11 +59,29 @@ public final class HierarchyProbe extends Instrumentation {
             byte[] bytes = text.toString().getBytes(StandardCharsets.UTF_8);
             if (bytes.length > 524288) throw new IllegalStateException("Hierarchy exceeds bound");
             result.putString("hierarchy", Base64.encodeToString(bytes, Base64.NO_WRAP));
+            if (requestedClick != null) result.putString("clicked", Boolean.toString(click(root, requestedClick.toLowerCase(Locale.ROOT), 0)));
             finish(Activity.RESULT_OK, result);
         } catch (Exception error) {
             result.putString("probe_error", error.toString());
             finish(Activity.RESULT_CANCELED, result);
         }
+    }
+
+    private boolean click(AccessibilityNodeInfo node, String label, int depth) {
+        if (depth > 64 || !node.isVisibleToUser()) return false;
+        String text = node.getText() == null ? "" : node.getText().toString().toLowerCase(Locale.ROOT);
+        String description = node.getContentDescription() == null ? "" : node.getContentDescription().toString().toLowerCase(Locale.ROOT);
+        if (label.equals(text) || label.equals(description)) {
+            AccessibilityNodeInfo target = node;
+            for (int parent = 0; parent < 4 && target != null; parent++, target = target.getParent()) {
+                if (target.isClickable()) return target.performAction(AccessibilityNodeInfo.ACTION_CLICK);
+            }
+        }
+        for (int index = 0; index < node.getChildCount(); index++) {
+            AccessibilityNodeInfo child = node.getChild(index);
+            if (child != null && click(child, label, depth + 1)) return true;
+        }
+        return false;
     }
 
     private void write(AccessibilityNodeInfo node, XmlSerializer xml, int depth, int[] count) throws Exception {
