@@ -11,6 +11,12 @@ repairs and **1,867 passing Python tests plus 19 subtests**. Fresh native CI,
 a signed TestFlight build and actual phone trials remain required before beta
 invitations. The current beta scope is the read-only interface and setup guides.
 
+The [October 15 Android live-input increment](docs/android-live-sound-check-2026-10-15.md)
+adds an optional **Sound → Live sound check** using real foreground microphone
+samples. Its separate **Audio Bodyguard Live Test** APK can coexist with the
+preview. Digital input levels do not establish acoustic safety or active
+protection. TV control and qualified output paths remain unavailable.
+
 The [internal TestFlight preparation](docs/testflight-beta-preparation.md)
 automates checks on an exact reviewed source revision and provides a manually
 requested signing/upload lane after Apple account and signing setup. It does

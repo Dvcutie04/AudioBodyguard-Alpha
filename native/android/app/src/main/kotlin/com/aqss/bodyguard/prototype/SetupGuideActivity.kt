@@ -423,6 +423,7 @@ class SetupGuideActivity : Activity() {
         render()
     }
     @Deprecated("Compatibility for Android 12 and earlier")
+    @android.annotation.SuppressLint("GestureBackNavigation") // API 33+ uses the platform OnBackInvokedCallback.
     override fun onBackPressed() { back() }
     override fun onSaveInstanceState(outState: Bundle) {
         outState.putAll(location()); outState.putString("completedTVRoute", completedTVRoute); outState.putString(SELECTED_SYSTEM, selectedSystem); outState.putParcelableArrayList("setupHistory", ArrayList(history)); super.onSaveInstanceState(outState)

@@ -11,8 +11,18 @@ android {
         applicationId = "com.aqss.bodyguard.prototype"
         minSdk = 26
         targetSdk = 36
-        versionCode = 1
-        versionName = "0.1-simulation"
+        versionCode = 2
+        versionName = "0.2-input-check"
+    }
+
+    buildTypes {
+        create("liveInput") {
+            initWith(getByName("debug"))
+            applicationIdSuffix = ".liveinput"
+            versionNameSuffix = "-live-input"
+            matchingFallbacks += listOf("debug")
+            resValue("string", "app_name", "Audio Bodyguard Live Test")
+        }
     }
 
     compileOptions {
