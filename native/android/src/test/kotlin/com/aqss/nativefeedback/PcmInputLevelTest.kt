@@ -7,21 +7,21 @@ class PcmInputLevelTest {
         val level = PcmInputLevel.measure(ShortArray(1600), 1600)
         assertNull(level.rmsDbfs)
         assertEquals(0.0, level.peakFraction)
-        assertEquals(0, level.clippedSamples)
+        assertEquals(0, level.fullScaleSamples)
     }
 
     @Test fun digitalAmplitudeUsesSigned16FullScaleAndOnlyTheReadPrefix() {
         val level = PcmInputLevel.measure(shortArrayOf(16384, -16384, 32767), 2)
         assertEquals(-6.020599913, level.rmsDbfs!!, 0.000001)
         assertEquals(0.5, level.peakFraction)
-        assertEquals(0, level.clippedSamples)
+        assertEquals(0, level.fullScaleSamples)
         assertEquals(2, level.sampleCount)
     }
 
-    @Test fun mostNegativeSampleDoesNotOverflowAndClippingIsCounted() {
+    @Test fun mostNegativeSampleDoesNotOverflowAndFullScaleIsCounted() {
         val level = PcmInputLevel.measure(shortArrayOf(-32768, 32767), 2)
         assertEquals(1.0, level.peakFraction)
-        assertEquals(2, level.clippedSamples)
+        assertEquals(2, level.fullScaleSamples)
         assertTrue(level.rmsDbfs!! <= 0.0)
         assertFailsWith<IllegalArgumentException> { PcmInputLevel.measure(shortArrayOf(1), 0) }
         assertFailsWith<IllegalArgumentException> { PcmInputLevel.measure(shortArrayOf(1), 2) }

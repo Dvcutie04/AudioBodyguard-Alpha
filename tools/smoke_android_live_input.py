@@ -18,7 +18,7 @@ def main():
     package = args.package
 
     def adb(*command, timeout=45):
-        return subprocess.check_output(["adb", *command], timeout=timeout)
+        return subprocess.check_output(["adb", *command], timeout=timeout, stdin=subprocess.DEVNULL)
 
     def screen(name):
         adb("shell", "uiautomator", "dump", "/sdcard/aqss-live-input.xml")
@@ -40,7 +40,7 @@ def main():
     def tap(text, name, optional=False):
         root = screen(name)
         for node in root.iter("node"):
-            if text in (node.get("text", ""), node.get("content-desc", "")):
+            if text.casefold() in (node.get("text", "").casefold(), node.get("content-desc", "").casefold()):
                 bounds = list(map(int, re.findall(r"\d+", node.get("bounds", ""))))
                 assert len(bounds) == 4
                 x1, y1, x2, y2 = bounds

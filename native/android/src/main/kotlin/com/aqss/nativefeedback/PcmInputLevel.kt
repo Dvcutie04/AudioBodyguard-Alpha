@@ -9,7 +9,7 @@ class PcmInputLevel private constructor(
     val sampleCount: Int,
     val rmsDbfs: Double?,
     val peakFraction: Double,
-    val clippedSamples: Int,
+    val fullScaleSamples: Int,
 ) {
     companion object {
         fun measure(samples: ShortArray, count: Int): PcmInputLevel {

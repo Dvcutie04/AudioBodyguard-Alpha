@@ -10,7 +10,7 @@ N2b–N5 remain pending. The existing iOS shell is unchanged; iPhone remains a
 product target and needs its own native implementation and device tests.
 
 The test reads mono PCM16 microphone input into one reusable 100 ms buffer,
-computes RMS dBFS, peak fraction and clipped-sample count, and discards raw
+computes RMS dBFS, peak fraction and full-scale-sample count, and discards raw
 samples. It runs only after an explicit Start with microphone permission, for
 at most 30 seconds while the Activity is resumed. No audio is written, uploaded,
 transcribed or played. No sound command, volume change, output observation,

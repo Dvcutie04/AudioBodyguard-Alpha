@@ -138,20 +138,25 @@ class LiveSoundCheckActivity : Activity() {
                     }
                     val current = window.current(now)
                     if (current == null) {
-                        meter.clear(); level.text = "No current input samples"
-                        status.text = "Waiting for microphone input…"
+                        meter.clear(); show(level, "No current input samples")
+                        show(status, "Waiting for microphone input…")
                         if (now - lastSample >= 3000) stopCapture("No current microphone input. Check microphone privacy, then tap Start to retry.")
                     } else {
-                        status.text = "Microphone samples received · up to 30 seconds"
-                        level.text = current.rmsDbfs?.let { String.format(Locale.US, "%.1f dBFS", it) }
+                        show(status, "Microphone samples received · up to 30 seconds")
+                        val value = current.rmsDbfs?.let { String.format(Locale.US, "%.1f dBFS", it) }
                             ?: "No input signal · quiet or blocked"
-                        if (current.clippedSamples > 0) level.append("\nDigital input clipped")
+                        show(level, value + if (current.fullScaleSamples > 0) "\nInput reached digital full scale" else "")
                     }
-                    details.text = "${Build.MANUFACTURER} ${Build.MODEL} · Android ${Build.VERSION.RELEASE}\n${source.description}"
+                    show(details, "${Build.MANUFACTURER} ${Build.MODEL} · Android ${Build.VERSION.RELEASE}\n${source.description}")
                 }
             }
             handler.postDelayed(this, 100)
         }
+    }
+
+    private fun show(view: TextView, value: String) {
+        // Identical input must not generate a stream of accessibility text-change events.
+        if (view.text.toString() != value) view.text = value
     }
 
     override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<out String>, grantResults: IntArray) {
