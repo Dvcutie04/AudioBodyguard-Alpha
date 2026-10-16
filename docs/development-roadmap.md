@@ -6,6 +6,14 @@ Checkpoint: September 26, 2026. Continue from the restored a-Shell baseline and 
 
 ## Current checkpoint
 
+October 15 Android input increment: David reported a successful preview install
+on a VL68 Pro running Android 16. The next separate test build adds a bounded,
+user-started microphone sound check. Its [research and verification record](android-live-sound-check-2026-10-15.md)
+distinguishes real digital input samples from output observation, calibrated
+acoustics and protection. This product sensing step leaves N2b–N5 pending and
+does not imply installed-device qualification of the new feature. iOS input
+parity remains pending.
+
 September 28 interface increment (PR #28, following PR #27): five native pages
 share Midnight/Daylight/System presentation, contextual help, truthful empty
 insights and an explicitly synthetic example chart. Future feature cards

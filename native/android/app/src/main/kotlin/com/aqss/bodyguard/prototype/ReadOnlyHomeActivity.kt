@@ -369,6 +369,9 @@ class ReadOnlyHomeActivity : Activity() {
     }
 
     private fun soundPage() {
+        destination("Live sound check", "Try the phone microphone for 30 seconds") {
+            startActivity(Intent(this, LiveSoundCheckActivity::class.java).putExtra("dark", skin.dark))
+        }
         destination("Voice check", "See microphone activity and recognized words") { openInputTool("voice") }
         card("options") { c ->
             label(c, "Sound options", 22f, bold = true)
@@ -590,6 +593,7 @@ class ReadOnlyHomeActivity : Activity() {
         } else if (!needed) { backCallback?.let { onBackInvokedDispatcher.unregisterOnBackInvokedCallback(it) }; backCallback = null }
     }
     @Deprecated("Legacy Back fallback for Android 8–12")
+    @android.annotation.SuppressLint("GestureBackNavigation") // API 33+ uses syncBackCallback's platform dispatcher.
     override fun onBackPressed() { if (!handleLocalBack()) super.onBackPressed() }
     override fun onDestroy() {
         resetSettingSwitches()

@@ -1,0 +1,202 @@
+package com.aqss.bodyguard.prototype
+
+import android.Manifest
+import android.app.Activity
+import android.app.AlertDialog
+import android.content.pm.PackageManager
+import android.graphics.Canvas
+import android.graphics.Paint
+import android.os.*
+import android.view.View
+import android.view.WindowInsets
+import android.widget.*
+import com.aqss.nativefeedback.SoundCheckWindow
+import java.util.Locale
+
+/** Real microphone input display; no output actuation or protective-state authority. */
+class LiveSoundCheckActivity : Activity() {
+    private lateinit var skin: InterfaceTheme
+    private lateinit var status: TextView
+    private lateinit var level: TextView
+    private lateinit var details: TextView
+    private lateinit var start: Button
+    private lateinit var meter: LiveInputMeter
+    private val handler = Handler(Looper.getMainLooper())
+    private val window = SoundCheckWindow()
+    private var capture: MicrophoneCapture? = null
+    private var run = 0L
+    private var started = 0L
+    private var lastSample = 0L
+    private var visible = false
+    private var stopping = false
+
+    override fun onCreate(savedInstanceState: Bundle?) {
+        val dark = intent.getBooleanExtra("dark", true)
+        setTheme(if (dark) R.style.AQSSMidnightTheme else R.style.AQSSReadOnlyTheme)
+        super.onCreate(savedInstanceState)
+        skin = InterfaceTheme(this, dark)
+        val root = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            setPadding(skin.dp(16), skin.dp(28), skin.dp(16), skin.dp(16))
+            setBackgroundColor(skin.background)
+        }
+        val header = LinearLayout(this)
+        header.addView(TextView(this).apply { text = "Live sound check"; textSize = 24f; setTextColor(skin.text) }, LinearLayout.LayoutParams(0, -2, 1f))
+        header.addView(Button(this).apply { text = "Back"; skin.style(this); setOnClickListener { finish() } })
+        root.addView(header)
+        val column = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL }
+        fun text(value: String, size: Float = 17f) = TextView(this).apply {
+            this.text = value; textSize = size; setTextColor(skin.text)
+            setPadding(0, skin.dp(12), 0, skin.dp(12)); column.addView(this)
+        }
+        text("Try a 30-second microphone check. Speak normally and watch the bars respond.")
+        status = text("Microphone off", 21f)
+        meter = LiveInputMeter(this, skin)
+        column.addView(meter, LinearLayout.LayoutParams(-1, skin.dp(135)))
+        level = text("No live input", 22f)
+        text("Relative microphone input · not calibrated room loudness", 15f).setTextColor(skin.muted)
+        column.addView(Button(this).apply {
+            this.text = "[?] What does this show?"; skin.style(this)
+            setOnClickListener {
+                stopCapture("Microphone stopped while help is open.")
+                AlertDialog.Builder(this@LiveSoundCheckActivity).setTitle("About the sound check")
+                    .setMessage("The bars use real microphone samples from this phone. dBFS describes digital input relative to the microphone’s maximum sample value. It is not dBA or a hearing-safety measurement. Phone gain, processing, position and input route change the result.\n\nZero input can mean a quiet signal or blocked input. This check cannot decide whether sound is safe.\n\nListening stops after 30 seconds or when you leave this screen. No audio files are saved or uploaded. Automatic audio protection and TV controls are still unavailable.")
+                    .setPositiveButton("Close", null).show()
+            }
+        })
+        details = text("${Build.MANUFACTURER} ${Build.MODEL} · Android ${Build.VERSION.RELEASE}\nInput details appear while the check runs.", 15f).apply { visibility = View.GONE }
+        column.addView(Button(this).apply {
+            this.text = "Show input details"; skin.style(this)
+            setOnClickListener {
+                details.visibility = if (details.visibility == View.GONE) View.VISIBLE else View.GONE
+                this.text = if (details.visibility == View.VISIBLE) "Hide input details" else "Show input details"
+            }
+        })
+        text("Automatic protection is not active.", 16f).setTextColor(skin.warning)
+        root.addView(ScrollView(this).apply { addView(column) }, LinearLayout.LayoutParams(-1, 0, 1f))
+        start = Button(this).apply {
+            text = "Start sound check"; skin.style(this, primary = true)
+            setOnClickListener { if (capture == null) startCapture() else stopCapture("Microphone stopped") }
+        }
+        root.addView(start, LinearLayout.LayoutParams(-1, -2))
+        setContentView(root)
+        root.setOnApplyWindowInsetsListener { view, insets ->
+            if (Build.VERSION.SDK_INT >= 30) {
+                val bars = insets.getInsets(WindowInsets.Type.systemBars())
+                view.setPadding(skin.dp(16) + bars.left, skin.dp(12) + bars.top, skin.dp(16) + bars.right, skin.dp(12) + bars.bottom)
+            }
+            insets
+        }
+    }
+
+    override fun onResume() {
+        super.onResume(); visible = true
+        if (capture != null) handler.post(tick)
+    }
+
+    private fun startCapture() {
+        if (!visible || capture != null) return
+        if (checkSelfPermission(Manifest.permission.RECORD_AUDIO) != PackageManager.PERMISSION_GRANTED) {
+            requestPermissions(arrayOf(Manifest.permission.RECORD_AUDIO), 73); return
+        }
+        started = SystemClock.elapsedRealtime(); lastSample = started
+        run = window.start(started); stopping = false
+        meter.clear(); level.text = "Waiting for microphone input"
+        status.text = "Starting microphone…"
+        capture = MicrophoneCapture(this).also { it.start() }
+        start.text = "Stop sound check"; start.isEnabled = true
+        handler.removeCallbacks(tick); handler.post(tick)
+    }
+
+    private fun stopCapture(message: String) {
+        window.stop(); meter.clear(); level.text = "No live input"
+        capture?.let {
+            stopping = true; it.stop(message); status.text = "Stopping microphone…"
+            start.isEnabled = false
+        } ?: run { status.text = message }
+    }
+
+    private val tick = object : Runnable {
+        override fun run() {
+            if (!visible) return
+            val source = capture ?: return
+            val now = SystemClock.elapsedRealtime()
+            if (source.completed.get()) {
+                window.stop(); if (!source.cleanupFailed) capture = null; stopping = false
+                meter.clear(); level.text = "No live input"; status.text = source.stopReason
+                start.text = "Start sound check"; start.isEnabled = !source.cleanupFailed
+                return
+            }
+            if (!stopping) {
+                if (now - started >= 30_000) stopCapture("30-second check finished. Tap Start for another check.")
+                else {
+                    source.takeLatest()?.let { frame ->
+                        if (window.offer(run, frame.receivedAtMs, now, frame.level)) {
+                            lastSample = frame.receivedAtMs
+                            meter.add(frame.level.rmsDbfs?.let { ((it + 60.0) / 60.0).toFloat().coerceIn(0f, 1f) } ?: 0f)
+                        }
+                    }
+                    val current = window.current(now)
+                    if (current == null) {
+                        meter.clear(); show(level, "No current input samples")
+                        show(status, "Waiting for microphone input…")
+                        if (now - lastSample >= 3000) stopCapture("No current microphone input. Check microphone privacy, then tap Start to retry.")
+                    } else {
+                        show(status, "Microphone samples received · up to 30 seconds")
+                        val value = current.rmsDbfs?.let { String.format(Locale.US, "%.1f dBFS", it) }
+                            ?: "No input signal · quiet or blocked"
+                        show(level, value + if (current.fullScaleSamples > 0) "\nInput reached digital full scale" else "")
+                    }
+                    show(details, "${Build.MANUFACTURER} ${Build.MODEL} · Android ${Build.VERSION.RELEASE}\n${source.description}")
+                }
+            }
+            handler.postDelayed(this, 100)
+        }
+    }
+
+    private fun show(view: TextView, value: String) {
+        // Identical input must not generate a stream of accessibility text-change events.
+        if (view.text.toString() != value) view.text = value
+    }
+
+    override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<out String>, grantResults: IntArray) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
+        if (requestCode == 73) status.text = if (grantResults.firstOrNull() == PackageManager.PERMISSION_GRANTED)
+            "Permission granted. Tap Start when you are ready." else "Microphone permission denied. You can allow it in Android Settings."
+    }
+
+    override fun onPause() {
+        visible = false; handler.removeCallbacks(tick)
+        stopCapture("Microphone stopped when you left the sound check.")
+        super.onPause()
+    }
+
+    override fun onDestroy() {
+        handler.removeCallbacksAndMessages(null)
+        capture?.stop("Sound check closed")
+        super.onDestroy()
+    }
+}
+
+/** A bounded history of digital RMS summaries, cleared as soon as samples become stale. */
+private class LiveInputMeter(activity: Activity, private val skin: InterfaceTheme) : View(activity) {
+    private val values = FloatArray(60)
+    private var count = 0
+    private var next = 0
+    private val paint = Paint(Paint.ANTI_ALIAS_FLAG)
+    init { importantForAccessibility = IMPORTANT_FOR_ACCESSIBILITY_NO }
+    fun clear() { values.fill(0f); count = 0; next = 0; invalidate() }
+    fun add(value: Float) { values[next] = value; next = (next + 1) % values.size; count = minOf(count + 1, values.size); invalidate() }
+    override fun onDraw(canvas: Canvas) {
+        super.onDraw(canvas)
+        paint.color = skin.raised; canvas.drawRoundRect(0f, 0f, width.toFloat(), height.toFloat(), 16f, 16f, paint)
+        paint.color = skin.accent
+        val gap = width.toFloat() / values.size
+        for (i in 0 until count) {
+            val index = (next - count + i + values.size) % values.size
+            val left = (values.size - count + i) * gap
+            val barHeight = maxOf(skin.dp(2).toFloat(), values[index] * (height - skin.dp(16)))
+            canvas.drawRect(left, height - skin.dp(8) - barHeight, left + gap * .72f, height - skin.dp(8).toFloat(), paint)
+        }
+    }
+}
