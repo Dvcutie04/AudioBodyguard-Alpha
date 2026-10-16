@@ -25,6 +25,7 @@ Reviewed October 15, 2026:
 | [AudioRecord](https://developer.android.com/reference/android/media/AudioRecord) | Read bounded blocks away from the UI thread; handle negative/zero returns and release the owned recorder after the reader exits. A PCM read is input data, not evidence of speaker output. |
 | [Sharing audio input](https://developer.android.com/media/platform/sharing-audio-input) | Capture may be silenced or rerouted. Register the recording callback before starting on API 29+, check the current capture configuration, and stop when blocked or when a known route changes. Missing or zero input cannot establish acoustic silence. |
 | [MediaRecorder overview](https://developer.android.com/media/platform/mediarecorder) | Request UNPROCESSED only when the platform advertises it; otherwise request VOICE_RECOGNITION. Neither request establishes actual calibrated gain. |
+| [UiAutomation](https://developer.android.com/reference/android/app/UiAutomation) | A test-only observer can snapshot the active window directly. The older idle-waiting dump command cannot reliably observe a continuously changing live meter. |
 
 The selected design uses AudioRecord instead of the existing SpeechRecognizer
 meter. It works independently of an installed on-device speech recognizer and
@@ -38,7 +39,9 @@ increment and is not requested.
   The UI consumes at most ten summaries a second. No per-buffer UI work queue.
 - Lifecycle pause, manual Stop, permission loss, platform silencing, route
   change, recorder failure and the time limit close that capture. Restart
-  requires another explicit Start. A new capture waits for prior cleanup.
+  requires another explicit Start. A process-wide owner makes a new capture
+  wait for prior cleanup even across Activity recreation. Failed native release
+  keeps that owner closed until the app process is force-stopped.
 - A generation-bound display window rejects old runs, future or rolled-back
   receive times, summaries older than 750 ms, and input at the 30-second limit.
   These are local receive times, not calibrated microphone acquisition times.
@@ -88,8 +91,11 @@ this new feature.
 - The first Android 16 UI run installed and launched the new Activity, then
   stopped at a test-runner case mismatch: the platform's **DON’T ALLOW** button
   was uppercase. A second run encountered a missing UI hierarchy at cold launch.
-  The runner now matches labels without case sensitivity and uses four bounded
-  hierarchy attempts, refusing to infer any result from missing or stale XML.
+  A later run observed input and manual Stop but lost the next live state while
+  UiAutomator waited for the changing meter to become idle. The runner now uses
+  a separate test-only UiAutomation observer process, case-insensitive labels
+  and four bounded hierarchy attempts. It refuses results from missing XML;
+  the observer is not included in the user-facing APK.
   The [Android 16 lifecycle workflow](https://github.com/Dvcutie04/AudioBodyguard-Alpha/actions/workflows/android-live-input.yml)
   retains the current result and UI evidence; inspect the run for the runtime
   result rather than inferring it from compilation. A local software-rendered
@@ -97,7 +103,7 @@ this new feature.
 - The deliverable is `AudioBodyguard-Live-Input-Test-0.2.apk`, version code **2**,
   target API **36**, min API **26**, with ARM64, ARMv7, x86 and x86-64 libraries.
   Its APK v2 signature verifies. SHA-256:
-  `8542c251bdbc99dd38fb3bb9ee6ae34da2d728220194616d80f59db86eb23ced`.
+  `d92f1b0f233eed05736df005024575cfc10c87d11c23569bb30f7aca3da83ee3`.
 
 The VL68 Pro microphone trial, calibrated acoustic measurements, resource
 measurements and physical protection qualification remain unreported.

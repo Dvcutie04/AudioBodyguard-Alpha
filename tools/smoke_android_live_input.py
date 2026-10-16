@@ -2,6 +2,7 @@
 """Install and inspect the live-input test in an isolated emulator; no acoustic claim."""
 from pathlib import Path
 import argparse
+import base64
 import re
 import subprocess
 import time
@@ -12,6 +13,7 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--apk", default="native/android/app/build/outputs/apk/liveInput/app-liveInput.apk")
     parser.add_argument("--package", default="com.aqss.bodyguard.prototype.liveinput")
+    parser.add_argument("--probe-apk", default="native/android/uiprobe/build/outputs/apk/debug/uiprobe-debug.apk")
     args = parser.parse_args()
     out = Path("artifacts/ui/android-live-input")
     out.mkdir(parents=True, exist_ok=True)
@@ -22,15 +24,18 @@ def main():
 
     def screen(name):
         for attempt in range(4):
-            adb("shell", "rm", "-f", "/sdcard/aqss-live-input.xml")
             try:
-                adb("shell", "uiautomator", "dump", "/sdcard/aqss-live-input.xml")
-                data = adb("exec-out", "cat", "/sdcard/aqss-live-input.xml")
+                output = adb("shell", "am", "instrument", "-w", "com.aqss.bodyguard.uiprobe/.HierarchyProbe").decode()
+                (out / f"{name}-probe-{attempt}.txt").write_text(output)
+                encoded = re.search(r"^INSTRUMENTATION_RESULT: hierarchy=(.+)$", output, re.MULTILINE)
+                if encoded is None:
+                    raise ValueError("No hierarchy returned by the live snapshot observer")
+                data = base64.b64decode(encoded.group(1).strip(), validate=True)
                 root = ET.fromstring(data)
                 if root.tag == "hierarchy" and root.find("node") is not None:
                     (out / f"{name}.xml").write_bytes(data)
                     return root
-            except (ET.ParseError, subprocess.CalledProcessError, subprocess.TimeoutExpired):
+            except (ValueError, ET.ParseError, subprocess.CalledProcessError, subprocess.TimeoutExpired):
                 pass
             print(f"UI hierarchy unavailable for {name}; bounded retry {attempt + 1}/4", flush=True)
             time.sleep(2)
@@ -68,6 +73,7 @@ def main():
         adb("shell", "am", "start", "-W", "-f", "0x10200000", "-a", "android.intent.action.MAIN",
             "-c", "android.intent.category.LAUNCHER", "-n", f"{package}/com.aqss.bodyguard.prototype.ReadOnlyHomeActivity")
 
+    adb("install", "-t", "-r", args.probe_apk, timeout=120)
     adb("install", "-r", args.apk, timeout=120)
     adb("shell", "pm", "clear", package)
     adb("logcat", "-c")
@@ -103,6 +109,15 @@ def main():
     (out / "after-background-appops.txt").write_text(appops)
     assert "(running)" not in appops, appops
 
+    tap("Start sound check", "restart_before_rotation")
+    wait_for("Microphone samples received", "before_rotation")
+    adb("shell", "settings", "put", "system", "accelerometer_rotation", "0")
+    adb("shell", "settings", "put", "system", "user_rotation", "1")
+    wait_for("Microphone off", "rotated_stopped")
+    assert has(screen("rotation_no_input"), "No live input")
+    adb("shell", "settings", "put", "system", "user_rotation", "0")
+    wait_for("Microphone off", "portrait_stopped")
+
     tap("Start sound check", "restart_for_timeout")
     started = time.monotonic()
     wait_for("Microphone samples received", "before_timeout")
@@ -118,7 +133,7 @@ def main():
     crashes = adb("logcat", "-b", "crash", "-d").decode()
     (out / "crash-log.txt").write_text(crashes)
     assert "FATAL EXCEPTION" not in crashes, crashes
-    print("LIVE_INPUT_EMULATOR_OBSERVED: permission denial, PCM samples, manual stop, background stop, no automatic restart, 30-second limit, and Back passed. No physical microphone or output qualification.", flush=True)
+    print("LIVE_INPUT_EMULATOR_OBSERVED: permission denial, PCM samples, manual stop, background stop, rotation stop, no automatic restart, 30-second limit, and Back passed. No physical microphone or output qualification.", flush=True)
 
 
 if __name__ == "__main__":

@@ -14,7 +14,12 @@ internal data class InputFrame(val receivedAtMs: Long, val level: PcmInputLevel)
 
 /** One bounded foreground capture. The worker alone releases its recorder and raw buffer. */
 internal class MicrophoneCapture(context: Context) {
+    companion object {
+        // Survives Activity recreation; an unresolved recorder cannot be bypassed by rotation.
+        private val processOwner = AtomicReference<MicrophoneCapture?>(null)
+    }
     private val app = context.applicationContext
+    private val launched = AtomicBoolean(false)
     private val lock = Any()
     private var recorder: AudioRecord? = null
     private val cancelled = AtomicBoolean(false)
@@ -29,7 +34,15 @@ internal class MicrophoneCapture(context: Context) {
     fun takeLatest(): InputFrame? = latest.getAndSet(null)
     val stopReason: String get() = result.get() ?: "Microphone stopped"
 
-    fun start() { Thread({ capture() }, "aqss-microphone-check").start() }
+    fun start() {
+        if (!launched.compareAndSet(false, true)) return
+        if (!processOwner.compareAndSet(null, this)) {
+            result.set("The previous microphone check is still closing. Wait, then tap Start.")
+            completed.set(true)
+            return
+        }
+        Thread({ capture() }, "aqss-microphone-check").start()
+    }
 
     fun stop(reason: String) {
         result.compareAndSet(null, reason)
@@ -134,12 +147,13 @@ internal class MicrophoneCapture(context: Context) {
                     try { audio.stop() } catch (_: Exception) {}
                     try { audio.release() } catch (_: Exception) {
                         cleanupFailed = true
-                        result.set("Microphone cleanup failed. Close this test app before trying again.")
+                        result.set("Microphone cleanup failed. Force stop this app in Android Settings before trying again.")
                     }
                 }
             }
             samples?.fill(0)
             completed.set(true)
+            if (!cleanupFailed) processOwner.compareAndSet(this, null)
         }
     }
 
