@@ -18,7 +18,7 @@ physical receipt, coverage status or endpoint authorization is produced.
 
 ## Refreshed primary research
 
-Reviewed October 15, 2026:
+Reviewed October 15, 2026; verification updated October 16, 2026:
 
 | Source | Design consequence |
 | --- | --- |
@@ -86,20 +86,22 @@ this new feature.
   existing platform-view conventions and English UI strings. Existing guarded
   Insets access was made explicit for lint; platform Back handlers and the
   intentional platform-only ImageView are documented with narrow annotations.
-- [Hosted CI for the code revision](https://github.com/Dvcutie04/AudioBodyguard-Alpha/actions/runs/38834770814)
+- [Hosted CI for the code revision](https://github.com/Dvcutie04/AudioBodyguard-Alpha/actions/runs/38837915574)
   passed Python, Android, Swift/iOS simulator compilation and the scripted C lab.
-- The first Android 16 UI run installed and launched the new Activity, then
-  stopped at a test-runner case mismatch: the platform's **DON’T ALLOW** button
-  was uppercase. A second run encountered a missing UI hierarchy at cold launch.
-  A later run observed input and manual Stop but lost the next live state while
-  UiAutomator waited for the changing meter to become idle. The runner now uses
-  a separate test-only UiAutomation observer process, case-insensitive labels
-  and four bounded hierarchy attempts. It refuses results from missing XML;
-  the observer is not included in the user-facing APK.
-  The [Android 16 lifecycle workflow](https://github.com/Dvcutie04/AudioBodyguard-Alpha/actions/workflows/android-live-input.yml)
-  retains the current result and UI evidence; inspect the run for the runtime
-  result rather than inferring it from compilation. A local software-rendered
-  emulator did not finish Android service startup and provides no UI pass.
+- The [Android 16 live-input run](https://github.com/Dvcutie04/AudioBodyguard-Alpha/actions/runs/38837915714)
+  passed at source commit `65776630cf3281b12e543f38c6b5fb5286b559ce`.
+  It observed permission denial, PCM input, manual Stop, background stop,
+  rotation stop, no automatic restart, the 30-second time limit, Back navigation
+  and no fatal crash. The run retains the actual UI hierarchies, screenshots,
+  AppOps observation and logs. Emulator PCM is not a physical-microphone trial.
+- Earlier UI-run failures were test observer defects: permission-label case,
+  missing cold-launch roots, UiAutomator's idle wait during a changing meter,
+  and a permission-dialog coordinate tap. The final runner uses a separate
+  test-only UiAutomation process, bounded root retrieval, case-insensitive
+  labels and actual accessibility click actions with shell-safe arguments.
+  Missing XML fails the test. The observer is not included in the user APK.
+  A local software-rendered emulator did not finish Android service startup
+  and provides no UI pass.
 - The deliverable is `AudioBodyguard-Live-Input-Test-0.2.apk`, version code **2**,
   target API **36**, min API **26**, with ARM64, ARMv7, x86 and x86-64 libraries.
   Its APK v2 signature verifies. SHA-256:
