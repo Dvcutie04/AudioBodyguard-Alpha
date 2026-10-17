@@ -73,6 +73,26 @@ phone capture, latency, battery, accessibility and acoustic calibration require
 independent observations. No installed-device trial has yet been recorded for
 this new feature.
 
+## Reported VL68 Pro trial — October 17, 2026
+
+David reported that Home navigation and locking/unlocking the Android 16
+VL68 Pro stopped a user-started capture. Three user-provided camera videos
+show the installed app's Live sound check screen:
+
+| Video (SHA-256 prefix) | Visual observation |
+| --- | --- |
+| `CameraRecording-BBE9E380-7DB9-4FCF-816F-7A8A0431532E.mp4` (`2804ea6a0bcf`), 16.67 s | Start with no displayed input, followed by moving bars and readings near -44 dBFS. |
+| `CameraRecording-D4C38587-91DC-4FF6-B4A0-BF264C2254B4.mp4` (`6d5c9d59efe7`), 11.10 s | Start near -90 dBFS and continue near -44 dBFS; no clear return to the initial level. |
+| `CameraRecording-F4E1962D-A87E-4513-90E4-966F82DA8B2C.mp4` (`b1ecd7f95053`), 20.00 s | Bars remain active, with the visible reading falling from roughly -44 to -48 dBFS to about -52 to -53 dBFS near 13 s. |
+
+The videos have no audio stream and do not show TV mute state or the TV
+speakers. This is real handset evidence that the foreground display received
+microphone input and responded to a change. Attribution to the TV source,
+acoustic calibration, automatic protection, native output ownership and
+verified physical control remain unestablished. The Home/lock behavior is a
+user report rather than a filmed lifecycle trial. The original manual-trial
+section above is a protocol; it is not a claim that every listed case passed.
+
 ## Verification
 
 - The five new PCM/window tests first failed compilation because their
@@ -107,5 +127,6 @@ this new feature.
   Its APK v2 signature verifies. SHA-256:
   `d92f1b0f233eed05736df005024575cfc10c87d11c23569bb30f7aca3da83ee3`.
 
-The VL68 Pro microphone trial, calibrated acoustic measurements, resource
-measurements and physical protection qualification remain unreported.
+The bounded visual VL68 Pro microphone trial is recorded above. Calibrated
+acoustic measurements, resource measurements and physical protection
+qualification remain unreported.
