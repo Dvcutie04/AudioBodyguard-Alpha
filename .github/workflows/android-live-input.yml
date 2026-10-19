@@ -19,7 +19,7 @@ permissions:
   contents: read
 
 concurrency:
-  group: live-input-${{ github.ref }}
+  group: live-input-${{ github.head_ref || github.ref_name }}
   cancel-in-progress: true
 
 jobs:

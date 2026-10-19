@@ -80,7 +80,7 @@ def main():
     adb("install", "-r", args.apk, timeout=120)
     adb("shell", "pm", "clear", package)
     adb("logcat", "-c")
-    recording = subprocess.Popen(["adb", "shell", "screenrecord", "--time-limit", "7", "/sdcard/aqss-opening.mp4"],
+    recording = subprocess.Popen(["adb", "shell", "screenrecord", "--time-limit", "12", "/sdcard/aqss-opening.mp4"],
                                  stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
     time.sleep(0.4)
     launch()

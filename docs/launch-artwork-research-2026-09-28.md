@@ -17,8 +17,9 @@ and, on Android 12+, the system splash's exit callback;
 a tap dismisses it immediately. Backgrounding dismisses it and removes its
 callback. Restoring an Activity skips the opening layer. Hidden Home/tutorial
 controls do not receive input while the artwork covers them. The title and
-credit respect system-bar and display-cutout insets; all source regions retain
-their aspect ratio. The layer reports no loading progress, connection,
+credit respect system-bar and display-cutout insets. The complete poster is
+fitted proportionally inside that area, without splitting or cropping the
+artwork; extra room on a tall or wide display stays white. The layer reports no loading progress, connection,
 microphone activity or protection. This short product branding interval is an
 explicit correction to September's no-minimum-duration decision.
 
