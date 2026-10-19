@@ -58,9 +58,13 @@ def main():
         raise AssertionError(f"Missing label: {text}")
 
     def tap(text, name, optional=False):
-        _, clicked = screen(name, click=text)
-        if clicked:
-            return True
+        # A successful prior click can still be replacing the active hierarchy.
+        # Retry only a rejected action against a newly retrieved root.
+        for attempt in range(6):
+            _, clicked = screen(f"{name}-{attempt}", click=text)
+            if clicked:
+                return True
+            time.sleep(0.3)
         if optional:
             return False
         raise AssertionError(f"Missing tap target: {text}")
@@ -76,7 +80,20 @@ def main():
     adb("install", "-r", args.apk, timeout=120)
     adb("shell", "pm", "clear", package)
     adb("logcat", "-c")
+    recording = subprocess.Popen(["adb", "shell", "screenrecord", "--time-limit", "7", "/sdcard/aqss-opening.mp4"],
+                                 stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+    time.sleep(0.4)
     launch()
+    try:
+        record_output = recording.communicate(timeout=20)[0]
+    except subprocess.TimeoutExpired:
+        recording.kill()
+        recording.communicate()
+        raise AssertionError("Opening-screen recording did not finish")
+    (out / "opening-recording.txt").write_bytes(record_output)
+    assert recording.returncode == 0, record_output.decode(errors="replace")
+    adb("pull", "/sdcard/aqss-opening.mp4", str(out / "opening.mp4"))
+    screenshot("after_opening")
     wait_for("Start picture setup", "welcome")
     tap("Exit tutorial", "exit_welcome")
     tap("Sound", "sound_page")

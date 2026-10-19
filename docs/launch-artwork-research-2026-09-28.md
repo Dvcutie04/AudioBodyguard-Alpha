@@ -12,7 +12,8 @@ Bodyguard and Silicon Workforce, without editing the image. Its SHA-256 is
 `8f15b1e42a9cf067a7458973edbe43aa9a975b82f728d5ccc47d180bcb50307c`.
 The existing iOS artwork retains the September source described below.
 
-The in-app opening layer is visible for 1,500 ms after its first drawn frame;
+The in-app opening layer is visible for 1,500 ms after its first drawn frame
+and, on Android 12+, the system splash's exit callback;
 a tap dismisses it immediately. Backgrounding dismisses it and removes its
 callback. Restoring an Activity skips the opening layer. Hidden Home/tutorial
 controls do not receive input while the artwork covers them. The title and

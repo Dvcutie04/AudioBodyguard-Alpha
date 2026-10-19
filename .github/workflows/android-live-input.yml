@@ -53,15 +53,7 @@ jobs:
           api-level: 36
           arch: x86_64
           profile: pixel_5
-          script: |
-            mkdir -p artifacts/ui/android-live-input
-            adb install -r native/android/app/build/outputs/apk/liveInput/app-liveInput.apk
-            adb shell am start -W -n com.aqss.bodyguard.prototype.liveinput/com.aqss.bodyguard.prototype.ReadOnlyHomeActivity
-            sleep 0.4
-            adb exec-out screencap -p > artifacts/ui/android-live-input/opening-artwork.png
-            sleep 2
-            adb exec-out screencap -p > artifacts/ui/android-live-input/after-opening.png
-            timeout 480 python3 tools/smoke_android_live_input.py
+          script: timeout 480 python3 tools/smoke_android_live_input.py
       - name: Retain live test APK
         uses: actions/upload-artifact@v4
         with:

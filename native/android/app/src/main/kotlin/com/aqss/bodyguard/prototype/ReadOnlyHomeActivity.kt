@@ -192,14 +192,29 @@ class ReadOnlyHomeActivity : Activity() {
             }
             artwork.setOnClickListener { dismissStartup?.invoke() }
             var firstFrameDrawn = false
+            var systemSplashExited = Build.VERSION.SDK_INT < 31
+            var startupTimeoutScheduled = false
+            fun scheduleStartupEnd() {
+                if (!firstFrameDrawn || !systemSplashExited || startupTimeoutScheduled || dismissStartup == null) return
+                startupTimeoutScheduled = true
+                artwork.postOnAnimation {
+                    if (dismissStartup != null && !isFinishing && !isDestroyed) artwork.postDelayed(finishStartup, 1500L)
+                }
+            }
+            if (Build.VERSION.SDK_INT >= 31) {
+                splashScreen.setOnExitAnimationListener { systemSplash ->
+                    systemSplash.remove()
+                    systemSplashExited = true
+                    scheduleStartupEnd()
+                }
+            }
             val listener = object : ViewTreeObserver.OnDrawListener {
                 override fun onDraw() {
                     if (firstFrameDrawn) return
                     firstFrameDrawn = true
                     artwork.postOnAnimation {
                         if (artwork.viewTreeObserver.isAlive) artwork.viewTreeObserver.removeOnDrawListener(this)
-                        if (dismissStartup == null || isFinishing || isDestroyed) return@postOnAnimation
-                        artwork.postDelayed(finishStartup, 1500L)
+                        scheduleStartupEnd()
                     }
                 }
             }
