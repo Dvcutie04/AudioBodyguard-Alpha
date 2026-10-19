@@ -21,10 +21,14 @@ internal class StartupArtworkView(context: Context) : View(context) {
 
     override fun onDraw(canvas: Canvas) {
         super.onDraw(canvas)
-        if (width <= 0 || height <= 0) return
-        val scale = min(width.toFloat() / artwork.width, height.toFloat() / artwork.height)
+        val contentWidth = width - paddingLeft - paddingRight
+        val contentHeight = height - paddingTop - paddingBottom
+        if (contentWidth <= 0 || contentHeight <= 0) return
+        canvas.save()
+        canvas.translate(paddingLeft.toFloat(), paddingTop.toFloat())
+        val scale = min(contentWidth.toFloat() / artwork.width, contentHeight.toFloat() / artwork.height)
         val drawnWidth = artwork.width * scale
-        val left = (width - drawnWidth) / 2f
+        val left = (contentWidth - drawnWidth) / 2f
         val titleEnd = (artwork.height * (290f / 1733f)).toInt()
         val creditStart = (artwork.height * (1535f / 1733f)).toInt()
         fun section(from: Int, to: Int, top: Float) {
@@ -32,8 +36,9 @@ internal class StartupArtworkView(context: Context) : View(context) {
                 RectF(left, top, left + drawnWidth, top + (to - from) * scale), paint)
         }
         section(0, titleEnd, 0f)
-        section(titleEnd, creditStart, (height - (creditStart - titleEnd) * scale) / 2f)
-        section(creditStart, artwork.height, height - (artwork.height - creditStart) * scale)
+        section(titleEnd, creditStart, (contentHeight - (creditStart - titleEnd) * scale) / 2f)
+        section(creditStart, artwork.height, contentHeight - (artwork.height - creditStart) * scale)
+        canvas.restore()
     }
 
     override fun onDetachedFromWindow() {

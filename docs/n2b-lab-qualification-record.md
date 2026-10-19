@@ -4,6 +4,38 @@
 
 The researched first experiment is an AQSS-owned Linux playback service with one specifically named ALSA PCM resource and an independent capture of its selected physical output. This is a lab candidate, not a mandatory customer accessory or a claim that consumer TV controls can be made equivalent. iPhone/iOS and Android remain equal product targets for later native qualification.
 
+## Available TV observations — October 18, 2026
+
+User-supplied photographs confirm a VIZIO **V505M-K09** and these visible
+connectors: white/red L/R RCA **AUDIO OUT**, **AUDIO OUT OPTICAL**, Ethernet,
+three HDMI sockets (one green-marked) and USB. The rear audio outputs and
+Ethernet are visibly unoccupied. These are connector observations; neither
+their signal operation nor native ownership has been tested.
+
+The user's reported listening route is the TV's built-in speakers. The prior
+TV settings screenshot reports firmware `1.720.9.1-1`, and the last checked
+guest-network address was `192.168.1.105`. Both phones failed to connect through
+VIZIO Mobile. Single-host TCP attempts from the iPhone timed out or reported
+no route; Android displayed address unreachable. These observations support a
+reachability problem but do not establish the guest router's exact policy.
+
+The Android VL68 Pro/Android 16 microphone videos establish a changing live
+input display only, as scoped in the [input trial record](android-live-sound-check-2026-10-15.md).
+They provide neither calibrated independent output capture nor evidence that
+the app can change TV volume. An existing computer, capture interface and
+compatible cables have not yet been inventoried. No adapter implementation
+or equipment purchase follows from the photographs; the Linux experiment
+fields below remain unknown.
+
+Photo identities (SHA-256) for the user-retained source files:
+
+- `IMG_543E6F3A-AD7F-42E9-9822-4F09C226081B.jpeg`:
+  `a990d3d923be03a048f2b4376d2ef5916f74e117afcdeffc3fa882b63db1bf46`.
+- `IMG_E532E656-8918-4ACE-A7D9-B5410C474BF9.jpeg`:
+  `c1ada6668bfe546eb6f965ab3642b3a58b0dbe527d626870f42257a91a0fd77b`.
+- `IMG_13F615DB-6BFD-4F2D-BE4B-53C8C91F0494.jpeg`:
+  `5265f7d73b38cc5e3ec833005a05273195630b6facf7da88d76d744478729eb3`.
+
 ## Pin the scope before writing an adapter
 
 Record actual values and links to immutable instrument output. Leave a field **unknown** rather than guessing.
