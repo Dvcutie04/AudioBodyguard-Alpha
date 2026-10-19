@@ -36,6 +36,22 @@ capture_ui() {
             adb shell uiautomator dump /sdcard/aqss-ui.xml || true
             adb exec-out cat /sdcard/aqss-ui.xml > "$artifact_dir/$label.xml" || true
             if python3 tools/check_android_simulation_ui.py --valid-hierarchy "$artifact_dir/$label.xml"; then
+                # A valid opening-poster snapshot is not yet the navigation page.
+                # Fetch a new hierarchy after that bounded presentation transition.
+                if python3 - "$artifact_dir/$label.xml" <<'OPENING'
+import sys, xml.etree.ElementTree as ET
+root = ET.parse(sys.argv[1]).getroot()
+sys.exit(0 if any(node.get("content-desc", "").startswith("Audio Bodyguard. Silicon Workforce.") for node in root.iter("node")) else 1)
+OPENING
+                then
+                    if [[ "$dump_attempt" -eq 4 ]]; then
+                        adb exec-out screencap -p > "$artifact_dir/$label.png"
+                        echo "Opening artwork did not dismiss before navigation checks" >&2
+                        return 1
+                    fi
+                    sleep 2
+                    continue
+                fi
                 break
             fi
             if [[ "$dump_attempt" -eq 4 ]]; then

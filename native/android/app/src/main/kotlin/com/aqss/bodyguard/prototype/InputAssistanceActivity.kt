@@ -58,8 +58,10 @@ class InputAssistanceActivity : Activity() {
         setContentView(root)
         // Use the same insets behavior on Android 15+ as the main shell.
         root.setOnApplyWindowInsetsListener { view, insets ->
-            val bars = if (Build.VERSION.SDK_INT >= 30) insets.getInsets(android.view.WindowInsets.Type.systemBars()) else null
-            if (bars != null) view.setPadding(skin.dp(16) + bars.left, skin.dp(12) + bars.top, skin.dp(16) + bars.right, skin.dp(12) + bars.bottom)
+            if (Build.VERSION.SDK_INT >= 30) {
+                val bars = insets.getInsets(android.view.WindowInsets.Type.systemBars())
+                view.setPadding(skin.dp(16) + bars.left, skin.dp(12) + bars.top, skin.dp(16) + bars.right, skin.dp(12) + bars.bottom)
+            }
             insets
         }
         if (isVoice) voicePage() else photoPage()

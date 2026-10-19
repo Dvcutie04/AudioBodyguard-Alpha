@@ -69,6 +69,7 @@ class ReadOnlyHomeActivity : Activity() {
     private lateinit var brand: TextView
     private val targets = mutableMapOf<String, View>()
     private var backCallback: OnBackInvokedCallback? = null
+    private var dismissStartup: (() -> Unit)? = null
     private var hintView: TextView? = null
     private var hintText = ""
     private var deviceCallback: AudioDeviceCallback? = null
@@ -159,28 +160,61 @@ class ReadOnlyHomeActivity : Activity() {
             }
         }
         if (saved == null) {
-            // The system splash is icon-sized on Android 12+. Show the complete supplied
-            // artwork for the first drawn frame, then reveal the already-built page.
+            // The system splash is icon-sized on Android 12+. Keep the owner's full
+            // opening artwork readable; tapping skips it without waiting for a timer.
             val frame = FrameLayout(this)
             val artwork = StartupArtworkView(this).apply {
                 setBackgroundColor(Color.WHITE)
+                contentDescription = getString(R.string.startup_artwork_description)
+                isFocusable = true
+                if (Build.VERSION.SDK_INT >= 30) {
+                    setOnApplyWindowInsetsListener { view, insets ->
+                        val bars = insets.getInsets(WindowInsets.Type.systemBars() or WindowInsets.Type.displayCutout())
+                        view.setPadding(bars.left, bars.top, bars.right, bars.bottom)
+                        insets
+                    }
+                }
             }
+            root.visibility = View.INVISIBLE
             frame.addView(root, FrameLayout.LayoutParams(-1, -1))
             frame.addView(artwork, FrameLayout.LayoutParams(-1, -1))
             setContentView(frame)
             setSystemBars(false, true)
+            val finishStartup = Runnable {
+                dismissStartup = null
+                frame.removeView(artwork)
+                root.visibility = View.VISIBLE
+                setSystemBars(dark)
+            }
+            dismissStartup = {
+                artwork.removeCallbacks(finishStartup)
+                finishStartup.run()
+            }
+            artwork.setOnClickListener { dismissStartup?.invoke() }
             var firstFrameDrawn = false
+            var systemSplashExited = Build.VERSION.SDK_INT < 31
+            var startupTimeoutScheduled = false
+            fun scheduleStartupEnd() {
+                if (!firstFrameDrawn || !systemSplashExited || startupTimeoutScheduled || dismissStartup == null) return
+                startupTimeoutScheduled = true
+                artwork.postOnAnimation {
+                    if (dismissStartup != null && !isFinishing && !isDestroyed) artwork.postDelayed(finishStartup, 1500L)
+                }
+            }
+            if (Build.VERSION.SDK_INT >= 31) {
+                splashScreen.setOnExitAnimationListener { systemSplash ->
+                    systemSplash.remove()
+                    systemSplashExited = true
+                    scheduleStartupEnd()
+                }
+            }
             val listener = object : ViewTreeObserver.OnDrawListener {
                 override fun onDraw() {
                     if (firstFrameDrawn) return
                     firstFrameDrawn = true
                     artwork.postOnAnimation {
                         if (artwork.viewTreeObserver.isAlive) artwork.viewTreeObserver.removeOnDrawListener(this)
-                        if (isFinishing || isDestroyed) return@postOnAnimation
-                        artwork.animate().alpha(0f).setDuration(120L).withEndAction {
-                            frame.removeView(artwork)
-                            setSystemBars(dark)
-                        }.start()
+                        scheduleStartupEnd()
                     }
                 }
             }
@@ -369,6 +403,9 @@ class ReadOnlyHomeActivity : Activity() {
     }
 
     private fun soundPage() {
+        destination("Live sound check", "Try the phone microphone for 30 seconds") {
+            startActivity(Intent(this, LiveSoundCheckActivity::class.java).putExtra("dark", skin.dark))
+        }
         destination("Voice check", "See microphone activity and recognized words") { openInputTool("voice") }
         card("options") { c ->
             label(c, "Sound options", 22f, bold = true)
@@ -590,8 +627,14 @@ class ReadOnlyHomeActivity : Activity() {
         } else if (!needed) { backCallback?.let { onBackInvokedDispatcher.unregisterOnBackInvokedCallback(it) }; backCallback = null }
     }
     @Deprecated("Legacy Back fallback for Android 8–12")
+    @android.annotation.SuppressLint("GestureBackNavigation") // API 33+ uses syncBackCallback's platform dispatcher.
     override fun onBackPressed() { if (!handleLocalBack()) super.onBackPressed() }
+    override fun onPause() {
+        dismissStartup?.invoke()
+        super.onPause()
+    }
     override fun onDestroy() {
+        dismissStartup?.invoke()
         resetSettingSwitches()
         if (Build.VERSION.SDK_INT >= 33) backCallback?.let { onBackInvokedDispatcher.unregisterOnBackInvokedCallback(it) }
         backCallback = null; super.onDestroy()

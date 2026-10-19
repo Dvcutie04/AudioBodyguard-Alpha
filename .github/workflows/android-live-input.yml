@@ -1,0 +1,74 @@
+name: Android live microphone input test
+
+on:
+  push:
+    branches: ["aqss/android-live-sound-check"]
+    paths:
+      - "native/android/**"
+      - "tools/smoke_android_live_input.py"
+      - ".github/workflows/android-live-input.yml"
+  pull_request:
+    branches: ["main"]
+    paths:
+      - "native/android/**"
+      - "tools/smoke_android_live_input.py"
+      - ".github/workflows/android-live-input.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: live-input-${{ github.head_ref || github.ref_name }}
+  cancel-in-progress: true
+
+jobs:
+  android-live-input:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: "8.13"
+      - uses: android-actions/setup-android@v4
+      - name: Compile, test input arithmetic and freshness, and check Android lint
+        run: |
+          sdkmanager "platforms;android-36"
+          gradle -p native/android :testDebugUnitTest :app:assembleLiveInput :app:lintLiveInput :uiprobe:assembleDebug
+      - name: Enable emulator acceleration
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+      - name: Inspect permission, input, lifecycle and time limit in Android 16
+        uses: reactivecircus/android-emulator-runner@a421e43855164a8197daf9d8d40fe71c6996bb0d
+        with:
+          api-level: 36
+          arch: x86_64
+          profile: pixel_5
+          script: timeout 480 python3 tools/smoke_android_live_input.py
+      - name: Retain live test APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: AudioBodyguard-Live-Input-Test
+          path: native/android/app/build/outputs/apk/liveInput/app-liveInput.apk
+          if-no-files-found: error
+          retention-days: 14
+      - name: Retain test and UI evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: live-input-verification
+          path: |
+            artifacts/ui/android-live-input/
+            native/android/build/test-results/testDebugUnitTest/
+            native/android/app/build/reports/lint-results-liveInput.*
+          if-no-files-found: ignore
+          retention-days: 14

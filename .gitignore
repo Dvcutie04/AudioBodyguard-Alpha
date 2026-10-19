@@ -15,6 +15,7 @@ coverage.xml
 .build/
 .swiftpm/
 .gradle/
+.kotlin/
 build/
 dist/
 DerivedData/
