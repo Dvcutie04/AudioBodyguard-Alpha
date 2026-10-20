@@ -106,6 +106,41 @@ def main():
             "-c", "android.intent.category.LAUNCHER", "-n", f"{package}/com.aqss.bodyguard.prototype.ReadOnlyHomeActivity")
 
     adb("install", "-t", "-r", args.probe_apk, timeout=120)
+    # Establish a responsive system launcher before AQSS is installed/launched.
+    # A boot-time OS ANR is not an AQSS observation. Preserve it, allow at most
+    # two exact known-system-dialog actions, then require fresh launcher roots.
+    adb("shell", "input", "keyevent", "KEYCODE_HOME")
+    stable = 0
+    recovered = 0
+    for attempt in range(20):
+        root, _ = screen(f"boot-preflight-{attempt}")
+        nodes = list(root.iter("node"))
+        titles = {n.get("text", "") for n in nodes if n.get("package") == "android"}
+        known_launcher = bool(titles & {"Quickstep isn't responding", "Pixel Launcher isn't responding"})
+        known_system = "System UI isn't responding" in titles
+        if known_launcher or known_system:
+            screenshot(f"boot-system-dialog-{recovered}")
+            assert recovered < 2, "System boot dialogs persisted after two recorded recovery actions"
+            action = "Close app" if known_launcher else "Wait"
+            _, clicked = screen(f"boot-recovery-{recovered}", click=action)
+            assert clicked, "Known system boot dialog has no inspectable recovery control"
+            recovered += 1; stable = 0
+            adb("shell", "input", "keyevent", "KEYCODE_HOME")
+        elif len(nodes) > 3 and any(n.get("package") in
+                {"com.android.launcher3", "com.google.android.apps.nexuslauncher"} for n in nodes):
+            stable += 1
+            if stable == 3:
+                break
+        else:
+            stable = 0
+        time.sleep(2)
+    else:
+        screenshot("boot-preflight-unavailable")
+        raise AssertionError("No stable system launcher before installing AQSS")
+    (out / "boot-preflight.txt").write_text(
+        f"Three fresh launcher observations; known boot-dialog recovery actions: {recovered}. "
+        "No app dialog or post-launch ANR is suppressed.\n")
+    print("SYSTEM_LAUNCHER_READY: three fresh observations before app installation", flush=True)
     adb("install", "-r", args.apk, timeout=120)
     adb("shell", "pm", "clear", package)
     adb("logcat", "-c")

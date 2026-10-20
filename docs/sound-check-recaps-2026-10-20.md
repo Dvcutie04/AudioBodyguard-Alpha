@@ -66,6 +66,22 @@ reachable without displacing the live input reading. A retained landscape
 screenshot and the unchanged simultaneous stopped-state assertions verify the
 layout correction.
 
+The corrected app revision `2c457b0` passed all six focused iPhone UI tests
+without skips. Android's first and second attempts at that revision were blocked
+by visible System UI and Quickstep ANR dialogs before app checks; their retained
+snapshots show the system-owned overlay. This is not a passed AQSS observation.
+The CI-only follow-up switches the emulator from deprecated
+`swiftshader_indirect` to supported `swiftshader`, adds `-delay-adb`, and requires
+three fresh launcher observations before installing AQSS. It records and permits
+at most two inspectable, exactly titled launcher/System UI boot-dialog actions;
+unknown/app dialogs, missing controls, persistent boot failure and any post-launch
+ANR still fail. This does not diagnose the emulator's root cause or qualify a
+physical phone. Source basis: [graphics modes](https://developer.android.com/studio/run/emulator-acceleration),
+[emulator troubleshooting](https://developer.android.com/studio/run/emulator-troubleshooting),
+[delayed ADB initialization](https://developer.android.com/studio/releases/emulator).
+The existing full navigation runner already treats exact launcher overlays as a
+separate bounded test-environment condition.
+
 The focused Android emulator and iPhone Simulator checks are extended to observe
 empty recaps after denied permission, sample-observed manual stop, Home/focus
 stop and the elapsed limit, retention across meter navigation, Clear and empty

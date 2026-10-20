@@ -55,6 +55,7 @@ jobs:
           api-level: 36
           arch: x86_64
           profile: pixel_5
+          emulator-options: -no-window -gpu swiftshader -no-snapshot -noaudio -no-boot-anim -delay-adb
           script: timeout 480 python3 tools/smoke_android_live_input.py
       - name: Verify APK signature, opening poster and exact source identity
         run: python3 tools/record_android_test_apk.py
