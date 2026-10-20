@@ -55,6 +55,17 @@ duplicate runs, stale callbacks, five-row eviction and independent snapshots,
 clear during a pending run, fresh stores, and separation from sticky microphone
 cleanup failure.
 
+The first implementation `6764ec4` passed the 42 Swift cases, Android build,
+Python/C gates and unsigned iPhone device archive, but its focused UI jobs found
+two reviewable defects. The Android landscape hierarchy hid the input label
+below the new secondary control; move that control below the meter and reduce
+the graph height on landscape screens. The iPhone observer selected the parent
+sheet's identically named Close button; give the recap Close its own identifier
+and target that exact control. Bounded scrolling keeps secondary controls
+reachable without displacing the live input reading. A retained landscape
+screenshot and the unchanged simultaneous stopped-state assertions verify the
+layout correction.
+
 The focused Android emulator and iPhone Simulator checks are extended to observe
 empty recaps after denied permission, sample-observed manual stop, Home/focus
 stop and the elapsed limit, retention across meter navigation, Clear and empty

@@ -190,10 +190,6 @@ struct LiveSoundCheckView: View {
                 VStack(alignment: .leading, spacing: 18) {
                     Text("Try a 30-second microphone check. Speak normally and watch the bars respond.")
                     Text("This check may pause other audio on your iPhone.").font(.caption).foregroundColor(theme.muted)
-                    Button("Recent sound checks") { showRecaps = true }
-                        .buttonStyle(AppButtonStyle(theme: theme))
-                        .disabled(check.running || check.requesting)
-                        .accessibilityIdentifier("sound-check-recaps")
                     Text(check.status).font(.headline).accessibilityIdentifier("sound-check-status")
                     GeometryReader { box in
                         HStack(alignment: .bottom, spacing: 2) {
@@ -213,6 +209,10 @@ struct LiveSoundCheckView: View {
                     Button(showDetails ? "Hide input details" : "Show input details") { showDetails.toggle() }
                         .buttonStyle(AppButtonStyle(theme: theme))
                     if showDetails { Text(check.details).font(.caption).foregroundColor(theme.muted) }
+                    Button("Recent sound checks") { showRecaps = true }
+                        .buttonStyle(AppButtonStyle(theme: theme))
+                        .disabled(check.running || check.requesting)
+                        .accessibilityIdentifier("sound-check-recaps")
                     Text("Automatic protection is not active.").foregroundColor(theme.warning)
                 }.padding()
             }.accessibilityIdentifier("sound-check-scroll")
@@ -253,7 +253,7 @@ private struct RecentSoundChecksView: View {
             HStack {
                 Text("Recent sound checks").font(.title2.bold())
                 Spacer()
-                RoseButton(title: "Close", theme: theme) { dismiss() }
+                RoseButton(title: "Close", theme: theme) { dismiss() }.accessibilityIdentifier("sound-recaps-close")
             }.padding()
             ScrollView {
                 VStack(alignment: .leading, spacing: 18) {

@@ -99,10 +99,10 @@ final class AQSSReadOnlyUITests: XCTestCase {
         XCTAssertEqual(app.buttons["sound-check-start-stop"].label, "Start sound check")
         label("No live input", app)
         screenshot("Permission denial keeps microphone off", app)
-        app.buttons["sound-check-recaps"].tap()
+        openSoundRecaps(app)
         label("No completed sound checks in this app session.", app)
         screenshot("Recaps stay empty after denied permission", app)
-        app.buttons["Close"].firstMatch.tap()
+        closeSoundRecaps(app)
 
     }
 
@@ -141,18 +141,16 @@ final class AQSSReadOnlyUITests: XCTestCase {
         label("No live input", app)
         XCTAssertEqual(app.buttons["sound-check-start-stop"].label, "Start sound check")
         screenshot("Thirty-second cap clears input", app)
-        app.buttons["sound-check-recaps"].tap()
+        openSoundRecaps(app)
         label("Input samples observed", app)
         label("30-second limit reached", app)
         label("Stopped when the app lost focus", app)
         label("Stopped by you", app)
         screenshot("Recaps show input and actual stop reasons", app)
-        app.buttons["Close"].firstMatch.tap()
-        let recapClosed = XCTNSPredicateExpectation(predicate: NSPredicate(format: "exists == false"), object: app.scrollViews["sound-recaps-scroll"])
-        XCTAssertEqual(XCTWaiter.wait(for: [recapClosed], timeout: 5), .completed)
+        closeSoundRecaps(app)
         app.buttons["Close"].firstMatch.tap()
         tap("Live sound check", app)
-        app.buttons["sound-check-recaps"].tap()
+        openSoundRecaps(app)
         label("30-second limit reached", app)
         screenshot("Recaps survive closing and reopening meter", app)
         app.buttons["sound-recaps-clear"].tap()
@@ -160,7 +158,7 @@ final class AQSSReadOnlyUITests: XCTestCase {
         screenshot("Clear removes input recaps", app)
         app.terminate(); app.launch()
         tab("sound", app); tap("Live sound check", app)
-        app.buttons["sound-check-recaps"].tap()
+        openSoundRecaps(app)
         label("No completed sound checks in this app session.", app)
         screenshot("New process starts with no input recaps", app)
 
@@ -239,13 +237,24 @@ final class AQSSReadOnlyUITests: XCTestCase {
         screenshot("Rose navigation returns to the exact tutorial", app)
     }
 
+    private func openSoundRecaps(_ app: XCUIApplication) {
+        tap("Recent sound checks", app)
+        XCTAssertTrue(app.scrollViews["sound-recaps-scroll"].waitForExistence(timeout: 5))
+    }
+    private func closeSoundRecaps(_ app: XCUIApplication) {
+        app.buttons["sound-recaps-close"].tap()
+        let closed = XCTNSPredicateExpectation(predicate: NSPredicate(format: "exists == false"), object: app.scrollViews["sound-recaps-scroll"])
+        XCTAssertEqual(XCTWaiter.wait(for: [closed], timeout: 5), .completed)
+        app.scrollViews["sound-check-scroll"].swipeDown()
+        app.scrollViews["sound-check-scroll"].swipeDown()
+    }
     private func label(_ text: String, _ app: XCUIApplication) {
         XCTAssertTrue(app.staticTexts.containing(NSPredicate(format: "label CONTAINS %@", text)).firstMatch.waitForExistence(timeout: 10), "Missing: \(text)")
     }
     private func tap(_ title: String, _ app: XCUIApplication) {
         // Match within the active surface. A sheet can coexist with an
         // identically named button on the page underneath it.
-        let scroll = app.scrollViews["setup-scroll"].exists ? app.scrollViews["setup-scroll"] : app.scrollViews["setting-help-scroll"].exists ? app.scrollViews["setting-help-scroll"] : app.scrollViews["menu-scroll"].exists ? app.scrollViews["menu-scroll"] : app.scrollViews["guide-scroll"].exists ? app.scrollViews["guide-scroll"] : app.scrollViews["home-scroll"]
+        let scroll = app.scrollViews["setup-scroll"].exists ? app.scrollViews["setup-scroll"] : app.scrollViews["setting-help-scroll"].exists ? app.scrollViews["setting-help-scroll"] : app.scrollViews["menu-scroll"].exists ? app.scrollViews["menu-scroll"] : app.scrollViews["guide-scroll"].exists ? app.scrollViews["guide-scroll"] : app.scrollViews["sound-check-scroll"].exists ? app.scrollViews["sound-check-scroll"] : app.scrollViews["home-scroll"]
         let button = scroll.buttons.matching(NSPredicate(format: "label CONTAINS %@", title)).firstMatch
         guard button.waitForExistence(timeout: 10) else { screenshot("Missing \(title)", app); XCTFail("Missing button: \(title)"); return }
         // isHittable can be true for a sliver of a button whose center lies

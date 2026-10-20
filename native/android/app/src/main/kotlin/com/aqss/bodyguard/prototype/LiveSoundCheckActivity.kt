@@ -4,6 +4,7 @@ import android.Manifest
 import android.app.Activity
 import android.app.AlertDialog
 import android.content.pm.PackageManager
+import android.content.res.Configuration
 import android.graphics.Canvas
 import android.graphics.Paint
 import android.os.*
@@ -53,14 +54,10 @@ class LiveSoundCheckActivity : Activity() {
             setPadding(0, skin.dp(12), 0, skin.dp(12)); column.addView(this)
         }
         text("Try a 30-second microphone check. Speak normally and watch the bars respond.")
-        recent = Button(this).apply {
-            this.text = "Recent sound checks"; skin.style(this)
-            setOnClickListener { showRecaps() }
-        }
-        column.addView(recent)
         status = text("Microphone off", 21f)
         meter = LiveInputMeter(this, skin)
-        column.addView(meter, LinearLayout.LayoutParams(-1, skin.dp(135)))
+        val meterHeight = if (resources.configuration.orientation == Configuration.ORIENTATION_LANDSCAPE) 84 else 135
+        column.addView(meter, LinearLayout.LayoutParams(-1, skin.dp(meterHeight)))
         level = text("No live input", 22f)
         text("Relative microphone input · not calibrated room loudness", 15f).setTextColor(skin.muted)
         column.addView(Button(this).apply {
@@ -80,6 +77,11 @@ class LiveSoundCheckActivity : Activity() {
                 this.text = if (details.visibility == View.VISIBLE) "Hide input details" else "Show input details"
             }
         })
+        recent = Button(this).apply {
+            this.text = "Recent sound checks"; skin.style(this)
+            setOnClickListener { showRecaps() }
+        }
+        column.addView(recent)
         text("Automatic protection is not active.", 16f).setTextColor(skin.warning)
         root.addView(ScrollView(this).apply { addView(column) }, LinearLayout.LayoutParams(-1, 0, 1f))
         start = Button(this).apply {
