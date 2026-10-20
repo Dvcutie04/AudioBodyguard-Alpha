@@ -64,7 +64,7 @@ jobs:
         run: |
           set -euo pipefail
           xcrun simctl privacy "$AQSS_SIMULATOR" grant microphone com.aqss.bodyguard.prototype
-          xcrun simctl privacy "$AQSS_SIMULATOR" reset speech-recognition com.aqss.bodyguard.prototype
+          # Earlier tests never request speech. Use the fresh runner's real consent prompt; simctl cannot reset Speech TCC on this runtime.
           xcodebuild test-without-building \
             -xctestrun "$RUNNER_TEMP/sound-check-build/Build/Products/sound-granted.xctestrun" \
             -destination "platform=iOS Simulator,id=$AQSS_SIMULATOR" \

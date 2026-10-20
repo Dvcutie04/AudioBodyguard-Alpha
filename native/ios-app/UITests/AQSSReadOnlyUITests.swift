@@ -36,7 +36,7 @@ final class AQSSReadOnlyUITests: XCTestCase {
 
     func testVoiceSpeechPermissionGrantDoesNotStartDeferredCapture() throws {
         guard ProcessInfo.processInfo.environment["AQSS_TEST_MIC_GRANTED"] == "1" else {
-            throw XCTSkip("The focused workflow must grant microphone and reset speech permission first.")
+            throw XCTSkip("The focused workflow must grant microphone on a fresh Simulator without prior speech consent.")
         }
         let app = launch()
         tab("sound", app); tap("Voice check", app)
