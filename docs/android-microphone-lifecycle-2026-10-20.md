@@ -13,7 +13,7 @@ and produces a separate 0.4 test build. It does not qualify a TV output path.
 | [Android SpeechRecognizer](https://developer.android.com/reference/android/speech/SpeechRecognizer) | Keep API calls on the main thread; use only the on-device factory after its API/support check. Always attempt destroy even if cancel throws. Any cleanup exception retains the shared reservation and blocks both tools until process exit. A returning API is not physical retirement proof. |
 | [RecognitionListener](https://developer.android.com/reference/android/speech/RecognitionListener) | Callbacks are delivered on the main thread. Check the current run, foreground/focus, permission and elapsed deadline before accepting them. Provider RMS is optional and relative; it is not microphone PCM, calibrated dB SPL or verified audible output. |
 | [Sharing audio input](https://developer.android.com/media/platform/sharing-audio-input) | Android may silence/change capture priority or route. Existing AudioRecord silencing/route checks remain. One shared process gate now prevents Voice check and sound-meter overlap without treating the gate as authority over other apps or the OS. |
-| [Activity lifecycle](https://developer.android.com/guide/components/activities/activity-lifecycle) | Stop on pause/destroy and additionally on window-focus loss. Returning to the app never starts capture; permissions also require another explicit Start. |
+| [Activity focus callback](https://developer.android.com/reference/android/app/Activity#onWindowFocusChanged(boolean)) | A notification panel or dialog can take window focus without pausing an Activity; resumed Activities can also overlap. This app conservatively stops on focus loss as well as pause/destroy. Returning never starts capture; permissions require another explicit Start. |
 
 The existing on-device SpeechRecognizer and AudioRecord implementations are
 retained. No server recognizer, model download, persistent audio, new permission,
@@ -33,8 +33,9 @@ background service or TV controller is introduced.
   Old run callbacks cannot revive it or stop a newer run. A permission callback
   changes text only. It cannot create a recognizer or acquire the gate.
 - RMS display clears after 750 ms without a new provider level, independently
-  of optional speech callbacks. Provider silence/omitted RMS is not classified
-  as a quiet room. Words are bounded to 500 Unicode code points, at most 2,000
+  of optional speech callbacks. The voice graph draws only received levels, so
+  idle/cleared views contain no manufactured baseline bars. Provider silence or
+  omitted RMS is not classified as a quiet room. Words are bounded to 500 Unicode code points, at most 2,000
   UTF-8 bytes, without cutting a valid surrogate pair.
 - Destroy is attempted after cancel even when cancel fails. Any exception in
   those two calls blocks capture until a complete app force stop. Successful
@@ -63,5 +64,7 @@ on-device model from actual speech capture. No synthetic speech input is used.
 
 The 0.4 live-input APK has the same separate test application ID and opening
 poster as 0.3. It is an early test build; no Play Store publication, installed
-VL68 Pro 0.4 result or N2b–N5 qualification is implied. iOS work is separately
-tracked in draft PR #35 rather than included in this Android branch.
+VL68 Pro 0.4 result or N2b–N5 qualification is implied. iOS work is reviewed in draft PR #35 and included as a parent of this combined
+candidate. Its focused iPhone suite also runs on this branch. APK signature,
+package/version, approved opening-poster digest and exact source/byte identity
+are retained with the emulator evidence.

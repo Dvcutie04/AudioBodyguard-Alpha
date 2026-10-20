@@ -6,13 +6,25 @@ Checkpoint: September 26, 2026. Continue from the restored a-Shell baseline and 
 
 ## Current checkpoint
 
-October 20 Android input lifecycle increment: the
-[shared microphone/voice record](android-microphone-lifecycle-2026-10-20.md)
-covers one reservation across the meter and Voice check, sticky cleanup failure,
-voice elapsed-time/permission/focus checks and bounded recognized words. The
-separate 0.4 test APK and its exact emulator/CI evidence are recorded in the draft
-PR. Actual VL68 Pro speech/capture and N2b–N5 remain pending; iOS ownership work
-is separately tracked in draft PR #35.
+October 20 input lifecycle checkpoint: the
+[iPhone ownership record](ios-microphone-lifecycle-2026-10-20.md) and
+[Android ownership record](android-microphone-lifecycle-2026-10-20.md) cover
+one owner across the meter and Voice check on each platform, explicit Start,
+bounded speech display, elapsed-time limits and interruption handling. The
+combined 0.4 candidate includes both increments; exact native/Simulator/emulator
+results and APK identity are recorded in draft PR #36, stacked on #35. Actual
+handset speech/capture and N2b–N5 remain pending.
+
+
+October 19 iPhone input-parity increment: the [foreground sound-check record](ios-live-sound-check-2026-10-19.md)
+adds a separately started, bounded microphone meter without a speech-recognition
+dependency. Its arithmetic/freshness tests and focused Simulator workflow are
+distinct from a signed iPhone installation or physical input qualification.
+The prior Android 0.3 source passed its Android/iOS navigation and connected-demo
+UI jobs in [the completed UI run](https://github.com/Dvcutie04/AudioBodyguard-Alpha/actions/runs/39182899875),
+as well as its already recorded CI and Android live-input checks. This iPhone
+increment does not alter that delivered APK or advance N2b–N5. Real output work
+still awaits the user's actual host/route/independent-capture inventory.
 
 October 15 Android input increment: David reported a successful preview install
 on a VL68 Pro running Android 16. The next separate test build adds a bounded,
@@ -20,7 +32,8 @@ user-started microphone sound check. Its [research and verification record](andr
 distinguishes real digital input samples from output observation, calibrated
 acoustics and protection. This product sensing step leaves N2b–N5 pending and
 does not imply installed-device qualification of the new feature. iOS input
-parity remains pending.
+parity is now being implemented in the separate October 19 increment above;
+installed-iPhone input validation remains pending.
 
 September 28 interface increment (PR #28, following PR #27): five native pages
 share Midnight/Daylight/System presentation, contextual help, truthful empty

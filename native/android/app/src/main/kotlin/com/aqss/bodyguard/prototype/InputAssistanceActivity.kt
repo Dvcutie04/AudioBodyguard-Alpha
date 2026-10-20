@@ -315,9 +315,9 @@ private class InputMeter(activity: Activity, color: Int) : View(activity) {
     override fun onDraw(canvas: Canvas) {
         super.onDraw(canvas)
         val values = levels.toList(); val step = width / 40f
-        for (i in 0 until 40) {
-            val index = i - (40 - values.size); val level = if (index >= 0) values[index] else 0f
-            val h = maxOf(2f, height * level)
+        for (index in values.indices) {
+            val i = 40 - values.size + index
+            val h = maxOf(2f, height * values[index])
             canvas.drawRoundRect(i * step, (height - h) / 2, i * step + maxOf(1f, step - 2), (height + h) / 2, 2f, 2f, paint)
         }
     }

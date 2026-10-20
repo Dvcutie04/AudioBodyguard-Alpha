@@ -1,6 +1,143 @@
 import XCTest
 
 final class AQSSReadOnlyUITests: XCTestCase {
+    func testVoiceCheckStartsIdleAndClosingItLeavesMeterUsable() {
+        let app = launch()
+        tab("sound", app); tap("Voice check", app)
+        label("Microphone off", app); label("No words recognized yet", app)
+        XCTAssertEqual(app.buttons["voice-start-stop"].label, "Start voice check")
+        XCTAssertFalse(app.alerts.firstMatch.exists)
+        screenshot("Voice check idle with no microphone capture", app)
+        app.buttons["Close"].firstMatch.tap()
+        tap("Live sound check", app)
+        label("Microphone off", app)
+        XCTAssertTrue(app.buttons["sound-check-start-stop"].isEnabled)
+        app.buttons["Close"].firstMatch.tap()
+        tap("Voice check", app)
+        label("Microphone off", app); label("No words recognized yet", app)
+    }
+
+    func testVoiceCheckDeniedMicrophoneCannotRequestSpeechOrCapture() throws {
+        guard ProcessInfo.processInfo.environment["AQSS_TEST_MIC_DENIED"] == "1" else {
+            throw XCTSkip("The focused workflow must establish denied microphone permission first.")
+        }
+        let app = launch()
+        tab("sound", app); tap("Voice check", app)
+        app.buttons["voice-start-stop"].tap()
+        label("Microphone permission denied", app)
+        label("No live microphone samples", app); label("No words recognized yet", app)
+        XCTAssertEqual(app.buttons["voice-start-stop"].label, "Start voice check")
+        XCTAssertFalse(app.alerts.firstMatch.exists)
+        screenshot("Voice microphone denial keeps capture off", app)
+        XCUIDevice.shared.press(.home); app.activate()
+        XCTAssertEqual(app.buttons["voice-start-stop"].label, "Start voice check")
+        label("No words recognized yet", app)
+    }
+
+    func testVoiceSpeechPermissionGrantDoesNotStartDeferredCapture() throws {
+        guard ProcessInfo.processInfo.environment["AQSS_TEST_MIC_GRANTED"] == "1" else {
+            throw XCTSkip("The focused workflow must grant microphone on a fresh Simulator without prior speech consent.")
+        }
+        let app = launch()
+        tab("sound", app); tap("Voice check", app)
+        app.buttons["voice-start-stop"].tap()
+        let springboard = XCUIApplication(bundleIdentifier: "com.apple.springboard")
+        let permission = springboard.alerts.firstMatch
+        XCTAssertTrue(permission.waitForExistence(timeout: 8), "Speech consent must be requested before creating a recognizer")
+        let allow = permission.buttons.matching(NSPredicate(format: "label IN %@", ["Allow", "OK"])).firstMatch
+        XCTAssertTrue(allow.exists); allow.tap()
+        let gone = XCTNSPredicateExpectation(predicate: NSPredicate(format: "exists == false"), object: permission)
+        XCTAssertEqual(XCTWaiter.wait(for: [gone], timeout: 5), .completed)
+        XCTAssertEqual(app.buttons["voice-start-stop"].label, "Start voice check")
+        label("No live microphone samples", app); label("No words recognized yet", app)
+        screenshot("Speech permission grant waits for a fresh Start", app)
+        XCUIDevice.shared.press(.home); app.activate()
+        XCTAssertEqual(app.buttons["voice-start-stop"].label, "Start voice check")
+        app.buttons["Close"].firstMatch.tap()
+        tap("Live sound check", app)
+        app.buttons["sound-check-start-stop"].tap()
+        let status = app.staticTexts["sound-check-status"]
+        let observed = XCTNSPredicateExpectation(predicate: NSPredicate(format: "label CONTAINS %@", "Microphone samples received"), object: status)
+        guard XCTWaiter.wait(for: [observed], timeout: 8) == .completed else {
+            XCTAssertEqual(app.buttons["sound-check-start-stop"].label, "Start sound check")
+            label("No live input", app)
+            throw XCTSkip("This Simulator supplied no meter input after voice permission: \(status.label)")
+        }
+        screenshot("Meter remains usable after closing voice permission flow", app)
+        app.buttons["sound-check-start-stop"].tap()
+        label("No live input", app)
+    }
+
+    func testLiveSoundCheckStartsOffAndHelpReturnsWithoutCapture() {
+        let app = launch()
+        tab("sound", app); tap("Live sound check", app)
+        label("Microphone off", app); label("No live input", app)
+        XCTAssertEqual(app.buttons["sound-check-start-stop"].label, "Start sound check")
+        XCTAssertFalse(app.alerts.firstMatch.exists)
+        screenshot("Live sound check starts idle", app)
+        app.buttons["sound-check-help"].tap()
+        XCTAssertTrue(app.alerts["About the sound check"].waitForExistence(timeout: 5))
+        app.alerts.buttons["Close"].tap()
+        let helpClosed = XCTNSPredicateExpectation(predicate: NSPredicate(format: "exists == false"), object: app.alerts.firstMatch)
+        XCTAssertEqual(XCTWaiter.wait(for: [helpClosed], timeout: 5), .completed)
+        label("Microphone stopped while help is open.", app)
+        XCTAssertEqual(app.buttons["sound-check-start-stop"].label, "Start sound check")
+        app.buttons["Close"].firstMatch.tap()
+        label("SOUND", app)
+        screenshot("Sound check close returns to Sound", app)
+    }
+
+    /// Run in the focused workflow after simctl has denied microphone permission.
+    func testLiveSoundCheckDeniedPermissionNeverStartsCapture() throws {
+        guard ProcessInfo.processInfo.environment["AQSS_TEST_MIC_DENIED"] == "1" else {
+            throw XCTSkip("The focused workflow must establish denied microphone permission first.")
+        }
+        let app = launch()
+        tab("sound", app); tap("Live sound check", app)
+        app.buttons["sound-check-start-stop"].tap()
+        label("Microphone permission denied", app)
+        XCTAssertEqual(app.buttons["sound-check-start-stop"].label, "Start sound check")
+        label("No live input", app)
+        screenshot("Permission denial keeps microphone off", app)
+    }
+
+    /// A Simulator input attempt is explicitly not physical microphone qualification.
+    func testLiveSoundCheckStopsOnHomeAndRequiresAnotherStart() throws {
+        guard ProcessInfo.processInfo.environment["AQSS_TEST_MIC_GRANTED"] == "1" else {
+            throw XCTSkip("The focused workflow must establish microphone permission first.")
+        }
+        let app = launch()
+        tab("sound", app); tap("Live sound check", app)
+        app.buttons["sound-check-start-stop"].tap()
+        let status = app.staticTexts["sound-check-status"]
+        let started = XCTNSPredicateExpectation(predicate: NSPredicate(format: "label CONTAINS %@", "Microphone samples received"), object: status)
+        guard XCTWaiter.wait(for: [started], timeout: 8) == .completed else {
+            screenshot("Simulator microphone unavailable", app)
+            // Missing input must end capture and clear the display, never simulate bars.
+            XCTAssertEqual(app.buttons["sound-check-start-stop"].label, "Start sound check")
+            label("No live input", app)
+            throw XCTSkip("This Simulator supplied no microphone samples: \(status.label)")
+        }
+        screenshot("Simulator input received", app)
+        XCUIDevice.shared.press(.home)
+        app.activate()
+        label("No live input", app)
+        XCTAssertEqual(app.buttons["sound-check-start-stop"].label, "Start sound check")
+        screenshot("Home stops input without automatic restart", app)
+        app.buttons["sound-check-start-stop"].tap()
+        let resumed = XCTNSPredicateExpectation(predicate: NSPredicate(format: "label CONTAINS %@", "Microphone samples received"), object: status)
+        XCTAssertEqual(XCTWaiter.wait(for: [resumed], timeout: 8), .completed)
+        app.buttons["sound-check-start-stop"].tap()
+        label("No live input", app)
+        XCTAssertEqual(app.buttons["sound-check-start-stop"].label, "Start sound check")
+        app.buttons["sound-check-start-stop"].tap()
+        let expired = XCTNSPredicateExpectation(predicate: NSPredicate(format: "label CONTAINS %@", "30-second check finished"), object: status)
+        XCTAssertEqual(XCTWaiter.wait(for: [expired], timeout: 34), .completed)
+        label("No live input", app)
+        XCTAssertEqual(app.buttons["sound-check-start-stop"].label, "Start sound check")
+        screenshot("Thirty-second cap clears input", app)
+    }
+
     func testTVChoiceOffersPhotoAndKeepsOtherBrandsOnDemand() {
         let app = launch(true)
         next(app); label("Step 2 of 6", app)

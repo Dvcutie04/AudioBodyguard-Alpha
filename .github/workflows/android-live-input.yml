@@ -6,12 +6,14 @@ on:
     paths:
       - "native/android/**"
       - "tools/smoke_android_live_input.py"
+      - "tools/record_android_test_apk.py"
       - ".github/workflows/android-live-input.yml"
   pull_request:
     branches: ["main"]
     paths:
       - "native/android/**"
       - "tools/smoke_android_live_input.py"
+      - "tools/record_android_test_apk.py"
       - ".github/workflows/android-live-input.yml"
   workflow_dispatch:
 
@@ -54,6 +56,8 @@ jobs:
           arch: x86_64
           profile: pixel_5
           script: timeout 480 python3 tools/smoke_android_live_input.py
+      - name: Verify APK signature, opening poster and exact source identity
+        run: python3 tools/record_android_test_apk.py
       - name: Retain live test APK
         uses: actions/upload-artifact@v4
         with:
