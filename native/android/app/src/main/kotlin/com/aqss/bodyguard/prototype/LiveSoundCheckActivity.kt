@@ -95,7 +95,7 @@ class LiveSoundCheckActivity : Activity() {
     }
 
     private fun startCapture() {
-        if (!visible || capture != null) return
+        if (!visible || !hasWindowFocus() || capture != null) return
         if (checkSelfPermission(Manifest.permission.RECORD_AUDIO) != PackageManager.PERMISSION_GRANTED) {
             requestPermissions(arrayOf(Manifest.permission.RECORD_AUDIO), 73); return
         }
@@ -163,6 +163,11 @@ class LiveSoundCheckActivity : Activity() {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults)
         if (requestCode == 73) status.text = if (grantResults.firstOrNull() == PackageManager.PERMISSION_GRANTED)
             "Permission granted. Tap Start when you are ready." else "Microphone permission denied. You can allow it in Android Settings."
+    }
+
+    override fun onWindowFocusChanged(hasFocus: Boolean) {
+        super.onWindowFocusChanged(hasFocus)
+        if (!hasFocus && capture != null) stopCapture("Microphone stopped when you left the sound check.")
     }
 
     override fun onPause() {

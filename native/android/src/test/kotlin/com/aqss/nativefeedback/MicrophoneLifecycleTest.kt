@@ -1,6 +1,7 @@
 package com.aqss.nativefeedback
 
 import java.util.concurrent.CountDownLatch
+import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicInteger
 import kotlin.concurrent.thread
 import kotlin.test.*
@@ -47,7 +48,8 @@ class MicrophoneLifecycleTest {
                 if (gate.acquire() != null) winners.incrementAndGet()
             }
         }
-        ready.await(); start.countDown(); callers.forEach { it.join() }
+        assertTrue(ready.await(5, TimeUnit.SECONDS)); start.countDown()
+        callers.forEach { it.join(5_000); assertFalse(it.isAlive) }
         assertEquals(1, winners.get())
     }
 

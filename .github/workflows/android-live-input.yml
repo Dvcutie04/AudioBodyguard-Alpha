@@ -2,7 +2,7 @@ name: Android live microphone input test
 
 on:
   push:
-    branches: ["aqss/android-live-sound-check"]
+    branches: ["aqss/android-live-sound-check", "aqss/android-microphone-lifecycle"]
     paths:
       - "native/android/**"
       - "tools/smoke_android_live_input.py"

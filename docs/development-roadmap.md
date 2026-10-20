@@ -6,6 +6,14 @@ Checkpoint: September 26, 2026. Continue from the restored a-Shell baseline and 
 
 ## Current checkpoint
 
+October 20 Android input lifecycle increment: the
+[shared microphone/voice record](android-microphone-lifecycle-2026-10-20.md)
+covers one reservation across the meter and Voice check, sticky cleanup failure,
+voice elapsed-time/permission/focus checks and bounded recognized words. The
+separate 0.4 test APK and its exact emulator/CI evidence are recorded in the draft
+PR. Actual VL68 Pro speech/capture and N2b–N5 remain pending; iOS ownership work
+is separately tracked in draft PR #35.
+
 October 15 Android input increment: David reported a successful preview install
 on a VL68 Pro running Android 16. The next separate test build adds a bounded,
 user-started microphone sound check. Its [research and verification record](android-live-sound-check-2026-10-15.md)
