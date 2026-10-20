@@ -50,9 +50,10 @@ The selected channel and actual sample rate are disclosed in optional details.
   retry until the user completely closes the app. No cleanup callback, signature
   or test result is turned into output retirement evidence.
 
-The existing optional Voice check remains separate. General multi-window audio
-ownership, full speech-tool lifecycle parity and exact installed-device route
-behavior require further review; this increment does not qualify them.
+At this checkpoint the optional Voice check remained separate. The subsequent
+[October 20 ownership increment](ios-microphone-lifecycle-2026-10-20.md) addresses
+shared ownership and voice lifecycle policy. Exact installed-device route and
+speech behavior still require physical trials; this record does not qualify them.
 
 ## Verification record
 

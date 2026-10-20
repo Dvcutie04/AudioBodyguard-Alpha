@@ -116,4 +116,14 @@ final class MicrophoneLifecycleTests: XCTestCase {
         XCTAssertEqual(next.take()?.text, "new run")
         XCTAssertNil(mailbox.take())
     }
+
+    func testSpeechTextBoundAlsoAppliesToMultibyteAndCombiningScalars() {
+        for text in [String(repeating: "🦋", count: 2_000), "a" + String(repeating: "\u{301}", count: 10_000)] {
+            let mailbox = VoiceResultMailbox()
+            mailbox.publish(text: text, final: false, failed: false)
+            let words = mailbox.take()?.text ?? ""
+            XCTAssertEqual(words.unicodeScalars.count, 500)
+            XCTAssertLessThanOrEqual(words.utf8.count, 2_000)
+        }
+    }
 }
