@@ -5,95 +5,222 @@ import Vision
 import PhotosUI
 import ImageIO
 
+/// A per-run ingress closes before endAudio, so late tap callbacks cannot append.
+/// Framework speech buffering and append latency are not application-controlled bounds.
+private final class VoiceAudioInput {
+    let request: SFSpeechAudioBufferRecognitionRequest
+    private let summaries: SoundInputMailbox
+    private let rate: Double
+    private let channels: AVAudioChannelCount
+    private let lock = NSLock()
+    private var open = true
+    init(request: SFSpeechAudioBufferRecognitionRequest, summaries: SoundInputMailbox,
+         format: AVAudioFormat) {
+        self.request = request; self.summaries = summaries
+        rate = format.sampleRate; channels = format.channelCount
+    }
+    func receive(_ buffer: AVAudioPCMBuffer) {
+        // Contention drops this buffer rather than waiting on app-owned state.
+        guard lock.try() else { return }
+        defer { lock.unlock() }
+        guard open else { return }
+        guard buffer.format.sampleRate == rate, buffer.format.channelCount == channels,
+              buffer.format.commonFormat == .pcmFormatFloat32, !buffer.format.isInterleaved,
+              buffer.frameLength > 0, buffer.frameLength <= 65_536,
+              buffer.frameLength <= buffer.frameCapacity,
+              let data = buffer.floatChannelData?[0] else {
+            summaries.rejectInput(); return
+        }
+        do {
+            let value = try SoundInputLevel.measure(UnsafeBufferPointer(start: data, count: Int(buffer.frameLength)))
+            request.append(buffer)
+            summaries.publish(value, at: ProcessInfo.processInfo.systemUptime)
+        } catch { summaries.rejectInput() }
+    }
+    func close() {
+        summaries.close()
+        lock.lock(); defer { lock.unlock() }
+        guard open else { return }
+        open = false; request.endAudio()
+    }
+}
+
 /// Foreground input only. Recognition results never enter an output control path.
 @MainActor
 final class VoiceCheck: ObservableObject {
-    @Published var status = "Microphone off"
-    @Published var transcript = ""
-    @Published var levels: [Double] = []
-    @Published var levelText = "No microphone samples yet"
-    @Published var running = false
-    private let engine = AVAudioEngine()
+    @Published private(set) var status = "Microphone off"
+    @Published private(set) var transcript = ""
+    @Published private(set) var levels: [Double] = []
+    @Published private(set) var levelText = "No live microphone samples"
+    @Published private(set) var running = false
+    @Published private(set) var requesting = false
+    @Published private(set) var cleanupFailed = false
+    private let microphone = ForegroundMicrophoneGate.shared
+    private var lease: ForegroundMicrophoneGate.Lease?
+    private var permissionRequest = UUID()
+    private var engine: AVAudioEngine?
     private var task: SFSpeechRecognitionTask?
-    private var request: SFSpeechAudioBufferRecognitionRequest?
-    private var generation = 0
+    private var recognizer: SFSpeechRecognizer?
+    private var ingress: VoiceAudioInput?
+    private var summaries: SoundInputMailbox?
+    private var words: VoiceResultMailbox?
     private var tapped = false
-    private var timeout: DispatchWorkItem?
+    private var timer: Timer?
+    private var window = SoundInputWindow()
+    private var run: UInt64 = 0
+    private var lastSampleAt = 0.0
+    private var inputRoute = ""
 
     func start() {
-        stop(); transcript = ""; levels = []; levelText = "No microphone samples yet"
-        generation += 1; let token = generation
-        running = true; status = "Requesting microphone permission"
-        AVAudioSession.sharedInstance().requestRecordPermission { [weak self] allowed in
-            DispatchQueue.main.async {
-                guard let self = self, self.generation == token else { return }
-                guard allowed else { self.stop("Microphone permission denied. You can change this in iPhone Settings."); return }
-                SFSpeechRecognizer.requestAuthorization { authorization in
-                    DispatchQueue.main.async {
-                        guard self.generation == token else { return }
-                        guard authorization == .authorized else { self.stop("Speech permission unavailable. No audio is being captured."); return }
-                        self.begin(token)
-                    }
+        guard !running, !requesting, !cleanupFailed,
+              UIApplication.shared.applicationState == .active else { return }
+        guard microphone.available else {
+            cleanupFailed = microphone.blocked
+            status = microphone.blocked ? "Microphone cleanup failed. Close this app completely before trying again."
+                : "Another microphone tool is in use. Stop it before starting this check."
+            return
+        }
+        switch AVAudioSession.sharedInstance().recordPermission {
+        case .denied:
+            status = "Microphone permission denied. You can allow it in iPhone Settings."; return
+        case .granted: break
+        default:
+            requesting = true; status = "Requesting microphone permission"
+            permissionRequest = UUID(); let token = permissionRequest
+            AVAudioSession.sharedInstance().requestRecordPermission { [weak self] allowed in
+                DispatchQueue.main.async {
+                    guard let self = self, self.permissionRequest == token else { return }
+                    self.requesting = false
+                    self.status = allowed ? "Permission granted. Tap Start when you are ready."
+                        : "Microphone permission denied. You can allow it in iPhone Settings."
                 }
             }
+            return
+        }
+        switch SFSpeechRecognizer.authorizationStatus() {
+        case .authorized: begin()
+        case .notDetermined:
+            requesting = true; status = "Requesting speech permission"
+            permissionRequest = UUID(); let token = permissionRequest
+            SFSpeechRecognizer.requestAuthorization { [weak self] authorization in
+                DispatchQueue.main.async {
+                    guard let self = self, self.permissionRequest == token else { return }
+                    self.requesting = false
+                    self.status = authorization == .authorized ? "Permission granted. Tap Start when you are ready."
+                        : "Speech permission unavailable. No audio is being captured."
+                }
+            }
+        default: status = "Speech permission unavailable. You can check it in iPhone Settings."
         }
     }
-    private func begin(_ token: Int) {
-        guard UIApplication.shared.applicationState == .active else { stop("Tap Start again when the app is active."); return }
-        guard let recognizer = SFSpeechRecognizer(), recognizer.isAvailable, recognizer.supportsOnDeviceRecognition else {
-            stop("On-device speech recognition is unavailable for this language or device. No cloud fallback is used."); return
+    private func begin() {
+        guard let speech = SFSpeechRecognizer(), speech.isAvailable, speech.supportsOnDeviceRecognition else {
+            status = "On-device speech recognition is unavailable for this language or device. No cloud fallback is used."; return
         }
+        guard let token = microphone.acquire() else {
+            status = "Another microphone tool is in use. Stop it before starting this check."; return
+        }
+        lease = token
         do {
             let session = AVAudioSession.sharedInstance()
-            try session.setCategory(.record, mode: .measurement, options: [])
-            try session.setActive(true)
-            let input = engine.inputNode
-            let format = input.outputFormat(forBus: 0)
-            guard format.sampleRate > 0, format.channelCount > 0 else { stop("No microphone input is available."); return }
-            let req = SFSpeechAudioBufferRecognitionRequest()
-            req.requiresOnDeviceRecognition = true; req.shouldReportPartialResults = true; request = req
-            var lastUpdate = 0.0
-            input.installTap(onBus: 0, bufferSize: 1024, format: format) { [weak self] buffer, _ in
-                req.append(buffer)
-                let now = ProcessInfo.processInfo.systemUptime
-                guard now - lastUpdate >= 0.1, let data = buffer.floatChannelData?[0], buffer.frameLength > 0 else { return }
-                lastUpdate = now
-                var sum = 0.0
-                for i in 0..<Int(buffer.frameLength) { let sample = Double(data[i]); sum += sample * sample }
-                let db = max(-80.0, min(0.0, 20 * log10(max(0.0001, sqrt(sum / Double(buffer.frameLength))))))
-                guard db.isFinite else { return }
-                DispatchQueue.main.async {
-                    guard let self = self, self.generation == token, self.running else { return }
-                    self.levels.append((db + 80) / 80); self.levels = Array(self.levels.suffix(40))
-                    self.levelText = String(format: "Microphone input: %.0f dBFS", db)
-                }
+            try microphone.activate(token) {
+                try session.setCategory(.record, mode: .measurement, options: [])
+                try session.setActive(true)
             }
+            let audio = AVAudioEngine(); engine = audio
+            let input = audio.inputNode, format = input.outputFormat(forBus: 0)
+            guard format.sampleRate.isFinite, format.sampleRate > 0, format.channelCount > 0,
+                  format.commonFormat == .pcmFormatFloat32, !format.isInterleaved else {
+                stop("This microphone format is unavailable. Tap Start to retry."); return
+            }
+            let slot = SoundInputMailbox(), updates = VoiceResultMailbox()
+            summaries = slot; words = updates
+            let request = SFSpeechAudioBufferRecognitionRequest()
+            request.requiresOnDeviceRecognition = true; request.shouldReportPartialResults = true
+            let inputRun = VoiceAudioInput(request: request, summaries: slot, format: format)
+            ingress = inputRun; recognizer = speech
+            input.installTap(onBus: 0, bufferSize: 1024, format: format) { buffer, _ in inputRun.receive(buffer) }
             tapped = true
-            task = recognizer.recognitionTask(with: req) { [weak self] result, error in
-                DispatchQueue.main.async {
-                    guard let self = self, self.generation == token, self.running else { return }
-                    if let result = result { self.transcript = String(result.bestTranscription.formattedString.suffix(500)) }
-                    if result?.isFinal == true { self.stop("Finished — review the recognized words. Nothing was sent to a TV.") }
-                    else if error != nil { self.stop("Speech recognition stopped. The words shown may be incomplete.") }
-                }
+            task = speech.recognitionTask(with: request) { result, error in
+                updates.publish(text: result?.bestTranscription.formattedString,
+                                final: result?.isFinal == true, failed: error != nil)
             }
-            engine.prepare(); try engine.start(); status = "Listening — on this phone, up to 30 seconds"
-            let expiry = DispatchWorkItem { [weak self] in
-                guard let self = self, self.generation == token else { return }
-                self.stop("30-second limit reached. Tap Start to try again.")
-            }
-            timeout = expiry; DispatchQueue.main.asyncAfter(deadline: .now() + 30, execute: expiry)
-        } catch { stop("Microphone could not start. Close other recording apps and try again.") }
+            audio.prepare(); try audio.start()
+            let now = ProcessInfo.processInfo.systemUptime
+            guard let token = window.start(at: now) else { stop("The input clock is unavailable."); return }
+            run = token; lastSampleAt = now; inputRoute = routeIdentity()
+            transcript = ""; levels = []; levelText = "Waiting for microphone input"
+            running = true; status = "Starting on-device voice check…"
+            let updatesTimer = Timer(timeInterval: 0.1, repeats: true) { [weak self] _ in self?.tick() }
+            timer = updatesTimer; RunLoop.main.add(updatesTimer, forMode: .common)
+        } catch { stop("Microphone could not start. Close other recording apps, then tap Start to retry.") }
+    }
+    private func tick() {
+        guard running else { return }
+        guard UIApplication.shared.applicationState == .active else {
+            clear("Microphone stopped when you left the voice check."); return
+        }
+        guard AVAudioSession.sharedInstance().recordPermission == .granted,
+              SFSpeechRecognizer.authorizationStatus() == .authorized,
+              recognizer?.isAvailable == true, engine?.isRunning == true else {
+            stop("Voice input stopped. Check permissions, then tap Start to retry."); return
+        }
+        guard routeIdentity() == inputRoute else { routeChanged(); return }
+        guard summaries?.invalidInput != true else {
+            stop("Microphone input format changed or was invalid. Tap Start to retry."); return
+        }
+        let now = ProcessInfo.processInfo.systemUptime
+        if let frame = summaries?.take(), window.offer(run: run, receivedAt: frame.receivedAt, now: now, value: frame.level) {
+            lastSampleAt = frame.receivedAt
+            if levels.count == 40 { levels.removeFirst() }
+            levels.append(frame.level.rmsDbfs.map { min(1, max(0, ($0 + 60) / 60)) } ?? 0)
+        }
+        let level = window.current(at: now)
+        guard window.active else {
+            stop(window.endReason == .timeLimit ? "30-second limit reached. Tap Start to try again."
+                : "The input clock changed. Tap Start to try again."); return
+        }
+        if let update = words?.take() {
+            if let text = update.text { transcript = text }
+            if update.failed { stop("Speech recognition stopped. The words shown may be incomplete."); return }
+            if update.final { stop("Finished — review the recognized words. Nothing was sent to a TV."); return }
+        }
+        guard let level = level else {
+            levels = []; levelText = "No current microphone samples"; status = "Waiting for microphone input…"
+            if now - lastSampleAt >= 3 { stop("No current microphone input. Tap Start to retry.") }
+            return
+        }
+        levelText = level.rmsDbfs.map { String(format: "Microphone input: %.1f dBFS", $0) }
+            ?? "No input signal · quiet or blocked"
+        if level.fullScaleSamples > 0 { levelText += "\nInput reached digital full scale" }
+        status = "Listening — on this phone, up to 30 seconds"
+    }
+    func routeChanged() {
+        guard running, routeIdentity() != inputRoute else { return }
+        stop("Microphone route changed. Tap Start to check the new input.")
+    }
+    private func routeIdentity() -> String {
+        AVAudioSession.sharedInstance().currentRoute.inputs.map { $0.uid }.joined(separator: "|")
+    }
+    func interrupt(_ message: String) {
+        if running || requesting { stop(message) }
     }
     func stop(_ message: String = "Microphone off") {
-        generation += 1; running = false; timeout?.cancel(); timeout = nil
-        engine.stop()
-        if tapped { engine.inputNode.removeTap(onBus: 0); tapped = false }
-        request?.endAudio(); task?.cancel(); task = nil; request = nil
-        try? AVAudioSession.sharedInstance().setActive(false, options: .notifyOthersOnDeactivation)
-        levels = []; levelText = "No live microphone samples"; status = message
+        permissionRequest = UUID(); requesting = false; running = false
+        timer?.invalidate(); timer = nil; window.stop()
+        words?.close(); words = nil
+        ingress?.close(); ingress = nil; summaries = nil
+        engine?.stop()
+        if tapped { engine?.inputNode.removeTap(onBus: 0); tapped = false }
+        engine = nil; task?.cancel(); task = nil; recognizer = nil
+        microphone.release(lease) {
+            try AVAudioSession.sharedInstance().setActive(false, options: .notifyOthersOnDeactivation)
+        }
+        lease = nil; cleanupFailed = microphone.blocked
+        levels = []; levelText = "No live microphone samples"
+        status = cleanupFailed ? "Microphone cleanup failed. Close this app completely before trying again." : message
     }
-    func clear() { stop(); transcript = "" }
+    func clear(_ message: String = "Microphone off") { stop(message); transcript = "" }
 }
 
 struct VoiceCheckView: View {
@@ -110,13 +237,14 @@ struct VoiceCheckView: View {
                     Text("See what your phone hears").font(.title.bold())
                     Button("Help · show voice steps") { voice.clear(); setupVisible = true }.buttonStyle(AppButtonStyle(theme: theme))
                     Text("Tap Start, then say: ‘Make the TV quieter.’ See the incoming sound bars and recognized words.")
+                    Text("This check may pause other audio on your iPhone.").font(.caption).foregroundColor(theme.muted)
                     Text(voice.status).font(.headline).accessibilityIdentifier("voice-status")
                     GeometryReader { box in
                         HStack(alignment: .center, spacing: 2) {
                             ForEach(0..<40, id: \.self) { index in
                                 let offset = index - (40 - voice.levels.count)
                                 let level = offset >= 0 ? voice.levels[offset] : 0
-                                RoundedRectangle(cornerRadius: 2).fill(theme.violet)
+                                RoundedRectangle(cornerRadius: 2).fill(offset >= 0 ? theme.violet : Color.clear)
                                     .frame(width: max(1, (box.size.width - 78) / 40), height: max(2, box.size.height * level))
                             }
                         }.frame(height: box.size.height)
@@ -130,13 +258,22 @@ struct VoiceCheckView: View {
                 }.padding()
             }
             HStack {
-                Button(voice.running ? "Stop listening" : "Start voice check") { if voice.running { voice.stop() } else { voice.start() } }.buttonStyle(AppButtonStyle(theme: theme, primary: true)).accessibilityIdentifier("voice-start-stop")
+                Button(voice.running || voice.requesting ? "Stop listening" : "Start voice check") {
+                    if voice.running || voice.requesting { voice.stop() } else { voice.start() }
+                }.buttonStyle(AppButtonStyle(theme: theme, primary: true)).disabled(voice.cleanupFailed).accessibilityIdentifier("voice-start-stop")
                 Button("Clear words") { voice.clear() }.buttonStyle(AppButtonStyle(theme: theme))
             }.padding()
         }.background(theme.background.ignoresSafeArea()).foregroundColor(theme.text)
             .sheet(isPresented: $setupVisible) { SetupGuidesView(theme: theme, initialGroup: "voice", onVoiceCheck: {}) }
-            .onChange(of: phase) { if $0 == .background { voice.clear() } }
-            .onReceive(NotificationCenter.default.publisher(for: AVAudioSession.interruptionNotification)) { _ in voice.stop("Audio interrupted — tap Start to try again.") }
+            .onChange(of: phase) { if $0 != .active { voice.clear("Microphone stopped when you left the voice check.") } }
+            .onReceive(NotificationCenter.default.publisher(for: AVAudioSession.interruptionNotification)) { _ in voice.interrupt("Audio interrupted — tap Start to try again.") }
+            .onReceive(NotificationCenter.default.publisher(for: AVAudioSession.routeChangeNotification)) { _ in voice.routeChanged() }
+            .onReceive(NotificationCenter.default.publisher(for: AVAudioSession.mediaServicesWereLostNotification)) { _ in
+                voice.interrupt("Audio services stopped. Tap Start to try again.")
+            }
+            .onReceive(NotificationCenter.default.publisher(for: AVAudioSession.mediaServicesWereResetNotification)) { _ in
+                voice.interrupt("Audio services reset. Tap Start to try again.")
+            }
             .onDisappear { voice.clear() }
     }
 }

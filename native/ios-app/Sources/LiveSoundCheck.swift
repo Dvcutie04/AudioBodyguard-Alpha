@@ -11,12 +11,11 @@ final class LiveSoundCheck: ObservableObject {
     @Published private(set) var running = false
     @Published private(set) var requesting = false
     @Published private(set) var cleanupFailed = false
-    private static var owner: UUID?
-    private let identity = UUID()
+    private let microphone = ForegroundMicrophoneGate.shared
+    private var lease: ForegroundMicrophoneGate.Lease?
     private var permissionRequest = UUID()
     private var engine: AVAudioEngine?
     private var tapped = false
-    private var sessionActive = false
     private var mailbox: SoundInputMailbox?
     private var timer: Timer?
     private var window = SoundInputWindow()
@@ -26,8 +25,10 @@ final class LiveSoundCheck: ObservableObject {
 
     func start() {
         guard !running, !requesting, !cleanupFailed else { return }
-        guard Self.owner == nil else {
-            status = "Another microphone check owns this input. If none is open, close this app completely and retry."
+        guard microphone.available else {
+            cleanupFailed = microphone.blocked
+            status = microphone.blocked ? "Microphone cleanup failed. Close this app completely before trying again."
+                : "Another microphone tool is in use. Stop it before starting this check."
             return
         }
         guard UIApplication.shared.applicationState == .active else { return }
@@ -51,12 +52,16 @@ final class LiveSoundCheck: ObservableObject {
     }
 
     private func begin() {
-        guard Self.owner == nil else { return }
-        Self.owner = identity
+        guard let token = microphone.acquire() else {
+            status = "Another microphone tool is in use. Stop it before starting this check."; return
+        }
+        lease = token
         do {
             let session = AVAudioSession.sharedInstance()
-            try session.setCategory(.record, mode: .measurement, options: [])
-            try session.setActive(true); sessionActive = true
+            try microphone.activate(token) {
+                try session.setCategory(.record, mode: .measurement, options: [])
+                try session.setActive(true)
+            }
             let audio = AVAudioEngine(); engine = audio
             let input = audio.inputNode, format = input.outputFormat(forBus: 0)
             guard format.sampleRate.isFinite, format.sampleRate > 0,
@@ -149,12 +154,10 @@ final class LiveSoundCheck: ObservableObject {
         engine?.stop()
         if tapped { engine?.inputNode.removeTap(onBus: 0); tapped = false }
         engine = nil
-        if sessionActive {
-            do { try AVAudioSession.sharedInstance().setActive(false, options: .notifyOthersOnDeactivation) }
-            catch { cleanupFailed = true }
-            sessionActive = false
+        microphone.release(lease) {
+            try AVAudioSession.sharedInstance().setActive(false, options: .notifyOthersOnDeactivation)
         }
-        if Self.owner == identity && !cleanupFailed { Self.owner = nil }
+        lease = nil; cleanupFailed = microphone.blocked
         levels = []; levelText = "No live input"
         details = "Input details appear while the check runs."
         status = cleanupFailed ? "Microphone cleanup failed. Close this app completely before trying again." : message
