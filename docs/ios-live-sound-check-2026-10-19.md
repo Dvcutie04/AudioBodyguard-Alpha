@@ -15,6 +15,7 @@ recognition is not required. Android source and the delivered 0.3 APK are unchan
 | [Microphone permission](https://developer.apple.com/documentation/avfaudio/avaudiosession/requestrecordpermission(_:)) | Microphone consent is required. The iOS-15-compatible API is retained; a permission result never starts delayed recording. Another explicit Start is required. No speech authorization is requested by this tool. |
 | [Audio interruptions](https://developer.apple.com/documentation/avfaudio/handling-audio-interruptions) and [route changes](https://developer.apple.com/documentation/avfaudio/responding-to-audio-route-changes) | Stop on interruption or changed selected input identity; neither a positive interruption callback nor a returning route restarts capture. Engine failure and format changes also stop the check. |
 | [Media-services reset](https://developer.apple.com/documentation/avfaudio/avaudiosession/mediaserviceswereresetnotification) | Discard this run's engine and require user action before constructing another. Reset/loss notifications do not imply recovery or qualification. |
+| [Record category](https://developer.apple.com/documentation/avfaudio/avaudiosession/category-swift.struct/record) | This input-only category can silence other phone playback. A visible note discloses that consequence before Start; it is not a TV-control result or an audio-protection guarantee. |
 
 AVAudioEngine matches the existing app and avoids an audio-file recorder or a
 speech-recognition dependency. This is an input-only category with measurement

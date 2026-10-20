@@ -178,6 +178,7 @@ struct LiveSoundCheckView: View {
             ScrollView {
                 VStack(alignment: .leading, spacing: 18) {
                     Text("Try a 30-second microphone check. Speak normally and watch the bars respond.")
+                    Text("This check may pause other audio on your iPhone.").font(.caption).foregroundColor(theme.muted)
                     Text(check.status).font(.headline).accessibilityIdentifier("sound-check-status")
                     GeometryReader { box in
                         HStack(alignment: .bottom, spacing: 2) {
