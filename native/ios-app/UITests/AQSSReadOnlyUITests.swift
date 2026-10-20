@@ -99,6 +99,11 @@ final class AQSSReadOnlyUITests: XCTestCase {
         XCTAssertEqual(app.buttons["sound-check-start-stop"].label, "Start sound check")
         label("No live input", app)
         screenshot("Permission denial keeps microphone off", app)
+        app.buttons["sound-check-recaps"].tap()
+        label("No completed sound checks in this app session.", app)
+        screenshot("Recaps stay empty after denied permission", app)
+        app.buttons["Close"].firstMatch.tap()
+
     }
 
     /// A Simulator input attempt is explicitly not physical microphone qualification.
@@ -136,6 +141,29 @@ final class AQSSReadOnlyUITests: XCTestCase {
         label("No live input", app)
         XCTAssertEqual(app.buttons["sound-check-start-stop"].label, "Start sound check")
         screenshot("Thirty-second cap clears input", app)
+        app.buttons["sound-check-recaps"].tap()
+        label("Input samples observed", app)
+        label("30-second limit reached", app)
+        label("Stopped when the app lost focus", app)
+        label("Stopped by you", app)
+        screenshot("Recaps show input and actual stop reasons", app)
+        app.buttons["Close"].firstMatch.tap()
+        let recapClosed = XCTNSPredicateExpectation(predicate: NSPredicate(format: "exists == false"), object: app.scrollViews["sound-recaps-scroll"])
+        XCTAssertEqual(XCTWaiter.wait(for: [recapClosed], timeout: 5), .completed)
+        app.buttons["Close"].firstMatch.tap()
+        tap("Live sound check", app)
+        app.buttons["sound-check-recaps"].tap()
+        label("30-second limit reached", app)
+        screenshot("Recaps survive closing and reopening meter", app)
+        app.buttons["sound-recaps-clear"].tap()
+        label("No completed sound checks in this app session.", app)
+        screenshot("Clear removes input recaps", app)
+        app.terminate(); app.launch()
+        tab("sound", app); tap("Live sound check", app)
+        app.buttons["sound-check-recaps"].tap()
+        label("No completed sound checks in this app session.", app)
+        screenshot("New process starts with no input recaps", app)
+
     }
 
     func testTVChoiceOffersPhotoAndKeepsOtherBrandsOnDemand() {

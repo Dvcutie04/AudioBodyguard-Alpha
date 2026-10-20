@@ -110,6 +110,10 @@ def main():
     assert denied, "Expected a microphone permission prompt"
     wait_for("Microphone permission denied", "permission_denied")
     wait_for_all(("Microphone permission denied", "No live input", "Start sound check"), "denied_has_no_input")
+    tap("Recent sound checks", "denied_recaps")
+    wait_for("No completed sound checks in this app session.", "denied_no_recap")
+    screenshot("recaps_empty_after_denial")
+    tap("Close", "close_denied_recaps")
     adb("shell", "pm", "grant", package, "android.permission.RECORD_AUDIO")
     tap("Start sound check", "start_capture")
     wait_for("Microphone samples received", "receiving_samples")
@@ -118,6 +122,14 @@ def main():
     wait_for("Microphone stopped", "stopped")
     wait_for_all(("Microphone stopped", "No live input", "Start sound check"), "stopped_no_input")
     screenshot("stopped")
+    tap("Recent sound checks", "manual_recaps")
+    wait_for_all(("Input samples observed", "Stopped by you"), "manual_recap_observed")
+    screenshot("recaps_manual_stop")
+    tap("Clear recaps", "clear_manual_recaps")
+    wait_for("No completed sound checks in this app session.", "recaps_cleared")
+    screenshot("recaps_cleared")
+    tap("Close", "close_cleared_recaps")
+
 
     tap("Start sound check", "restart_before_notification_shade")
     wait_for("Microphone samples received", "before_notification_shade")
@@ -161,6 +173,11 @@ def main():
     wait_for("30-second check finished", "time_limit")
     wait_for_all(("30-second check finished", "No live input", "Start sound check"), "time_limit_no_input")
     screenshot("time_limit")
+    tap("Recent sound checks", "time_limit_recaps")
+    wait_for_all(("Input samples observed", "30-second limit reached", "Stopped when the app lost focus"), "time_limit_and_left_recaps")
+    screenshot("recaps_time_limit_and_focus")
+    tap("Close", "close_time_limit_recaps")
+
     adb("shell", "input", "keyevent", "KEYCODE_BACK")
     wait_for("Voice check", "back_to_sound")
     tap("Voice check. See microphone activity and recognized words", "open_voice_check")
@@ -191,10 +208,27 @@ def main():
     tap("Stop sound check", "stop_meter_after_voice")
     wait_for("Microphone stopped", "meter_after_voice_stopped")
     screenshot("meter_usable_after_voice")
+    adb("shell", "input", "keyevent", "KEYCODE_BACK")
+    wait_for("Voice check", "back_before_recap_reopen")
+    tap("Live sound check. Try the phone microphone for 30 seconds", "reopen_meter_for_recaps")
+    tap("Recent sound checks", "recaps_after_reopen")
+    wait_for_all(("Input samples observed", "Stopped by you"), "recaps_survive_navigation")
+    screenshot("recaps_survive_navigation")
+    tap("Close", "close_before_process_stop")
+    adb("shell", "am", "force-stop", package)
+    launch()
+    wait_for("Sound", "new_process_navigation")
+    tap("Sound", "new_process_sound_tab")
+    wait_for("Voice check", "new_process_sound_page")
+    tap("Live sound check. Try the phone microphone for 30 seconds", "meter_new_process")
+    tap("Recent sound checks", "recaps_new_process")
+    wait_for("No completed sound checks in this app session.", "recaps_not_persisted")
+    screenshot("recaps_new_process_empty")
+
     crashes = adb("logcat", "-b", "crash", "-d").decode()
     (out / "crash-log.txt").write_text(crashes)
     assert "FATAL EXCEPTION" not in crashes, crashes
-    print("LIVE_INPUT_EMULATOR_OBSERVED: permission denial, PCM samples, manual stop, notification-shade focus loss, background stop, rotation stop, no automatic restart, 30-second limit, voice navigation/service attempt, and meter reuse passed. No physical microphone or output qualification.", flush=True)
+    print("LIVE_INPUT_EMULATOR_OBSERVED: permission denial, PCM samples, manual stop, notification-shade focus loss, background stop, rotation stop, no automatic restart, 30-second limit, voice navigation/service attempt, meter reuse, bounded input recaps, Clear, navigation retention and empty recaps after process restart passed. No physical microphone or output qualification.", flush=True)
 
 
 if __name__ == "__main__":

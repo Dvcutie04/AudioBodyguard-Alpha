@@ -8,6 +8,8 @@ import android.os.Build
 import android.os.SystemClock
 import com.aqss.nativefeedback.PcmInputLevel
 import com.aqss.nativefeedback.ForegroundMicrophoneGate
+import com.aqss.nativefeedback.SoundCheckEnd
+import com.aqss.nativefeedback.SoundCheckRecaps
 import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicReference
 
@@ -16,6 +18,9 @@ internal data class InputFrame(val receivedAtMs: Long, val level: PcmInputLevel)
 /** One bounded foreground capture. The worker alone releases its recorder and raw buffer. */
 internal class MicrophoneCapture(context: Context) {
     private val gate = ForegroundMicrophoneGate.process
+    private val recaps = SoundCheckRecaps.process
+    private var recapToken: SoundCheckRecaps.Token? = null
+    private data class End(val reason: SoundCheckEnd, val message: String)
     private var lease: ForegroundMicrophoneGate.Lease? = null
     private val app = context.applicationContext
     private val launched = AtomicBoolean(false)
@@ -23,7 +28,7 @@ internal class MicrophoneCapture(context: Context) {
     private var recorder: AudioRecord? = null
     private val cancelled = AtomicBoolean(false)
     private val latest = AtomicReference<InputFrame?>(null)
-    private val result = AtomicReference<String?>(null)
+    private val result = AtomicReference<End?>(null)
     val completed = AtomicBoolean(false)
     @Volatile var cleanupFailed = false
         private set
@@ -31,28 +36,33 @@ internal class MicrophoneCapture(context: Context) {
         private set
 
     fun takeLatest(): InputFrame? = latest.getAndSet(null)
-    val stopReason: String get() = result.get() ?: "Microphone stopped"
+    val stopReason: String get() = result.get()?.message ?: "Microphone stopped"
+    fun noteDisplayedInput() { recaps.observe(recapToken) }
+    private fun end(reason: SoundCheckEnd, message: String) { result.compareAndSet(null, End(reason, message)) }
 
     fun start() {
         if (!launched.compareAndSet(false, true)) return
         val reservation = gate.acquire()
         if (reservation == null) {
             cleanupFailed = gate.blocked
-            result.set(if (gate.blocked) "Microphone cleanup failed. Force stop this app in Android Settings before trying again."
-                else "Another microphone tool is using or closing the input. Stop it, then tap Start.")
+            result.set(End(if (gate.blocked) SoundCheckEnd.CLEANUP_FAILED else SoundCheckEnd.INPUT_UNAVAILABLE, if (gate.blocked) "Microphone cleanup failed. Force stop this app in Android Settings before trying again."
+                else "Another microphone tool is using or closing the input. Stop it, then tap Start."))
             completed.set(true)
             return
         }
         lease = reservation
+        recapToken = recaps.begin()
         try { Thread({ capture() }, "aqss-microphone-check").start() }
         catch (_: Exception) {
+            end(SoundCheckEnd.COULD_NOT_START, "Microphone worker could not start. Tap Start to retry.")
+            recaps.finish(recapToken, SoundCheckEnd.COULD_NOT_START)
             gate.release(lease, cleanupSucceeded = true); lease = null
-            result.set("Microphone worker could not start. Tap Start to retry."); completed.set(true)
+            completed.set(true)
         }
     }
 
-    fun stop(reason: String) {
-        result.compareAndSet(null, reason)
+    fun stop(reason: SoundCheckEnd, message: String) {
+        end(reason, message)
         cancelled.set(true)
         latest.set(null)
         // Stop can interrupt a blocking read; release waits for that read's worker to exit.
@@ -65,7 +75,7 @@ internal class MicrophoneCapture(context: Context) {
         var recordingCallback: AudioManager.AudioRecordingCallback? = null
         try {
             if (cancelled.get()) return
-            if (!hasPermission()) { result.compareAndSet(null, "Microphone permission is unavailable."); return }
+            if (!hasPermission()) { end(SoundCheckEnd.PERMISSION_CHANGED, "Microphone permission is unavailable."); return }
             val rate = listOf(16000, 48000).firstOrNull {
                 AudioRecord.getMinBufferSize(it, AudioFormat.CHANNEL_IN_MONO, AudioFormat.ENCODING_PCM_16BIT) > 0
             } ?: throw IllegalStateException("No supported input format")
@@ -88,7 +98,7 @@ internal class MicrophoneCapture(context: Context) {
                     override fun onRecordingConfigChanged(configs: MutableList<AudioRecordingConfiguration>) {
                         if (cancelled.get() || completed.get()) return
                         if (configs.any { it.clientAudioSessionId == audio.audioSessionId && it.isClientSilenced }) {
-                            stop("Android blocked microphone input. Check microphone privacy and other recording apps.")
+                            stop(SoundCheckEnd.INPUT_BLOCKED, "Android blocked microphone input. Check microphone privacy and other recording apps.")
                         }
                     }
                 }
@@ -107,28 +117,28 @@ internal class MicrophoneCapture(context: Context) {
             var routeId: Int? = null
             while (!cancelled.get()) {
                 if (SystemClock.elapsedRealtime() - started >= 30_000) {
-                    result.compareAndSet(null, "30-second check finished. Tap Start for another check."); break
+                    end(SoundCheckEnd.TIME_LIMIT, "30-second check finished. Tap Start for another check."); break
                 }
                 if (!hasPermission()) {
-                    result.compareAndSet(null, "Microphone permission was removed. Tap Start to check permission."); break
+                    end(SoundCheckEnd.PERMISSION_CHANGED, "Microphone permission was removed. Tap Start to check permission."); break
                 }
                 val count = audio.read(samples, 0, frames, AudioRecord.READ_BLOCKING)
                 if (cancelled.get()) break
                 if (count < 0) {
-                    result.compareAndSet(null, "Microphone input stopped (code $count). Tap Start to try again."); break
+                    end(SoundCheckEnd.INPUT_UNAVAILABLE, "Microphone input stopped (code $count). Tap Start to try again."); break
                 }
                 val now = SystemClock.elapsedRealtime()
                 if (count == 0) {
-                    if (now - lastData >= 2000) { result.compareAndSet(null, "No microphone samples arrived. Tap Start to retry."); break }
+                    if (now - lastData >= 2000) { end(SoundCheckEnd.NO_SAMPLES, "No microphone samples arrived. Tap Start to retry."); break }
                     Thread.sleep(20) // Prevent spinning if an OEM returns zero from a blocking read.
                     continue
                 }
                 if (Build.VERSION.SDK_INT >= 29 && audio.activeRecordingConfiguration?.isClientSilenced == true) {
-                    result.compareAndSet(null, "Android blocked microphone input. Check microphone privacy and other recording apps."); break
+                    end(SoundCheckEnd.INPUT_BLOCKED, "Android blocked microphone input. Check microphone privacy and other recording apps."); break
                 }
                 val route = audio.routedDevice
                 if (routeId != null && route?.id != routeId) {
-                    result.compareAndSet(null, "Microphone route changed. Tap Start to check the new input."); break
+                    end(SoundCheckEnd.ROUTE_CHANGED, "Microphone route changed. Tap Start to check the new input."); break
                 }
                 routeId = route?.id
                 val routeText = if (route?.type == AudioDeviceInfo.TYPE_BUILTIN_MIC) "Built-in microphone" else "Android-selected microphone"
@@ -139,9 +149,9 @@ internal class MicrophoneCapture(context: Context) {
                 latest.set(InputFrame(now, level)) // One summary slot: no growing UI message queue.
             }
         } catch (_: SecurityException) {
-            result.compareAndSet(null, "Microphone access was blocked. Check permission and microphone privacy.")
+            end(SoundCheckEnd.PERMISSION_CHANGED, "Microphone access was blocked. Check permission and microphone privacy.")
         } catch (_: Exception) {
-            result.compareAndSet(null, "Microphone could not run. Close other recording apps, then tap Start to retry.")
+            end(SoundCheckEnd.INPUT_UNAVAILABLE, "Microphone could not run. Close other recording apps, then tap Start to retry.")
         } finally {
             cancelled.set(true)
             latest.set(null)
@@ -154,11 +164,12 @@ internal class MicrophoneCapture(context: Context) {
                     try { audio.stop() } catch (_: Exception) {}
                     try { audio.release() } catch (_: Exception) {
                         cleanupFailed = true
-                        result.set("Microphone cleanup failed. Force stop this app in Android Settings before trying again.")
+                        result.set(End(SoundCheckEnd.CLEANUP_FAILED, "Microphone cleanup failed. Force stop this app in Android Settings before trying again."))
                     }
                 }
             }
             samples?.fill(0)
+            recaps.finish(recapToken, result.get()?.reason ?: SoundCheckEnd.INPUT_UNAVAILABLE)
             gate.release(lease, cleanupSucceeded = !cleanupFailed); lease = null
             completed.set(true)
         }
