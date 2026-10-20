@@ -31,34 +31,53 @@ class PcmInputLevel private constructor(
     }
 }
 
-/** Main-thread display freshness gate, independent of any protection or coverage projector. */
+/** Main-thread display freshness gate. Clock rollback and expiry latch the run off. */
 class SoundCheckWindow {
+    enum class EndReason { stopped, clockInvalid, timeLimit }
+    var active = false
+        private set
+    var endReason = EndReason.stopped
+        private set
     private var generation = 0L
-    private var active = false
     private var startedAt = 0L
+    private var checkedAt = 0L
     private var lastAt = -1L
     private var latest: PcmInputLevel? = null
 
-    fun start(nowMs: Long): Long {
-        require(nowMs >= 0)
+    fun start(nowMs: Long): Long? {
+        stop()
+        if (nowMs < 0 || generation == Long.MAX_VALUE) return null
         generation++
-        active = true; startedAt = nowMs; lastAt = -1; latest = null
+        active = true; startedAt = nowMs; checkedAt = nowMs; lastAt = -1
         return generation
     }
 
-    fun offer(run: Long, receivedAtMs: Long, nowMs: Long, value: PcmInputLevel): Boolean {
-        if (!active || run != generation || receivedAtMs < startedAt || receivedAtMs <= lastAt ||
-            nowMs < receivedAtMs || nowMs - receivedAtMs >= 750 || nowMs - startedAt >= 30_000) return false
+    private fun eligible(nowMs: Long): Boolean {
+        if (!active) return false
+        val reason = when {
+            nowMs < checkedAt -> EndReason.clockInvalid
+            nowMs - startedAt >= 30_000 -> EndReason.timeLimit
+            else -> null
+        }
+        if (reason != null) { stop(); endReason = reason; return false }
+        checkedAt = nowMs
+        return true
+    }
+
+    fun offer(run: Long?, receivedAtMs: Long, nowMs: Long, value: PcmInputLevel): Boolean {
+        // Reject the old identity before observing its clock; it cannot close a newer run.
+        if (run != generation || !eligible(nowMs) || receivedAtMs < startedAt || receivedAtMs <= lastAt ||
+            nowMs < receivedAtMs || nowMs - receivedAtMs >= 750) return false
         latest = value; lastAt = receivedAtMs
         return true
     }
 
     fun current(nowMs: Long): PcmInputLevel? {
-        if (!active || nowMs < lastAt || nowMs - lastAt >= 750 || nowMs - startedAt >= 30_000) {
+        if (!eligible(nowMs) || lastAt < 0 || nowMs - lastAt >= 750) {
             latest = null
         }
         return latest
     }
 
-    fun stop() { active = false; latest = null }
+    fun stop() { active = false; latest = null; endReason = EndReason.stopped }
 }
