@@ -50,7 +50,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          xcrun simctl privacy "$AQSS_SIMULATOR" deny microphone com.aqss.bodyguard.prototype
+          xcrun simctl privacy "$AQSS_SIMULATOR" revoke microphone com.aqss.bodyguard.prototype
           xcodebuild test-without-building \
             -xctestrun "$RUNNER_TEMP/sound-check-build/Build/Products/sound-denied.xctestrun" \
             -destination "platform=iOS Simulator,id=$AQSS_SIMULATOR" \
