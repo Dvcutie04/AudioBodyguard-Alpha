@@ -49,13 +49,18 @@ def main():
     def has(root, text):
         return any(text in node.get("text", "") for node in root.iter("node"))
 
-    def wait_for(text, name):
+    def wait_for_all(texts, name):
+        # Native layout may briefly return a nonempty but partial hierarchy.
+        # Observe all required labels together rather than comparing two frames.
         for _ in range(6):
             root, _ = screen(name)
-            if has(root, text):
+            if all(has(root, text) for text in texts):
                 return root
             time.sleep(1)
-        raise AssertionError(f"Missing label: {text}")
+        raise AssertionError(f"Missing simultaneous labels: {texts}")
+
+    def wait_for(text, name):
+        return wait_for_all((text,), name)
 
     def tap(text, name, optional=False):
         # A successful prior click can still be replacing the active hierarchy.
@@ -104,15 +109,27 @@ def main():
     denied = tap("Don’t allow", "permission_deny", optional=True) or tap("Don't allow", "permission_deny_ascii", optional=True)
     assert denied, "Expected a microphone permission prompt"
     wait_for("Microphone permission denied", "permission_denied")
-    assert has(screen("denied_has_no_input")[0], "No live input")
+    wait_for_all(("Microphone permission denied", "No live input", "Start sound check"), "denied_has_no_input")
     adb("shell", "pm", "grant", package, "android.permission.RECORD_AUDIO")
     tap("Start sound check", "start_capture")
     wait_for("Microphone samples received", "receiving_samples")
     screenshot("receiving_samples")
     tap("Stop sound check", "manual_stop")
     wait_for("Microphone stopped", "stopped")
-    assert has(screen("stopped_no_input")[0], "No live input")
+    wait_for_all(("Microphone stopped", "No live input", "Start sound check"), "stopped_no_input")
     screenshot("stopped")
+
+    tap("Start sound check", "restart_before_notification_shade")
+    wait_for("Microphone samples received", "before_notification_shade")
+    adb("shell", "cmd", "statusbar", "expand-notifications")
+    time.sleep(1)
+    adb("shell", "cmd", "statusbar", "collapse")
+    wait_for("Microphone stopped when you left", "shade_returned_stopped")
+    wait_for_all(("Microphone stopped when you left", "No live input", "Start sound check"), "shade_no_input")
+    shade_appops = adb("shell", "cmd", "appops", "get", package, "RECORD_AUDIO").decode()
+    (out / "after-shade-appops.txt").write_text(shade_appops)
+    assert "(running)" not in shade_appops, shade_appops
+    screenshot("shade_stopped")
 
     tap("Start sound check", "restart_before_background")
     wait_for("Microphone samples received", "before_background")
@@ -120,7 +137,7 @@ def main():
     time.sleep(1)
     launch()
     wait_for("Microphone stopped when you left", "returned_stopped")
-    assert has(screen("returned_no_input")[0], "No live input")
+    wait_for_all(("Microphone stopped when you left", "No live input", "Start sound check"), "returned_no_input")
     appops = adb("shell", "cmd", "appops", "get", package, "RECORD_AUDIO").decode()
     (out / "after-background-appops.txt").write_text(appops)
     assert "(running)" not in appops, appops
@@ -130,7 +147,7 @@ def main():
     adb("shell", "settings", "put", "system", "accelerometer_rotation", "0")
     adb("shell", "settings", "put", "system", "user_rotation", "1")
     wait_for("Microphone off", "rotated_stopped")
-    assert has(screen("rotation_no_input")[0], "No live input")
+    wait_for_all(("Microphone off", "No live input", "Start sound check"), "rotation_no_input")
     adb("shell", "settings", "put", "system", "user_rotation", "0")
     wait_for("Microphone off", "portrait_stopped")
 
@@ -142,14 +159,42 @@ def main():
         time.sleep(min(5, 31 - (time.monotonic() - started)))
         print("Waiting for the 30-second stop", flush=True)
     wait_for("30-second check finished", "time_limit")
-    assert has(screen("time_limit_no_input")[0], "No live input")
+    wait_for_all(("30-second check finished", "No live input", "Start sound check"), "time_limit_no_input")
     screenshot("time_limit")
     adb("shell", "input", "keyevent", "KEYCODE_BACK")
     wait_for("Voice check", "back_to_sound")
+    tap("Voice check. See microphone activity and recognized words", "open_voice_check")
+    wait_for("Microphone off", "voice_starts_off")
+    wait_for_all(("Microphone off", "No words recognized yet", "Start voice check"), "voice_no_words")
+    screenshot("voice_starts_off")
+    # This host may have no on-device speech model. Do not synthesize speech or
+    # claim a service trial from a navigation result.
+    tap("Start voice check", "attempt_voice_service")
+    time.sleep(1)
+    voice, _ = screen("voice_service_attempt")
+    screenshot("voice_service_attempt")
+    (out / "voice-service-observation.txt").write_text(
+        "\n".join(n.get("text", "") for n in voice.iter("node") if n.get("text")))
+    adb("shell", "input", "keyevent", "KEYCODE_HOME")
+    time.sleep(1)
+    launch()
+    wait_for("Start voice check", "voice_background_requires_start")
+    wait_for_all(("No words recognized yet", "Start voice check"), "voice_words_cleared")
+    voice_appops = adb("shell", "cmd", "appops", "get", package, "RECORD_AUDIO").decode()
+    (out / "after-voice-background-appops.txt").write_text(voice_appops)
+    assert "(running)" not in voice_appops, voice_appops
+    adb("shell", "input", "keyevent", "KEYCODE_BACK")
+    wait_for("Live sound check", "voice_closed_back_to_sound")
+    tap("Live sound check. Try the phone microphone for 30 seconds", "meter_after_voice")
+    tap("Start sound check", "meter_start_after_voice")
+    wait_for("Microphone samples received", "meter_usable_after_voice")
+    tap("Stop sound check", "stop_meter_after_voice")
+    wait_for("Microphone stopped", "meter_after_voice_stopped")
+    screenshot("meter_usable_after_voice")
     crashes = adb("logcat", "-b", "crash", "-d").decode()
     (out / "crash-log.txt").write_text(crashes)
     assert "FATAL EXCEPTION" not in crashes, crashes
-    print("LIVE_INPUT_EMULATOR_OBSERVED: permission denial, PCM samples, manual stop, background stop, rotation stop, no automatic restart, 30-second limit, and Back passed. No physical microphone or output qualification.", flush=True)
+    print("LIVE_INPUT_EMULATOR_OBSERVED: permission denial, PCM samples, manual stop, notification-shade focus loss, background stop, rotation stop, no automatic restart, 30-second limit, voice navigation/service attempt, and meter reuse passed. No physical microphone or output qualification.", flush=True)
 
 
 if __name__ == "__main__":

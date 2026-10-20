@@ -6,12 +6,15 @@ Checkpoint: September 26, 2026. Continue from the restored a-Shell baseline and 
 
 ## Current checkpoint
 
-October 20 iPhone microphone lifecycle increment: the
-[shared ownership and voice record](ios-microphone-lifecycle-2026-10-20.md)
-addresses the meter/voice session conflict, explicit consent-to-Start behavior,
-bounded recognition display and voice interruption/reset handling. Its exact
-build and Simulator results are recorded separately in the draft PR. This input
-hardening does not change the delivered Android APK or advance N2b–N5.
+October 20 input lifecycle checkpoint: the
+[iPhone ownership record](ios-microphone-lifecycle-2026-10-20.md) and
+[Android ownership record](android-microphone-lifecycle-2026-10-20.md) cover
+one owner across the meter and Voice check on each platform, explicit Start,
+bounded speech display, elapsed-time limits and interruption handling. The
+combined 0.4 candidate includes both increments; exact native/Simulator/emulator
+results and APK identity are recorded in draft PR #36, stacked on #35. Actual
+handset speech/capture and N2b–N5 remain pending.
+
 
 October 19 iPhone input-parity increment: the [foreground sound-check record](ios-live-sound-check-2026-10-19.md)
 adds a separately started, bounded microphone meter without a speech-recognition

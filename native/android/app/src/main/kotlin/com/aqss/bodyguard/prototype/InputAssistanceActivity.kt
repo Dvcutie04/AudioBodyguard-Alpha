@@ -12,6 +12,9 @@ import android.view.View
 import android.widget.*
 import com.aqss.nativefeedback.TVPhotoHints
 import com.aqss.nativefeedback.TutorialContent
+import com.aqss.nativefeedback.ForegroundMicrophoneGate
+import com.aqss.nativefeedback.VoiceInputRun
+import com.aqss.nativefeedback.boundedRecognizedWords
 import com.google.mlkit.vision.common.InputImage
 import com.google.mlkit.vision.text.TextRecognition
 import com.google.mlkit.vision.text.latin.TextRecognizerOptions
@@ -29,7 +32,11 @@ class InputAssistanceActivity : Activity() {
     private lateinit var footer: LinearLayout
     private val handler = Handler(Looper.getMainLooper())
     private var recognizer: SpeechRecognizer? = null
-    private var generation = 0
+    private var generation = 0L
+    private val voiceRun = VoiceInputRun()
+    private val microphone = ForegroundMicrophoneGate.process
+    private var microphoneLease: ForegroundMicrophoneGate.Lease? = null
+    private var visible = false
     private var running = false
     private var lastLevelAt = 0L
     private var photoGeneration = 0
@@ -38,7 +45,16 @@ class InputAssistanceActivity : Activity() {
     private var photoBrand: String? = null
     private var useBrand: Button? = null
     private var photoExtra: TextView? = null
-    private val expiry = Runnable { stopVoice("30-second limit reached. Tap Start to try again.") }
+    private val voiceWatchdog = object : Runnable {
+        override fun run() {
+            if (!validVoice(generation)) return
+            val now = SystemClock.elapsedRealtime()
+            if (lastLevelAt != 0L && now - lastLevelAt >= 750) {
+                lastLevelAt = 0; meter.clear(); levelText.text = "No current recognizer level"
+            }
+            handler.postDelayed(this, 100)
+        }
+    }
     private val isVoice get() = intent.getStringExtra("mode") == "voice"
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -95,23 +111,37 @@ class InputAssistanceActivity : Activity() {
         label("On-device recognition on supported Android 12+ phones. Words clear and listening stops when you leave. Review recognized words before using them.")
     }
     private fun startVoice() {
+        if (!visible || !hasWindowFocus() || isFinishing) return
         stopVoice(); details.text = "No words recognized yet"
-        if (Build.VERSION.SDK_INT < 31 || !SpeechRecognizer.isOnDeviceRecognitionAvailable(this)) {
+        if (microphone.blocked) return
+        if (Build.VERSION.SDK_INT < 31) {
+            status.text = "On-device speech recognition unavailable. No cloud fallback is used."; return
+        }
+        val supported = try { SpeechRecognizer.isOnDeviceRecognitionAvailable(this) } catch (_: Exception) { false }
+        if (!supported) {
             status.text = "On-device speech recognition unavailable. No cloud fallback is used."; return
         }
         if (checkSelfPermission(Manifest.permission.RECORD_AUDIO) != PackageManager.PERMISSION_GRANTED) {
             requestPermissions(arrayOf(Manifest.permission.RECORD_AUDIO), 41); return
         }
-        val token = ++generation
+        val reservation = microphone.acquire()
+        if (reservation == null) {
+            status.text = "Another microphone tool is using or closing the input. Stop it, then tap Start."; return
+        }
+        microphoneLease = reservation
+        val token = voiceRun.start(SystemClock.elapsedRealtime())
+        if (token == null) { stopVoice("The input clock is unavailable. Close and reopen this screen."); return }
+        generation = token; lastLevelAt = 0
         try {
             val service = SpeechRecognizer.createOnDeviceSpeechRecognizer(this); recognizer = service; running = true
             startButton.text = "Stop listening"; status.text = "Starting microphone…"
             service.setRecognitionListener(object : RecognitionListener {
-                private fun valid() = running && generation == token && !isFinishing
+                private fun valid() = validVoice(token)
                 override fun onReadyForSpeech(params: Bundle?) { if (valid()) status.text = "Listening — on this phone, up to 30 seconds" }
                 override fun onBeginningOfSpeech() { if (valid()) status.text = "Speech detected — words are provisional" }
                 override fun onRmsChanged(rmsdB: Float) {
-                    if (!valid() || !rmsdB.isFinite()) return
+                    if (!valid()) return
+                    if (!rmsdB.isFinite()) { stopVoice("Recognizer input level was invalid. Tap Start to retry."); return }
                     val now = SystemClock.elapsedRealtime()
                     if (now - lastLevelAt < 100) return
                     lastLevelAt = now
@@ -121,7 +151,7 @@ class InputAssistanceActivity : Activity() {
                 override fun onBufferReceived(buffer: ByteArray?) { /* No raw audio retained. */ }
                 override fun onEndOfSpeech() { if (valid()) { status.text = "Finishing recognition…"; meter.clear(); levelText.text = "No live microphone samples" } }
                 override fun onError(error: Int) { if (valid()) stopVoice("Recognition stopped or unavailable (code $error). Words may be incomplete. Tap Start to retry.") }
-                private fun words(results: Bundle?) { results?.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION)?.firstOrNull()?.let { details.text = it.takeLast(500) } }
+                private fun words(results: Bundle?) { results?.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION)?.firstOrNull()?.let { details.text = boundedRecognizedWords(it) } }
                 override fun onResults(results: Bundle?) { if (valid()) { words(results); stopVoice("Finished — review the words. Nothing was sent to a TV.") } }
                 override fun onPartialResults(partialResults: Bundle?) { if (valid()) words(partialResults) }
                 override fun onEvent(eventType: Int, params: Bundle?) {}
@@ -132,13 +162,37 @@ class InputAssistanceActivity : Activity() {
                 putExtra(RecognizerIntent.EXTRA_PREFER_OFFLINE, true)
                 putExtra(RecognizerIntent.EXTRA_MAX_RESULTS, 1)
             })
-            handler.postDelayed(expiry, 30_000)
+            if (running) handler.post(voiceWatchdog)
         } catch (_: Exception) { stopVoice("Microphone could not start. Check permission and the installed speech service.") }
     }
+    private fun validVoice(token: Long): Boolean {
+        if (!running || generation != token) return false
+        if (voiceRun.accepts(token, SystemClock.elapsedRealtime(), visible && hasWindowFocus() && !isFinishing,
+                checkSelfPermission(Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED)) return true
+        val message = when (voiceRun.endReason) {
+            VoiceInputRun.EndReason.timeLimit -> "30-second limit reached. Tap Start to try again."
+            VoiceInputRun.EndReason.permission -> "Microphone permission was removed. Tap Start to check permission."
+            VoiceInputRun.EndReason.clockInvalid -> "The input clock changed. Tap Start to try again."
+            else -> "Microphone stopped when you left the voice check."
+        }
+        stopVoice(message)
+        return false
+    }
     private fun stopVoice(message: String = "Microphone off") {
-        generation++; running = false; handler.removeCallbacks(expiry)
-        recognizer?.let { service -> recognizer = null; try { service.cancel(); service.destroy() } catch (_: Exception) {} }
-        if (::startButton.isInitialized) { startButton.text = "Start voice check"; status.text = message; meter.clear(); levelText.text = "No live microphone samples" }
+        running = false; voiceRun.stop(); handler.removeCallbacks(voiceWatchdog)
+        var clean = true
+        recognizer?.let { service ->
+            recognizer = null
+            // Destroy is still attempted if cancel throws; neither callback restarts input.
+            try { service.cancel() } catch (_: Exception) { clean = false }
+            try { service.destroy() } catch (_: Exception) { clean = false }
+        }
+        microphone.release(microphoneLease, cleanupSucceeded = clean); microphoneLease = null
+        if (::startButton.isInitialized) {
+            startButton.text = "Start voice check"; startButton.isEnabled = !microphone.blocked
+            status.text = if (microphone.blocked) "Microphone cleanup failed. Force stop this app in Android Settings before trying again." else message
+            meter.clear(); lastLevelAt = 0; levelText.text = "No live microphone samples"
+        }
     }
     override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<out String>, grantResults: IntArray) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults)
@@ -239,11 +293,17 @@ class InputAssistanceActivity : Activity() {
             }
         }
     }
+    override fun onResume() { super.onResume(); visible = true }
+    override fun onWindowFocusChanged(hasFocus: Boolean) {
+        super.onWindowFocusChanged(hasFocus)
+        if (!hasFocus && isVoice && running) { stopVoice("Microphone stopped when you left the voice check."); details.text = "No words recognized yet" }
+    }
     override fun onPause() {
+        visible = false
         if (isVoice) { stopVoice(); if (::details.isInitialized) details.text = "No words recognized yet" }
         super.onPause()
     }
-    override fun onDestroy() { stopVoice(); photoGeneration++; worker.shutdownNow(); super.onDestroy() }
+    override fun onDestroy() { stopVoice(); handler.removeCallbacksAndMessages(null); photoGeneration++; worker.shutdownNow(); super.onDestroy() }
 }
 
 private class InputMeter(activity: Activity, color: Int) : View(activity) {
@@ -255,9 +315,9 @@ private class InputMeter(activity: Activity, color: Int) : View(activity) {
     override fun onDraw(canvas: Canvas) {
         super.onDraw(canvas)
         val values = levels.toList(); val step = width / 40f
-        for (i in 0 until 40) {
-            val index = i - (40 - values.size); val level = if (index >= 0) values[index] else 0f
-            val h = maxOf(2f, height * level)
+        for (index in values.indices) {
+            val i = 40 - values.size + index
+            val h = maxOf(2f, height * values[index])
             canvas.drawRoundRect(i * step, (height - h) / 2, i * step + maxOf(1f, step - 2), (height + h) / 2, 2f, 2f, paint)
         }
     }

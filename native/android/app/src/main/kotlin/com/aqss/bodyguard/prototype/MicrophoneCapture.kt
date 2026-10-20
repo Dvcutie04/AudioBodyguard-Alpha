@@ -7,6 +7,7 @@ import android.media.*
 import android.os.Build
 import android.os.SystemClock
 import com.aqss.nativefeedback.PcmInputLevel
+import com.aqss.nativefeedback.ForegroundMicrophoneGate
 import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicReference
 
@@ -14,10 +15,8 @@ internal data class InputFrame(val receivedAtMs: Long, val level: PcmInputLevel)
 
 /** One bounded foreground capture. The worker alone releases its recorder and raw buffer. */
 internal class MicrophoneCapture(context: Context) {
-    companion object {
-        // Survives Activity recreation; an unresolved recorder cannot be bypassed by rotation.
-        private val processOwner = AtomicReference<MicrophoneCapture?>(null)
-    }
+    private val gate = ForegroundMicrophoneGate.process
+    private var lease: ForegroundMicrophoneGate.Lease? = null
     private val app = context.applicationContext
     private val launched = AtomicBoolean(false)
     private val lock = Any()
@@ -36,12 +35,20 @@ internal class MicrophoneCapture(context: Context) {
 
     fun start() {
         if (!launched.compareAndSet(false, true)) return
-        if (!processOwner.compareAndSet(null, this)) {
-            result.set("The previous microphone check is still closing. Wait, then tap Start.")
+        val reservation = gate.acquire()
+        if (reservation == null) {
+            cleanupFailed = gate.blocked
+            result.set(if (gate.blocked) "Microphone cleanup failed. Force stop this app in Android Settings before trying again."
+                else "Another microphone tool is using or closing the input. Stop it, then tap Start.")
             completed.set(true)
             return
         }
-        Thread({ capture() }, "aqss-microphone-check").start()
+        lease = reservation
+        try { Thread({ capture() }, "aqss-microphone-check").start() }
+        catch (_: Exception) {
+            gate.release(lease, cleanupSucceeded = true); lease = null
+            result.set("Microphone worker could not start. Tap Start to retry."); completed.set(true)
+        }
     }
 
     fun stop(reason: String) {
@@ -152,8 +159,8 @@ internal class MicrophoneCapture(context: Context) {
                 }
             }
             samples?.fill(0)
+            gate.release(lease, cleanupSucceeded = !cleanupFailed); lease = null
             completed.set(true)
-            if (!cleanupFailed) processOwner.compareAndSet(this, null)
         }
     }
 
