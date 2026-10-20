@@ -6,6 +6,14 @@ Checkpoint: September 26, 2026. Continue from the restored a-Shell baseline and 
 
 ## Current checkpoint
 
+October 20 input-recap increment: the [local sound-check recap record](sound-check-recaps-2026-10-20.md)
+adds five temporary, input-only summaries on both mobile platforms, with observed
+input and typed stop reasons. Clear and process restart discard display data;
+neither can unlock microphone cleanup or produce protection evidence. This
+advances native status reporting while the actual N2b host/route/capture
+inventory remains unavailable. Exact build and UI results belong to the draft
+PR for this increment; installed-phone validation and N2b–N5 remain pending.
+
 October 20 input lifecycle checkpoint: the
 [iPhone ownership record](ios-microphone-lifecycle-2026-10-20.md) and
 [Android ownership record](android-microphone-lifecycle-2026-10-20.md) cover

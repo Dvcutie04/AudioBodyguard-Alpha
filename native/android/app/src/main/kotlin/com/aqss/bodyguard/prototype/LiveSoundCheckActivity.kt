@@ -4,6 +4,7 @@ import android.Manifest
 import android.app.Activity
 import android.app.AlertDialog
 import android.content.pm.PackageManager
+import android.content.res.Configuration
 import android.graphics.Canvas
 import android.graphics.Paint
 import android.os.*
@@ -11,6 +12,8 @@ import android.view.View
 import android.view.WindowInsets
 import android.widget.*
 import com.aqss.nativefeedback.SoundCheckWindow
+import com.aqss.nativefeedback.SoundCheckEnd
+import com.aqss.nativefeedback.SoundCheckRecaps
 import java.util.Locale
 
 /** Real microphone input display; no output actuation or protective-state authority. */
@@ -21,6 +24,7 @@ class LiveSoundCheckActivity : Activity() {
     private lateinit var details: TextView
     private lateinit var start: Button
     private lateinit var meter: LiveInputMeter
+    private lateinit var recent: Button
     private val handler = Handler(Looper.getMainLooper())
     private val window = SoundCheckWindow()
     private var capture: MicrophoneCapture? = null
@@ -52,13 +56,14 @@ class LiveSoundCheckActivity : Activity() {
         text("Try a 30-second microphone check. Speak normally and watch the bars respond.")
         status = text("Microphone off", 21f)
         meter = LiveInputMeter(this, skin)
-        column.addView(meter, LinearLayout.LayoutParams(-1, skin.dp(135)))
+        val meterHeight = if (resources.configuration.orientation == Configuration.ORIENTATION_LANDSCAPE) 84 else 135
+        column.addView(meter, LinearLayout.LayoutParams(-1, skin.dp(meterHeight)))
         level = text("No live input", 22f)
         text("Relative microphone input · not calibrated room loudness", 15f).setTextColor(skin.muted)
         column.addView(Button(this).apply {
             this.text = "[?] What does this show?"; skin.style(this)
             setOnClickListener {
-                stopCapture("Microphone stopped while help is open.")
+                stopCapture(SoundCheckEnd.HELP_OPENED, "Microphone stopped while help is open.")
                 AlertDialog.Builder(this@LiveSoundCheckActivity).setTitle("About the sound check")
                     .setMessage("The bars use real microphone samples from this phone. dBFS describes digital input relative to the microphone’s maximum sample value. It is not dBA or a hearing-safety measurement. Phone gain, processing, position and input route change the result.\n\nZero input can mean a quiet signal or blocked input. This check cannot decide whether sound is safe.\n\nListening stops after 30 seconds or when you leave this screen. No audio files are saved or uploaded. Automatic audio protection and TV controls are still unavailable.")
                     .setPositiveButton("Close", null).show()
@@ -72,11 +77,16 @@ class LiveSoundCheckActivity : Activity() {
                 this.text = if (details.visibility == View.VISIBLE) "Hide input details" else "Show input details"
             }
         })
+        recent = Button(this).apply {
+            this.text = "Recent sound checks"; skin.style(this)
+            setOnClickListener { showRecaps() }
+        }
+        column.addView(recent)
         text("Automatic protection is not active.", 16f).setTextColor(skin.warning)
         root.addView(ScrollView(this).apply { addView(column) }, LinearLayout.LayoutParams(-1, 0, 1f))
         start = Button(this).apply {
             text = "Start sound check"; skin.style(this, primary = true)
-            setOnClickListener { if (capture == null) startCapture() else stopCapture("Microphone stopped") }
+            setOnClickListener { if (capture == null) startCapture() else stopCapture(SoundCheckEnd.STOPPED_BY_USER, "Microphone stopped") }
         }
         root.addView(start, LinearLayout.LayoutParams(-1, -2))
         setContentView(root)
@@ -101,6 +111,7 @@ class LiveSoundCheckActivity : Activity() {
         }
         started = SystemClock.elapsedRealtime(); lastSample = started
         run = window.start(started); stopping = false
+        recent.isEnabled = false
         meter.clear(); level.text = "Waiting for microphone input"
         status.text = "Starting microphone…"
         capture = MicrophoneCapture(this).also { it.start() }
@@ -108,10 +119,10 @@ class LiveSoundCheckActivity : Activity() {
         handler.removeCallbacks(tick); handler.post(tick)
     }
 
-    private fun stopCapture(message: String) {
+    private fun stopCapture(reason: SoundCheckEnd, message: String) {
         window.stop(); meter.clear(); level.text = "No live input"
         capture?.let {
-            stopping = true; it.stop(message); status.text = "Stopping microphone…"
+            stopping = true; it.stop(reason, message); status.text = "Stopping microphone…"
             start.isEnabled = false
         } ?: run { status.text = message }
     }
@@ -125,14 +136,16 @@ class LiveSoundCheckActivity : Activity() {
                 window.stop(); if (!source.cleanupFailed) capture = null; stopping = false
                 meter.clear(); level.text = "No live input"; status.text = source.stopReason
                 start.text = "Start sound check"; start.isEnabled = !source.cleanupFailed
+                recent.isEnabled = true
                 return
             }
             if (!stopping) {
-                if (now - started >= 30_000) stopCapture("30-second check finished. Tap Start for another check.")
+                if (now - started >= 30_000) stopCapture(SoundCheckEnd.TIME_LIMIT, "30-second check finished. Tap Start for another check.")
                 else {
                     source.takeLatest()?.let { frame ->
                         if (window.offer(run, frame.receivedAtMs, now, frame.level)) {
                             lastSample = frame.receivedAtMs
+                            source.noteDisplayedInput()
                             meter.add(frame.level.rmsDbfs?.let { ((it + 60.0) / 60.0).toFloat().coerceIn(0f, 1f) } ?: 0f)
                         }
                     }
@@ -140,7 +153,7 @@ class LiveSoundCheckActivity : Activity() {
                     if (current == null) {
                         meter.clear(); show(level, "No current input samples")
                         show(status, "Waiting for microphone input…")
-                        if (now - lastSample >= 3000) stopCapture("No current microphone input. Check microphone privacy, then tap Start to retry.")
+                        if (now - lastSample >= 3000) stopCapture(SoundCheckEnd.NO_SAMPLES, "No current microphone input. Check microphone privacy, then tap Start to retry.")
                     } else {
                         show(status, "Microphone samples received · up to 30 seconds")
                         val value = current.rmsDbfs?.let { String.format(Locale.US, "%.1f dBFS", it) }
@@ -152,6 +165,36 @@ class LiveSoundCheckActivity : Activity() {
             }
             handler.postDelayed(this, 100)
         }
+    }
+
+    private fun showRecaps() {
+        if (capture?.completed?.get() == false) return
+        val store = SoundCheckRecaps.process
+        val rows = store.snapshot()
+        val content = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            setPadding(skin.dp(24), skin.dp(8), skin.dp(24), skin.dp(8))
+        }
+        fun line(value: String, heading: Boolean = false) {
+            content.addView(TextView(this).apply {
+                text = value; textSize = if (heading) 18f else 16f
+                setTextColor(skin.text); setPadding(0, skin.dp(8), 0, skin.dp(8))
+            })
+        }
+        line("Up to five completed checks, most recent first. Kept in memory; cleared when this app process ends.")
+        if (rows.isEmpty()) line("No completed sound checks in this app session.")
+        rows.forEachIndexed { index, row ->
+            line("Check ${index + 1} · ${if (row.inputObserved) "Input samples observed" else "No input samples observed"}", true)
+            line(row.end.label)
+        }
+        line("These are meter observations from this phone, not proof of continuous listening, sound safety or TV control. Audio and recognized words are not kept in recaps.")
+        val dialog = AlertDialog.Builder(this).setTitle("Recent sound checks")
+            .setView(ScrollView(this).apply { addView(content) })
+            .setPositiveButton("Close", null)
+        if (rows.isNotEmpty()) dialog.setNeutralButton("Clear recaps") { _, _ ->
+            store.clear(); showRecaps()
+        }
+        dialog.show()
     }
 
     private fun show(view: TextView, value: String) {
@@ -167,18 +210,18 @@ class LiveSoundCheckActivity : Activity() {
 
     override fun onWindowFocusChanged(hasFocus: Boolean) {
         super.onWindowFocusChanged(hasFocus)
-        if (!hasFocus && capture != null) stopCapture("Microphone stopped when you left the sound check.")
+        if (!hasFocus && capture != null) stopCapture(SoundCheckEnd.LEFT_SCREEN, "Microphone stopped when you left the sound check.")
     }
 
     override fun onPause() {
         visible = false; handler.removeCallbacks(tick)
-        stopCapture("Microphone stopped when you left the sound check.")
+        stopCapture(SoundCheckEnd.LEFT_SCREEN, "Microphone stopped when you left the sound check.")
         super.onPause()
     }
 
     override fun onDestroy() {
         handler.removeCallbacksAndMessages(null)
-        capture?.stop("Sound check closed")
+        capture?.stop(SoundCheckEnd.CLOSED, "Sound check closed")
         super.onDestroy()
     }
 }
