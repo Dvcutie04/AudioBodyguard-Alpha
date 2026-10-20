@@ -6,13 +6,24 @@ Checkpoint: September 26, 2026. Continue from the restored a-Shell baseline and 
 
 ## Current checkpoint
 
+October 19 iPhone input-parity increment: the [foreground sound-check record](ios-live-sound-check-2026-10-19.md)
+adds a separately started, bounded microphone meter without a speech-recognition
+dependency. Its arithmetic/freshness tests and focused Simulator workflow are
+distinct from a signed iPhone installation or physical input qualification.
+The prior Android 0.3 source passed its Android/iOS navigation and connected-demo
+UI jobs in [the completed UI run](https://github.com/Dvcutie04/AudioBodyguard-Alpha/actions/runs/39182899875),
+as well as its already recorded CI and Android live-input checks. This iPhone
+increment does not alter that delivered APK or advance N2b–N5. Real output work
+still awaits the user's actual host/route/independent-capture inventory.
+
 October 15 Android input increment: David reported a successful preview install
 on a VL68 Pro running Android 16. The next separate test build adds a bounded,
 user-started microphone sound check. Its [research and verification record](android-live-sound-check-2026-10-15.md)
 distinguishes real digital input samples from output observation, calibrated
 acoustics and protection. This product sensing step leaves N2b–N5 pending and
 does not imply installed-device qualification of the new feature. iOS input
-parity remains pending.
+parity is now being implemented in the separate October 19 increment above;
+installed-iPhone input validation remains pending.
 
 September 28 interface increment (PR #28, following PR #27): five native pages
 share Midnight/Daylight/System presentation, contextual help, truthful empty
