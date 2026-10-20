@@ -29,7 +29,6 @@ class LiveSoundCheckActivity : Activity() {
     private val window = SoundCheckWindow()
     private var capture: MicrophoneCapture? = null
     private var run = 0L
-    private var started = 0L
     private var lastSample = 0L
     private var visible = false
     private var stopping = false
@@ -109,8 +108,12 @@ class LiveSoundCheckActivity : Activity() {
         if (checkSelfPermission(Manifest.permission.RECORD_AUDIO) != PackageManager.PERMISSION_GRANTED) {
             requestPermissions(arrayOf(Manifest.permission.RECORD_AUDIO), 73); return
         }
-        started = SystemClock.elapsedRealtime(); lastSample = started
-        run = window.start(started); stopping = false
+        val now = SystemClock.elapsedRealtime()
+        val token = window.start(now) ?: run {
+            status.text = "Sound check could not start. Close and reopen the app before trying again."
+            return
+        }
+        run = token; lastSample = now; stopping = false
         recent.isEnabled = false
         meter.clear(); level.text = "Waiting for microphone input"
         status.text = "Starting microphone…"
@@ -140,16 +143,19 @@ class LiveSoundCheckActivity : Activity() {
                 return
             }
             if (!stopping) {
-                if (now - started >= 30_000) stopCapture(SoundCheckEnd.TIME_LIMIT, "30-second check finished. Tap Start for another check.")
-                else {
-                    source.takeLatest()?.let { frame ->
-                        if (window.offer(run, frame.receivedAtMs, now, frame.level)) {
-                            lastSample = frame.receivedAtMs
-                            source.noteDisplayedInput()
-                            meter.add(frame.level.rmsDbfs?.let { ((it + 60.0) / 60.0).toFloat().coerceIn(0f, 1f) } ?: 0f)
-                        }
+                source.takeLatest()?.let { frame ->
+                    if (window.offer(run, frame.receivedAtMs, now, frame.level)) {
+                        lastSample = frame.receivedAtMs
+                        source.noteDisplayedInput()
+                        meter.add(frame.level.rmsDbfs?.let { ((it + 60.0) / 60.0).toFloat().coerceIn(0f, 1f) } ?: 0f)
                     }
-                    val current = window.current(now)
+                }
+                val current = window.current(now)
+                if (!window.active) {
+                    if (window.endReason == SoundCheckWindow.EndReason.timeLimit)
+                        stopCapture(SoundCheckEnd.TIME_LIMIT, "30-second check finished. Tap Start for another check.")
+                    else stopCapture(SoundCheckEnd.INVALID_INPUT, "Input clock changed. Tap Start for a new sound check.")
+                } else {
                     if (current == null) {
                         meter.clear(); show(level, "No current input samples")
                         show(status, "Waiting for microphone input…")

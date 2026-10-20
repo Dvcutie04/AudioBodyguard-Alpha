@@ -6,6 +6,14 @@ Checkpoint: September 26, 2026. Continue from the restored a-Shell baseline and 
 
 ## Current checkpoint
 
+October 20 Android input-deadline increment: the
+[window closure record](android-input-deadlines-2026-10-20.md) brings Android's
+sound-meter clock/deadline latch into line with the existing iPhone policy.
+Ended runs cannot restore a reading, and the Activity requests capture shutdown
+on the latched reason. This is defensive software behavior; no clock failure
+on the handset or physical cutoff measurement is claimed. Candidate 0.6 retains
+the recap feature. Exact validation belongs to its draft PR; N2b–N5 remain pending.
+
 October 20 input-recap increment: the [local sound-check recap record](sound-check-recaps-2026-10-20.md)
 adds five temporary, input-only summaries on both mobile platforms, with observed
 input and typed stop reasons. Clear and process restart discard display data;
