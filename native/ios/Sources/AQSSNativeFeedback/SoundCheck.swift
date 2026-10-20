@@ -29,7 +29,9 @@ public struct SoundInputLevel: Equatable {
 
 /// Main-thread freshness policy. Clock discontinuity and expiry latch this run off.
 public struct SoundInputWindow {
+    public enum EndReason { case stopped, clockInvalid, timeLimit }
     public private(set) var active = false
+    public private(set) var endReason: EndReason = .stopped
     private var generation: UInt64 = 0
     private var startedAt = 0.0, checkedAt = 0.0
     private var receivedAt: Double?
@@ -44,9 +46,11 @@ public struct SoundInputWindow {
         return generation
     }
     private mutating func eligible(_ now: Double) -> Bool {
-        guard active, now.isFinite, now >= checkedAt, now - startedAt < 30 else {
-            stop(); return false
+        guard active else { return false }
+        guard now.isFinite, now >= checkedAt else {
+            stop(); endReason = .clockInvalid; return false
         }
+        guard now - startedAt < 30 else { stop(); endReason = .timeLimit; return false }
         checkedAt = now
         return true
     }
@@ -62,7 +66,7 @@ public struct SoundInputWindow {
         }
         return latest
     }
-    public mutating func stop() { active = false; latest = nil }
+    public mutating func stop() { active = false; latest = nil; endReason = .stopped }
 }
 
 /// One summary slot per run. Audio callbacks never wait on the consumer's lock.

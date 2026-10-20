@@ -55,6 +55,7 @@ final class SoundCheckTests: XCTestCase {
         XCTAssertTrue(window.offer(run: run, receivedAt: 30.9, now: 30.9, value: value))
         XCTAssertNil(window.current(at: 31))
         XCTAssertFalse(window.active)
+        XCTAssertEqual(window.endReason, .timeLimit)
         XCTAssertFalse(window.offer(run: run, receivedAt: 31.1, now: 31.1, value: value))
     }
 
@@ -69,10 +70,12 @@ final class SoundCheckTests: XCTestCase {
         XCTAssertFalse(window.offer(run: run, receivedAt: 1.3, now: 1.4, value: value))
         XCTAssertNil(window.current(at: 1.39))
         XCTAssertFalse(window.active)
+        XCTAssertEqual(window.endReason, .clockInvalid)
         XCTAssertFalse(window.offer(run: run, receivedAt: 2, now: 2, value: value))
         _ = window.start(at: 3)
         XCTAssertNil(window.current(at: .infinity))
         XCTAssertFalse(window.active)
+        XCTAssertEqual(window.endReason, .clockInvalid)
     }
 
     func testMailboxKeepsOneSummaryAndClosureRejectsLatePublication() throws {

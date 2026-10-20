@@ -27,7 +27,7 @@ final class LiveSoundCheck: ObservableObject {
     func start() {
         guard !running, !requesting, !cleanupFailed else { return }
         guard Self.owner == nil else {
-            status = "A microphone check is still closing. Close it, then tap Start."
+            status = "Another microphone check owns this input. If none is open, close this app completely and retry."
             return
         }
         guard UIApplication.shared.applicationState == .active else { return }
@@ -117,7 +117,11 @@ final class LiveSoundCheck: ObservableObject {
             levels.append(height)
         }
         let value = window.current(at: now)
-        guard window.active else { stop("30-second check finished. Tap Start for another check."); return }
+        guard window.active else {
+            stop(window.endReason == .timeLimit ? "30-second check finished. Tap Start for another check."
+                : "The input clock changed. Tap Start for another check.")
+            return
+        }
         guard let value = value else {
             levels = []; levelText = "No current input samples"; status = "Waiting for microphone input…"
             if now - lastSampleAt >= 3 { stop("No current microphone input. Tap Start to retry.") }
@@ -180,11 +184,11 @@ struct LiveSoundCheckView: View {
                             ForEach(0..<60, id: \.self) { index in
                                 let offset = index - (60 - check.levels.count)
                                 let value = offset >= 0 ? check.levels[offset] : 0
-                                RoundedRectangle(cornerRadius: 2).fill(theme.violet)
+                                RoundedRectangle(cornerRadius: 2).fill(offset >= 0 ? theme.violet : Color.clear)
                                     .frame(width: max(1, (box.size.width - 118) / 60), height: max(2, box.size.height * value))
                             }
                         }.frame(height: box.size.height, alignment: .bottom)
-                    }.frame(height: 120).accessibilityHidden(true)
+                    }.frame(height: 120).background(theme.raised).cornerRadius(12).accessibilityHidden(true)
                     Text(check.levelText).font(.title2).accessibilityIdentifier("sound-check-level")
                     Text("Relative microphone input · not calibrated room loudness").font(.caption).foregroundColor(theme.muted)
                     Button("[?] What does this show?") {
