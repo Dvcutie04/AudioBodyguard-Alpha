@@ -413,8 +413,11 @@ struct TVPhotoView: View {
         } }
     }
     private func finishPhoto(_ image: UIImage?, request: PhotoPickerRequest) {
+        // The sheet binding becomes nil before its dismissal animation ends.
+        // Reject a provider returning in that interval, before onDisappear runs.
+        guard pickerRequest?.id == request.id else { photo.cancelSelection(request.token); return }
         guard photo.isSelecting(request.token) else { return }
-        if pickerRequest?.id == request.id { pickerRequest = nil }
+        pickerRequest = nil
         if let image = image { photo.scan(image, for: request.token) }
         else { photo.cancelSelection(request.token) }
     }
