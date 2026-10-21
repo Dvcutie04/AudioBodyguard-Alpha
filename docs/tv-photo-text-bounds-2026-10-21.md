@@ -50,12 +50,20 @@ The existing native Vision synthetic-image test must use the same collector.
 The Android walkthrough selects both the ordinary synthetic image and a
 text-heavy image through the system picker and bundled ML Kit, checks review
 or rejection respectively, clears/cancels, and leaves connection unverified.
-The additional 2,048-square monochrome PNG contains 80 fictional rows and
-10,367 authored UTF-8 bytes. Its SHA-256 is
-695a035feda3c8edf752bf04c003e3d957f588d352fcdf499e2d32f15ef842c1.
+The additional 2,048-square grayscale PNG contains 135 fictional rows in
+three separated columns and 2,953 authored UTF-8 bytes. Its SHA-256 is
+4817b4d8cba2b418d6a3bb22f43f6b5b5bbfa8ff75c62c3faeb5f1fac479dd5a.
 It was rendered from exact test text with Pillow and DejaVu Sans Mono. The
 native Vision test must observe a genuinely over-budget result before
 asserting rejection. Both PNGs are test resources excluded from shipped apps.
+
+The first dense limit fixture in source 277be36159e56169181ac49492b238a712027bd7
+did not meet that precondition: Vision returned 94 observations and 944 UTF-8
+bytes instead of the 10,367 authored bytes. The native test failed at its
+actual-overflow assertion in runs 39623571969 and 39623572004. Replace that
+fixture with larger, separated rows; retain the same 100-row/8,192-byte policy
+and actual-overflow assertion. This is a test-image correction, not a claim
+that OCR reports every row in an arbitrary photo.
 
 Exact source identities, failed and passing native/CI jobs, APK signature and
 byte identity belong to the completed draft PR. Tests of supplied recognizer
