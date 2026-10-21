@@ -50,7 +50,7 @@ public final class DelayedPhotoProvider extends ContentProvider {
         if ("/delayed.png".equals(uri.getPath())) {
             CountDownLatch pending = gate; opened = true;
             try {
-                if (!pending.await(45, TimeUnit.SECONDS)) throw new FileNotFoundException("Observer did not release test photo");
+                if (!pending.await(60, TimeUnit.SECONDS)) throw new FileNotFoundException("Observer did not release test photo");
             } catch (InterruptedException interrupted) {
                 Thread.currentThread().interrupt(); throw new FileNotFoundException("Test photo interrupted");
             }

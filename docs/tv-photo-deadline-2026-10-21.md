@@ -4,7 +4,7 @@
 
 This increment follows the full Android camera-photo capture in candidate
 0.10 while the owner tests it on the handset. A selected picture must not
-produce an accepted review at or after a 15-second elapsed boundary. The
+produce an accepted review at or after a 30-second elapsed boundary. The
 window starts when the app accepts the selected image for import/reading,
 not while the user chooses a photo, takes a picture or answers camera consent.
 Brand/model/IP remain provisional hints; there is no pairing or output authority.
@@ -19,14 +19,14 @@ Brand/model/IP remain provisional hints; there is no pairing or output authority
 | [Apple file representation loading](https://developer.apple.com/documentation/foundation/nsitemprovider/loadfilerepresentation(forTypeIdentifier:completionHandler:)) | Decode the provider's temporary file inside its completion; dismissing the picker does not extend that file's lifetime. |
 
 Research inspected October 21. These sources describe OS APIs, not measured
-handset behavior or cancellation guarantees. The 15-second window is an app
+handset behavior or cancellation guarantees. The 30-second window is an app
 interaction policy, not an OCR latency qualification.
 
 ## Result ownership and native integration
 
 Both native `PhotoReviewRun` implementations accept a caller-supplied clock.
 `beginReading` samples it only for the current, still-selecting token. A
-reading window ends at elapsed time **greater than or equal to 15 seconds**,
+reading window ends at elapsed time **greater than or equal to 30 seconds**,
 or on a negative, non-finite (Swift) or backward clock observation. The end
 latches: subsequent callbacks cannot revive it, even if a later clock value
 would have fitted the original interval. A new selection resets ownership.
@@ -97,6 +97,29 @@ The Android production and observer trees are unchanged by that follow-up.
 
 Exact green revisions, run IDs, failed attempts, artifact hashes, signature
 and final APK provenance are recorded in the draft PR after inspection.
+
+## Native regression and revised interaction window
+
+The first Android implementation run `39694632564`, job `119548912403`,
+compiled successfully, passed **69 JVM tests** and reached the original
+Photos-picker/ML Kit checks. Its dense-text image did not complete inside the
+initial **15-second** window. The retained failure screenshot and native view
+hierarchy show “Photo review timed out. Choose the picture again.” with all
+hints unknown; the existing over-budget-text expectation therefore failed.
+The delayed-provider observer was not reached, and no APK was delivered from
+this attempt. Evidence artifact `12390960348` has ZIP SHA-256
+`ce816f98bb0f1e184795cb4f57cd7777619d544f7cffabde2d6a38ebbb62ed2e`.
+
+The current policy is **30 seconds on both platforms**. The previous 0.10
+artifacts also show that the dense-text case's UI observations spanned more
+than 15 seconds. Those archive timestamps include UI polling and are not a
+recognizer or handset latency measurement. The existing dense-text gate must
+still complete and reject its text collection; accepting a timeout as an
+alternate success would lose that verification. The revised boundary tests
+are published before the policy change, so the old 15-second policy must fail
+at a valid result just before 30 seconds. The delayed-provider observation
+now has its own 45-second observer wait and a 60-second provider fail-safe;
+neither changes the app's result window.
 
 ## Remaining gates
 

@@ -178,8 +178,9 @@ public class CameraCaptureProbe extends Instrumentation {
         }
         throw new AssertionError("Temporary photo still readable after its request ended");
     }
-    protected void waitForText(String expected) {
-        long deadline = SystemClock.uptimeMillis() + 30000;
+    protected void waitForText(String expected) { waitForText(expected, 30000); }
+    protected void waitForText(String expected, long timeoutMs) {
+        long deadline = SystemClock.uptimeMillis() + timeoutMs;
         while (SystemClock.uptimeMillis() < deadline) {
             StringBuilder text = new StringBuilder();
             runOnMainSync(() -> read(activity.getWindow().getDecorView(), text));

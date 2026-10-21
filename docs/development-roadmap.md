@@ -7,7 +7,7 @@ Checkpoint: September 26, 2026. Continue from the restored a-Shell baseline and 
 ## Current checkpoint
 
 October 21 photo-reading deadline increment: the
-[result-window record](tv-photo-deadline-2026-10-21.md) adds a 15-second elapsed
+[result-window record](tv-photo-deadline-2026-10-21.md) adds a 30-second elapsed
 acceptance window on Android and iPhone. After an image is selected, stalled
 reading leaves hints unknown and offers another selection; late results cannot
 restore an expired review. iPhone dismisses its picker before provider loading.

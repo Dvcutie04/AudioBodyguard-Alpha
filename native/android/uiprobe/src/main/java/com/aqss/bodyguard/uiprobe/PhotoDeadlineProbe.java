@@ -37,9 +37,9 @@ public final class PhotoDeadlineProbe extends CameraCaptureProbe {
                 SystemClock.sleep(100);
             }
             String expired = "Photo review timed out. Choose the picture again.";
-            waitForText(expired); assertUnknown();
+            waitForText(expired, 45000); assertUnknown();
             long elapsed = SystemClock.elapsedRealtime() - started;
-            require(elapsed >= 15000, "Photo expired before its 15-second result window");
+            require(elapsed >= 30000, "Photo expired before its 30-second result window");
             require(!getContext().getContentResolver().call(DELAYED, "state", null, null).getBoolean("released"),
                     "Delayed photo was released before the timeout observation");
             recordScreen("photo-deadline");

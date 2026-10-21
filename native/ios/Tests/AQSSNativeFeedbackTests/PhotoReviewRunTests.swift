@@ -42,18 +42,18 @@ final class PhotoReviewRunTests: XCTestCase {
     }
     func testResultJustBeforeTheDeadlineCanComplete() {
         var now = 100.0; let run = PhotoReviewRun(now: { now }), token = run.select()
-        XCTAssertTrue(run.beginReading(token)); now = 114.999
+        XCTAssertTrue(run.beginReading(token)); now = 129.999
         XCTAssertTrue(run.complete(token)); XCTAssertFalse(run.complete(token))
     }
     func testReadingExpiresAtTheDeadlineAndCannotRevive() {
         var now = 100.0; let run = PhotoReviewRun(now: { now }), token = run.select()
-        XCTAssertTrue(run.beginReading(token)); now = 115
+        XCTAssertTrue(run.beginReading(token)); now = 130
         XCTAssertFalse(run.isReading(token)); XCTAssertEqual(run.endReason(token), .timeLimit); now = 101
         XCTAssertFalse(run.isReading(token)); XCTAssertFalse(run.complete(token))
     }
     func testCompletionChecksTheDeadlineWithoutATimerTick() {
         var now = 100.0; let run = PhotoReviewRun(now: { now }), token = run.select()
-        XCTAssertTrue(run.beginReading(token)); now = 115
+        XCTAssertTrue(run.beginReading(token)); now = 130
         XCTAssertFalse(run.complete(token)); now = 100
         XCTAssertFalse(run.complete(token))
     }
@@ -66,7 +66,7 @@ final class PhotoReviewRunTests: XCTestCase {
     func testChoosingAPictureDoesNotConsumeItsReadingWindow() {
         var now = 100.0; let run = PhotoReviewRun(now: { now }), token = run.select()
         now = 1_000; XCTAssertTrue(run.isSelecting(token)); XCTAssertTrue(run.beginReading(token))
-        now = 1_014.999; XCTAssertTrue(run.complete(token))
+        now = 1_029.999; XCTAssertTrue(run.complete(token))
     }
     func testStaleCallbacksDoNotSampleTheClockOrExpireTheReplacement() {
         var now = 100.0, samples = 0
@@ -87,7 +87,7 @@ final class PhotoReviewRunTests: XCTestCase {
     }
     func testAnExpiredReviewCanBeReplacedWithoutItsEndReasonLeaking() {
         var now = 0.0; let run = PhotoReviewRun(now: { now }), old = run.select()
-        XCTAssertTrue(run.beginReading(old)); now = 15; XCTAssertFalse(run.complete(old))
+        XCTAssertTrue(run.beginReading(old)); now = 30; XCTAssertFalse(run.complete(old))
         XCTAssertEqual(run.endReason(old), .timeLimit); XCTAssertFalse(run.isSelecting(old))
         let current = run.select(); XCTAssertNil(run.endReason(old)); XCTAssertNil(run.endReason(current))
         XCTAssertTrue(run.beginReading(current)); XCTAssertFalse(run.complete(old)); XCTAssertTrue(run.complete(current))
