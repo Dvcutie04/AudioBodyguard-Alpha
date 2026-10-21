@@ -1,7 +1,25 @@
 import XCTest
 @testable import AQSSNativeFeedback
+#if canImport(Vision)
+import Vision
+#endif
 
 final class TVPhotoHintsTests: XCTestCase {
+#if canImport(Vision)
+    func testNativeVisionReadsSyntheticVizioLabels() throws {
+        guard #available(macOS 12.0, iOS 15.0, *) else { throw XCTSkip("Native Vision text recognition is unavailable on this runtime") }
+        let url = try XCTUnwrap(Bundle.module.url(forResource: "tv-photo-labels", withExtension: "png", subdirectory: "Fixtures"))
+        let request = VNRecognizeTextRequest()
+        request.recognitionLevel = .accurate
+        request.usesLanguageCorrection = false
+        try VNImageRequestHandler(url: url).perform([request])
+        let text = (request.results ?? []).prefix(100).compactMap { $0.topCandidates(1).first?.string }.joined(separator: "\n")
+        let hints = TVPhotoHints(text)
+        XCTAssertEqual(hints.brand, "VIZIO", "Synthetic image OCR: \(text)")
+        XCTAssertEqual(hints.model, "V505M-K09", "Synthetic image OCR: \(text)")
+        XCTAssertEqual(hints.address, "10.20.30.40", "Synthetic image OCR: \(text)")
+    }
+#endif
     func testVizioAboutLabelsIdentifyOnlyTheLabelledModelAndAddress() {
         let hints = TVPhotoHints("VIZIO\nModel Name: V505M-K09\nIPv4 IP Address: 10.20.30.40\nIPv4 Default Gateway: 10.20.30.1\nDNS: 10.0.0.10")
         XCTAssertEqual(hints.brand, "VIZIO")

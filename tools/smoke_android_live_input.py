@@ -285,10 +285,77 @@ def main():
     wait_for("No completed sound checks in this app session.", "recaps_not_persisted")
     screenshot("recaps_new_process_empty")
 
+    # A synthetic image in this isolated emulator goes through the real system
+    # picker, image decoder, bundled ML Kit and app review screen. Never inject
+    # OCR text or a result directly into the app.
+    close_recaps("close_recaps_before_photo")
+    adb("shell", "input", "keyevent", "KEYCODE_BACK")
+    tap("Devices", "photo_devices_page")
+    tap("TV photo setup. Read a model label or Network settings photo", "open_photo_check")
+    wait_for_all(("No photo selected", "Brand: Not identified"), "photo_starts_empty")
+    fixture = Path("native/ios/Tests/AQSSNativeFeedbackTests/Fixtures/tv-photo-labels.png")
+    inserted = adb("shell", "content", "insert", "--uri", "content://media/external_primary/images/media",
+                   "--bind", "_display_name:s:aqss-tv-labels.png", "--bind", "mime_type:s:image/png",
+                   "--bind", "relative_path:s:Pictures/", "--bind", "is_pending:i:1").decode()
+    (out / "photo-fixture-insert.txt").write_text(inserted)
+    match = re.search(r"Inserted (content://media/external_primary/images/media/\d+)", inserted)
+    assert match is not None, "Test image was not inserted into MediaStore"
+    image_uri = match.group(1)
+    try:
+        written = subprocess.run(["adb", "shell", "content", "write", "--uri", image_uri],
+                                 input=fixture.read_bytes(), capture_output=True, timeout=45, check=True)
+        (out / "photo-fixture-write.txt").write_bytes(written.stdout + written.stderr)
+        adb("shell", "content", "update", "--uri", image_uri, "--bind", "is_pending:i:0")
+        tap("Choose a photo", "photo_choose")
+        chosen = False
+        for attempt in range(6):
+            picker, _ = screen(f"photo_picker_{attempt}")
+            labels = {n.get(field, "") for n in picker.iter("node") for field in ("text", "content-desc")}
+            if "aqss-tv-labels.png" in labels:
+                tap("aqss-tv-labels.png", "photo_pick_fixture"); chosen = True; break
+            browse = next((s for s in ("Browse", "Browse…", "Browse...", "Browse files") if s in labels), None)
+            if browse:
+                tap(browse, f"photo_browse_{attempt}"); continue
+            # On the stock single-photo picker, media cells expose their capture
+            # date instead of a filename. Accept only one visible photo cell.
+            cells = {s for s in labels if s.startswith("Photo taken on ") or s.startswith("Image taken on ")}
+            if len(cells) == 1:
+                tap(cells.pop(), "photo_pick_single_fixture"); chosen = True; break
+            time.sleep(1)
+        assert chosen, "No unambiguous synthetic image in the observed system picker"
+        wait_for_all(("Brand: VIZIO", "Model: V505M-K09", "TV IP hint: 10.20.30.40", "Nothing is connected."),
+                     "photo_native_ocr_result")
+        screenshot("photo_native_ocr_result")
+        for attempt in range(5):
+            current, _ = screen(f"photo_clear_find_{attempt}")
+            if has(current, "Clear photo details"):
+                tap("Clear photo details", "photo_clear"); break
+            scroll_meter(f"photo_scroll_{attempt}", down=True)
+        else:
+            raise AssertionError("Clear photo details is unreachable")
+        for attempt in range(3):
+            scroll_meter(f"photo_after_clear_top_{attempt}", down=False)
+        wait_for_all(("No photo selected", "Brand: Not identified", "Model: Not identified", "TV IP hint: Not identified"),
+                     "photo_clear_empty")
+        screenshot("photo_clear_empty")
+        tap("Choose a photo", "photo_choose_to_cancel")
+        screen("photo_picker_before_cancel")
+        adb("shell", "input", "keyevent", "KEYCODE_BACK")
+        wait_for_all(("No photo selected", "Brand: Not identified"), "photo_cancel_stays_empty")
+        adb("shell", "input", "keyevent", "KEYCODE_BACK")
+        wait_for("TV photo setup", "photo_close_returns_devices")
+        tap("Home", "photo_back_home")
+        wait_for("Connection not verified", "photo_did_not_connect")
+    except Exception:
+        screenshot("photo_failure")
+        raise
+    finally:
+        adb("shell", "content", "delete", "--uri", image_uri)
+
     crashes = adb("logcat", "-b", "crash", "-d").decode()
     (out / "crash-log.txt").write_text(crashes)
     assert "FATAL EXCEPTION" not in crashes, crashes
-    print("LIVE_INPUT_EMULATOR_OBSERVED: permission denial, PCM samples, manual stop, notification-shade focus loss, background stop, rotation stop, no automatic restart, 30-second limit, voice navigation/service attempt, meter reuse, bounded input recaps, Clear, navigation retention and empty recaps after process restart passed. No physical microphone or output qualification.", flush=True)
+    print("LIVE_INPUT_EMULATOR_OBSERVED: permission denial, PCM samples, manual stop, notification-shade focus loss, background stop, rotation stop, no automatic restart, 30-second limit, voice navigation/service attempt, meter reuse, bounded input recaps, Clear, navigation retention, empty recaps after process restart, synthetic-photo picker/ML Kit review, photo Clear/cancel and unverified connection passed. No physical microphone, real-photo accuracy or output qualification.", flush=True)
 
 
 if __name__ == "__main__":

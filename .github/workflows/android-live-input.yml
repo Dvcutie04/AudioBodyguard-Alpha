@@ -2,9 +2,10 @@ name: Android live microphone input test
 
 on:
   push:
-    branches: ["aqss/android-live-sound-check", "aqss/android-microphone-lifecycle", "aqss/sound-check-recaps", "aqss/android-input-deadlines"]
+    branches: ["aqss/android-live-sound-check", "aqss/android-microphone-lifecycle", "aqss/sound-check-recaps", "aqss/android-input-deadlines", "aqss/tv-photo-labels"]
     paths:
       - "native/android/**"
+      - "native/ios/Tests/AQSSNativeFeedbackTests/Fixtures/**"
       - "tools/smoke_android_live_input.py"
       - "tools/record_android_test_apk.py"
       - ".github/workflows/android-live-input.yml"
@@ -12,6 +13,7 @@ on:
     branches: ["main"]
     paths:
       - "native/android/**"
+      - "native/ios/Tests/AQSSNativeFeedbackTests/Fixtures/**"
       - "tools/smoke_android_live_input.py"
       - "tools/record_android_test_apk.py"
       - ".github/workflows/android-live-input.yml"
