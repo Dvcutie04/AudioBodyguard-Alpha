@@ -6,6 +6,15 @@ Checkpoint: September 26, 2026. Continue from the restored a-Shell baseline and 
 
 ## Current checkpoint
 
+October 21 Android camera-photo increment: the
+[full-image capture record](android-full-camera-photo-2026-10-21.md) replaces
+camera thumbnails with a unique private full-image output, decoded at the
+existing 2048-pixel target. Temporary access and file cleanup are checked at
+request termination; canceled or unreadable captures leave hints unknown.
+Candidate 0.10 retains the prior input tools and opening art. This Android
+capture improvement does not change iPhone production code or advance N2b–N5;
+actual handset camera compatibility and real-photo accuracy remain pending.
+
 October 21 TV photo-selection increment: the
 [selection ownership record](tv-photo-selection-2026-10-21.md) assigns a selection
 identity before importing a photo. Clear, Close and replacement invalidate old

@@ -6,7 +6,6 @@ import android.content.Intent
 import android.content.pm.PackageManager
 import android.graphics.*
 import android.os.*
-import android.provider.MediaStore
 import android.speech.*
 import android.view.View
 import android.widget.*
@@ -42,7 +41,8 @@ class InputAssistanceActivity : Activity() {
     private var running = false
     private var lastLevelAt = 0L
     private val photoRun = PhotoReviewRun()
-    private data class PhotoRequest(val code: Int, val camera: Boolean, val token: PhotoReviewRun.Token)
+    private data class PhotoRequest(val code: Int, val token: PhotoReviewRun.Token, val capture: TVPhotoCapture?)
+    private var cameraPhoto: TVPhotoCapture? = null
     private var pendingPhoto: PhotoRequest? = null
     private var nextPhotoRequestCode = 100
     private val worker = Executors.newSingleThreadExecutor()
@@ -225,10 +225,10 @@ class InputAssistanceActivity : Activity() {
         action("Need help?") { instructions?.visibility = if (instructions?.visibility == View.VISIBLE) View.GONE else View.VISIBLE }
         instructions = label("1. Open Settings on the TV. Look for About, Support or Device information to find its model. Menu names differ.\n\n2. Look for Network, Connection or Network status, then IP settings. Photograph the IP address row — not Gateway or DNS. The back label usually does not show the current IP.\n\n3. Put the phone and TV on the same home Wi-Fi. Avoid a guest network. IP addresses can change and do not prove TV identity.\n\n4. Supported Samsung models use SmartThings and may ask for approval on the TV. For Alexa or Google Home, add/link a supported TV inside that app and follow its approval steps.").apply { visibility = View.GONE }
         action("Clear photo details") { clearPhoto() }
-        label("Text recognition stays on this phone. Details clear on close. Manage the original in your camera or gallery app. Choose the full photo if text looks small.")
+        label("Text recognition stays on this phone. New camera photos use a temporary copy. Photos you choose stay in your gallery. Details clear on close.")
     }
     private fun clearPhoto() {
-        pendingPhoto = null; photoRun.clear(); photoBrand = null
+        pendingPhoto = null; photoRun.clear(); cameraPhoto?.close(); cameraPhoto = null; photoBrand = null
         status.text = "No photo selected"; details.text = "Brand: Not identified"
         photoExtra?.text = "Model: Not identified\nTV IP hint: Not identified"; useBrand?.visibility = View.GONE
     }
@@ -239,14 +239,17 @@ class InputAssistanceActivity : Activity() {
         if (nextPhotoRequestCode > 65_535) {
             status.text = "Close and reopen photo setup before choosing another picture."; return
         }
-        val request = PhotoRequest(nextPhotoRequestCode++, camera, photoRun.select())
-        pendingPhoto = request
+        val token = photoRun.select()
         try {
-            val intent = if (camera) Intent(MediaStore.ACTION_IMAGE_CAPTURE)
-                else Intent(Intent.ACTION_GET_CONTENT).apply { type = "image/*"; addCategory(Intent.CATEGORY_OPENABLE) }
-            startActivityForResult(intent, request.code)
+            val capture = if (camera) TVPhotoCapture.create(this) else null
+            cameraPhoto = capture
+            val request = PhotoRequest(nextPhotoRequestCode++, token, capture)
+            pendingPhoto = request
+            val source = capture?.intent()
+                ?: Intent(Intent.ACTION_GET_CONTENT).apply { type = "image/*"; addCategory(Intent.CATEGORY_OPENABLE) }
+            startActivityForResult(source, request.code)
         } catch (_: Exception) {
-            pendingPhoto = null; photoRun.cancel(request.token)
+            pendingPhoto = null; photoRun.cancel(token); cameraPhoto?.close(); cameraPhoto = null
             status.text = if (camera) "Camera unavailable. Take a photo in your Camera app, then choose it below."
                 else "No photo picker available. Use the instructions below."
         }
@@ -257,17 +260,18 @@ class InputAssistanceActivity : Activity() {
         val request = pendingPhoto ?: return
         if (requestCode != request.code) return
         pendingPhoto = null
-        if (resultCode != RESULT_OK) { photoRun.cancel(request.token); return }
+        request.capture?.revokeAccess()
+        if (resultCode != RESULT_OK) { photoRun.cancel(request.token); request.capture?.close(); cameraPhoto = null; return }
         val token = request.token
-        if (isDestroyed || isFinishing || !photoRun.beginReading(token)) return
+        if (isDestroyed || isFinishing || !photoRun.beginReading(token)) { request.capture?.close(); return }
         status.text = "Reading text on this phone…"
         worker.execute {
             try {
-                val bitmap: Bitmap = if (request.camera) {
-                    @Suppress("DEPRECATION")
-                    (data?.extras?.get("data") as? Bitmap) ?: throw IllegalArgumentException("No camera image")
-                } else {
-                    val uri = data?.data ?: throw IllegalArgumentException("No photo")
+                if (!photoRun.isReading(token)) return@execute
+                val bitmap: Bitmap = run {
+                    // Camera result data can be null. Only the reserved full-size
+                    // output is eligible; never fall back to a result thumbnail.
+                    val uri = request.capture?.uri ?: data?.data ?: throw IllegalArgumentException("No photo")
                     if (uri.scheme != "content") throw IllegalArgumentException("Unsupported photo source")
                     if (Build.VERSION.SDK_INT >= 28) {
                         ImageDecoder.decodeBitmap(ImageDecoder.createSource(contentResolver, uri)) { decoder, info, _ ->
@@ -319,6 +323,9 @@ class InputAssistanceActivity : Activity() {
                     .addOnCompleteListener { scanner.close(); bitmap.recycle() }
             } catch (_: Exception) {
                 runOnUiThread { if (!isDestroyed && !isFinishing && photoRun.complete(token)) status.text = "Photo could not be read. Choose a clear photo of the label or settings screen." }
+            } finally {
+                // The bitmap owns the decoded pixels; OCR does not need the file.
+                request.capture?.close()
             }
         }
     }
@@ -332,7 +339,7 @@ class InputAssistanceActivity : Activity() {
         if (isVoice) { stopVoice(); if (::details.isInitialized) details.text = "No words recognized yet" }
         super.onPause()
     }
-    override fun onDestroy() { stopVoice(); handler.removeCallbacksAndMessages(null); pendingPhoto = null; photoRun.clear(); worker.shutdownNow(); super.onDestroy() }
+    override fun onDestroy() { stopVoice(); handler.removeCallbacksAndMessages(null); pendingPhoto = null; photoRun.clear(); cameraPhoto?.close(); cameraPhoto = null; worker.shutdownNow(); super.onDestroy() }
 }
 
 private class InputMeter(activity: Activity, color: Int) : View(activity) {

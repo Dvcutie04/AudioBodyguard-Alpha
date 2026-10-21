@@ -11,8 +11,8 @@ android {
         applicationId = "com.aqss.bodyguard.prototype"
         minSdk = 26
         targetSdk = 36
-        versionCode = 9
-        versionName = "0.9-tv-photo-selection"
+        versionCode = 10
+        versionName = "0.10-full-camera-photo"
     }
 
     buildTypes {
@@ -37,5 +37,6 @@ android {
 
 dependencies {
     implementation(project(":"))
+    implementation("androidx.core:core:1.13.1")
     implementation("com.google.mlkit:text-recognition:16.0.1")
 }

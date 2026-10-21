@@ -55,8 +55,12 @@ public final class CameraCaptureProbe extends Instrumentation {
                         try (InputStream fixture = getContext().getAssets().open("tv-photo-labels.png");
                              OutputStream stream = getTargetContext().getContentResolver().openOutputStream(uri, "w")) {
                             require(stream != null, "Output URI was not writable");
+                            java.security.MessageDigest digest = java.security.MessageDigest.getInstance("SHA-256");
                             byte[] buffer = new byte[8192]; int count;
-                            while ((count = fixture.read(buffer)) != -1) stream.write(buffer, 0, count);
+                            while ((count = fixture.read(buffer)) != -1) { stream.write(buffer, 0, count); digest.update(buffer, 0, count); }
+                            StringBuilder hex = new StringBuilder();
+                            for (byte value : digest.digest()) hex.append(String.format(java.util.Locale.ROOT, "%02x", value & 255));
+                            require("2f55775447c5d28841737a25713ae83a76b37bb6d614fa33007621ce92853f31".contentEquals(hex), "Camera fixture hash differs");
                         }
                     }
                     if ("cancel".equals(mode)) return new ActivityResult(Activity.RESULT_CANCELED, null);
@@ -64,7 +68,8 @@ public final class CameraCaptureProbe extends Instrumentation {
                         // A valid-looking thumbnail must not substitute for an empty output file.
                         Bitmap thumbnail;
                         try (InputStream fixture = getContext().getAssets().open("tv-photo-labels.png")) {
-                            thumbnail = BitmapFactory.decodeStream(fixture);
+                            Bitmap original = BitmapFactory.decodeStream(fixture);
+                            thumbnail = Bitmap.createScaledBitmap(original, 320, 180, true); original.recycle();
                         }
                         return new ActivityResult(Activity.RESULT_OK, new Intent().putExtra("data", thumbnail));
                     }
@@ -81,15 +86,27 @@ public final class CameraCaptureProbe extends Instrumentation {
         try {
             Intent launch = new Intent().setClassName(getTargetContext(), "com.aqss.bodyguard.prototype.InputAssistanceActivity")
                     .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+            // Seed an abandoned capture and an unrelated cache file. The first
+            // capture in this fresh process must clean only its own directory.
+            java.io.File directory = new java.io.File(getTargetContext().getCacheDir(), "tv-camera");
+            require(directory.isDirectory() || directory.mkdirs(), "Cannot seed camera cache");
+            java.io.File abandoned = new java.io.File(directory, "capture-abandoned.jpg");
+            require(abandoned.createNewFile(), "Abandoned fixture already exists");
+            java.io.File unrelated = java.io.File.createTempFile("camera-scope-", ".txt", getTargetContext().getCacheDir());
             activity = startActivitySync(launch);
             waitForText("No photo selected");
             capture("photo");
             require(violation == null, violation);
+            require(!abandoned.exists(), "Abandoned capture was retained");
+            require(unrelated.isFile(), "Camera cleanup removed unrelated cache data");
+            require(unrelated.delete(), "Cannot remove unrelated test file");
             waitForText("Brand: VIZIO"); waitForText("Model: V505M-K09"); waitForText("TV IP hint: 10.20.30.40");
             waitForText("Nothing is connected."); assertRemoved(output);
+            recordScreen("camera-full-image");
 
             capture("cancel"); require(violation == null, violation);
             assertEmpty(); assertRemoved(output);
+            recordScreen("camera-cancel");
 
             capture("empty"); require(violation == null, violation);
             waitForText("Photo could not be read."); assertUnknown(); assertRemoved(output);
@@ -116,6 +133,13 @@ public final class CameraCaptureProbe extends Instrumentation {
         }
     }
 
+    private void recordScreen(String name) throws Exception {
+        Bitmap image = getUiAutomation().takeScreenshot();
+        require(image != null, "Camera review screenshot unavailable");
+        try (OutputStream stream = new java.io.FileOutputStream(new java.io.File(getTargetContext().getFilesDir(), name + ".png"))) {
+            require(image.compress(Bitmap.CompressFormat.PNG, 100, stream), "Cannot record camera review");
+        } finally { image.recycle(); }
+    }
     private void capture(String nextMode) {
         mode = nextMode;
         runOnMainSync(() -> require(click(activity.getWindow().getDecorView(), "Take a TV photo"), "Camera button missing"));

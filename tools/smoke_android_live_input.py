@@ -263,6 +263,9 @@ def main():
     camera = adb("shell", "am", "instrument", "-w", "com.aqss.bodyguard.uiprobe/.CameraCaptureProbe", timeout=150).decode()
     (out / "camera-capture-contract.txt").write_text(camera)
     assert "INSTRUMENTATION_RESULT: camera_capture=passed:" in camera, camera
+    for name in ("camera-full-image", "camera-cancel"):
+        (out / f"{name}.png").write_bytes(adb("exec-out", "run-as", package, "cat", f"files/{name}.png"))
+        adb("shell", "run-as", package, "rm", f"files/{name}.png")
     launch()
     wait_for("Connection not verified", "camera_probe_returned_home")
 
