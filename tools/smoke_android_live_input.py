@@ -173,8 +173,9 @@ def main():
     (out / "photo-fixture-insert.txt").write_text(inserted)
     # The AOSP content insert command discards its returned URI. Query the exact
     # test row; absence or ambiguity fails rather than guessing an item ID.
+    pending_match = r"android\:query-arg-match-pending:i:1"
     query = adb("shell", shlex.join(["content", "query", "--uri", "content://media/external_primary/images/media",
-                "--projection", "_id:_display_name:is_pending", "--extra", "android:query-arg-match-pending:i:1", "--where",
+                "--projection", "_id:_display_name:is_pending", "--extra", pending_match, "--where",
                 "_display_name='aqss-tv-labels.png' AND relative_path='Pictures/'"])).decode()
     (out / "photo-fixture-query.txt").write_text(query)
     rows = re.findall(r"^Row: \d+ _id=(\d+), _display_name=aqss-tv-labels\.png, is_pending=1$", query, re.MULTILINE)
@@ -185,8 +186,8 @@ def main():
                                  input=fixture.read_bytes(), capture_output=True, timeout=45, check=True)
         (out / "photo-fixture-write.txt").write_bytes(written.stdout + written.stderr)
         assert adb("shell", "content", "read", "--uri", image_uri) == fixture.read_bytes(), "Imported image bytes differ"
-        adb("shell", "content", "update", "--uri", image_uri, "--bind", "is_pending:i:0",
-            "--extra", "android:query-arg-match-pending:i:1")
+        adb("shell", shlex.join(["content", "update", "--uri", image_uri, "--bind", "is_pending:i:0",
+            "--extra", pending_match]))
         published = adb("shell", "content", "query", "--uri", image_uri, "--projection", "_id:_display_name:is_pending").decode()
         (out / "photo-fixture-published.txt").write_text(published)
         assert f"_id={rows[0]}, _display_name=aqss-tv-labels.png, is_pending=0" in published, "Fixture is not published to the picker"
@@ -234,7 +235,7 @@ def main():
         screenshot("photo_failure")
         raise
     finally:
-        adb("shell", "content", "delete", "--uri", image_uri, "--extra", "android:query-arg-match-pending:i:1")
+        adb("shell", shlex.join(["content", "delete", "--uri", image_uri, "--extra", pending_match]))
 
     tap("Sound", "sound_page")
     tap("Live sound check. Try the phone microphone for 30 seconds", "open_check")

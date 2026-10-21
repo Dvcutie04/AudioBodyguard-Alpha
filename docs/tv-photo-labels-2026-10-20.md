@@ -84,3 +84,7 @@ filters pending items by default. Setup now requests `MATCH_INCLUDE` explicitly
 for its pending query/publication/cleanup, while still requiring exactly one
 observed row, exact image bytes and a published result. Run photo setup before
 the unchanged microphone scenarios to expose any fixture failure earlier.
+The `c9aa325` attempt exposed a CLI escaping error: the colon in the pending
+Bundle key was interpreted as another binding delimiter. The AOSP parser
+requires that key colon to be escaped; all affected commands now preserve the
+escaped key through the remote shell. The same row and byte assertions remain.
