@@ -133,11 +133,33 @@ public final class CameraCaptureProbe extends Instrumentation {
         }
     }
 
+    @android.annotation.TargetApi(29)
     private void recordScreen(String name) throws Exception {
-        Bitmap image = getUiAutomation().takeScreenshot();
-        require(image != null, "Camera review screenshot unavailable");
-        try (OutputStream stream = new java.io.FileOutputStream(new java.io.File(getTargetContext().getFilesDir(), name + ".png"))) {
-            require(image.compress(Bitmap.CompressFormat.PNG, 100, stream), "Cannot record camera review");
+        require(android.os.Build.VERSION.SDK_INT >= 29, "Frame-commit evidence requires the configured API-36 emulator");
+        java.util.concurrent.CountDownLatch frame = new java.util.concurrent.CountDownLatch(1);
+        int[] size = new int[2];
+        runOnMainSync(() -> {
+            View root = activity.getWindow().getDecorView();
+            require(root.isHardwareAccelerated(), "Frame-commit evidence requires hardware rendering");
+            size[0] = root.getWidth(); size[1] = root.getHeight();
+            root.getViewTreeObserver().registerFrameCommitCallback(frame::countDown);
+            root.invalidate();
+        });
+        require(frame.await(5, java.util.concurrent.TimeUnit.SECONDS), "No committed camera review frame");
+        Bitmap image = Bitmap.createBitmap(size[0], size[1], Bitmap.Config.ARGB_8888);
+        java.util.concurrent.CountDownLatch copied = new java.util.concurrent.CountDownLatch(1);
+        int[] status = {android.view.PixelCopy.ERROR_UNKNOWN};
+        try {
+            // PixelCopy reads the app Window's latest submitted buffer. A plain
+            // screen capture here can still contain the previous review frame.
+            runOnMainSync(() -> android.view.PixelCopy.request(activity.getWindow(), image, value -> {
+                status[0] = value; copied.countDown();
+            }, new android.os.Handler(android.os.Looper.getMainLooper())));
+            require(copied.await(5, java.util.concurrent.TimeUnit.SECONDS), "Camera review pixel copy timed out");
+            require(status[0] == android.view.PixelCopy.SUCCESS, "Camera review pixel copy failed: " + status[0]);
+            try (OutputStream stream = new java.io.FileOutputStream(new java.io.File(getTargetContext().getFilesDir(), name + ".png"))) {
+                require(image.compress(Bitmap.CompressFormat.PNG, 100, stream), "Cannot record camera review");
+            }
         } finally { image.recycle(); }
     }
     private void capture(String nextMode) {

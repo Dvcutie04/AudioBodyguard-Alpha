@@ -84,6 +84,24 @@ or user photographs. Native UI and core CI results, failed attempts and exact
 APK/signing identity belong in the draft PR. No test count proves optical
 accuracy, calibrated acoustics or physical output containment.
 
+The first implementation `749e76c8d31136c6afe44176afb15174ea80333d`
+passed main CI and [Android run 39653782287](https://github.com/Dvcutie04/AudioBodyguard-Alpha/actions/runs/39653782287),
+including all five camera scenarios. Artifact `12370674645` retained native view
+assertions showing unknown hints after Cancel, but its two camera PNGs had the
+same SHA-256 `9217a2b0e29c45b70e8ae0498ed859fc68ef74357f74c43a1c01c778ebc5f180`:
+the screen recorder captured the prior rendered frame. That PNG is not visual
+proof of the canceled state. Preserve it and correct the test recorder before
+calling the visual evidence complete; production camera code is unchanged.
+
+The corrected API-36 test recorder explicitly invalidates the app Window,
+requires a hardware frame-commit callback and successful PixelCopy, then records
+that submitted app buffer. It fails on a missing frame/copy or identical camera
+review/Cancel PNGs. [Android ViewTreeObserver](https://developer.android.com/reference/android/view/ViewTreeObserver#registerFrameCommitCallback(java.lang.Runnable))
+documents frame submission and its use with PixelCopy for reliable UI captures;
+[Android PixelCopy](https://developer.android.com/reference/android/view/PixelCopy)
+reads the most recently queued source buffer and reports completion status.
+These are rendered app-window pixels, not a physical-display observation.
+
 ## Remaining gates
 
 Test Take a TV photo on the user's Android camera, confirm a clear model row is

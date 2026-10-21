@@ -266,6 +266,7 @@ def main():
     for name in ("camera-full-image", "camera-cancel"):
         (out / f"{name}.png").write_bytes(adb("exec-out", "run-as", package, "cat", f"files/{name}.png"))
         adb("shell", "run-as", package, "rm", f"files/{name}.png")
+    assert (out / "camera-full-image.png").read_bytes() != (out / "camera-cancel.png").read_bytes(), "Camera evidence reused the previous rendered frame"
     launch()
     wait_for("Connection not verified", "camera_probe_returned_home")
 
