@@ -81,6 +81,22 @@ final class TVPhotoHintsTests: XCTestCase {
         XCTAssertNil(hints.address)
     }
 #if canImport(Vision)
+    func testNativeVisionRejectsSyntheticTextOverBudget() throws {
+        guard #available(macOS 12.0, iOS 15.0, *) else { throw XCTSkip("Native Vision text recognition is unavailable on this runtime") }
+        let url = try XCTUnwrap(Bundle.module.url(forResource: "tv-photo-text-limit", withExtension: "png", subdirectory: "Fixtures"))
+        let request = VNRecognizeTextRequest()
+        request.recognitionLevel = .accurate
+        request.usesLanguageCorrection = false
+        try VNImageRequestHandler(url: url).perform([request])
+        let rows = (request.results ?? []).map { $0.topCandidates(1).first?.string }
+        XCTAssertTrue(rows.allSatisfy { $0 != nil })
+        let observed = rows.compactMap { $0 }.joined(separator: "\n")
+        print("TV_PHOTO_LIMIT_VISION_OBSERVED rows=\(rows.count) utf8_bytes=\(observed.utf8.count)")
+        XCTAssertTrue(rows.count > 100 || observed.utf8.count > 8192, "The synthetic OCR result must actually exceed a collection limit")
+        XCTAssertNil(boundedTVPhotoText(rows))
+        let hints = TVPhotoHints(observed)
+        XCTAssertNil(hints.brand); XCTAssertNil(hints.model); XCTAssertNil(hints.address)
+    }
     func testNativeVisionReadsSyntheticVizioLabels() throws {
         guard #available(macOS 12.0, iOS 15.0, *) else { throw XCTSkip("Native Vision text recognition is unavailable on this runtime") }
         let url = try XCTUnwrap(Bundle.module.url(forResource: "tv-photo-labels", withExtension: "png", subdirectory: "Fixtures"))

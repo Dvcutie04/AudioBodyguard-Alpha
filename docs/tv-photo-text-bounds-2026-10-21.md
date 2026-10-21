@@ -47,8 +47,15 @@ is separate from corrected source.
 Further checks cover the exact row/UTF-8 boundaries, separator overhead,
 missing/blank/multiline candidates, hidden conflicts and early termination.
 The existing native Vision synthetic-image test must use the same collector.
-The Android walkthrough must still select the synthetic image through the
-system picker and bundled ML Kit, clear/cancel, and leave connection unverified.
+The Android walkthrough selects both the ordinary synthetic image and a
+text-heavy image through the system picker and bundled ML Kit, checks review
+or rejection respectively, clears/cancels, and leaves connection unverified.
+The additional 2,048-square monochrome PNG contains 80 fictional rows and
+10,367 authored UTF-8 bytes. Its SHA-256 is
+695a035feda3c8edf752bf04c003e3d957f588d352fcdf499e2d32f15ef842c1.
+It was rendered from exact test text with Pillow and DejaVu Sans Mono. The
+native Vision test must observe a genuinely over-budget result before
+asserting rejection. Both PNGs are test resources excluded from shipped apps.
 
 Exact source identities, failed and passing native/CI jobs, APK signature and
 byte identity belong to the completed draft PR. Tests of supplied recognizer
