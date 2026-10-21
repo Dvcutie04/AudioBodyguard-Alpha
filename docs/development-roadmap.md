@@ -6,6 +6,14 @@ Checkpoint: September 26, 2026. Continue from the restored a-Shell baseline and 
 
 ## Current checkpoint
 
+October 21 TV photo-selection increment: the
+[selection ownership record](tv-photo-selection-2026-10-21.md) assigns a selection
+identity before importing a photo. Clear, Close and replacement invalidate old
+imports and recognition results; canceling a replacement leaves all details
+unknown. Candidate 0.9 preserves the prior sound tools and opening art. Exact
+software validation belongs to its draft PR; physical output, real-photo
+accuracy, signed iPhone installation and N2b–N5 remain pending.
+
 October 21 TV photo text-boundary increment: the
 [collection-limit record](tv-photo-text-bounds-2026-10-21.md) replaces silent
 OCR row truncation with whole-collection rejection on both native platforms.

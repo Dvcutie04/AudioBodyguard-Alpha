@@ -282,16 +282,26 @@ struct VoiceCheckView: View {
 final class PhotoCheck: ObservableObject {
     @Published var hints = TVPhotoHints("")
     @Published var status = "No photo selected"
-    private var generation = 0
-    func clear() { generation += 1; hints = TVPhotoHints(""); status = "No photo selected" }
-    func scan(_ image: UIImage) {
-        clear(); status = "Reading text on this phone…"; let token = generation
+    private let run = PhotoReviewRun()
+    private func resetDetails() { hints = TVPhotoHints(""); status = "No photo selected" }
+    func clear() { run.clear(); resetDetails() }
+    func select() -> PhotoReviewRun.Token { resetDetails(); return run.select() }
+    func isSelecting(_ token: PhotoReviewRun.Token) -> Bool { run.isSelecting(token) }
+    func cancelSelection(_ token: PhotoReviewRun.Token) {
+        guard run.isSelecting(token), run.cancel(token) else { return }
+        resetDetails()
+    }
+    func scan(_ image: UIImage, for token: PhotoReviewRun.Token) {
+        // The picker owns the token before asynchronous loading begins. A late
+        // provider must not create a fresh selection after Clear or Close.
+        guard run.beginReading(token) else { return }
+        status = "Reading text on this phone…"
         // Always normalize orientation and bound the bitmap before OCR.
         let scale = min(1, 2048 / max(image.size.width, image.size.height))
         let size = CGSize(width: max(1, image.size.width * scale), height: max(1, image.size.height * scale))
         let format = UIGraphicsImageRendererFormat(); format.scale = 1
         let small = UIGraphicsImageRenderer(size: size, format: format).image { _ in image.draw(in: CGRect(origin: .zero, size: size)) }
-        guard let cg = small.cgImage else { status = "Photo could not be read. Try another picture."; return }
+        guard let cg = small.cgImage else { _ = run.complete(token); status = "Photo could not be read. Try another picture."; return }
         DispatchQueue.global(qos: .userInitiated).async {
             let request = VNRecognizeTextRequest(); request.recognitionLevel = .accurate; request.usesLanguageCorrection = false
             do {
@@ -299,7 +309,7 @@ final class PhotoCheck: ObservableObject {
                 let text = boundedTVPhotoText((request.results ?? []).lazy.map { $0.topCandidates(1).first?.string })
                 let hints = TVPhotoHints(text ?? "")
                 DispatchQueue.main.async { [weak self] in
-                    guard let self = self, self.generation == token else { return }
+                    guard let self = self, self.run.complete(token) else { return }
                     self.hints = hints
                     self.status = text == nil
                         ? "Photo text could not be reviewed. Choose a closer photo of the model or IP address row."
@@ -307,7 +317,7 @@ final class PhotoCheck: ObservableObject {
                 }
             } catch {
                 DispatchQueue.main.async { [weak self] in
-                    guard let self = self, self.generation == token else { return }
+                    guard let self = self, self.run.complete(token) else { return }
                     self.status = "Could not read this picture. Try brighter light and a closer photo."
                 }
             }
@@ -315,13 +325,18 @@ final class PhotoCheck: ObservableObject {
     }
 }
 
+private struct PhotoPickerRequest: Identifiable {
+    let id = UUID()
+    let token: PhotoReviewRun.Token
+    let camera: Bool
+}
+
 struct TVPhotoView: View {
     let theme: AppTheme
     var onUseBrand: ((String) -> Void)? = nil
     @Environment(\.dismiss) private var dismiss
     @StateObject private var photo = PhotoCheck()
-    @State private var gallery = false
-    @State private var camera = false
+    @State private var pickerRequest: PhotoPickerRequest?
     @State private var instructions = false
     @State private var detailsExpanded = false
     @State private var setupRequest: SetupGuideRequest?
@@ -340,13 +355,8 @@ struct TVPhotoView: View {
                     Text(onUseBrand == nil
                          ? "Take a clear picture of the TV’s model label, or its Network / IP settings screen. Avoid including passwords. You do not need to move a heavy or wall-mounted TV: use its About screen instead."
                          : "Photograph the TV’s model label or About screen. Keep passwords out of the picture.")
-                    Button("Take a TV photo") {
-                        guard UIImagePickerController.isSourceTypeAvailable(.camera) else { cameraNotice = "Camera unavailable here. Take a photo with your phone and choose it below."; return }
-                        AVCaptureDevice.requestAccess(for: .video) { allowed in DispatchQueue.main.async {
-                            if allowed { camera = true } else { cameraNotice = "Camera permission denied. Choose an existing photo or use the instructions." }
-                        } }
-                    }.buttonStyle(AppButtonStyle(theme: theme, primary: true))
-                    Button("Choose a photo") { gallery = true }.buttonStyle(AppButtonStyle(theme: theme))
+                    Button("Take a TV photo") { choosePhoto(camera: true) }.buttonStyle(AppButtonStyle(theme: theme, primary: true))
+                    Button("Choose a photo") { choosePhoto(camera: false) }.buttonStyle(AppButtonStyle(theme: theme))
                     if !cameraNotice.isEmpty { Text(cameraNotice).foregroundColor(theme.warning) }
                     Text(photo.status).font(.headline).accessibilityIdentifier("photo-status")
                     Text("Brand: \(photo.hints.brand ?? "Not identified")")
@@ -359,7 +369,7 @@ struct TVPhotoView: View {
                         Text("Model: \(photo.hints.model ?? "Not identified")")
                         Text("TV IP hint: \(photo.hints.address ?? "Not identified")")
                     }
-                    Text("Check the suggested details on your TV. A photo does not connect it.").font(.caption).foregroundColor(theme.muted)
+                    Text("Check the suggested details on your TV. A photo does not connect it. Choosing another picture clears these details.").font(.caption).foregroundColor(theme.muted)
                     if onUseBrand != nil {
                         Button(detailsExpanded ? "Hide photo details" : "Show photo details") { detailsExpanded.toggle() }.buttonStyle(AppButtonStyle(theme: theme))
                     } else {
@@ -375,12 +385,41 @@ struct TVPhotoView: View {
                     Button("Clear photo details") { photo.clear() }.buttonStyle(AppButtonStyle(theme: theme))
                     Text("Text recognition stays on this phone. Details clear when you close this screen. Your original photo remains in Photos until you delete it there.").font(.caption).foregroundColor(theme.muted)
                 }.padding()
-            }
+            }.accessibilityIdentifier("photo-review-scroll")
         }.background(theme.background.ignoresSafeArea()).foregroundColor(theme.text)
             .sheet(item: $setupRequest) { request in SetupGuidesView(theme: theme, initialGroup: request.group) }
-            .sheet(isPresented: $gallery) { LocalPhotoPicker { image in gallery = false; if let image = image { photo.scan(image) } } }
-            .sheet(isPresented: $camera) { LocalCameraPicker { image in camera = false; if let image = image { photo.scan(image) } } }
+            .sheet(item: $pickerRequest) { request in
+                Group {
+                    if request.camera { LocalCameraPicker { finishPhoto($0, request: request) } }
+                    else { LocalPhotoPicker { finishPhoto($0, request: request) } }
+                }.onDisappear { photo.cancelSelection(request.token) }
+            }
             .onDisappear { photo.clear() }
+    }
+    private func choosePhoto(camera: Bool) {
+        let token = photo.select(); cameraNotice = ""
+        guard camera else { pickerRequest = PhotoPickerRequest(token: token, camera: false); return }
+        guard UIImagePickerController.isSourceTypeAvailable(.camera) else {
+            photo.cancelSelection(token)
+            cameraNotice = "Camera unavailable here. Take a photo with your phone and choose it below."; return
+        }
+        AVCaptureDevice.requestAccess(for: .video) { allowed in DispatchQueue.main.async {
+            guard photo.isSelecting(token) else { return }
+            if allowed { pickerRequest = PhotoPickerRequest(token: token, camera: true) }
+            else {
+                photo.cancelSelection(token)
+                cameraNotice = "Camera permission denied. Choose an existing photo or use the instructions."
+            }
+        } }
+    }
+    private func finishPhoto(_ image: UIImage?, request: PhotoPickerRequest) {
+        // The sheet binding becomes nil before its dismissal animation ends.
+        // Reject a provider returning in that interval, before onDisappear runs.
+        guard pickerRequest?.id == request.id else { photo.cancelSelection(request.token); return }
+        guard photo.isSelecting(request.token) else { return }
+        pickerRequest = nil
+        if let image = image { photo.scan(image, for: request.token) }
+        else { photo.cancelSelection(request.token) }
     }
 }
 
