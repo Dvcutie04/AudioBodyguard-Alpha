@@ -77,3 +77,10 @@ observer now requires one exact pending filename/path row, constructs its
 item URI from the observed ID, verifies a byte-for-byte readback after writing,
 and observes publication before opening the picker. This changes test setup,
 not app parsing, picker behavior or the expected OCR/UI result.
+
+The following observer revision `f961202` returned `No result found` for that
+pending-row query. The [MediaStore pending-match contract](https://developer.android.com/reference/android/provider/MediaStore#QUERY_ARG_MATCH_PENDING)
+filters pending items by default. Setup now requests `MATCH_INCLUDE` explicitly
+for its pending query/publication/cleanup, while still requiring exactly one
+observed row, exact image bytes and a published result. Run photo setup before
+the unchanged microphone scenarios to expose any fixture failure earlier.
