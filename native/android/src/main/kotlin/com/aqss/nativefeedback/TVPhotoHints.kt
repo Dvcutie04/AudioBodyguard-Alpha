@@ -15,8 +15,13 @@ class TVPhotoHints(text: String) {
         fun matches(pattern: String) = Regex(pattern, RegexOption.MULTILINE).findAll(upper).map { it.groupValues[1] }.toSet()
         // Include malformed labelled values before checking uniqueness: do not salvage
         // one readable candidate from a conflicting or unreadable second row.
-        fun labelled(label: String) = matches("^[ \\t]*$label(?:[ \\t]*[:=][ \\t]*|[ \\t]+)([^\\r\\n]*)[ \\t]*\\r?$")
-            .map { it.trim(' ', '\t') }.toSet().singleOrNull()
+        fun labelled(label: String): String? {
+            val explicit = matches("^[ \\t]*$label[ \\t]*[:=][ \\t]*([^\\r\\n]*)[ \\t]*\\r?$")
+            // With no separator, a whole value may follow the label. Do not let
+            // bare IPv4 consume the start of 'IPv4 Default Gateway: ...'.
+            val spaced = matches("^[ \\t]*$label[ \\t]+([^:=\\r\\n]*)[ \\t]*\\r?$")
+            return (explicit + spaced).map { it.trim(' ', '\t') }.toSet().singleOrNull()
+        }
         brand = matches("\\b(SAMSUNG|LG|SONY|TCL|HISENSE|VIZIO|PANASONIC|PHILIPS)\\b").singleOrNull()
         model = labelled(modelLabel)?.takeIf { Regex("[A-Z0-9][A-Z0-9._-]{1,39}").matches(it) && it.any { c -> c in '0'..'9' } }
         address = labelled(addressLabel)?.takeIf(::isPrivateIPv4)

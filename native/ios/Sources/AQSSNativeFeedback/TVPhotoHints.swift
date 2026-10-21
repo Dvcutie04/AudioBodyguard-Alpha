@@ -19,7 +19,10 @@ public struct TVPhotoHints {
         brand = brands.count == 1 ? brands.first : nil
         // Count malformed labelled candidates too; a readable row cannot hide a conflict.
         func labelled(_ label: String) -> String? {
-            let values = Set(matches("^[ \\t]*\(label)(?:[ \\t]*[:=][ \\t]*|[ \\t]+)([^\\r\\n]*)[ \\t]*\\r?$")
+            let explicit = matches("^[ \\t]*\(label)[ \\t]*[:=][ \\t]*([^\\r\\n]*)[ \\t]*\\r?$")
+            // A whitespace-only value cannot swallow a differently named row's colon.
+            let spaced = matches("^[ \\t]*\(label)[ \\t]+([^:=\\r\\n]*)[ \\t]*\\r?$")
+            let values = Set((explicit + spaced)
                 .map { $0.trimmingCharacters(in: CharacterSet(charactersIn: " \t")) })
             return values.count == 1 ? values.first : nil
         }
