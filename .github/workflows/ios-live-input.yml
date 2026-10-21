@@ -51,6 +51,7 @@ jobs:
               assert len(targets) == 1, 'Expected exactly one UI test target'
               targets[0].setdefault('EnvironmentVariables', {})['AQSS_TEST_MIC_' + mode] = '1'
               targets[0]['EnvironmentVariables']['AQSS_TEST_PHOTO'] = '1'
+              targets[0]['EnvironmentVariables']['AQSS_TEST_PHOTO_MODIFIED_AT'] = str(pathlib.Path('native/ios/Tests/AQSSNativeFeedbackTests/Fixtures/tv-photo-labels.png').stat().st_mtime)
               (root / ('sound-' + mode.lower() + '.xctestrun')).write_bytes(plistlib.dumps(data))
           PYTHON
       - name: Verify idle navigation and denied permission

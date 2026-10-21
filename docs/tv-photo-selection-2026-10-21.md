@@ -70,11 +70,14 @@ hints, then selects it again and verifies Clear. The over-budget image and all
 existing microphone/recap checks remain in the focused workflow.
 
 The focused iPhone workflow imports the hash-checked synthetic label into a fresh
-Simulator Photos library. The new UI case requires exactly one observed picker
-cell, recognizes it through the real provider and Vision, cancels a replacement,
-requires unknown details, then recognizes and clears it again. A missing or
-ambiguous picker fails rather than guessing a fixture. Existing permission,
-input-lifecycle and unverified-connection checks remain required.
+Simulator Photos library. Its six stock pictures remain intact. The new UI case
+requires exactly one observed Image matching the hash-checked fixture's file
+date and current-year date-label form, then recognizes it through the real provider
+and Vision. It cancels a replacement, requires unknown details, then recognizes
+and clears it again. A missing or ambiguous candidate fails rather than guessing
+a position or accepting old hints. Existing permission, input-lifecycle and
+unverified-connection checks remain required. The photo test explicitly scopes
+its scroll container so older guide/sheet tests keep their prior priority.
 
 Exact commit, red/green outcomes, test counts, APK identity and any failed attempts
 belong in the draft PR. An unsigned Simulator or device-target build is not an
@@ -86,6 +89,18 @@ passed all 63 Swift package tests but failed the iOS app build in run
 job `119373378950`: the new source was missing from the app's explicit Xcode
 Sources phase. Add the file reference, group entry and build-phase membership;
 do not treat package tests alone as an app build.
+
+The iPhone UI run at `b1e13b36bcc8ed000821a0bcd3848eb1b9e84bed`,
+[39644678407](https://github.com/Dvcutie04/AudioBodyguard-Alpha/actions/runs/39644678407),
+job `119377640707`, passed five existing UI cases and failed the new photo case:
+the picker exposed zero CollectionView Cells. Its hash-verified artifact
+`12368080282` (`7038092f7ed9c98d5e257ed83bf069e220746585b694fc8edd58568617916a77`)
+shows the fixture plus six stock images. The captured accessibility inventory
+exposes Image elements labelled by photo date. Correct the selector to match
+the imported fixture's modification date and require one candidate; retain all
+recognition, Cancel, re-selection and Clear assertions. The two granted-input
+cases were not run after that failed phase. The failure is not a passed iPhone
+photo check.
 
 ## Remaining gates
 
