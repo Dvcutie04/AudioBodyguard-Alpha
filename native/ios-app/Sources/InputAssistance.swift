@@ -296,13 +296,14 @@ final class PhotoCheck: ObservableObject {
             let request = VNRecognizeTextRequest(); request.recognitionLevel = .accurate; request.usesLanguageCorrection = false
             do {
                 try VNImageRequestHandler(cgImage: cg).perform([request])
-                let lines = (request.results ?? []).prefix(100).compactMap { $0.topCandidates(1).first?.string }
-                let text = lines.joined(separator: "\n")
-                let hints = TVPhotoHints(text)
+                let text = boundedTVPhotoText((request.results ?? []).lazy.map { $0.topCandidates(1).first?.string })
+                let hints = TVPhotoHints(text ?? "")
                 DispatchQueue.main.async { [weak self] in
                     guard let self = self, self.generation == token else { return }
                     self.hints = hints
-                    self.status = "Check the details below. Text recognition can make mistakes. Nothing is connected."
+                    self.status = text == nil
+                        ? "Photo text could not be reviewed. Choose a closer photo of the model or IP address row."
+                        : "Check the details below. Text recognition can make mistakes. Nothing is connected."
                 }
             } catch {
                 DispatchQueue.main.async { [weak self] in

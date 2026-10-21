@@ -2,6 +2,43 @@ package com.aqss.nativefeedback
 
 import java.util.Locale
 
+private const val PHOTO_TEXT_BYTES = 8192
+private const val PHOTO_TEXT_ROWS = 100
+private fun photoLineBreak(value: Char): Boolean = value in "\n\r\u000B\u000C\u0085\u2028\u2029"
+
+private fun photoTextFits(text: String): Boolean {
+    if (text.length > PHOTO_TEXT_BYTES || text.toByteArray(Charsets.UTF_8).size > PHOTO_TEXT_BYTES) return false
+    var rows = 1
+    var previousCR = false
+    for (value in text) {
+        if (photoLineBreak(value) && !(value == '\n' && previousCR)) {
+            rows++
+            if (rows > PHOTO_TEXT_ROWS) return false
+        }
+        previousCR = value == '\r'
+    }
+    return true
+}
+
+/** Reject the whole OCR collection rather than hiding a row in a shortened prefix. */
+fun boundedTVPhotoText(rows: Sequence<String?>): String? {
+    val text = StringBuilder()
+    var count = 0
+    var bytes = 0
+    for (row in rows) {
+        if (count == PHOTO_TEXT_ROWS || row == null || row.length > PHOTO_TEXT_BYTES ||
+            row.isBlank() || row.any(::photoLineBreak)) return null
+        val size = row.toByteArray(Charsets.UTF_8).size
+        val separator = if (count == 0) 0 else 1
+        if (size > PHOTO_TEXT_BYTES - bytes - separator) return null
+        if (count > 0) text.append('\n')
+        text.append(row)
+        bytes += size + separator
+        count++
+    }
+    return text.toString()
+}
+
 /** Untrusted presentation hints; there is intentionally no connection or authority API. */
 class TVPhotoHints(text: String) {
     val brand: String?
@@ -10,7 +47,7 @@ class TVPhotoHints(text: String) {
     init {
         val modelLabel = "MODEL(?:[ \\t]+(?:NAME|CODE|NUMBER|NO\\.?))?"
         val addressLabel = "(?:IPV4[ \\t]+IP[ \\t]+ADDRESS|IP(?:V4)?(?:[ \\t]+ADDRESS)?)"
-        val upper = if (text.length <= 8192 && text.toByteArray(Charsets.UTF_8).size <= 8192)
+        val upper = if (photoTextFits(text))
             text.uppercase(Locale.ROOT).replace(Regex("(?m)^[ \\t]*($modelLabel|$addressLabel)[ \\t]*[:=]?[ \\t]*\\r?\\n[ \\t]*"), "$1: ") else ""
         fun matches(pattern: String) = Regex(pattern, RegexOption.MULTILINE).findAll(upper).map { it.groupValues[1] }.toSet()
         // Include malformed labelled values before checking uniqueness: do not salvage

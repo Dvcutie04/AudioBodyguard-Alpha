@@ -6,6 +6,14 @@ Checkpoint: September 26, 2026. Continue from the restored a-Shell baseline and 
 
 ## Current checkpoint
 
+October 21 TV photo text-boundary increment: the
+[collection-limit record](tv-photo-text-bounds-2026-10-21.md) replaces silent
+OCR row truncation with whole-collection rejection on both native platforms.
+Over-limit or unreadable collections leave all hints unknown and ask for a
+closer photo. Candidate 0.8 retains the existing input tools and opening art.
+Exact software validation belongs to its draft PR; real-photo accuracy,
+signed iPhone installation and N2b–N5 remain pending.
+
 October 20 TV photo-label increment: the
 [label normalization record](tv-photo-labels-2026-10-20.md) adds the Model Name
 and IPv4 IP Address forms seen in the user's VIZIO screenshots on both mobile
