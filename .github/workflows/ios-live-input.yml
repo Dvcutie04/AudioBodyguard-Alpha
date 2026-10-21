@@ -3,7 +3,7 @@ name: iPhone foreground input verification
 on:
   workflow_dispatch:
   push:
-    branches: ["aqss/ios-live-sound-check", "aqss/ios-microphone-lifecycle", "aqss/android-microphone-lifecycle", "aqss/sound-check-recaps"]
+    branches: ["aqss/ios-live-sound-check", "aqss/ios-microphone-lifecycle", "aqss/android-microphone-lifecycle", "aqss/sound-check-recaps", "aqss/tv-photo-labels"]
 
 permissions:
   contents: read

@@ -6,6 +6,13 @@ Checkpoint: September 26, 2026. Continue from the restored a-Shell baseline and 
 
 ## Current checkpoint
 
+October 20 TV photo-label increment: the
+[label normalization record](tv-photo-labels-2026-10-20.md) adds the Model Name
+and IPv4 IP Address forms seen in the user's VIZIO screenshots on both mobile
+platforms. Conflicting or unreadable labelled candidates remain unknown.
+Native synthetic-image tests are separate from real-photo accuracy or device
+identity. Candidate 0.7 retains the prior sound tools; N2b–N5 remain pending.
+
 October 20 Android input-deadline increment: the
 [window closure record](android-input-deadlines-2026-10-20.md) brings Android's
 sound-meter clock/deadline latch into line with the existing iPhone policy.

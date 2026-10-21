@@ -7,7 +7,9 @@ public struct TVPhotoHints {
     public let address: String?
     public init(_ text: String) {
         guard text.utf8.count <= 8192 else { brand = nil; model = nil; address = nil; return }
-        let upper = text.uppercased().replacingOccurrences(of: "(?m)^(MODEL(?: CODE| NUMBER| NO\\.?)?|IP(?:V4)?(?: ADDRESS)?)[ \\t]*[:=]?[ \\t]*\\r?\\n[ \\t]*", with: "$1: ", options: .regularExpression)
+        let modelLabel = "MODEL(?:[ \\t]+(?:NAME|CODE|NUMBER|NO\\.?))?"
+        let addressLabel = "(?:IPV4[ \\t]+IP[ \\t]+ADDRESS|IP(?:V4)?(?:[ \\t]+ADDRESS)?)"
+        let upper = text.uppercased().replacingOccurrences(of: "(?m)^[ \\t]*(\(modelLabel)|\(addressLabel))[ \\t]*[:=]?[ \\t]*\\r?\\n[ \\t]*", with: "$1: ", options: .regularExpression)
         func matches(_ pattern: String) -> [String] {
             guard let re = try? NSRegularExpression(pattern: pattern, options: [.anchorsMatchLines]) else { return [] }
             let ns = upper as NSString
@@ -15,10 +17,20 @@ public struct TVPhotoHints {
         }
         let brands = Set(matches("\\b(SAMSUNG|LG|SONY|TCL|HISENSE|VIZIO|PANASONIC|PHILIPS)\\b"))
         brand = brands.count == 1 ? brands.first : nil
-        let models = Set(matches("^[ \\t]*MODEL(?: CODE| NUMBER| NO\\.?)?(?:[ \\t]*[:=][ \\t]*|[ \\t]+)([A-Z0-9][A-Z0-9._-]{1,39})[ \\t]*$"))
-        model = models.count == 1 && models.first!.rangeOfCharacter(from: .decimalDigits) != nil ? models.first : nil
-        let addresses = Set(matches("^[ \\t]*IP(?:V4)?(?: ADDRESS)?(?:[ \\t]*[:=][ \\t]*|[ \\t]+)([0-9.]+)[ \\t]*$"))
-        address = addresses.count == 1 && Self.isPrivateIPv4(addresses.first!) ? addresses.first : nil
+        // Count malformed labelled candidates too; a readable row cannot hide a conflict.
+        func labelled(_ label: String) -> String? {
+            let explicit = matches("^[ \\t]*\(label)[ \\t]*[:=][ \\t]*([^\\r\\n]*)[ \\t]*\\r?$")
+            // A whitespace-only value cannot swallow a differently named row's colon.
+            let spaced = matches("^[ \\t]*\(label)[ \\t]+([^:=\\r\\n]*)[ \\t]*\\r?$")
+            let values = Set((explicit + spaced)
+                .map { $0.trimmingCharacters(in: CharacterSet(charactersIn: " \t")) })
+            return values.count == 1 ? values.first : nil
+        }
+        if let candidate = labelled(modelLabel),
+           candidate.range(of: "^[A-Z0-9][A-Z0-9._-]{1,39}$", options: .regularExpression) != nil,
+           candidate.contains(where: { $0 >= "0" && $0 <= "9" }) { model = candidate }
+        else { model = nil }
+        address = labelled(addressLabel).flatMap { Self.isPrivateIPv4($0) ? $0 : nil }
     }
     public static func isPrivateIPv4(_ value: String) -> Bool {
         let parts = value.split(separator: ".", omittingEmptySubsequences: false)
