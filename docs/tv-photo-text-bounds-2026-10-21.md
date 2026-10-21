@@ -65,6 +65,14 @@ fixture with larger, separated rows; retain the same 100-row/8,192-byte policy
 and actual-overflow assertion. This is a test-image correction, not a claim
 that OCR reports every row in an arbitrary photo.
 
+The clearer fixture passed native Vision with 159 observations and 1,420
+recognized UTF-8 bytes at source 5ae3e1bc1cb0f03a900fee82c9265737344351ef.
+Its Android observer exhausted six snapshots while the screen still reported
+Reading text, with all hints unknown (run 39624290440, job 119305622372).
+Retain that evidence and allow 30 result observations only for photo OCR;
+keep the same final labels and all other navigation waits unchanged. This
+observer allowance is not an SDK completion-time or phone latency claim.
+
 Exact source identities, failed and passing native/CI jobs, APK signature and
 byte identity belong to the completed draft PR. Tests of supplied recognizer
 rows are deterministic software checks, not real-photo coverage or measured

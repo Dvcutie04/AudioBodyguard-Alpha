@@ -49,10 +49,10 @@ def main():
     def has(root, text):
         return any(text in node.get("text", "") for node in root.iter("node"))
 
-    def wait_for_all(texts, name):
+    def wait_for_all(texts, name, attempts=6):
         # Native layout may briefly return a nonempty but partial hierarchy.
         # Observe all required labels together rather than comparing two frames.
-        for _ in range(6):
+        for _ in range(attempts):
             root, _ = screen(name)
             if all(has(root, text) for text in texts):
                 return root
@@ -210,7 +210,7 @@ def main():
                 time.sleep(1)
             assert chosen, "No unambiguous synthetic image in the observed system picker"
             wait_for_all(expected,
-                         f"{case_prefix}_native_ocr_result")
+                         f"{case_prefix}_native_ocr_result", attempts=30)
             screenshot(f"{case_prefix}_native_ocr_result")
             for attempt in range(5):
                 current, _ = screen(f"{case_prefix}_clear_find_{attempt}")
