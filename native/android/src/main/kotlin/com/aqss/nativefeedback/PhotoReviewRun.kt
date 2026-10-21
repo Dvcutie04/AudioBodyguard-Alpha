@@ -1,7 +1,7 @@
 package com.aqss.nativefeedback
 
 /** A selection owns one import and one OCR result. No device or output authority. */
-class PhotoReviewRun {
+class PhotoReviewRun(private val nowMs: () -> Long) {
     class Token internal constructor()
     private var owner: Token? = null
     private var reading = false

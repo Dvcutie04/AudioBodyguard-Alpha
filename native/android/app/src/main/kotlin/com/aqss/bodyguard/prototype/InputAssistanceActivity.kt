@@ -40,7 +40,7 @@ class InputAssistanceActivity : Activity() {
     private var visible = false
     private var running = false
     private var lastLevelAt = 0L
-    private val photoRun = PhotoReviewRun()
+    private val photoRun = PhotoReviewRun(SystemClock::elapsedRealtime)
     private data class PhotoRequest(val code: Int, val token: PhotoReviewRun.Token, val capture: TVPhotoCapture?)
     private var cameraPhoto: TVPhotoCapture? = null
     private var pendingPhoto: PhotoRequest? = null

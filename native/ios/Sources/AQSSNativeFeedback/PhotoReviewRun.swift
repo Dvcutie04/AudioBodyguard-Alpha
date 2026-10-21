@@ -6,7 +6,8 @@ public final class PhotoReviewRun {
     private let lock = NSLock()
     private var owner: Token?
     private var reading = false
-    public init() {}
+    private let now: () -> Double
+    public init(now: @escaping () -> Double) { self.now = now }
 
     public func select() -> Token {
         lock.lock(); defer { lock.unlock() }

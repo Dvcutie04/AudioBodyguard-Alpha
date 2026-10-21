@@ -282,7 +282,11 @@ struct VoiceCheckView: View {
 final class PhotoCheck: ObservableObject {
     @Published var hints = TVPhotoHints("")
     @Published var status = "No photo selected"
-    private let run = PhotoReviewRun()
+    private let run = PhotoReviewRun(now: {
+        var timebase = mach_timebase_info_data_t()
+        guard mach_timebase_info(&timebase) == KERN_SUCCESS, timebase.denom != 0 else { return .nan }
+        return Double(mach_continuous_time()) * Double(timebase.numer) / Double(timebase.denom) / 1_000_000_000
+    })
     private func resetDetails() { hints = TVPhotoHints(""); status = "No photo selected" }
     func clear() { run.clear(); resetDetails() }
     func select() -> PhotoReviewRun.Token { resetDetails(); return run.select() }
