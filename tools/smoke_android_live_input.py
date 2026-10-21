@@ -258,6 +258,14 @@ def main():
                        ("Brand: Not identified", "Model: Not identified", "TV IP hint: Not identified",
                         "Photo text could not be reviewed. Choose a closer photo of the model or IP address row."))
 
+    # A test-only Instrumentation monitor returns camera fixture bytes through
+    # EXTRA_OUTPUT, with no result thumbnail; the real decoder and ML Kit run.
+    camera = adb("shell", "am", "instrument", "-w", "com.aqss.bodyguard.uiprobe/.CameraCaptureProbe", timeout=150).decode()
+    (out / "camera-capture-contract.txt").write_text(camera)
+    assert "INSTRUMENTATION_RESULT: camera_capture=passed:" in camera, camera
+    launch()
+    wait_for("Connection not verified", "camera_probe_returned_home")
+
     tap("Sound", "sound_page")
     tap("Live sound check. Try the phone microphone for 30 seconds", "open_check")
     wait_for("Microphone off", "microphone_off")
