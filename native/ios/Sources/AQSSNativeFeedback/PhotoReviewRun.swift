@@ -2,7 +2,7 @@ import Foundation
 
 /// One selected image owns a 15-second result window. This does not cancel OS work.
 public final class PhotoReviewRun {
-    public struct Token: Equatable { fileprivate let identity = UUID() }
+    public struct Token: Equatable, Sendable { fileprivate let identity = UUID() }
     public enum EndReason { case timeLimit, clockInvalid }
     private let lock = NSLock()
     private let now: () -> Double

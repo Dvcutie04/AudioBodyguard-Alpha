@@ -313,7 +313,7 @@ final class PhotoCheck: ObservableObject {
         status = "Reading text on this phone…"
         stopWatchdog(); readingToken = token
         let watch = Timer(timeInterval: 0.25, repeats: true) { [weak self] _ in
-            self?.checkDeadline()
+            DispatchQueue.main.async { [weak self] in self?.checkDeadline() }
         }
         timer = watch; RunLoop.main.add(watch, forMode: .common)
         return true
@@ -338,11 +338,7 @@ final class PhotoCheck: ObservableObject {
         let small = UIGraphicsImageRenderer(size: size, format: format).image { _ in image.draw(in: CGRect(origin: .zero, size: size)) }
         guard canRead(token) else { return }
         guard let cg = small.cgImage else { unreadable(token); return }
-        let review = run
         DispatchQueue.global(qos: .userInitiated).async {
-            guard review.isReading(token) else {
-                DispatchQueue.main.async { [weak self] in self?.showEnd(token) }; return
-            }
             let request = VNRecognizeTextRequest(); request.recognitionLevel = .accurate; request.usesLanguageCorrection = false
             do {
                 try VNImageRequestHandler(cgImage: cg).perform([request])

@@ -84,6 +84,17 @@ and the successful retry.
 The focused iPhone workflow must re-run its real Photos-picker/Vision review,
 replacement Cancel, reselect, Clear, denied/granted microphone and navigation
 cases. The unsigned device archive remains a distinct compilation gate.
+The first implementation `0b0082c54826edd3e1df566d930074f2174fe654`
+passed main run `39694632569` (including 71 Swift tests) and unsigned device
+preflight `39694640728`. That archive exposed new Swift concurrency warnings
+at the photo timer callback and the background preflight check. The follow-up
+routes the timer callback explicitly to the main queue, marks the immutable
+UUID token Sendable, and keeps window admission on the main actor before
+work and at publication. It does not assert that already queued framework
+work is canceled. The focused iPhone UI attempt from the earlier revision
+is superseded by the follow-up's exact-revision run; it is not final UI proof.
+The Android production and observer trees are unchanged by that follow-up.
+
 Exact green revisions, run IDs, failed attempts, artifact hashes, signature
 and final APK provenance are recorded in the draft PR after inspection.
 
