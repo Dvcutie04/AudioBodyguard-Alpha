@@ -267,6 +267,13 @@ def main():
         (out / f"{name}.png").write_bytes(adb("exec-out", "run-as", package, "cat", f"files/{name}.png"))
         adb("shell", "run-as", package, "rm", f"files/{name}.png")
     assert (out / "camera-full-image.png").read_bytes() != (out / "camera-cancel.png").read_bytes(), "Camera evidence reused the previous rendered frame"
+    deadline = adb("shell", "am", "instrument", "-w", "com.aqss.bodyguard.uiprobe/.PhotoDeadlineProbe", timeout=150).decode()
+    (out / "photo-deadline-contract.txt").write_text(deadline)
+    assert "INSTRUMENTATION_RESULT: photo_deadline=passed:" in deadline, deadline
+    for name in ("photo-deadline", "photo-deadline-retry"):
+        (out / f"{name}.png").write_bytes(adb("exec-out", "run-as", package, "cat", f"files/{name}.png"))
+        adb("shell", "run-as", package, "rm", f"files/{name}.png")
+    assert (out / "photo-deadline.png").read_bytes() != (out / "photo-deadline-retry.png").read_bytes(), "Photo retry evidence reused the expired frame"
     launch()
     wait_for("Connection not verified", "camera_probe_returned_home")
 

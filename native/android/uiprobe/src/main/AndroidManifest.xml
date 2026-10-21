@@ -1,5 +1,8 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
-    <application android:testOnly="true" android:allowBackup="false" android:label="AQSS test observer" />
+    <application android:testOnly="true" android:allowBackup="false" android:label="AQSS test observer">
+        <provider android:name=".DelayedPhotoProvider" android:authorities="com.aqss.bodyguard.uiprobe.delayedphotos" android:exported="true" />
+    </application>
     <instrumentation android:name=".HierarchyProbe" android:targetPackage="com.aqss.bodyguard.uiprobe" />
     <instrumentation android:name=".CameraCaptureProbe" android:targetPackage="com.aqss.bodyguard.prototype.liveinput" />
+    <instrumentation android:name=".PhotoDeadlineProbe" android:targetPackage="com.aqss.bodyguard.prototype.liveinput" />
 </manifest>

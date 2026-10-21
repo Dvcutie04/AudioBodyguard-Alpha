@@ -6,6 +6,16 @@ Checkpoint: September 26, 2026. Continue from the restored a-Shell baseline and 
 
 ## Current checkpoint
 
+October 21 photo-reading deadline increment: the
+[result-window record](tv-photo-deadline-2026-10-21.md) adds a 30-second elapsed
+acceptance window on Android and iPhone. After an image is selected, stalled
+reading leaves hints unknown and offers another selection; late results cannot
+restore an expired review. iPhone dismisses its picker before provider loading.
+Candidate 0.11 preserves the prior camera, sound tools and opening art. This is
+an application result policy, not framework cancellation or a physical timing
+measurement. Exact validation and APK identity belong to its draft PR; actual
+handset behavior, TestFlight distribution and N2b–N5 remain pending.
+
 October 21 Android camera-photo increment: the
 [full-image capture record](android-full-camera-photo-2026-10-21.md) replaces
 camera thumbnails with a unique private full-image output, decoded at the

@@ -20,8 +20,8 @@ import java.util.HashSet;
 import java.util.Set;
 
 /** Test APK only. Intercepts the external camera intent, never injects OCR text. */
-public final class CameraCaptureProbe extends Instrumentation {
-    private Activity activity;
+public class CameraCaptureProbe extends Instrumentation {
+    protected Activity activity;
     private final Set<Uri> seen = new HashSet<>();
     private Uri output;
     private String violation;
@@ -134,7 +134,7 @@ public final class CameraCaptureProbe extends Instrumentation {
     }
 
     @android.annotation.TargetApi(29)
-    private void recordScreen(String name) throws Exception {
+    protected void recordScreen(String name) throws Exception {
         require(android.os.Build.VERSION.SDK_INT >= 29, "Frame-commit evidence requires the configured API-36 emulator");
         java.util.concurrent.CountDownLatch frame = new java.util.concurrent.CountDownLatch(1);
         int[] size = new int[2];
@@ -167,7 +167,7 @@ public final class CameraCaptureProbe extends Instrumentation {
         runOnMainSync(() -> require(click(activity.getWindow().getDecorView(), "Take a TV photo"), "Camera button missing"));
     }
     private void assertEmpty() { waitForText("No photo selected"); assertUnknown(); }
-    private void assertUnknown() { waitForText("Brand: Not identified"); waitForText("Model: Not identified"); waitForText("TV IP hint: Not identified"); }
+    protected void assertUnknown() { waitForText("Brand: Not identified"); waitForText("Model: Not identified"); waitForText("TV IP hint: Not identified"); }
     private void assertRemoved(Uri uri) throws Exception {
         require(uri != null, "No output URI captured");
         long deadline = SystemClock.uptimeMillis() + 5000;
@@ -178,8 +178,9 @@ public final class CameraCaptureProbe extends Instrumentation {
         }
         throw new AssertionError("Temporary photo still readable after its request ended");
     }
-    private void waitForText(String expected) {
-        long deadline = SystemClock.uptimeMillis() + 30000;
+    protected void waitForText(String expected) { waitForText(expected, 30000); }
+    protected void waitForText(String expected, long timeoutMs) {
+        long deadline = SystemClock.uptimeMillis() + timeoutMs;
         while (SystemClock.uptimeMillis() < deadline) {
             StringBuilder text = new StringBuilder();
             runOnMainSync(() -> read(activity.getWindow().getDecorView(), text));
@@ -188,7 +189,7 @@ public final class CameraCaptureProbe extends Instrumentation {
         }
         throw new AssertionError("Missing camera review text: " + expected);
     }
-    private static boolean click(View view, String text) {
+    protected static boolean click(View view, String text) {
         if (view instanceof TextView && text.contentEquals(((TextView) view).getText())) return view.performClick();
         if (view instanceof ViewGroup) for (int i = 0; i < ((ViewGroup) view).getChildCount(); i++)
             if (click(((ViewGroup) view).getChildAt(i), text)) return true;
@@ -199,5 +200,5 @@ public final class CameraCaptureProbe extends Instrumentation {
         if (view instanceof TextView) text.append(((TextView) view).getText()).append('\n');
         if (view instanceof ViewGroup) for (int i = 0; i < ((ViewGroup) view).getChildCount(); i++) read(((ViewGroup) view).getChildAt(i), text);
     }
-    private static void require(boolean condition, String message) { if (!condition) throw new AssertionError(message); }
+    protected static void require(boolean condition, String message) { if (!condition) throw new AssertionError(message); }
 }
