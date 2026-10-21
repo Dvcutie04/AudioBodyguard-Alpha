@@ -48,7 +48,7 @@ final class PhotoReviewRunTests: XCTestCase {
     func testReadingExpiresAtTheDeadlineAndCannotRevive() {
         var now = 100.0; let run = PhotoReviewRun(now: { now }), token = run.select()
         XCTAssertTrue(run.beginReading(token)); now = 115
-        XCTAssertFalse(run.isReading(token)); now = 101
+        XCTAssertFalse(run.isReading(token)); XCTAssertEqual(run.endReason(token), .timeLimit); now = 101
         XCTAssertFalse(run.isReading(token)); XCTAssertFalse(run.complete(token))
     }
     func testCompletionChecksTheDeadlineWithoutATimerTick() {
@@ -60,7 +60,7 @@ final class PhotoReviewRunTests: XCTestCase {
     func testClockRollbackDuringReadingLatchesTheReviewOff() {
         var now = 100.0; let run = PhotoReviewRun(now: { now }), token = run.select()
         XCTAssertTrue(run.beginReading(token)); now = 101; XCTAssertTrue(run.isReading(token))
-        now = 100; XCTAssertFalse(run.isReading(token)); now = 102
+        now = 100; XCTAssertFalse(run.isReading(token)); XCTAssertEqual(run.endReason(token), .clockInvalid); now = 102
         XCTAssertFalse(run.isReading(token)); XCTAssertFalse(run.complete(token))
     }
     func testChoosingAPictureDoesNotConsumeItsReadingWindow() {
@@ -84,5 +84,13 @@ final class PhotoReviewRunTests: XCTestCase {
         var now = 0.0; let run = PhotoReviewRun(now: { now }), token = run.select()
         XCTAssertTrue(run.beginReading(token)); now = .nan; XCTAssertFalse(run.complete(token))
         now = 1; XCTAssertFalse(run.complete(token))
+    }
+    func testAnExpiredReviewCanBeReplacedWithoutItsEndReasonLeaking() {
+        var now = 0.0; let run = PhotoReviewRun(now: { now }), old = run.select()
+        XCTAssertTrue(run.beginReading(old)); now = 15; XCTAssertFalse(run.complete(old))
+        XCTAssertEqual(run.endReason(old), .timeLimit); XCTAssertFalse(run.isSelecting(old))
+        let current = run.select(); XCTAssertNil(run.endReason(old)); XCTAssertNil(run.endReason(current))
+        XCTAssertTrue(run.beginReading(current)); XCTAssertFalse(run.complete(old)); XCTAssertTrue(run.complete(current))
+        run.clear(); XCTAssertNil(run.endReason(current))
     }
 }

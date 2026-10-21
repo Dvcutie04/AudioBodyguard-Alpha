@@ -49,7 +49,7 @@ class PhotoReviewRunTest {
     @Test fun readingExpiresAtTheDeadlineAndCannotRevive() {
         var now = 100L; val run = PhotoReviewRun { now }; val token = run.select()
         assertTrue(run.beginReading(token)); now = 15_100
-        assertFalse(run.isReading(token)); now = 101
+        assertFalse(run.isReading(token)); assertEquals(PhotoReviewRun.EndReason.timeLimit, run.endReason(token)); now = 101
         assertFalse(run.isReading(token)); assertFalse(run.complete(token))
     }
     @Test fun completionChecksTheDeadlineWithoutATimerTick() {
@@ -61,7 +61,7 @@ class PhotoReviewRunTest {
     @Test fun clockRollbackDuringReadingLatchesTheReviewOff() {
         var now = 100L; val run = PhotoReviewRun { now }; val token = run.select()
         assertTrue(run.beginReading(token)); now = 101; assertTrue(run.isReading(token))
-        now = 100; assertFalse(run.isReading(token)); now = 102
+        now = 100; assertFalse(run.isReading(token)); assertEquals(PhotoReviewRun.EndReason.clockInvalid, run.endReason(token)); now = 102
         assertFalse(run.isReading(token)); assertFalse(run.complete(token))
     }
     @Test fun choosingAPictureDoesNotConsumeItsReadingWindow() {
@@ -80,5 +80,13 @@ class PhotoReviewRunTest {
         var now = -1L; val run = PhotoReviewRun { now }; val token = run.select()
         assertFalse(run.beginReading(token)); now = 0
         assertFalse(run.beginReading(token)); assertFalse(run.complete(token))
+    }
+    @Test fun anExpiredReviewCanBeReplacedWithoutItsEndReasonLeaking() {
+        var now = 0L; val run = PhotoReviewRun { now }; val old = run.select()
+        assertTrue(run.beginReading(old)); now = 15_000; assertFalse(run.complete(old))
+        assertEquals(PhotoReviewRun.EndReason.timeLimit, run.endReason(old)); assertFalse(run.isSelecting(old))
+        val current = run.select(); assertNull(run.endReason(old)); assertNull(run.endReason(current))
+        assertTrue(run.beginReading(current)); assertFalse(run.complete(old)); assertTrue(run.complete(current))
+        run.clear(); assertNull(run.endReason(current))
     }
 }

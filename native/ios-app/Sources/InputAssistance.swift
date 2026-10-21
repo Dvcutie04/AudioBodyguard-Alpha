@@ -4,6 +4,7 @@ import SwiftUI
 import Vision
 import PhotosUI
 import ImageIO
+import Darwin
 
 /// A per-run ingress closes before endAudio, so late tap callbacks cannot append.
 /// Framework speech buffering and append latency are not application-controlled bounds.
@@ -287,42 +288,74 @@ final class PhotoCheck: ObservableObject {
         guard mach_timebase_info(&timebase) == KERN_SUCCESS, timebase.denom != 0 else { return .nan }
         return Double(mach_continuous_time()) * Double(timebase.numer) / Double(timebase.denom) / 1_000_000_000
     })
+    private var timer: Timer?
+    private var readingToken: PhotoReviewRun.Token?
+    private func stopWatchdog() { timer?.invalidate(); timer = nil; readingToken = nil }
     private func resetDetails() { hints = TVPhotoHints(""); status = "No photo selected" }
-    func clear() { run.clear(); resetDetails() }
-    func select() -> PhotoReviewRun.Token { resetDetails(); return run.select() }
+    func clear() { stopWatchdog(); run.clear(); resetDetails() }
+    func select() -> PhotoReviewRun.Token { stopWatchdog(); resetDetails(); return run.select() }
     func isSelecting(_ token: PhotoReviewRun.Token) -> Bool { run.isSelecting(token) }
     func cancelSelection(_ token: PhotoReviewRun.Token) {
         guard run.isSelecting(token), run.cancel(token) else { return }
-        resetDetails()
+        stopWatchdog(); resetDetails()
+    }
+    private func showEnd(_ token: PhotoReviewRun.Token) {
+        guard let reason = run.endReason(token) else { return }
+        stopWatchdog(); hints = TVPhotoHints("")
+        status = reason == .timeLimit ? "Photo review timed out. Choose the picture again."
+            : "Photo review ended. Choose the picture again."
+    }
+    func checkDeadline() {
+        if let token = readingToken, !run.isReading(token) { showEnd(token) }
+    }
+    func beginReading(_ token: PhotoReviewRun.Token) -> Bool {
+        guard run.beginReading(token) else { showEnd(token); return false }
+        status = "Reading text on this phone…"
+        stopWatchdog(); readingToken = token
+        let watch = Timer(timeInterval: 0.25, repeats: true) { [weak self] _ in
+            self?.checkDeadline()
+        }
+        timer = watch; RunLoop.main.add(watch, forMode: .common)
+        return true
+    }
+    private func canRead(_ token: PhotoReviewRun.Token) -> Bool {
+        guard run.isReading(token) else { showEnd(token); return false }
+        return true
+    }
+    private func finish(_ token: PhotoReviewRun.Token, hints: TVPhotoHints = TVPhotoHints(""), message: String) {
+        guard run.complete(token) else { showEnd(token); return }
+        stopWatchdog(); self.hints = hints; status = message
+    }
+    func unreadable(_ token: PhotoReviewRun.Token) {
+        finish(token, message: "Photo could not be read. Try another picture.")
     }
     func scan(_ image: UIImage, for token: PhotoReviewRun.Token) {
-        // The picker owns the token before asynchronous loading begins. A late
-        // provider must not create a fresh selection after Clear or Close.
-        guard run.beginReading(token) else { return }
-        status = "Reading text on this phone…"
-        // Always normalize orientation and bound the bitmap before OCR.
+        // The accepted selection already owns its import/recognition window.
+        guard canRead(token) else { return }
         let scale = min(1, 2048 / max(image.size.width, image.size.height))
         let size = CGSize(width: max(1, image.size.width * scale), height: max(1, image.size.height * scale))
         let format = UIGraphicsImageRendererFormat(); format.scale = 1
         let small = UIGraphicsImageRenderer(size: size, format: format).image { _ in image.draw(in: CGRect(origin: .zero, size: size)) }
-        guard let cg = small.cgImage else { _ = run.complete(token); status = "Photo could not be read. Try another picture."; return }
+        guard canRead(token) else { return }
+        guard let cg = small.cgImage else { unreadable(token); return }
+        let review = run
         DispatchQueue.global(qos: .userInitiated).async {
+            guard review.isReading(token) else {
+                DispatchQueue.main.async { [weak self] in self?.showEnd(token) }; return
+            }
             let request = VNRecognizeTextRequest(); request.recognitionLevel = .accurate; request.usesLanguageCorrection = false
             do {
                 try VNImageRequestHandler(cgImage: cg).perform([request])
                 let text = boundedTVPhotoText((request.results ?? []).lazy.map { $0.topCandidates(1).first?.string })
                 let hints = TVPhotoHints(text ?? "")
                 DispatchQueue.main.async { [weak self] in
-                    guard let self = self, self.run.complete(token) else { return }
-                    self.hints = hints
-                    self.status = text == nil
+                    self?.finish(token, hints: hints, message: text == nil
                         ? "Photo text could not be reviewed. Choose a closer photo of the model or IP address row."
-                        : "Check the details below. Text recognition can make mistakes. Nothing is connected."
+                        : "Check the details below. Text recognition can make mistakes. Nothing is connected.")
                 }
             } catch {
                 DispatchQueue.main.async { [weak self] in
-                    guard let self = self, self.run.complete(token) else { return }
-                    self.status = "Could not read this picture. Try brighter light and a closer photo."
+                    self?.finish(token, message: "Could not read this picture. Try brighter light and a closer photo.")
                 }
             }
         }
@@ -339,6 +372,7 @@ struct TVPhotoView: View {
     let theme: AppTheme
     var onUseBrand: ((String) -> Void)? = nil
     @Environment(\.dismiss) private var dismiss
+    @Environment(\.scenePhase) private var phase
     @StateObject private var photo = PhotoCheck()
     @State private var pickerRequest: PhotoPickerRequest?
     @State private var instructions = false
@@ -395,10 +429,11 @@ struct TVPhotoView: View {
             .sheet(item: $pickerRequest) { request in
                 Group {
                     if request.camera { LocalCameraPicker { finishPhoto($0, request: request) } }
-                    else { LocalPhotoPicker { finishPhoto($0, request: request) } }
+                    else { LocalPhotoPicker(beginImport: { beginPhotoImport(request) }) { finishPhoto($0, request: request) } }
                 }.onDisappear { photo.cancelSelection(request.token) }
             }
             .onDisappear { photo.clear() }
+            .onChange(of: phase) { value in if value == .active { photo.checkDeadline() } }
     }
     private func choosePhoto(camera: Bool) {
         let token = photo.select(); cameraNotice = ""
@@ -416,20 +451,29 @@ struct TVPhotoView: View {
             }
         } }
     }
+    private func beginPhotoImport(_ request: PhotoPickerRequest) -> Bool {
+        guard pickerRequest?.id == request.id, photo.isSelecting(request.token),
+              photo.beginReading(request.token) else { return false }
+        // Dismiss before provider loading: retry remains visible if it stalls.
+        pickerRequest = nil; return true
+    }
     private func finishPhoto(_ image: UIImage?, request: PhotoPickerRequest) {
-        // The sheet binding becomes nil before its dismissal animation ends.
-        // Reject a provider returning in that interval, before onDisappear runs.
-        guard pickerRequest?.id == request.id else { photo.cancelSelection(request.token); return }
-        guard photo.isSelecting(request.token) else { return }
-        pickerRequest = nil
+        if photo.isSelecting(request.token) {
+            // The camera supplies an image here. Gallery loading has already
+            // accepted its selection and dismissed the picker before this call.
+            guard pickerRequest?.id == request.id else { photo.cancelSelection(request.token); return }
+            guard image != nil else { pickerRequest = nil; photo.cancelSelection(request.token); return }
+            guard beginPhotoImport(request) else { return }
+        }
         if let image = image { photo.scan(image, for: request.token) }
-        else { photo.cancelSelection(request.token) }
+        else { photo.unreadable(request.token) }
     }
 }
 
 private struct LocalPhotoPicker: UIViewControllerRepresentable {
+    let beginImport: () -> Bool
     let finished: (UIImage?) -> Void
-    func makeCoordinator() -> Coordinator { Coordinator(finished) }
+    func makeCoordinator() -> Coordinator { Coordinator(beginImport, finished) }
     func makeUIViewController(context: Context) -> PHPickerViewController {
         var config = PHPickerConfiguration(); config.filter = .images; config.selectionLimit = 1
         let picker = PHPickerViewController(configuration: config); picker.delegate = context.coordinator; return picker
@@ -437,9 +481,13 @@ private struct LocalPhotoPicker: UIViewControllerRepresentable {
     func updateUIViewController(_ controller: PHPickerViewController, context: Context) {}
     final class Coordinator: NSObject, PHPickerViewControllerDelegate {
         let finished: (UIImage?) -> Void
-        init(_ finished: @escaping (UIImage?) -> Void) { self.finished = finished }
+        let beginImport: () -> Bool
+        init(_ beginImport: @escaping () -> Bool, _ finished: @escaping (UIImage?) -> Void) {
+            self.beginImport = beginImport; self.finished = finished
+        }
         func picker(_ picker: PHPickerViewController, didFinishPicking results: [PHPickerResult]) {
             guard let provider = results.first?.itemProvider else { finished(nil); return }
+            guard beginImport() else { return }
             provider.loadFileRepresentation(forTypeIdentifier: "public.image") { url, _ in
                 var image: UIImage?
                 if let url = url, let source = CGImageSourceCreateWithURL(url as CFURL, nil), let cg = CGImageSourceCreateThumbnailAtIndex(source, 0, [kCGImageSourceCreateThumbnailFromImageAlways: true, kCGImageSourceThumbnailMaxPixelSize: 2048, kCGImageSourceCreateThumbnailWithTransform: true] as CFDictionary) { image = UIImage(cgImage: cg) }
