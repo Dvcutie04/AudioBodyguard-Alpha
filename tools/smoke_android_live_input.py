@@ -163,6 +163,25 @@ def main():
     # A synthetic image in this isolated emulator goes through the real system
     # picker, image decoder, bundled ML Kit and app review screen. Never inject
     # OCR text or a result directly into the app.
+    def choose_photo_fixture(display_name, case_prefix):
+        tap("Choose a photo", f"{case_prefix}_choose")
+        chosen = False
+        for attempt in range(6):
+            picker, _ = screen(f"{case_prefix}_picker_{attempt}")
+            labels = {n.get(field, "") for n in picker.iter("node") for field in ("text", "content-desc")}
+            if display_name in labels:
+                tap(display_name, f"{case_prefix}_pick_fixture"); chosen = True; break
+            browse = next((s for s in ("Browse", "Browse…", "Browse...", "Browse files") if s in labels), None)
+            if browse:
+                tap(browse, f"{case_prefix}_browse_{attempt}"); continue
+            # On the stock single-photo picker, media cells expose their capture
+            # date instead of a filename. Accept only one visible photo cell.
+            cells = {s for s in labels if s.startswith("Photo taken on ") or s.startswith("Image taken on ")}
+            if len(cells) == 1:
+                tap(cells.pop(), f"{case_prefix}_pick_single_fixture"); chosen = True; break
+            time.sleep(1)
+        assert chosen, "No unambiguous synthetic image in the observed system picker"
+
     def photo_fixture_case(fixture_name, display_name, case_prefix, expected):
         tap("Devices", f"{case_prefix}_devices_page")
         tap("TV photo setup. Read a model label or Network settings photo", "open_photo_check")
@@ -192,26 +211,21 @@ def main():
             published = adb("shell", "content", "query", "--uri", image_uri, "--projection", "_id:_display_name:is_pending").decode()
             (out / f"{case_prefix}-fixture-published.txt").write_text(published)
             assert f"_id={rows[0]}, _display_name={display_name}, is_pending=0" in published, "Fixture is not published to the picker"
-            tap("Choose a photo", f"{case_prefix}_choose")
-            chosen = False
-            for attempt in range(6):
-                picker, _ = screen(f"{case_prefix}_picker_{attempt}")
-                labels = {n.get(field, "") for n in picker.iter("node") for field in ("text", "content-desc")}
-                if display_name in labels:
-                    tap(display_name, f"{case_prefix}_pick_fixture"); chosen = True; break
-                browse = next((s for s in ("Browse", "Browse…", "Browse...", "Browse files") if s in labels), None)
-                if browse:
-                    tap(browse, f"{case_prefix}_browse_{attempt}"); continue
-                # On the stock single-photo picker, media cells expose their capture
-                # date instead of a filename. Accept only one visible photo cell.
-                cells = {s for s in labels if s.startswith("Photo taken on ") or s.startswith("Image taken on ")}
-                if len(cells) == 1:
-                    tap(cells.pop(), f"{case_prefix}_pick_single_fixture"); chosen = True; break
-                time.sleep(1)
-            assert chosen, "No unambiguous synthetic image in the observed system picker"
+            choose_photo_fixture(display_name, case_prefix)
             wait_for_all(expected,
                          f"{case_prefix}_native_ocr_result", attempts=30)
             screenshot(f"{case_prefix}_native_ocr_result")
+            if case_prefix == "photo":
+                # A newly opened selection replaces the old review even if cancelled.
+                # Use the real picker, then prove the old VIZIO/model/IP do not return.
+                tap("Choose a photo", "photo_replace_to_cancel")
+                screen("photo_replacement_picker")
+                adb("shell", "input", "keyevent", "KEYCODE_BACK")
+                wait_for_all(("No photo selected", "Brand: Not identified", "Model: Not identified", "TV IP hint: Not identified"),
+                             "photo_replacement_cancel_empty")
+                screenshot("photo_replacement_cancel_empty")
+                choose_photo_fixture(display_name, "photo_reselect")
+                wait_for_all(expected, "photo_reselect_native_ocr_result", attempts=30)
             for attempt in range(5):
                 current, _ = screen(f"{case_prefix}_clear_find_{attempt}")
                 if has(current, "Clear photo details"):
