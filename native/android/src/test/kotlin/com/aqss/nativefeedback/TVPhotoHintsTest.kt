@@ -2,6 +2,73 @@ package com.aqss.nativefeedback
 import kotlin.test.*
 
 class TVPhotoHintsTest {
+    @Test fun exactRowLimitKeepsTheLastRowAndRejectsTheNextConflict() {
+        val hundred = listOf("VIZIO", "Model: X1") + List(97) { "other row" } + "IP: 10.0.0.2"
+        val text = assertNotNull(boundedTVPhotoText(hundred.asSequence()))
+        assertEquals(hundred.joinToString("\n"), text)
+        val hints = TVPhotoHints(text)
+        assertEquals("VIZIO", hints.brand); assertEquals("X1", hints.model); assertEquals("10.0.0.2", hints.address)
+        for (conflict in listOf("LG", "Model: Y2", "IP: 10.0.0.3")) {
+            assertNull(boundedTVPhotoText((hundred + conflict).asSequence()), conflict)
+        }
+    }
+    @Test fun exactUtf8BudgetIncludesJoinedSeparators() {
+        val prefix = listOf("VIZIO", "Model: X1", "IP: 10.0.0.2")
+        val remaining = 8192 - prefix.joinToString("\n").toByteArray(Charsets.UTF_8).size - 1
+        val padding = "é".repeat(remaining / 2) + if (remaining % 2 == 1) "a" else ""
+        val text = assertNotNull(boundedTVPhotoText((prefix + padding).asSequence()))
+        assertEquals(8192, text.toByteArray(Charsets.UTF_8).size)
+        assertEquals("X1", TVPhotoHints(text).model)
+        assertNull(boundedTVPhotoText((prefix + (padding + "a")).asSequence()))
+        assertNull(TVPhotoHints(text + "a").brand)
+        assertNull(TVPhotoHints(text + "a").model)
+        assertNull(TVPhotoHints(text + "a").address)
+    }
+    @Test fun missingBlankOrMultilineRowsCannotBeSilentlyDropped() {
+        val prefix = listOf<String?>("VIZIO", "Model: X1", "IP: 10.0.0.2")
+        val badRows = listOf(null, "", " ", "\t") +
+            listOf("\n", "\r", "\r\n", "\u000B", "\u000C", "\u0085", "\u2028", "\u2029").map { "other" + it + "Model: Y2" }
+        for (bad in badRows) assertNull(boundedTVPhotoText((prefix + bad).asSequence()))
+    }
+    @Test fun rawBudgetCountsEveryLineBreakAndCrLfOnlyOnce() {
+        val rows = listOf("VIZIO", "Model: X1", "IP: 10.0.0.2") + List(97) { "other row" }
+        for (separator in listOf("\n", "\r", "\r\n", "\u000B", "\u000C", "\u0085", "\u2028", "\u2029")) {
+            val text = rows.joinToString(separator)
+            assertEquals("VIZIO", TVPhotoHints(text).brand)
+            val over = TVPhotoHints(text + separator + "one more row")
+            assertNull(over.brand); assertNull(over.model); assertNull(over.address)
+        }
+        assertEquals("X1", TVPhotoHints(rows.joinToString("\r\n")).model)
+    }
+    @Test fun collectorStopsAtTheFirstRejectionWithoutReadingTheRemainder() {
+        var consumed = 0
+        val tooMany = sequence<String?> {
+            repeat(101) { consumed++; yield("other row") }
+            error("Read past the rejected 101st row")
+        }
+        assertNull(boundedTVPhotoText(tooMany))
+        assertEquals(101, consumed)
+        var earlyConsumed = 0
+        val tooLong = sequence<String?> {
+            earlyConsumed++; yield("a".repeat(8193))
+            error("Read another row after the byte limit failed")
+        }
+        assertNull(boundedTVPhotoText(tooLong))
+        assertEquals(1, earlyConsumed)
+    }
+    @Test fun emptyObservationCollectionInventsNoHints() {
+        val text = assertNotNull(boundedTVPhotoText(emptySequence()))
+        assertEquals("", text)
+        val hints = TVPhotoHints(text)
+        assertNull(hints.brand); assertNull(hints.model); assertNull(hints.address)
+    }
+    @Test fun overOneHundredRowsCannotProducePartialPhotoHints() {
+        val rows = listOf("VIZIO", "Model: X1", "IP: 10.0.0.2") + List(98) { "other row" }
+        val hints = TVPhotoHints(rows.joinToString("\n"))
+        assertNull(hints.brand)
+        assertNull(hints.model)
+        assertNull(hints.address)
+    }
     @Test fun vizioAboutLabelsIdentifyOnlyTheLabelledModelAndAddress() {
         val hints = TVPhotoHints("VIZIO\nModel Name: V505M-K09\nIPv4 IP Address: 10.20.30.40\nIPv4 Default Gateway: 10.20.30.1\nDNS: 10.0.0.10")
         assertEquals("VIZIO", hints.brand)

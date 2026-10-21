@@ -3,7 +3,7 @@ name: iPhone foreground input verification
 on:
   workflow_dispatch:
   push:
-    branches: ["aqss/ios-live-sound-check", "aqss/ios-microphone-lifecycle", "aqss/android-microphone-lifecycle", "aqss/sound-check-recaps", "aqss/tv-photo-labels"]
+    branches: ["aqss/ios-live-sound-check", "aqss/ios-microphone-lifecycle", "aqss/android-microphone-lifecycle", "aqss/sound-check-recaps", "aqss/tv-photo-labels", "aqss/tv-photo-text-bounds"]
 
 permissions:
   contents: read
@@ -58,7 +58,8 @@ jobs:
             -only-testing:AQSSReadOnlyUITests/AQSSReadOnlyUITests/testLiveSoundCheckStartsOffAndHelpReturnsWithoutCapture \
             -only-testing:AQSSReadOnlyUITests/AQSSReadOnlyUITests/testLiveSoundCheckDeniedPermissionNeverStartsCapture \
             -only-testing:AQSSReadOnlyUITests/AQSSReadOnlyUITests/testVoiceCheckStartsIdleAndClosingItLeavesMeterUsable \
-            -only-testing:AQSSReadOnlyUITests/AQSSReadOnlyUITests/testVoiceCheckDeniedMicrophoneCannotRequestSpeechOrCapture
+            -only-testing:AQSSReadOnlyUITests/AQSSReadOnlyUITests/testVoiceCheckDeniedMicrophoneCannotRequestSpeechOrCapture \
+            -only-testing:AQSSReadOnlyUITests/AQSSReadOnlyUITests/testInputToolsStartIdleAndNeverClaimAConnection
       - name: Verify granted input, Stop, Home and the 30-second cap when available
         shell: bash
         run: |

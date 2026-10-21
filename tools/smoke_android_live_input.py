@@ -49,10 +49,10 @@ def main():
     def has(root, text):
         return any(text in node.get("text", "") for node in root.iter("node"))
 
-    def wait_for_all(texts, name):
+    def wait_for_all(texts, name, attempts=6):
         # Native layout may briefly return a nonempty but partial hierarchy.
         # Observe all required labels together rather than comparing two frames.
-        for _ in range(6):
+        for _ in range(attempts):
             root, _ = screen(name)
             if all(has(root, text) for text in texts):
                 return root
@@ -163,79 +163,86 @@ def main():
     # A synthetic image in this isolated emulator goes through the real system
     # picker, image decoder, bundled ML Kit and app review screen. Never inject
     # OCR text or a result directly into the app.
-    tap("Devices", "photo_devices_page")
-    tap("TV photo setup. Read a model label or Network settings photo", "open_photo_check")
-    wait_for_all(("No photo selected", "Brand: Not identified"), "photo_starts_empty")
-    fixture = Path("native/ios/Tests/AQSSNativeFeedbackTests/Fixtures/tv-photo-labels.png")
-    inserted = adb("shell", "content", "insert", "--uri", "content://media/external_primary/images/media",
-                   "--bind", "_display_name:s:aqss-tv-labels.png", "--bind", "mime_type:s:image/png",
-                   "--bind", "relative_path:s:Pictures/", "--bind", "is_pending:i:1").decode()
-    (out / "photo-fixture-insert.txt").write_text(inserted)
-    # The AOSP content insert command discards its returned URI. Query the exact
-    # test row; absence or ambiguity fails rather than guessing an item ID.
-    pending_match = r"android\:query-arg-match-pending:i:1"
-    query = adb("shell", shlex.join(["content", "query", "--uri", "content://media/external_primary/images/media",
-                "--projection", "_id:_display_name:is_pending", "--extra", pending_match, "--where",
-                "_display_name='aqss-tv-labels.png' AND relative_path='Pictures/'"])).decode()
-    (out / "photo-fixture-query.txt").write_text(query)
-    rows = re.findall(r"^Row: \d+ _id=(\d+), _display_name=aqss-tv-labels\.png, is_pending=1$", query, re.MULTILINE)
-    assert len(rows) == 1, "Expected one identifiable pending fixture in MediaStore"
-    image_uri = "content://media/external_primary/images/media/" + rows[0]
-    try:
-        written = subprocess.run(["adb", "shell", "content", "write", "--uri", image_uri],
-                                 input=fixture.read_bytes(), capture_output=True, timeout=45, check=True)
-        (out / "photo-fixture-write.txt").write_bytes(written.stdout + written.stderr)
-        assert adb("shell", "content", "read", "--uri", image_uri) == fixture.read_bytes(), "Imported image bytes differ"
-        adb("shell", shlex.join(["content", "update", "--uri", image_uri, "--bind", "is_pending:i:0",
-            "--extra", pending_match]))
-        published = adb("shell", "content", "query", "--uri", image_uri, "--projection", "_id:_display_name:is_pending").decode()
-        (out / "photo-fixture-published.txt").write_text(published)
-        assert f"_id={rows[0]}, _display_name=aqss-tv-labels.png, is_pending=0" in published, "Fixture is not published to the picker"
-        tap("Choose a photo", "photo_choose")
-        chosen = False
-        for attempt in range(6):
-            picker, _ = screen(f"photo_picker_{attempt}")
-            labels = {n.get(field, "") for n in picker.iter("node") for field in ("text", "content-desc")}
-            if "aqss-tv-labels.png" in labels:
-                tap("aqss-tv-labels.png", "photo_pick_fixture"); chosen = True; break
-            browse = next((s for s in ("Browse", "Browse…", "Browse...", "Browse files") if s in labels), None)
-            if browse:
-                tap(browse, f"photo_browse_{attempt}"); continue
-            # On the stock single-photo picker, media cells expose their capture
-            # date instead of a filename. Accept only one visible photo cell.
-            cells = {s for s in labels if s.startswith("Photo taken on ") or s.startswith("Image taken on ")}
-            if len(cells) == 1:
-                tap(cells.pop(), "photo_pick_single_fixture"); chosen = True; break
-            time.sleep(1)
-        assert chosen, "No unambiguous synthetic image in the observed system picker"
-        wait_for_all(("Brand: VIZIO", "Model: V505M-K09", "TV IP hint: 10.20.30.40", "Nothing is connected."),
-                     "photo_native_ocr_result")
-        screenshot("photo_native_ocr_result")
-        for attempt in range(5):
-            current, _ = screen(f"photo_clear_find_{attempt}")
-            if has(current, "Clear photo details"):
-                tap("Clear photo details", "photo_clear"); break
-            scroll_meter(f"photo_scroll_{attempt}", down=True)
-        else:
-            raise AssertionError("Clear photo details is unreachable")
-        for attempt in range(3):
-            scroll_meter(f"photo_after_clear_top_{attempt}", down=False)
-        wait_for_all(("No photo selected", "Brand: Not identified", "Model: Not identified", "TV IP hint: Not identified"),
-                     "photo_clear_empty")
-        screenshot("photo_clear_empty")
-        tap("Choose a photo", "photo_choose_to_cancel")
-        screen("photo_picker_before_cancel")
-        adb("shell", "input", "keyevent", "KEYCODE_BACK")
-        wait_for_all(("No photo selected", "Brand: Not identified"), "photo_cancel_stays_empty")
-        adb("shell", "input", "keyevent", "KEYCODE_BACK")
-        wait_for("TV photo setup", "photo_close_returns_devices")
-        tap("Home", "photo_back_home")
-        wait_for("Connection not verified", "photo_did_not_connect")
-    except Exception:
-        screenshot("photo_failure")
-        raise
-    finally:
-        adb("shell", shlex.join(["content", "delete", "--uri", image_uri, "--extra", pending_match]))
+    def photo_fixture_case(fixture_name, display_name, case_prefix, expected):
+        tap("Devices", f"{case_prefix}_devices_page")
+        tap("TV photo setup. Read a model label or Network settings photo", "open_photo_check")
+        wait_for_all(("No photo selected", "Brand: Not identified"), f"{case_prefix}_starts_empty")
+        fixture = Path("native/ios/Tests/AQSSNativeFeedbackTests/Fixtures") / fixture_name
+        inserted = adb("shell", "content", "insert", "--uri", "content://media/external_primary/images/media",
+                       "--bind", f"_display_name:s:{display_name}", "--bind", "mime_type:s:image/png",
+                       "--bind", "relative_path:s:Pictures/", "--bind", "is_pending:i:1").decode()
+        (out / f"{case_prefix}-fixture-insert.txt").write_text(inserted)
+        # The AOSP content insert command discards its returned URI. Query the exact
+        # test row; absence or ambiguity fails rather than guessing an item ID.
+        pending_match = r"android\:query-arg-match-pending:i:1"
+        query = adb("shell", shlex.join(["content", "query", "--uri", "content://media/external_primary/images/media",
+                    "--projection", "_id:_display_name:is_pending", "--extra", pending_match, "--where",
+                    f"_display_name='{display_name}' AND relative_path='Pictures/'"])).decode()
+        (out / f"{case_prefix}-fixture-query.txt").write_text(query)
+        rows = re.findall(rf"^Row: \d+ _id=(\d+), _display_name={re.escape(display_name)}, is_pending=1$", query, re.MULTILINE)
+        assert len(rows) == 1, "Expected one identifiable pending fixture in MediaStore"
+        image_uri = "content://media/external_primary/images/media/" + rows[0]
+        try:
+            written = subprocess.run(["adb", "shell", "content", "write", "--uri", image_uri],
+                                     input=fixture.read_bytes(), capture_output=True, timeout=45, check=True)
+            (out / f"{case_prefix}-fixture-write.txt").write_bytes(written.stdout + written.stderr)
+            assert adb("shell", "content", "read", "--uri", image_uri) == fixture.read_bytes(), "Imported image bytes differ"
+            adb("shell", shlex.join(["content", "update", "--uri", image_uri, "--bind", "is_pending:i:0",
+                "--extra", pending_match]))
+            published = adb("shell", "content", "query", "--uri", image_uri, "--projection", "_id:_display_name:is_pending").decode()
+            (out / f"{case_prefix}-fixture-published.txt").write_text(published)
+            assert f"_id={rows[0]}, _display_name={display_name}, is_pending=0" in published, "Fixture is not published to the picker"
+            tap("Choose a photo", f"{case_prefix}_choose")
+            chosen = False
+            for attempt in range(6):
+                picker, _ = screen(f"{case_prefix}_picker_{attempt}")
+                labels = {n.get(field, "") for n in picker.iter("node") for field in ("text", "content-desc")}
+                if display_name in labels:
+                    tap(display_name, f"{case_prefix}_pick_fixture"); chosen = True; break
+                browse = next((s for s in ("Browse", "Browse…", "Browse...", "Browse files") if s in labels), None)
+                if browse:
+                    tap(browse, f"{case_prefix}_browse_{attempt}"); continue
+                # On the stock single-photo picker, media cells expose their capture
+                # date instead of a filename. Accept only one visible photo cell.
+                cells = {s for s in labels if s.startswith("Photo taken on ") or s.startswith("Image taken on ")}
+                if len(cells) == 1:
+                    tap(cells.pop(), f"{case_prefix}_pick_single_fixture"); chosen = True; break
+                time.sleep(1)
+            assert chosen, "No unambiguous synthetic image in the observed system picker"
+            wait_for_all(expected,
+                         f"{case_prefix}_native_ocr_result", attempts=30)
+            screenshot(f"{case_prefix}_native_ocr_result")
+            for attempt in range(5):
+                current, _ = screen(f"{case_prefix}_clear_find_{attempt}")
+                if has(current, "Clear photo details"):
+                    tap("Clear photo details", f"{case_prefix}_clear"); break
+                scroll_meter(f"{case_prefix}_scroll_{attempt}", down=True)
+            else:
+                raise AssertionError("Clear photo details is unreachable")
+            for attempt in range(3):
+                scroll_meter(f"{case_prefix}_after_clear_top_{attempt}", down=False)
+            wait_for_all(("No photo selected", "Brand: Not identified", "Model: Not identified", "TV IP hint: Not identified"),
+                         f"{case_prefix}_clear_empty")
+            screenshot(f"{case_prefix}_clear_empty")
+            tap("Choose a photo", f"{case_prefix}_choose_to_cancel")
+            screen(f"{case_prefix}_picker_before_cancel")
+            adb("shell", "input", "keyevent", "KEYCODE_BACK")
+            wait_for_all(("No photo selected", "Brand: Not identified"), f"{case_prefix}_cancel_stays_empty")
+            adb("shell", "input", "keyevent", "KEYCODE_BACK")
+            wait_for("TV photo setup", f"{case_prefix}_close_returns_devices")
+            tap("Home", f"{case_prefix}_back_home")
+            wait_for("Connection not verified", f"{case_prefix}_did_not_connect")
+        except Exception:
+            screenshot(f"{case_prefix}_failure")
+            raise
+        finally:
+            adb("shell", shlex.join(["content", "delete", "--uri", image_uri, "--extra", pending_match]))
+
+    photo_fixture_case("tv-photo-labels.png", "aqss-tv-labels.png", "photo",
+                       ("Brand: VIZIO", "Model: V505M-K09", "TV IP hint: 10.20.30.40", "Nothing is connected."))
+    photo_fixture_case("tv-photo-text-limit.png", "aqss-tv-text-limit.png", "photo_limit",
+                       ("Brand: Not identified", "Model: Not identified", "TV IP hint: Not identified",
+                        "Photo text could not be reviewed. Choose a closer photo of the model or IP address row."))
 
     tap("Sound", "sound_page")
     tap("Live sound check. Try the phone microphone for 30 seconds", "open_check")
@@ -365,7 +372,7 @@ def main():
     crashes = adb("logcat", "-b", "crash", "-d").decode()
     (out / "crash-log.txt").write_text(crashes)
     assert "FATAL EXCEPTION" not in crashes, crashes
-    print("LIVE_INPUT_EMULATOR_OBSERVED: permission denial, PCM samples, manual stop, notification-shade focus loss, background stop, rotation stop, no automatic restart, 30-second limit, voice navigation/service attempt, meter reuse, bounded input recaps, Clear, navigation retention, empty recaps after process restart, synthetic-photo picker/ML Kit review, photo Clear/cancel and unverified connection passed. No physical microphone, real-photo accuracy or output qualification.", flush=True)
+    print("LIVE_INPUT_EMULATOR_OBSERVED: permission denial, PCM samples, manual stop, notification-shade focus loss, background stop, rotation stop, no automatic restart, 30-second limit, voice navigation/service attempt, meter reuse, bounded input recaps, Clear, navigation retention, empty recaps after process restart, synthetic-photo picker/ML Kit review, over-budget photo rejection, photo Clear/cancel and unverified connection passed. No physical microphone, real-photo accuracy or output qualification.", flush=True)
 
 
 if __name__ == "__main__":

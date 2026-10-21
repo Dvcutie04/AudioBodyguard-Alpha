@@ -5,7 +5,98 @@ import Vision
 #endif
 
 final class TVPhotoHintsTests: XCTestCase {
+    func testExactRowLimitKeepsTheLastRowAndRejectsTheNextConflict() throws {
+        let hundred: [String?] = ["VIZIO", "Model: X1"] + Array(repeating: "other row", count: 97) + ["IP: 10.0.0.2"]
+        let text = try XCTUnwrap(boundedTVPhotoText(hundred))
+        XCTAssertEqual(text, hundred.compactMap { $0 }.joined(separator: "\n"))
+        let hints = TVPhotoHints(text)
+        XCTAssertEqual(hints.brand, "VIZIO"); XCTAssertEqual(hints.model, "X1"); XCTAssertEqual(hints.address, "10.0.0.2")
+        for conflict in ["LG", "Model: Y2", "IP: 10.0.0.3"] {
+            XCTAssertNil(boundedTVPhotoText(hundred + [conflict]), conflict)
+        }
+    }
+    func testExactUtf8BudgetIncludesJoinedSeparators() throws {
+        let prefix = ["VIZIO", "Model: X1", "IP: 10.0.0.2"]
+        let remaining = 8192 - prefix.joined(separator: "\n").utf8.count - 1
+        let padding = String(repeating: "é", count: remaining / 2) + (remaining % 2 == 1 ? "a" : "")
+        let rows: [String?] = (prefix + [padding]).map { Optional($0) }
+        let text = try XCTUnwrap(boundedTVPhotoText(rows))
+        XCTAssertEqual(text.utf8.count, 8192)
+        XCTAssertEqual(TVPhotoHints(text).model, "X1")
+        let over: [String?] = (prefix + [padding + "a"]).map { Optional($0) }
+        XCTAssertNil(boundedTVPhotoText(over))
+        XCTAssertNil(TVPhotoHints(text + "a").brand)
+        XCTAssertNil(TVPhotoHints(text + "a").model)
+        XCTAssertNil(TVPhotoHints(text + "a").address)
+    }
+    func testMissingBlankOrMultilineRowsCannotBeSilentlyDropped() {
+        let prefix: [String?] = ["VIZIO", "Model: X1", "IP: 10.0.0.2"]
+        let badRows: [String?] = [nil, "", " ", "\t"] +
+            ["\n", "\r", "\r\n", "\u{B}", "\u{C}", "\u{85}", "\u{2028}", "\u{2029}"].map { "other" + $0 + "Model: Y2" }
+        for bad in badRows { XCTAssertNil(boundedTVPhotoText(prefix + [bad])) }
+    }
+    func testRawBudgetCountsEveryLineBreakAndCrLfOnlyOnce() {
+        let rows = ["VIZIO", "Model: X1", "IP: 10.0.0.2"] + Array(repeating: "other row", count: 97)
+        for separator in ["\n", "\r", "\r\n", "\u{B}", "\u{C}", "\u{85}", "\u{2028}", "\u{2029}"] {
+            let text = rows.joined(separator: separator)
+            XCTAssertEqual(TVPhotoHints(text).brand, "VIZIO")
+            let over = TVPhotoHints(text + separator + "one more row")
+            XCTAssertNil(over.brand); XCTAssertNil(over.model); XCTAssertNil(over.address)
+        }
+        XCTAssertEqual(TVPhotoHints(rows.joined(separator: "\r\n")).model, "X1")
+    }
+    func testCollectorStopsAtTheFirstRejectionWithoutReadingTheRemainder() {
+        var consumed = 0
+        let tooMany = AnySequence<String?> {
+            AnyIterator<String?> {
+                consumed += 1
+                guard consumed <= 101 else { XCTFail("Read past the rejected 101st row"); return nil }
+                return .some("other row")
+            }
+        }
+        XCTAssertNil(boundedTVPhotoText(tooMany))
+        XCTAssertEqual(consumed, 101)
+        var earlyConsumed = 0
+        let tooLong = AnySequence<String?> {
+            AnyIterator<String?> {
+                earlyConsumed += 1
+                guard earlyConsumed == 1 else { XCTFail("Read another row after the byte limit failed"); return nil }
+                return .some(String(repeating: "a", count: 8193))
+            }
+        }
+        XCTAssertNil(boundedTVPhotoText(tooLong))
+        XCTAssertEqual(earlyConsumed, 1)
+    }
+    func testEmptyObservationCollectionInventsNoHints() throws {
+        let text = try XCTUnwrap(boundedTVPhotoText([String?]()))
+        XCTAssertEqual(text, "")
+        let hints = TVPhotoHints(text)
+        XCTAssertNil(hints.brand); XCTAssertNil(hints.model); XCTAssertNil(hints.address)
+    }
+    func testOverOneHundredRowsCannotProducePartialPhotoHints() {
+        let rows = ["VIZIO", "Model: X1", "IP: 10.0.0.2"] + Array(repeating: "other row", count: 98)
+        let hints = TVPhotoHints(rows.joined(separator: "\n"))
+        XCTAssertNil(hints.brand)
+        XCTAssertNil(hints.model)
+        XCTAssertNil(hints.address)
+    }
 #if canImport(Vision)
+    func testNativeVisionRejectsSyntheticTextOverBudget() throws {
+        guard #available(macOS 12.0, iOS 15.0, *) else { throw XCTSkip("Native Vision text recognition is unavailable on this runtime") }
+        let url = try XCTUnwrap(Bundle.module.url(forResource: "tv-photo-text-limit", withExtension: "png", subdirectory: "Fixtures"))
+        let request = VNRecognizeTextRequest()
+        request.recognitionLevel = .accurate
+        request.usesLanguageCorrection = false
+        try VNImageRequestHandler(url: url).perform([request])
+        let rows = (request.results ?? []).map { $0.topCandidates(1).first?.string }
+        XCTAssertTrue(rows.allSatisfy { $0 != nil })
+        let observed = rows.compactMap { $0 }.joined(separator: "\n")
+        print("TV_PHOTO_LIMIT_VISION_OBSERVED rows=\(rows.count) utf8_bytes=\(observed.utf8.count)")
+        XCTAssertTrue(rows.count > 100 || observed.utf8.count > 8192, "The synthetic OCR result must actually exceed a collection limit")
+        XCTAssertNil(boundedTVPhotoText(rows))
+        let hints = TVPhotoHints(observed)
+        XCTAssertNil(hints.brand); XCTAssertNil(hints.model); XCTAssertNil(hints.address)
+    }
     func testNativeVisionReadsSyntheticVizioLabels() throws {
         guard #available(macOS 12.0, iOS 15.0, *) else { throw XCTSkip("Native Vision text recognition is unavailable on this runtime") }
         let url = try XCTUnwrap(Bundle.module.url(forResource: "tv-photo-labels", withExtension: "png", subdirectory: "Fixtures"))
@@ -13,7 +104,7 @@ final class TVPhotoHintsTests: XCTestCase {
         request.recognitionLevel = .accurate
         request.usesLanguageCorrection = false
         try VNImageRequestHandler(url: url).perform([request])
-        let text = (request.results ?? []).prefix(100).compactMap { $0.topCandidates(1).first?.string }.joined(separator: "\n")
+        let text = try XCTUnwrap(boundedTVPhotoText((request.results ?? []).lazy.map { $0.topCandidates(1).first?.string }))
         let hints = TVPhotoHints(text)
         XCTAssertEqual(hints.brand, "VIZIO", "Synthetic image OCR: \(text)")
         XCTAssertEqual(hints.model, "V505M-K09", "Synthetic image OCR: \(text)")

@@ -11,6 +11,7 @@ import android.speech.*
 import android.view.View
 import android.widget.*
 import com.aqss.nativefeedback.TVPhotoHints
+import com.aqss.nativefeedback.boundedTVPhotoText
 import com.aqss.nativefeedback.TutorialContent
 import com.aqss.nativefeedback.ForegroundMicrophoneGate
 import com.aqss.nativefeedback.VoiceInputRun
@@ -276,14 +277,17 @@ class InputAssistanceActivity : Activity() {
                 scanner.process(InputImage.fromBitmap(bitmap, 0))
                     .addOnSuccessListener { result ->
                         if (!isDestroyed && token == photoGeneration) {
-                            val text = result.textBlocks.flatMap { it.lines }.take(100).joinToString("\n") { it.text }
-                            val hints = TVPhotoHints(text)
+                            val text = boundedTVPhotoText(result.textBlocks.asSequence()
+                                .flatMap { it.lines.asSequence() }.map { it.text })
+                            val hints = TVPhotoHints(text ?: "")
                             details.text = "Brand: ${hints.brand ?: "Not identified"}"
                             photoExtra?.text = "Model: ${hints.model ?: "Not identified"}\nTV IP hint: ${hints.address ?: "Not identified"}"
                             photoBrand = hints.brand
                             val choice = TutorialContent.choices["chooseTV"]?.firstOrNull { it.id == hints.brand?.lowercase() }
                             useBrand?.apply { this.text = "Use ${choice?.title ?: "brand"} and continue"; visibility = if (choice == null) View.GONE else View.VISIBLE }
-                            status.text = "Check these details. Text recognition can make mistakes. Nothing is connected."
+                            status.text = if (text == null)
+                                "Photo text could not be reviewed. Choose a closer photo of the model or IP address row."
+                            else "Check these details. Text recognition can make mistakes. Nothing is connected."
                         }
                     }
                     .addOnFailureListener { if (!isDestroyed && token == photoGeneration) status.text = "Could not read this picture. Try brighter light and a closer photo." }
