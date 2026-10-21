@@ -254,7 +254,7 @@ final class AQSSReadOnlyUITests: XCTestCase {
     private func tap(_ title: String, _ app: XCUIApplication) {
         // Match within the active surface. A sheet can coexist with an
         // identically named button on the page underneath it.
-        let scroll = app.scrollViews["setup-scroll"].exists ? app.scrollViews["setup-scroll"] : app.scrollViews["setting-help-scroll"].exists ? app.scrollViews["setting-help-scroll"] : app.scrollViews["menu-scroll"].exists ? app.scrollViews["menu-scroll"] : app.scrollViews["guide-scroll"].exists ? app.scrollViews["guide-scroll"] : app.scrollViews["sound-check-scroll"].exists ? app.scrollViews["sound-check-scroll"] : app.scrollViews["home-scroll"]
+        let scroll = app.scrollViews["photo-review-scroll"].exists ? app.scrollViews["photo-review-scroll"] : app.scrollViews["setup-scroll"].exists ? app.scrollViews["setup-scroll"] : app.scrollViews["setting-help-scroll"].exists ? app.scrollViews["setting-help-scroll"] : app.scrollViews["menu-scroll"].exists ? app.scrollViews["menu-scroll"] : app.scrollViews["guide-scroll"].exists ? app.scrollViews["guide-scroll"] : app.scrollViews["sound-check-scroll"].exists ? app.scrollViews["sound-check-scroll"] : app.scrollViews["home-scroll"]
         let button = scroll.buttons.matching(NSPredicate(format: "label CONTAINS %@", title)).firstMatch
         guard button.waitForExistence(timeout: 10) else { screenshot("Missing \(title)", app); XCTFail("Missing button: \(title)"); return }
         // isHittable can be true for a sliver of a button whose center lies
@@ -313,6 +313,39 @@ final class AQSSReadOnlyUITests: XCTestCase {
     }
     private func screenshot(_ name: String, _ app: XCUIApplication) {
         let shot = XCTAttachment(screenshot: app.screenshot()); shot.name = name; shot.lifetime = .keepAlways; add(shot)
+    }
+
+    func testPhotoReplacementCancellationClearsThePreviousReview() throws {
+        guard ProcessInfo.processInfo.environment["AQSS_TEST_PHOTO"] == "1" else {
+            throw XCTSkip("The focused workflow must import exactly one synthetic label photo into Photos first.")
+        }
+        let app = launch()
+        tab("devices", app); tap("TV photo setup", app)
+        func selectFixture() {
+            tap("Choose a photo", app)
+            let cell = app.collectionViews.cells.firstMatch
+            XCTAssertTrue(cell.waitForExistence(timeout: 10), "The real Photos picker must expose the imported image")
+            let inventory = XCTAttachment(string: app.debugDescription)
+            inventory.name = "System photo picker inventory"; inventory.lifetime = .keepAlways; add(inventory)
+            XCTAssertEqual(app.collectionViews.cells.count, 1, "Never guess a fixture among multiple images")
+            guard app.collectionViews.cells.count == 1 else { return }
+            cell.tap()
+            label("Brand: VIZIO", app); label("Model: V505M-K09", app); label("TV IP hint: 10.20.30.40", app)
+            label("Nothing is connected.", app)
+        }
+        selectFixture()
+        screenshot("Native photo review before replacement", app)
+        tap("Choose a photo", app)
+        let cancel = app.buttons["Cancel"].firstMatch
+        XCTAssertTrue(cancel.waitForExistence(timeout: 10)); cancel.tap()
+        label("No photo selected", app); label("Brand: Not identified", app)
+        label("Model: Not identified", app); label("TV IP hint: Not identified", app)
+        screenshot("Replacement cancellation discards the old review", app)
+        selectFixture()
+        tap("Clear photo details", app)
+        label("No photo selected", app); label("Brand: Not identified", app)
+        app.buttons["Close"].firstMatch.tap()
+        tab("home", app); label("Connection not verified", app)
     }
 
     func testInputToolsStartIdleAndNeverClaimAConnection() {

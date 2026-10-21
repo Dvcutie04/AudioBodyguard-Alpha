@@ -11,6 +11,7 @@ import android.speech.*
 import android.view.View
 import android.widget.*
 import com.aqss.nativefeedback.TVPhotoHints
+import com.aqss.nativefeedback.PhotoReviewRun
 import com.aqss.nativefeedback.boundedTVPhotoText
 import com.aqss.nativefeedback.TutorialContent
 import com.aqss.nativefeedback.ForegroundMicrophoneGate
@@ -40,7 +41,10 @@ class InputAssistanceActivity : Activity() {
     private var visible = false
     private var running = false
     private var lastLevelAt = 0L
-    private var photoGeneration = 0
+    private val photoRun = PhotoReviewRun()
+    private data class PhotoRequest(val code: Int, val camera: Boolean, val token: PhotoReviewRun.Token)
+    private var pendingPhoto: PhotoRequest? = null
+    private var nextPhotoRequestCode = 100
     private val worker = Executors.newSingleThreadExecutor()
     private var instructions: TextView? = null
     private var photoBrand: String? = null
@@ -202,20 +206,14 @@ class InputAssistanceActivity : Activity() {
     private fun photoPage() {
         label("Find your TV details", true)
         label(if (intent.getBooleanExtra("fromTutorial", false)) "Photograph the TV’s model label or About screen. Keep passwords out of the picture." else "Take a clear picture of the model label, or the TV’s Network / IP settings screen. Avoid passwords. Do not move a heavy or wall-mounted TV: use its About screen instead.")
-        action("Take a TV photo", primary = true) {
-            try { startActivityForResult(Intent(MediaStore.ACTION_IMAGE_CAPTURE), 52) }
-            catch (_: Exception) { status.text = "Camera unavailable. Take a photo in your Camera app, then choose it below." }
-        }
-        action("Choose a photo") {
-            try { startActivityForResult(Intent(Intent.ACTION_GET_CONTENT).apply { type = "image/*"; addCategory(Intent.CATEGORY_OPENABLE) }, 51) }
-            catch (_: Exception) { status.text = "No photo picker available. Use the instructions below." }
-        }
+        action("Take a TV photo", primary = true) { selectPhoto(camera = true) }
+        action("Choose a photo") { selectPhoto(camera = false) }
         status = label("No photo selected", true)
         details = label("Brand: Not identified")
         photoExtra = label("Model: Not identified\nTV IP hint: Not identified").apply {
             if (intent.getBooleanExtra("fromTutorial", false)) visibility = View.GONE
         }
-        label("Check the suggested details on your TV. A photo does not connect it.")
+        label("Check the suggested details on your TV. A photo does not connect it. Choosing another picture clears these details.")
         if (intent.getBooleanExtra("fromTutorial", false)) {
             useBrand = action("Use brand and continue", primary = true) {
                 photoBrand?.lowercase()?.let { id ->
@@ -230,16 +228,42 @@ class InputAssistanceActivity : Activity() {
         label("Text recognition stays on this phone. Details clear on close. Manage the original in your camera or gallery app. Choose the full photo if text looks small.")
     }
     private fun clearPhoto() {
-        photoBrand = null; photoGeneration++; status.text = "No photo selected"; details.text = "Brand: Not identified"; photoExtra?.text = "Model: Not identified\nTV IP hint: Not identified"; useBrand?.visibility = View.GONE
+        pendingPhoto = null; photoRun.clear(); photoBrand = null
+        status.text = "No photo selected"; details.text = "Brand: Not identified"
+        photoExtra?.text = "Model: Not identified\nTV IP hint: Not identified"; useBrand?.visibility = View.GONE
+    }
+    private fun selectPhoto(camera: Boolean) {
+        clearPhoto()
+        // Never reuse a request code in this Activity: a late result must not
+        // become the image belonging to a newer selection.
+        if (nextPhotoRequestCode > 65_535) {
+            status.text = "Close and reopen photo setup before choosing another picture."; return
+        }
+        val request = PhotoRequest(nextPhotoRequestCode++, camera, photoRun.select())
+        pendingPhoto = request
+        try {
+            val intent = if (camera) Intent(MediaStore.ACTION_IMAGE_CAPTURE)
+                else Intent(Intent.ACTION_GET_CONTENT).apply { type = "image/*"; addCategory(Intent.CATEGORY_OPENABLE) }
+            startActivityForResult(intent, request.code)
+        } catch (_: Exception) {
+            pendingPhoto = null; photoRun.cancel(request.token)
+            status.text = if (camera) "Camera unavailable. Take a photo in your Camera app, then choose it below."
+                else "No photo picker available. Use the instructions below."
+        }
     }
     @Deprecated("Platform callback retained for API 26 compatibility")
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
         super.onActivityResult(requestCode, resultCode, data)
-        if (resultCode != RESULT_OK || (requestCode != 51 && requestCode != 52)) return
-        clearPhoto(); status.text = "Reading text on this phone…"; val token = photoGeneration
+        val request = pendingPhoto ?: return
+        if (requestCode != request.code) return
+        pendingPhoto = null
+        if (resultCode != RESULT_OK) { photoRun.cancel(request.token); return }
+        val token = request.token
+        if (isDestroyed || isFinishing || !photoRun.beginReading(token)) return
+        status.text = "Reading text on this phone…"
         worker.execute {
             try {
-                val bitmap: Bitmap = if (requestCode == 52) {
+                val bitmap: Bitmap = if (request.camera) {
                     @Suppress("DEPRECATION")
                     (data?.extras?.get("data") as? Bitmap) ?: throw IllegalArgumentException("No camera image")
                 } else {
@@ -273,10 +297,11 @@ class InputAssistanceActivity : Activity() {
                         if (transform.isIdentity) decoded else Bitmap.createBitmap(decoded, 0, 0, decoded.width, decoded.height, transform, true).also { decoded.recycle() }
                     }
                 }
+                if (!photoRun.isReading(token)) { bitmap.recycle(); return@execute }
                 val scanner = TextRecognition.getClient(TextRecognizerOptions.DEFAULT_OPTIONS)
                 scanner.process(InputImage.fromBitmap(bitmap, 0))
                     .addOnSuccessListener { result ->
-                        if (!isDestroyed && token == photoGeneration) {
+                        if (!isDestroyed && !isFinishing && photoRun.complete(token)) {
                             val text = boundedTVPhotoText(result.textBlocks.asSequence()
                                 .flatMap { it.lines.asSequence() }.map { it.text })
                             val hints = TVPhotoHints(text ?: "")
@@ -290,10 +315,10 @@ class InputAssistanceActivity : Activity() {
                             else "Check these details. Text recognition can make mistakes. Nothing is connected."
                         }
                     }
-                    .addOnFailureListener { if (!isDestroyed && token == photoGeneration) status.text = "Could not read this picture. Try brighter light and a closer photo." }
+                    .addOnFailureListener { if (!isDestroyed && !isFinishing && photoRun.complete(token)) status.text = "Could not read this picture. Try brighter light and a closer photo." }
                     .addOnCompleteListener { scanner.close(); bitmap.recycle() }
             } catch (_: Exception) {
-                runOnUiThread { if (!isDestroyed && token == photoGeneration) status.text = "Photo could not be read. Choose a clear photo of the label or settings screen." }
+                runOnUiThread { if (!isDestroyed && !isFinishing && photoRun.complete(token)) status.text = "Photo could not be read. Choose a clear photo of the label or settings screen." }
             }
         }
     }
@@ -307,7 +332,7 @@ class InputAssistanceActivity : Activity() {
         if (isVoice) { stopVoice(); if (::details.isInitialized) details.text = "No words recognized yet" }
         super.onPause()
     }
-    override fun onDestroy() { stopVoice(); handler.removeCallbacksAndMessages(null); photoGeneration++; worker.shutdownNow(); super.onDestroy() }
+    override fun onDestroy() { stopVoice(); handler.removeCallbacksAndMessages(null); pendingPhoto = null; photoRun.clear(); worker.shutdownNow(); super.onDestroy() }
 }
 
 private class InputMeter(activity: Activity, color: Int) : View(activity) {

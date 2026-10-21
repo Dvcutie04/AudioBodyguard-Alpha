@@ -11,8 +11,8 @@ android {
         applicationId = "com.aqss.bodyguard.prototype"
         minSdk = 26
         targetSdk = 36
-        versionCode = 8
-        versionName = "0.8-tv-photo-text-bounds"
+        versionCode = 9
+        versionName = "0.9-tv-photo-selection"
     }
 
     buildTypes {

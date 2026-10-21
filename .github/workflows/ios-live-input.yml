@@ -34,6 +34,12 @@ jobs:
           xcrun simctl boot "$simulator_udid" || true
           xcrun simctl bootstatus "$simulator_udid" -b
           xcrun simctl install "$simulator_udid" "$RUNNER_TEMP/sound-check-build/Build/Products/Release-iphonesimulator/AQSSReadOnly.app"
+          python3 - <<'PYTHON'
+          import hashlib, pathlib
+          fixture = pathlib.Path('native/ios/Tests/AQSSNativeFeedbackTests/Fixtures/tv-photo-labels.png')
+          assert hashlib.sha256(fixture.read_bytes()).hexdigest() == '2f55775447c5d28841737a25713ae83a76b37bb6d614fa33007621ce92853f31'
+          PYTHON
+          xcrun simctl addmedia "$simulator_udid" native/ios/Tests/AQSSNativeFeedbackTests/Fixtures/tv-photo-labels.png
           python3 - "$RUNNER_TEMP/sound-check-build/Build/Products" <<'PYTHON'
           import pathlib, plistlib, sys
           root = pathlib.Path(sys.argv[1])
@@ -44,6 +50,7 @@ jobs:
               targets = [v for v in data.values() if isinstance(v, dict) and v.get('IsUITestBundle')]
               assert len(targets) == 1, 'Expected exactly one UI test target'
               targets[0].setdefault('EnvironmentVariables', {})['AQSS_TEST_MIC_' + mode] = '1'
+              targets[0]['EnvironmentVariables']['AQSS_TEST_PHOTO'] = '1'
               (root / ('sound-' + mode.lower() + '.xctestrun')).write_bytes(plistlib.dumps(data))
           PYTHON
       - name: Verify idle navigation and denied permission
@@ -59,7 +66,8 @@ jobs:
             -only-testing:AQSSReadOnlyUITests/AQSSReadOnlyUITests/testLiveSoundCheckDeniedPermissionNeverStartsCapture \
             -only-testing:AQSSReadOnlyUITests/AQSSReadOnlyUITests/testVoiceCheckStartsIdleAndClosingItLeavesMeterUsable \
             -only-testing:AQSSReadOnlyUITests/AQSSReadOnlyUITests/testVoiceCheckDeniedMicrophoneCannotRequestSpeechOrCapture \
-            -only-testing:AQSSReadOnlyUITests/AQSSReadOnlyUITests/testInputToolsStartIdleAndNeverClaimAConnection
+            -only-testing:AQSSReadOnlyUITests/AQSSReadOnlyUITests/testInputToolsStartIdleAndNeverClaimAConnection \
+            -only-testing:AQSSReadOnlyUITests/AQSSReadOnlyUITests/testPhotoReplacementCancellationClearsThePreviousReview
       - name: Verify granted input, Stop, Home and the 30-second cap when available
         shell: bash
         run: |
