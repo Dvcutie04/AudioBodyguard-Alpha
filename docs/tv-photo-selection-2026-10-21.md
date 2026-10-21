@@ -80,6 +80,13 @@ Exact commit, red/green outcomes, test counts, APK identity and any failed attem
 belong in the draft PR. An unsigned Simulator or device-target build is not an
 installed iPhone/TestFlight release. No phone has qualified this increment yet.
 
+The first implementation commit `4cc2dbf445c4a87f50bbc59f6f6ffef649d107c0`
+passed all 63 Swift package tests but failed the iOS app build in run
+[39643634886](https://github.com/Dvcutie04/AudioBodyguard-Alpha/actions/runs/39643634886),
+job `119373378950`: the new source was missing from the app's explicit Xcode
+Sources phase. Add the file reference, group entry and build-phase membership;
+do not treat package tests alone as an app build.
+
 ## Remaining gates
 
 N2b still needs the real owned host/device/driver/route/format and independent
