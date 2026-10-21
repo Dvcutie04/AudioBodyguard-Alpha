@@ -2,6 +2,13 @@ package com.aqss.nativefeedback
 import kotlin.test.*
 
 class TVPhotoHintsTest {
+    @Test fun overOneHundredRowsCannotProducePartialPhotoHints() {
+        val rows = listOf("VIZIO", "Model: X1", "IP: 10.0.0.2") + List(98) { "other row" }
+        val hints = TVPhotoHints(rows.joinToString("\n"))
+        assertNull(hints.brand)
+        assertNull(hints.model)
+        assertNull(hints.address)
+    }
     @Test fun vizioAboutLabelsIdentifyOnlyTheLabelledModelAndAddress() {
         val hints = TVPhotoHints("VIZIO\nModel Name: V505M-K09\nIPv4 IP Address: 10.20.30.40\nIPv4 Default Gateway: 10.20.30.1\nDNS: 10.0.0.10")
         assertEquals("VIZIO", hints.brand)

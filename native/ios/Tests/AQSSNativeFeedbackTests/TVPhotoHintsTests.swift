@@ -5,6 +5,13 @@ import Vision
 #endif
 
 final class TVPhotoHintsTests: XCTestCase {
+    func testOverOneHundredRowsCannotProducePartialPhotoHints() {
+        let rows = ["VIZIO", "Model: X1", "IP: 10.0.0.2"] + Array(repeating: "other row", count: 98)
+        let hints = TVPhotoHints(rows.joined(separator: "\n"))
+        XCTAssertNil(hints.brand)
+        XCTAssertNil(hints.model)
+        XCTAssertNil(hints.address)
+    }
 #if canImport(Vision)
     func testNativeVisionReadsSyntheticVizioLabels() throws {
         guard #available(macOS 12.0, iOS 15.0, *) else { throw XCTSkip("Native Vision text recognition is unavailable on this runtime") }
