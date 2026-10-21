@@ -67,3 +67,13 @@ does not qualify a real photograph, camera, glare, orientation or real-device
 accuracy. Physical microphone/output, installed-phone energy/timing and N2b–N5
 remain pending. Candidate Android 0.7 retains prior sound checks, recaps and the
 approved Silicon Workforce opening poster.
+
+The first corrected-parser revision `7cefc54` passed native package tests and
+the six focused iPhone UI cases. Its Android observer stopped before selecting
+the image because it expected `content insert` to print a URI. The retained
+insert output is empty. [AOSP Content.java](https://android.googlesource.com/platform/frameworks/base/+/refs/heads/main/cmds/content/src/com/android/commands/content/Content.java)
+shows that insertion discards the returned URI; only query prints rows. The
+observer now requires one exact pending filename/path row, constructs its
+item URI from the observed ID, verifies a byte-for-byte readback after writing,
+and observes publication before opening the picker. This changes test setup,
+not app parsing, picker behavior or the expected OCR/UI result.
