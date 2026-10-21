@@ -1,6 +1,6 @@
 import Foundation
 
-/// One selected image owns a 15-second result window. This does not cancel OS work.
+/// One selected image owns a 30-second result window. This does not cancel OS work.
 public final class PhotoReviewRun {
     public struct Token: Equatable, Sendable { fileprivate let identity = UUID() }
     public enum EndReason { case timeLimit, clockInvalid }
@@ -26,7 +26,7 @@ public final class PhotoReviewRun {
         guard owner == token, reading else { return false }
         let sample = now()
         if !sample.isFinite || sample < checkedAt { failure = .clockInvalid }
-        else if sample - startedAt >= 15 { failure = .timeLimit }
+        else if sample - startedAt >= 30 { failure = .timeLimit }
         if failure != nil { reading = false; return false }
         checkedAt = sample; return true
     }

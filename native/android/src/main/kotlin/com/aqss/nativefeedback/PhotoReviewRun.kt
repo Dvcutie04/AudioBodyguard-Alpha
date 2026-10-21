@@ -1,6 +1,6 @@
 package com.aqss.nativefeedback
 
-/** One selected image owns a 15-second result window. This does not cancel OS work. */
+/** One selected image owns a 30-second result window. This does not cancel OS work. */
 class PhotoReviewRun(private val nowMs: () -> Long) {
     class Token internal constructor()
     enum class EndReason { timeLimit, clockInvalid }
@@ -18,7 +18,7 @@ class PhotoReviewRun(private val nowMs: () -> Long) {
         val now = nowMs()
         failure = when {
             now < checkedAt -> EndReason.clockInvalid
-            now - startedAt >= 15_000 -> EndReason.timeLimit
+            now - startedAt >= 30_000 -> EndReason.timeLimit
             else -> null
         }
         if (failure != null) { reading = false; return false }

@@ -121,6 +121,17 @@ at a valid result just before 30 seconds. The delayed-provider observation
 now has its own 45-second observer wait and a 60-second provider fail-safe;
 neither changes the app's result window.
 
+The revised-window tests were published at
+`bd96255c7e4fa9fe34db5268384960614c2b2aa9` before changing the app policy.
+Android focused run `39695632283`, job `119552186325`, and main Android job
+`119552186581` each failed **2 of 69 tests**: a valid result just before
+30 seconds and a selection whose choosing time must not consume that window.
+Main Swift job `119552186564` in run `39695632289` failed the corresponding
+**2 of 71 tests**. The short 15-second policy caused these runtime assertion
+failures. The implementation then changes only the two native policy windows
+to 30 seconds; all cutoff, clock, identity and original dense-text assertions
+remain required.
+
 ## Remaining gates
 
 Actual Android camera/provider compatibility, real-photo recognition, memory
