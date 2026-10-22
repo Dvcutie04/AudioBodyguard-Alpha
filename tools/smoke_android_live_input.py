@@ -62,6 +62,24 @@ def main():
     def wait_for(text, name):
         return wait_for_all((text,), name)
 
+    def wait_for_voice_permission_idle(permission_text, name):
+        texts = (permission_text, "No live microphone samples", "No words recognized yet", "Start voice check")
+        for _ in range(6):
+            root, _ = screen(name)
+            if all(has(root, text) for text in texts):
+                return root
+            scroller = next((n for n in root.iter("node") if n.get("class") == "android.widget.ScrollView"), None)
+            if scroller is not None and (not has(root, "No words recognized yet") or not has(root, permission_text)):
+                x0, y0, x1, y1 = map(int, re.findall(r"-?\d+", scroller.get("bounds")))
+                down = not has(root, "No words recognized yet")
+                x = (x0 + x1) // 2
+                y = int(y0 + (y1-y0) * (0.65 if down else 0.35))
+                distance = max(1, min(240, (y1-y0) // 6))
+                adb("shell", "input", "swipe", str(x), str(y), str(x), str(y-distance if down else y+distance), "2000")
+            else:
+                time.sleep(1)
+        raise AssertionError(f"Missing simultaneous Voice permission labels after bounded scrolling: {texts}")
+
     def tap(text, name, optional=False):
         # A successful prior click can still be replacing the active hierarchy.
         # Retry only a rejected action against a newly retrieved root.
@@ -452,10 +470,10 @@ def main():
     try:
         denied = tap("Don’t allow", "voice_permission_deny", optional=True) or tap("Don't allow", "voice_permission_deny_ascii", optional=True)
         assert denied, "Expected the real microphone permission dialog from the Voice fixture"
-        wait_for_all(("Microphone permission denied", "No live microphone samples", "No words recognized yet", "Start voice check"), "voice_permission_denied_off")
+        wait_for_voice_permission_idle("Microphone permission denied", "voice_permission_denied_off")
         open_app_permission_settings("voice_permission_settings_denied", "com.aqss.bodyguard.prototype.InputAssistanceActivity")
         adb("shell", "input", "keyevent", "KEYCODE_BACK")
-        wait_for_all(("Microphone permission denied", "No live microphone samples", "No words recognized yet", "Start voice check"), "voice_settings_denied_return_off")
+        wait_for_voice_permission_idle("Microphone permission denied", "voice_settings_denied_return_off")
         voice_denied_appops = adb("shell", "cmd", "appops", "get", package, "RECORD_AUDIO").decode()
         (out / "voice-settings-denied-appops.txt").write_text(voice_denied_appops)
         assert "(running)" not in voice_denied_appops, voice_denied_appops
@@ -463,7 +481,7 @@ def main():
         open_app_permission_settings("voice_permission_settings_granted", "com.aqss.bodyguard.prototype.InputAssistanceActivity")
         adb("shell", "pm", "grant", package, "android.permission.RECORD_AUDIO")
         adb("shell", "input", "keyevent", "KEYCODE_BACK")
-        voice_granted = wait_for_all(("Permission granted. Tap Start when you are ready.", "No live microphone samples", "No words recognized yet", "Start voice check"), "voice_settings_granted_return_off")
+        voice_granted = wait_for_voice_permission_idle("Permission granted. Tap Start when you are ready.", "voice_settings_granted_return_off")
         assert not has(voice_granted, "Open app settings"), "Voice Settings shortcut remains after native grant"
         assert not has(voice_granted, "Microphone permission denied"), "Voice permission guidance remained denied"
         voice_granted_appops = adb("shell", "cmd", "appops", "get", package, "RECORD_AUDIO").decode()

@@ -81,6 +81,13 @@ no recognized words and Start, with no running microphone app-op. The grant
 must remove the denied shortcut and show fresh granted guidance. The observer
 and fixture must be excluded from the delivered APK.
 
+The first implementation checkpoint displayed the correct Android denied
+status, Settings shortcut and no-live-samples label. Its observer failed
+because the longer guidance pushed the empty-words label below the visible
+viewport. The corrected observer makes bounded small swipes inside the real
+Voice scroll view, then still requires all four labels in one snapshot. It
+retains the actual permission and non-running app-op checks.
+
 iPhone microphone recovery runs after the other denied tests and meter
 Settings test, with its own native denied precondition. It uses the real
 Microphone switch and leaves access granted for the following explicit-input
