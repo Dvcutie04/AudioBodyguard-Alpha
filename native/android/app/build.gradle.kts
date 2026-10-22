@@ -11,8 +11,8 @@ android {
         applicationId = "com.aqss.bodyguard.prototype"
         minSdk = 26
         targetSdk = 36
-        versionCode = 15
-        versionName = "0.15-sound-permission-settings"
+        versionCode = 16
+        versionName = "0.16-voice-permission-settings"
     }
 
     buildTypes {

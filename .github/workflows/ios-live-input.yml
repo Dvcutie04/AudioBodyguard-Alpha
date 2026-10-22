@@ -3,7 +3,7 @@ name: iPhone foreground input verification
 on:
   workflow_dispatch:
   push:
-    branches: ["aqss/ios-live-sound-check", "aqss/ios-microphone-lifecycle", "aqss/android-microphone-lifecycle", "aqss/sound-check-recaps", "aqss/tv-photo-labels", "aqss/tv-photo-text-bounds", "aqss/tv-photo-selection", "aqss/photo-review-deadline", "aqss/photo-work-ownership", "aqss/photo-work-ready", "aqss/photo-retry-guidance", "aqss/sound-permission-settings"]
+    branches: ["aqss/ios-live-sound-check", "aqss/ios-microphone-lifecycle", "aqss/android-microphone-lifecycle", "aqss/sound-check-recaps", "aqss/tv-photo-labels", "aqss/tv-photo-text-bounds", "aqss/tv-photo-selection", "aqss/photo-review-deadline", "aqss/photo-work-ownership", "aqss/photo-work-ready", "aqss/photo-retry-guidance", "aqss/sound-permission-settings", "aqss/voice-permission-settings"]
 
 permissions:
   contents: read
@@ -91,6 +91,16 @@ jobs:
             -destination "platform=iOS Simulator,id=$AQSS_SIMULATOR" \
             -parallel-testing-enabled NO -resultBundlePath "$RUNNER_TEMP/sound-settings.xcresult" \
             -only-testing:AQSSReadOnlyUITests/AQSSReadOnlyUITests/testLiveSoundCheckDeniedPermissionNeverStartsCapture
+      - name: Verify Voice microphone Settings returns
+        shell: bash
+        run: |
+          set -euo pipefail
+          xcrun simctl privacy "$AQSS_SIMULATOR" revoke microphone com.aqss.bodyguard.prototype
+          xcodebuild test-without-building \
+            -xctestrun "$RUNNER_TEMP/sound-check-build/Build/Products/sound-denied.xctestrun" \
+            -destination "platform=iOS Simulator,id=$AQSS_SIMULATOR" \
+            -parallel-testing-enabled NO -resultBundlePath "$RUNNER_TEMP/sound-voice-microphone.xcresult" \
+            -only-testing:AQSSReadOnlyUITests/AQSSReadOnlyUITests/testVoiceMicrophoneSettingsReturnStaysOff
       - name: Verify granted input, Stop, Home and the 30-second cap when available
         shell: bash
         run: |
@@ -107,50 +117,7 @@ jobs:
         if: always()
         shell: bash
         run: |
-          python3 - "$RUNNER_TEMP" <<'PYTHON'
-          import json, pathlib, subprocess, sys
-          temporary = pathlib.Path(sys.argv[1])
-          out = temporary / 'sound-check-screenshots'
-          out.mkdir(exist_ok=True)
-          for mode in ('denied', 'settings', 'granted'):
-              result = temporary / ('sound-' + mode + '.xcresult')
-              if not result.exists():
-                  continue
-              seen, exported = set(), set()
-              def get(identifier=None):
-                  args = ['xcrun', 'xcresulttool', 'get', '--path', str(result), '--format', 'json']
-                  if identifier:
-                      args += ['--id', identifier]
-                  call = subprocess.run(args, capture_output=True, text=True)
-                  if call.returncode:
-                      call = subprocess.run(args + ['--legacy'], capture_output=True, text=True)
-                  if call.returncode:
-                      raise RuntimeError(call.stderr)
-                  return json.loads(call.stdout)
-              def walk(value):
-                  if isinstance(value, list):
-                      for child in value:
-                          walk(child)
-                  elif isinstance(value, dict):
-                      if 'payloadRef' in value and value.get('uniformTypeIdentifier', {}).get('_value') == 'public.png':
-                          identifier = value['payloadRef']['id']['_value']
-                          if identifier not in exported:
-                              exported.add(identifier)
-                              name = value.get('name', {}).get('_value', 'Screenshot')
-                              safe = ''.join(c if c.isalnum() or c in '-_' else '-' for c in name)[:100]
-                              path = out / (mode + '-' + str(len(exported)).zfill(3) + '-' + safe + '.png')
-                              subprocess.run(['xcrun', 'xcresulttool', 'export', '--type', 'file', '--path', str(result), '--id', identifier, '--output-path', str(path)], check=True)
-                      for key, child in value.items():
-                          if key in ('testsRef', 'summaryRef') and isinstance(child, dict):
-                              identifier = child.get('id', {}).get('_value')
-                              if identifier and identifier not in seen:
-                                  seen.add(identifier)
-                                  walk(get(identifier))
-                          else:
-                              walk(child)
-              walk(get())
-              print(mode, 'exported', len(exported), 'screenshots')
-          PYTHON
+          python3 tools/export_ios_input_screenshots.py "$RUNNER_TEMP" denied settings voice-microphone granted
       - name: Keep Simulator test evidence
         if: always()
         uses: actions/upload-artifact@v4
@@ -159,7 +126,61 @@ jobs:
           path: |
             ${{ runner.temp }}/sound-denied.xcresult
             ${{ runner.temp }}/sound-settings.xcresult
+            ${{ runner.temp }}/sound-voice-microphone.xcresult
             ${{ runner.temp }}/sound-granted.xcresult
+            ${{ runner.temp }}/sound-check-screenshots
+          if-no-files-found: ignore
+          retention-days: 7
+
+  ios-voice-speech-permission-settings:
+    runs-on: macos-14
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Build isolated speech-consent fixture on a fresh iPhone Simulator
+        shell: bash
+        run: |
+          set -euo pipefail
+          simulator_udid="$(xcrun simctl list devices available -j | python3 -c 'import json,sys; print(next(d["udid"] for group in json.load(sys.stdin)["devices"].values() for d in group if d["name"].startswith("iPhone") and d.get("isAvailable",True)))')"
+          echo "AQSS_SIMULATOR=$simulator_udid" >> "$GITHUB_ENV"
+          xcodebuild -project native/ios-app/AQSSReadOnly.xcodeproj -scheme AQSSReadOnly \
+            -configuration Release -destination "platform=iOS Simulator,id=$simulator_udid" \
+            -derivedDataPath "$RUNNER_TEMP/voice-permission-build" CODE_SIGNING_ALLOWED=NO build-for-testing
+          xcrun simctl boot "$simulator_udid" || true
+          xcrun simctl bootstatus "$simulator_udid" -b
+          xcrun simctl install "$simulator_udid" "$RUNNER_TEMP/voice-permission-build/Build/Products/Release-iphonesimulator/AQSSReadOnly.app"
+          xcrun simctl privacy "$simulator_udid" grant microphone com.aqss.bodyguard.prototype
+          python3 - "$RUNNER_TEMP/voice-permission-build/Build/Products" <<'PYTHON'
+          import pathlib, plistlib, sys
+          root = pathlib.Path(sys.argv[1])
+          source, = root.glob('*.xctestrun')
+          data = plistlib.loads(source.read_bytes())
+          targets = [v for v in data.values() if isinstance(v, dict) and v.get('IsUITestBundle')]
+          assert len(targets) == 1
+          targets[0].setdefault('EnvironmentVariables', {})['AQSS_TEST_SPEECH_DENIED'] = '1'
+          (root / 'voice-speech.xctestrun').write_bytes(plistlib.dumps(data))
+          PYTHON
+      - name: Verify real speech denial and app-specific Settings recovery
+        shell: bash
+        run: |
+          set -euo pipefail
+          xcodebuild test-without-building \
+            -xctestrun "$RUNNER_TEMP/voice-permission-build/Build/Products/voice-speech.xctestrun" \
+            -destination "platform=iOS Simulator,id=$AQSS_SIMULATOR" \
+            -parallel-testing-enabled NO -resultBundlePath "$RUNNER_TEMP/sound-voice-speech.xcresult" \
+            -only-testing:AQSSReadOnlyUITests/AQSSReadOnlyUITests/testVoiceSpeechSettingsReturnStaysOff
+      - name: Export speech-permission screenshot evidence
+        if: always()
+        run: python3 tools/export_ios_input_screenshots.py "$RUNNER_TEMP" voice-speech
+      - name: Keep isolated speech Settings evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ios-voice-speech-settings-evidence
+          path: |
+            ${{ runner.temp }}/sound-voice-speech.xcresult
             ${{ runner.temp }}/sound-check-screenshots
           if-no-files-found: ignore
           retention-days: 7

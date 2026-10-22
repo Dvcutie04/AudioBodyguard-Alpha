@@ -89,6 +89,7 @@ public final class HierarchyProbe extends Instrumentation {
         if (!node.isVisibleToUser()) return;
         Rect bounds = new Rect(); node.getBoundsInScreen(bounds);
         xml.startTag(null, "node");
+        xml.attribute(null, "class", node.getClassName() == null ? "" : node.getClassName().toString());
         xml.attribute(null, "text", node.getText() == null ? "" : node.getText().toString());
         xml.attribute(null, "content-desc", node.getContentDescription() == null ? "" : node.getContentDescription().toString());
         xml.attribute(null, "package", node.getPackageName() == null ? "" : node.getPackageName().toString());
