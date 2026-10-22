@@ -3,7 +3,7 @@ name: iPhone foreground input verification
 on:
   workflow_dispatch:
   push:
-    branches: ["aqss/ios-live-sound-check", "aqss/ios-microphone-lifecycle", "aqss/android-microphone-lifecycle", "aqss/sound-check-recaps", "aqss/tv-photo-labels", "aqss/tv-photo-text-bounds", "aqss/tv-photo-selection", "aqss/photo-review-deadline", "aqss/photo-work-ownership", "aqss/photo-work-ready"]
+    branches: ["aqss/ios-live-sound-check", "aqss/ios-microphone-lifecycle", "aqss/android-microphone-lifecycle", "aqss/sound-check-recaps", "aqss/tv-photo-labels", "aqss/tv-photo-text-bounds", "aqss/tv-photo-selection", "aqss/photo-review-deadline", "aqss/photo-work-ownership", "aqss/photo-work-ready", "aqss/photo-retry-guidance"]
 
 permissions:
   contents: read
@@ -35,11 +35,19 @@ jobs:
           xcrun simctl bootstatus "$simulator_udid" -b
           xcrun simctl install "$simulator_udid" "$RUNNER_TEMP/sound-check-build/Build/Products/Release-iphonesimulator/AQSSReadOnly.app"
           python3 - <<'PYTHON'
-          import hashlib, pathlib
+          import datetime, hashlib, os, pathlib
           fixture = pathlib.Path('native/ios/Tests/AQSSNativeFeedbackTests/Fixtures/tv-photo-labels.png')
           assert hashlib.sha256(fixture.read_bytes()).hexdigest() == '2f55775447c5d28841737a25713ae83a76b37bb6d614fa33007621ce92853f31'
+          # Different capture dates identify each fixture in the real Photos picker.
+          for day, name in enumerate(('empty', 'unrelated', 'brand-only'), 15):
+              photo = fixture.with_name('tv-photo-' + name + '.png')
+              captured = datetime.datetime(2026, 1, day, 12, tzinfo=datetime.timezone.utc).timestamp()
+              os.utime(photo, (captured, captured))
           PYTHON
           xcrun simctl addmedia "$simulator_udid" native/ios/Tests/AQSSNativeFeedbackTests/Fixtures/tv-photo-labels.png
+          for photo_case in empty unrelated brand-only; do
+            xcrun simctl addmedia "$simulator_udid" "native/ios/Tests/AQSSNativeFeedbackTests/Fixtures/tv-photo-$photo_case.png"
+          done
           python3 - "$RUNNER_TEMP/sound-check-build/Build/Products" <<'PYTHON'
           import pathlib, plistlib, sys
           root = pathlib.Path(sys.argv[1])
@@ -52,6 +60,9 @@ jobs:
               targets[0].setdefault('EnvironmentVariables', {})['AQSS_TEST_MIC_' + mode] = '1'
               targets[0]['EnvironmentVariables']['AQSS_TEST_PHOTO'] = '1'
               targets[0]['EnvironmentVariables']['AQSS_TEST_PHOTO_MODIFIED_AT'] = str(pathlib.Path('native/ios/Tests/AQSSNativeFeedbackTests/Fixtures/tv-photo-labels.png').stat().st_mtime)
+              for name in ('empty', 'unrelated', 'brand-only'):
+                  key = 'AQSS_TEST_PHOTO_' + name.upper().replace('-', '_') + '_MODIFIED_AT'
+                  targets[0]['EnvironmentVariables'][key] = str(pathlib.Path('native/ios/Tests/AQSSNativeFeedbackTests/Fixtures/tv-photo-' + name + '.png').stat().st_mtime)
               (root / ('sound-' + mode.lower() + '.xctestrun')).write_bytes(plistlib.dumps(data))
           PYTHON
       - name: Verify idle navigation and denied permission
@@ -68,7 +79,7 @@ jobs:
             -only-testing:AQSSReadOnlyUITests/AQSSReadOnlyUITests/testVoiceCheckStartsIdleAndClosingItLeavesMeterUsable \
             -only-testing:AQSSReadOnlyUITests/AQSSReadOnlyUITests/testVoiceCheckDeniedMicrophoneCannotRequestSpeechOrCapture \
             -only-testing:AQSSReadOnlyUITests/AQSSReadOnlyUITests/testInputToolsStartIdleAndNeverClaimAConnection \
-            -only-testing:AQSSReadOnlyUITests/AQSSReadOnlyUITests/testPhotoReplacementCancellationClearsThePreviousReview
+            -only-testing:AQSSReadOnlyUITests/AQSSReadOnlyUITests/testPhotoReviewGuidanceAndReplacement
       - name: Verify granted input, Stop, Home and the 30-second cap when available
         shell: bash
         run: |

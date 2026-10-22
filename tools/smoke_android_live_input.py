@@ -254,6 +254,12 @@ def main():
 
     photo_fixture_case("tv-photo-labels.png", "aqss-tv-labels.png", "photo",
                        ("Brand: VIZIO", "Model: V505M-K09", "TV IP hint: 10.20.30.40", "Nothing is connected."))
+    for case in ("empty", "unrelated"):
+        photo_fixture_case(f"tv-photo-{case}.png", f"aqss-tv-{case}.png", f"photo_{case}",
+                           ("Brand: Not identified", "Model: Not identified", "TV IP hint: Not identified",
+                            "No TV details found. Try a closer photo of the model label or IP address row."))
+    photo_fixture_case("tv-photo-brand-only.png", "aqss-tv-brand-only.png", "photo_brand_only",
+                       ("Brand: VIZIO", "Model: Not identified", "TV IP hint: Not identified", "Nothing is connected."))
     photo_fixture_case("tv-photo-text-limit.png", "aqss-tv-text-limit.png", "photo_limit",
                        ("Brand: Not identified", "Model: Not identified", "TV IP hint: Not identified",
                         "Photo text could not be reviewed. Choose a closer photo of the model or IP address row."))

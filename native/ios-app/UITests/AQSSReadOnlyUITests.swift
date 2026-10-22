@@ -315,19 +315,19 @@ final class AQSSReadOnlyUITests: XCTestCase {
         let shot = XCTAttachment(screenshot: app.screenshot()); shot.name = name; shot.lifetime = .keepAlways; add(shot)
     }
 
-    func testPhotoReplacementCancellationClearsThePreviousReview() throws {
+    func testPhotoReviewGuidanceAndReplacement() throws {
         guard ProcessInfo.processInfo.environment["AQSS_TEST_PHOTO"] == "1" else {
-            throw XCTSkip("The focused workflow must import exactly one synthetic label photo into Photos first.")
+            throw XCTSkip("The focused workflow must import the dated synthetic photo fixtures into Photos first.")
         }
         let app = launch()
         tab("devices", app); tap("TV photo setup", app)
-        let modified = try XCTUnwrap(ProcessInfo.processInfo.environment["AQSS_TEST_PHOTO_MODIFIED_AT"].flatMap(TimeInterval.init))
-        let date = DateFormatter(); date.locale = Locale(identifier: "en_US_POSIX"); date.dateFormat = "MMMM dd"
-        let prefix = "Photo, " + date.string(from: Date(timeIntervalSince1970: modified)) + ", "
-        func selectFixture() throws {
+        let identified = ["Brand: VIZIO", "Model: V505M-K09", "TV IP hint: 10.20.30.40", "Nothing is connected."]
+        func selectFixture(_ key: String = "AQSS_TEST_PHOTO_MODIFIED_AT", expected: [String] = []) throws {
+            let modified = try XCTUnwrap(ProcessInfo.processInfo.environment[key].flatMap(TimeInterval.init))
+            let date = DateFormatter(); date.locale = Locale(identifier: "en_US_POSIX"); date.dateFormat = "MMMM dd"
+            let prefix = "Photo, " + date.string(from: Date(timeIntervalSince1970: modified)) + ", "
             tap("Choose a photo", app, scroll: app.scrollViews["photo-review-scroll"])
-            // This runtime exposes picker assets as Images, with six older
-            // stock photos. Match the imported fixture's date, not its position.
+            // Match each fixture's capture date, never an assumed grid position.
             let images = app.images.matching(NSPredicate(format: "label BEGINSWITH %@", prefix))
             _ = images.firstMatch.waitForExistence(timeout: 10)
             let candidates = images.allElementsBoundByIndex.filter {
@@ -344,10 +344,9 @@ final class AQSSReadOnlyUITests: XCTestCase {
             let image = try XCTUnwrap(candidates.count == 1 ? candidates.first : nil,
                                      "Require exactly one imported-date fixture; never guess among Photos assets")
             image.tap()
-            label("Brand: VIZIO", app); label("Model: V505M-K09", app); label("TV IP hint: 10.20.30.40", app)
-            label("Nothing is connected.", app)
+            for text in expected { label(text, app) }
         }
-        try selectFixture()
+        try selectFixture(expected: identified)
         screenshot("Native photo review before replacement", app)
         tap("Choose a photo", app, scroll: app.scrollViews["photo-review-scroll"])
         let cancel = app.buttons["Cancel"].firstMatch
@@ -355,7 +354,20 @@ final class AQSSReadOnlyUITests: XCTestCase {
         label("No photo selected", app); label("Brand: Not identified", app)
         label("Model: Not identified", app); label("TV IP hint: Not identified", app)
         screenshot("Replacement cancellation discards the old review", app)
-        try selectFixture()
+        try selectFixture(expected: identified)
+        for name in ["EMPTY", "UNRELATED"] {
+            try selectFixture("AQSS_TEST_PHOTO_" + name + "_MODIFIED_AT", expected: [
+                "No TV details found. Try a closer photo of the model label or IP address row.",
+                "Brand: Not identified", "Model: Not identified", "TV IP hint: Not identified"
+            ])
+            screenshot("Photo retry guidance " + name.lowercased(), app)
+            XCTAssertFalse(app.buttons["photo-use-brand"].exists)
+        }
+        try selectFixture("AQSS_TEST_PHOTO_BRAND_ONLY_MODIFIED_AT", expected: [
+            "Brand: VIZIO", "Model: Not identified", "TV IP hint: Not identified", "Nothing is connected."
+        ])
+        screenshot("Partial photo details remain available", app)
+        try selectFixture(expected: identified)
         tap("Clear photo details", app, scroll: app.scrollViews["photo-review-scroll"])
         label("No photo selected", app); label("Brand: Not identified", app)
         app.buttons["Close"].firstMatch.tap()
