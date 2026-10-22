@@ -286,7 +286,8 @@ def main():
 
     tap("Sound", "sound_page")
     tap("Live sound check. Try the phone microphone for 30 seconds", "open_check")
-    wait_for("Microphone off", "microphone_off")
+    idle_meter = wait_for("Microphone off", "microphone_off")
+    assert not has(idle_meter, "Open app settings"), "Permission shortcut appeared before an attempted request"
     screenshot("microphone_off")
     tap("Start sound check", "request_permission")
     denied = tap("Don’t allow", "permission_deny", optional=True) or tap("Don't allow", "permission_deny_ascii", optional=True)
@@ -437,7 +438,7 @@ def main():
     crashes = adb("logcat", "-b", "crash", "-d").decode()
     (out / "crash-log.txt").write_text(crashes)
     assert "FATAL EXCEPTION" not in crashes, crashes
-    print("LIVE_INPUT_EMULATOR_OBSERVED: permission denial, PCM samples, manual stop, notification-shade focus loss, background stop, rotation stop, no automatic restart, 30-second limit, voice navigation/service attempt, meter reuse, bounded input recaps, Clear, navigation retention, empty recaps after process restart, synthetic-photo picker/ML Kit review, over-budget photo rejection, photo Clear/cancel and unverified connection passed. No physical microphone, real-photo accuracy or output qualification.", flush=True)
+    print("LIVE_INPUT_EMULATOR_OBSERVED: permission denial, app-specific Settings round trips with denied/granted access and no capture until another Start, PCM samples, manual stop, notification-shade focus loss, background stop, rotation stop, no automatic restart, 30-second limit, voice navigation/service attempt, meter reuse, bounded input recaps, Clear, navigation retention, empty recaps after process restart, synthetic-photo picker/ML Kit review, over-budget photo rejection, photo Clear/cancel and unverified connection passed. No physical microphone, real-photo accuracy or output qualification.", flush=True)
 
 
 if __name__ == "__main__":

@@ -73,6 +73,7 @@ final class AQSSReadOnlyUITests: XCTestCase {
         tab("sound", app); tap("Live sound check", app)
         label("Microphone off", app); label("No live input", app)
         XCTAssertEqual(app.buttons["sound-check-start-stop"].label, "Start sound check")
+        XCTAssertFalse(app.buttons["sound-check-open-settings"].exists)
         XCTAssertFalse(app.alerts.firstMatch.exists)
         screenshot("Live sound check starts idle", app)
         app.buttons["sound-check-help"].tap()
