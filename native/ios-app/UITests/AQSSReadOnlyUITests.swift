@@ -6,6 +6,7 @@ final class AQSSReadOnlyUITests: XCTestCase {
         tab("sound", app); tap("Voice check", app)
         label("Microphone off", app); label("No words recognized yet", app)
         XCTAssertEqual(app.buttons["voice-start-stop"].label, "Start voice check")
+        XCTAssertFalse(app.buttons["voice-open-settings"].exists)
         XCTAssertFalse(app.alerts.firstMatch.exists)
         screenshot("Voice check idle with no microphone capture", app)
         app.buttons["Close"].firstMatch.tap()
@@ -167,6 +168,106 @@ final class AQSSReadOnlyUITests: XCTestCase {
         screenshot("Settings permission grant creates no sound recap", app)
         closeSoundRecaps(app)
 
+    }
+
+    private func openVoicePermissionSettings(_ app: XCUIApplication, _ settings: XCUIApplication) throws {
+        let button = app.buttons["voice-open-settings"]
+        guard button.waitForExistence(timeout: 5) else {
+            XCTFail("Missing voice permission Settings shortcut")
+            throw NSError(domain: "AQSSVoicePermissionSettings", code: 1)
+        }
+        button.tap()
+        XCTAssertTrue(settings.wait(for: .runningForeground, timeout: 8))
+        guard settings.navigationBars["Audio Bodyguard"].waitForExistence(timeout: 20) else {
+            screenshot("Voice Settings destination unavailable", settings)
+            XCTFail("Require this app's actual Settings page")
+            throw NSError(domain: "AQSSVoicePermissionSettings", code: 2)
+        }
+    }
+
+    private func returnToVoiceAfterPermissionChange(_ app: XCUIApplication) {
+        app.activate()
+        if !app.buttons["voice-start-stop"].waitForExistence(timeout: 3) {
+            if app.buttons["exit-tutorial"].waitForExistence(timeout: 3) { exit(app) }
+            XCTAssertTrue(app.buttons["tab-sound"].waitForExistence(timeout: 5))
+            tab("sound", app); tap("Voice check", app)
+        }
+    }
+
+    private func assertVoicePermissionReturnIdle(_ app: XCUIApplication) {
+        label("No live microphone samples", app); label("No words recognized yet", app)
+        XCTAssertEqual(app.buttons["voice-start-stop"].label, "Start voice check")
+        XCTAssertFalse(XCUIApplication(bundleIdentifier: "com.apple.springboard").alerts.firstMatch.exists)
+    }
+
+    /// Isolated after other denied tests; leaves real microphone access granted.
+    func testVoiceMicrophoneSettingsReturnStaysOff() throws {
+        guard ProcessInfo.processInfo.environment["AQSS_TEST_MIC_DENIED"] == "1" else {
+            throw XCTSkip("The focused workflow must establish denied microphone permission.")
+        }
+        let app = launch()
+        tab("sound", app); tap("Voice check", app)
+        app.buttons["voice-start-stop"].tap()
+        label("Microphone permission denied", app)
+        assertVoicePermissionReturnIdle(app)
+        let settings = XCUIApplication(bundleIdentifier: "com.apple.Preferences")
+        try openVoicePermissionSettings(app, settings)
+        app.activate()
+        label("Microphone permission denied", app); assertVoicePermissionReturnIdle(app)
+        screenshot("Voice Settings microphone denied return stays off", app)
+        try openVoicePermissionSettings(app, settings)
+        let controls = settings.switches.matching(NSPredicate(format: "label CONTAINS %@", "Microphone"))
+        let microphone = controls.firstMatch
+        XCTAssertTrue(microphone.waitForExistence(timeout: 5)); XCTAssertEqual(controls.count, 1)
+        XCTAssertEqual(microphone.value as? String, "0")
+        screenshot("Voice app Settings microphone denied", settings)
+        microphone.coordinate(withNormalizedOffset: CGVector(dx: 0.88, dy: 0.5)).tap()
+        let enabled = XCTNSPredicateExpectation(predicate: NSPredicate(format: "value == %@", "1"), object: microphone)
+        XCTAssertEqual(XCTWaiter.wait(for: [enabled], timeout: 8), .completed)
+        screenshot("Voice app Settings microphone granted", settings)
+        returnToVoiceAfterPermissionChange(app)
+        assertVoicePermissionReturnIdle(app)
+        XCTAssertFalse(app.buttons["voice-open-settings"].exists)
+        XCTAssertFalse(app.staticTexts.matching(NSPredicate(format: "label CONTAINS %@", "Microphone permission denied")).firstMatch.exists)
+        screenshot("Voice Settings microphone grant waits for Start", app)
+    }
+
+    /// Runs alone on a fresh Simulator so speech consent has not been requested.
+    func testVoiceSpeechSettingsReturnStaysOff() throws {
+        guard ProcessInfo.processInfo.environment["AQSS_TEST_SPEECH_DENIED"] == "1" else {
+            throw XCTSkip("The isolated workflow must grant microphone on a fresh Simulator.")
+        }
+        let app = launch()
+        tab("sound", app); tap("Voice check", app)
+        app.buttons["voice-start-stop"].tap()
+        let consent = XCUIApplication(bundleIdentifier: "com.apple.springboard").alerts.firstMatch
+        XCTAssertTrue(consent.waitForExistence(timeout: 8), "Require the real first speech consent prompt")
+        let deny = consent.buttons.matching(NSPredicate(format: "label IN %@", ["Don’t Allow", "Don't Allow"])).firstMatch
+        XCTAssertTrue(deny.exists); deny.tap()
+        let gone = XCTNSPredicateExpectation(predicate: NSPredicate(format: "exists == false"), object: consent)
+        XCTAssertEqual(XCTWaiter.wait(for: [gone], timeout: 5), .completed)
+        assertVoicePermissionReturnIdle(app)
+        let settings = XCUIApplication(bundleIdentifier: "com.apple.Preferences")
+        try openVoicePermissionSettings(app, settings)
+        let controls = settings.switches.matching(NSPredicate(format: "label CONTAINS %@", "Speech Recognition"))
+        let speech = controls.firstMatch
+        XCTAssertTrue(speech.waitForExistence(timeout: 5)); XCTAssertEqual(controls.count, 1)
+        XCTAssertEqual(speech.value as? String, "0")
+        screenshot("Voice app Settings speech denied", settings)
+        app.activate()
+        label("Speech permission denied", app); assertVoicePermissionReturnIdle(app)
+        screenshot("Voice Settings speech denied return stays off", app)
+        try openVoicePermissionSettings(app, settings)
+        XCTAssertEqual(speech.value as? String, "0")
+        speech.coordinate(withNormalizedOffset: CGVector(dx: 0.88, dy: 0.5)).tap()
+        let enabled = XCTNSPredicateExpectation(predicate: NSPredicate(format: "value == %@", "1"), object: speech)
+        XCTAssertEqual(XCTWaiter.wait(for: [enabled], timeout: 8), .completed)
+        screenshot("Voice app Settings speech granted", settings)
+        returnToVoiceAfterPermissionChange(app)
+        assertVoicePermissionReturnIdle(app)
+        XCTAssertFalse(app.buttons["voice-open-settings"].exists)
+        XCTAssertFalse(app.staticTexts.matching(NSPredicate(format: "label CONTAINS %@", "Speech permission denied")).firstMatch.exists)
+        screenshot("Voice Settings speech grant waits for Start", app)
     }
 
     /// A Simulator input attempt is explicitly not physical microphone qualification.

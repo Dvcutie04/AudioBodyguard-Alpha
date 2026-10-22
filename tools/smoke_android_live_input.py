@@ -299,7 +299,7 @@ def main():
     screenshot("recaps_empty_after_denial")
     close_recaps("close_denied_recaps")
 
-    def open_app_permission_settings(name):
+    def open_app_permission_settings(name, return_activity="com.aqss.bodyguard.prototype.LiveSoundCheckActivity"):
         tap("Open app settings", name)
         settings = wait_for_all(("Audio Bodyguard Live Test", "Permissions"), name + "-app-info")
         assert any(node.get("package") == "com.android.settings" for node in settings.iter("node")), "Settings did not open"
@@ -309,7 +309,7 @@ def main():
         # route. Require the observed app-specific page and foreground Settings,
         # rather than expecting the caller's action/data to survive that redirect.
         assert re.search(r"topResumedActivity=ActivityRecord\{[^\n]*com\.android\.settings/", activities), "Settings is not foreground"
-        assert package + "/com.aqss.bodyguard.prototype.LiveSoundCheckActivity" in activities, "Sound check is missing from the Settings return history"
+        assert package + "/" + return_activity in activities, "Input screen is missing from the Settings return history"
 
     open_app_permission_settings("permission_settings_denied")
     adb("shell", "input", "keyevent", "KEYCODE_BACK")
@@ -439,10 +439,50 @@ def main():
     wait_for("No completed sound checks in this app session.", "recaps_not_persisted")
     screenshot("recaps_new_process_empty")
 
+    close_recaps("close_before_voice_permission_fixture")
+    # The stock emulator may have no on-device speech model. Ask for the real
+    # microphone permission from the real Voice Activity through the test APK;
+    # no recognition service or permission callback is replaced.
+    adb("shell", "am", "force-stop", package)
+    adb("shell", "pm", "revoke", package, "android.permission.RECORD_AUDIO")
+    adb("shell", "pm", "clear-permission-flags", package, "android.permission.RECORD_AUDIO", "user-set", "user-fixed")
+    consent_probe = subprocess.Popen(
+        ["adb", "shell", "am", "instrument", "-w", "com.aqss.bodyguard.uiprobe/.VoicePermissionProbe"],
+        stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True)
+    try:
+        denied = tap("Don’t allow", "voice_permission_deny", optional=True) or tap("Don't allow", "voice_permission_deny_ascii", optional=True)
+        assert denied, "Expected the real microphone permission dialog from the Voice fixture"
+        wait_for_all(("Microphone permission denied", "No live microphone samples", "No words recognized yet", "Start voice check"), "voice_permission_denied_off")
+        open_app_permission_settings("voice_permission_settings_denied", "com.aqss.bodyguard.prototype.InputAssistanceActivity")
+        adb("shell", "input", "keyevent", "KEYCODE_BACK")
+        wait_for_all(("Microphone permission denied", "No live microphone samples", "No words recognized yet", "Start voice check"), "voice_settings_denied_return_off")
+        voice_denied_appops = adb("shell", "cmd", "appops", "get", package, "RECORD_AUDIO").decode()
+        (out / "voice-settings-denied-appops.txt").write_text(voice_denied_appops)
+        assert "(running)" not in voice_denied_appops, voice_denied_appops
+        screenshot("voice_settings_denied_return_off")
+        open_app_permission_settings("voice_permission_settings_granted", "com.aqss.bodyguard.prototype.InputAssistanceActivity")
+        adb("shell", "pm", "grant", package, "android.permission.RECORD_AUDIO")
+        adb("shell", "input", "keyevent", "KEYCODE_BACK")
+        voice_granted = wait_for_all(("Permission granted. Tap Start when you are ready.", "No live microphone samples", "No words recognized yet", "Start voice check"), "voice_settings_granted_return_off")
+        assert not has(voice_granted, "Open app settings"), "Voice Settings shortcut remains after native grant"
+        assert not has(voice_granted, "Microphone permission denied"), "Voice permission guidance remained denied"
+        voice_granted_appops = adb("shell", "cmd", "appops", "get", package, "RECORD_AUDIO").decode()
+        (out / "voice-settings-granted-appops.txt").write_text(voice_granted_appops)
+        assert "(running)" not in voice_granted_appops, voice_granted_appops
+        screenshot("voice_settings_granted_return_off")
+    finally:
+        adb("shell", "run-as", package, "touch", "files/voice-permission-finish")
+        try:
+            consent_result, _ = consent_probe.communicate(timeout=8)
+        except subprocess.TimeoutExpired:
+            consent_probe.kill(); consent_result, _ = consent_probe.communicate()
+        (out / "voice-permission-fixture-contract.txt").write_text(consent_result)
+    assert "voice_permission_fixture=passed:" in consent_result, consent_result
+
     crashes = adb("logcat", "-b", "crash", "-d").decode()
     (out / "crash-log.txt").write_text(crashes)
     assert "FATAL EXCEPTION" not in crashes, crashes
-    print("LIVE_INPUT_EMULATOR_OBSERVED: permission denial, app-specific Settings round trips with denied/granted access and no capture until another Start, PCM samples, manual stop, notification-shade focus loss, background stop, rotation stop, no automatic restart, 30-second limit, voice navigation/service attempt, meter reuse, bounded input recaps, Clear, navigation retention, empty recaps after process restart, synthetic-photo picker/ML Kit review, over-budget photo rejection, photo Clear/cancel and unverified connection passed. No physical microphone, real-photo accuracy or output qualification.", flush=True)
+    print("LIVE_INPUT_EMULATOR_OBSERVED: permission denial, app-specific Settings round trips with denied/granted access and no capture until another Start, PCM samples, manual stop, notification-shade focus loss, background stop, rotation stop, no automatic restart, 30-second limit, voice navigation/service attempt, real Voice microphone-denial/Settings fixture with denied and granted returns kept off, meter reuse, bounded input recaps, Clear, navigation retention, empty recaps after process restart, synthetic-photo picker/ML Kit review, over-budget photo rejection, photo Clear/cancel and unverified connection passed. No physical microphone, real-photo accuracy or output qualification.", flush=True)
 
 
 if __name__ == "__main__":
