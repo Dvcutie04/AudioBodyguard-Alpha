@@ -12,13 +12,19 @@ import java.util.concurrent.TimeUnit;
 public final class PhotoDeadlineProbe extends CameraCaptureProbe {
     private static final Uri DELAYED = Uri.parse("content://com.aqss.bodyguard.uiprobe.delayedphotos/delayed.png");
     private static final Uri FIXTURE = Uri.parse("content://com.aqss.bodyguard.uiprobe.delayedphotos/fixture.png");
-    private Uri selected = DELAYED;
+    private volatile Uri selected = DELAYED;
+    private volatile int pickerRequests;
+    private volatile int cameraRequests;
 
     @Override public void onStart() {
         Bundle result = new Bundle();
         ActivityMonitor monitor = new ActivityMonitor() {
             @Override public ActivityResult onStartActivity(Intent intent) {
+                if (android.provider.MediaStore.ACTION_IMAGE_CAPTURE.equals(intent.getAction())) {
+                    cameraRequests++; return new ActivityResult(Activity.RESULT_CANCELED, null);
+                }
                 if (!Intent.ACTION_GET_CONTENT.equals(intent.getAction())) return null;
+                pickerRequests++;
                 return new ActivityResult(Activity.RESULT_OK, new Intent().setData(selected));
             }
         };
@@ -44,13 +50,30 @@ public final class PhotoDeadlineProbe extends CameraCaptureProbe {
                     "Delayed photo was released before the timeout observation");
             recordScreen("photo-deadline");
 
+            int reads = getContext().getContentResolver().call(DELAYED, "state", null, null).getInt("reads");
+            String busy = "The previous photo is still finishing. Try again shortly.";
+            selected = FIXTURE;
+            choose(); waitForText(busy); assertUnknown();
+            require(pickerRequests == 1, "Retry launched another picker while the original read was blocked");
+            runOnMainSync(() -> require(click(activity.getWindow().getDecorView(), "Clear photo details"), "Clear missing"));
+            waitForText("No photo selected"); choose(); waitForText(busy); assertUnknown();
+            runOnMainSync(() -> require(click(activity.getWindow().getDecorView(), "Take a TV photo"), "Camera missing"));
+            require(cameraRequests == 0 && pickerRequests == 1, "Clear or camera request bypassed occupied photo work");
+
+            java.lang.reflect.Field field = activity.getClass().getDeclaredField("worker");
+            field.setAccessible(true);
+            ExecutorService oldWorker = (ExecutorService) field.get(activity);
+            runOnMainSync(() -> activity.finish()); waitForIdleSync();
+            activity = startActivitySync(launch); waitForText("No photo selected");
+            choose(); waitForText(busy); assertUnknown();
+            require(pickerRequests == 1 && getContext().getContentResolver().call(DELAYED, "state", null, null).getInt("reads") == reads,
+                    "Reopening photo setup admitted another picker or provider read");
+            recordScreen("photo-work-busy");
             getContext().getContentResolver().call(DELAYED, "release", null, null);
             // An observer-only barrier waits for the original decoder job to
             // return. No clock, token or OCR result is replaced or injected.
-            java.lang.reflect.Field field = activity.getClass().getDeclaredField("worker");
-            field.setAccessible(true);
-            ((ExecutorService) field.get(activity)).submit(() -> {}).get(10, TimeUnit.SECONDS);
-            waitForIdleSync(); waitForText(expired); assertUnknown();
+            require(oldWorker.awaitTermination(10, TimeUnit.SECONDS), "Closed photo worker never returned");
+            waitForIdleSync(); waitForText(busy); assertUnknown();
 
             selected = FIXTURE; choose();
             waitForText("Brand: VIZIO"); waitForText("Model: V505M-K09"); waitForText("TV IP hint: 10.20.30.40");
@@ -58,7 +81,7 @@ public final class PhotoDeadlineProbe extends CameraCaptureProbe {
             runOnMainSync(() -> require(click(activity.getWindow().getDecorView(), "Clear photo details"), "Clear missing"));
             waitForText("No photo selected"); assertUnknown();
             result.putString("photo_deadline", "passed: real provider read held through timeout (" + elapsed +
-                    "ms); late decoded image rejected; fresh image recognized; Clear unknown");
+                    "ms); retry, Clear, camera and reopened screen admitted no overlapping read; late decoded image rejected; fresh image recognized; Clear unknown");
             finish(Activity.RESULT_OK, result);
         } catch (Exception | AssertionError error) {
             result.putString("photo_deadline_error", error.toString()); finish(Activity.RESULT_CANCELED, result);

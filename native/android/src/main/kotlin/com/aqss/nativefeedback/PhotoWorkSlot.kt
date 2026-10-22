@@ -1,10 +1,18 @@
 package com.aqss.nativefeedback
 
-/** Test-first API scaffold; native screens do not use it yet. */
+/** One process-wide read retains capacity until its own cleanup returns. */
 class PhotoWorkSlot {
     class Lease internal constructor()
-    val occupied: Boolean get() = false
-    fun acquire(): Lease? = Lease()
-    fun release(lease: Lease): Boolean = false
+    private var owner: Lease? = null
+    val occupied: Boolean @Synchronized get() = owner != null
+    @Synchronized fun acquire(): Lease? {
+        if (owner != null) return null
+        return Lease().also { owner = it }
+    }
+    @Synchronized fun release(lease: Lease): Boolean {
+        if (owner !== lease) return false
+        owner = null
+        return true
+    }
     companion object { val process = PhotoWorkSlot() }
 }
