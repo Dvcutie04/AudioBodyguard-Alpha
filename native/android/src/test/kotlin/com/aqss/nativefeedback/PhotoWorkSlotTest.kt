@@ -5,6 +5,41 @@ import java.util.concurrent.CountDownLatch
 import kotlin.test.*
 
 class PhotoWorkSlotTest {
+    @Test fun onlyTheRealOwnerReturnNotifiesAvailability() {
+        val slot = PhotoWorkSlot(); var calls = 0
+        val observer = slot.observe { calls++ }
+        val work = assertNotNull(slot.acquire()); val foreign = assertNotNull(PhotoWorkSlot().acquire())
+        assertEquals(0, calls); assertFalse(slot.release(foreign)); assertEquals(0, calls)
+        assertTrue(slot.release(work)); assertEquals(1, calls)
+        assertFalse(slot.release(work)); assertEquals(1, calls)
+        val next = assertNotNull(slot.acquire()); assertEquals(1, calls)
+        assertTrue(slot.release(next)); assertEquals(2, calls); observer.close()
+    }
+    @Test fun detachedViewsDoNotReceiveLaterAvailabilitySignals() {
+        val slot = PhotoWorkSlot(); var closedCalls = 0; var liveCalls = 0
+        val closed = slot.observe { closedCalls++ }; val live = slot.observe { liveCalls++ }
+        closed.close(); closed.close()
+        assertTrue(slot.release(assertNotNull(slot.acquire())))
+        assertEquals(0, closedCalls); assertEquals(1, liveCalls)
+        live.close(); assertTrue(slot.release(assertNotNull(slot.acquire()))); assertEquals(1, liveCalls)
+    }
+    @Test fun availabilityCallbacksRunOutsideTheSlotLock() {
+        val slot = PhotoWorkSlot(); var called = false
+        val observer = slot.observe {
+            called = true
+            val available = java.util.concurrent.atomic.AtomicBoolean(false)
+            val query = Thread { available.set(!slot.occupied) }.apply { start() }
+            query.join(5000); assertFalse(query.isAlive); assertTrue(available.get())
+        }
+        assertTrue(slot.release(assertNotNull(slot.acquire()))); assertTrue(called); observer.close()
+    }
+    @Test fun aBrokenViewCannotPreventCleanupOrOtherNotifications() {
+        val slot = PhotoWorkSlot(); var calls = 0
+        val broken = slot.observe { throw IllegalStateException("View unavailable") }
+        val live = slot.observe { calls++ }
+        assertTrue(slot.release(assertNotNull(slot.acquire()))); assertFalse(slot.occupied); assertEquals(1, calls)
+        broken.close(); live.close()
+    }
     @Test fun oneReadOwnsCapacityUntilItsActualReturn() {
         val slot = PhotoWorkSlot(); assertFalse(slot.occupied)
         val work = assertNotNull(slot.acquire()); assertTrue(slot.occupied)
