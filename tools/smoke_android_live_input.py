@@ -297,7 +297,32 @@ def main():
     wait_for("No completed sound checks in this app session.", "denied_no_recap")
     screenshot("recaps_empty_after_denial")
     close_recaps("close_denied_recaps")
+
+    def open_app_permission_settings(name):
+        tap("Open app settings", name)
+        settings = wait_for_all(("Audio Bodyguard Live Test", "Permissions"), name + "-app-info")
+        assert any(node.get("package") == "com.android.settings" for node in settings.iter("node")), "Settings did not open"
+        activities = adb("shell", "dumpsys", "activity", "activities").decode()
+        (out / (name + "-activities.txt")).write_text(activities)
+        assert "android.settings.APPLICATION_DETAILS_SETTINGS" in activities and "package:" + package in activities, "Settings did not target this app"
+
+    open_app_permission_settings("permission_settings_denied")
+    adb("shell", "input", "keyevent", "KEYCODE_BACK")
+    wait_for_all(("Microphone permission denied", "No live input", "Start sound check"), "settings_denied_return_off")
+    denied_appops = adb("shell", "cmd", "appops", "get", package, "RECORD_AUDIO").decode()
+    (out / "settings-denied-appops.txt").write_text(denied_appops)
+    assert "(running)" not in denied_appops, denied_appops
+    screenshot("settings_denied_return_off")
+    open_app_permission_settings("permission_settings_granted")
     adb("shell", "pm", "grant", package, "android.permission.RECORD_AUDIO")
+    adb("shell", "input", "keyevent", "KEYCODE_BACK")
+    after_settings = wait_for_all(("No live input", "Start sound check"), "settings_granted_return_off")
+    assert not has(after_settings, "Open app settings"), "Permission shortcut remains after grant"
+    assert not has(after_settings, "Microphone permission denied"), "Permission status remained denied after grant"
+    granted_appops = adb("shell", "cmd", "appops", "get", package, "RECORD_AUDIO").decode()
+    (out / "settings-granted-appops.txt").write_text(granted_appops)
+    assert "(running)" not in granted_appops, granted_appops
+    screenshot("settings_granted_return_off")
     tap("Start sound check", "start_capture")
     wait_for("Microphone samples received", "receiving_samples")
     screenshot("receiving_samples")

@@ -99,6 +99,47 @@ final class AQSSReadOnlyUITests: XCTestCase {
         XCTAssertEqual(app.buttons["sound-check-start-stop"].label, "Start sound check")
         label("No live input", app)
         screenshot("Permission denial keeps microphone off", app)
+        let settings = XCUIApplication(bundleIdentifier: "com.apple.Preferences")
+        func openAppSettings() throws {
+            let button = app.buttons["sound-check-open-settings"]
+            guard button.waitForExistence(timeout: 5) else {
+                XCTFail("Missing sound-check permission Settings shortcut")
+                throw NSError(domain: "AQSSPermissionSettings", code: 1)
+            }
+            button.tap()
+            XCTAssertTrue(settings.wait(for: .runningForeground, timeout: 8))
+            XCTAssertTrue(settings.navigationBars["Audio Bodyguard"].waitForExistence(timeout: 5), "Require this app's Settings page")
+        }
+        try openAppSettings()
+        app.activate()
+        label("Microphone permission denied", app); label("No live input", app)
+        XCTAssertEqual(app.buttons["sound-check-start-stop"].label, "Start sound check")
+        screenshot("Settings return with permission denied stays off", app)
+        try openAppSettings()
+        let microphone = settings.switches.matching(NSPredicate(format: "label CONTAINS %@", "Microphone")).firstMatch
+        XCTAssertTrue(microphone.waitForExistence(timeout: 5), "Require the app's real microphone permission control")
+        XCTAssertEqual(microphone.value as? String, "0")
+        microphone.tap()
+        let allowed = XCTNSPredicateExpectation(predicate: NSPredicate(format: "value == %@", "1"), object: microphone)
+        XCTAssertEqual(XCTWaiter.wait(for: [allowed], timeout: 5), .completed)
+        app.activate()
+        // The OS may relaunch the app after a permission change. Both paths
+        // must stay off and wait for another deliberate Start.
+        label("No live input", app)
+        XCTAssertEqual(app.buttons["sound-check-start-stop"].label, "Start sound check")
+        XCTAssertFalse(app.buttons["sound-check-open-settings"].exists)
+        XCTAssertFalse(app.staticTexts.matching(NSPredicate(format: "label CONTAINS %@", "Microphone permission denied")).firstMatch.exists)
+        screenshot("Settings permission grant waits for Start", app)
+        // Restore the real denied state for the remaining denied-permission tests.
+        settings.activate()
+        XCTAssertTrue(microphone.waitForExistence(timeout: 5))
+        XCTAssertEqual(microphone.value as? String, "1")
+        microphone.tap()
+        let denied = XCTNSPredicateExpectation(predicate: NSPredicate(format: "value == %@", "0"), object: microphone)
+        XCTAssertEqual(XCTWaiter.wait(for: [denied], timeout: 5), .completed)
+        app.activate()
+        label("No live input", app)
+        XCTAssertEqual(app.buttons["sound-check-start-stop"].label, "Start sound check")
         openSoundRecaps(app)
         label("No completed sound checks in this app session.", app)
         screenshot("Recaps stay empty after denied permission", app)
