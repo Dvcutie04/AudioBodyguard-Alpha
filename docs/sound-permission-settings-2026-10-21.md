@@ -53,7 +53,10 @@ five UI tests passed; the granted-input stage was skipped after this expected
 failure. These are runtime observations before any production change.
 
 Android opens the actual Settings application, requires this app's name and
-Permissions row, and records the package-specific details intent. A return
+Permissions row, and records the foreground Settings route and sound-check
+return history. Android 16 redirects the public details intent to its internal
+SPA Activity, so the observed app page establishes the destination rather than
+requiring the original intent to survive that redirect. A return
 with access denied must remain off. Another visit grants the real permission
 while Settings is foreground; returning must still show Start and no input,
 with no running microphone app-op. Only a subsequent deliberate Start may

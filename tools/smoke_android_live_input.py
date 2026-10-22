@@ -305,7 +305,11 @@ def main():
         assert any(node.get("package") == "com.android.settings" for node in settings.iter("node")), "Settings did not open"
         activities = adb("shell", "dumpsys", "activity", "activities").decode()
         (out / (name + "-activities.txt")).write_text(activities)
-        assert "android.settings.APPLICATION_DETAILS_SETTINGS" in activities and "package:" + package in activities, "Settings did not target this app"
+        # Android can replace the public details intent with its internal SPA
+        # route. Require the observed app-specific page and foreground Settings,
+        # rather than expecting the caller's action/data to survive that redirect.
+        assert re.search(r"topResumedActivity=ActivityRecord\{[^\n]*com\.android\.settings/", activities), "Settings is not foreground"
+        assert package + "/com.aqss.bodyguard.prototype.LiveSoundCheckActivity" in activities, "Sound check is missing from the Settings return history"
 
     open_app_permission_settings("permission_settings_denied")
     adb("shell", "input", "keyevent", "KEYCODE_BACK")

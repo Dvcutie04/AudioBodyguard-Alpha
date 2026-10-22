@@ -109,7 +109,12 @@ final class AQSSReadOnlyUITests: XCTestCase {
             }
             button.tap()
             XCTAssertTrue(settings.wait(for: .runningForeground, timeout: 8))
-            XCTAssertTrue(settings.navigationBars["Audio Bodyguard"].waitForExistence(timeout: 5), "Require this app's Settings page")
+            // Cold Settings startup can outlast its foreground transition.
+            guard settings.navigationBars["Audio Bodyguard"].waitForExistence(timeout: 20) else {
+                screenshot("Settings destination unavailable", settings)
+                XCTFail("Require this app's Settings page")
+                throw NSError(domain: "AQSSPermissionSettings", code: 2)
+            }
         }
         func returnToSoundCheckAfterPermissionChange() {
             app.activate()
@@ -131,9 +136,17 @@ final class AQSSReadOnlyUITests: XCTestCase {
         XCTAssertTrue(microphone.waitForExistence(timeout: 5), "Require the app's real microphone permission control")
         XCTAssertEqual(microphoneControls.count, 1, "Require one unambiguous microphone switch")
         XCTAssertEqual(microphone.value as? String, "0")
-        microphone.tap()
+        screenshot("App Settings microphone denied", settings)
+        // Settings exposes a full-width labeled switch row plus the smaller
+        // toggle at its trailing edge. The row's center only taps its label.
+        microphone.coordinate(withNormalizedOffset: CGVector(dx: 0.88, dy: 0.5)).tap()
         let allowed = XCTNSPredicateExpectation(predicate: NSPredicate(format: "value == %@", "1"), object: microphone)
-        XCTAssertEqual(XCTWaiter.wait(for: [allowed], timeout: 5), .completed)
+        guard XCTWaiter.wait(for: [allowed], timeout: 8) == .completed else {
+            screenshot("Settings microphone grant failed", settings)
+            XCTFail("The real microphone switch must become enabled")
+            throw NSError(domain: "AQSSPermissionSettings", code: 3)
+        }
+        screenshot("App Settings microphone granted", settings)
         returnToSoundCheckAfterPermissionChange()
         // The OS may relaunch the app after a permission change. Both paths
         // must stay off and wait for another deliberate Start.
@@ -144,9 +157,11 @@ final class AQSSReadOnlyUITests: XCTestCase {
         screenshot("Settings permission grant waits for Start", app)
         // Restore the real denied state for the remaining denied-permission tests.
         settings.activate()
+        XCTAssertTrue(settings.wait(for: .runningForeground, timeout: 8))
+        XCTAssertTrue(settings.navigationBars["Audio Bodyguard"].waitForExistence(timeout: 20))
         XCTAssertTrue(microphone.waitForExistence(timeout: 5))
         XCTAssertEqual(microphone.value as? String, "1")
-        microphone.tap()
+        microphone.coordinate(withNormalizedOffset: CGVector(dx: 0.88, dy: 0.5)).tap()
         let denied = XCTNSPredicateExpectation(predicate: NSPredicate(format: "value == %@", "0"), object: microphone)
         XCTAssertEqual(XCTWaiter.wait(for: [denied], timeout: 5), .completed)
         returnToSoundCheckAfterPermissionChange()
