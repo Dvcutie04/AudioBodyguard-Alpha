@@ -30,6 +30,7 @@ final class LiveSoundCheck: ObservableObject {
     private var inputRoute = ""
 
     func start() {
+        settingsAttempt = UUID()
         guard !running, !requesting, !cleanupFailed else { return }
         guard microphone.available else {
             cleanupFailed = microphone.blocked
@@ -38,7 +39,6 @@ final class LiveSoundCheck: ObservableObject {
             return
         }
         guard UIApplication.shared.applicationState == .active else { return }
-        settingsAttempt = UUID()
         let session = AVAudioSession.sharedInstance()
         switch session.recordPermission {
         case .granted:
