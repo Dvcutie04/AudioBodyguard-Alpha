@@ -48,3 +48,12 @@ The iPhone focused run has ten prior UI tests plus the new case, with no skipped
 checks accepted as a pass. Review actual Android and iPhone details screenshots
 and retain artifact/source identity. Exact red and final results belong to the
 increment's draft PR; physical phone testing remains separate.
+
+Red source `fd93fe2510fbf57034aeb9238d5d21847fbeae6e` retained 0.16 production
+code. Android run 39869764683, job 120140954875, compiled and read the installed
+metadata before failing `Missing tap target: Build details`. iPhone run
+39869764705, job 120140955080, compiled and obtained the actual app metadata
+before failing `Missing Build details action` and its Code 2 sentinel for that
+one missing control. The five existing navigation, photo and denied-input
+cases passed. The isolated speech-Settings test also passed. Implementation
+began only after both intended missing-control failures were confirmed.

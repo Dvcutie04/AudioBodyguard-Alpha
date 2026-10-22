@@ -6,6 +6,15 @@ Checkpoint: October 21, 2026. Continue from the restored a-Shell baseline and th
 
 ## Current checkpoint
 
+October 22 installed-build details: the
+[build identity record](build-details-2026-10-22.md) adds a Build details action
+in ordinary Settings on both platforms. Candidate 0.17 reads the installed
+package or main-bundle version and build so phone-test feedback can identify
+the app being used. Metadata is separate from source authentication, exact
+binary provenance and physical qualification. Existing input/photo behavior
+and N2b–N5 gates remain required; exact native results and APK identity belong
+to its draft PR.
+
 October 22 Voice permission guidance: the
 [Voice Settings recovery record](voice-permission-settings-2026-10-22.md)
 extends app-specific Settings help to Android microphone access and the

@@ -26,6 +26,7 @@ import android.widget.ScrollView
 import android.widget.TextView
 import android.window.OnBackInvokedCallback
 import android.window.OnBackInvokedDispatcher
+import androidx.core.content.pm.PackageInfoCompat
 import com.aqss.nativefeedback.CapabilityFacts
 import com.aqss.nativefeedback.SessionEvidenceView
 import com.aqss.nativefeedback.SessionState
@@ -524,10 +525,19 @@ class ReadOnlyHomeActivity : Activity() {
                 }.apply { contentDescription = value.replaceFirstChar { it.uppercase() }; isSelected = appearance == value }, LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(8) })
             }
         }
+        action(column, "Build details") { showBuildDetails() }
         action(column, "Advanced Settings") { rememberPage(); tutorial.close(false); advancedExpanded = true; renderPage() }
     }
 
-    private fun question(title: String, explanation: String, target: String, light: Boolean = false): Button = button("[?]") {
+    @Suppress("DEPRECATION") // The int-flags overload remains available on the API 26 minimum.
+    private fun showBuildDetails() {
+        val info = try { packageManager.getPackageInfo(packageName, 0) } catch (_: Exception) { null }
+        val version = info?.versionName?.takeIf { it.isNotBlank() } ?: "Unavailable"
+        val build = info?.let { PackageInfoCompat.getLongVersionCode(it).toString() } ?: "Unavailable"
+        showInformation("Build details", "Version: $version\nBuild: $build\n\nInclude the version and build when reporting a problem.", "build")
+    }
+
+    private fun showInformation(title: String, explanation: String, target: String) {
         val content = vertical().apply { setPadding(dp(20), dp(14), dp(20), dp(14)); setBackgroundColor(skin.background) }
         val holder = ScrollView(this).apply { addView(content) }
         val dialog = AlertDialog.Builder(this).setView(holder).create()
@@ -538,6 +548,10 @@ class ReadOnlyHomeActivity : Activity() {
         label(content, explanation, 17f)
         if (target == "voice") action(content, "Show voice steps") { dialog.dismiss(); openSetup("voice") }
         dialog.show()
+    }
+
+    private fun question(title: String, explanation: String, target: String, light: Boolean = false): Button = button("[?]") {
+        showInformation(title, explanation, target)
     }.apply {
         contentDescription = "About $title"; tag = "help-$target"
         if (light) { setTextColor(Color.BLACK); background = skin.shape(Color.WHITE, 8) }
