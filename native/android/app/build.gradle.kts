@@ -11,8 +11,8 @@ android {
         applicationId = "com.aqss.bodyguard.prototype"
         minSdk = 26
         targetSdk = 36
-        versionCode = 13
-        versionName = "0.13-photo-ready-notice"
+        versionCode = 14
+        versionName = "0.14-photo-retry-guidance"
     }
 
     buildTypes {
