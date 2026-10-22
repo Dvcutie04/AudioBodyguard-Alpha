@@ -189,8 +189,9 @@ def main():
     tap("Settings", "build_details_settings")
     wait_for("Appearance", "build_details_settings_page")
     tap("Build details", "build_details_open")
-    wait_for_all(("Build details", f"Version: {version}", f"Build: {build}",
-                  "Include the version and build when reporting a problem.", "Back"), "installed_build_details")
+    build_details = wait_for_all(("Build details", f"Version: {version}", f"Build: {build}",
+                                  "Include the version and build when reporting a problem."), "installed_build_details")
+    assert any(node.get("content-desc") == "Back" or node.get("text") == "Back" for node in build_details.iter("node")), "Build details requires an accessible Back control"
     screenshot("installed_build_details")
     tap("Back", "build_details_close")
     wait_for_all(("Appearance", "Advanced Settings"), "build_details_return_to_settings")

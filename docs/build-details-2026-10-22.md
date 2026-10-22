@@ -57,3 +57,11 @@ before failing `Missing Build details action` and its Code 2 sentinel for that
 one missing control. The five existing navigation, photo and denied-input
 cases passed. The isolated speech-Settings test also passed. Implementation
 began only after both intended missing-control failures were confirmed.
+
+The first implementation's Android evidence showed the correct installed
+version and build, together with the existing rose image button whose native
+accessibility description is `Back`. The observer had incorrectly required
+printed Back text. The corrected check accepts the native Back description or
+text in the same snapshot, then still taps the actual control and requires a
+return to Settings. Required metadata and navigation assertions are retained;
+the application implementation is unchanged by this observer correction.
