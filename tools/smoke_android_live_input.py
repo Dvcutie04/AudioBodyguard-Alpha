@@ -286,7 +286,8 @@ def main():
 
     tap("Sound", "sound_page")
     tap("Live sound check. Try the phone microphone for 30 seconds", "open_check")
-    wait_for("Microphone off", "microphone_off")
+    idle_meter = wait_for("Microphone off", "microphone_off")
+    assert not has(idle_meter, "Open app settings"), "Permission shortcut appeared before an attempted request"
     screenshot("microphone_off")
     tap("Start sound check", "request_permission")
     denied = tap("Don’t allow", "permission_deny", optional=True) or tap("Don't allow", "permission_deny_ascii", optional=True)
@@ -297,7 +298,36 @@ def main():
     wait_for("No completed sound checks in this app session.", "denied_no_recap")
     screenshot("recaps_empty_after_denial")
     close_recaps("close_denied_recaps")
+
+    def open_app_permission_settings(name):
+        tap("Open app settings", name)
+        settings = wait_for_all(("Audio Bodyguard Live Test", "Permissions"), name + "-app-info")
+        assert any(node.get("package") == "com.android.settings" for node in settings.iter("node")), "Settings did not open"
+        activities = adb("shell", "dumpsys", "activity", "activities").decode()
+        (out / (name + "-activities.txt")).write_text(activities)
+        # Android can replace the public details intent with its internal SPA
+        # route. Require the observed app-specific page and foreground Settings,
+        # rather than expecting the caller's action/data to survive that redirect.
+        assert re.search(r"topResumedActivity=ActivityRecord\{[^\n]*com\.android\.settings/", activities), "Settings is not foreground"
+        assert package + "/com.aqss.bodyguard.prototype.LiveSoundCheckActivity" in activities, "Sound check is missing from the Settings return history"
+
+    open_app_permission_settings("permission_settings_denied")
+    adb("shell", "input", "keyevent", "KEYCODE_BACK")
+    wait_for_all(("Microphone permission denied", "No live input", "Start sound check"), "settings_denied_return_off")
+    denied_appops = adb("shell", "cmd", "appops", "get", package, "RECORD_AUDIO").decode()
+    (out / "settings-denied-appops.txt").write_text(denied_appops)
+    assert "(running)" not in denied_appops, denied_appops
+    screenshot("settings_denied_return_off")
+    open_app_permission_settings("permission_settings_granted")
     adb("shell", "pm", "grant", package, "android.permission.RECORD_AUDIO")
+    adb("shell", "input", "keyevent", "KEYCODE_BACK")
+    after_settings = wait_for_all(("Permission granted. Tap Start when you are ready.", "No live input", "Start sound check"), "settings_granted_return_off")
+    assert not has(after_settings, "Open app settings"), "Permission shortcut remains after grant"
+    assert not has(after_settings, "Microphone permission denied"), "Permission status remained denied after grant"
+    granted_appops = adb("shell", "cmd", "appops", "get", package, "RECORD_AUDIO").decode()
+    (out / "settings-granted-appops.txt").write_text(granted_appops)
+    assert "(running)" not in granted_appops, granted_appops
+    screenshot("settings_granted_return_off")
     tap("Start sound check", "start_capture")
     wait_for("Microphone samples received", "receiving_samples")
     screenshot("receiving_samples")
@@ -412,7 +442,7 @@ def main():
     crashes = adb("logcat", "-b", "crash", "-d").decode()
     (out / "crash-log.txt").write_text(crashes)
     assert "FATAL EXCEPTION" not in crashes, crashes
-    print("LIVE_INPUT_EMULATOR_OBSERVED: permission denial, PCM samples, manual stop, notification-shade focus loss, background stop, rotation stop, no automatic restart, 30-second limit, voice navigation/service attempt, meter reuse, bounded input recaps, Clear, navigation retention, empty recaps after process restart, synthetic-photo picker/ML Kit review, over-budget photo rejection, photo Clear/cancel and unverified connection passed. No physical microphone, real-photo accuracy or output qualification.", flush=True)
+    print("LIVE_INPUT_EMULATOR_OBSERVED: permission denial, app-specific Settings round trips with denied/granted access and no capture until another Start, PCM samples, manual stop, notification-shade focus loss, background stop, rotation stop, no automatic restart, 30-second limit, voice navigation/service attempt, meter reuse, bounded input recaps, Clear, navigation retention, empty recaps after process restart, synthetic-photo picker/ML Kit review, over-budget photo rejection, photo Clear/cancel and unverified connection passed. No physical microphone, real-photo accuracy or output qualification.", flush=True)
 
 
 if __name__ == "__main__":

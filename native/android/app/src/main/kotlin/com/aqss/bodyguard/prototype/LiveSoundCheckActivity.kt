@@ -3,11 +3,14 @@ package com.aqss.bodyguard.prototype
 import android.Manifest
 import android.app.Activity
 import android.app.AlertDialog
+import android.content.Intent
 import android.content.pm.PackageManager
 import android.content.res.Configuration
 import android.graphics.Canvas
 import android.graphics.Paint
+import android.net.Uri
 import android.os.*
+import android.provider.Settings
 import android.view.View
 import android.view.WindowInsets
 import android.widget.*
@@ -25,6 +28,7 @@ class LiveSoundCheckActivity : Activity() {
     private lateinit var start: Button
     private lateinit var meter: LiveInputMeter
     private lateinit var recent: Button
+    private lateinit var permissionSettings: Button
     private val handler = Handler(Looper.getMainLooper())
     private val window = SoundCheckWindow()
     private var capture: MicrophoneCapture? = null
@@ -32,6 +36,8 @@ class LiveSoundCheckActivity : Activity() {
     private var lastSample = 0L
     private var visible = false
     private var stopping = false
+    private var permissionGuidance = false
+    private val permissionDeniedMessage = "Microphone permission denied. In app settings, choose Permissions, then Microphone."
 
     override fun onCreate(savedInstanceState: Bundle?) {
         val dark = intent.getBooleanExtra("dark", true)
@@ -54,6 +60,11 @@ class LiveSoundCheckActivity : Activity() {
         }
         text("Try a 30-second microphone check. Speak normally and watch the bars respond.")
         status = text("Microphone off", 21f)
+        permissionSettings = Button(this).apply {
+            this.text = "Open app settings"; skin.style(this); visibility = View.GONE
+            setOnClickListener { openPermissionSettings() }
+        }
+        column.addView(permissionSettings, LinearLayout.LayoutParams(-1, -2))
         meter = LiveInputMeter(this, skin)
         val meterHeight = if (resources.configuration.orientation == Configuration.ORIENTATION_LANDSCAPE) 84 else 135
         column.addView(meter, LinearLayout.LayoutParams(-1, skin.dp(meterHeight)))
@@ -100,14 +111,37 @@ class LiveSoundCheckActivity : Activity() {
 
     override fun onResume() {
         super.onResume(); visible = true
+        if (permissionGuidance) refreshPermissionGuidance()
         if (capture != null) handler.post(tick)
+    }
+
+    private fun refreshPermissionGuidance() {
+        val granted = checkSelfPermission(Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED
+        permissionSettings.visibility = if (permissionGuidance && !granted && capture == null) View.VISIBLE else View.GONE
+        if (!permissionGuidance || capture != null) return
+        status.text = if (granted) "Permission granted. Tap Start when you are ready." else permissionDeniedMessage
+    }
+
+    private fun openPermissionSettings() {
+        if (!permissionGuidance || !visible || !hasWindowFocus() || isFinishing || isDestroyed || capture != null) return
+        if (checkSelfPermission(Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED) {
+            refreshPermissionGuidance(); return
+        }
+        stopCapture(SoundCheckEnd.LEFT_SCREEN, "Microphone off")
+        try {
+            startActivity(Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, Uri.fromParts("package", packageName, null)))
+        } catch (_: RuntimeException) {
+            status.text = "App settings could not open. In Android Settings, choose Apps, ${getString(R.string.app_name)}, then Permissions."
+        }
     }
 
     private fun startCapture() {
         if (!visible || !hasWindowFocus() || capture != null) return
         if (checkSelfPermission(Manifest.permission.RECORD_AUDIO) != PackageManager.PERMISSION_GRANTED) {
+            permissionGuidance = true
             requestPermissions(arrayOf(Manifest.permission.RECORD_AUDIO), 73); return
         }
+        permissionGuidance = false; permissionSettings.visibility = View.GONE
         val now = SystemClock.elapsedRealtime()
         val token = window.start(now) ?: run {
             status.text = "Sound check could not start. Close and reopen the app before trying again."
@@ -210,8 +244,9 @@ class LiveSoundCheckActivity : Activity() {
 
     override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<out String>, grantResults: IntArray) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults)
-        if (requestCode == 73) status.text = if (grantResults.firstOrNull() == PackageManager.PERMISSION_GRANTED)
-            "Permission granted. Tap Start when you are ready." else "Microphone permission denied. You can allow it in Android Settings."
+        if (requestCode == 73 && !isFinishing && !isDestroyed && capture == null) {
+            permissionGuidance = true; refreshPermissionGuidance()
+        }
     }
 
     override fun onWindowFocusChanged(hasFocus: Boolean) {

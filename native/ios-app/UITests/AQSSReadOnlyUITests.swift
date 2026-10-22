@@ -73,6 +73,7 @@ final class AQSSReadOnlyUITests: XCTestCase {
         tab("sound", app); tap("Live sound check", app)
         label("Microphone off", app); label("No live input", app)
         XCTAssertEqual(app.buttons["sound-check-start-stop"].label, "Start sound check")
+        XCTAssertFalse(app.buttons["sound-check-open-settings"].exists)
         XCTAssertFalse(app.alerts.firstMatch.exists)
         screenshot("Live sound check starts idle", app)
         app.buttons["sound-check-help"].tap()
@@ -99,9 +100,71 @@ final class AQSSReadOnlyUITests: XCTestCase {
         XCTAssertEqual(app.buttons["sound-check-start-stop"].label, "Start sound check")
         label("No live input", app)
         screenshot("Permission denial keeps microphone off", app)
+        let settings = XCUIApplication(bundleIdentifier: "com.apple.Preferences")
+        func openAppSettings() throws {
+            let button = app.buttons["sound-check-open-settings"]
+            guard button.waitForExistence(timeout: 5) else {
+                XCTFail("Missing sound-check permission Settings shortcut")
+                throw NSError(domain: "AQSSPermissionSettings", code: 1)
+            }
+            button.tap()
+            XCTAssertTrue(settings.wait(for: .runningForeground, timeout: 8))
+            // Cold Settings startup can outlast its foreground transition.
+            guard settings.navigationBars["Audio Bodyguard"].waitForExistence(timeout: 20) else {
+                screenshot("Settings destination unavailable", settings)
+                XCTFail("Require this app's Settings page")
+                throw NSError(domain: "AQSSPermissionSettings", code: 2)
+            }
+        }
+        func returnToSoundCheckAfterPermissionChange() {
+            app.activate()
+            if !app.buttons["sound-check-start-stop"].waitForExistence(timeout: 3) {
+                // iOS can terminate the app after a Settings permission change.
+                // That OS launch has no UI-test arguments, so the first-visit
+                // guide can appear. Use its actual Exit Home navigation.
+                if app.buttons["exit-tutorial"].waitForExistence(timeout: 3) {
+                    screenshot("Settings permission return shows first-visit guide", app)
+                    exit(app)
+                }
+                XCTAssertTrue(app.buttons["tab-sound"].waitForExistence(timeout: 5))
+                tab("sound", app); tap("Live sound check", app)
+            }
+        }
+        try openAppSettings()
+        app.activate()
+        label("Microphone permission denied", app); label("No live input", app)
+        XCTAssertEqual(app.buttons["sound-check-start-stop"].label, "Start sound check")
+        screenshot("Settings return with permission denied stays off", app)
+        try openAppSettings()
+        let microphoneControls = settings.switches.matching(NSPredicate(format: "label CONTAINS %@", "Microphone"))
+        let microphone = microphoneControls.firstMatch
+        XCTAssertTrue(microphone.waitForExistence(timeout: 5), "Require the app's real microphone permission control")
+        XCTAssertEqual(microphoneControls.count, 1, "Require one unambiguous microphone switch")
+        XCTAssertEqual(microphone.value as? String, "0")
+        screenshot("App Settings microphone denied", settings)
+        // Settings exposes a full-width labeled switch row plus the smaller
+        // toggle at its trailing edge. The row's center only taps its label.
+        microphone.coordinate(withNormalizedOffset: CGVector(dx: 0.88, dy: 0.5)).tap()
+        let allowed = XCTNSPredicateExpectation(predicate: NSPredicate(format: "value == %@", "1"), object: microphone)
+        guard XCTWaiter.wait(for: [allowed], timeout: 8) == .completed else {
+            screenshot("Settings microphone grant failed", settings)
+            XCTFail("The real microphone switch must become enabled")
+            throw NSError(domain: "AQSSPermissionSettings", code: 3)
+        }
+        screenshot("App Settings microphone granted", settings)
+        returnToSoundCheckAfterPermissionChange()
+        // The OS may relaunch the app after a permission change. Both paths
+        // must stay off and wait for another deliberate Start.
+        label("No live input", app)
+        XCTAssertEqual(app.buttons["sound-check-start-stop"].label, "Start sound check")
+        XCTAssertFalse(app.buttons["sound-check-open-settings"].exists)
+        XCTAssertFalse(app.staticTexts.matching(NSPredicate(format: "label CONTAINS %@", "Microphone permission denied")).firstMatch.exists)
+        screenshot("Settings permission grant waits for Start", app)
+        // The focused workflow runs this after the denied-permission suite,
+        // before the granted-input suite. No later test inherits its consent.
         openSoundRecaps(app)
         label("No completed sound checks in this app session.", app)
-        screenshot("Recaps stay empty after denied permission", app)
+        screenshot("Settings permission grant creates no sound recap", app)
         closeSoundRecaps(app)
 
     }
