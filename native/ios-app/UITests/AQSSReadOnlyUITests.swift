@@ -160,21 +160,11 @@ final class AQSSReadOnlyUITests: XCTestCase {
         XCTAssertFalse(app.buttons["sound-check-open-settings"].exists)
         XCTAssertFalse(app.staticTexts.matching(NSPredicate(format: "label CONTAINS %@", "Microphone permission denied")).firstMatch.exists)
         screenshot("Settings permission grant waits for Start", app)
-        // Restore the real denied state for the remaining denied-permission tests.
-        settings.activate()
-        XCTAssertTrue(settings.wait(for: .runningForeground, timeout: 8))
-        XCTAssertTrue(settings.navigationBars["Audio Bodyguard"].waitForExistence(timeout: 20))
-        XCTAssertTrue(microphone.waitForExistence(timeout: 5))
-        XCTAssertEqual(microphone.value as? String, "1")
-        microphone.coordinate(withNormalizedOffset: CGVector(dx: 0.88, dy: 0.5)).tap()
-        let denied = XCTNSPredicateExpectation(predicate: NSPredicate(format: "value == %@", "0"), object: microphone)
-        XCTAssertEqual(XCTWaiter.wait(for: [denied], timeout: 5), .completed)
-        returnToSoundCheckAfterPermissionChange()
-        label("No live input", app)
-        XCTAssertEqual(app.buttons["sound-check-start-stop"].label, "Start sound check")
+        // The focused workflow runs this after the denied-permission suite,
+        // before the granted-input suite. No later test inherits its consent.
         openSoundRecaps(app)
         label("No completed sound checks in this app session.", app)
-        screenshot("Recaps stay empty after denied permission", app)
+        screenshot("Settings permission grant creates no sound recap", app)
         closeSoundRecaps(app)
 
     }

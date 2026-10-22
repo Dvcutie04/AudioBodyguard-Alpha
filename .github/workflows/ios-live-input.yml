@@ -75,11 +75,22 @@ jobs:
             -destination "platform=iOS Simulator,id=$AQSS_SIMULATOR" \
             -parallel-testing-enabled NO -resultBundlePath "$RUNNER_TEMP/sound-denied.xcresult" \
             -only-testing:AQSSReadOnlyUITests/AQSSReadOnlyUITests/testLiveSoundCheckStartsOffAndHelpReturnsWithoutCapture \
-            -only-testing:AQSSReadOnlyUITests/AQSSReadOnlyUITests/testLiveSoundCheckDeniedPermissionNeverStartsCapture \
             -only-testing:AQSSReadOnlyUITests/AQSSReadOnlyUITests/testVoiceCheckStartsIdleAndClosingItLeavesMeterUsable \
             -only-testing:AQSSReadOnlyUITests/AQSSReadOnlyUITests/testVoiceCheckDeniedMicrophoneCannotRequestSpeechOrCapture \
             -only-testing:AQSSReadOnlyUITests/AQSSReadOnlyUITests/testInputToolsStartIdleAndNeverClaimAConnection \
             -only-testing:AQSSReadOnlyUITests/AQSSReadOnlyUITests/testPhotoReviewGuidanceAndReplacement
+      - name: Verify denied and granted Settings returns
+        shell: bash
+        run: |
+          set -euo pipefail
+          # This test changes real consent. Give it an explicit denied fixture
+          # after the other denied tests and before the granted-input suite.
+          xcrun simctl privacy "$AQSS_SIMULATOR" revoke microphone com.aqss.bodyguard.prototype
+          xcodebuild test-without-building \
+            -xctestrun "$RUNNER_TEMP/sound-check-build/Build/Products/sound-denied.xctestrun" \
+            -destination "platform=iOS Simulator,id=$AQSS_SIMULATOR" \
+            -parallel-testing-enabled NO -resultBundlePath "$RUNNER_TEMP/sound-settings.xcresult" \
+            -only-testing:AQSSReadOnlyUITests/AQSSReadOnlyUITests/testLiveSoundCheckDeniedPermissionNeverStartsCapture
       - name: Verify granted input, Stop, Home and the 30-second cap when available
         shell: bash
         run: |
@@ -101,7 +112,7 @@ jobs:
           temporary = pathlib.Path(sys.argv[1])
           out = temporary / 'sound-check-screenshots'
           out.mkdir(exist_ok=True)
-          for mode in ('denied', 'granted'):
+          for mode in ('denied', 'settings', 'granted'):
               result = temporary / ('sound-' + mode + '.xcresult')
               if not result.exists():
                   continue
@@ -147,6 +158,7 @@ jobs:
           name: ios-sound-check-evidence
           path: |
             ${{ runner.temp }}/sound-denied.xcresult
+            ${{ runner.temp }}/sound-settings.xcresult
             ${{ runner.temp }}/sound-granted.xcresult
             ${{ runner.temp }}/sound-check-screenshots
           if-no-files-found: ignore

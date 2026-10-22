@@ -65,9 +65,11 @@ produce samples. Denied attempts must leave recaps empty.
 iPhone opens the actual app-specific Settings page, returns while still denied,
 then uses the real microphone switch to grant access. It must remain idle after
 returning, including an OS-induced relaunch through the first-visit guide's
-actual Exit Home action. The test restores denied access for the remaining
-denied-permission tests. Permission-switch values are observed before
-continuing. The tap is anchored to the identified Microphone row's trailing
+actual Exit Home action. The Settings test runs in a separate suite after the
+other denied-permission tests and before the explicitly granted-input suite.
+Its native denied precondition is set immediately before that suite, so its
+consent change cannot contaminate another denied test. Permission-switch values
+are observed before continuing. The tap is anchored to the identified Microphone row's trailing
 toggle; Settings exposes its label as a separate full-width switch row whose
 center does not toggle consent. Screenshots of Settings and the app's denied
 and granted return states are kept as CI evidence.
