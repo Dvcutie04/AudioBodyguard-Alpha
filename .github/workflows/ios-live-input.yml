@@ -3,7 +3,7 @@ name: iPhone foreground input verification
 on:
   workflow_dispatch:
   push:
-    branches: ["aqss/ios-live-sound-check", "aqss/ios-microphone-lifecycle", "aqss/android-microphone-lifecycle", "aqss/sound-check-recaps", "aqss/tv-photo-labels", "aqss/tv-photo-text-bounds", "aqss/tv-photo-selection", "aqss/photo-review-deadline", "aqss/photo-work-ownership", "aqss/photo-work-ready", "aqss/photo-retry-guidance", "aqss/sound-permission-settings", "aqss/voice-permission-settings"]
+    branches: ["aqss/ios-live-sound-check", "aqss/ios-microphone-lifecycle", "aqss/android-microphone-lifecycle", "aqss/sound-check-recaps", "aqss/tv-photo-labels", "aqss/tv-photo-text-bounds", "aqss/tv-photo-selection", "aqss/photo-review-deadline", "aqss/photo-work-ownership", "aqss/photo-work-ready", "aqss/photo-retry-guidance", "aqss/sound-permission-settings", "aqss/voice-permission-settings", "aqss/build-details"]
 
 permissions:
   contents: read
@@ -53,11 +53,15 @@ jobs:
           root = pathlib.Path(sys.argv[1])
           source, = root.glob('*.xctestrun')
           original = plistlib.loads(source.read_bytes())
+          app_info = plistlib.loads((root / 'Release-iphonesimulator/AQSSReadOnly.app/Info.plist').read_bytes())
+          assert all(isinstance(app_info.get(key), str) and app_info[key] for key in ('CFBundleShortVersionString', 'CFBundleVersion'))
           for mode in ('DENIED', 'GRANTED'):
               data = plistlib.loads(plistlib.dumps(original))
               targets = [v for v in data.values() if isinstance(v, dict) and v.get('IsUITestBundle')]
               assert len(targets) == 1, 'Expected exactly one UI test target'
               targets[0].setdefault('EnvironmentVariables', {})['AQSS_TEST_MIC_' + mode] = '1'
+              targets[0]['EnvironmentVariables']['AQSS_TEST_APP_VERSION'] = app_info['CFBundleShortVersionString']
+              targets[0]['EnvironmentVariables']['AQSS_TEST_APP_BUILD'] = app_info['CFBundleVersion']
               targets[0]['EnvironmentVariables']['AQSS_TEST_PHOTO'] = '1'
               targets[0]['EnvironmentVariables']['AQSS_TEST_PHOTO_MODIFIED_AT'] = str(pathlib.Path('native/ios/Tests/AQSSNativeFeedbackTests/Fixtures/tv-photo-labels.png').stat().st_mtime)
               for name in ('empty', 'unrelated', 'brand-only'):
@@ -74,6 +78,7 @@ jobs:
             -xctestrun "$RUNNER_TEMP/sound-check-build/Build/Products/sound-denied.xctestrun" \
             -destination "platform=iOS Simulator,id=$AQSS_SIMULATOR" \
             -parallel-testing-enabled NO -resultBundlePath "$RUNNER_TEMP/sound-denied.xcresult" \
+            -only-testing:AQSSReadOnlyUITests/AQSSReadOnlyUITests/testBuildDetailsMatchInstalledMetadataAndReturnToSettings \
             -only-testing:AQSSReadOnlyUITests/AQSSReadOnlyUITests/testLiveSoundCheckStartsOffAndHelpReturnsWithoutCapture \
             -only-testing:AQSSReadOnlyUITests/AQSSReadOnlyUITests/testVoiceCheckStartsIdleAndClosingItLeavesMeterUsable \
             -only-testing:AQSSReadOnlyUITests/AQSSReadOnlyUITests/testVoiceCheckDeniedMicrophoneCannotRequestSpeechOrCapture \
