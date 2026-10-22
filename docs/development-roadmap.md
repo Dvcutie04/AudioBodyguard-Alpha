@@ -6,6 +6,14 @@ Checkpoint: October 21, 2026. Continue from the restored a-Shell baseline and th
 
 ## Current checkpoint
 
+October 21 sound-check permission guidance: the
+[Settings shortcut record](sound-permission-settings-2026-10-21.md) adds an
+app-specific Settings action after a denied microphone request in the dedicated
+meter. Candidate 0.15 rechecks permission on return and keeps capture off until
+another explicit Start. Existing cleanup and ownership gates remain required.
+Exact native validation and APK identity belong to its draft PR; handset
+behavior, signed iPhone distribution and N2b–N5 remain pending.
+
 October 21 photo retry-guidance increment: the
 [result guidance record](tv-photo-retry-guidance-2026-10-21.md) gives a clear
 retry instruction when an accepted photo yields no supported TV details.

@@ -11,11 +11,15 @@ final class LiveSoundCheck: ObservableObject {
     @Published private(set) var running = false
     @Published private(set) var requesting = false
     @Published private(set) var cleanupFailed = false
+    @Published private(set) var permissionDenied = false
     private let microphone = ForegroundMicrophoneGate.shared
     private let recaps = SoundCheckRecaps.shared
     private var recapToken: SoundCheckRecaps.Token?
     private var lease: ForegroundMicrophoneGate.Lease?
     private var permissionRequest = UUID()
+    private var settingsAttempt = UUID()
+    private var permissionGuidance = false
+    private let permissionDeniedMessage = "Microphone permission denied. In app settings, turn on Microphone."
     private var engine: AVAudioEngine?
     private var tapped = false
     private var mailbox: SoundInputMailbox?
@@ -34,21 +38,55 @@ final class LiveSoundCheck: ObservableObject {
             return
         }
         guard UIApplication.shared.applicationState == .active else { return }
+        settingsAttempt = UUID()
         let session = AVAudioSession.sharedInstance()
         switch session.recordPermission {
-        case .granted: begin()
-        case .denied: status = "Microphone permission denied. You can allow it in iPhone Settings."
+        case .granted:
+            permissionGuidance = false; permissionDenied = false; begin()
+        case .denied:
+            permissionGuidance = true; permissionDenied = true; status = permissionDeniedMessage
         default:
+            permissionGuidance = true; permissionDenied = false
             requesting = true; status = "Requesting microphone permission"
             permissionRequest = UUID(); let token = permissionRequest
-            session.requestRecordPermission { [weak self] allowed in
+            session.requestRecordPermission { [weak self] _ in
                 DispatchQueue.main.async {
                     guard let self = self, self.permissionRequest == token else { return }
                     self.requesting = false
                     // Permission is consent to a later explicit Start, never delayed capture.
-                    self.status = allowed ? "Permission granted. Tap Start when you are ready."
-                        : "Microphone permission denied. You can allow it in iPhone Settings."
+                    self.refreshPermissionGuidance()
                 }
+            }
+        }
+    }
+
+    func refreshPermissionGuidance() {
+        guard permissionGuidance else { return }
+        settingsAttempt = UUID()
+        let permission = AVAudioSession.sharedInstance().recordPermission
+        permissionDenied = permission == .denied
+        guard !running, !requesting, !cleanupFailed else { return }
+        if permission == .granted { status = "Permission granted. Tap Start when you are ready." }
+        else if permission == .denied { status = permissionDeniedMessage }
+        else { status = "Microphone off. Tap Start to choose permission." }
+    }
+
+    func openPermissionSettings() {
+        guard permissionDenied, !running, !requesting, !cleanupFailed,
+              UIApplication.shared.applicationState == .active else { return }
+        guard AVAudioSession.sharedInstance().recordPermission == .denied else {
+            refreshPermissionGuidance(); return
+        }
+        stop("Microphone off", reason: .leftScreen)
+        guard !cleanupFailed else { return }
+        guard let url = URL(string: UIApplication.openSettingsURLString) else {
+            status = "App settings could not open. In iPhone Settings, choose Audio Bodyguard, then Microphone."; return
+        }
+        let token = UUID(); settingsAttempt = token
+        UIApplication.shared.open(url, options: [:]) { [weak self] opened in
+            DispatchQueue.main.async {
+                guard let self = self, self.settingsAttempt == token, !opened else { return }
+                self.status = "App settings could not open. In iPhone Settings, choose Audio Bodyguard, then Microphone."
             }
         }
     }
@@ -153,6 +191,7 @@ final class LiveSoundCheck: ObservableObject {
         if running || requesting { stop(message, reason: reason) }
     }
     func stop(_ message: String = "Microphone stopped", reason: SoundCheckEnd = .stoppedByUser) {
+        settingsAttempt = UUID()
         permissionRequest = UUID(); requesting = false; running = false
         timer?.invalidate(); timer = nil; window.stop()
         mailbox?.close(); mailbox = nil
@@ -191,6 +230,12 @@ struct LiveSoundCheckView: View {
                     Text("Try a 30-second microphone check. Speak normally and watch the bars respond.")
                     Text("This check may pause other audio on your iPhone.").font(.caption).foregroundColor(theme.muted)
                     Text(check.status).font(.headline).accessibilityIdentifier("sound-check-status")
+                    if check.permissionDenied && !check.cleanupFailed {
+                        Button("Open app settings") { check.openPermissionSettings() }
+                            .buttonStyle(AppButtonStyle(theme: theme))
+                            .disabled(check.running || check.requesting)
+                            .accessibilityIdentifier("sound-check-open-settings")
+                    }
                     GeometryReader { box in
                         HStack(alignment: .bottom, spacing: 2) {
                             ForEach(0..<60, id: \.self) { index in
@@ -227,7 +272,10 @@ struct LiveSoundCheckView: View {
             } message: {
                 Text("The bars use real microphone samples from this phone. dBFS describes digital input relative to full scale. It is not dBA or a hearing-safety measurement. Phone gain, processing, position and input route change the result.\n\nZero input can mean a quiet signal or blocked input. This check cannot decide whether sound is safe.\n\nListening stops after 30 seconds or when you leave this screen. No audio files are saved or uploaded. Speech recognition, automatic protection and TV controls are not part of this check.")
             }
-            .onChange(of: phase) { if $0 != .active { check.interrupt("Microphone stopped when you left the sound check.", reason: .leftScreen) } }
+            .onChange(of: phase) { value in
+                if value == .active { check.refreshPermissionGuidance() }
+                else { check.interrupt("Microphone stopped when you left the sound check.", reason: .leftScreen) }
+            }
             .onReceive(NotificationCenter.default.publisher(for: AVAudioSession.interruptionNotification)) { _ in
                 check.interrupt("Audio interrupted. Tap Start to try again.", reason: .audioInterrupted)
             }

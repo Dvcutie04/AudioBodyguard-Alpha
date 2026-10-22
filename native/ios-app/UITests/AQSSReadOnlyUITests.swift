@@ -110,19 +110,30 @@ final class AQSSReadOnlyUITests: XCTestCase {
             XCTAssertTrue(settings.wait(for: .runningForeground, timeout: 8))
             XCTAssertTrue(settings.navigationBars["Audio Bodyguard"].waitForExistence(timeout: 5), "Require this app's Settings page")
         }
+        func returnToSoundCheckAfterPermissionChange() {
+            app.activate()
+            if !app.buttons["sound-check-start-stop"].waitForExistence(timeout: 3) {
+                // A permission change can terminate the app. Require the real
+                // home navigation before reopening the now-idle meter.
+                XCTAssertTrue(app.buttons["tab-sound"].waitForExistence(timeout: 5))
+                tab("sound", app); tap("Live sound check", app)
+            }
+        }
         try openAppSettings()
         app.activate()
         label("Microphone permission denied", app); label("No live input", app)
         XCTAssertEqual(app.buttons["sound-check-start-stop"].label, "Start sound check")
         screenshot("Settings return with permission denied stays off", app)
         try openAppSettings()
-        let microphone = settings.switches.matching(NSPredicate(format: "label CONTAINS %@", "Microphone")).firstMatch
+        let microphoneControls = settings.switches.matching(NSPredicate(format: "label CONTAINS %@", "Microphone"))
+        let microphone = microphoneControls.firstMatch
         XCTAssertTrue(microphone.waitForExistence(timeout: 5), "Require the app's real microphone permission control")
+        XCTAssertEqual(microphoneControls.count, 1, "Require one unambiguous microphone switch")
         XCTAssertEqual(microphone.value as? String, "0")
         microphone.tap()
         let allowed = XCTNSPredicateExpectation(predicate: NSPredicate(format: "value == %@", "1"), object: microphone)
         XCTAssertEqual(XCTWaiter.wait(for: [allowed], timeout: 5), .completed)
-        app.activate()
+        returnToSoundCheckAfterPermissionChange()
         // The OS may relaunch the app after a permission change. Both paths
         // must stay off and wait for another deliberate Start.
         label("No live input", app)
@@ -137,7 +148,7 @@ final class AQSSReadOnlyUITests: XCTestCase {
         microphone.tap()
         let denied = XCTNSPredicateExpectation(predicate: NSPredicate(format: "value == %@", "0"), object: microphone)
         XCTAssertEqual(XCTWaiter.wait(for: [denied], timeout: 5), .completed)
-        app.activate()
+        returnToSoundCheckAfterPermissionChange()
         label("No live input", app)
         XCTAssertEqual(app.buttons["sound-check-start-stop"].label, "Start sound check")
         openSoundRecaps(app)
