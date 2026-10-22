@@ -5,7 +5,9 @@ import android.app.Activity
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.graphics.*
+import android.net.Uri
 import android.os.*
+import android.provider.Settings
 import android.speech.*
 import android.view.View
 import android.widget.*
@@ -43,6 +45,9 @@ class InputAssistanceActivity : Activity() {
     private var microphoneLease: ForegroundMicrophoneGate.Lease? = null
     private var visible = false
     private var running = false
+    private var permissionGuidance = false
+    private var permissionSettingsButton: Button? = null
+    private val microphoneDeniedMessage = "Microphone permission denied. In app settings, choose Permissions, then Microphone."
     private var lastLevelAt = 0L
     private val photoRun = PhotoReviewRun(SystemClock::elapsedRealtime)
     private val photoWork = PhotoWorkSlot.process
@@ -111,6 +116,7 @@ class InputAssistanceActivity : Activity() {
         action("Help · show voice steps") { openSetup("voice") }
         label("Tap Start, then say: ‘Make the TV quieter.’ See the incoming sound bars and recognized words.")
         status = label("Microphone off", true)
+        permissionSettingsButton = action("Open app settings") { openVoicePermissionSettings() }.apply { visibility = View.GONE }
         meter = InputMeter(this, skin.violet)
         column.addView(meter, LinearLayout.LayoutParams(-1, skin.dp(120)))
         levelText = label("No microphone samples yet")
@@ -128,6 +134,9 @@ class InputAssistanceActivity : Activity() {
         if (!visible || !hasWindowFocus() || isFinishing) return
         stopVoice(); details.text = "No words recognized yet"
         if (microphone.blocked) return
+        if (checkSelfPermission(Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED) {
+            permissionGuidance = false; permissionSettingsButton?.visibility = View.GONE
+        }
         if (Build.VERSION.SDK_INT < 31) {
             status.text = "On-device speech recognition unavailable. No cloud fallback is used."; return
         }
@@ -136,6 +145,7 @@ class InputAssistanceActivity : Activity() {
             status.text = "On-device speech recognition unavailable. No cloud fallback is used."; return
         }
         if (checkSelfPermission(Manifest.permission.RECORD_AUDIO) != PackageManager.PERMISSION_GRANTED) {
+            permissionGuidance = true
             requestPermissions(arrayOf(Manifest.permission.RECORD_AUDIO), 41); return
         }
         val reservation = microphone.acquire()
@@ -192,6 +202,30 @@ class InputAssistanceActivity : Activity() {
         stopVoice(message)
         return false
     }
+    private fun refreshVoicePermissionGuidance() {
+        if (!isVoice || !permissionGuidance || !::status.isInitialized || isDestroyed || isFinishing) return
+        if (running || recognizer != null || microphone.blocked) {
+            permissionSettingsButton?.visibility = View.GONE; return
+        }
+        val denied = checkSelfPermission(Manifest.permission.RECORD_AUDIO) != PackageManager.PERMISSION_GRANTED
+        meter.clear(); lastLevelAt = 0; levelText.text = "No live microphone samples"
+        permissionSettingsButton?.visibility = if (denied) View.VISIBLE else View.GONE
+        status.text = if (denied) microphoneDeniedMessage else "Permission granted. Tap Start when you are ready."
+    }
+    private fun openVoicePermissionSettings() {
+        if (!visible || !hasWindowFocus() || !isVoice || running || recognizer != null ||
+            microphone.blocked || isDestroyed || isFinishing) return
+        if (checkSelfPermission(Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED) {
+            refreshVoicePermissionGuidance(); return
+        }
+        stopVoice(); details.text = "No words recognized yet"
+        if (microphone.blocked) return
+        try {
+            startActivity(Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, Uri.fromParts("package", packageName, null)))
+        } catch (_: RuntimeException) {
+            status.text = "App settings could not open. In Android Settings, choose Apps, Audio Bodyguard Live Test, then Permissions and Microphone."
+        }
+    }
     private fun stopVoice(message: String = "Microphone off") {
         running = false; voiceRun.stop(); handler.removeCallbacks(voiceWatchdog)
         var clean = true
@@ -210,7 +244,9 @@ class InputAssistanceActivity : Activity() {
     }
     override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<out String>, grantResults: IntArray) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults)
-        if (requestCode == 41 && ::status.isInitialized) status.text = if (grantResults.firstOrNull() == PackageManager.PERMISSION_GRANTED) "Permission granted. Tap Start when you are ready." else "Microphone permission denied. You can change it in Android Settings."
+        if (requestCode == 41 && isVoice && ::status.isInitialized && !isDestroyed && !isFinishing && !running && recognizer == null) {
+            permissionGuidance = true; refreshVoicePermissionGuidance()
+        }
     }
     private fun photoPage() {
         label("Find your TV details", true)
@@ -425,11 +461,12 @@ class InputAssistanceActivity : Activity() {
     override fun onResume() {
         super.onResume(); visible = true
         readingPhoto?.let { if (!photoRun.isReading(it)) showPhotoEnd(it) }
-        if (!isVoice) observePhotoWork()
+        if (isVoice) refreshVoicePermissionGuidance() else observePhotoWork()
     }
     override fun onWindowFocusChanged(hasFocus: Boolean) {
         super.onWindowFocusChanged(hasFocus)
         if (!hasFocus && isVoice && running) { stopVoice("Microphone stopped when you left the voice check."); details.text = "No words recognized yet" }
+        if (hasFocus && visible && isVoice) refreshVoicePermissionGuidance()
     }
     override fun onPause() {
         visible = false

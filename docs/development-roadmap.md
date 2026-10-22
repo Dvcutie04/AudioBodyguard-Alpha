@@ -6,6 +6,16 @@ Checkpoint: October 21, 2026. Continue from the restored a-Shell baseline and th
 
 ## Current checkpoint
 
+October 22 Voice permission guidance: the
+[Voice Settings recovery record](voice-permission-settings-2026-10-22.md)
+extends app-specific Settings help to Android microphone access and the
+distinct iPhone microphone and speech permissions. Candidate 0.16 rechecks
+native status on return, distinguishes restricted speech, and keeps listening
+off until another explicit Start. Existing availability, cleanup and ownership
+gates remain required. Exact native validation and APK identity belong to its
+draft PR; actual handset behavior, signed iPhone distribution and N2b–N5
+remain pending.
+
 October 21 sound-check permission guidance: the
 [Settings shortcut record](sound-permission-settings-2026-10-21.md) adds an
 app-specific Settings action after a denied microphone request in the dedicated

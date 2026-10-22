@@ -56,9 +56,12 @@ final class VoiceCheck: ObservableObject {
     @Published private(set) var running = false
     @Published private(set) var requesting = false
     @Published private(set) var cleanupFailed = false
+    @Published private(set) var permissionSettingsAvailable = false
     private let microphone = ForegroundMicrophoneGate.shared
     private var lease: ForegroundMicrophoneGate.Lease?
     private var permissionRequest = UUID()
+    private var settingsAttempt = UUID()
+    private var permissionGuidance = false
     private var engine: AVAudioEngine?
     private var task: SFSpeechRecognitionTask?
     private var recognizer: SFSpeechRecognizer?
@@ -73,6 +76,7 @@ final class VoiceCheck: ObservableObject {
     private var inputRoute = ""
 
     func start() {
+        settingsAttempt = UUID()
         guard !running, !requesting, !cleanupFailed,
               UIApplication.shared.applicationState == .active else { return }
         guard microphone.available else {
@@ -83,35 +87,92 @@ final class VoiceCheck: ObservableObject {
         }
         switch AVAudioSession.sharedInstance().recordPermission {
         case .denied:
-            status = "Microphone permission denied. You can allow it in iPhone Settings."; return
+            permissionGuidance = true; refreshPermissionGuidance(); return
         case .granted: break
-        default:
+        case .undetermined:
+            permissionGuidance = true; permissionSettingsAvailable = false
             requesting = true; status = "Requesting microphone permission"
             permissionRequest = UUID(); let token = permissionRequest
-            AVAudioSession.sharedInstance().requestRecordPermission { [weak self] allowed in
+            AVAudioSession.sharedInstance().requestRecordPermission { [weak self] _ in
                 DispatchQueue.main.async {
                     guard let self = self, self.permissionRequest == token else { return }
                     self.requesting = false
-                    self.status = allowed ? "Permission granted. Tap Start when you are ready."
-                        : "Microphone permission denied. You can allow it in iPhone Settings."
+                    self.refreshPermissionGuidance()
                 }
             }
             return
+        @unknown default:
+            permissionGuidance = true; refreshPermissionGuidance(); return
         }
         switch SFSpeechRecognizer.authorizationStatus() {
-        case .authorized: begin()
+        case .authorized:
+            permissionGuidance = false; permissionSettingsAvailable = false; begin()
         case .notDetermined:
+            permissionGuidance = true; permissionSettingsAvailable = false
             requesting = true; status = "Requesting speech permission"
             permissionRequest = UUID(); let token = permissionRequest
-            SFSpeechRecognizer.requestAuthorization { [weak self] authorization in
+            SFSpeechRecognizer.requestAuthorization { [weak self] _ in
                 DispatchQueue.main.async {
                     guard let self = self, self.permissionRequest == token else { return }
                     self.requesting = false
-                    self.status = authorization == .authorized ? "Permission granted. Tap Start when you are ready."
-                        : "Speech permission unavailable. No audio is being captured."
+                    self.refreshPermissionGuidance()
                 }
             }
-        default: status = "Speech permission unavailable. You can check it in iPhone Settings."
+        default:
+            permissionGuidance = true; refreshPermissionGuidance()
+        }
+    }
+
+    func refreshPermissionGuidance() {
+        guard permissionGuidance else { return }
+        settingsAttempt = UUID()
+        var canOpenSettings = false
+        let message: String
+        switch AVAudioSession.sharedInstance().recordPermission {
+        case .denied:
+            canOpenSettings = true
+            message = "Microphone permission denied. In app settings, check Microphone."
+        case .undetermined:
+            message = "Microphone off. Tap Start to choose permission."
+        case .granted:
+            switch SFSpeechRecognizer.authorizationStatus() {
+            case .denied:
+                canOpenSettings = true
+                message = "Speech permission denied. In app settings, check Speech Recognition."
+            case .restricted:
+                message = "Speech recognition is restricted on this iPhone. No audio is being captured."
+            case .notDetermined:
+                message = "Microphone permission granted. Tap Start to choose speech permission."
+            case .authorized:
+                message = "Permissions granted. Tap Start when you are ready."
+            @unknown default:
+                message = "Speech permission is unavailable. No audio is being captured."
+            }
+        @unknown default:
+            message = "Microphone permission is unavailable. No audio is being captured."
+        }
+        permissionSettingsAvailable = canOpenSettings
+        guard !running, !requesting, !cleanupFailed else { return }
+        status = message
+    }
+
+    func openPermissionSettings() {
+        guard permissionSettingsAvailable, !running, !requesting, !cleanupFailed,
+              UIApplication.shared.applicationState == .active else { return }
+        let mic = AVAudioSession.sharedInstance().recordPermission
+        guard mic == .denied || (mic == .granted && SFSpeechRecognizer.authorizationStatus() == .denied) else {
+            refreshPermissionGuidance(); return
+        }
+        clear()
+        guard !cleanupFailed else { return }
+        let fallback = "App settings could not open. In iPhone Settings, choose Audio Bodyguard, then check Microphone and Speech Recognition."
+        guard let url = URL(string: UIApplication.openSettingsURLString) else { status = fallback; return }
+        let token = UUID(); settingsAttempt = token
+        UIApplication.shared.open(url, options: [:]) { [weak self] opened in
+            DispatchQueue.main.async {
+                guard let self = self, self.settingsAttempt == token, !opened else { return }
+                self.status = fallback
+            }
         }
     }
     private func begin() {
@@ -207,6 +268,7 @@ final class VoiceCheck: ObservableObject {
         if running || requesting { stop(message) }
     }
     func stop(_ message: String = "Microphone off") {
+        settingsAttempt = UUID()
         permissionRequest = UUID(); requesting = false; running = false
         timer?.invalidate(); timer = nil; window.stop()
         words?.close(); words = nil
@@ -240,6 +302,12 @@ struct VoiceCheckView: View {
                     Text("Tap Start, then say: ‘Make the TV quieter.’ See the incoming sound bars and recognized words.")
                     Text("This check may pause other audio on your iPhone.").font(.caption).foregroundColor(theme.muted)
                     Text(voice.status).font(.headline).accessibilityIdentifier("voice-status")
+                    if voice.permissionSettingsAvailable && !voice.cleanupFailed {
+                        Button("Open app settings") { voice.openPermissionSettings() }
+                            .buttonStyle(AppButtonStyle(theme: theme))
+                            .disabled(voice.running || voice.requesting)
+                            .accessibilityIdentifier("voice-open-settings")
+                    }
                     GeometryReader { box in
                         HStack(alignment: .center, spacing: 2) {
                             ForEach(0..<40, id: \.self) { index in
@@ -266,7 +334,10 @@ struct VoiceCheckView: View {
             }.padding()
         }.background(theme.background.ignoresSafeArea()).foregroundColor(theme.text)
             .sheet(isPresented: $setupVisible) { SetupGuidesView(theme: theme, initialGroup: "voice", onVoiceCheck: {}) }
-            .onChange(of: phase) { if $0 != .active { voice.clear("Microphone stopped when you left the voice check.") } }
+            .onChange(of: phase) {
+                if $0 == .active { voice.refreshPermissionGuidance() }
+                else { voice.clear("Microphone stopped when you left the voice check.") }
+            }
             .onReceive(NotificationCenter.default.publisher(for: AVAudioSession.interruptionNotification)) { _ in voice.interrupt("Audio interrupted — tap Start to try again.") }
             .onReceive(NotificationCenter.default.publisher(for: AVAudioSession.routeChangeNotification)) { _ in voice.routeChanged() }
             .onReceive(NotificationCenter.default.publisher(for: AVAudioSession.mediaServicesWereLostNotification)) { _ in
