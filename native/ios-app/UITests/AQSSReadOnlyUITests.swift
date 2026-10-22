@@ -119,8 +119,13 @@ final class AQSSReadOnlyUITests: XCTestCase {
         func returnToSoundCheckAfterPermissionChange() {
             app.activate()
             if !app.buttons["sound-check-start-stop"].waitForExistence(timeout: 3) {
-                // A permission change can terminate the app. Require the real
-                // home navigation before reopening the now-idle meter.
+                // iOS can terminate the app after a Settings permission change.
+                // That OS launch has no UI-test arguments, so the first-visit
+                // guide can appear. Use its actual Exit Home navigation.
+                if app.buttons["exit-tutorial"].waitForExistence(timeout: 3) {
+                    screenshot("Settings permission return shows first-visit guide", app)
+                    exit(app)
+                }
                 XCTAssertTrue(app.buttons["tab-sound"].waitForExistence(timeout: 5))
                 tab("sound", app); tap("Live sound check", app)
             }

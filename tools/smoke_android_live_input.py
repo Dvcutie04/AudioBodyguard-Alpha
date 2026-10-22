@@ -321,7 +321,7 @@ def main():
     open_app_permission_settings("permission_settings_granted")
     adb("shell", "pm", "grant", package, "android.permission.RECORD_AUDIO")
     adb("shell", "input", "keyevent", "KEYCODE_BACK")
-    after_settings = wait_for_all(("No live input", "Start sound check"), "settings_granted_return_off")
+    after_settings = wait_for_all(("Permission granted. Tap Start when you are ready.", "No live input", "Start sound check"), "settings_granted_return_off")
     assert not has(after_settings, "Open app settings"), "Permission shortcut remains after grant"
     assert not has(after_settings, "Microphone permission denied"), "Permission status remained denied after grant"
     granted_appops = adb("shell", "cmd", "appops", "get", package, "RECORD_AUDIO").decode()
