@@ -3,6 +3,7 @@
 from pathlib import Path
 import argparse
 import base64
+import json
 import re
 import shlex
 import subprocess
@@ -178,6 +179,24 @@ def main():
     screenshot("after_opening")
     wait_for("Start picture setup", "welcome")
     tap("Exit tutorial", "exit_welcome")
+    installed = adb("shell", "dumpsys", "package", package).decode()
+    versions = re.findall(r"^\s*versionName=(.+)$", installed, re.MULTILINE)
+    builds = re.findall(r"^\s*versionCode=(\d+)\b", installed, re.MULTILINE)
+    assert len(versions) == len(builds) == 1, "Require unambiguous installed package metadata"
+    version, build = versions[0].strip(), builds[0]
+    (out / "installed-build-identity.json").write_text(
+        json.dumps({"application_id": package, "version": version, "build": build}, sort_keys=True))
+    tap("Settings", "build_details_settings")
+    wait_for("Appearance", "build_details_settings_page")
+    tap("Build details", "build_details_open")
+    build_details = wait_for_all(("Build details", f"Version: {version}", f"Build: {build}",
+                                  "Include the version and build when reporting a problem."), "installed_build_details")
+    assert any(node.get("content-desc") == "Back" or node.get("text") == "Back" for node in build_details.iter("node")), "Build details requires an accessible Back control"
+    screenshot("installed_build_details")
+    tap("Back", "build_details_close")
+    wait_for_all(("Appearance", "Advanced Settings"), "build_details_return_to_settings")
+    tap("Home", "build_details_return_home")
+    wait_for("Connection not verified", "build_details_home_still_unverified")
     # A synthetic image in this isolated emulator goes through the real system
     # picker, image decoder, bundled ML Kit and app review screen. Never inject
     # OCR text or a result directly into the app.

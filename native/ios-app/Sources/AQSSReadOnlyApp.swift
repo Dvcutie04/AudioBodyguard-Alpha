@@ -469,6 +469,9 @@ private struct ReadOnlyHomeView: View {
                     }.buttonStyle(AppButtonStyle(theme: theme, primary: appearance == value)).accessibilityLabel(value.capitalized).accessibilityValue(appearance == value ? "Selected" : "Not selected")
                 }
             }
+            action("Build details", icon: "info.circle") {
+                settingHelp = SettingExplanation(id: "build", title: "Build details", explanation: installedBuildDetails)
+            }
             action("Advanced Settings", icon: "chevron.right") {
                 rememberPage(); closeTutorial(restore: false); advancedExpanded = true
                 navigationTarget = "page-heading"; navigationRequest += 1
@@ -494,6 +497,15 @@ private struct ReadOnlyHomeView: View {
                 helpButton("Advanced Settings tutorial", topic: "advanced")
             }
         }
+    }
+
+    private var installedBuildDetails: String {
+        func value(_ key: String) -> String {
+            guard let value = Bundle.main.object(forInfoDictionaryKey: key) as? String,
+                  !value.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { return "Unavailable" }
+            return value
+        }
+        return "Version: \(value("CFBundleShortVersionString"))\nBuild: \(value("CFBundleVersion"))\n\nInclude the version and build when reporting a problem."
     }
 
     private func question(_ title: String, explanation: String, target: String, light: Bool = false) -> some View {

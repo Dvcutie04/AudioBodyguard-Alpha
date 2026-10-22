@@ -1,6 +1,34 @@
 import XCTest
 
 final class AQSSReadOnlyUITests: XCTestCase {
+    func testBuildDetailsMatchInstalledMetadataAndReturnToSettings() throws {
+        let environment = ProcessInfo.processInfo.environment
+        guard let version = environment["AQSS_TEST_APP_VERSION"], !version.isEmpty,
+              let build = environment["AQSS_TEST_APP_BUILD"], !build.isEmpty else {
+            XCTFail("Require version and build from the compiled app's Info.plist")
+            throw NSError(domain: "AQSSBuildDetails", code: 1)
+        }
+        let app = launch()
+        tab("settings", app)
+        label("Appearance", app)
+        guard app.buttons["Build details"].firstMatch.waitForExistence(timeout: 5) else {
+            screenshot("Build details action missing in Settings", app)
+            XCTFail("Missing Build details action")
+            throw NSError(domain: "AQSSBuildDetails", code: 2)
+        }
+        tap("Build details", app)
+        label("Version: \(version)\nBuild: \(build)", app)
+        label("Include the version and build when reporting a problem.", app)
+        XCTAssertFalse(XCUIApplication(bundleIdentifier: "com.apple.springboard").alerts.firstMatch.exists)
+        screenshot("Installed version and build from app metadata", app)
+        app.buttons["setting-help-close"].tap()
+        label("Appearance", app)
+        XCTAssertTrue(app.buttons["Advanced Settings"].exists)
+        XCTAssertFalse(app.scrollViews["setting-help-scroll"].exists)
+        tab("home", app)
+        label("Connection not verified", app)
+    }
+
     func testVoiceCheckStartsIdleAndClosingItLeavesMeterUsable() {
         let app = launch()
         tab("sound", app); tap("Voice check", app)
