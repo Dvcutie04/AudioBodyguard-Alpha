@@ -26,12 +26,15 @@ def main():
     package = re.search(r"package: name='([^']+)' versionCode='([^']+)' versionName='([^']+)'", badging)
     if package is None or package[1] != "com.aqss.bodyguard.prototype.liveinput":
         raise RuntimeError("APK identity is not the separate live-input test app")
+    fixture_names = {path.name for path in Path("native/ios/Tests/AQSSNativeFeedbackTests/Fixtures").glob("tv-photo-*.png")}
+    if not fixture_names:
+        raise RuntimeError("Synthetic photo fixture inventory is unavailable")
     with zipfile.ZipFile(apk) as archive:
         poster = archive.read("res/drawable-nodpi-v4/startup_artwork.jpg")
         for name in archive.namelist():
             if name.endswith(".dex") and b"Lcom/aqss/bodyguard/uiprobe/" in archive.read(name):
                 raise RuntimeError("Test observer code was packaged into the delivered APK")
-            if name.rsplit("/", 1)[-1] in {"tv-photo-labels.png", "tv-photo-text-limit.png"}:
+            if name.rsplit("/", 1)[-1] in fixture_names:
                 raise RuntimeError("Synthetic photo fixture was packaged into the delivered APK")
     poster_sha = hashlib.sha256(poster).hexdigest()
     if poster_sha != "8f15b1e42a9cf067a7458973edbe43aa9a975b82f728d5ccc47d180bcb50307c":

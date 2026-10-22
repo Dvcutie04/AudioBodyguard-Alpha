@@ -387,9 +387,12 @@ class InputAssistanceActivity : Activity() {
                         photoBrand = hints.brand
                         val choice = TutorialContent.choices["chooseTV"]?.firstOrNull { it.id == hints.brand?.lowercase() }
                         useBrand?.apply { this.text = "Use ${choice?.title ?: "brand"} and continue"; visibility = if (choice == null) View.GONE else View.VISIBLE }
-                        status.text = if (text == null)
-                            "Photo text could not be reviewed. Choose a closer photo of the model or IP address row."
-                        else "Check these details. Text recognition can make mistakes. Nothing is connected."
+                        status.text = when {
+                            text == null -> "Photo text could not be reviewed. Choose a closer photo of the model or IP address row."
+                            hints.brand == null && hints.model == null && hints.address == null ->
+                                "No TV details found. Try a closer photo of the model label or IP address row."
+                            else -> "Check these details. Text recognition can make mistakes. Nothing is connected."
+                        }
                     }
                 }
             } catch (_: Exception) {

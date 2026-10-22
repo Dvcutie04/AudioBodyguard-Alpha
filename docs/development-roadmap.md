@@ -1,10 +1,30 @@
 # AQSS development roadmap
 
-Checkpoint: September 26, 2026. Continue from the restored a-Shell baseline and the existing native endpoint qualification research. iPhone/iOS and Android remain equal product targets.
+Checkpoint: October 21, 2026. Continue from the restored a-Shell baseline and the existing native endpoint qualification research. iPhone/iOS and Android remain equal product targets.
 
 **INFERENCE IS NOT REALITY. AI proposes. Policy authorizes. Physical Commit verifies.**
 
 ## Current checkpoint
+
+October 21 photo retry-guidance increment: the
+[result guidance record](tv-photo-retry-guidance-2026-10-21.md) gives a clear
+retry instruction when an accepted photo yields no supported TV details.
+Partial hints keep the ordinary review notice. Candidate 0.14 retains the
+existing recognition, ownership and physical-control boundaries. Native tests
+cover blank, unrelated, brand-only and complete-label photos; exact validation
+and APK identity belong to its draft PR. Handset accuracy and N2b–N5 remain
+pending.
+
+October 21 photo-readiness increment: the
+[readiness record](tv-photo-ready-notice-2026-10-21.md) updates a waiting screen
+after actual cleanup and on resume. Candidate 0.13 uses release events plus a
+fresh availability query; the notice does not open a picker or submit a read.
+
+October 21 photo-work ownership increment: the
+[ownership record](tv-photo-work-ownership-2026-10-21.md) keeps one process-wide
+photo read admitted until its actual worker and cleanup return. Candidate 0.12
+rejects overlapping imports after timeout, Clear or screen replacement while
+continuing to reject late results.
 
 October 21 photo-reading deadline increment: the
 [result-window record](tv-photo-deadline-2026-10-21.md) adds a 30-second elapsed

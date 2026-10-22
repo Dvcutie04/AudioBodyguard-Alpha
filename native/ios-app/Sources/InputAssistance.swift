@@ -386,10 +386,16 @@ final class PhotoCheck: ObservableObject {
                     try VNImageRequestHandler(cgImage: cg).perform([request])
                     let text = boundedTVPhotoText((request.results ?? []).lazy.map { $0.topCandidates(1).first?.string })
                     let hints = TVPhotoHints(text ?? "")
+                    let message: String
+                    if text == nil {
+                        message = "Photo text could not be reviewed. Choose a closer photo of the model or IP address row."
+                    } else if hints.brand == nil && hints.model == nil && hints.address == nil {
+                        message = "No TV details found. Try a closer photo of the model label or IP address row."
+                    } else {
+                        message = "Check the details below. Text recognition can make mistakes. Nothing is connected."
+                    }
                     DispatchQueue.main.async { [weak self] in
-                        self?.finish(token, hints: hints, message: text == nil
-                            ? "Photo text could not be reviewed. Choose a closer photo of the model or IP address row."
-                            : "Check the details below. Text recognition can make mistakes. Nothing is connected.")
+                        self?.finish(token, hints: hints, message: message)
                     }
                 } catch {
                     DispatchQueue.main.async { [weak self] in
