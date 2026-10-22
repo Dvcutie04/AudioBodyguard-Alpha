@@ -73,15 +73,38 @@ public final class PhotoDeadlineProbe extends CameraCaptureProbe {
             // An observer-only barrier waits for the original decoder job to
             // return. No clock, token or OCR result is replaced or injected.
             require(oldWorker.awaitTermination(10, TimeUnit.SECONDS), "Closed photo worker never returned");
-            waitForIdleSync(); waitForText(busy); assertUnknown();
+            String ready = "The previous photo has finished. Choose a photo.";
+            waitForIdleSync(); waitForText(ready); assertUnknown();
+            require(pickerRequests == 1, "Cleanup automatically launched a picker");
+            recordScreen("photo-work-ready");
 
             selected = FIXTURE; choose();
             waitForText("Brand: VIZIO"); waitForText("Model: V505M-K09"); waitForText("TV IP hint: 10.20.30.40");
             waitForText("Nothing is connected."); recordScreen("photo-deadline-retry");
             runOnMainSync(() -> require(click(activity.getWindow().getDecorView(), "Clear photo details"), "Clear missing"));
             waitForText("No photo selected"); assertUnknown();
+            ExecutorService currentWorker = (ExecutorService) field.get(activity);
+            currentWorker.submit(() -> {}).get(10, TimeUnit.SECONDS);
+            getContext().getContentResolver().call(DELAYED, "prepare", null, null);
+            selected = DELAYED; choose(); waitForText("Reading text on this phone");
+            long secondWait = SystemClock.uptimeMillis() + 5000;
+            while (!getContext().getContentResolver().call(DELAYED, "state", null, null).getBoolean("opened")) {
+                require(SystemClock.uptimeMillis() < secondWait, "Second provider read never opened");
+                SystemClock.sleep(100);
+            }
+            runOnMainSync(() -> require(click(activity.getWindow().getDecorView(), "Clear photo details"), "Clear missing"));
+            choose(); waitForText(busy); assertUnknown();
+            Activity overlay = startActivitySync(new Intent().setClassName(getTargetContext().getPackageName(),
+                    "com.aqss.bodyguard.prototype.SetupGuideActivity").addFlags(Intent.FLAG_ACTIVITY_NEW_TASK));
+            waitForIdleSync();
+            getContext().getContentResolver().call(DELAYED, "release", null, null);
+            currentWorker.submit(() -> {}).get(10, TimeUnit.SECONDS);
+            runOnMainSync(() -> overlay.finish()); waitForIdleSync();
+            waitForText(ready); assertUnknown();
+            require(pickerRequests == 3, "Returning to the screen automatically launched a picker");
+            recordScreen("photo-work-ready-resume");
             result.putString("photo_deadline", "passed: real provider read held through timeout (" + elapsed +
-                    "ms); retry, Clear, camera and reopened screen admitted no overlapping read; late decoded image rejected; fresh image recognized; Clear unknown");
+                    "ms); retry, Clear, camera and reopened screen admitted no overlapping read; visible cleanup and resume show ready without opening a picker; late decoded image rejected; fresh image recognized; Clear unknown");
             finish(Activity.RESULT_OK, result);
         } catch (Exception | AssertionError error) {
             result.putString("photo_deadline_error", error.toString()); finish(Activity.RESULT_CANCELED, result);
