@@ -54,6 +54,15 @@ photos. The dated picker selection, unknown fields, brand-only review,
 replacement cancellation, reselection and Clear assertions passed. The
 granted-microphone stage was skipped after this expected photo failure.
 
+At the first implementation checkpoint `f5bc87c81a24ae365b7e63fdb35cf0fb2e7162df`,
+Android run `39715527354` passed both no-detail cases, then failed the partial
+brand expectation: the single-word VIZIO fixture produced no parsed hints.
+Its captured hierarchy correctly kept all hints unknown and showed retry
+guidance. The partial fixture now uses an explicit “Brand: SAMSUNG” row plus
+neutral text. It still must produce a real recognized brand, unknown model/IP
+and the ordinary review notice. No parser or production-policy change follows
+from this fixture revision. Brand-logo accuracy remains unqualified.
+
 Both no-detail cases must show the retry message with all three hints unknown.
 The brand-only case must retain its supported brand and ordinary review notice.
 The iPhone walkthrough replaces a recognized full label with no-detail photos

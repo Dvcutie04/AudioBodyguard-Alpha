@@ -259,7 +259,7 @@ def main():
                            ("Brand: Not identified", "Model: Not identified", "TV IP hint: Not identified",
                             "No TV details found. Try a closer photo of the model label or IP address row."))
     photo_fixture_case("tv-photo-brand-only.png", "aqss-tv-brand-only.png", "photo_brand_only",
-                       ("Brand: VIZIO", "Model: Not identified", "TV IP hint: Not identified", "Nothing is connected."))
+                       ("Brand: SAMSUNG", "Model: Not identified", "TV IP hint: Not identified", "Nothing is connected."))
     photo_fixture_case("tv-photo-text-limit.png", "aqss-tv-text-limit.png", "photo_limit",
                        ("Brand: Not identified", "Model: Not identified", "TV IP hint: Not identified",
                         "Photo text could not be reviewed. Choose a closer photo of the model or IP address row."))

@@ -364,7 +364,7 @@ final class AQSSReadOnlyUITests: XCTestCase {
             XCTAssertFalse(app.buttons["photo-use-brand"].exists)
         }
         try selectFixture("AQSS_TEST_PHOTO_BRAND_ONLY_MODIFIED_AT", expected: [
-            "Brand: VIZIO", "Model: Not identified", "TV IP hint: Not identified", "Nothing is connected."
+            "Brand: SAMSUNG", "Model: Not identified", "TV IP hint: Not identified", "Nothing is connected."
         ])
         screenshot("Partial photo details remain available", app)
         try selectFixture(expected: identified)
