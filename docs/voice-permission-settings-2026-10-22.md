@@ -86,7 +86,10 @@ status, Settings shortcut and no-live-samples label. Its observer failed
 because the longer guidance pushed the empty-words label below the visible
 viewport. The corrected observer makes bounded small swipes inside the real
 Voice scroll view, then still requires all four labels in one snapshot. It
-retains the actual permission and non-running app-op checks.
+retains the actual permission and non-running app-op checks. The hierarchy
+observer now exports the actual native view class needed to locate that
+scroll view; the original export omitted it, so the first scroll correction
+could not find its target. This changes only the separate test observer.
 
 iPhone microphone recovery runs after the other denied tests and meter
 Settings test, with its own native denied precondition. It uses the real
