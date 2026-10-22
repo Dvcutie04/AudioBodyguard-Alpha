@@ -21,6 +21,7 @@ public final class DelayedPhotoProvider extends ContentProvider {
     private volatile CountDownLatch gate = new CountDownLatch(1);
     private volatile boolean opened;
     private volatile boolean released;
+    private final java.util.concurrent.atomic.AtomicInteger reads = new java.util.concurrent.atomic.AtomicInteger();
 
     @Override public boolean onCreate() {
         try {
@@ -39,14 +40,15 @@ public final class DelayedPhotoProvider extends ContentProvider {
         } catch (Exception failure) { throw new IllegalStateException("Cannot prepare delayed photo fixture", failure); }
     }
     @Override public Bundle call(String method, String argument, Bundle extras) {
-        if ("prepare".equals(method)) { gate.countDown(); gate = new CountDownLatch(1); opened = false; released = false; }
+        if ("prepare".equals(method)) { gate.countDown(); gate = new CountDownLatch(1); opened = false; released = false; reads.set(0); }
         else if ("release".equals(method)) { released = true; gate.countDown(); }
         else if (!"state".equals(method)) throw new IllegalArgumentException("Unknown photo test command");
-        Bundle state = new Bundle(); state.putBoolean("opened", opened); state.putBoolean("released", released); return state;
+        Bundle state = new Bundle(); state.putBoolean("opened", opened); state.putBoolean("released", released); state.putInt("reads", reads.get()); return state;
     }
     @Override public ParcelFileDescriptor openFile(Uri uri, String mode) throws FileNotFoundException {
         if (!"r".equals(mode) || !("/delayed.png".equals(uri.getPath()) || "/fixture.png".equals(uri.getPath())))
             throw new FileNotFoundException("Unknown read-only test photo");
+        reads.incrementAndGet();
         if ("/delayed.png".equals(uri.getPath())) {
             CountDownLatch pending = gate; opened = true;
             try {

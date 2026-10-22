@@ -11,6 +11,7 @@ import android.view.View
 import android.widget.*
 import com.aqss.nativefeedback.TVPhotoHints
 import com.aqss.nativefeedback.PhotoReviewRun
+import com.aqss.nativefeedback.PhotoWorkSlot
 import com.aqss.nativefeedback.boundedTVPhotoText
 import com.aqss.nativefeedback.TutorialContent
 import com.aqss.nativefeedback.ForegroundMicrophoneGate
@@ -18,7 +19,10 @@ import com.aqss.nativefeedback.VoiceInputRun
 import com.aqss.nativefeedback.boundedRecognizedWords
 import com.google.mlkit.vision.common.InputImage
 import com.google.mlkit.vision.text.TextRecognition
+import com.google.mlkit.vision.text.TextRecognizer
 import com.google.mlkit.vision.text.latin.TextRecognizerOptions
+import com.google.android.gms.tasks.Task
+import com.google.android.gms.tasks.Tasks
 import java.util.concurrent.Executors
 
 /** User-initiated foreground input. No output controller, device adapter or socket. */
@@ -41,6 +45,7 @@ class InputAssistanceActivity : Activity() {
     private var running = false
     private var lastLevelAt = 0L
     private val photoRun = PhotoReviewRun(SystemClock::elapsedRealtime)
+    private val photoWork = PhotoWorkSlot.process
     private data class PhotoRequest(val code: Int, val token: PhotoReviewRun.Token, val capture: TVPhotoCapture?)
     private var cameraPhoto: TVPhotoCapture? = null
     private var readingPhoto: PhotoReviewRun.Token? = null
@@ -265,6 +270,9 @@ class InputAssistanceActivity : Activity() {
         stopPhotoWatchdog(); return true
     }
     private fun selectPhoto(camera: Boolean) {
+        if (photoWork.occupied) {
+            status.text = "The previous photo is still finishing. Try again shortly."; return
+        }
         clearPhoto()
         // Never reuse a request code in this Activity: a late result must not
         // become the image belonging to a newer selection.
@@ -296,10 +304,20 @@ class InputAssistanceActivity : Activity() {
         if (resultCode != RESULT_OK) { photoRun.cancel(request.token); request.capture?.close(); cameraPhoto = null; return }
         val token = request.token
         if (isDestroyed || isFinishing) { request.capture?.close(); return }
-        if (!photoRun.beginReading(token)) { request.capture?.close(); showPhotoEnd(token); return }
+        val work = photoWork.acquire()
+        if (work == null) {
+            photoRun.cancel(token); request.capture?.close(); cameraPhoto = null
+            status.text = "The previous photo is still finishing. Try again shortly."; return
+        }
+        if (!photoRun.beginReading(token)) {
+            try { request.capture?.close() } finally { photoWork.release(work) }
+            showPhotoEnd(token); return
+        }
         status.text = "Reading text on this phone…"
         watchPhoto(token)
-        worker.execute {
+        try { worker.execute {
+            var decoded: Bitmap? = null
+            var scanner: TextRecognizer? = null
             try {
                 if (!photoRun.isReading(token)) return@execute
                 val bitmap: Bitmap = run {
@@ -335,33 +353,52 @@ class InputAssistanceActivity : Activity() {
                         if (transform.isIdentity) decoded else Bitmap.createBitmap(decoded, 0, 0, decoded.width, decoded.height, transform, true).also { decoded.recycle() }
                     }
                 }
-                if (!photoRun.isReading(token)) { bitmap.recycle(); return@execute }
-                val scanner = TextRecognition.getClient(TextRecognizerOptions.DEFAULT_OPTIONS)
-                scanner.process(InputImage.fromBitmap(bitmap, 0))
-                    .addOnSuccessListener { result ->
-                        if (acceptPhoto(token)) {
-                            val text = boundedTVPhotoText(result.textBlocks.asSequence()
-                                .flatMap { it.lines.asSequence() }.map { it.text })
-                            val hints = TVPhotoHints(text ?: "")
-                            details.text = "Brand: ${hints.brand ?: "Not identified"}"
-                            photoExtra?.text = "Model: ${hints.model ?: "Not identified"}\nTV IP hint: ${hints.address ?: "Not identified"}"
-                            photoBrand = hints.brand
-                            val choice = TutorialContent.choices["chooseTV"]?.firstOrNull { it.id == hints.brand?.lowercase() }
-                            useBrand?.apply { this.text = "Use ${choice?.title ?: "brand"} and continue"; visibility = if (choice == null) View.GONE else View.VISIBLE }
-                            status.text = if (text == null)
-                                "Photo text could not be reviewed. Choose a closer photo of the model or IP address row."
-                            else "Check these details. Text recognition can make mistakes. Nothing is connected."
-                        }
+                decoded = bitmap
+                if (!photoRun.isReading(token)) return@execute
+                val reader = TextRecognition.getClient(TextRecognizerOptions.DEFAULT_OPTIONS)
+                scanner = reader
+                val result = awaitPhoto(reader.process(InputImage.fromBitmap(bitmap, 0)))
+                val text = boundedTVPhotoText(result.textBlocks.asSequence()
+                    .flatMap { it.lines.asSequence() }.map { it.text })
+                val hints = TVPhotoHints(text ?: "")
+                runOnUiThread {
+                    if (acceptPhoto(token)) {
+                        details.text = "Brand: ${hints.brand ?: "Not identified"}"
+                        photoExtra?.text = "Model: ${hints.model ?: "Not identified"}\nTV IP hint: ${hints.address ?: "Not identified"}"
+                        photoBrand = hints.brand
+                        val choice = TutorialContent.choices["chooseTV"]?.firstOrNull { it.id == hints.brand?.lowercase() }
+                        useBrand?.apply { this.text = "Use ${choice?.title ?: "brand"} and continue"; visibility = if (choice == null) View.GONE else View.VISIBLE }
+                        status.text = if (text == null)
+                            "Photo text could not be reviewed. Choose a closer photo of the model or IP address row."
+                        else "Check these details. Text recognition can make mistakes. Nothing is connected."
                     }
-                    .addOnFailureListener { if (acceptPhoto(token)) status.text = "Could not read this picture. Try brighter light and a closer photo." }
-                    .addOnCompleteListener { scanner.close(); bitmap.recycle() }
+                }
             } catch (_: Exception) {
                 runOnUiThread { if (acceptPhoto(token)) status.text = "Photo could not be read. Choose a clear photo of the label or settings screen." }
             } finally {
-                // The bitmap owns the decoded pixels; OCR does not need the file.
-                request.capture?.close()
+                // View invalidation cannot settle provider, OCR or cleanup work.
+                try { scanner?.close() } finally {
+                    try { decoded?.recycle() } finally {
+                        try { request.capture?.close() } finally { photoWork.release(work) }
+                    }
+                }
             }
+        } } catch (_: java.util.concurrent.RejectedExecutionException) {
+            try { request.capture?.close() } finally { photoWork.release(work) }
+            photoRun.cancel(token); stopPhotoWatchdog()
+            if (!isDestroyed && !isFinishing) status.text = "Photo could not start. Close and reopen photo setup."
         }
+    }
+    private fun <T> awaitPhoto(task: Task<T>): T {
+        // Interruption is not proof that ML Kit returned. Wait for the same task;
+        // never retry recognition or release its bitmap while it is still in use.
+        var interrupted = false
+        try {
+            while (true) {
+                try { return Tasks.await(task) }
+                catch (_: InterruptedException) { interrupted = true }
+            }
+        } finally { if (interrupted) Thread.currentThread().interrupt() }
     }
     override fun onResume() {
         super.onResume(); visible = true
@@ -376,7 +413,7 @@ class InputAssistanceActivity : Activity() {
         if (isVoice) { stopVoice(); if (::details.isInitialized) details.text = "No words recognized yet" }
         super.onPause()
     }
-    override fun onDestroy() { stopVoice(); stopPhotoWatchdog(); handler.removeCallbacksAndMessages(null); pendingPhoto = null; photoRun.clear(); cameraPhoto?.close(); cameraPhoto = null; worker.shutdownNow(); super.onDestroy() }
+    override fun onDestroy() { stopVoice(); stopPhotoWatchdog(); handler.removeCallbacksAndMessages(null); pendingPhoto = null; photoRun.clear(); cameraPhoto?.close(); cameraPhoto = null; worker.shutdown(); super.onDestroy() }
 }
 
 private class InputMeter(activity: Activity, color: Int) : View(activity) {
