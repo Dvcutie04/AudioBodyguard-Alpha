@@ -97,10 +97,14 @@ public final class PhotoDeadlineProbe extends CameraCaptureProbe {
             Activity overlay = startActivitySync(new Intent().setClassName(getTargetContext().getPackageName(),
                     "com.aqss.bodyguard.prototype.SetupGuideActivity").addFlags(Intent.FLAG_ACTIVITY_NEW_TASK));
             waitForIdleSync();
+            java.lang.reflect.Field visible = activity.getClass().getDeclaredField("visible");
+            visible.setAccessible(true);
+            require(!visible.getBoolean(activity), "Photo setup never paused behind the guide");
             getContext().getContentResolver().call(DELAYED, "release", null, null);
             currentWorker.submit(() -> {}).get(10, TimeUnit.SECONDS);
             runOnMainSync(() -> overlay.finish()); waitForIdleSync();
             waitForText(ready); assertUnknown();
+            require(visible.getBoolean(activity), "Photo setup never resumed after the guide");
             require(pickerRequests == 3, "Returning to the screen automatically launched a picker");
             recordScreen("photo-work-ready-resume");
             result.putString("photo_deadline", "passed: real provider read held through timeout (" + elapsed +

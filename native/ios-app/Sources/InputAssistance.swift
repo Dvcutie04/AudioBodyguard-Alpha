@@ -291,6 +291,8 @@ final class PhotoReadWork: @unchecked Sendable {
 final class PhotoCheck: ObservableObject {
     @Published var hints = TVPhotoHints("")
     @Published var status = "No photo selected"
+    private var workObservation: PhotoWorkSlot.Observation?
+    private var waitingForPhotoWork = false
     private let run = PhotoReviewRun(now: {
         var timebase = mach_timebase_info_data_t()
         guard mach_timebase_info(&timebase) == KERN_SUCCESS, timebase.denom != 0 else { return .nan }
@@ -299,11 +301,29 @@ final class PhotoCheck: ObservableObject {
     private var timer: Timer?
     private var readingToken: PhotoReviewRun.Token?
     private func stopWatchdog() { timer?.invalidate(); timer = nil; readingToken = nil }
-    private func resetDetails() { hints = TVPhotoHints(""); status = "No photo selected" }
+    private func resetDetails() { waitingForPhotoWork = false; hints = TVPhotoHints(""); status = "No photo selected" }
+    func observeWork() {
+        workObservation?.close()
+        workObservation = PhotoWorkSlot.process.observe { [weak self] in
+            DispatchQueue.main.async { [weak self] in self?.refreshPhotoAvailability() }
+        }
+        refreshPhotoAvailability()
+    }
+    func stopObservingWork() { workObservation?.close(); workObservation = nil }
+    private func showBusy() {
+        waitingForPhotoWork = true
+        status = "The previous photo is still finishing. Try again shortly."
+        refreshPhotoAvailability()
+    }
+    private func refreshPhotoAvailability() {
+        guard workObservation != nil, waitingForPhotoWork, !PhotoWorkSlot.process.occupied else { return }
+        waitingForPhotoWork = false
+        status = "The previous photo has finished. Choose a photo."
+    }
     func clear() { stopWatchdog(); run.clear(); resetDetails() }
     func select() -> PhotoReviewRun.Token? {
         guard !PhotoWorkSlot.process.occupied else {
-            status = "The previous photo is still finishing. Try again shortly."; return nil
+            showBusy(); return nil
         }
         stopWatchdog(); resetDetails(); return run.select()
     }
@@ -324,8 +344,8 @@ final class PhotoCheck: ObservableObject {
     func beginReading(_ token: PhotoReviewRun.Token) -> PhotoReadWork? {
         guard run.isSelecting(token) else { return nil }
         guard let lease = PhotoWorkSlot.process.acquire() else {
-            run.cancel(token); stopWatchdog(); hints = TVPhotoHints("")
-            status = "The previous photo is still finishing. Try again shortly."; return nil
+            _ = run.cancel(token); stopWatchdog(); hints = TVPhotoHints("")
+            showBusy(); return nil
         }
         let work = PhotoReadWork(lease)
         guard run.beginReading(token) else { showEnd(token); return nil }
@@ -343,7 +363,7 @@ final class PhotoCheck: ObservableObject {
     }
     private func finish(_ token: PhotoReviewRun.Token, hints: TVPhotoHints = TVPhotoHints(""), message: String) {
         guard run.complete(token) else { showEnd(token); return }
-        stopWatchdog(); self.hints = hints; status = message
+        waitingForPhotoWork = false; stopWatchdog(); self.hints = hints; status = message
     }
     func unreadable(_ token: PhotoReviewRun.Token) {
         finish(token, message: "Photo could not be read. Try another picture.")
@@ -451,8 +471,12 @@ struct TVPhotoView: View {
                     else { LocalPhotoPicker(beginImport: { beginPhotoImport(request) }) { image, work in finishPhoto(image, request: request, work: work) } }
                 }.onDisappear { photo.cancelSelection(request.token) }
             }
-            .onDisappear { photo.clear() }
-            .onChange(of: phase) { value in if value == .active { photo.checkDeadline() } }
+            .onAppear { photo.observeWork() }
+            .onDisappear { photo.stopObservingWork(); photo.clear() }
+            .onChange(of: phase) { value in
+                if value == .active { photo.checkDeadline(); photo.observeWork() }
+                else { photo.stopObservingWork() }
+            }
     }
     private func choosePhoto(camera: Bool) {
         guard let token = photo.select() else { return }
