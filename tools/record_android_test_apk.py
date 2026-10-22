@@ -28,6 +28,11 @@ def main():
         raise RuntimeError("APK identity is not the separate live-input test app")
     with zipfile.ZipFile(apk) as archive:
         poster = archive.read("res/drawable-nodpi-v4/startup_artwork.jpg")
+        for name in archive.namelist():
+            if name.endswith(".dex") and b"Lcom/aqss/bodyguard/uiprobe/" in archive.read(name):
+                raise RuntimeError("Test observer code was packaged into the delivered APK")
+            if name.rsplit("/", 1)[-1] in {"tv-photo-labels.png", "tv-photo-text-limit.png"}:
+                raise RuntimeError("Synthetic photo fixture was packaged into the delivered APK")
     poster_sha = hashlib.sha256(poster).hexdigest()
     if poster_sha != "8f15b1e42a9cf067a7458973edbe43aa9a975b82f728d5ccc47d180bcb50307c":
         raise RuntimeError("Packaged opening poster differs from the approved original")
@@ -40,6 +45,7 @@ def main():
         "size_bytes": apk.stat().st_size, "sha256": digest,
         "opening_poster_sha256": poster_sha,
         "signature_verified": True,
+        "test_observer_excluded": True,
         "scope": "CI-built test APK and emulator checks; no physical input/output qualification",
     }
     (output / "apk-provenance.json").write_text(json.dumps(record, indent=2) + "\n")

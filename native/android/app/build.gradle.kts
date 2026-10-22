@@ -11,8 +11,8 @@ android {
         applicationId = "com.aqss.bodyguard.prototype"
         minSdk = 26
         targetSdk = 36
-        versionCode = 11
-        versionName = "0.11-photo-review-deadline"
+        versionCode = 12
+        versionName = "0.12-photo-work-ownership"
     }
 
     buildTypes {
