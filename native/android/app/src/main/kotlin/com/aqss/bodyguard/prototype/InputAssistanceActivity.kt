@@ -46,6 +46,8 @@ class InputAssistanceActivity : Activity() {
     private var lastLevelAt = 0L
     private val photoRun = PhotoReviewRun(SystemClock::elapsedRealtime)
     private val photoWork = PhotoWorkSlot.process
+    private var photoObservation: PhotoWorkSlot.Observation? = null
+    private var waitingForPhotoWork = false
     private data class PhotoRequest(val code: Int, val token: PhotoReviewRun.Token, val capture: TVPhotoCapture?)
     private var cameraPhoto: TVPhotoCapture? = null
     private var readingPhoto: PhotoReviewRun.Token? = null
@@ -235,6 +237,7 @@ class InputAssistanceActivity : Activity() {
         label("Text recognition stays on this phone. New camera photos use a temporary copy. Photos you choose stay in your gallery. Details clear on close.")
     }
     private fun clearPhoto() {
+        waitingForPhotoWork = false
         stopPhotoWatchdog()
         pendingPhoto = null; photoRun.clear(); cameraPhoto?.close(); cameraPhoto = null; photoBrand = null
         status.text = "No photo selected"; details.text = "Brand: Not identified"
@@ -267,11 +270,27 @@ class InputAssistanceActivity : Activity() {
     private fun acceptPhoto(token: PhotoReviewRun.Token): Boolean {
         if (isDestroyed || isFinishing) return false
         if (!photoRun.complete(token)) { showPhotoEnd(token); return false }
-        stopPhotoWatchdog(); return true
+        waitingForPhotoWork = false; stopPhotoWatchdog(); return true
+    }
+    private fun showPhotoBusy() {
+        waitingForPhotoWork = true
+        status.text = "The previous photo is still finishing. Try again shortly."
+        refreshPhotoAvailability()
+    }
+    private fun refreshPhotoAvailability() {
+        if (!visible || isVoice || isDestroyed || isFinishing || !waitingForPhotoWork || photoWork.occupied) return
+        waitingForPhotoWork = false
+        status.text = "The previous photo has finished. Choose a photo."
+    }
+    private fun observePhotoWork() {
+        photoObservation?.close()
+        photoObservation = photoWork.observe { handler.post { refreshPhotoAvailability() } }
+        // Catch completion while paused or between a busy check and registration.
+        refreshPhotoAvailability()
     }
     private fun selectPhoto(camera: Boolean) {
         if (photoWork.occupied) {
-            status.text = "The previous photo is still finishing. Try again shortly."; return
+            showPhotoBusy(); return
         }
         clearPhoto()
         // Never reuse a request code in this Activity: a late result must not
@@ -307,7 +326,7 @@ class InputAssistanceActivity : Activity() {
         val work = photoWork.acquire()
         if (work == null) {
             photoRun.cancel(token); request.capture?.close(); cameraPhoto = null
-            status.text = "The previous photo is still finishing. Try again shortly."; return
+            showPhotoBusy(); return
         }
         if (!photoRun.beginReading(token)) {
             try { request.capture?.close() } finally { photoWork.release(work) }
@@ -403,6 +422,7 @@ class InputAssistanceActivity : Activity() {
     override fun onResume() {
         super.onResume(); visible = true
         readingPhoto?.let { if (!photoRun.isReading(it)) showPhotoEnd(it) }
+        if (!isVoice) observePhotoWork()
     }
     override fun onWindowFocusChanged(hasFocus: Boolean) {
         super.onWindowFocusChanged(hasFocus)
@@ -410,10 +430,11 @@ class InputAssistanceActivity : Activity() {
     }
     override fun onPause() {
         visible = false
+        photoObservation?.close(); photoObservation = null
         if (isVoice) { stopVoice(); if (::details.isInitialized) details.text = "No words recognized yet" }
         super.onPause()
     }
-    override fun onDestroy() { stopVoice(); stopPhotoWatchdog(); handler.removeCallbacksAndMessages(null); pendingPhoto = null; photoRun.clear(); cameraPhoto?.close(); cameraPhoto = null; worker.shutdown(); super.onDestroy() }
+    override fun onDestroy() { stopVoice(); stopPhotoWatchdog(); photoObservation?.close(); photoObservation = null; handler.removeCallbacksAndMessages(null); pendingPhoto = null; photoRun.clear(); cameraPhoto?.close(); cameraPhoto = null; worker.shutdown(); super.onDestroy() }
 }
 
 private class InputMeter(activity: Activity, color: Int) : View(activity) {

@@ -3,6 +3,34 @@ import XCTest
 @testable import AQSSNativeFeedback
 
 final class PhotoWorkSlotTests: XCTestCase {
+    func testOnlyTheRealOwnerReturnNotifiesAvailability() throws {
+        let slot = PhotoWorkSlot(); let calls = AvailabilityCalls()
+        let observer = slot.observe { calls.increment() }; defer { observer.close() }
+        let work = try XCTUnwrap(slot.acquire()); let foreign = try XCTUnwrap(PhotoWorkSlot().acquire())
+        XCTAssertEqual(calls.count, 0); XCTAssertFalse(slot.release(foreign)); XCTAssertEqual(calls.count, 0)
+        XCTAssertTrue(slot.release(work)); XCTAssertEqual(calls.count, 1)
+        XCTAssertFalse(slot.release(work)); XCTAssertEqual(calls.count, 1)
+        let next = try XCTUnwrap(slot.acquire()); XCTAssertEqual(calls.count, 1)
+        XCTAssertTrue(slot.release(next)); XCTAssertEqual(calls.count, 2)
+    }
+    func testDetachedViewsDoNotReceiveLaterAvailabilitySignals() throws {
+        let slot = PhotoWorkSlot(); let closedCalls = AvailabilityCalls(); let liveCalls = AvailabilityCalls()
+        let closed = slot.observe { closedCalls.increment() }; let live = slot.observe { liveCalls.increment() }
+        closed.close(); closed.close()
+        XCTAssertTrue(slot.release(try XCTUnwrap(slot.acquire())))
+        XCTAssertEqual(closedCalls.count, 0); XCTAssertEqual(liveCalls.count, 1)
+        live.close(); XCTAssertTrue(slot.release(try XCTUnwrap(slot.acquire()))); XCTAssertEqual(liveCalls.count, 1)
+    }
+    func testAvailabilityCallbacksRunOutsideTheSlotLock() throws {
+        let slot = PhotoWorkSlot(); let calls = AvailabilityCalls()
+        let observer = slot.observe {
+            let done = DispatchSemaphore(value: 0)
+            DispatchQueue.global().async { if !slot.occupied { calls.increment() }; done.signal() }
+            XCTAssertEqual(done.wait(timeout: .now() + 5), .success)
+        }
+        defer { observer.close() }
+        XCTAssertTrue(slot.release(try XCTUnwrap(slot.acquire()))); XCTAssertEqual(calls.count, 1)
+    }
     func testOneReadOwnsCapacityUntilItsActualReturn() throws {
         let slot = PhotoWorkSlot(); XCTAssertFalse(slot.occupied)
         let work = try XCTUnwrap(slot.acquire()); XCTAssertTrue(slot.occupied)
@@ -53,6 +81,12 @@ final class PhotoWorkSlotTests: XCTestCase {
         XCTAssertEqual(admitted.count, 1); XCTAssertTrue(slot.occupied)
         if admitted.count == 1 { XCTAssertTrue(slot.release(admitted[0])); XCTAssertFalse(slot.occupied) }
     }
+}
+
+private final class AvailabilityCalls: @unchecked Sendable {
+    private let lock = NSLock(); private var value = 0
+    func increment() { lock.lock(); defer { lock.unlock() }; value += 1 }
+    var count: Int { lock.lock(); defer { lock.unlock() }; return value }
 }
 
 private final class AdmittedPhotoWork: @unchecked Sendable {
