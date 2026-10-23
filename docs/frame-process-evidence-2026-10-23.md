@@ -73,3 +73,21 @@ withholds summaries. Existing raw capture bounds, UI assertions and native app
 code are unchanged. Reprocessed 0.26 observations are compatibility evidence,
 not a new performance comparison; final 0.27 captures and artifact identities
 are recorded in the candidate's draft PR after verification.
+
+The first Android run, 40040421603/job 120709929060 on implementation source
+`7ed589f498033801edd00f351878815f47564aba`, failed the unchanged native support
+report handoff assertion. The pre-click hierarchy marked the receiver visible
+but placed its label at `[11,2142][205,2186]` outside the ancestor GridView
+`[0,2208][1080,2340]`; an earlier chooser snapshot had it fully in view. A
+reported successful accessibility click was followed by the app preview, not
+the independently checked receiver. The run is retained as a failure, not
+accepted as share evidence or an APK candidate.
+
+The Android test now waits for one unambiguous system receiver label fully
+inside all ancestor bounds in two consecutive fresh observations, within six
+attempts, before the existing native accessibility click. A failure to settle
+retains a screenshot and fails the test. Exact Intent/ClipData, receiver-Activity,
+Cancel, content, URI/stream exclusion and return assertions remain. This is a
+test-only synchronization correction; app sources, versions and the frame
+parser are unchanged from the implementation revision. Final evidence records
+both source identities explicitly.
