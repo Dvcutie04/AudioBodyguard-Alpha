@@ -2,7 +2,7 @@ name: Android live microphone input test
 
 on:
   push:
-    branches: ["aqss/android-live-sound-check", "aqss/android-microphone-lifecycle", "aqss/sound-check-recaps", "aqss/android-input-deadlines", "aqss/tv-photo-labels", "aqss/tv-photo-text-bounds", "aqss/tv-photo-selection", "aqss/android-full-photo", "aqss/photo-review-deadline", "aqss/photo-work-ownership", "aqss/photo-work-ready", "aqss/photo-retry-guidance", "aqss/sound-permission-settings", "aqss/voice-permission-settings", "aqss/build-details", "aqss/share-build-details", "aqss/private-support-report"]
+    branches: ["aqss/android-live-sound-check", "aqss/android-microphone-lifecycle", "aqss/sound-check-recaps", "aqss/android-input-deadlines", "aqss/tv-photo-labels", "aqss/tv-photo-text-bounds", "aqss/tv-photo-selection", "aqss/android-full-photo", "aqss/photo-review-deadline", "aqss/photo-work-ownership", "aqss/photo-work-ready", "aqss/photo-retry-guidance", "aqss/sound-permission-settings", "aqss/voice-permission-settings", "aqss/build-details", "aqss/share-build-details", "aqss/private-support-report", "aqss/support-report-privacy"]
     paths:
       - "native/android/**"
       - "native/ios/Tests/AQSSNativeFeedbackTests/Fixtures/**"

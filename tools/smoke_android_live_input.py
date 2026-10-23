@@ -238,8 +238,16 @@ def main():
             break
         scroll_meter(f"support_report_scroll_{attempt}", down=True)
     tap("About Private support report", "support_report_open")
-    tap("Share support report", "support_report_share_required")
     expected_report = expected_share + "\n\nRecent sound checks (this app session)\nNo completed sound checks in this app session.\n\nInput observations only; not proof of sound safety, protection or TV control."
+    wait_for(expected_report, "support_report_default_includes_checks")
+    tap("Include recent sound checks", "support_report_exclude_choice_required")
+    root = wait_for(expected_share, "support_report_build_only_preview")
+    assert any(n.get("text") == expected_share for n in root.iter("node"))
+    assert not any("Recent sound checks (this app session)" in n.get("text", "") for n in root.iter("node"))
+    screenshot("support_report_build_only_preview")
+    tap("Include recent sound checks", "support_report_restore_checks")
+    wait_for(expected_report, "support_report_restored_snapshot")
+    tap("Share support report", "support_report_share_required")
     wait_for("Build details test", "support_report_native_chooser")
     screenshot("support_report_native_chooser")
     adb("shell", "input", "keyevent", "KEYCODE_BACK")
@@ -272,7 +280,7 @@ def main():
     print("SUPPORT_REPORT_SHARE_OBSERVED: empty allowlisted preview, native Cancel, exact Intent receipt and return to Advanced Settings", flush=True)
     tap("Home", "build_details_return_home")
     wait_for("Connection not verified", "build_details_home_still_unverified")
-    def review_report(name, recap, share=False):
+    def review_report(name, recap, share=False, exclude=False):
         expected = expected_share + "\n\nRecent sound checks (this app session)\n" + recap + "\n\nInput observations only; not proof of sound safety, protection or TV control."
         tap("Settings", name + "_settings")
         tap("Advanced Settings", name + "_advanced")
@@ -283,6 +291,12 @@ def main():
             scroll_meter(f"{name}_scroll_{attempt}", down=True)
         tap("About Private support report", name + "_open")
         wait_for(expected, name + "_preview")
+        if exclude:
+            tap("Include recent sound checks", name + "_exclude_checks")
+            expected = expected_share
+            preview = wait_for(expected, name + "_build_only")
+            assert any(n.get("text") == expected for n in preview.iter("node"))
+            assert not any("Recent sound checks (this app session)" in n.get("text", "") for n in preview.iter("node"))
         screenshot(name + "_preview")
         if share:
             previous = adb("shell", "run-as", receiver, "cat", receiver_file)
@@ -500,6 +514,7 @@ def main():
     adb("shell", "input", "keyevent", "KEYCODE_BACK")
     wait_for("Voice check", "support_report_after_manual_meter_close")
     review_report("support_report_completed", "Check 1: Input samples observed\nStopped by you", share=True)
+    review_report("support_report_completed_build_only", "Check 1: Input samples observed\nStopped by you", share=True, exclude=True)
     tap("Live sound check. Try the phone microphone for 30 seconds", "meter_after_report_share")
     open_recaps("manual_recaps_after_support_share")
     wait_for_all(("Input samples observed", "Stopped by you"), "support_share_did_not_clear_recaps")
@@ -509,6 +524,7 @@ def main():
     close_recaps("close_cleared_recaps")
     adb("shell", "input", "keyevent", "KEYCODE_BACK")
     review_report("support_report_after_clear", "No completed sound checks in this app session.")
+    review_report("support_report_empty_build_only", "No completed sound checks in this app session.", share=True, exclude=True)
     tap("Live sound check. Try the phone microphone for 30 seconds", "meter_after_cleared_report")
 
     tap("Start sound check", "restart_before_notification_shade")
