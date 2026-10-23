@@ -71,3 +71,36 @@ The draft PR will record exact red reasons, final source/tree, native cases
 and immutable artifact identity. Native share/copy checks in isolated
 Simulators/emulators are separate from actual handset compatibility,
 recipient delivery, signed iPhone distribution and N2b-N5 qualification.
+
+
+## Red results and implementation
+
+Red-only source 64d6b060a9f9d49a02c43c15610d4be38b86f572, tree
+14dfc53b6e0a5d4c312124b67f552f5632de51c2, kept both production apps and
+their version metadata at 0.17.
+
+- Android run 39875622079, job 120160388751 compiled, passed lint, queried
+  actual installed metadata, opened Build details and failed exactly at
+  Missing tap target: Share build details.
+- iPhone run 39875622155, job 120160389931 compiled, used expected metadata
+  from the compiled app Info.plist and failed Missing Share build details
+  action plus its AQSSBuildShare Code=2 sentinel. All six prior cases in that
+  first UI group passed, including installed metadata and native photo
+  selection. The separate speech-Settings job passed.
+- The same run's iPad job 120160389205 compiled and failed the same missing
+  Share action/sentinel after reaching Build details on the actual Simulator.
+
+Production edits began only after all three expected native red reasons were
+confirmed. Android adds text-only ACTION_SEND through createChooser to its
+existing information dialog. Its ordinary help dialogs retain their existing
+behavior. iPhone/iPad reuses the existing Settings explanation sheet, with an
+optional immutable share string and a small UIKit presenter anchored to the
+visible Share button. A coordinator suppresses repeat presentation and resets
+the control after cancellation/completion. Only the UI-test runner reads or
+writes its synthetic pasteboard.
+
+The Android live-input version is 0.18-share-build-details-live-input, code
+18. The default Apple release is 0.18.0, first build 1; runtime metadata lookup
+still honors future signing/distribution overrides. Final source identity,
+native results, screenshots and APK verification are recorded in draft PR #50
+before delivery; none of these software checks qualifies physical output.

@@ -1,5 +1,6 @@
 import AVFAudio
 import SwiftUI
+import UIKit
 
 @main
 struct AQSSReadOnlyApp: App {
@@ -94,6 +95,60 @@ struct ConnectionHeadView: View {
     }
 }
 
+private struct BuildDetailsShareButton: View {
+    let text: String
+    let theme: AppTheme
+    @State private var sharing = false
+
+    var body: some View {
+        Button { sharing = true } label: {
+            Label("Share build details", systemImage: "square.and.arrow.up")
+                .frame(maxWidth: .infinity, minHeight: 44)
+        }
+        .buttonStyle(AppButtonStyle(theme: theme))
+        .disabled(sharing)
+        .background(BuildDetailsSharePresenter(text: text, isPresented: $sharing).allowsHitTesting(false))
+        .accessibilityIdentifier("share-build-details")
+    }
+}
+
+/// The system receives only the visible four-line snapshot, after an explicit tap.
+private struct BuildDetailsSharePresenter: UIViewControllerRepresentable {
+    let text: String
+    @Binding var isPresented: Bool
+
+    final class Coordinator: NSObject, UIPopoverPresentationControllerDelegate {
+        var presentation: Binding<Bool>
+        var presenting = false
+        init(_ presentation: Binding<Bool>) { self.presentation = presentation }
+        func finished() { presenting = false; presentation.wrappedValue = false }
+        func popoverPresentationControllerDidDismissPopover(_ popoverPresentationController: UIPopoverPresentationController) { finished() }
+    }
+
+    func makeCoordinator() -> Coordinator { Coordinator($isPresented) }
+    func makeUIViewController(context: Context) -> UIViewController {
+        let controller = UIViewController()
+        controller.view.backgroundColor = .clear
+        return controller
+    }
+    func updateUIViewController(_ controller: UIViewController, context: Context) {
+        let coordinator = context.coordinator
+        coordinator.presentation = $isPresented
+        guard isPresented, !coordinator.presenting, controller.view.window != nil,
+              controller.presentedViewController == nil else { return }
+        let activity = UIActivityViewController(activityItems: [text], applicationActivities: nil)
+        if UIDevice.current.userInterfaceIdiom == .pad { activity.modalPresentationStyle = .popover }
+        if let popover = activity.popoverPresentationController {
+            popover.sourceView = controller.view
+            popover.sourceRect = controller.view.bounds
+            popover.delegate = coordinator
+        }
+        activity.completionWithItemsHandler = { [weak coordinator] _, _, _, _ in coordinator?.finished() }
+        coordinator.presenting = true
+        controller.present(activity, animated: true)
+    }
+}
+
 private struct ReadOnlyHomeView: View {
     @Environment(\.scenePhase) private var scenePhase
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
@@ -122,6 +177,7 @@ private struct ReadOnlyHomeView: View {
     @State private var settingResetTask: Task<Void, Never>?
     private struct SettingExplanation: Identifiable {
         let id, title, explanation: String
+        var shareText: String? = nil
     }
     @State private var settingHelp: SettingExplanation?
     @State private var deviceDetails = false
@@ -228,6 +284,9 @@ private struct ReadOnlyHomeView: View {
                     ScrollView {
                       VStack(alignment: .leading, spacing: 20) {
                         Text(item.explanation).fixedSize(horizontal: false, vertical: true)
+                        if let text = item.shareText {
+                            BuildDetailsShareButton(text: text, theme: theme)
+                        }
                         if item.id == "voice" {
                             action("Show voice steps", icon: "mic") { pendingSetupGroup = "voice"; settingHelp = nil }
                         }
@@ -470,7 +529,9 @@ private struct ReadOnlyHomeView: View {
                 }
             }
             action("Build details", icon: "info.circle") {
-                settingHelp = SettingExplanation(id: "build", title: "Build details", explanation: installedBuildDetails)
+                let details = installedBuildDetails
+                settingHelp = SettingExplanation(id: "build", title: "Build details",
+                    explanation: details + "\n\nInclude the version and build when reporting a problem.", shareText: details)
             }
             action("Advanced Settings", icon: "chevron.right") {
                 rememberPage(); closeTutorial(restore: false); advancedExpanded = true
@@ -505,7 +566,7 @@ private struct ReadOnlyHomeView: View {
                   !value.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { return "Unavailable" }
             return value
         }
-        return "Version: \(value("CFBundleShortVersionString"))\nBuild: \(value("CFBundleVersion"))\n\nInclude the version and build when reporting a problem."
+        return "Audio Bodyguard\nPlatform: iPhone/iPad\nVersion: \(value("CFBundleShortVersionString"))\nBuild: \(value("CFBundleVersion"))"
     }
 
     private func question(_ title: String, explanation: String, target: String, light: Bool = false) -> some View {
