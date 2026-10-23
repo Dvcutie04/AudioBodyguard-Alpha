@@ -55,13 +55,19 @@ final class MicrophoneLifecycleTests: XCTestCase {
         }
     }
 
-    func testFailedActivationReleasesReservationWithoutDeactivating() async throws {
+    func testFailedActivationAndFailedCleanupBlockBothTools() async throws {
         try await MainActor.run {
             let gate = ForegroundMicrophoneGate()
             let owner = try XCTUnwrap(gate.acquire())
             XCTAssertThrowsError(try gate.activate(owner) { throw Failure.expected })
-            XCTAssertTrue(gate.release(owner) { XCTFail("Activation never succeeded") })
-            XCTAssertNotNil(gate.acquire())
+            var cleanups = 0
+            XCTAssertFalse(gate.release(owner) { cleanups += 1; throw Failure.expected })
+            XCTAssertEqual(cleanups, 1)
+            XCTAssertTrue(gate.blocked)
+            XCTAssertFalse(gate.available)
+            XCTAssertNil(gate.acquire())
+            XCTAssertFalse(gate.release(owner) { XCTFail("Failure must stay latched") })
+            XCTAssertThrowsError(try gate.activate(owner) { XCTFail("Blocked") })
         }
     }
 
@@ -76,6 +82,7 @@ final class MicrophoneLifecycleTests: XCTestCase {
                 throw Failure.expected
             })
             XCTAssertNil(gate.acquire())
+            XCTAssertThrowsError(try gate.activate(owner) { XCTFail("Cleanup is still required") })
             XCTAssertTrue(gate.release(owner) {
                 cleanups += 1
                 sessionChanged = false
