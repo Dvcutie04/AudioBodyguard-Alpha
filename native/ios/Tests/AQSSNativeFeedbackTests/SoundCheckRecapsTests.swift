@@ -2,6 +2,15 @@ import XCTest
 @testable import AQSSNativeFeedback
 
 final class SoundCheckRecapsTests: XCTestCase {
+    func testExcludedRecapsShareOnlyExactInstalledMetadata() {
+        let metadata = "Audio Bodyguard\nPlatform: iPhone/iPad\nVersion: test-version\nBuild: 1"
+        let report = PrivateSupportReportSnapshot(buildDetails: metadata, recaps: [
+            SoundCheckRecap(inputObserved: true, end: .stoppedByUser),
+            SoundCheckRecap(inputObserved: false, end: .permissionChanged),
+        ])
+        XCTAssertEqual(report.text(includeRecentChecks: false), metadata)
+    }
+
     func testSupportReportKeepsNewestFirstAndDoesNotCallMissingInputSilence() {
         let text = soundCheckSupportReportSection([
             SoundCheckRecap(inputObserved: true, end: .stoppedByUser),

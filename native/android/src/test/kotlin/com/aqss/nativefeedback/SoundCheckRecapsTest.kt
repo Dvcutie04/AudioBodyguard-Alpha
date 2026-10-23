@@ -3,6 +3,15 @@ package com.aqss.nativefeedback
 import kotlin.test.*
 
 class SoundCheckRecapsTest {
+    @Test fun excludedRecapsShareOnlyTheExactInstalledMetadata() {
+        val metadata = "Audio Bodyguard\nPlatform: Android\nVersion: test-version\nBuild: 20"
+        val report = PrivateSupportReportSnapshot(metadata, listOf(
+            SoundCheckRecap(true, SoundCheckEnd.STOPPED_BY_USER),
+            SoundCheckRecap(false, SoundCheckEnd.PERMISSION_CHANGED),
+        ))
+        assertEquals(metadata, report.text(includeRecentChecks = false))
+    }
+
     @Test fun supportReportKeepsNewestFirstAndDoesNotCallMissingInputSilence() {
         val text = soundCheckSupportReportSection(listOf(
             SoundCheckRecap(true, SoundCheckEnd.STOPPED_BY_USER),
