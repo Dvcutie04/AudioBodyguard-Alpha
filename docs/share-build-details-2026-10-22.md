@@ -149,3 +149,12 @@ actual native popover frame, and taps there. It fails immediately if cancel
 does not close the sheet, retaining the hierarchy and a failure screenshot.
 Neither correction changes the application feature or relaxes cancel,
 reopen, exact handoff, enabled-control or Settings-return assertions.
+
+The earlier iPhone job 120168528686 also retained a native share-sheet
+screenshot, and the first implementation's job 120164157620 captured its
+hierarchy. Both show the system Close control in the UIActivityContentView
+navigation bar. The observer now scopes to that native bar and waits for the
+Close button, instead of checking a broad label predicate immediately after
+Copy first appears. If it is unavailable, the test retains a screenshot and
+the hierarchy and fails. The application still uses the native sheet's
+own dismissal behavior.

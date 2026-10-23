@@ -31,10 +31,7 @@ final class AQSSReadOnlyUITests: XCTestCase {
             throw NSError(domain: "AQSSBuildShare", code: 3)
         }
         screenshot("Native build details share sheet", app)
-        let close = app.buttons.matching(NSPredicate(format: "label IN %@", ["Close", "Cancel"])).firstMatch
-        if close.exists {
-            close.tap()
-        } else if UIDevice.current.userInterfaceIdiom == .pad {
+        if UIDevice.current.userInterfaceIdiom == .pad {
             // Tap an observed point inside this app but outside its share popover.
             // The app-window edge can lie outside the inset iPad presentation.
             let preview = app.scrollViews["setting-help-scroll"].staticTexts
@@ -48,8 +45,13 @@ final class AQSSReadOnlyUITests: XCTestCase {
             }
             cancelPoint.tap()
         } else {
-            XCTFail("Require a native share-sheet cancel control")
-            throw NSError(domain: "AQSSBuildShare", code: 4)
+            let close = app.navigationBars["UIActivityContentView"].buttons["Close"].firstMatch
+            guard close.waitForExistence(timeout: 5) else {
+                screenshot("Native share-sheet close control unavailable", app)
+                XCTFail("Require the observed native share-sheet Close control: \(app.debugDescription)")
+                throw NSError(domain: "AQSSBuildShare", code: 4)
+            }
+            close.tap()
         }
         let closed = XCTNSPredicateExpectation(predicate: NSPredicate(format: "exists == false"), object: copy)
         guard XCTWaiter.wait(for: [closed], timeout: 5) == .completed else {
