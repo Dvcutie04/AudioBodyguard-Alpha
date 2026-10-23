@@ -3,14 +3,20 @@ import UIKit
 
 final class AQSSReadOnlyUITests: XCTestCase {
     func testBuildDetailsShareOnlyInstalledMetadataAndReturn() throws {
+        try inspectBuildDetailsShare(copyDetails: true)
+    }
+
+    func testBuildDetailsShareCancelReturnsWithoutCopy() throws {
+        try inspectBuildDetailsShare(copyDetails: false)
+    }
+
+    private func inspectBuildDetailsShare(copyDetails: Bool) throws {
         let environment = ProcessInfo.processInfo.environment
         guard let version = environment["AQSS_TEST_APP_VERSION"], !version.isEmpty,
               let build = environment["AQSS_TEST_APP_BUILD"], !build.isEmpty else {
             XCTFail("Require version and build from the compiled app's Info.plist")
             throw NSError(domain: "AQSSBuildShare", code: 1)
         }
-        UIPasteboard.general.string = nil
-        defer { UIPasteboard.general.string = nil }
         let app = launch()
         tab("settings", app); tap("Build details", app)
         let share = app.buttons["share-build-details"]
@@ -60,19 +66,27 @@ final class AQSSReadOnlyUITests: XCTestCase {
             throw NSError(domain: "AQSSBuildShare", code: 6)
         }
         XCTAssertTrue(share.isHittable)
-        XCTAssertNil(UIPasteboard.general.string, "Cancel must not copy build details")
         label(expected, app)
         screenshot("Cancel share returns to Build details", app)
-        share.tap()
-        XCTAssertTrue(copy.waitForExistence(timeout: 8))
-        copy.tap()
-        let copied = XCTNSPredicateExpectation(predicate: NSPredicate(format: "exists == false"), object: copy)
-        XCTAssertEqual(XCTWaiter.wait(for: [copied], timeout: 5), .completed)
-        XCTAssertEqual(UIPasteboard.general.string, expected, "The actual system handoff must contain only the four preview fields")
-        XCTAssertTrue(share.isHittable)
-        label(expected, app)
+        print("AQSS_BUILD_SHARE_UI: native cancel returned to the preview")
+        if copyDetails {
+            share.tap()
+            XCTAssertTrue(copy.waitForExistence(timeout: 8))
+            copy.tap()
+            print("AQSS_BUILD_SHARE_UI: native Copy selected")
+            let returned = XCTNSPredicateExpectation(
+                predicate: NSPredicate(format: "enabled == true AND hittable == true"), object: share)
+            guard XCTWaiter.wait(for: [returned], timeout: 8) == .completed else {
+                screenshot("Native Copy did not return to Build details", app)
+                XCTFail("Copy must return to an enabled Share control: \(app.debugDescription)")
+                throw NSError(domain: "AQSSBuildShare", code: 7)
+            }
+            XCTAssertFalse(app.cells["Copy"].firstMatch.exists)
+            label(expected, app)
+            print("AQSS_BUILD_SHARE_UI: Copy returned to the preview; host verifies actual clipboard bytes")
+            screenshot("System Copy returns to Build details", app)
+        }
         XCTAssertFalse(XCUIApplication(bundleIdentifier: "com.apple.springboard").alerts.firstMatch.exists)
-        screenshot("System Copy shares exactly the previewed build details", app)
         app.buttons["setting-help-close"].tap()
         label("Appearance", app)
         XCTAssertTrue(app.buttons["Advanced Settings"].exists)

@@ -58,12 +58,13 @@ After the intended red results, test the actual system share sheet:
   independently queried installed version/build, reject stream/URI/extra
   intent data, and return through Build details and Settings. Check that
   microphone app-ops are not running. The receiver never ships in the APK.
-- iPhone and iPad: cancel the native sheet without changing the isolated
-  Simulator pasteboard, reopen, select the real system Copy activity, compare
-  the resulting clipboard text exactly with the preview and compiled
-  Info.plist metadata, and return through Settings to unverified Home.
-  Pasteboard access exists only in the UI-test runner, which clears its
-  synthetic clipboard fixture. The application never accesses it.
+- iPhone and iPad: cancel the native sheet without changing a synthetic
+  Simulator clipboard fixture, reopen, select the real system Copy activity,
+  and return through Settings to unverified Home. A separate host observer
+  compares the actual clipboard bytes exactly with the compiled app's
+  Info.plist metadata. Cancel and Copy run separately so the host can check
+  the unchanged fixture before checking the four-line handoff. The host
+  clears its fixture afterward. Neither app nor UI-test runner reads it.
 - Preserve the complete native permission/input/photo/lifecycle regressions,
   core suites, opening artwork, closed production factory and physical gates.
 
@@ -96,8 +97,8 @@ existing information dialog. Its ordinary help dialogs retain their existing
 behavior. iPhone/iPad reuses the existing Settings explanation sheet, with an
 optional immutable share string and a small UIKit presenter anchored to the
 visible Share button. A coordinator suppresses repeat presentation and resets
-the control after cancellation/completion. Only the UI-test runner reads or
-writes its synthetic pasteboard.
+the control after cancellation/completion. The isolated CI host prepares,
+checks and clears the synthetic pasteboard fixture.
 
 The Android live-input version is 0.18-share-build-details-live-input, code
 18. The default Apple release is 0.18.0, first build 1; runtime metadata lookup
@@ -158,3 +159,28 @@ Close button, instead of checking a broad label predicate immediately after
 Copy first appears. If it is unavailable, the test retains a screenshot and
 the hierarchy and fails. The application still uses the native sheet's
 own dismissal behavior.
+
+Source cfd7a1766e08839b322ca205dc2fc128b9c920a9 passed the complete Android
+native run 39878846662, including the actual receiver Intent and native
+cancel/return. iPad job 120171439729 showed a successful native cancel,
+enabled preview, reopen and Copy tap. It then stopped reporting immediately
+after checking Copy's disappearance; cancellation eventually stopped the
+run. This does not establish an application failure or the exact blocked
+call. The next operation in the initial test was a cross-app UIPasteboard
+read from the UI runner. [Apple documents programmatic paste consent](https://developer.apple.com/documentation/uikit/uipastecontrol)
+on newer systems, so the revised observer avoids that extra app-level
+clipboard reader.
+
+The application remains unchanged. Separate native Cancel and Copy cases
+still require real system controls, identical metadata previews, an enabled
+Share action, Settings return and unverified Home. After the UI returns, the
+host reads the actual Simulator clipboard using simctl with a 20-second
+command bound. Cancel must preserve the prepared fixture; Copy must match
+the exact four UTF-8 lines from the compiled app Info.plist, without trimming
+or normalization. The host retains both JSON observations and clears its
+fixture. [Apple's Xcode command reference](https://developer.apple.com/documentation/xcode/xcode-command-line-tool-reference)
+directs developers to the installed simctl help; CI retains the actual
+pbcopy/pbpaste help before using them and verifies a fixture round trip.
+UI-runner milestones and four-minute share-step bounds make any subsequent
+stall reviewable. This is a change to test observation, not an app clipboard
+API or a weaker handoff assertion.

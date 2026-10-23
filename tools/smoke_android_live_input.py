@@ -227,7 +227,7 @@ def main():
     tap("Return to Build details", "build_share_leave_test_receiver")
     wait_for_all(("Build details", expected_share, "Share build details"), "build_share_receiver_return")
     screenshot("build_share_receiver_return")
-    print("BUILD_DETAILS_SHARE_OBSERVED: native cancel, exact four-field Intent receipt and return", flush=True)
+    print("BUILD_DETAILS_SHARE_OBSERVED: native cancel, exact four-field Intent receipt and enabled preview return", flush=True)
     tap("Back", "build_details_close")
     wait_for_all(("Appearance", "Advanced Settings"), "build_details_return_to_settings")
     tap("Home", "build_details_return_home")

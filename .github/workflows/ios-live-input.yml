@@ -74,17 +74,30 @@ jobs:
         run: |
           set -euo pipefail
           xcrun simctl privacy "$AQSS_SIMULATOR" revoke microphone com.aqss.bodyguard.prototype
+          python3 tools/check_ios_build_share_clipboard.py prepare "$AQSS_SIMULATOR" --output "$RUNNER_TEMP/build-share-clipboard"
           xcodebuild test-without-building \
             -xctestrun "$RUNNER_TEMP/sound-check-build/Build/Products/sound-denied.xctestrun" \
             -destination "platform=iOS Simulator,id=$AQSS_SIMULATOR" \
             -parallel-testing-enabled NO -resultBundlePath "$RUNNER_TEMP/sound-denied.xcresult" \
             -only-testing:AQSSReadOnlyUITests/AQSSReadOnlyUITests/testBuildDetailsMatchInstalledMetadataAndReturnToSettings \
-            -only-testing:AQSSReadOnlyUITests/AQSSReadOnlyUITests/testBuildDetailsShareOnlyInstalledMetadataAndReturn \
+            -only-testing:AQSSReadOnlyUITests/AQSSReadOnlyUITests/testBuildDetailsShareCancelReturnsWithoutCopy \
             -only-testing:AQSSReadOnlyUITests/AQSSReadOnlyUITests/testLiveSoundCheckStartsOffAndHelpReturnsWithoutCapture \
             -only-testing:AQSSReadOnlyUITests/AQSSReadOnlyUITests/testVoiceCheckStartsIdleAndClosingItLeavesMeterUsable \
             -only-testing:AQSSReadOnlyUITests/AQSSReadOnlyUITests/testVoiceCheckDeniedMicrophoneCannotRequestSpeechOrCapture \
             -only-testing:AQSSReadOnlyUITests/AQSSReadOnlyUITests/testInputToolsStartIdleAndNeverClaimAConnection \
             -only-testing:AQSSReadOnlyUITests/AQSSReadOnlyUITests/testPhotoReviewGuidanceAndReplacement
+          python3 tools/check_ios_build_share_clipboard.py cancel "$AQSS_SIMULATOR" --output "$RUNNER_TEMP/build-share-clipboard"
+      - name: Verify native iPhone Copy and exact clipboard handoff
+        timeout-minutes: 4
+        shell: bash
+        run: |
+          set -euo pipefail
+          xcodebuild test-without-building \
+            -xctestrun "$RUNNER_TEMP/sound-check-build/Build/Products/sound-denied.xctestrun" \
+            -destination "platform=iOS Simulator,id=$AQSS_SIMULATOR" \
+            -parallel-testing-enabled NO -resultBundlePath "$RUNNER_TEMP/sound-build-share-copy.xcresult" \
+            -only-testing:AQSSReadOnlyUITests/AQSSReadOnlyUITests/testBuildDetailsShareOnlyInstalledMetadataAndReturn
+          python3 tools/check_ios_build_share_clipboard.py copy "$AQSS_SIMULATOR" --app-info "$RUNNER_TEMP/sound-check-build/Build/Products/Release-iphonesimulator/AQSSReadOnly.app/Info.plist" --output "$RUNNER_TEMP/build-share-clipboard"
       - name: Verify denied and granted Settings returns
         shell: bash
         run: |
@@ -119,11 +132,14 @@ jobs:
             -parallel-testing-enabled NO -resultBundlePath "$RUNNER_TEMP/sound-granted.xcresult" \
             -only-testing:AQSSReadOnlyUITests/AQSSReadOnlyUITests/testLiveSoundCheckStopsOnHomeAndRequiresAnotherStart \
             -only-testing:AQSSReadOnlyUITests/AQSSReadOnlyUITests/testVoiceSpeechPermissionGrantDoesNotStartDeferredCapture
+      - name: Clear isolated clipboard fixture
+        if: always() && env.AQSS_SIMULATOR != ''
+        run: python3 tools/check_ios_build_share_clipboard.py clear "$AQSS_SIMULATOR" --output "$RUNNER_TEMP/build-share-clipboard"
       - name: Export compact screenshot evidence
         if: always()
         shell: bash
         run: |
-          python3 tools/export_ios_input_screenshots.py "$RUNNER_TEMP" denied settings voice-microphone granted
+          python3 tools/export_ios_input_screenshots.py "$RUNNER_TEMP" denied build-share-copy settings voice-microphone granted
       - name: Keep Simulator test evidence
         if: always()
         uses: actions/upload-artifact@v4
@@ -131,10 +147,12 @@ jobs:
           name: ios-sound-check-evidence
           path: |
             ${{ runner.temp }}/sound-denied.xcresult
+            ${{ runner.temp }}/sound-build-share-copy.xcresult
             ${{ runner.temp }}/sound-settings.xcresult
             ${{ runner.temp }}/sound-voice-microphone.xcresult
             ${{ runner.temp }}/sound-granted.xcresult
             ${{ runner.temp }}/sound-check-screenshots
+            ${{ runner.temp }}/build-share-clipboard
           if-no-files-found: ignore
           retention-days: 7
 
@@ -171,18 +189,35 @@ jobs:
           environment['AQSS_TEST_APP_BUILD'] = info['CFBundleVersion']
           (root / 'build-share-ipad.xctestrun').write_bytes(plistlib.dumps(data))
           PYTHON
-      - name: Verify native iPad share popover and exact text handoff
+      - name: Verify native iPad popover cancellation
+        timeout-minutes: 4
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 tools/check_ios_build_share_clipboard.py prepare "$AQSS_SHARE_IPAD" --output "$RUNNER_TEMP/build-share-clipboard"
+          xcodebuild test-without-building \
+            -xctestrun "$RUNNER_TEMP/build-share-ipad/Build/Products/build-share-ipad.xctestrun" \
+            -destination "platform=iOS Simulator,id=$AQSS_SHARE_IPAD" \
+            -parallel-testing-enabled NO -resultBundlePath "$RUNNER_TEMP/sound-build-share-ipad.xcresult" \
+            -only-testing:AQSSReadOnlyUITests/AQSSReadOnlyUITests/testBuildDetailsShareCancelReturnsWithoutCopy
+          python3 tools/check_ios_build_share_clipboard.py cancel "$AQSS_SHARE_IPAD" --output "$RUNNER_TEMP/build-share-clipboard"
+      - name: Verify native iPad Copy and exact clipboard handoff
+        timeout-minutes: 4
         shell: bash
         run: |
           set -euo pipefail
           xcodebuild test-without-building \
             -xctestrun "$RUNNER_TEMP/build-share-ipad/Build/Products/build-share-ipad.xctestrun" \
             -destination "platform=iOS Simulator,id=$AQSS_SHARE_IPAD" \
-            -parallel-testing-enabled NO -resultBundlePath "$RUNNER_TEMP/sound-build-share-ipad.xcresult" \
+            -parallel-testing-enabled NO -resultBundlePath "$RUNNER_TEMP/sound-build-share-ipad-copy.xcresult" \
             -only-testing:AQSSReadOnlyUITests/AQSSReadOnlyUITests/testBuildDetailsShareOnlyInstalledMetadataAndReturn
+          python3 tools/check_ios_build_share_clipboard.py copy "$AQSS_SHARE_IPAD" --app-info "$RUNNER_TEMP/build-share-ipad/Build/Products/Release-iphonesimulator/AQSSReadOnly.app/Info.plist" --output "$RUNNER_TEMP/build-share-clipboard"
+      - name: Clear isolated iPad clipboard fixture
+        if: always() && env.AQSS_SHARE_IPAD != ''
+        run: python3 tools/check_ios_build_share_clipboard.py clear "$AQSS_SHARE_IPAD" --output "$RUNNER_TEMP/build-share-clipboard"
       - name: Export iPad share screenshot evidence
         if: always()
-        run: python3 tools/export_ios_input_screenshots.py "$RUNNER_TEMP" build-share-ipad
+        run: python3 tools/export_ios_input_screenshots.py "$RUNNER_TEMP" build-share-ipad build-share-ipad-copy
       - name: Keep iPad share evidence
         if: always()
         uses: actions/upload-artifact@v4
@@ -190,7 +225,9 @@ jobs:
           name: ios-build-details-share-ipad-evidence
           path: |
             ${{ runner.temp }}/sound-build-share-ipad.xcresult
+            ${{ runner.temp }}/sound-build-share-ipad-copy.xcresult
             ${{ runner.temp }}/sound-check-screenshots
+            ${{ runner.temp }}/build-share-clipboard
           if-no-files-found: ignore
           retention-days: 7
 
