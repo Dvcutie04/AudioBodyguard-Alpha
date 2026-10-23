@@ -2,6 +2,14 @@ import XCTest
 import UIKit
 
 final class AQSSReadOnlyUITests: XCTestCase {
+    func testPrivateSupportReportCancelReturnsWithoutCopy() throws {
+        try inspectBuildDetailsShare(copyDetails: false, supportReport: true)
+    }
+
+    func testPrivateSupportReportSharesOnlyPreviewedFieldsAndReturns() throws {
+        try inspectBuildDetailsShare(copyDetails: true, supportReport: true)
+    }
+
     func testBuildDetailsShareOnlyInstalledMetadataAndReturn() throws {
         try inspectBuildDetailsShare(copyDetails: true)
     }
@@ -10,7 +18,7 @@ final class AQSSReadOnlyUITests: XCTestCase {
         try inspectBuildDetailsShare(copyDetails: false)
     }
 
-    private func inspectBuildDetailsShare(copyDetails: Bool) throws {
+    private func inspectBuildDetailsShare(copyDetails: Bool, supportReport: Bool = false) throws {
         let environment = ProcessInfo.processInfo.environment
         guard let version = environment["AQSS_TEST_APP_VERSION"], !version.isEmpty,
               let build = environment["AQSS_TEST_APP_BUILD"], !build.isEmpty else {
@@ -18,14 +26,21 @@ final class AQSSReadOnlyUITests: XCTestCase {
             throw NSError(domain: "AQSSBuildShare", code: 1)
         }
         let app = launch()
-        tab("settings", app); tap("Build details", app)
-        let share = app.buttons["share-build-details"]
+        tab("settings", app)
+        if supportReport { tap("Advanced Settings", app); tap("About Private support report", app) }
+        else { tap("Build details", app) }
+        let share = app.buttons[supportReport ? "share-support-report" : "share-build-details"]
         guard share.waitForExistence(timeout: 5) else {
-            screenshot("Share build details action missing", app)
-            XCTFail("Missing Share build details action")
+            screenshot(supportReport ? "Share support report action missing" : "Share build details action missing", app)
+            XCTFail(supportReport ? "Missing Share support report action" : "Missing Share build details action")
             throw NSError(domain: "AQSSBuildShare", code: 2)
         }
-        let expected = "Audio Bodyguard\nPlatform: iPhone/iPad\nVersion: \(version)\nBuild: \(build)"
+        var expected = "Audio Bodyguard\nPlatform: iPhone/iPad\nVersion: \(version)\nBuild: \(build)"
+        if supportReport {
+            expected += "\n\nRecent sound checks (this app session)\nNo completed sound checks in this app session.\n\nInput observations only; not proof of sound safety, protection or TV control."
+            label("Review before sharing", app)
+            label("No audio, recognized words, photos, TV or network details are included.", app)
+        }
         label(expected, app)
         let copy = app.cells["Copy"].firstMatch
         XCTAssertFalse(copy.exists, "Build details must preview without opening the share sheet")
@@ -88,6 +103,11 @@ final class AQSSReadOnlyUITests: XCTestCase {
         }
         XCTAssertFalse(XCUIApplication(bundleIdentifier: "com.apple.springboard").alerts.firstMatch.exists)
         app.buttons["setting-help-close"].tap()
+        if supportReport {
+            label("Advanced Settings", app)
+            XCTAssertTrue(app.buttons["help-support"].exists)
+            app.buttons["page-back"].tap()
+        }
         label("Appearance", app)
         XCTAssertTrue(app.buttons["Advanced Settings"].exists)
         XCTAssertFalse(app.scrollViews["setting-help-scroll"].exists)

@@ -230,6 +230,46 @@ def main():
     print("BUILD_DETAILS_SHARE_OBSERVED: native cancel, exact four-field Intent receipt and enabled preview return", flush=True)
     tap("Back", "build_details_close")
     wait_for_all(("Appearance", "Advanced Settings"), "build_details_return_to_settings")
+    # Start with a genuinely fresh process: no completed input checks exist.
+    tap("Advanced Settings", "support_report_advanced")
+    for attempt in range(7):
+        report_root, _ = screen(f"support_report_find_{attempt}")
+        if any(n.get("content-desc") == "About Private support report" for n in report_root.iter("node")):
+            break
+        scroll_meter(f"support_report_scroll_{attempt}", down=True)
+    tap("About Private support report", "support_report_open")
+    tap("Share support report", "support_report_share_required")
+    expected_report = expected_share + "\n\nRecent sound checks (this app session)\nNo completed sound checks in this app session.\n\nInput observations only; not proof of sound safety, protection or TV control."
+    wait_for("Build details test", "support_report_native_chooser")
+    screenshot("support_report_native_chooser")
+    adb("shell", "input", "keyevent", "KEYCODE_BACK")
+    wait_for_all((expected_report, "Share support report", "Review before sharing"), "support_report_cancel_return")
+    # The earlier build-detail receipt must not be replaced by Cancel.
+    assert adb("shell", "run-as", receiver, "cat", receiver_file) == receipt
+    screenshot("support_report_cancel_return")
+    tap("Share support report", "support_report_reopen")
+    tap("Build details test", "support_report_select_test_receiver")
+    report_received = wait_for_all(("Build details received for test", expected_report, "Return to Build details"), "support_report_receiver_observed")
+    assert any(n.get("package") == receiver for n in report_received.iter("node"))
+    report_receipt = adb("shell", "run-as", receiver, "cat", receiver_file)
+    (out / "shared-support-report-receiver-raw.txt").write_bytes(report_receipt)
+    report_observed = json.loads(report_receipt.decode())
+    assert report_observed["action"] == "android.intent.action.SEND" and report_observed["type"] == "text/plain", report_observed
+    assert report_observed["text"] == expected_report, report_observed
+    assert report_observed["data"] is None and report_observed["has_stream"] is False, report_observed
+    assert all(item["text"] == expected_report and item["uri"] is None and item["has_intent"] is False for item in report_observed["clips"]), report_observed
+    (out / "shared-support-report.json").write_text(json.dumps(report_observed, sort_keys=True))
+    tap("Return to Build details", "support_report_leave_test_receiver")
+    wait_for_all((expected_report, "Share support report"), "support_report_receiver_return")
+    screenshot("support_report_receiver_return")
+    report_appops = adb("shell", "cmd", "appops", "get", package, "RECORD_AUDIO").decode()
+    (out / "support-report-appops.txt").write_text(report_appops)
+    assert "(running)" not in report_appops, report_appops
+    tap("Back", "support_report_close")
+    wait_for("Advanced Settings", "support_report_back_to_caller")
+    adb("shell", "input", "keyevent", "KEYCODE_BACK")
+    wait_for("Appearance", "support_report_back_to_settings")
+    print("SUPPORT_REPORT_SHARE_OBSERVED: empty allowlisted preview, native Cancel, exact Intent receipt and return to Advanced Settings", flush=True)
     tap("Home", "build_details_return_home")
     wait_for("Connection not verified", "build_details_home_still_unverified")
     # A synthetic image in this isolated emulator goes through the real system
