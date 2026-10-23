@@ -1,6 +1,68 @@
 import XCTest
+import UIKit
 
 final class AQSSReadOnlyUITests: XCTestCase {
+    func testBuildDetailsShareOnlyInstalledMetadataAndReturn() throws {
+        let environment = ProcessInfo.processInfo.environment
+        guard let version = environment["AQSS_TEST_APP_VERSION"], !version.isEmpty,
+              let build = environment["AQSS_TEST_APP_BUILD"], !build.isEmpty else {
+            XCTFail("Require version and build from the compiled app's Info.plist")
+            throw NSError(domain: "AQSSBuildShare", code: 1)
+        }
+        UIPasteboard.general.string = nil
+        defer { UIPasteboard.general.string = nil }
+        let app = launch()
+        tab("settings", app); tap("Build details", app)
+        let share = app.buttons["share-build-details"]
+        guard share.waitForExistence(timeout: 5) else {
+            screenshot("Share build details action missing", app)
+            XCTFail("Missing Share build details action")
+            throw NSError(domain: "AQSSBuildShare", code: 2)
+        }
+        let expected = "Audio Bodyguard\nPlatform: iPhone/iPad\nVersion: \(version)\nBuild: \(build)"
+        label(expected, app)
+        let copy = app.buttons["Copy"].firstMatch
+        XCTAssertFalse(copy.exists, "Build details must preview without opening the share sheet")
+        screenshot("Build details preview before explicit Share", app)
+        share.tap()
+        guard copy.waitForExistence(timeout: 8) else {
+            screenshot("Native share sheet unavailable", app)
+            XCTFail("Require the native share sheet's Copy action: \(app.debugDescription)")
+            throw NSError(domain: "AQSSBuildShare", code: 3)
+        }
+        screenshot("Native build details share sheet", app)
+        let close = app.buttons.matching(NSPredicate(format: "label IN %@", ["Close", "Cancel"])).firstMatch
+        if close.exists {
+            close.tap()
+        } else if UIDevice.current.userInterfaceIdiom == .pad {
+            app.coordinate(withNormalizedOffset: CGVector(dx: 0.01, dy: 0.1)).tap()
+        } else {
+            XCTFail("Require a native share-sheet cancel control")
+            throw NSError(domain: "AQSSBuildShare", code: 4)
+        }
+        let closed = XCTNSPredicateExpectation(predicate: NSPredicate(format: "exists == false"), object: copy)
+        XCTAssertEqual(XCTWaiter.wait(for: [closed], timeout: 5), .completed)
+        XCTAssertTrue(share.isHittable)
+        XCTAssertNil(UIPasteboard.general.string, "Cancel must not copy build details")
+        label(expected, app)
+        screenshot("Cancel share returns to Build details", app)
+        share.tap()
+        XCTAssertTrue(copy.waitForExistence(timeout: 8))
+        copy.tap()
+        let copied = XCTNSPredicateExpectation(predicate: NSPredicate(format: "exists == false"), object: copy)
+        XCTAssertEqual(XCTWaiter.wait(for: [copied], timeout: 5), .completed)
+        XCTAssertEqual(UIPasteboard.general.string, expected, "The actual system handoff must contain only the four preview fields")
+        XCTAssertTrue(share.isHittable)
+        label(expected, app)
+        XCTAssertFalse(XCUIApplication(bundleIdentifier: "com.apple.springboard").alerts.firstMatch.exists)
+        screenshot("System Copy shares exactly the previewed build details", app)
+        app.buttons["setting-help-close"].tap()
+        label("Appearance", app)
+        XCTAssertTrue(app.buttons["Advanced Settings"].exists)
+        XCTAssertFalse(app.scrollViews["setting-help-scroll"].exists)
+        tab("home", app); label("Connection not verified", app)
+    }
+
     func testBuildDetailsMatchInstalledMetadataAndReturnToSettings() throws {
         let environment = ProcessInfo.processInfo.environment
         guard let version = environment["AQSS_TEST_APP_VERSION"], !version.isEmpty,

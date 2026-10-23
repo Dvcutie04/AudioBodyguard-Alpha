@@ -193,6 +193,32 @@ def main():
                                   "Include the version and build when reporting a problem."), "installed_build_details")
     assert any(node.get("content-desc") == "Back" or node.get("text") == "Back" for node in build_details.iter("node")), "Build details requires an accessible Back control"
     screenshot("installed_build_details")
+    receiver = "com.aqss.bodyguard.uiprobe"
+    receiver_file = "files/shared-build-details.json"
+    adb("shell", "run-as", receiver, "rm", "-f", receiver_file)
+    tap("Share build details", "build_share_open")
+    chooser = wait_for("Build details test", "build_share_native_chooser")
+    assert any(node.get("package") == "com.android.intentresolver" for node in chooser.iter("node")), "Require the real Android Sharesheet"
+    screenshot("build_share_native_chooser")
+    adb("shell", "input", "keyevent", "KEYCODE_BACK")
+    expected_share = f"Audio Bodyguard\nPlatform: Android\nVersion: {version}\nBuild: {build}"
+    wait_for_all(("Build details", expected_share, "Share build details"), "build_share_cancel_return")
+    adb("shell", shlex.join(["run-as", receiver, "sh", "-c", "test ! -e " + receiver_file]))
+    screenshot("build_share_cancel_return")
+    tap("Share build details", "build_share_reopen")
+    wait_for("Build details test", "build_share_native_chooser_again")
+    tap("Build details test", "build_share_select_test_receiver")
+    wait_for_all(("Build details", expected_share, "Share build details"), "build_share_receiver_return")
+    observed = json.loads(adb("exec-out", "run-as", receiver, "cat", receiver_file).decode())
+    assert observed["action"] == "android.intent.action.SEND" and observed["type"] == "text/plain", observed
+    assert observed["text"] == expected_share, observed
+    assert observed["data"] is None and observed["has_stream"] is False, observed
+    assert all(item["text"] == expected_share and item["uri"] is None and item["has_intent"] is False for item in observed["clips"]), observed
+    (out / "shared-build-details.json").write_text(json.dumps(observed, sort_keys=True))
+    shared_appops = adb("shell", "cmd", "appops", "get", package, "RECORD_AUDIO").decode()
+    (out / "build-share-appops.txt").write_text(shared_appops)
+    assert "(running)" not in shared_appops, shared_appops
+    screenshot("build_share_receiver_return")
     tap("Back", "build_details_close")
     wait_for_all(("Appearance", "Advanced Settings"), "build_details_return_to_settings")
     tap("Home", "build_details_return_home")
@@ -519,7 +545,7 @@ def main():
     crashes = adb("logcat", "-b", "crash", "-d").decode()
     (out / "crash-log.txt").write_text(crashes)
     assert "FATAL EXCEPTION" not in crashes, crashes
-    print("LIVE_INPUT_EMULATOR_OBSERVED: permission denial, app-specific Settings round trips with denied/granted access and no capture until another Start, PCM samples, manual stop, notification-shade focus loss, background stop, rotation stop, no automatic restart, 30-second limit, voice navigation/service attempt, real Voice microphone-denial/Settings fixture with denied and granted returns kept off, meter reuse, bounded input recaps, Clear, navigation retention, empty recaps after process restart, synthetic-photo picker/ML Kit review, over-budget photo rejection, photo Clear/cancel and unverified connection passed. No physical microphone, real-photo accuracy or output qualification.", flush=True)
+    print("LIVE_INPUT_EMULATOR_OBSERVED: native build-details preview/cancel/four-field share handoff, permission denial, app-specific Settings round trips with denied/granted access and no capture until another Start, PCM samples, manual stop, notification-shade focus loss, background stop, rotation stop, no automatic restart, 30-second limit, voice navigation/service attempt, real Voice microphone-denial/Settings fixture with denied and granted returns kept off, meter reuse, bounded input recaps, Clear, navigation retention, empty recaps after process restart, synthetic-photo picker/ML Kit review, over-budget photo rejection, photo Clear/cancel and unverified connection passed. No physical microphone, real-photo accuracy or output qualification.", flush=True)
 
 
 if __name__ == "__main__":

@@ -1,5 +1,12 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
     <application android:testOnly="true" android:allowBackup="false" android:label="AQSS test observer">
+        <activity android:name=".BuildDetailsShareReceiver" android:exported="true" android:label="Build details test">
+            <intent-filter>
+                <action android:name="android.intent.action.SEND" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <data android:mimeType="text/plain" />
+            </intent-filter>
+        </activity>
         <provider android:name=".DelayedPhotoProvider" android:authorities="com.aqss.bodyguard.uiprobe.delayedphotos" android:exported="true" />
     </application>
     <instrumentation android:name=".HierarchyProbe" android:targetPackage="com.aqss.bodyguard.uiprobe" />
