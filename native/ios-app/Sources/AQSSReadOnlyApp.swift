@@ -151,6 +151,36 @@ private struct ReviewedTextSharePresenter: UIViewControllerRepresentable {
     }
 }
 
+func installedAppBuildDetails() -> String {
+    func value(_ key: String) -> String {
+        guard let value = Bundle.main.object(forInfoDictionaryKey: key) as? String,
+              !value.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { return "Unavailable" }
+        return value
+    }
+    return "Audio Bodyguard\nPlatform: iPhone/iPad\nVersion: \(value("CFBundleShortVersionString"))\nBuild: \(value("CFBundleVersion"))"
+}
+
+private let supportReportReviewNotice = "Review before sharing\nNo audio, recognized words, photos, TV or network details are included."
+
+/// The snapshot is supplied by the caller; only an explicit Share opens a native activity.
+struct SupportReportReviewContent: View {
+    let theme: AppTheme
+    let report: PrivateSupportReportSnapshot
+    @Binding var includeRecentChecks: Bool
+    var body: some View {
+        Group {
+            Toggle("Include recent sound checks", isOn: $includeRecentChecks)
+                .tint(theme.accent).accessibilityIdentifier("support-report-include-checks")
+            let preview = report.text(includeRecentChecks: includeRecentChecks)
+            Text(preview).fixedSize(horizontal: false, vertical: true)
+                .accessibilityIdentifier("support-report-preview")
+            Text(supportReportReviewNotice).fixedSize(horizontal: false, vertical: true)
+            ReviewedTextShareButton(text: preview, theme: theme,
+                title: "Share support report", identifier: "share-support-report")
+        }
+    }
+}
+
 private struct ReadOnlyHomeView: View {
     @Environment(\.scenePhase) private var scenePhase
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
@@ -567,14 +597,7 @@ private struct ReadOnlyHomeView: View {
 
     @ViewBuilder private func settingExplanationContents(_ item: SettingExplanation) -> some View {
         if let report = item.supportReport {
-            Toggle("Include recent sound checks", isOn: $includeRecentChecks)
-                .tint(theme.accent).accessibilityIdentifier("support-report-include-checks")
-            let preview = report.text(includeRecentChecks: includeRecentChecks)
-            Text(preview).fixedSize(horizontal: false, vertical: true)
-                .accessibilityIdentifier("support-report-preview")
-            Text(item.explanation).fixedSize(horizontal: false, vertical: true)
-            ReviewedTextShareButton(text: preview, theme: theme,
-                title: "Share support report", identifier: "share-support-report")
+            SupportReportReviewContent(theme: theme, report: report, includeRecentChecks: $includeRecentChecks)
         } else {
             Text(item.explanation).fixedSize(horizontal: false, vertical: true)
             if let text = item.shareText {
@@ -583,20 +606,13 @@ private struct ReadOnlyHomeView: View {
         }
     }
 
-    private var installedBuildDetails: String {
-        func value(_ key: String) -> String {
-            guard let value = Bundle.main.object(forInfoDictionaryKey: key) as? String,
-                  !value.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { return "Unavailable" }
-            return value
-        }
-        return "Audio Bodyguard\nPlatform: iPhone/iPad\nVersion: \(value("CFBundleShortVersionString"))\nBuild: \(value("CFBundleVersion"))"
-    }
+    private var installedBuildDetails: String { installedAppBuildDetails() }
 
     @MainActor private func showSupportReport() {
         let report = PrivateSupportReportSnapshot(buildDetails: installedBuildDetails, recaps: SoundCheckRecaps.shared.snapshot())
         includeRecentChecks = true
         settingHelp = SettingExplanation(id: "support", title: "Private support report",
-            explanation: "Review before sharing\nNo audio, recognized words, photos, TV or network details are included.", supportReport: report)
+            explanation: supportReportReviewNotice, supportReport: report)
     }
 
     private func question(_ title: String, explanation: String, target: String, light: Bool = false) -> some View {

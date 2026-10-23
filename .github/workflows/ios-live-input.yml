@@ -3,7 +3,7 @@ name: iPhone foreground input verification
 on:
   workflow_dispatch:
   push:
-    branches: ["aqss/ios-live-sound-check", "aqss/ios-microphone-lifecycle", "aqss/android-microphone-lifecycle", "aqss/sound-check-recaps", "aqss/tv-photo-labels", "aqss/tv-photo-text-bounds", "aqss/tv-photo-selection", "aqss/photo-review-deadline", "aqss/photo-work-ownership", "aqss/photo-work-ready", "aqss/photo-retry-guidance", "aqss/sound-permission-settings", "aqss/voice-permission-settings", "aqss/build-details", "aqss/share-build-details", "aqss/private-support-report", "aqss/support-report-privacy", "aqss/insights-sound-checks", "aqss/input-activation-cleanup", "aqss/voice-error-guidance", "aqss/ios-voice-stop-guidance"]
+    branches: ["aqss/ios-live-sound-check", "aqss/ios-microphone-lifecycle", "aqss/android-microphone-lifecycle", "aqss/sound-check-recaps", "aqss/tv-photo-labels", "aqss/tv-photo-text-bounds", "aqss/tv-photo-selection", "aqss/photo-review-deadline", "aqss/photo-work-ownership", "aqss/photo-work-ready", "aqss/photo-retry-guidance", "aqss/sound-permission-settings", "aqss/voice-permission-settings", "aqss/build-details", "aqss/share-build-details", "aqss/private-support-report", "aqss/support-report-privacy", "aqss/insights-sound-checks", "aqss/input-activation-cleanup", "aqss/voice-error-guidance", "aqss/ios-voice-stop-guidance", "aqss/recap-support-report"]
 
 permissions:
   contents: read
@@ -79,7 +79,8 @@ jobs:
             -xctestrun "$RUNNER_TEMP/sound-check-build/Build/Products/sound-denied.xctestrun" \
             -destination "platform=iOS Simulator,id=$AQSS_SIMULATOR" \
             -parallel-testing-enabled NO -resultBundlePath "$RUNNER_TEMP/sound-insights-empty.xcresult" \
-            -only-testing:AQSSReadOnlyUITests/AQSSReadOnlyUITests/testInsightsRecapsStartEmptyAndReturnWithoutCapture
+            -only-testing:AQSSReadOnlyUITests/AQSSReadOnlyUITests/testInsightsRecapsStartEmptyAndReturnWithoutCapture \
+            -only-testing:AQSSReadOnlyUITests/AQSSReadOnlyUITests/testInsightsRecapReportPreviewReturnsWithoutCapture
       - name: Verify native build-only report Cancel
         timeout-minutes: 4
         shell: bash
@@ -184,11 +185,13 @@ jobs:
         run: |
           set -euo pipefail
           xcrun simctl privacy "$AQSS_SIMULATOR" grant microphone com.aqss.bodyguard.prototype
+          python3 tools/check_ios_build_share_clipboard.py prepare "$AQSS_SIMULATOR" --output "$RUNNER_TEMP/recap-report-clipboard"
           xcodebuild test-without-building \
             -xctestrun "$RUNNER_TEMP/sound-check-build/Build/Products/sound-granted.xctestrun" \
             -destination "platform=iOS Simulator,id=$AQSS_SIMULATOR" \
             -parallel-testing-enabled NO -resultBundlePath "$RUNNER_TEMP/sound-insights-completed.xcresult" \
             -only-testing:AQSSReadOnlyUITests/AQSSReadOnlyUITests/testInsightsRecapsReviewClearAndRestart
+          python3 tools/check_ios_build_share_clipboard.py copy "$AQSS_SIMULATOR" --app-info "$RUNNER_TEMP/sound-check-build/Build/Products/Release-iphonesimulator/AQSSReadOnly.app/Info.plist" --support-report --completed-check --output "$RUNNER_TEMP/recap-report-clipboard"
       - name: Verify completed sound checks can be excluded without deletion
         timeout-minutes: 4
         shell: bash
@@ -232,6 +235,7 @@ jobs:
           path: |
             ${{ runner.temp }}/sound-insights-empty.xcresult
             ${{ runner.temp }}/sound-insights-completed.xcresult
+            ${{ runner.temp }}/recap-report-clipboard
             ${{ runner.temp }}/sound-denied.xcresult
             ${{ runner.temp }}/sound-support-report-cancel.xcresult
             ${{ runner.temp }}/sound-support-report-copy.xcresult
@@ -294,7 +298,8 @@ jobs:
             -xctestrun "$RUNNER_TEMP/build-share-ipad/Build/Products/build-share-ipad.xctestrun" \
             -destination "platform=iOS Simulator,id=$AQSS_SHARE_IPAD" \
             -parallel-testing-enabled NO -resultBundlePath "$RUNNER_TEMP/sound-insights-ipad-empty.xcresult" \
-            -only-testing:AQSSReadOnlyUITests/AQSSReadOnlyUITests/testInsightsRecapsStartEmptyAndReturnWithoutCapture
+            -only-testing:AQSSReadOnlyUITests/AQSSReadOnlyUITests/testInsightsRecapsStartEmptyAndReturnWithoutCapture \
+            -only-testing:AQSSReadOnlyUITests/AQSSReadOnlyUITests/testInsightsRecapReportPreviewReturnsWithoutCapture
       - name: Verify native build-only report Cancel
         timeout-minutes: 4
         shell: bash

@@ -5,7 +5,6 @@ import android.app.AlertDialog
 import android.content.ActivityNotFoundException
 import android.content.Intent
 import android.content.res.Configuration
-import android.content.res.ColorStateList
 import android.graphics.Color
 import android.graphics.Typeface
 import android.media.AudioDeviceCallback
@@ -22,7 +21,6 @@ import android.view.ViewGroup
 import android.view.ViewTreeObserver
 import android.view.WindowInsets
 import android.widget.Button
-import android.widget.CheckBox
 import android.widget.FrameLayout
 import android.widget.LinearLayout
 import android.widget.ScrollView
@@ -30,7 +28,6 @@ import android.widget.TextView
 import android.widget.Toast
 import android.window.OnBackInvokedCallback
 import android.window.OnBackInvokedDispatcher
-import androidx.core.content.pm.PackageInfoCompat
 import com.aqss.nativefeedback.CapabilityFacts
 import com.aqss.nativefeedback.SessionEvidenceView
 import com.aqss.nativefeedback.SessionState
@@ -536,13 +533,7 @@ class ReadOnlyHomeActivity : Activity() {
         action(column, "Advanced Settings") { rememberPage(); tutorial.close(false); advancedExpanded = true; renderPage() }
     }
 
-    @Suppress("DEPRECATION") // The int-flags overload remains available on the API 26 minimum.
-    private fun installedBuildDetails(): String {
-        val info = try { packageManager.getPackageInfo(packageName, 0) } catch (_: Exception) { null }
-        val version = info?.versionName?.takeIf { it.isNotBlank() } ?: "Unavailable"
-        val build = info?.let { PackageInfoCompat.getLongVersionCode(it).toString() } ?: "Unavailable"
-        return "Audio Bodyguard\nPlatform: Android\nVersion: $version\nBuild: $build"
-    }
+    private fun installedBuildDetails() = installedAppBuildDetails(this)
 
     private fun showBuildDetails() {
         val details = installedBuildDetails()
@@ -551,11 +542,10 @@ class ReadOnlyHomeActivity : Activity() {
 
     private fun showSupportReport() {
         val report = PrivateSupportReportSnapshot(installedBuildDetails(), SoundCheckRecaps.process.snapshot())
-        showInformation("Private support report", "Review before sharing\nNo audio, recognized words, photos, TV or network details are included.",
-            "support", shareText = report.text(true), shareTitle = "Share support report", supportReport = report)
+        showPrivateSupportReport(this, skin, report)
     }
 
-    private fun showInformation(title: String, explanation: String, target: String, shareText: String? = null, shareTitle: String = "Share build details", supportReport: PrivateSupportReportSnapshot? = null) {
+    private fun showInformation(title: String, explanation: String, target: String, shareText: String? = null, shareTitle: String = "Share build details") {
         val content = vertical().apply { setPadding(dp(20), dp(14), dp(20), dp(14)); setBackgroundColor(skin.background) }
         val holder = ScrollView(this).apply { addView(content) }
         val dialog = AlertDialog.Builder(this).setView(holder).create()
@@ -563,27 +553,11 @@ class ReadOnlyHomeActivity : Activity() {
         label(heading, title, 22f, bold = true).layoutParams = LinearLayout.LayoutParams(0, -2, 1f)
         heading.addView(roseButton(this, skin, "Back", compact = true) { dialog.dismiss() })
         content.addView(heading)
-        var reviewedText = shareText
-        if (supportReport != null) {
-            val choice = CheckBox(this).apply {
-                text = "Include recent sound checks"
-                isChecked = true
-                textSize = 17f; minHeight = dp(48)
-                setTextColor(skin.text)
-                buttonTintList = ColorStateList(arrayOf(intArrayOf(android.R.attr.state_checked), intArrayOf()), intArrayOf(skin.accent, skin.muted))
-            }
-            content.addView(choice, LinearLayout.LayoutParams(-1, -2))
-            val preview = label(content, supportReport.text(true), 17f)
-            label(content, explanation, 17f)
-            choice.setOnCheckedChangeListener { _, checked ->
-                reviewedText = supportReport.text(checked)
-                preview.text = reviewedText
-            }
-        } else label(content, explanation, 17f)
+        label(content, explanation, 17f)
         if (shareText != null) action(content, shareTitle) {
             val send = Intent(Intent.ACTION_SEND).apply {
                 type = "text/plain"
-                putExtra(Intent.EXTRA_TEXT, reviewedText)
+                putExtra(Intent.EXTRA_TEXT, shareText)
             }
             try {
                 startActivity(Intent.createChooser(send, null))

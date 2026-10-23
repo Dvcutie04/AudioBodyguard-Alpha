@@ -45,6 +45,11 @@ distinguishes unavailable microphone access, speech access, recognition and inpu
 when a running check stops. Recognition or input loss no longer points to
 permissions when the permission checks have passed.
 
+The [0.25 recap shortcut](docs/recap-support-report-2026-10-23.md) adds
+**Review support report** inside Recent sound checks on Android and iPhone/iPad.
+Review the visible recap snapshot, optionally exclude checks, then explicitly
+Share. Back returns to the same recap list.
+
 The [internal TestFlight preparation](docs/testflight-beta-preparation.md)
 automates checks on an exact reviewed source revision and provides a manually
 requested signing/upload lane after Apple account and signing setup. It does
