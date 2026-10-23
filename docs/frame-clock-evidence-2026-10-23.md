@@ -75,3 +75,16 @@ and the private support report contain none of these diagnostics.
 
 Final verification and artifact identity are recorded in
 [draft PR #58](https://github.com/Dvcutie04/AudioBodyguard-Alpha/pull/58).
+
+The first 0.26 iPhone run, job 120675224401 in run 40029882079, stopped in
+the unchanged native photo-replacement test before later sharing/input cases.
+It repeated the 0.25 `kAXErrorCannotComplete` failure: XCTest computed a
+(-1, -1) hit point while trying to scroll an on-screen, uniquely dated Photos
+thumbnail into view. The test now uses the existing coordinate-tap technique
+when the identified image is fully inside the app viewport and at least 44
+points wide/high; offscreen images keep the existing native scroll-and-tap.
+Unique date/asset matching and every photo OCR, replacement, cancellation and
+unknown-state assertion remain. This is a test-only correction; Android app
+code, frame collection/parser, iPhone app sources and version identities are
+unchanged. Final evidence records both the original implementation revision
+and the corrected test revision explicitly.

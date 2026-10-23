@@ -897,7 +897,15 @@ final class AQSSReadOnlyUITests: XCTestCase {
             }
             let image = try XCTUnwrap(candidates.count == 1 ? candidates.first : nil,
                                      "Require exactly one imported-date fixture; never guess among Photos assets")
-            image.tap()
+            // A fully visible remote Photos thumbnail can reject XCTest's AX
+            // scroll-to-visible action. Touch its identified on-screen center,
+            // as the button helper does; retain normal scrolling when offscreen.
+            let frame = image.frame
+            if frame.width >= 44, frame.height >= 44,
+               app.frame.insetBy(dx: 0, dy: 24).contains(frame) {
+                let offset = CGVector(dx: frame.midX - app.frame.minX, dy: frame.midY - app.frame.minY)
+                app.coordinate(withNormalizedOffset: CGVector(dx: 0, dy: 0)).withOffset(offset).tap()
+            } else { image.tap() }
             for text in expected { label(text, app) }
         }
         try selectFixture(expected: identified)
