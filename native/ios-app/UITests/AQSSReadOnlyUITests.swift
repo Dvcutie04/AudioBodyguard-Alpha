@@ -802,8 +802,8 @@ final class AQSSReadOnlyUITests: XCTestCase {
         XCTAssertTrue(app.buttons["Close"].firstMatch.waitForExistence(timeout: 5))
         XCTAssertTrue(app.buttons["Close"].firstMatch.isHittable)
     }
-    private func label(_ text: String, _ app: XCUIApplication) {
-        XCTAssertTrue(app.staticTexts.containing(NSPredicate(format: "label CONTAINS %@", text)).firstMatch.waitForExistence(timeout: 10), "Missing: \(text)")
+    private func label(_ text: String, _ app: XCUIApplication, timeout: TimeInterval = 10) {
+        XCTAssertTrue(app.staticTexts.containing(NSPredicate(format: "label CONTAINS %@", text)).firstMatch.waitForExistence(timeout: timeout), "Missing: \(text)")
     }
     private func tap(_ title: String, _ app: XCUIApplication, scroll explicitScroll: XCUIElement? = nil) {
         // Match within the active surface. A sheet can coexist with an
@@ -906,7 +906,12 @@ final class AQSSReadOnlyUITests: XCTestCase {
                 let offset = CGVector(dx: frame.midX - app.frame.minX, dy: frame.midY - app.frame.minY)
                 app.coordinate(withNormalizedOffset: CGVector(dx: 0, dy: 0)).withOffset(offset).tap()
             } else { image.tap() }
-            for text in expected { label(text, app) }
+            // Import and OCR have the existing 30-second app result window.
+            // Allow that window plus presentation before the first result;
+            // every expected value still has to match, without another read.
+            for (index, text) in expected.enumerated() {
+                label(text, app, timeout: index == 0 ? 35 : 10)
+            }
         }
         try selectFixture(expected: identified)
         screenshot("Native photo review before replacement", app)

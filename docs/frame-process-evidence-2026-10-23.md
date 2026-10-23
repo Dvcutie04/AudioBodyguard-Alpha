@@ -91,3 +91,22 @@ Cancel, content, URI/stream exclusion and return assertions remain. This is a
 test-only synchronization correction; app sources, versions and the frame
 parser are unchanged from the implementation revision. Final evidence records
 both source identities explicitly.
+
+The corrected-source Apple run 40041309685/job 120712994552 stopped at the
+first photo result: its ten-second wait did not observe `Brand: VIZIO`.
+Subsequent expected model/IP assertions passed, and the retained screenshot
+`Native photo review before replacement` shows VIZIO and the complete expected
+result. Artifact 12539528643 (ZIP SHA-256
+`92a974f3ce4587938b086cc6c8be2d2e1c5348e6fddd2e9243a8e8e9f50fd414`)
+was inspected before the next edit. This does not determine whether OCR,
+presentation or accessibility observation caused the delay.
+
+Only the first expected result after each selected fixture now receives a
+35-second test wait: the app's existing 30-second import/OCR acceptance window
+plus five seconds for presentation. Other label waits stay at ten seconds.
+Every expected brand/model/IP, partial/unknown result, cancellation, replacement
+and Clear assertion remains; the test neither retries a read nor injects OCR.
+App result deadlines, app sources, Android verification and version identities
+are unchanged. Android run 40041309673 passed on source
+`5dad9cb6ed80ea8e67053f1bdd5dbc750de43d05`; final evidence binds that APK
+source separately from the subsequent iPhone test-only correction.
