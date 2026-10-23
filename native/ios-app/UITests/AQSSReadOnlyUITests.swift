@@ -21,7 +21,7 @@ final class AQSSReadOnlyUITests: XCTestCase {
         }
         let expected = "Audio Bodyguard\nPlatform: iPhone/iPad\nVersion: \(version)\nBuild: \(build)"
         label(expected, app)
-        let copy = app.buttons["Copy"].firstMatch
+        let copy = app.cells["Copy"].firstMatch
         XCTAssertFalse(copy.exists, "Build details must preview without opening the share sheet")
         screenshot("Build details preview before explicit Share", app)
         share.tap()

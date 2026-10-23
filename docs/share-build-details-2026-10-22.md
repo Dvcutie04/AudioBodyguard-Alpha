@@ -104,3 +104,12 @@ The Android live-input version is 0.18-share-build-details-live-input, code
 still honors future signing/distribution overrides. Final source identity,
 native results, screenshots and APK verification are recorded in draft PR #50
 before delivery; none of these software checks qualifies physical output.
+
+The first implementation source fbd8e4019b3ed94deab1f7139a758e52b745275e
+passed core CI and the unsigned archive. Its iPad share job 120164157482 in
+run 39876772412 opened the real native popover, whose captured accessibility
+hierarchy showed Copy as a Cell with a nested StaticText. The initial test
+incorrectly queried Buttons, so it failed before cancellation or clipboard
+comparison. The observer now taps the observed Copy cell. The exact payload,
+native cancel/reopen, enabled Share control, Settings return and clipboard
+assertions are retained. Application code is unchanged by this test correction.
