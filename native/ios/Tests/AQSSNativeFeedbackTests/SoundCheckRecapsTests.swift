@@ -2,6 +2,15 @@ import XCTest
 @testable import AQSSNativeFeedback
 
 final class SoundCheckRecapsTests: XCTestCase {
+    func testSupportReportDoesNotInventCompletedChecksFromAnActiveDraft() async throws {
+        try await MainActor.run {
+            let store = SoundCheckRecaps()
+            store.observe(try XCTUnwrap(store.begin()))
+            XCTAssertEqual(soundCheckSupportReportSection(store.snapshot()),
+                "Recent sound checks (this app session)\nNo completed sound checks in this app session.\n\nInput observations only; not proof of sound safety, protection or TV control.")
+        }
+    }
+
     func testOnlyFinishedChecksAppearAndMissingInputIsNotSilence() async throws {
         try await MainActor.run {
             let store = SoundCheckRecaps()

@@ -3,6 +3,15 @@ package com.aqss.nativefeedback
 import kotlin.test.*
 
 class SoundCheckRecapsTest {
+    @Test fun supportReportDoesNotInventCompletedChecksFromAnActiveDraft() {
+        val store = SoundCheckRecaps()
+        store.observe(assertNotNull(store.begin()))
+        assertEquals(
+            "Recent sound checks (this app session)\nNo completed sound checks in this app session.\n\nInput observations only; not proof of sound safety, protection or TV control.",
+            soundCheckSupportReportSection(store.snapshot()),
+        )
+    }
+
     @Test fun onlyFinishedChecksAppearAndZeroInputIsNotSilence() {
         val store = SoundCheckRecaps()
         val run = assertNotNull(store.begin())
