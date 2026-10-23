@@ -24,6 +24,11 @@ choose **Share support report**. It excludes audio, words, photos, TV/network
 details and generic logs. Native sharing does not prove recipient delivery or
 physical audio protection.
 
+The [0.21 Insights entry](docs/insights-sound-checks-2026-10-22.md) opens
+**Recent sound checks** directly from Insights. Review or clear the existing
+five temporary completed-check summaries, then Close returns to Insights.
+The microphone tool does not open; Audio trends remain separate.
+
 The [0.20 report choice](docs/support-report-choice-2026-10-22.md) lets testers
 leave recent sound checks out of the shared text without clearing recaps.
 

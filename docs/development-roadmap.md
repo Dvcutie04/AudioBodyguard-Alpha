@@ -6,6 +6,14 @@ Checkpoint: October 22, 2026. Continue from the restored a-Shell baseline and th
 
 ## Current checkpoint
 
+October 22 Insights access: the [0.21 record](insights-sound-checks-2026-10-22.md)
+adds Recent sound checks directly to Insights, reusing the bounded process-only
+recap store and presentation. Close returns to Insights; Clear is shared with
+the original meter entry. This route opens no microphone tool and adds no
+permission, persistence or output authority. Audio trends and Session history
+retain their separate unknown states. Native results and APK identity belong
+to draft PR #53; physical handset, signed iPhone and N2b–N5 remain unqualified.
+
 October 22 report contents choice: the
 [0.20 record](support-report-choice-2026-10-22.md) adds one Include recent
 sound checks control in the private report preview. Excluding checks shares

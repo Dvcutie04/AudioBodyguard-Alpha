@@ -3,7 +3,7 @@ name: iPhone foreground input verification
 on:
   workflow_dispatch:
   push:
-    branches: ["aqss/ios-live-sound-check", "aqss/ios-microphone-lifecycle", "aqss/android-microphone-lifecycle", "aqss/sound-check-recaps", "aqss/tv-photo-labels", "aqss/tv-photo-text-bounds", "aqss/tv-photo-selection", "aqss/photo-review-deadline", "aqss/photo-work-ownership", "aqss/photo-work-ready", "aqss/photo-retry-guidance", "aqss/sound-permission-settings", "aqss/voice-permission-settings", "aqss/build-details", "aqss/share-build-details", "aqss/private-support-report", "aqss/support-report-privacy"]
+    branches: ["aqss/ios-live-sound-check", "aqss/ios-microphone-lifecycle", "aqss/android-microphone-lifecycle", "aqss/sound-check-recaps", "aqss/tv-photo-labels", "aqss/tv-photo-text-bounds", "aqss/tv-photo-selection", "aqss/photo-review-deadline", "aqss/photo-work-ownership", "aqss/photo-work-ready", "aqss/photo-retry-guidance", "aqss/sound-permission-settings", "aqss/voice-permission-settings", "aqss/build-details", "aqss/share-build-details", "aqss/private-support-report", "aqss/support-report-privacy", "aqss/insights-sound-checks"]
 
 permissions:
   contents: read
@@ -69,6 +69,17 @@ jobs:
                   targets[0]['EnvironmentVariables'][key] = str(pathlib.Path('native/ios/Tests/AQSSNativeFeedbackTests/Fixtures/tv-photo-' + name + '.png').stat().st_mtime)
               (root / ('sound-' + mode.lower() + '.xctestrun')).write_bytes(plistlib.dumps(data))
           PYTHON
+      - name: Verify empty Insights recaps without microphone access
+        timeout-minutes: 4
+        shell: bash
+        run: |
+          set -euo pipefail
+          xcrun simctl privacy "$AQSS_SIMULATOR" revoke microphone com.aqss.bodyguard.prototype
+          xcodebuild test-without-building \
+            -xctestrun "$RUNNER_TEMP/sound-check-build/Build/Products/sound-denied.xctestrun" \
+            -destination "platform=iOS Simulator,id=$AQSS_SIMULATOR" \
+            -parallel-testing-enabled NO -resultBundlePath "$RUNNER_TEMP/sound-insights-empty.xcresult" \
+            -only-testing:AQSSReadOnlyUITests/AQSSReadOnlyUITests/testInsightsRecapsStartEmptyAndReturnWithoutCapture
       - name: Verify native build-only report Cancel
         timeout-minutes: 4
         shell: bash
@@ -167,6 +178,17 @@ jobs:
             -destination "platform=iOS Simulator,id=$AQSS_SIMULATOR" \
             -parallel-testing-enabled NO -resultBundlePath "$RUNNER_TEMP/sound-voice-microphone.xcresult" \
             -only-testing:AQSSReadOnlyUITests/AQSSReadOnlyUITests/testVoiceMicrophoneSettingsReturnStaysOff
+      - name: Verify actual Insights recap review, Clear and process restart
+        timeout-minutes: 4
+        shell: bash
+        run: |
+          set -euo pipefail
+          xcrun simctl privacy "$AQSS_SIMULATOR" grant microphone com.aqss.bodyguard.prototype
+          xcodebuild test-without-building \
+            -xctestrun "$RUNNER_TEMP/sound-check-build/Build/Products/sound-granted.xctestrun" \
+            -destination "platform=iOS Simulator,id=$AQSS_SIMULATOR" \
+            -parallel-testing-enabled NO -resultBundlePath "$RUNNER_TEMP/sound-insights-completed.xcresult" \
+            -only-testing:AQSSReadOnlyUITests/AQSSReadOnlyUITests/testInsightsRecapsReviewClearAndRestart
       - name: Verify completed sound checks can be excluded without deletion
         timeout-minutes: 4
         shell: bash
@@ -201,13 +223,15 @@ jobs:
         if: always()
         shell: bash
         run: |
-          python3 tools/export_ios_input_screenshots.py "$RUNNER_TEMP" denied build-share-copy support-report-cancel support-report-copy settings voice-microphone granted support-report-populated-build-only support-report-build-only-cancel support-report-build-only-copy
+          python3 tools/export_ios_input_screenshots.py "$RUNNER_TEMP" denied build-share-copy support-report-cancel support-report-copy settings voice-microphone granted support-report-populated-build-only support-report-build-only-cancel support-report-build-only-copy insights-empty insights-completed
       - name: Keep Simulator test evidence
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: ios-sound-check-evidence
           path: |
+            ${{ runner.temp }}/sound-insights-empty.xcresult
+            ${{ runner.temp }}/sound-insights-completed.xcresult
             ${{ runner.temp }}/sound-denied.xcresult
             ${{ runner.temp }}/sound-support-report-cancel.xcresult
             ${{ runner.temp }}/sound-support-report-copy.xcresult
@@ -260,6 +284,17 @@ jobs:
           environment['AQSS_TEST_APP_BUILD'] = info['CFBundleVersion']
           (root / 'build-share-ipad.xctestrun').write_bytes(plistlib.dumps(data))
           PYTHON
+      - name: Verify empty iPad Insights recaps and return
+        timeout-minutes: 4
+        shell: bash
+        run: |
+          set -euo pipefail
+          xcrun simctl privacy "$AQSS_SHARE_IPAD" revoke microphone com.aqss.bodyguard.prototype
+          xcodebuild test-without-building \
+            -xctestrun "$RUNNER_TEMP/build-share-ipad/Build/Products/build-share-ipad.xctestrun" \
+            -destination "platform=iOS Simulator,id=$AQSS_SHARE_IPAD" \
+            -parallel-testing-enabled NO -resultBundlePath "$RUNNER_TEMP/sound-insights-ipad-empty.xcresult" \
+            -only-testing:AQSSReadOnlyUITests/AQSSReadOnlyUITests/testInsightsRecapsStartEmptyAndReturnWithoutCapture
       - name: Verify native build-only report Cancel
         timeout-minutes: 4
         shell: bash
@@ -335,13 +370,14 @@ jobs:
         run: python3 tools/check_ios_build_share_clipboard.py clear "$AQSS_SHARE_IPAD" --output "$RUNNER_TEMP/build-share-clipboard"
       - name: Export iPad share screenshot evidence
         if: always()
-        run: python3 tools/export_ios_input_screenshots.py "$RUNNER_TEMP" build-share-ipad build-share-ipad-copy support-report-ipad-cancel support-report-ipad-copy support-report-ipad-build-only-cancel support-report-ipad-build-only-copy
+        run: python3 tools/export_ios_input_screenshots.py "$RUNNER_TEMP" build-share-ipad build-share-ipad-copy support-report-ipad-cancel support-report-ipad-copy support-report-ipad-build-only-cancel support-report-ipad-build-only-copy insights-ipad-empty
       - name: Keep iPad share evidence
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: ios-build-details-share-ipad-evidence
           path: |
+            ${{ runner.temp }}/sound-insights-ipad-empty.xcresult
             ${{ runner.temp }}/sound-build-share-ipad.xcresult
             ${{ runner.temp }}/sound-support-report-ipad-cancel.xcresult
             ${{ runner.temp }}/sound-support-report-ipad-copy.xcresult
