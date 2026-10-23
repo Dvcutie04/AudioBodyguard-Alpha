@@ -65,6 +65,27 @@ final class MicrophoneLifecycleTests: XCTestCase {
         }
     }
 
+    func testFailedConfigurationCannotSkipCleanupOfPossibleSessionEffects() async throws {
+        try await MainActor.run {
+            let gate = ForegroundMicrophoneGate()
+            let owner = try XCTUnwrap(gate.acquire())
+            var sessionChanged = false
+            var cleanups = 0
+            XCTAssertThrowsError(try gate.activate(owner) {
+                sessionChanged = true
+                throw Failure.expected
+            })
+            XCTAssertNil(gate.acquire())
+            XCTAssertTrue(gate.release(owner) {
+                cleanups += 1
+                sessionChanged = false
+            })
+            XCTAssertEqual(cleanups, 1)
+            XCTAssertFalse(sessionChanged)
+            XCTAssertTrue(gate.available)
+        }
+    }
+
     func testCleanupFailureBlocksBothToolsAndCannotBeRetriedAway() async throws {
         try await MainActor.run {
             let gate = ForegroundMicrophoneGate()
