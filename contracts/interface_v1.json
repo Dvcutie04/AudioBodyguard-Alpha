@@ -107,7 +107,7 @@
       "id": "support",
       "title": "Private support report",
       "detail": "Available · review before sharing",
-      "explanation": "Review installed build details and up to five temporary sound-check summaries in Advanced Settings, then choose whether to share them. Audio, words, photos and TV/network details are excluded."
+      "explanation": "Review installed build details in Advanced Settings. Choose whether to include recent sound checks before sharing. Audio, words, photos and TV/network details are excluded."
     }
   ],
   "settings": [

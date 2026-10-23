@@ -2,6 +2,45 @@ import XCTest
 @testable import AQSSNativeFeedback
 
 final class SoundCheckRecapsTests: XCTestCase {
+    func testExcludedRecapsShareOnlyExactInstalledMetadata() {
+        let metadata = "Audio Bodyguard\nPlatform: iPhone/iPad\nVersion: test-version\nBuild: 1"
+        let report = PrivateSupportReportSnapshot(buildDetails: metadata, recaps: [
+            SoundCheckRecap(inputObserved: true, end: .stoppedByUser),
+            SoundCheckRecap(inputObserved: false, end: .permissionChanged),
+        ])
+        XCTAssertEqual(report.text(includeRecentChecks: false), metadata)
+    }
+
+    func testInclusionRoundTripKeepsSameBoundedOrderedSnapshot() {
+        let metadata = "Installed build details"
+        let rows = Array(SoundCheckEnd.allCases.prefix(6)).map { SoundCheckRecap(inputObserved: false, end: $0) }
+        let report = PrivateSupportReportSnapshot(buildDetails: metadata, recaps: rows)
+        let full = report.text(includeRecentChecks: true)
+        XCTAssertEqual(full, metadata + "\n\n" + soundCheckSupportReportSection(rows))
+        XCTAssertEqual(full.components(separatedBy: "\n").filter { $0.hasPrefix("Check ") }.count, 5)
+        XCTAssertFalse(full.contains("Check 6"))
+        XCTAssertEqual(report.text(includeRecentChecks: false), metadata)
+        XCTAssertEqual(report.text(includeRecentChecks: true), full)
+    }
+
+    func testReportChoiceDoesNotClearRecapsOrRefreshPreparedSnapshot() async throws {
+        try await MainActor.run {
+            let store = SoundCheckRecaps()
+            let token = try XCTUnwrap(store.begin()); store.observe(token); store.finish(token, end: .stoppedByUser)
+            var rows = store.snapshot()
+            let report = PrivateSupportReportSnapshot(buildDetails: "Installed build details", recaps: rows)
+            let full = report.text(includeRecentChecks: true)
+            XCTAssertEqual(report.text(includeRecentChecks: false), "Installed build details")
+            XCTAssertEqual(store.snapshot(), [SoundCheckRecap(inputObserved: true, end: .stoppedByUser)])
+            rows.removeAll(); store.clear()
+            XCTAssertEqual(report.text(includeRecentChecks: true), full)
+            XCTAssertTrue(full.contains("Check 1: Input samples observed\nStopped by you"))
+            let fresh = PrivateSupportReportSnapshot(buildDetails: "Installed build details", recaps: store.snapshot())
+            XCTAssertTrue(fresh.text(includeRecentChecks: true).contains("No completed sound checks in this app session."))
+            XCTAssertEqual(fresh.text(includeRecentChecks: false), "Installed build details")
+        }
+    }
+
     func testSupportReportKeepsNewestFirstAndDoesNotCallMissingInputSilence() {
         let text = soundCheckSupportReportSection([
             SoundCheckRecap(inputObserved: true, end: .stoppedByUser),

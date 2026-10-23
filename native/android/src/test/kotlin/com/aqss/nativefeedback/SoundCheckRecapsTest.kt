@@ -3,6 +3,43 @@ package com.aqss.nativefeedback
 import kotlin.test.*
 
 class SoundCheckRecapsTest {
+    @Test fun excludedRecapsShareOnlyTheExactInstalledMetadata() {
+        val metadata = "Audio Bodyguard\nPlatform: Android\nVersion: test-version\nBuild: 20"
+        val report = PrivateSupportReportSnapshot(metadata, listOf(
+            SoundCheckRecap(true, SoundCheckEnd.STOPPED_BY_USER),
+            SoundCheckRecap(false, SoundCheckEnd.PERMISSION_CHANGED),
+        ))
+        assertEquals(metadata, report.text(includeRecentChecks = false))
+    }
+
+    @Test fun inclusionRoundTripKeepsTheSameBoundedOrderedSnapshot() {
+        val metadata = "Installed build details"
+        val rows = SoundCheckEnd.entries.take(6).map { SoundCheckRecap(false, it) }
+        val report = PrivateSupportReportSnapshot(metadata, rows)
+        val full = report.text(true)
+        assertEquals(metadata + "\n\n" + soundCheckSupportReportSection(rows), full)
+        assertEquals(5, Regex("^Check [1-5]:", RegexOption.MULTILINE).findAll(full).count())
+        assertFalse(full.contains("Check 6"))
+        assertEquals(metadata, report.text(false))
+        assertEquals(full, report.text(true))
+    }
+
+    @Test fun reportChoiceDoesNotClearRecapsOrRefreshAPreparedSnapshot() {
+        val store = SoundCheckRecaps()
+        val token = assertNotNull(store.begin()); store.observe(token); store.finish(token, SoundCheckEnd.STOPPED_BY_USER)
+        val rows = store.snapshot().toMutableList()
+        val report = PrivateSupportReportSnapshot("Installed build details", rows)
+        val full = report.text(true)
+        assertEquals("Installed build details", report.text(false))
+        assertEquals(listOf(SoundCheckRecap(true, SoundCheckEnd.STOPPED_BY_USER)), store.snapshot())
+        rows.clear(); store.clear()
+        assertEquals(full, report.text(true))
+        assertTrue(full.contains("Check 1: Input samples observed\nStopped by you"))
+        val fresh = PrivateSupportReportSnapshot("Installed build details", store.snapshot())
+        assertTrue(fresh.text(true).contains("No completed sound checks in this app session."))
+        assertEquals("Installed build details", fresh.text(false))
+    }
+
     @Test fun supportReportKeepsNewestFirstAndDoesNotCallMissingInputSilence() {
         val text = soundCheckSupportReportSection(listOf(
             SoundCheckRecap(true, SoundCheckEnd.STOPPED_BY_USER),

@@ -3,6 +3,14 @@ import UIKit
 
 final class AQSSReadOnlyUITests: XCTestCase {
     func testPrivateSupportReportIncludesCompletedCheckAndClears() throws {
+        try inspectCompletedSupportReport(buildOnly: false)
+    }
+
+    func testPrivateSupportReportExcludesCompletedCheckWithoutClearing() throws {
+        try inspectCompletedSupportReport(buildOnly: true)
+    }
+
+    private func inspectCompletedSupportReport(buildOnly: Bool) throws {
         guard ProcessInfo.processInfo.environment["AQSS_TEST_MIC_GRANTED"] == "1" else {
             throw XCTSkip("The native workflow must establish microphone consent.")
         }
@@ -40,13 +48,26 @@ final class AQSSReadOnlyUITests: XCTestCase {
         try finishActualCheck()
         openReport(completed)
         screenshot("Support report contains only the completed input recap", app)
+        if buildOnly {
+            let choice = app.switches["support-report-include-checks"]
+            XCTAssertTrue(choice.waitForExistence(timeout: 5), "Missing Include recent sound checks choice")
+            XCTAssertEqual(choice.value as? String, "1")
+            choice.tap()
+            XCTAssertEqual(choice.value as? String, "0")
+            XCTAssertEqual(app.staticTexts["support-report-preview"].label, metadata)
+            screenshot("Completed sound check excluded from build-only report", app)
+        }
         tap("Share support report", app)
         let copy = app.cells["Copy"].firstMatch
         XCTAssertTrue(copy.waitForExistence(timeout: 8)); copy.tap()
         let share = app.buttons["share-support-report"]
         let returned = XCTNSPredicateExpectation(predicate: NSPredicate(format: "enabled == true AND hittable == true"), object: share)
         XCTAssertEqual(XCTWaiter.wait(for: [returned], timeout: 8), .completed)
-        XCTAssertFalse(copy.exists); label(completed, app)
+        XCTAssertFalse(copy.exists); label(buildOnly ? metadata : completed, app)
+        if buildOnly {
+            XCTAssertEqual(app.staticTexts["support-report-preview"].label, metadata)
+            XCTAssertEqual(app.switches["support-report-include-checks"].value as? String, "0")
+        }
         screenshot("Completed support report native Copy returns to preview", app)
         closeReport()
         tab("sound", app); tap("Live sound check", app); openSoundRecaps(app)
@@ -59,6 +80,14 @@ final class AQSSReadOnlyUITests: XCTestCase {
         app.terminate(); app.launch()
         openReport(empty); screenshot("New process support report is empty", app); closeReport()
         tab("home", app); label("Connection not verified", app)
+    }
+
+    func testPrivateSupportReportBuildOnlyCancelReturnsWithoutCopy() throws {
+        try inspectBuildDetailsShare(copyDetails: false, supportReport: true, buildOnly: true)
+    }
+
+    func testPrivateSupportReportBuildOnlyCopySharesOnlyBuildDetails() throws {
+        try inspectBuildDetailsShare(copyDetails: true, supportReport: true, buildOnly: true)
     }
 
     func testPrivateSupportReportCancelReturnsWithoutCopy() throws {
@@ -77,7 +106,7 @@ final class AQSSReadOnlyUITests: XCTestCase {
         try inspectBuildDetailsShare(copyDetails: false)
     }
 
-    private func inspectBuildDetailsShare(copyDetails: Bool, supportReport: Bool = false) throws {
+    private func inspectBuildDetailsShare(copyDetails: Bool, supportReport: Bool = false, buildOnly: Bool = false) throws {
         let environment = ProcessInfo.processInfo.environment
         guard let version = environment["AQSS_TEST_APP_VERSION"], !version.isEmpty,
               let build = environment["AQSS_TEST_APP_BUILD"], !build.isEmpty else {
@@ -99,6 +128,27 @@ final class AQSSReadOnlyUITests: XCTestCase {
             expected += "\n\nRecent sound checks (this app session)\nNo completed sound checks in this app session.\n\nInput observations only; not proof of sound safety, protection or TV control."
             label("Review before sharing", app)
             label("No audio, recognized words, photos, TV or network details are included.", app)
+        }
+        if buildOnly {
+            let choice = app.switches["support-report-include-checks"]
+            guard choice.waitForExistence(timeout: 5) else {
+                screenshot("Missing Include recent sound checks choice", app)
+                XCTFail("Missing Include recent sound checks choice")
+                throw NSError(domain: "AQSSSupportReportChoice", code: 1)
+            }
+            let full = expected
+            let metadata = "Audio Bodyguard\nPlatform: iPhone/iPad\nVersion: \(version)\nBuild: \(build)"
+            XCTAssertEqual(choice.value as? String, "1")
+            choice.tap()
+            XCTAssertEqual(choice.value as? String, "0")
+            XCTAssertEqual(app.staticTexts["support-report-preview"].label, metadata)
+            choice.tap()
+            XCTAssertEqual(choice.value as? String, "1")
+            XCTAssertEqual(app.staticTexts["support-report-preview"].label, full)
+            choice.tap()
+            expected = metadata
+            XCTAssertEqual(app.staticTexts["support-report-preview"].label, expected)
+            screenshot("Build-only report selected before explicit Share", app)
         }
         label(expected, app)
         let copy = app.cells["Copy"].firstMatch
@@ -142,6 +192,10 @@ final class AQSSReadOnlyUITests: XCTestCase {
         }
         XCTAssertTrue(share.isHittable)
         XCTAssertTrue(share.isEnabled)
+        if buildOnly {
+            XCTAssertEqual(app.switches["support-report-include-checks"].value as? String, "0")
+            XCTAssertEqual(app.staticTexts["support-report-preview"].label, expected)
+        }
         label(expected, app)
         screenshot("Cancel share returns to Build details", app)
         print("AQSS_BUILD_SHARE_UI: native cancel returned to the preview")

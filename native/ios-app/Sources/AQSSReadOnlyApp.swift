@@ -180,7 +180,9 @@ private struct ReadOnlyHomeView: View {
     private struct SettingExplanation: Identifiable {
         let id, title, explanation: String
         var shareText: String? = nil
+        var supportReport: PrivateSupportReportSnapshot? = nil
     }
+    @State private var includeRecentChecks = true
     @State private var settingHelp: SettingExplanation?
     @State private var deviceDetails = false
     @State private var detailSections: Set<String> = []
@@ -285,12 +287,7 @@ private struct ReadOnlyHomeView: View {
                     }.padding(20)
                     ScrollView {
                       VStack(alignment: .leading, spacing: 20) {
-                        Text(item.explanation).fixedSize(horizontal: false, vertical: true)
-                        if let text = item.shareText {
-                            ReviewedTextShareButton(text: text, theme: theme,
-                                title: item.id == "support" ? "Share support report" : "Share build details",
-                                identifier: item.id == "support" ? "share-support-report" : "share-build-details")
-                        }
+                        settingExplanationContents(item)
                         if item.id == "voice" {
                             action("Show voice steps", icon: "mic") { pendingSetupGroup = "voice"; settingHelp = nil }
                         }
@@ -564,6 +561,24 @@ private struct ReadOnlyHomeView: View {
         }
     }
 
+    @ViewBuilder private func settingExplanationContents(_ item: SettingExplanation) -> some View {
+        if let report = item.supportReport {
+            Toggle("Include recent sound checks", isOn: $includeRecentChecks)
+                .tint(theme.accent).accessibilityIdentifier("support-report-include-checks")
+            let preview = report.text(includeRecentChecks: includeRecentChecks)
+            Text(preview).fixedSize(horizontal: false, vertical: true)
+                .accessibilityIdentifier("support-report-preview")
+            Text(item.explanation).fixedSize(horizontal: false, vertical: true)
+            ReviewedTextShareButton(text: preview, theme: theme,
+                title: "Share support report", identifier: "share-support-report")
+        } else {
+            Text(item.explanation).fixedSize(horizontal: false, vertical: true)
+            if let text = item.shareText {
+                ReviewedTextShareButton(text: text, theme: theme, title: "Share build details", identifier: "share-build-details")
+            }
+        }
+    }
+
     private var installedBuildDetails: String {
         func value(_ key: String) -> String {
             guard let value = Bundle.main.object(forInfoDictionaryKey: key) as? String,
@@ -574,9 +589,10 @@ private struct ReadOnlyHomeView: View {
     }
 
     @MainActor private func showSupportReport() {
-        let report = installedBuildDetails + "\n\n" + soundCheckSupportReportSection(SoundCheckRecaps.shared.snapshot())
+        let report = PrivateSupportReportSnapshot(buildDetails: installedBuildDetails, recaps: SoundCheckRecaps.shared.snapshot())
+        includeRecentChecks = true
         settingHelp = SettingExplanation(id: "support", title: "Private support report",
-            explanation: report + "\n\nReview before sharing\nNo audio, recognized words, photos, TV or network details are included.", shareText: report)
+            explanation: "Review before sharing\nNo audio, recognized words, photos, TV or network details are included.", supportReport: report)
     }
 
     private func question(_ title: String, explanation: String, target: String, light: Bool = false) -> some View {

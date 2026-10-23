@@ -6,6 +6,15 @@ Checkpoint: October 22, 2026. Continue from the restored a-Shell baseline and th
 
 ## Current checkpoint
 
+October 22 report contents choice: the
+[0.20 record](support-report-choice-2026-10-22.md) adds one Include recent
+sound checks control in the private report preview. Excluding checks shares
+only installed build details and preserves the app's completed recaps.
+Selection operates on one immutable snapshot; native Cancel preserves it,
+and closing/reopening resets the choice. No capture, upload, persistence or
+output authority is introduced. Exact native results and APK identity belong
+to draft PR #52; physical handset, signed iPhone and N2b–N5 remain unqualified.
+
 October 22 private support report: the
 [reviewable report record](private-support-report-2026-10-22.md) implements the
 planned entry in Advanced Settings. Candidate 0.19 previews installed build
