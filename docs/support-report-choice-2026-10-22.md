@@ -63,3 +63,25 @@ recipient handling and audio qualification remain unproven.
 Record exact source/tree, red/green jobs and final APK identity in the draft
 PR. Keep signed iPhone distribution, physical handset compatibility,
 recipient delivery and N2b–N5 unqualified. Production activation stays closed.
+
+## Red-first evidence
+
+Native tests-only source ac6671b70d7500861c49913b7badf4de1d47d646, tree
+cc3c88e90f1b9b7e5e52b44a2415f9f8d47a41f8 retained 0.19 production and
+metadata. Android run39889167705/job120204497830 passed the prior native
+build-share checks, then failed Missing tap target: Include recent sound
+checks. Apple run39889167974 failed the new focused native case at Missing
+Include recent sound checks choice / AQSSSupportReportChoice Code1 on
+iPhone job120204499273 and iPad job120204498987. The isolated speech
+Settings case and core baseline run39889167778 passed.
+
+Snapshot tests-only source 613368f3b9a2c8ad41ebdb05652f955463fe79fd, tree
+9cc982304c5711bb07f661d1a835f593f6dc2da9, retained that production baseline.
+Core run39889852322 failed at unresolved PrivateSupportReportSnapshot in
+Kotlin job120206746749 and cannot find PrivateSupportReportSnapshot in scope
+in Swift job120206746788. Python and scripted C passed. Production edits
+began only after these intended native and snapshot red proofs.
+
+New native Copy cases prepare an independent host clipboard marker before
+sharing, so a previously copied build-only payload cannot satisfy the next
+comparison. The app and UI runner do not access that clipboard.

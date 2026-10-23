@@ -5,6 +5,7 @@ import android.app.AlertDialog
 import android.content.ActivityNotFoundException
 import android.content.Intent
 import android.content.res.Configuration
+import android.content.res.ColorStateList
 import android.graphics.Color
 import android.graphics.Typeface
 import android.media.AudioDeviceCallback
@@ -21,6 +22,7 @@ import android.view.ViewGroup
 import android.view.ViewTreeObserver
 import android.view.WindowInsets
 import android.widget.Button
+import android.widget.CheckBox
 import android.widget.FrameLayout
 import android.widget.LinearLayout
 import android.widget.ScrollView
@@ -34,7 +36,7 @@ import com.aqss.nativefeedback.SessionEvidenceView
 import com.aqss.nativefeedback.SessionState
 import com.aqss.nativefeedback.TutorialContent
 import com.aqss.nativefeedback.SoundCheckRecaps
-import com.aqss.nativefeedback.soundCheckSupportReportSection
+import com.aqss.nativefeedback.PrivateSupportReportSnapshot
 import com.aqss.nativefeedback.InterfaceContent
 import com.aqss.nativefeedback.InterfaceSetting
 import com.aqss.nativefeedback.SettingSwitchState
@@ -547,12 +549,12 @@ class ReadOnlyHomeActivity : Activity() {
     }
 
     private fun showSupportReport() {
-        val report = installedBuildDetails() + "\n\n" + soundCheckSupportReportSection(SoundCheckRecaps.process.snapshot())
-        showInformation("Private support report", report + "\n\nReview before sharing\nNo audio, recognized words, photos, TV or network details are included.",
-            "support", shareText = report, shareTitle = "Share support report")
+        val report = PrivateSupportReportSnapshot(installedBuildDetails(), SoundCheckRecaps.process.snapshot())
+        showInformation("Private support report", "Review before sharing\nNo audio, recognized words, photos, TV or network details are included.",
+            "support", shareText = report.text(true), shareTitle = "Share support report", supportReport = report)
     }
 
-    private fun showInformation(title: String, explanation: String, target: String, shareText: String? = null, shareTitle: String = "Share build details") {
+    private fun showInformation(title: String, explanation: String, target: String, shareText: String? = null, shareTitle: String = "Share build details", supportReport: PrivateSupportReportSnapshot? = null) {
         val content = vertical().apply { setPadding(dp(20), dp(14), dp(20), dp(14)); setBackgroundColor(skin.background) }
         val holder = ScrollView(this).apply { addView(content) }
         val dialog = AlertDialog.Builder(this).setView(holder).create()
@@ -560,11 +562,27 @@ class ReadOnlyHomeActivity : Activity() {
         label(heading, title, 22f, bold = true).layoutParams = LinearLayout.LayoutParams(0, -2, 1f)
         heading.addView(roseButton(this, skin, "Back", compact = true) { dialog.dismiss() })
         content.addView(heading)
-        label(content, explanation, 17f)
+        var reviewedText = shareText
+        if (supportReport != null) {
+            val choice = CheckBox(this).apply {
+                text = "Include recent sound checks"
+                isChecked = true
+                textSize = 17f; minHeight = dp(48)
+                setTextColor(skin.text)
+                buttonTintList = ColorStateList(arrayOf(intArrayOf(android.R.attr.state_checked), intArrayOf()), intArrayOf(skin.accent, skin.muted))
+            }
+            content.addView(choice, LinearLayout.LayoutParams(-1, -2))
+            val preview = label(content, supportReport.text(true), 17f)
+            label(content, explanation, 17f)
+            choice.setOnCheckedChangeListener { _, checked ->
+                reviewedText = supportReport.text(checked)
+                preview.text = reviewedText
+            }
+        } else label(content, explanation, 17f)
         if (shareText != null) action(content, shareTitle) {
             val send = Intent(Intent.ACTION_SEND).apply {
                 type = "text/plain"
-                putExtra(Intent.EXTRA_TEXT, shareText)
+                putExtra(Intent.EXTRA_TEXT, reviewedText)
             }
             try {
                 startActivity(Intent.createChooser(send, null))

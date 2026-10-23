@@ -56,6 +56,19 @@ public final class SoundCheckRecaps {
     public func clear() { completed = []; owner = nil; observed = false }
 }
 
+/// Two immutable views of one reviewed snapshot; selection never edits recaps.
+public struct PrivateSupportReportSnapshot {
+    private let buildOnly: String
+    private let withChecks: String
+    public init(buildDetails: String, recaps: [SoundCheckRecap]) {
+        buildOnly = buildDetails
+        withChecks = buildDetails + "\n\n" + soundCheckSupportReportSection(recaps)
+    }
+    public func text(includeRecentChecks: Bool) -> String {
+        includeRecentChecks ? withChecks : buildOnly
+    }
+}
+
 /// An allowlisted, bounded text snapshot. Never a raw log or physical evidence.
 public func soundCheckSupportReportSection(_ recaps: [SoundCheckRecap]) -> String {
     var lines = ["Recent sound checks (this app session)"]

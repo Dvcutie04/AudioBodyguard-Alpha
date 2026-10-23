@@ -15,7 +15,7 @@ concurrency:
 jobs:
   ios-sound-check:
     runs-on: macos-14
-    timeout-minutes: 25
+    timeout-minutes: 35
     steps:
       - uses: actions/checkout@v4
         with:
@@ -138,7 +138,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          :
+          python3 tools/check_ios_build_share_clipboard.py prepare "$AQSS_SIMULATOR" --output "$RUNNER_TEMP/support-report-build-only-clipboard"
           xcodebuild test-without-building \
             -xctestrun "$RUNNER_TEMP/sound-check-build/Build/Products/sound-denied.xctestrun" \
             -destination "platform=iOS Simulator,id=$AQSS_SIMULATOR" \
@@ -173,6 +173,7 @@ jobs:
         run: |
           set -euo pipefail
           xcrun simctl privacy "$AQSS_SIMULATOR" grant microphone com.aqss.bodyguard.prototype
+          python3 tools/check_ios_build_share_clipboard.py prepare "$AQSS_SIMULATOR" --output "$RUNNER_TEMP/support-report-populated-build-only-clipboard"
           xcodebuild test-without-building \
             -xctestrun "$RUNNER_TEMP/sound-check-build/Build/Products/sound-granted.xctestrun" \
             -destination "platform=iOS Simulator,id=$AQSS_SIMULATOR" \
@@ -322,7 +323,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          :
+          python3 tools/check_ios_build_share_clipboard.py prepare "$AQSS_SHARE_IPAD" --output "$RUNNER_TEMP/support-report-ipad-build-only-clipboard"
           xcodebuild test-without-building \
             -xctestrun "$RUNNER_TEMP/build-share-ipad/Build/Products/build-share-ipad.xctestrun" \
             -destination "platform=iOS Simulator,id=$AQSS_SHARE_IPAD" \

@@ -60,6 +60,13 @@ class SoundCheckRecaps {
     }
 }
 
+/** Two immutable views of one reviewed snapshot; selection never edits recaps. */
+class PrivateSupportReportSnapshot(buildDetails: String, recaps: List<SoundCheckRecap>) {
+    private val buildOnly = buildDetails
+    private val withChecks = buildDetails + "\n\n" + soundCheckSupportReportSection(recaps)
+    fun text(includeRecentChecks: Boolean): String = if (includeRecentChecks) withChecks else buildOnly
+}
+
 /** An allowlisted, bounded text snapshot. Never a raw log or physical evidence. */
 fun soundCheckSupportReportSection(recaps: List<SoundCheckRecap>): String {
     val lines = mutableListOf("Recent sound checks (this app session)")
