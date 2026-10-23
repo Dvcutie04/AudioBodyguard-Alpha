@@ -118,7 +118,7 @@ def main():
         for attempt in range(3):
             scroll_meter(f"{name}-top-{attempt}", down=False)
 
-    def review_insights_recaps(name, expected, clear=False, return_sound=True):
+    def review_insights_recaps(name, expected, clear=False, return_sound=True, report=False):
         tap("Insights", name + "_tab")
         wait_for("Audio trends", name + "_page")
         tap("Recent sound checks", name + "_open")
@@ -132,6 +132,51 @@ def main():
         appops = adb("shell", "cmd", "appops", "get", package, "RECORD_AUDIO").decode()
         (out / (name + "-appops.txt")).write_text(appops)
         assert "(running)" not in appops, appops
+        if report:
+            tap("Review support report", name + "_review_report")
+            metadata = f"Audio Bodyguard\nPlatform: Android\nVersion: {version}\nBuild: {build}"
+            checks = ("Check 1: Input samples observed\nStopped by you"
+                      if "Input samples observed" in expected else "No completed sound checks in this app session.")
+            reviewed = metadata + "\n\nRecent sound checks (this app session)\n" + checks + "\n\nInput observations only; not proof of sound safety, protection or TV control."
+            root = wait_for_all((reviewed, "Private support report", "Include recent sound checks", "Share support report"), name + "_report_preview")
+            assert not has(root, "Build details test"), "Review must not open native sharing"
+            tap("Include recent sound checks", name + "_report_exclude")
+            root = wait_for(metadata, name + "_report_build_only")
+            assert not has(root, "Recent sound checks (this app session)"), "Excluded recaps must leave the shared preview"
+            tap("Include recent sound checks", name + "_report_restore")
+            wait_for(reviewed, name + "_report_restored")
+            screenshot(name + "_report_preview")
+            if "Input samples observed" in expected:
+                previous = adb("shell", "run-as", receiver, "cat", receiver_file)
+                tap("Share support report", name + "_report_share")
+                chooser = wait_for("Build details test", name + "_report_chooser")
+                assert any(n.get("package") == "com.android.intentresolver" for n in chooser.iter("node"))
+                adb("shell", "input", "keyevent", "KEYCODE_BACK")
+                wait_for_all((reviewed, "Share support report"), name + "_report_cancel_return")
+                assert adb("shell", "run-as", receiver, "cat", receiver_file) == previous
+                tap("Share support report", name + "_report_reshare")
+                tap("Build details test", name + "_report_receiver")
+                received = wait_for_all((reviewed, "Return to Build details"), name + "_report_received")
+                assert any(n.get("package") == receiver for n in received.iter("node"))
+                raw = adb("shell", "run-as", receiver, "cat", receiver_file)
+                item = json.loads(raw.decode())
+                assert item["action"] == "android.intent.action.SEND" and item["type"] == "text/plain", item
+                assert item["text"] == reviewed and item["data"] is None and item["has_stream"] is False, item
+                assert all(c["text"] == reviewed and c["uri"] is None and c["has_intent"] is False for c in item["clips"]), item
+                (out / (name + "_report_receipt.json")).write_text(json.dumps(item, sort_keys=True))
+                tap("Return to Build details", name + "_report_receiver_return")
+                wait_for_all((reviewed, "Share support report"), name + "_report_returned_preview")
+            tap("Include recent sound checks", name + "_report_leave_excluded")
+            wait_for(metadata, name + "_report_excluded_before_back")
+            tap("Back", name + "_report_back")
+            wait_for_all((*expected, "Review support report"), name + "_report_returned_recaps")
+            tap("Review support report", name + "_report_reopen")
+            wait_for(reviewed, name + "_report_fresh_snapshot")
+            adb("shell", "input", "keyevent", "KEYCODE_BACK")
+            wait_for_all((*expected, "Review support report"), name + "_report_system_back_recaps")
+            appops = adb("shell", "cmd", "appops", "get", package, "RECORD_AUDIO").decode()
+            (out / (name + "_report-appops.txt")).write_text(appops)
+            assert "(running)" not in appops, appops
         if clear:
             tap("Clear recaps", name + "_clear")
             wait_for("No completed sound checks in this app session.", name + "_cleared")
@@ -213,7 +258,7 @@ def main():
     version, build = versions[0].strip(), builds[0]
     (out / "installed-build-identity.json").write_text(
         json.dumps({"application_id": package, "version": version, "build": build}, sort_keys=True))
-    review_insights_recaps("insights_recaps_empty", ("No completed sound checks in this app session.",), return_sound=False)
+    review_insights_recaps("insights_recaps_empty", ("No completed sound checks in this app session.",), return_sound=False, report=True)
     tap("Recent sound checks", "insights_recaps_reopen_empty")
     wait_for("No completed sound checks in this app session.", "insights_recaps_reopened_empty")
     adb("shell", "input", "keyevent", "KEYCODE_BACK")
@@ -547,7 +592,7 @@ def main():
     wait_for("Voice check", "support_report_after_manual_meter_close")
     review_report("support_report_completed", "Check 1: Input samples observed\nStopped by you", share=True)
     review_report("support_report_completed_build_only", "Check 1: Input samples observed\nStopped by you", share=True, exclude=True)
-    review_insights_recaps("insights_recaps_completed", ("Input samples observed", "Stopped by you"))
+    review_insights_recaps("insights_recaps_completed", ("Input samples observed", "Stopped by you"), report=True)
     tap("Live sound check. Try the phone microphone for 30 seconds", "meter_after_report_share")
     open_recaps("manual_recaps_after_support_share")
     wait_for_all(("Input samples observed", "Stopped by you"), "support_share_did_not_clear_recaps")

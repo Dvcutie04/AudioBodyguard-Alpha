@@ -2,6 +2,64 @@ import XCTest
 import UIKit
 
 final class AQSSReadOnlyUITests: XCTestCase {
+    func testInsightsRecapReportPreviewReturnsWithoutCapture() throws {
+        let app = launch()
+        tab("insights", app); try openInsightsRecaps(app)
+        try inspectRecapReport(app, completed: false)
+        XCTAssertFalse(app.scrollViews["sound-check-scroll"].exists)
+        XCTAssertFalse(app.buttons["sound-check-start-stop"].exists)
+        XCTAssertEqual(app.alerts.count, 0)
+        XCTAssertEqual(XCUIApplication(bundleIdentifier: "com.apple.springboard").alerts.count, 0)
+        closeInsightsRecaps(app)
+        app.buttons["page-back"].tap(); label("Connection not verified", app)
+    }
+
+    private func inspectRecapReport(_ app: XCUIApplication, completed: Bool, copy: Bool = false) throws {
+        let environment = ProcessInfo.processInfo.environment
+        let version = try XCTUnwrap(environment["AQSS_TEST_APP_VERSION"])
+        let build = try XCTUnwrap(environment["AQSS_TEST_APP_BUILD"])
+        let metadata = "Audio Bodyguard\nPlatform: iPhone/iPad\nVersion: \(version)\nBuild: \(build)"
+        let checks = completed ? "Check 1: Input samples observed\nStopped by you" : "No completed sound checks in this app session."
+        let expected = metadata + "\n\nRecent sound checks (this app session)\n" + checks +
+            "\n\nInput observations only; not proof of sound safety, protection or TV control."
+        let entry = app.buttons["recaps-review-support-report"]
+        guard entry.waitForExistence(timeout: 5) else {
+            screenshot("Missing support report review from recaps", app)
+            XCTFail("Missing support report review from recaps")
+            throw NSError(domain: "AQSSRecapReport", code: 1)
+        }
+        entry.tap()
+        let preview = app.staticTexts["support-report-preview"]
+        XCTAssertTrue(preview.waitForExistence(timeout: 5))
+        XCTAssertEqual(preview.label, expected)
+        let choice = app.switches["support-report-include-checks"]
+        XCTAssertEqual(choice.value as? String, "1")
+        XCTAssertFalse(app.cells["Copy"].firstMatch.exists, "Review must not open native sharing")
+        choice.tap(); XCTAssertEqual(preview.label, metadata)
+        choice.tap(); XCTAssertEqual(preview.label, expected)
+        screenshot("Recap report preview contains only reviewed fields", app)
+        if copy {
+            tap("Share support report", app)
+            let nativeCopy = app.cells["Copy"].firstMatch
+            XCTAssertTrue(nativeCopy.waitForExistence(timeout: 8)); nativeCopy.tap()
+            let share = app.buttons["share-support-report"]
+            let returned = XCTNSPredicateExpectation(predicate: NSPredicate(format: "enabled == true AND hittable == true"), object: share)
+            XCTAssertEqual(XCTWaiter.wait(for: [returned], timeout: 8), .completed)
+            XCTAssertEqual(preview.label, expected)
+        }
+        choice.tap(); XCTAssertEqual(preview.label, metadata)
+        app.buttons["recap-report-back"].tap()
+        XCTAssertTrue(entry.waitForExistence(timeout: 5)); XCTAssertTrue(entry.isHittable)
+        label(completed ? "Stopped by you" : "No completed sound checks in this app session.", app)
+        screenshot("Report Back returns to the same recaps", app)
+        entry.tap()
+        XCTAssertTrue(preview.waitForExistence(timeout: 5))
+        XCTAssertEqual(app.switches["support-report-include-checks"].value as? String, "1")
+        XCTAssertEqual(preview.label, expected)
+        app.buttons["recap-report-back"].tap()
+        XCTAssertTrue(entry.isHittable)
+    }
+
     func testInsightsRecapsStartEmptyAndReturnWithoutCapture() throws {
         let app = launch()
         tab("insights", app)
@@ -32,6 +90,7 @@ final class AQSSReadOnlyUITests: XCTestCase {
         label("Input samples observed", app); label("Stopped by you", app)
         XCTAssertFalse(app.scrollViews["sound-check-scroll"].exists)
         screenshot("Insights recaps show actual completed input", app)
+        try inspectRecapReport(app, completed: true, copy: true)
         closeInsightsRecaps(app)
         try openInsightsRecaps(app)
         label("Input samples observed", app); label("Stopped by you", app)
