@@ -48,3 +48,28 @@ This is an audit and repair under the existing responsiveness research. It
 adds no input permission, recording backend, app persistence, upload, output
 authority or physical experiment. Installed-phone smoothness, calibrated sound,
 protection, TV control, signed iPhone delivery and N2b–N5 remain unqualified.
+
+## Recorded red and implementation
+
+Tests-only source `f1bb7ffed05cf0bac0904fb874c6de3784472cc4`, tree
+`511ac118d4103ddcdf529cf2166088ca75da7736`, retains all 0.26 production files
+and versions. Eighteen local cases failed at the intended `timing_qualified`
+assertion; the seven existing timing cases passed with matching process headers.
+[Hosted red run 40039827064](https://github.com/Dvcutie04/AudioBodyguard-Alpha/actions/runs/40039827064),
+Python job 120708019435, reproduced exactly those 18 failures while the other
+1,881 tests and 19 subtests passed. The failure log was inspected before the
+production parser changed.
+
+The parser now recognizes the retained graphics-process headers and requires
+one unique positive-PID/nonempty-name pair per dump. Repeated identical headers
+are accepted. A malformed additional header or more than one distinct pair
+makes identity unavailable. Both pairs must match before durations or frames
+are attributed. JSON exposes `process_identity_available` and
+`process_identity_matches` separately from the existing clock facts.
+
+All existing timestamp/uptime guards remain required. Missing clock evidence
+with matching process headers retains its previous diagnostic treatment and
+withholds summaries. Existing raw capture bounds, UI assertions and native app
+code are unchanged. Reprocessed 0.26 observations are compatibility evidence,
+not a new performance comparison; final 0.27 captures and artifact identities
+are recorded in the candidate's draft PR after verification.

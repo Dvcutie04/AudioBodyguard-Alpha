@@ -55,6 +55,12 @@ rejects comparisons when recorded Android uptime regresses and retains hosted
 renderer snapshots around report Open and Back. App behavior remains 0.25;
 these diagnostics do not establish installed-phone smoothness or physical latency.
 
+The [0.27 process attribution repair](docs/frame-process-evidence-2026-10-23.md)
+also requires one matching observed PID/name pair in both frame dumps. Missing,
+changed, ambiguous or malformed process headers withhold attribution and timing
+summaries. Matching headers do not prove uninterrupted process/device identity;
+the app flow and physical qualification boundaries remain unchanged.
+
 The [internal TestFlight preparation](docs/testflight-beta-preparation.md)
 automates checks on an exact reviewed source revision and provides a manually
 requested signing/upload lane after Apple account and signing setup. It does

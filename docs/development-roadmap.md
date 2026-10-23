@@ -6,6 +6,15 @@ Checkpoint: October 23, 2026. Continue from the restored a-Shell baseline and th
 
 ## Current checkpoint
 
+October 23 renderer process scope: the
+[0.27 record](frame-process-evidence-2026-10-23.md) closes a comparator path
+that accepted missing or different process identities. Both dumps now require
+one matching observed PID/name pair before frame attribution; ambiguous or
+malformed headers stay unknown. Existing timestamp, uptime, duplicate and
+in-flight behavior remains within that scope. App behavior remains 0.25 and
+no uninterrupted identity, phone smoothness or physical latency is established.
+Exact source-bound validation and artifact identity belong to the draft PR.
+
 October 23 responsiveness evidence: the
 [0.26 record](frame-clock-evidence-2026-10-23.md) closes a parser path that
 qualified frame comparisons despite a regressed dump uptime. Such comparisons
