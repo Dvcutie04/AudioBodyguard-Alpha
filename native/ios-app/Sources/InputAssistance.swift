@@ -222,10 +222,19 @@ final class VoiceCheck: ObservableObject {
         guard UIApplication.shared.applicationState == .active else {
             clear("Microphone stopped when you left the voice check."); return
         }
-        guard AVAudioSession.sharedInstance().recordPermission == .granted,
-              SFSpeechRecognizer.authorizationStatus() == .authorized,
-              recognizer?.isAvailable == true, engine?.isRunning == true else {
-            stop("Voice input stopped. Check permissions, then tap Start to retry."); return
+        // Keep the existing check order, but describe only the failed check.
+        // Availability or engine loss does not establish a permission change.
+        guard AVAudioSession.sharedInstance().recordPermission == .granted else {
+            stop("Microphone access is unavailable. Check app permissions, then tap Start. Words may be incomplete."); return
+        }
+        guard SFSpeechRecognizer.authorizationStatus() == .authorized else {
+            stop("Speech access is unavailable. Check app permissions, then tap Start. Words may be incomplete."); return
+        }
+        guard recognizer?.isAvailable == true else {
+            stop("Speech recognition is unavailable right now. Try Live sound check for microphone levels. Words may be incomplete."); return
+        }
+        guard engine?.isRunning == true else {
+            stop("Voice input stopped. Tap Start to try again. Words may be incomplete."); return
         }
         guard routeIdentity() == inputRoute else { routeChanged(); return }
         guard summaries?.invalidInput != true else {
@@ -244,7 +253,7 @@ final class VoiceCheck: ObservableObject {
         }
         if let update = words?.take() {
             if let text = update.text { transcript = text }
-            if update.failed { stop("Speech recognition stopped. The words shown may be incomplete."); return }
+            if update.failed { stop("Speech recognition stopped. Tap Start to try again. Words may be incomplete."); return }
             if update.final { stop("Finished — review the recognized words. Nothing was sent to a TV."); return }
         }
         guard let level = level else {

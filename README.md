@@ -40,6 +40,11 @@ The [0.23 Voice guidance](docs/voice-error-guidance-2026-10-23.md) replaces
 common Android speech error numbers with a short explanation and next step.
 Stopping, permission checks and cleanup retain their existing behavior.
 
+The [0.24 iPhone Voice guidance](docs/ios-voice-stop-guidance-2026-10-23.md)
+distinguishes unavailable microphone access, speech access, recognition and input
+when a running check stops. Recognition or input loss no longer points to
+permissions when the permission checks have passed.
+
 The [internal TestFlight preparation](docs/testflight-beta-preparation.md)
 automates checks on an exact reviewed source revision and provides a manually
 requested signing/upload lane after Apple account and signing setup. It does
