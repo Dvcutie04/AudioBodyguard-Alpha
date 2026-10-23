@@ -15,7 +15,7 @@ object InterfaceContent {
         InterfaceFeature("voice", "Voice requests", "Planned · proposal only", "Explore voice input and recognized words in Sound. Voice control requires device authority and checked output."),
         InterfaceFeature("profiles", "Personal sound profiles", "Planned · verified settings", "Planned profiles: save and restore confirmed preferences on supported devices."),
         InterfaceFeature("supervisor", "Background protection", "Research · device trials needed", "Background support depends on platform rules and a qualified output path. Review coverage when you return."),
-        InterfaceFeature("support", "Private support report", "Planned · review before sharing", "Planned support reports: review a small, redacted record before choosing to share it."),
+        InterfaceFeature("support", "Private support report", "Available · review before sharing", "Review installed build details and up to five temporary sound-check summaries in Advanced Settings, then choose whether to share them. Audio, words, photos and TV/network details are excluded."),
     )
     val settings = listOf(
         InterfaceSetting("captions", "Captions", "captions.bubble", "Show a supported caption track on a connected device. This preview cannot select or display a device caption track. A verified connection is required. When disconnected, a tap shows cyan and “Not connected.” for two seconds, then turns off. With a verified connection, it stays cyan until you turn it off or the connection is lost."),

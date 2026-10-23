@@ -3,6 +3,36 @@ package com.aqss.nativefeedback
 import kotlin.test.*
 
 class SoundCheckRecapsTest {
+    @Test fun supportReportKeepsNewestFirstAndDoesNotCallMissingInputSilence() {
+        val text = soundCheckSupportReportSection(listOf(
+            SoundCheckRecap(true, SoundCheckEnd.STOPPED_BY_USER),
+            SoundCheckRecap(false, SoundCheckEnd.NO_SAMPLES),
+        ))
+        assertEquals("Recent sound checks (this app session)\nCheck 1: Input samples observed\nStopped by you\n\nCheck 2: No input samples observed\nNo current input samples\n\nInput observations only; not proof of sound safety, protection or TV control.", text)
+    }
+
+    @Test fun supportReportDefensivelyExcludesASixthCompletedRow() {
+        val rows = listOf(SoundCheckEnd.STOPPED_BY_USER, SoundCheckEnd.TIME_LIMIT,
+            SoundCheckEnd.PERMISSION_CHANGED, SoundCheckEnd.INPUT_BLOCKED,
+            SoundCheckEnd.CLEANUP_FAILED, SoundCheckEnd.CLOSED).map { SoundCheckRecap(false, it) }
+        val text = soundCheckSupportReportSection(rows)
+        assertEquals(5, Regex("^Check [1-5]:", RegexOption.MULTILINE).findAll(text).count())
+        assertFalse(text.contains("Check 6"))
+        assertFalse(text.contains("Sound check closed"))
+        assertTrue(text.contains("Input cleanup failed; restart the app before retrying"))
+    }
+
+    @Test fun aNewReportAfterClearIsEmptyWhileTheReviewedSnapshotStaysFixed() {
+        val store = SoundCheckRecaps()
+        val run = assertNotNull(store.begin()); store.observe(run); store.finish(run, SoundCheckEnd.STOPPED_BY_USER)
+        val snapshot = store.snapshot()
+        val reviewed = soundCheckSupportReportSection(snapshot)
+        store.clear()
+        assertTrue(reviewed.contains("Check 1: Input samples observed\nStopped by you"))
+        assertEquals(reviewed, soundCheckSupportReportSection(snapshot))
+        assertTrue(soundCheckSupportReportSection(store.snapshot()).contains("No completed sound checks in this app session."))
+    }
+
     @Test fun supportReportDoesNotInventCompletedChecksFromAnActiveDraft() {
         val store = SoundCheckRecaps()
         store.observe(assertNotNull(store.begin()))

@@ -154,7 +154,9 @@ jobs:
             -destination "platform=iOS Simulator,id=$AQSS_SIMULATOR" \
             -parallel-testing-enabled NO -resultBundlePath "$RUNNER_TEMP/sound-granted.xcresult" \
             -only-testing:AQSSReadOnlyUITests/AQSSReadOnlyUITests/testLiveSoundCheckStopsOnHomeAndRequiresAnotherStart \
-            -only-testing:AQSSReadOnlyUITests/AQSSReadOnlyUITests/testVoiceSpeechPermissionGrantDoesNotStartDeferredCapture
+            -only-testing:AQSSReadOnlyUITests/AQSSReadOnlyUITests/testVoiceSpeechPermissionGrantDoesNotStartDeferredCapture \
+            -only-testing:AQSSReadOnlyUITests/AQSSReadOnlyUITests/testPrivateSupportReportIncludesCompletedCheckAndClears
+          python3 tools/check_ios_build_share_clipboard.py copy "$AQSS_SIMULATOR" --app-info "$RUNNER_TEMP/sound-check-build/Build/Products/Release-iphonesimulator/AQSSReadOnly.app/Info.plist" --support-report --completed-check --output "$RUNNER_TEMP/support-report-populated-clipboard"
       - name: Clear isolated clipboard fixture
         if: always() && env.AQSS_SIMULATOR != ''
         run: python3 tools/check_ios_build_share_clipboard.py clear "$AQSS_SIMULATOR" --output "$RUNNER_TEMP/build-share-clipboard"
@@ -177,6 +179,7 @@ jobs:
             ${{ runner.temp }}/sound-settings.xcresult
             ${{ runner.temp }}/sound-voice-microphone.xcresult
             ${{ runner.temp }}/sound-granted.xcresult
+            ${{ runner.temp }}/support-report-populated-clipboard
             ${{ runner.temp }}/sound-check-screenshots
             ${{ runner.temp }}/build-share-clipboard
           if-no-files-found: ignore

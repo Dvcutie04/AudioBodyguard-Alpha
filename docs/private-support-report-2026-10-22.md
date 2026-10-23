@@ -14,9 +14,7 @@ continuous-listening, output or protection claim.
 
 This increment reuses the researched [0.18 native sharing](share-build-details-2026-10-22.md)
 and [0.5 bounded input recaps](sound-check-recaps-2026-10-20.md). No new OS API,
-permission, recorder, service, network client or storage is introduced. The
-user's research-model activation carries forward; recovering these decisions
-does not require another model-switch pause.
+permission, recorder, service, network client or storage is introduced. Recovering these decisions does not introduce a new platform behavior.
 
 | Evidence | Decision and limitation |
 | --- | --- |
@@ -61,7 +59,7 @@ the existing app's display observations; it is not independent sound evidence.
    Retain exact source, job and failure evidence before production edits.
 2. Prove a focused formatter behavior red on both native packages, then add
    the minimal allowlisted formatter and UI snapshot. Cover empty, ordered,
-   five-row bounds, all stop reasons and independent snapshots.
+   five-row bounds, typed stop reasons and independent snapshots.
 3. On Android, require the actual system chooser, Cancel, an unchanged prior
    receipt, the independent test receiver's exact Intent, and return to the
    preview/caller with no running microphone app-op. The receiver never ships.
@@ -80,3 +78,31 @@ claiming measurements. Physical handset trials, signed iPhone distribution,
 recipient delivery and N2b-N5 remain separate unqualified gates. Production
 factories stay closed. Exact red/green results and APK identity will be added
 to the draft PR before delivery.
+
+
+## Native and formatter red evidence
+
+Native red-only source 161a5d7f938d98bb3335d64474adee3ab36c467c, tree
+edf95306d6f75f8131ef3b5bdf9a24ef00c8c901, preserved all 0.18 production
+code and version metadata. Android run 39885155469/job120191505389 passed
+its prior actual build-details share checks, reached the planned report entry,
+and failed Missing tap target: Share support report. Apple run39885155387
+failed Missing Share support report action / AQSSBuildShare Code2 on iPhone
+job120191505688 and iPad job120191505706. Both devices passed their prior
+build-share cases; the isolated speech-Settings job passed.
+
+The next tests-only source f35f330720c6202c458bd80fed16608419c152aa, tree
+83e96fdc7560fd263ceecab6646e2be6f81f9743, specified that an active draft
+must not become a completed report row. Core run39886147261 failed exactly
+at missing soundCheckSupportReportSection in Kotlin job120194667526 and
+Swift job120194667616. Python and scripted C passed. Production edits began
+only after those native and typed-formatter red proofs.
+
+The implementation uses the existing package/main-bundle lookup plus one
+immutable String snapshot of the completed, typed recap list. Native sharing
+reuses the 0.18 presenters, with a separate report button label/identifier.
+The preview can be reached by the existing help control or the report row.
+Build details keeps its original four-field payload. The Android live-input
+version is 0.19-private-support-report-live-input/code19. The Apple default
+is 0.19.0/build1, retaining signing overrides. Final green results, source/tree,
+artifact bytes and remaining physical limits belong to draft PR #51.

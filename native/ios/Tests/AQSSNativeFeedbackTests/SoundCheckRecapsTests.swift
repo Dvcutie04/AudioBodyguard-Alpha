@@ -2,6 +2,36 @@ import XCTest
 @testable import AQSSNativeFeedback
 
 final class SoundCheckRecapsTests: XCTestCase {
+    func testSupportReportKeepsNewestFirstAndDoesNotCallMissingInputSilence() {
+        let text = soundCheckSupportReportSection([
+            SoundCheckRecap(inputObserved: true, end: .stoppedByUser),
+            SoundCheckRecap(inputObserved: false, end: .noSamples),
+        ])
+        XCTAssertEqual(text, "Recent sound checks (this app session)\nCheck 1: Input samples observed\nStopped by you\n\nCheck 2: No input samples observed\nNo current input samples\n\nInput observations only; not proof of sound safety, protection or TV control.")
+    }
+
+    func testSupportReportDefensivelyExcludesASixthCompletedRow() {
+        let ends: [SoundCheckEnd] = [.stoppedByUser, .timeLimit, .permissionChanged, .inputBlocked, .cleanupFailed, .closed]
+        let text = soundCheckSupportReportSection(ends.map { SoundCheckRecap(inputObserved: false, end: $0) })
+        XCTAssertEqual(text.components(separatedBy: "\n").filter { $0.hasPrefix("Check ") }.count, 5)
+        XCTAssertFalse(text.contains("Check 6"))
+        XCTAssertFalse(text.contains("Sound check closed"))
+        XCTAssertTrue(text.contains("Input cleanup failed; restart the app before retrying"))
+    }
+
+    func testNewReportAfterClearIsEmptyWhileReviewedSnapshotStaysFixed() async throws {
+        try await MainActor.run {
+            let store = SoundCheckRecaps()
+            let run = try XCTUnwrap(store.begin()); store.observe(run); store.finish(run, end: .stoppedByUser)
+            let snapshot = store.snapshot()
+            let reviewed = soundCheckSupportReportSection(snapshot)
+            store.clear()
+            XCTAssertTrue(reviewed.contains("Check 1: Input samples observed\nStopped by you"))
+            XCTAssertEqual(reviewed, soundCheckSupportReportSection(snapshot))
+            XCTAssertTrue(soundCheckSupportReportSection(store.snapshot()).contains("No completed sound checks in this app session."))
+        }
+    }
+
     func testSupportReportDoesNotInventCompletedChecksFromAnActiveDraft() async throws {
         try await MainActor.run {
             let store = SoundCheckRecaps()
