@@ -292,7 +292,7 @@ struct LiveSoundCheckView: View {
 
 
 /// Local input observations only; kept separate from the protection/session journal.
-private struct RecentSoundChecksView: View {
+struct RecentSoundChecksView: View {
     let theme: AppTheme
     @Environment(\.dismiss) private var dismiss
     @State private var rows: [SoundCheckRecap] = []

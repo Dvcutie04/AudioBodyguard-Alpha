@@ -161,6 +161,7 @@ private struct ReadOnlyHomeView: View {
     @State private var page = "home"
     @State private var voiceCheckVisible = false
     @State private var liveSoundCheckVisible = false
+    @State private var soundRecapsVisible = false
     @State private var photoCheckVisible = false
     @State private var suggestedTVBrand: String?
     @State private var setupRequest: SetupGuideRequest?
@@ -265,6 +266,7 @@ private struct ReadOnlyHomeView: View {
             }
             .sheet(isPresented: $voiceCheckVisible) { VoiceCheckView(theme: theme) }
             .sheet(isPresented: $liveSoundCheckVisible) { LiveSoundCheckView(theme: theme) }
+            .sheet(isPresented: $soundRecapsVisible) { RecentSoundChecksView(theme: theme) }
             .sheet(isPresented: $photoCheckVisible, onDismiss: {
                 guard let brand = suggestedTVBrand else { return }
                 suggestedTVBrand = nil
@@ -486,6 +488,8 @@ private struct ReadOnlyHomeView: View {
 
     private var insightsPage: some View {
         VStack(alignment: .leading, spacing: 18) {
+            action("Recent sound checks", icon: "clock.arrow.circlepath") { soundRecapsVisible = true }
+                .accessibilityIdentifier("insights-sound-check-recaps")
             card(target: "trends") {
                 HStack { Text("Audio trends").font(.title2.bold()); Spacer(); Image(systemName: "chart.xyaxis.line").foregroundColor(theme.violet).accessibilityHidden(true) }
                 if showingExample {

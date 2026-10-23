@@ -209,32 +209,7 @@ class LiveSoundCheckActivity : Activity() {
 
     private fun showRecaps() {
         if (capture?.completed?.get() == false) return
-        val store = SoundCheckRecaps.process
-        val rows = store.snapshot()
-        val content = LinearLayout(this).apply {
-            orientation = LinearLayout.VERTICAL
-            setPadding(skin.dp(24), skin.dp(8), skin.dp(24), skin.dp(8))
-        }
-        fun line(value: String, heading: Boolean = false) {
-            content.addView(TextView(this).apply {
-                text = value; textSize = if (heading) 18f else 16f
-                setTextColor(skin.text); setPadding(0, skin.dp(8), 0, skin.dp(8))
-            })
-        }
-        line("Up to five completed checks, most recent first. Kept in memory; cleared when this app process ends.")
-        if (rows.isEmpty()) line("No completed sound checks in this app session.")
-        rows.forEachIndexed { index, row ->
-            line("Check ${index + 1} · ${if (row.inputObserved) "Input samples observed" else "No input samples observed"}", true)
-            line(row.end.label)
-        }
-        line("These are meter observations from this phone, not proof of continuous listening, sound safety or TV control. Audio and recognized words are not kept in recaps.")
-        val dialog = AlertDialog.Builder(this).setTitle("Recent sound checks")
-            .setView(ScrollView(this).apply { addView(content) })
-            .setPositiveButton("Close", null)
-        if (rows.isNotEmpty()) dialog.setNeutralButton("Clear recaps") { _, _ ->
-            store.clear(); showRecaps()
-        }
-        dialog.show()
+        showRecentSoundChecks(this, skin)
     }
 
     private fun show(view: TextView, value: String) {
@@ -288,4 +263,34 @@ private class LiveInputMeter(activity: Activity, private val skin: InterfaceThem
             canvas.drawRect(left, height - skin.dp(8) - barHeight, left + gap * .72f, height - skin.dp(8).toFloat(), paint)
         }
     }
+}
+
+/** Shared process-only recap presentation; opening it performs no capture work. */
+internal fun showRecentSoundChecks(activity: Activity, skin: InterfaceTheme) {
+    val store = SoundCheckRecaps.process
+    val rows = store.snapshot()
+    val content = LinearLayout(activity).apply {
+        orientation = LinearLayout.VERTICAL
+        setPadding(skin.dp(24), skin.dp(8), skin.dp(24), skin.dp(8))
+    }
+    fun line(value: String, heading: Boolean = false) {
+        content.addView(TextView(activity).apply {
+            text = value; textSize = if (heading) 18f else 16f
+            setTextColor(skin.text); setPadding(0, skin.dp(8), 0, skin.dp(8))
+        })
+    }
+    line("Up to five completed checks, most recent first. Kept in memory; cleared when this app process ends.")
+    if (rows.isEmpty()) line("No completed sound checks in this app session.")
+    rows.forEachIndexed { index, row ->
+        line("Check ${index + 1} · ${if (row.inputObserved) "Input samples observed" else "No input samples observed"}", true)
+        line(row.end.label)
+    }
+    line("These are meter observations from this phone, not proof of continuous listening, sound safety or TV control. Audio and recognized words are not kept in recaps.")
+    val dialog = AlertDialog.Builder(activity).setTitle("Recent sound checks")
+        .setView(ScrollView(activity).apply { addView(content) })
+        .setPositiveButton("Close", null)
+    if (rows.isNotEmpty()) dialog.setNeutralButton("Clear recaps") { _, _ ->
+        store.clear(); showRecentSoundChecks(activity, skin)
+    }
+    dialog.show()
 }

@@ -15,6 +15,17 @@ Before production changes, native Android, iPhone and iPad checks must fail at t
 
 Recaps are snapshots of completed checks. An in-flight cleanup may finish after a snapshot. Clear affects the recap store; it does not settle microphone ownership or authorize capture. The existing bounded store tests remain the authority for those races.
 
-## Evidence
+## Red-first evidence
 
-Pending source-bound red and green native runs. Simulator and emulator checks do not qualify physical input or output, continuous coverage, sound safety, TV control or signed iPhone delivery.
+Tests-only source a73a7281093c79248bf3f27c8fa10cb6e6b2589d, tree
+147f736b00f75a865169d3c4ad61be554f00eabd, retained 0.20 production and versions.
+Android run39896312768/job120227482889 reached a stable launcher and failed
+Missing tap target: Recent sound checks from Insights. Apple run39896312804
+failed Missing recent sound checks in Insights / AQSSInsightsRecaps Code1 on
+iPhone job120227483116 and iPad job120227483041. Baseline core run39896312777
+passed all four jobs. Production edits began after all three intended red proofs.
+
+## Validation boundary
+
+Final source-bound run IDs, completed native counts and APK identity are
+recorded in [draft PR #53](https://github.com/Dvcutie04/AudioBodyguard-Alpha/pull/53). Simulator and emulator checks do not qualify physical input or output, continuous coverage, sound safety, TV control or signed iPhone delivery.

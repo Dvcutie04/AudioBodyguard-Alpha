@@ -466,6 +466,7 @@ class ReadOnlyHomeActivity : Activity() {
         action(column, "Help with session transfer") { tutorial.start("handoff") }
     }
     private fun insightsPage() {
+        action(column, "Recent sound checks") { showRecentSoundChecks(this, skin) }
         card("trends") { c ->
             label(c, "Audio trends", 22f, bold = true)
             if (showingExample) {
