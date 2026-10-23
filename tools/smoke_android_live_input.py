@@ -4,11 +4,13 @@ from pathlib import Path
 import argparse
 import base64
 import json
+import os
 import re
 import shlex
 import subprocess
 import time
 import xml.etree.ElementTree as ET
+from android_frame_evidence import compare_frames
 
 
 def main():
@@ -24,6 +26,32 @@ def main():
 
     def adb(*command, timeout=45):
         return subprocess.check_output(["adb", *command], timeout=timeout, stdin=subprocess.DEVNULL)
+
+    def frame_snapshot(name):
+        try:
+            data = adb("shell", "dumpsys", "gfxinfo", package, "framestats", timeout=10)
+            if len(data) > 2_097_152:
+                data = b"FRAME_SNAPSHOT_UNAVAILABLE: output exceeded the 2 MiB capture limit\n"
+        except (subprocess.CalledProcessError, subprocess.TimeoutExpired) as error:
+            data = f"FRAME_SNAPSHOT_UNAVAILABLE: {type(error).__name__}\n".encode()
+        (out / (name + ".txt")).write_bytes(data)
+        return data.decode(errors="replace")
+
+    def complete_frame_evidence(name, before):
+        after = frame_snapshot(name + "_after")
+        report = compare_frames(before, after)
+        report.update({
+            "transition": name,
+            "source_commit": os.environ.get("GITHUB_SHA", "Unavailable"),
+            "workflow_run_id": os.environ.get("GITHUB_RUN_ID", "Unavailable"),
+            "workflow_attempt": os.environ.get("GITHUB_RUN_ATTEMPT", "Unavailable"),
+            "installed_build": {"application_id": package, "version": version, "build": build},
+            "collection_timeout_s": 10,
+            "maximum_snapshot_bytes": 2_097_152,
+        })
+        (out / (name + ".json")).write_text(json.dumps(report, sort_keys=True))
+        print(f"RECAP_RENDERER_EVIDENCE: {name}; {report['frame_count']} attributed frames; "
+              f"timing qualified={report['timing_qualified']}; hosted renderer only", flush=True)
 
     def screen(name, click=None):
         for attempt in range(4):
@@ -133,6 +161,8 @@ def main():
         (out / (name + "-appops.txt")).write_text(appops)
         assert "(running)" not in appops, appops
         if report:
+            opening_frames = name + "_report_open_frames"
+            before_open = frame_snapshot(opening_frames + "_before")
             tap("Review support report", name + "_review_report")
             metadata = f"Audio Bodyguard\nPlatform: Android\nVersion: {version}\nBuild: {build}"
             checks = ("Check 1: Input samples observed\nStopped by you"
@@ -140,6 +170,7 @@ def main():
             reviewed = metadata + "\n\nRecent sound checks (this app session)\n" + checks + "\n\nInput observations only; not proof of sound safety, protection or TV control."
             root = wait_for_all((reviewed, "Private support report", "Include recent sound checks", "Share support report"), name + "_report_preview")
             assert not has(root, "Build details test"), "Review must not open native sharing"
+            complete_frame_evidence(opening_frames, before_open)
             tap("Include recent sound checks", name + "_report_exclude")
             root = wait_for(metadata, name + "_report_build_only")
             assert not has(root, "Recent sound checks (this app session)"), "Excluded recaps must leave the shared preview"
@@ -168,8 +199,11 @@ def main():
                 wait_for_all((reviewed, "Share support report"), name + "_report_returned_preview")
             tap("Include recent sound checks", name + "_report_leave_excluded")
             wait_for(metadata, name + "_report_excluded_before_back")
+            returning_frames = name + "_report_back_frames"
+            before_back = frame_snapshot(returning_frames + "_before")
             tap("Back", name + "_report_back")
             wait_for_all((*expected, "Review support report"), name + "_report_returned_recaps")
+            complete_frame_evidence(returning_frames, before_back)
             tap("Review support report", name + "_report_reopen")
             wait_for(reviewed, name + "_report_fresh_snapshot")
             adb("shell", "input", "keyevent", "KEYCODE_BACK")

@@ -1,4 +1,23 @@
 from tools.android_frame_evidence import compare_frames
+import pytest
+
+
+@pytest.mark.parametrize("baseline_completion", [0, 1010000000])
+def test_regressed_uptime_cannot_attribute_frames_to_the_same_transition(baseline_completion):
+    columns = "Flags,IntendedVsync,FrameCompleted,\n"
+    before = "Uptime: 2000 Realtime: 2000\n" + columns + f"0,1000000000,{baseline_completion},\n"
+    # Both rows are locally plausible within the collector's diagnostic horizon,
+    # but a smaller dump uptime makes their cross-snapshot ordering untrustworthy.
+    after = "Uptime: 1000 Realtime: 1000\n" + columns + "0,1500000000,1510000000,\n"
+    result = compare_frames(before, after)
+    assert result["baseline_available"] is True
+    assert result["clock_bound_available"] is True
+    assert result["timing_qualified"] is False
+    assert result["uptime_order_valid"] is False
+    assert result["frame_count"] == 0
+    assert result["durations_ms"] == []
+    assert result["median_ms"] is None
+    assert result["maximum_ms"] is None
 
 def test_only_new_completed_frames_contribute_to_picture_transition():
     header = "Uptime: 1000 Realtime: 1000\nFlags,IntendedVsync,FrameCompleted,\n"

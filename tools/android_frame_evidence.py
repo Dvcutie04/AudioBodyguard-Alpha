@@ -14,9 +14,10 @@ def _snapshot(text):
     watermark = None
     invalid = set()
     clock = re.search(r"(?m)^Uptime:\s*(\d+)", text)
+    uptime_ms = int(clock.group(1)) if clock else None
     # A generous diagnostic horizon tolerates dump collection after its header.
     # Samples outside it are unknown, never clipped into an apparently fast frame.
-    horizon = (int(clock.group(1)) + 60_000) * 1_000_000 if clock else None
+    horizon = (uptime_ms + 60_000) * 1_000_000 if uptime_ms is not None else None
     for line in text.splitlines():
         fields = next(csv.reader([line]))
         if "Flags" in fields and "IntendedVsync" in fields and "FrameCompleted" in fields:
@@ -40,21 +41,28 @@ def _snapshot(text):
             invalid.add((start, end))
         else:
             frames.add((start, end))
-    return watermark, frames, invalid, clock is not None
+    return watermark, frames, invalid, uptime_ms
 
 def compare_frames(before, after):
-    cutoff, _, _, before_clock = _snapshot(before)
-    _, frames, invalid, after_clock = _snapshot(after)
+    cutoff, _, _, before_uptime = _snapshot(before)
+    _, frames, invalid, after_uptime = _snapshot(after)
+    clocks_available = before_uptime is not None and after_uptime is not None
+    uptime_order_valid = clocks_available and after_uptime >= before_uptime
+    uptime_regressed = clocks_available and not uptime_order_valid
     invalid_count = sum(1 for start, _ in invalid if cutoff is not None and start > cutoff)
-    qualified = cutoff is not None and before_clock and after_clock and not invalid_count
-    durations = sorted((end - start) / 1_000_000 for start, end in frames if cutoff is not None and start > cutoff)
+    qualified = cutoff is not None and uptime_order_valid and not invalid_count
+    # A known regression invalidates attribution even if each dump's rows are
+    # individually plausible. Preserve the raw dumps instead of comparing them.
+    durations = sorted((end - start) / 1_000_000 for start, end in frames
+                       if not uptime_regressed and cutoff is not None and start > cutoff)
     n = len(durations)
     return {
         "scope": SCOPE,
         "baseline_available": cutoff is not None,
         "frame_count": n,
         "invalid_timing_count": invalid_count,
-        "clock_bound_available": before_clock and after_clock,
+        "clock_bound_available": clocks_available,
+        "uptime_order_valid": uptime_order_valid,
         "timing_qualified": bool(qualified and n),
         "diagnostic_horizon_ms": 60_000,
         "durations_ms": durations,
