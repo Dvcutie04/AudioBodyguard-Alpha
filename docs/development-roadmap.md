@@ -6,6 +6,15 @@ Checkpoint: October 23, 2026. Continue from the restored a-Shell baseline and th
 
 ## Current checkpoint
 
+October 23 iPhone Voice stop guidance: the
+[0.24 record](ios-voice-stop-guidance-2026-10-23.md) separates the existing
+microphone permission, speech permission, recognizer availability and engine
+checks into equivalent ordered guards. Each failed check gets a relevant next
+step and incomplete-words notice. Generic recognition failure also offers a
+fresh Start. No error-domain diagnosis, automatic recovery or input authority
+is added. Exact candidate validation belongs to its draft pull request;
+handset, signed iPhone and N2b–N5 remain unqualified.
+
 October 23 Voice failure guidance: the
 [0.23 record](voice-error-guidance-2026-10-23.md) gives common Android speech
 errors a short explanation and next step, with generic handling for every other
