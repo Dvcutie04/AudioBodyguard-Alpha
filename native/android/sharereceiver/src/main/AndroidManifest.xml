@@ -1,0 +1,11 @@
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <application android:testOnly="true" android:allowBackup="false" android:label="AQSS build-share test receiver" android:theme="@android:style/Theme.Material.Light.NoActionBar">
+        <activity android:name=".BuildDetailsShareReceiver" android:exported="true" android:label="Build details test">
+            <intent-filter>
+                <action android:name="android.intent.action.SEND" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <data android:mimeType="text/plain" />
+            </intent-filter>
+        </activity>
+    </application>
+</manifest>

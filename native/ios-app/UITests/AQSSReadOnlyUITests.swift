@@ -1,6 +1,99 @@
 import XCTest
+import UIKit
 
 final class AQSSReadOnlyUITests: XCTestCase {
+    func testBuildDetailsShareOnlyInstalledMetadataAndReturn() throws {
+        try inspectBuildDetailsShare(copyDetails: true)
+    }
+
+    func testBuildDetailsShareCancelReturnsWithoutCopy() throws {
+        try inspectBuildDetailsShare(copyDetails: false)
+    }
+
+    private func inspectBuildDetailsShare(copyDetails: Bool) throws {
+        let environment = ProcessInfo.processInfo.environment
+        guard let version = environment["AQSS_TEST_APP_VERSION"], !version.isEmpty,
+              let build = environment["AQSS_TEST_APP_BUILD"], !build.isEmpty else {
+            XCTFail("Require version and build from the compiled app's Info.plist")
+            throw NSError(domain: "AQSSBuildShare", code: 1)
+        }
+        let app = launch()
+        tab("settings", app); tap("Build details", app)
+        let share = app.buttons["share-build-details"]
+        guard share.waitForExistence(timeout: 5) else {
+            screenshot("Share build details action missing", app)
+            XCTFail("Missing Share build details action")
+            throw NSError(domain: "AQSSBuildShare", code: 2)
+        }
+        let expected = "Audio Bodyguard\nPlatform: iPhone/iPad\nVersion: \(version)\nBuild: \(build)"
+        label(expected, app)
+        let copy = app.cells["Copy"].firstMatch
+        XCTAssertFalse(copy.exists, "Build details must preview without opening the share sheet")
+        screenshot("Build details preview before explicit Share", app)
+        share.tap()
+        guard copy.waitForExistence(timeout: 8) else {
+            screenshot("Native share sheet unavailable", app)
+            XCTFail("Require the native share sheet's Copy action: \(app.debugDescription)")
+            throw NSError(domain: "AQSSBuildShare", code: 3)
+        }
+        screenshot("Native build details share sheet", app)
+        if UIDevice.current.userInterfaceIdiom == .pad {
+            // Tap an observed point inside this app but outside its share popover.
+            // The app-window edge can lie outside the inset iPad presentation.
+            let preview = app.scrollViews["setting-help-scroll"].staticTexts
+                .matching(NSPredicate(format: "label BEGINSWITH %@", expected)).firstMatch
+            let cancelPoint = preview.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5))
+            let popover = app.popovers.firstMatch
+            guard preview.exists, popover.exists,
+                  !popover.frame.contains(cancelPoint.screenPoint) else {
+                XCTFail("Require an observed preview point outside the native share popover")
+                throw NSError(domain: "AQSSBuildShare", code: 5)
+            }
+            cancelPoint.tap()
+        } else {
+            let close = app.navigationBars["UIActivityContentView"].buttons["Close"].firstMatch
+            guard close.waitForExistence(timeout: 5) else {
+                screenshot("Native share-sheet close control unavailable", app)
+                XCTFail("Require the observed native share-sheet Close control: \(app.debugDescription)")
+                throw NSError(domain: "AQSSBuildShare", code: 4)
+            }
+            close.tap()
+        }
+        let closed = XCTNSPredicateExpectation(predicate: NSPredicate(format: "exists == false"), object: copy)
+        guard XCTWaiter.wait(for: [closed], timeout: 5) == .completed else {
+            screenshot("Native share cancellation failed", app)
+            XCTFail("Cancel must close the native share sheet: \(app.debugDescription)")
+            throw NSError(domain: "AQSSBuildShare", code: 6)
+        }
+        XCTAssertTrue(share.isHittable)
+        label(expected, app)
+        screenshot("Cancel share returns to Build details", app)
+        print("AQSS_BUILD_SHARE_UI: native cancel returned to the preview")
+        if copyDetails {
+            share.tap()
+            XCTAssertTrue(copy.waitForExistence(timeout: 8))
+            copy.tap()
+            print("AQSS_BUILD_SHARE_UI: native Copy selected")
+            let returned = XCTNSPredicateExpectation(
+                predicate: NSPredicate(format: "enabled == true AND hittable == true"), object: share)
+            guard XCTWaiter.wait(for: [returned], timeout: 8) == .completed else {
+                screenshot("Native Copy did not return to Build details", app)
+                XCTFail("Copy must return to an enabled Share control: \(app.debugDescription)")
+                throw NSError(domain: "AQSSBuildShare", code: 7)
+            }
+            XCTAssertFalse(app.cells["Copy"].firstMatch.exists)
+            label(expected, app)
+            print("AQSS_BUILD_SHARE_UI: Copy returned to the preview; host verifies actual clipboard bytes")
+            screenshot("System Copy returns to Build details", app)
+        }
+        XCTAssertFalse(XCUIApplication(bundleIdentifier: "com.apple.springboard").alerts.firstMatch.exists)
+        app.buttons["setting-help-close"].tap()
+        label("Appearance", app)
+        XCTAssertTrue(app.buttons["Advanced Settings"].exists)
+        XCTAssertFalse(app.scrollViews["setting-help-scroll"].exists)
+        tab("home", app); label("Connection not verified", app)
+    }
+
     func testBuildDetailsMatchInstalledMetadataAndReturnToSettings() throws {
         let environment = ProcessInfo.processInfo.environment
         guard let version = environment["AQSS_TEST_APP_VERSION"], !version.isEmpty,
@@ -437,8 +530,11 @@ final class AQSSReadOnlyUITests: XCTestCase {
         app.buttons["sound-recaps-close"].tap()
         let closed = XCTNSPredicateExpectation(predicate: NSPredicate(format: "exists == false"), object: app.scrollViews["sound-recaps-scroll"])
         XCTAssertEqual(XCTWaiter.wait(for: [closed], timeout: 5), .completed)
-        app.scrollViews["sound-check-scroll"].swipeDown()
-        app.scrollViews["sound-check-scroll"].swipeDown()
+        // The meter header is fixed above its scroll view. Pulling down here
+        // can dismiss the meter sheet instead of merely returning from recaps.
+        XCTAssertTrue(app.scrollViews["sound-check-scroll"].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.buttons["Close"].firstMatch.waitForExistence(timeout: 5))
+        XCTAssertTrue(app.buttons["Close"].firstMatch.isHittable)
     }
     private func label(_ text: String, _ app: XCUIApplication) {
         XCTAssertTrue(app.staticTexts.containing(NSPredicate(format: "label CONTAINS %@", text)).firstMatch.waitForExistence(timeout: 10), "Missing: \(text)")

@@ -16,6 +16,7 @@ def main():
     parser.add_argument("--apk", default="native/android/app/build/outputs/apk/liveInput/app-liveInput.apk")
     parser.add_argument("--package", default="com.aqss.bodyguard.prototype.liveinput")
     parser.add_argument("--probe-apk", default="native/android/uiprobe/build/outputs/apk/debug/uiprobe-debug.apk")
+    parser.add_argument("--share-receiver-apk", default="native/android/sharereceiver/build/outputs/apk/debug/sharereceiver-debug.apk")
     args = parser.parse_args()
     out = Path("artifacts/ui/android-live-input")
     out.mkdir(parents=True, exist_ok=True)
@@ -125,6 +126,7 @@ def main():
             "-c", "android.intent.category.LAUNCHER", "-n", f"{package}/com.aqss.bodyguard.prototype.ReadOnlyHomeActivity")
 
     adb("install", "-t", "-r", args.probe_apk, timeout=120)
+    adb("install", "-t", "-r", args.share_receiver_apk, timeout=120)
     # Establish a responsive system launcher before AQSS is installed/launched.
     # A boot-time OS ANR is not an AQSS observation. Preserve it, allow at most
     # two exact known-system-dialog actions, then require fresh launcher roots.
@@ -193,6 +195,39 @@ def main():
                                   "Include the version and build when reporting a problem."), "installed_build_details")
     assert any(node.get("content-desc") == "Back" or node.get("text") == "Back" for node in build_details.iter("node")), "Build details requires an accessible Back control"
     screenshot("installed_build_details")
+    receiver = "com.aqss.bodyguard.sharetest"
+    receiver_file = "files/shared-build-details.json"
+    adb("shell", "run-as", receiver, "rm", "-f", receiver_file)
+    tap("Share build details", "build_share_open")
+    chooser = wait_for("Build details test", "build_share_native_chooser")
+    assert any(node.get("package") == "com.android.intentresolver" for node in chooser.iter("node")), "Require the real Android Sharesheet"
+    screenshot("build_share_native_chooser")
+    adb("shell", "input", "keyevent", "KEYCODE_BACK")
+    expected_share = f"Audio Bodyguard\nPlatform: Android\nVersion: {version}\nBuild: {build}"
+    wait_for_all(("Build details", expected_share, "Share build details"), "build_share_cancel_return")
+    adb("shell", shlex.join(["run-as", receiver, "sh", "-c", "test ! -e " + receiver_file]))
+    screenshot("build_share_cancel_return")
+    tap("Share build details", "build_share_reopen")
+    wait_for("Build details test", "build_share_native_chooser_again")
+    tap("Build details test", "build_share_select_test_receiver")
+    received = wait_for_all(("Build details received for test", expected_share, "Return to Build details"), "build_share_receiver_observed")
+    assert any(node.get("package") == receiver for node in received.iter("node")), "Require the independent receiver Activity"
+    screenshot("build_share_receiver_observed")
+    receipt = adb("shell", "run-as", receiver, "cat", receiver_file)
+    (out / "shared-build-details-receiver-raw.txt").write_bytes(receipt)
+    observed = json.loads(receipt.decode())
+    assert observed["action"] == "android.intent.action.SEND" and observed["type"] == "text/plain", observed
+    assert observed["text"] == expected_share, observed
+    assert observed["data"] is None and observed["has_stream"] is False, observed
+    assert all(item["text"] == expected_share and item["uri"] is None and item["has_intent"] is False for item in observed["clips"]), observed
+    (out / "shared-build-details.json").write_text(json.dumps(observed, sort_keys=True))
+    shared_appops = adb("shell", "cmd", "appops", "get", package, "RECORD_AUDIO").decode()
+    (out / "build-share-appops.txt").write_text(shared_appops)
+    assert "(running)" not in shared_appops, shared_appops
+    tap("Return to Build details", "build_share_leave_test_receiver")
+    wait_for_all(("Build details", expected_share, "Share build details"), "build_share_receiver_return")
+    screenshot("build_share_receiver_return")
+    print("BUILD_DETAILS_SHARE_OBSERVED: native cancel, exact four-field Intent receipt and enabled preview return", flush=True)
     tap("Back", "build_details_close")
     wait_for_all(("Appearance", "Advanced Settings"), "build_details_return_to_settings")
     tap("Home", "build_details_return_home")
@@ -519,7 +554,7 @@ def main():
     crashes = adb("logcat", "-b", "crash", "-d").decode()
     (out / "crash-log.txt").write_text(crashes)
     assert "FATAL EXCEPTION" not in crashes, crashes
-    print("LIVE_INPUT_EMULATOR_OBSERVED: permission denial, app-specific Settings round trips with denied/granted access and no capture until another Start, PCM samples, manual stop, notification-shade focus loss, background stop, rotation stop, no automatic restart, 30-second limit, voice navigation/service attempt, real Voice microphone-denial/Settings fixture with denied and granted returns kept off, meter reuse, bounded input recaps, Clear, navigation retention, empty recaps after process restart, synthetic-photo picker/ML Kit review, over-budget photo rejection, photo Clear/cancel and unverified connection passed. No physical microphone, real-photo accuracy or output qualification.", flush=True)
+    print("LIVE_INPUT_EMULATOR_OBSERVED: native build-details preview/cancel/four-field share handoff, permission denial, app-specific Settings round trips with denied/granted access and no capture until another Start, PCM samples, manual stop, notification-shade focus loss, background stop, rotation stop, no automatic restart, 30-second limit, voice navigation/service attempt, real Voice microphone-denial/Settings fixture with denied and granted returns kept off, meter reuse, bounded input recaps, Clear, navigation retention, empty recaps after process restart, synthetic-photo picker/ML Kit review, over-budget photo rejection, photo Clear/cancel and unverified connection passed. No physical microphone, real-photo accuracy or output qualification.", flush=True)
 
 
 if __name__ == "__main__":

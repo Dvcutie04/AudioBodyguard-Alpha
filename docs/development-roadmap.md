@@ -1,10 +1,20 @@
 # AQSS development roadmap
 
-Checkpoint: October 21, 2026. Continue from the restored a-Shell baseline and the existing native endpoint qualification research. iPhone/iOS and Android remain equal product targets.
+Checkpoint: October 22, 2026. Continue from the restored a-Shell baseline and the existing native endpoint qualification research. iPhone/iOS and Android remain equal product targets.
 
 **INFERENCE IS NOT REALITY. AI proposes. Policy authorizes. Physical Commit verifies.**
 
 ## Current checkpoint
+
+October 22 explicit build sharing: the
+[share design and native test record](share-build-details-2026-10-22.md)
+adds Share build details inside the installed-metadata preview on Android and
+iPhone/iPad. Candidate 0.18 hands only the previewed product, platform,
+version and build to the native share sheet after a tap. Cancel preserves
+the preview and Back returns to Settings. The complete support report stays
+planned. Exact native results and APK identity belong to its draft PR;
+recipient delivery, handset compatibility, signed iPhone distribution and
+N2b-N5 remain unqualified.
 
 October 22 installed-build details: the
 [build identity record](build-details-2026-10-22.md) adds a Build details action

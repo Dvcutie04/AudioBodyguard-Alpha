@@ -2,7 +2,7 @@ name: Android live microphone input test
 
 on:
   push:
-    branches: ["aqss/android-live-sound-check", "aqss/android-microphone-lifecycle", "aqss/sound-check-recaps", "aqss/android-input-deadlines", "aqss/tv-photo-labels", "aqss/tv-photo-text-bounds", "aqss/tv-photo-selection", "aqss/android-full-photo", "aqss/photo-review-deadline", "aqss/photo-work-ownership", "aqss/photo-work-ready", "aqss/photo-retry-guidance", "aqss/sound-permission-settings", "aqss/voice-permission-settings", "aqss/build-details"]
+    branches: ["aqss/android-live-sound-check", "aqss/android-microphone-lifecycle", "aqss/sound-check-recaps", "aqss/android-input-deadlines", "aqss/tv-photo-labels", "aqss/tv-photo-text-bounds", "aqss/tv-photo-selection", "aqss/android-full-photo", "aqss/photo-review-deadline", "aqss/photo-work-ownership", "aqss/photo-work-ready", "aqss/photo-retry-guidance", "aqss/sound-permission-settings", "aqss/voice-permission-settings", "aqss/build-details", "aqss/share-build-details"]
     paths:
       - "native/android/**"
       - "native/ios/Tests/AQSSNativeFeedbackTests/Fixtures/**"
@@ -45,7 +45,7 @@ jobs:
       - name: Compile, test input arithmetic and freshness, and check Android lint
         run: |
           sdkmanager "platforms;android-36"
-          gradle -p native/android :testDebugUnitTest :app:assembleLiveInput :app:lintLiveInput :uiprobe:assembleDebug
+          gradle -p native/android :testDebugUnitTest :app:assembleLiveInput :app:lintLiveInput :uiprobe:assembleDebug :sharereceiver:assembleDebug
       - name: Enable emulator acceleration
         run: |
           echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules

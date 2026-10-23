@@ -2,6 +2,7 @@ package com.aqss.bodyguard.prototype
 
 import android.app.Activity
 import android.app.AlertDialog
+import android.content.ActivityNotFoundException
 import android.content.Intent
 import android.content.res.Configuration
 import android.graphics.Color
@@ -24,6 +25,7 @@ import android.widget.FrameLayout
 import android.widget.LinearLayout
 import android.widget.ScrollView
 import android.widget.TextView
+import android.widget.Toast
 import android.window.OnBackInvokedCallback
 import android.window.OnBackInvokedDispatcher
 import androidx.core.content.pm.PackageInfoCompat
@@ -534,10 +536,11 @@ class ReadOnlyHomeActivity : Activity() {
         val info = try { packageManager.getPackageInfo(packageName, 0) } catch (_: Exception) { null }
         val version = info?.versionName?.takeIf { it.isNotBlank() } ?: "Unavailable"
         val build = info?.let { PackageInfoCompat.getLongVersionCode(it).toString() } ?: "Unavailable"
-        showInformation("Build details", "Version: $version\nBuild: $build\n\nInclude the version and build when reporting a problem.", "build")
+        val details = "Audio Bodyguard\nPlatform: Android\nVersion: $version\nBuild: $build"
+        showInformation("Build details", "$details\n\nInclude the version and build when reporting a problem.", "build", shareText = details)
     }
 
-    private fun showInformation(title: String, explanation: String, target: String) {
+    private fun showInformation(title: String, explanation: String, target: String, shareText: String? = null) {
         val content = vertical().apply { setPadding(dp(20), dp(14), dp(20), dp(14)); setBackgroundColor(skin.background) }
         val holder = ScrollView(this).apply { addView(content) }
         val dialog = AlertDialog.Builder(this).setView(holder).create()
@@ -546,6 +549,18 @@ class ReadOnlyHomeActivity : Activity() {
         heading.addView(roseButton(this, skin, "Back", compact = true) { dialog.dismiss() })
         content.addView(heading)
         label(content, explanation, 17f)
+        if (shareText != null) action(content, "Share build details") {
+            val send = Intent(Intent.ACTION_SEND).apply {
+                type = "text/plain"
+                putExtra(Intent.EXTRA_TEXT, shareText)
+            }
+            try {
+                startActivity(Intent.createChooser(send, null))
+            } catch (error: RuntimeException) {
+                if (error !is ActivityNotFoundException && error !is SecurityException) throw error
+                Toast.makeText(this, "Sharing is unavailable. You can read the details shown here.", Toast.LENGTH_LONG).show()
+            }
+        }
         if (target == "voice") action(content, "Show voice steps") { dialog.dismiss(); openSetup("voice") }
         dialog.show()
     }
