@@ -55,3 +55,15 @@ public final class SoundCheckRecaps {
     public func snapshot() -> [SoundCheckRecap] { completed }
     public func clear() { completed = []; owner = nil; observed = false }
 }
+
+/// An allowlisted, bounded text snapshot. Never a raw log or physical evidence.
+public func soundCheckSupportReportSection(_ recaps: [SoundCheckRecap]) -> String {
+    var lines = ["Recent sound checks (this app session)"]
+    if recaps.isEmpty { lines.append("No completed sound checks in this app session.") }
+    for (index, row) in recaps.prefix(5).enumerated() {
+        if index > 0 { lines.append("") }
+        lines.append("Check \(index + 1): \(row.inputObserved ? "Input samples observed" : "No input samples observed")")
+        lines.append(row.end.rawValue)
+    }
+    return lines.joined(separator: "\n") + "\n\nInput observations only; not proof of sound safety, protection or TV control."
+}

@@ -2,6 +2,73 @@ import XCTest
 import UIKit
 
 final class AQSSReadOnlyUITests: XCTestCase {
+    func testPrivateSupportReportIncludesCompletedCheckAndClears() throws {
+        guard ProcessInfo.processInfo.environment["AQSS_TEST_MIC_GRANTED"] == "1" else {
+            throw XCTSkip("The native workflow must establish microphone consent.")
+        }
+        let environment = ProcessInfo.processInfo.environment
+        let version = try XCTUnwrap(environment["AQSS_TEST_APP_VERSION"])
+        let build = try XCTUnwrap(environment["AQSS_TEST_APP_BUILD"])
+        let metadata = "Audio Bodyguard\nPlatform: iPhone/iPad\nVersion: \(version)\nBuild: \(build)"
+        let empty = metadata + "\n\nRecent sound checks (this app session)\nNo completed sound checks in this app session.\n\nInput observations only; not proof of sound safety, protection or TV control."
+        let completed = metadata + "\n\nRecent sound checks (this app session)\nCheck 1: Input samples observed\nStopped by you\n\nInput observations only; not proof of sound safety, protection or TV control."
+        let app = launch()
+        func finishActualCheck() throws {
+            tab("sound", app); tap("Live sound check", app)
+            app.buttons["sound-check-start-stop"].tap()
+            let status = app.staticTexts["sound-check-status"]
+            let input = XCTNSPredicateExpectation(predicate: NSPredicate(format: "label CONTAINS %@", "Microphone samples received"), object: status)
+            guard XCTWaiter.wait(for: [input], timeout: 8) == .completed else {
+                screenshot("Support report requires actual native input", app)
+                XCTFail("Require actual native samples before reporting observed input")
+                throw NSError(domain: "AQSSSupportReport", code: 1)
+            }
+            app.buttons["sound-check-start-stop"].tap()
+            label("No live input", app)
+            openSoundRecaps(app); label("Input samples observed", app); label("Stopped by you", app)
+            closeSoundRecaps(app); app.buttons["Close"].firstMatch.tap()
+        }
+        func openReport(_ expected: String) {
+            tab("settings", app); tap("Advanced Settings", app); tap("About Private support report", app)
+            label(expected, app)
+            XCTAssertTrue(app.buttons["share-support-report"].exists)
+        }
+        func closeReport() {
+            app.buttons["setting-help-close"].tap(); label("Advanced Settings", app)
+            app.buttons["page-back"].tap(); label("Appearance", app)
+        }
+        try finishActualCheck()
+        openReport(completed)
+        screenshot("Support report contains only the completed input recap", app)
+        tap("Share support report", app)
+        let copy = app.cells["Copy"].firstMatch
+        XCTAssertTrue(copy.waitForExistence(timeout: 8)); copy.tap()
+        let share = app.buttons["share-support-report"]
+        let returned = XCTNSPredicateExpectation(predicate: NSPredicate(format: "enabled == true AND hittable == true"), object: share)
+        XCTAssertEqual(XCTWaiter.wait(for: [returned], timeout: 8), .completed)
+        XCTAssertFalse(copy.exists); label(completed, app)
+        screenshot("Completed support report native Copy returns to preview", app)
+        closeReport()
+        tab("sound", app); tap("Live sound check", app); openSoundRecaps(app)
+        label("Stopped by you", app)
+        app.buttons["sound-recaps-clear"].tap(); label("No completed sound checks in this app session.", app)
+        closeSoundRecaps(app); app.buttons["Close"].firstMatch.tap()
+        openReport(empty); screenshot("New support report after Clear is empty", app); closeReport()
+        try finishActualCheck()
+        // End a process that really has a completed recap; restart must discard it.
+        app.terminate(); app.launch()
+        openReport(empty); screenshot("New process support report is empty", app); closeReport()
+        tab("home", app); label("Connection not verified", app)
+    }
+
+    func testPrivateSupportReportCancelReturnsWithoutCopy() throws {
+        try inspectBuildDetailsShare(copyDetails: false, supportReport: true)
+    }
+
+    func testPrivateSupportReportSharesOnlyPreviewedFieldsAndReturns() throws {
+        try inspectBuildDetailsShare(copyDetails: true, supportReport: true)
+    }
+
     func testBuildDetailsShareOnlyInstalledMetadataAndReturn() throws {
         try inspectBuildDetailsShare(copyDetails: true)
     }
@@ -10,7 +77,7 @@ final class AQSSReadOnlyUITests: XCTestCase {
         try inspectBuildDetailsShare(copyDetails: false)
     }
 
-    private func inspectBuildDetailsShare(copyDetails: Bool) throws {
+    private func inspectBuildDetailsShare(copyDetails: Bool, supportReport: Bool = false) throws {
         let environment = ProcessInfo.processInfo.environment
         guard let version = environment["AQSS_TEST_APP_VERSION"], !version.isEmpty,
               let build = environment["AQSS_TEST_APP_BUILD"], !build.isEmpty else {
@@ -18,19 +85,26 @@ final class AQSSReadOnlyUITests: XCTestCase {
             throw NSError(domain: "AQSSBuildShare", code: 1)
         }
         let app = launch()
-        tab("settings", app); tap("Build details", app)
-        let share = app.buttons["share-build-details"]
+        tab("settings", app)
+        if supportReport { tap("Advanced Settings", app); tap("About Private support report", app) }
+        else { tap("Build details", app) }
+        let share = app.buttons[supportReport ? "share-support-report" : "share-build-details"]
         guard share.waitForExistence(timeout: 5) else {
-            screenshot("Share build details action missing", app)
-            XCTFail("Missing Share build details action")
+            screenshot(supportReport ? "Share support report action missing" : "Share build details action missing", app)
+            XCTFail(supportReport ? "Missing Share support report action" : "Missing Share build details action")
             throw NSError(domain: "AQSSBuildShare", code: 2)
         }
-        let expected = "Audio Bodyguard\nPlatform: iPhone/iPad\nVersion: \(version)\nBuild: \(build)"
+        var expected = "Audio Bodyguard\nPlatform: iPhone/iPad\nVersion: \(version)\nBuild: \(build)"
+        if supportReport {
+            expected += "\n\nRecent sound checks (this app session)\nNo completed sound checks in this app session.\n\nInput observations only; not proof of sound safety, protection or TV control."
+            label("Review before sharing", app)
+            label("No audio, recognized words, photos, TV or network details are included.", app)
+        }
         label(expected, app)
         let copy = app.cells["Copy"].firstMatch
         XCTAssertFalse(copy.exists, "Build details must preview without opening the share sheet")
         screenshot("Build details preview before explicit Share", app)
-        share.tap()
+        if supportReport { tap("Share support report", app) } else { share.tap() }
         guard copy.waitForExistence(timeout: 8) else {
             screenshot("Native share sheet unavailable", app)
             XCTFail("Require the native share sheet's Copy action: \(app.debugDescription)")
@@ -42,9 +116,10 @@ final class AQSSReadOnlyUITests: XCTestCase {
             // The app-window edge can lie outside the inset iPad presentation.
             let preview = app.scrollViews["setting-help-scroll"].staticTexts
                 .matching(NSPredicate(format: "label BEGINSWITH %@", expected)).firstMatch
-            let cancelPoint = preview.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5))
+            let cancelPoint = preview.coordinate(withNormalizedOffset: CGVector(dx: supportReport ? 0.1 : 0.5, dy: supportReport ? 0.1 : 0.5))
             let popover = app.popovers.firstMatch
             guard preview.exists, popover.exists,
+                  app.scrollViews["setting-help-scroll"].frame.contains(cancelPoint.screenPoint),
                   !popover.frame.contains(cancelPoint.screenPoint) else {
                 XCTFail("Require an observed preview point outside the native share popover")
                 throw NSError(domain: "AQSSBuildShare", code: 5)
@@ -66,11 +141,12 @@ final class AQSSReadOnlyUITests: XCTestCase {
             throw NSError(domain: "AQSSBuildShare", code: 6)
         }
         XCTAssertTrue(share.isHittable)
+        XCTAssertTrue(share.isEnabled)
         label(expected, app)
         screenshot("Cancel share returns to Build details", app)
         print("AQSS_BUILD_SHARE_UI: native cancel returned to the preview")
         if copyDetails {
-            share.tap()
+            if supportReport { tap("Share support report", app) } else { share.tap() }
             XCTAssertTrue(copy.waitForExistence(timeout: 8))
             copy.tap()
             print("AQSS_BUILD_SHARE_UI: native Copy selected")
@@ -88,6 +164,11 @@ final class AQSSReadOnlyUITests: XCTestCase {
         }
         XCTAssertFalse(XCUIApplication(bundleIdentifier: "com.apple.springboard").alerts.firstMatch.exists)
         app.buttons["setting-help-close"].tap()
+        if supportReport {
+            label("Advanced Settings", app)
+            XCTAssertTrue(app.buttons["help-support"].exists)
+            app.buttons["page-back"].tap()
+        }
         label("Appearance", app)
         XCTAssertTrue(app.buttons["Advanced Settings"].exists)
         XCTAssertFalse(app.scrollViews["setting-help-scroll"].exists)

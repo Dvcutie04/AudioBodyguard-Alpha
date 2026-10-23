@@ -95,25 +95,27 @@ struct ConnectionHeadView: View {
     }
 }
 
-private struct BuildDetailsShareButton: View {
+private struct ReviewedTextShareButton: View {
     let text: String
     let theme: AppTheme
+    let title: String
+    let identifier: String
     @State private var sharing = false
 
     var body: some View {
         Button { sharing = true } label: {
-            Label("Share build details", systemImage: "square.and.arrow.up")
+            Label(title, systemImage: "square.and.arrow.up")
                 .frame(maxWidth: .infinity, minHeight: 44)
         }
         .buttonStyle(AppButtonStyle(theme: theme))
         .disabled(sharing)
-        .background(BuildDetailsSharePresenter(text: text, isPresented: $sharing).allowsHitTesting(false))
-        .accessibilityIdentifier("share-build-details")
+        .background(ReviewedTextSharePresenter(text: text, isPresented: $sharing).allowsHitTesting(false))
+        .accessibilityIdentifier(identifier)
     }
 }
 
-/// The system receives only the visible four-line snapshot, after an explicit tap.
-private struct BuildDetailsSharePresenter: UIViewControllerRepresentable {
+/// The system receives only the visible text snapshot, after an explicit tap.
+private struct ReviewedTextSharePresenter: UIViewControllerRepresentable {
     let text: String
     @Binding var isPresented: Bool
 
@@ -285,7 +287,9 @@ private struct ReadOnlyHomeView: View {
                       VStack(alignment: .leading, spacing: 20) {
                         Text(item.explanation).fixedSize(horizontal: false, vertical: true)
                         if let text = item.shareText {
-                            BuildDetailsShareButton(text: text, theme: theme)
+                            ReviewedTextShareButton(text: text, theme: theme,
+                                title: item.id == "support" ? "Share support report" : "Share build details",
+                                identifier: item.id == "support" ? "share-support-report" : "share-build-details")
                         }
                         if item.id == "voice" {
                             action("Show voice steps", icon: "mic") { pendingSetupGroup = "voice"; settingHelp = nil }
@@ -553,7 +557,7 @@ private struct ReadOnlyHomeView: View {
                     Divider()
                     settingInfo("Move this session", detail: "Unavailable", explanation: "No authorized endpoint or verified transfer path is connected. Moving a session between iPhone and Android requires qualification in both directions.", target: "handoffOption")
                     Divider()
-                    settingInfo("Private support report", detail: "Planned", explanation: AQSSInterfaceContent.future.first { $0.id == "support" }!.explanation, target: "support")
+                    settingInfo("Private support report", detail: "Review before sharing", explanation: AQSSInterfaceContent.future.first { $0.id == "support" }!.explanation, target: "support")
                 }
                 helpButton("Advanced Settings tutorial", topic: "advanced")
             }
@@ -569,8 +573,17 @@ private struct ReadOnlyHomeView: View {
         return "Audio Bodyguard\nPlatform: iPhone/iPad\nVersion: \(value("CFBundleShortVersionString"))\nBuild: \(value("CFBundleVersion"))"
     }
 
+    @MainActor private func showSupportReport() {
+        let report = installedBuildDetails + "\n\n" + soundCheckSupportReportSection(SoundCheckRecaps.shared.snapshot())
+        settingHelp = SettingExplanation(id: "support", title: "Private support report",
+            explanation: report + "\n\nReview before sharing\nNo audio, recognized words, photos, TV or network details are included.", shareText: report)
+    }
+
     private func question(_ title: String, explanation: String, target: String, light: Bool = false) -> some View {
-        Button { settingHelp = SettingExplanation(id: target, title: title, explanation: explanation) } label: {
+        Button {
+            if target == "support" { showSupportReport() }
+            else { settingHelp = SettingExplanation(id: target, title: title, explanation: explanation) }
+        } label: {
             Text("[?]").font(.system(size: 18, weight: .semibold)).frame(width: 44, height: 44)
                 .foregroundColor(light ? .black : theme.text)
         }.buttonStyle(.plain).accessibilityLabel("About " + title).accessibilityIdentifier("help-" + target)
@@ -612,8 +625,8 @@ private struct ReadOnlyHomeView: View {
             .accessibilityLabel(item.title).accessibilityValue(settingSwitches.isAttempting(item.id) ? "On temporarily. Not connected." : settingSwitches.isOn(item.id) ? "On" : "Off")
             .accessibilityIdentifier("setting-" + item.id)
     }
-    private func settingInfo(_ title: String, detail: String = "", explanation: String, target: String) -> some View {
-        HStack(alignment: .center) {
+    @ViewBuilder private func settingInfo(_ title: String, detail: String = "", explanation: String, target: String) -> some View {
+        let row = HStack(alignment: .center) {
             VStack(alignment: .leading, spacing: 4) {
                 Text(title).font(.body.weight(.semibold))
                 if !detail.isEmpty { Text(detail).font(.subheadline).foregroundColor(Color(white: 0.3)) }
@@ -621,6 +634,8 @@ private struct ReadOnlyHomeView: View {
             Spacer(minLength: 8)
             question(title, explanation: explanation, target: target, light: true)
         }.padding(.vertical, 8).modifier(SectionAnchor(target: target))
+        if target == "support" { row.contentShape(Rectangle()).onTapGesture { showSupportReport() } }
+        else { row }
     }
     private func scheduleSettingReset() {
         settingResetTask?.cancel(); settingResetTask = nil

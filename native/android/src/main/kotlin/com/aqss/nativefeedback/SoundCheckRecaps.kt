@@ -59,3 +59,15 @@ class SoundCheckRecaps {
         completed.clear(); owner = null; observed = false
     }
 }
+
+/** An allowlisted, bounded text snapshot. Never a raw log or physical evidence. */
+fun soundCheckSupportReportSection(recaps: List<SoundCheckRecap>): String {
+    val lines = mutableListOf("Recent sound checks (this app session)")
+    if (recaps.isEmpty()) lines.add("No completed sound checks in this app session.")
+    recaps.take(5).forEachIndexed { index, row ->
+        if (index > 0) lines.add("")
+        lines.add("Check ${index + 1}: ${if (row.inputObserved) "Input samples observed" else "No input samples observed"}")
+        lines.add(row.end.label)
+    }
+    return lines.joinToString("\n") + "\n\nInput observations only; not proof of sound safety, protection or TV control."
+}

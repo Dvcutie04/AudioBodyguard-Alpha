@@ -33,6 +33,8 @@ import com.aqss.nativefeedback.CapabilityFacts
 import com.aqss.nativefeedback.SessionEvidenceView
 import com.aqss.nativefeedback.SessionState
 import com.aqss.nativefeedback.TutorialContent
+import com.aqss.nativefeedback.SoundCheckRecaps
+import com.aqss.nativefeedback.soundCheckSupportReportSection
 import com.aqss.nativefeedback.InterfaceContent
 import com.aqss.nativefeedback.InterfaceSetting
 import com.aqss.nativefeedback.SettingSwitchState
@@ -511,7 +513,7 @@ class ReadOnlyHomeActivity : Activity() {
                 settingsDivider(c)
                 settingInfo(c, "Move this session", "Unavailable", "No authorized endpoint or verified transfer path is connected. Moving a session between iPhone and Android requires qualification in both directions.", "handoffOption")
                 settingsDivider(c)
-                settingInfo(c, "Private support report", "Planned", InterfaceContent.future.single { it.id == "support" }.explanation, "support")
+                settingInfo(c, "Private support report", "Review before sharing", InterfaceContent.future.single { it.id == "support" }.explanation, "support")
             }
             action(column, "Advanced Settings tutorial") { tutorial.start("advanced") }
             return
@@ -532,15 +534,25 @@ class ReadOnlyHomeActivity : Activity() {
     }
 
     @Suppress("DEPRECATION") // The int-flags overload remains available on the API 26 minimum.
-    private fun showBuildDetails() {
+    private fun installedBuildDetails(): String {
         val info = try { packageManager.getPackageInfo(packageName, 0) } catch (_: Exception) { null }
         val version = info?.versionName?.takeIf { it.isNotBlank() } ?: "Unavailable"
         val build = info?.let { PackageInfoCompat.getLongVersionCode(it).toString() } ?: "Unavailable"
-        val details = "Audio Bodyguard\nPlatform: Android\nVersion: $version\nBuild: $build"
+        return "Audio Bodyguard\nPlatform: Android\nVersion: $version\nBuild: $build"
+    }
+
+    private fun showBuildDetails() {
+        val details = installedBuildDetails()
         showInformation("Build details", "$details\n\nInclude the version and build when reporting a problem.", "build", shareText = details)
     }
 
-    private fun showInformation(title: String, explanation: String, target: String, shareText: String? = null) {
+    private fun showSupportReport() {
+        val report = installedBuildDetails() + "\n\n" + soundCheckSupportReportSection(SoundCheckRecaps.process.snapshot())
+        showInformation("Private support report", report + "\n\nReview before sharing\nNo audio, recognized words, photos, TV or network details are included.",
+            "support", shareText = report, shareTitle = "Share support report")
+    }
+
+    private fun showInformation(title: String, explanation: String, target: String, shareText: String? = null, shareTitle: String = "Share build details") {
         val content = vertical().apply { setPadding(dp(20), dp(14), dp(20), dp(14)); setBackgroundColor(skin.background) }
         val holder = ScrollView(this).apply { addView(content) }
         val dialog = AlertDialog.Builder(this).setView(holder).create()
@@ -549,7 +561,7 @@ class ReadOnlyHomeActivity : Activity() {
         heading.addView(roseButton(this, skin, "Back", compact = true) { dialog.dismiss() })
         content.addView(heading)
         label(content, explanation, 17f)
-        if (shareText != null) action(content, "Share build details") {
+        if (shareText != null) action(content, shareTitle) {
             val send = Intent(Intent.ACTION_SEND).apply {
                 type = "text/plain"
                 putExtra(Intent.EXTRA_TEXT, shareText)
@@ -566,7 +578,7 @@ class ReadOnlyHomeActivity : Activity() {
     }
 
     private fun question(title: String, explanation: String, target: String, light: Boolean = false): Button = button("[?]") {
-        showInformation(title, explanation, target)
+        if (target == "support") showSupportReport() else showInformation(title, explanation, target)
     }.apply {
         contentDescription = "About $title"; tag = "help-$target"
         if (light) { setTextColor(Color.BLACK); background = skin.shape(Color.WHITE, 8) }
@@ -619,6 +631,7 @@ class ReadOnlyHomeActivity : Activity() {
         label(words, title, 17f, Color.BLACK, true)
         if (detail.isNotEmpty()) label(words, detail, 15f, Color.DKGRAY)
         row.addView(words, LinearLayout.LayoutParams(0, -2, 1f)); row.addView(question(title, explanation, target, true))
+        if (target == "support") row.setOnClickListener { showSupportReport() }
         parent.addView(row); targets[target] = row
     }
     private fun settingClock() = SystemClock.elapsedRealtime() / 1000.0

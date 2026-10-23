@@ -6,6 +6,16 @@ Checkpoint: October 22, 2026. Continue from the restored a-Shell baseline and th
 
 ## Current checkpoint
 
+October 22 private support report: the
+[reviewable report record](private-support-report-2026-10-22.md) implements the
+planned entry in Advanced Settings. Candidate 0.19 previews installed build
+metadata and at most five completed input-only meter summaries before an
+explicit native Share. Cancel preserves the snapshot; Back returns to the
+caller. Audio, words, photos, TV/network details and generic logs are excluded.
+No capture, upload, report file or output authority is added. Exact native
+results and APK identity belong to its draft PR; handset compatibility, signed
+iPhone distribution, recipient delivery and N2b-N5 remain unqualified.
+
 October 22 explicit build sharing: the
 [share design and native test record](share-build-details-2026-10-22.md)
 adds Share build details inside the installed-metadata preview on Android and

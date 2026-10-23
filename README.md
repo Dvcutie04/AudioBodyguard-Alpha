@@ -17,6 +17,13 @@ samples. Its separate **Audio Bodyguard Live Test** APK can coexist with the
 preview. Digital input levels do not establish acoustic safety or active
 protection. TV control and qualified output paths remain unavailable.
 
+The [0.19 private support report](docs/private-support-report-2026-10-22.md)
+lets testers preview installed build details and up to five temporary meter
+summaries in **Settings → Advanced Settings → Private support report**, then
+choose **Share support report**. It excludes audio, words, photos, TV/network
+details and generic logs. Native sharing does not prove recipient delivery or
+physical audio protection.
+
 The [internal TestFlight preparation](docs/testflight-beta-preparation.md)
 automates checks on an exact reviewed source revision and provides a manually
 requested signing/upload lane after Apple account and signing setup. It does
