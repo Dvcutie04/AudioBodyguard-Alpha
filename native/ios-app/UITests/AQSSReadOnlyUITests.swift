@@ -35,13 +35,28 @@ final class AQSSReadOnlyUITests: XCTestCase {
         if close.exists {
             close.tap()
         } else if UIDevice.current.userInterfaceIdiom == .pad {
-            app.coordinate(withNormalizedOffset: CGVector(dx: 0.01, dy: 0.1)).tap()
+            // Tap an observed point inside this app but outside its share popover.
+            // The app-window edge can lie outside the inset iPad presentation.
+            let preview = app.scrollViews["setting-help-scroll"].staticTexts
+                .matching(NSPredicate(format: "label BEGINSWITH %@", expected)).firstMatch
+            let cancelPoint = preview.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5))
+            let popover = app.popovers.firstMatch
+            guard preview.exists, popover.exists,
+                  !popover.frame.contains(cancelPoint.screenPoint) else {
+                XCTFail("Require an observed preview point outside the native share popover")
+                throw NSError(domain: "AQSSBuildShare", code: 5)
+            }
+            cancelPoint.tap()
         } else {
             XCTFail("Require a native share-sheet cancel control")
             throw NSError(domain: "AQSSBuildShare", code: 4)
         }
         let closed = XCTNSPredicateExpectation(predicate: NSPredicate(format: "exists == false"), object: copy)
-        XCTAssertEqual(XCTWaiter.wait(for: [closed], timeout: 5), .completed)
+        guard XCTWaiter.wait(for: [closed], timeout: 5) == .completed else {
+            screenshot("Native share cancellation failed", app)
+            XCTFail("Cancel must close the native share sheet: \(app.debugDescription)")
+            throw NSError(domain: "AQSSBuildShare", code: 6)
+        }
         XCTAssertTrue(share.isHittable)
         XCTAssertNil(UIPasteboard.general.string, "Cancel must not copy build details")
         label(expected, app)

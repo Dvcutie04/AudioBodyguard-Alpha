@@ -133,3 +133,19 @@ details. No retry or weaker payload assertion replaces receipt evidence.
 Both observer and receiver package markers are rejected by CI and the final
 APK validator if found in delivered DEX files. Application feature code
 remains unchanged from fbd8e4019b3ed94deab1f7139a758e52b745275e.
+
+The next run (source 58ffbb32e8c44eec86f22bc5923dbe7c0d9f2ccc) proved
+Android's separate receiver opened with the exact four-line text. Its captured
+hierarchy exposed the themed button as RETURN TO BUILD DETAILS, while the
+test required the mixed-case label. The test-only receiver now disables
+automatic capitalization for that button; payload and package checks remain
+exact. On iPad, the native share popover opened, but a normalized app-edge
+cancel tap did not dismiss it. The captured window is inset from that edge.
+[Apple's coordinate API](https://developer.apple.com/documentation/xcuiautomation/xcuielement/coordinate%28withnormalizedoffset%3A%29)
+uses the queried element's frame; [popover presentation](https://developer.apple.com/documentation/uikit/uimodalpresentationstyle/popover)
+supports dismissal by tapping outside it. The revised observer finds the
+visible Build details preview, requires its tap point to be outside the
+actual native popover frame, and taps there. It fails immediately if cancel
+does not close the sheet, retaining the hierarchy and a failure screenshot.
+Neither correction changes the application feature or relaxes cancel,
+reopen, exact handoff, enabled-control or Settings-return assertions.

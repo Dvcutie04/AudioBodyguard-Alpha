@@ -55,6 +55,7 @@ public final class BuildDetailsShareReceiver extends Activity {
             text.setTextSize(17);
             content.addView(text);
             Button back = new Button(this);
+            back.setAllCaps(false);
             back.setText("Return to Build details");
             back.setOnClickListener(view -> finish());
             content.addView(back);
