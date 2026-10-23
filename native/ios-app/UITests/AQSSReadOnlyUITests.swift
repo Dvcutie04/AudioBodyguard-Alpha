@@ -39,7 +39,7 @@ final class AQSSReadOnlyUITests: XCTestCase {
         choice.tap(); XCTAssertEqual(preview.label, expected)
         screenshot("Recap report preview contains only reviewed fields", app)
         if copy {
-            tap("Share support report", app)
+            tap("Share support report", app, scroll: app.scrollViews["recap-report-scroll"])
             let nativeCopy = app.cells["Copy"].firstMatch
             XCTAssertTrue(nativeCopy.waitForExistence(timeout: 8)); nativeCopy.tap()
             let share = app.buttons["share-support-report"]

@@ -69,3 +69,10 @@ Candidate identity is Android version code 25 / `0.25-recap-support-report-live-
 and iPhone/iPad version `0.25.0`, build 1. The final source revision, green native
 results, independently received shared text and APK/archive provenance are
 recorded in [draft PR #57](https://github.com/Dvcutie04/AudioBodyguard-Alpha/pull/57).
+
+The first implementation run exposed a test navigation error in the new
+iPhone completed-recap helper: its generic Share lookup selected an underlying
+page scroll view instead of the child report scroll view. The follow-up scopes
+the existing bounded scroll-and-tap helper to `recap-report-scroll`, preserving
+all preview, native Copy, clipboard, reset, Clear and restart assertions. No
+application production code or candidate version changes for this correction.
