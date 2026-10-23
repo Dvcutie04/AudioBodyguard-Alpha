@@ -184,3 +184,24 @@ pbcopy/pbpaste help before using them and verifies a fixture round trip.
 UI-runner milestones and four-minute share-step bounds make any subsequent
 stall reviewable. This is a change to test observation, not an app clipboard
 API or a weaker handoff assertion.
+
+Source d4d3c5ae71e6c2bee6c7af63596e4ecc1b0e48a3 passed Android, both iPad
+share cases, the isolated speech case, and eleven of twelve iPhone UI cases.
+Both iPhone native share cases and the host's exact clipboard comparisons
+passed. The remaining failure in job 120177187172 happened in the older
+meter/recaps test: after verifying real input, Home, manual Stop, the
+30-second cap and all recap stop reasons, closeSoundRecaps performed two
+downward swipes before trying Close. LiveSoundCheckView places its Close
+header outside the scroll view. [Apple's interactive sheet dismissal](https://developer.apple.com/documentation/swiftui/view/interactivedismissdisabled(_:))
+documents drag-to-dismiss behavior. Those unnecessary test gestures can
+dismiss the parent sheet; the log's missing Close is consistent with that
+inference. The corrected observer waits for recaps to disappear, requires
+the meter and its fixed Close control to remain visible/hittable, and leaves
+closing the meter to the test's explicit tap. It retains reopening, recap
+retention, Clear and process-restart assertions.
+
+This correction changes only the UI-test helper and this record. All shipping
+app files remain identical to d4d3c5ae71e6c2bee6c7af63596e4ecc1b0e48a3;
+the already verified Android APK keeps that immutable source identity. The
+final PR records the observer revision and app-source equivalence separately,
+with full Apple validation after the correction.

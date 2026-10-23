@@ -530,8 +530,11 @@ final class AQSSReadOnlyUITests: XCTestCase {
         app.buttons["sound-recaps-close"].tap()
         let closed = XCTNSPredicateExpectation(predicate: NSPredicate(format: "exists == false"), object: app.scrollViews["sound-recaps-scroll"])
         XCTAssertEqual(XCTWaiter.wait(for: [closed], timeout: 5), .completed)
-        app.scrollViews["sound-check-scroll"].swipeDown()
-        app.scrollViews["sound-check-scroll"].swipeDown()
+        // The meter header is fixed above its scroll view. Pulling down here
+        // can dismiss the meter sheet instead of merely returning from recaps.
+        XCTAssertTrue(app.scrollViews["sound-check-scroll"].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.buttons["Close"].firstMatch.waitForExistence(timeout: 5))
+        XCTAssertTrue(app.buttons["Close"].firstMatch.isHittable)
     }
     private func label(_ text: String, _ app: XCUIApplication) {
         XCTAssertTrue(app.staticTexts.containing(NSPredicate(format: "label CONTAINS %@", text)).firstMatch.waitForExistence(timeout: 10), "Missing: \(text)")
