@@ -11,8 +11,8 @@ android {
         applicationId = "com.aqss.bodyguard.prototype"
         minSdk = 26
         targetSdk = 36
-        versionCode = 21
-        versionName = "0.21-insights-sound-checks"
+        versionCode = 22
+        versionName = "0.22-input-startup-cleanup"
     }
 
     buildTypes {

@@ -10,7 +10,7 @@ public final class ForegroundMicrophoneGate {
     public private(set) var blocked = false
     public var available: Bool { owner == nil && !blocked }
     private var owner: Lease?
-    private var active = false
+    private var deactivationRequired = false
     public init() {}
 
     public func acquire() -> Lease? {
@@ -20,9 +20,11 @@ public final class ForegroundMicrophoneGate {
     }
 
     public func activate(_ lease: Lease, using configure: () throws -> Void) throws {
-        guard owner == lease, !active, !blocked else { throw Rejection.notOwner }
+        guard owner == lease, !deactivationRequired, !blocked else { throw Rejection.notOwner }
+        // Configuration can change the app-wide session before throwing.
+        // Retain cleanup responsibility from entry, not only successful return.
+        deactivationRequired = true
         try configure()
-        active = true
     }
 
     /// A missing, stale or foreign lease must never call the global session API.
@@ -30,11 +32,11 @@ public final class ForegroundMicrophoneGate {
     @discardableResult
     public func release(_ lease: Lease?, using deactivate: () throws -> Void) -> Bool {
         guard let lease = lease, owner == lease, !blocked else { return false }
-        if active {
+        if deactivationRequired {
             do { try deactivate() }
             catch { blocked = true; return false }
         }
-        active = false; owner = nil
+        deactivationRequired = false; owner = nil
         return true
     }
 }
