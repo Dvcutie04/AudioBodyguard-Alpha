@@ -118,6 +118,31 @@ def main():
         for attempt in range(3):
             scroll_meter(f"{name}-top-{attempt}", down=False)
 
+    def review_insights_recaps(name, expected, clear=False, return_sound=True):
+        tap("Insights", name + "_tab")
+        wait_for("Audio trends", name + "_page")
+        tap("Recent sound checks", name + "_open")
+        root = wait_for_all((*expected, "Kept in memory; cleared when this app process ends."), name)
+        assert not has(root, "Start sound check") and not has(root, "Stop sound check"), "Insights must not open the microphone tool"
+        screenshot(name)
+        activities = adb("shell", "dumpsys", "activity", "activities").decode()
+        (out / (name + "-activities.txt")).write_text(activities)
+        foreground = re.search(r"topResumedActivity=[^\n]*", activities)
+        assert foreground and "ReadOnlyHomeActivity" in foreground.group(), "Insights must stay in the home Activity"
+        appops = adb("shell", "cmd", "appops", "get", package, "RECORD_AUDIO").decode()
+        (out / (name + "-appops.txt")).write_text(appops)
+        assert "(running)" not in appops, appops
+        if clear:
+            tap("Clear recaps", name + "_clear")
+            wait_for("No completed sound checks in this app session.", name + "_cleared")
+            screenshot(name + "_cleared")
+        tap("Close", name + "_close")
+        wait_for_all(("Audio trends", "Recent sound checks", "No measurements yet"), name + "_returned")
+        screenshot(name + "_returned")
+        if return_sound:
+            tap("Sound", name + "_sound")
+            wait_for("Voice check", name + "_back_in_sound")
+
     def screenshot(name):
         (out / f"{name}.png").write_bytes(adb("exec-out", "screencap", "-p"))
 
@@ -188,6 +213,13 @@ def main():
     version, build = versions[0].strip(), builds[0]
     (out / "installed-build-identity.json").write_text(
         json.dumps({"application_id": package, "version": version, "build": build}, sort_keys=True))
+    review_insights_recaps("insights_recaps_empty", ("No completed sound checks in this app session.",), return_sound=False)
+    tap("Recent sound checks", "insights_recaps_reopen_empty")
+    wait_for("No completed sound checks in this app session.", "insights_recaps_reopened_empty")
+    adb("shell", "input", "keyevent", "KEYCODE_BACK")
+    wait_for_all(("Audio trends", "Recent sound checks"), "insights_recaps_back_returns_to_insights")
+    adb("shell", "input", "keyevent", "KEYCODE_BACK")
+    wait_for("Connection not verified", "insights_recaps_back_returns_home")
     tap("Settings", "build_details_settings")
     wait_for("Appearance", "build_details_settings_page")
     tap("Build details", "build_details_open")
@@ -515,6 +547,7 @@ def main():
     wait_for("Voice check", "support_report_after_manual_meter_close")
     review_report("support_report_completed", "Check 1: Input samples observed\nStopped by you", share=True)
     review_report("support_report_completed_build_only", "Check 1: Input samples observed\nStopped by you", share=True, exclude=True)
+    review_insights_recaps("insights_recaps_completed", ("Input samples observed", "Stopped by you"))
     tap("Live sound check. Try the phone microphone for 30 seconds", "meter_after_report_share")
     open_recaps("manual_recaps_after_support_share")
     wait_for_all(("Input samples observed", "Stopped by you"), "support_share_did_not_clear_recaps")
@@ -526,6 +559,18 @@ def main():
     review_report("support_report_after_clear", "No completed sound checks in this app session.")
     review_report("support_report_empty_build_only", "No completed sound checks in this app session.", share=True, exclude=True)
     tap("Live sound check. Try the phone microphone for 30 seconds", "meter_after_cleared_report")
+
+    tap("Start sound check", "insights_recaps_start_actual_check")
+    wait_for("Microphone samples received", "insights_recaps_actual_input")
+    tap("Stop sound check", "insights_recaps_stop_actual_check")
+    wait_for_all(("Microphone stopped", "No live input", "Start sound check"), "insights_recaps_stopped")
+    adb("shell", "input", "keyevent", "KEYCODE_BACK")
+    wait_for("Voice check", "insights_recaps_actual_meter_closed")
+    review_insights_recaps("insights_recaps_clear", ("Input samples observed", "Stopped by you"), clear=True)
+    tap("Live sound check. Try the phone microphone for 30 seconds", "meter_after_insights_clear")
+    open_recaps("meter_recaps_after_insights_clear")
+    wait_for("No completed sound checks in this app session.", "insights_clear_also_empty_in_meter")
+    close_recaps("close_meter_recaps_after_insights_clear")
 
     tap("Start sound check", "restart_before_notification_shade")
     wait_for("Microphone samples received", "before_notification_shade")
@@ -625,6 +670,7 @@ def main():
     close_recaps("close_before_voice_permission_fixture")
     adb("shell", "input", "keyevent", "KEYCODE_BACK")
     review_report("support_report_new_process", "No completed sound checks in this app session.")
+    review_insights_recaps("insights_recaps_new_process", ("No completed sound checks in this app session.",))
     # The stock emulator may have no on-device speech model. Ask for the real
     # microphone permission from the real Voice Activity through the test APK;
     # no recognition service or permission callback is replaced.
@@ -667,7 +713,7 @@ def main():
     crashes = adb("logcat", "-b", "crash", "-d").decode()
     (out / "crash-log.txt").write_text(crashes)
     assert "FATAL EXCEPTION" not in crashes, crashes
-    print("LIVE_INPUT_EMULATOR_OBSERVED: native build-details preview/cancel/four-field share handoff, permission denial, app-specific Settings round trips with denied/granted access and no capture until another Start, PCM samples, manual stop, notification-shade focus loss, background stop, rotation stop, no automatic restart, 30-second limit, voice navigation/service attempt, real Voice microphone-denial/Settings fixture with denied and granted returns kept off, meter reuse, bounded input recaps, Clear, navigation retention, empty recaps after process restart, synthetic-photo picker/ML Kit review, over-budget photo rejection, photo Clear/cancel and unverified connection passed. No physical microphone, real-photo accuracy or output qualification.", flush=True)
+    print("LIVE_INPUT_EMULATOR_OBSERVED: Insights empty/completed recaps, Close/Back returns, cross-route Clear and process restart, native build-details preview/cancel/four-field share handoff, permission denial, app-specific Settings round trips with denied/granted access and no capture until another Start, PCM samples, manual stop, notification-shade focus loss, background stop, rotation stop, no automatic restart, 30-second limit, voice navigation/service attempt, real Voice microphone-denial/Settings fixture with denied and granted returns kept off, meter reuse, bounded input recaps, Clear, navigation retention, empty recaps after process restart, synthetic-photo picker/ML Kit review, over-budget photo rejection, photo Clear/cancel and unverified connection passed. No physical microphone, real-photo accuracy or output qualification.", flush=True)
 
 
 if __name__ == "__main__":

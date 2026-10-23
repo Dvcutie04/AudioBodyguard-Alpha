@@ -2,6 +2,93 @@ import XCTest
 import UIKit
 
 final class AQSSReadOnlyUITests: XCTestCase {
+    func testInsightsRecapsStartEmptyAndReturnWithoutCapture() throws {
+        let app = launch()
+        tab("insights", app)
+        try openInsightsRecaps(app)
+        label("No completed sound checks in this app session.", app)
+        label("Kept in memory; cleared when this app process ends.", app)
+        XCTAssertFalse(app.buttons["sound-recaps-clear"].exists)
+        XCTAssertFalse(app.scrollViews["sound-check-scroll"].exists)
+        XCTAssertFalse(app.buttons["sound-check-start-stop"].exists)
+        XCTAssertEqual(app.alerts.count, 0)
+        XCTAssertEqual(XCUIApplication(bundleIdentifier: "com.apple.springboard").alerts.count, 0)
+        screenshot("Insights recaps empty without opening capture", app)
+        closeInsightsRecaps(app)
+        label("No measurements yet", app)
+        screenshot("Insights recap Close returns to Insights", app)
+        app.buttons["page-back"].tap()
+        label("Connection not verified", app)
+    }
+
+    func testInsightsRecapsReviewClearAndRestart() throws {
+        guard ProcessInfo.processInfo.environment["AQSS_TEST_MIC_GRANTED"] == "1" else {
+            XCTFail("The native workflow must establish microphone consent")
+            throw NSError(domain: "AQSSInsightsRecaps", code: 2)
+        }
+        let app = launch()
+        try finishActualSoundCheck(app)
+        tab("insights", app); try openInsightsRecaps(app)
+        label("Input samples observed", app); label("Stopped by you", app)
+        XCTAssertFalse(app.scrollViews["sound-check-scroll"].exists)
+        screenshot("Insights recaps show actual completed input", app)
+        closeInsightsRecaps(app)
+        try openInsightsRecaps(app)
+        label("Input samples observed", app); label("Stopped by you", app)
+        app.buttons["sound-recaps-clear"].tap()
+        label("No completed sound checks in this app session.", app)
+        XCTAssertFalse(app.buttons["sound-recaps-clear"].exists)
+        screenshot("Insights Clear removes session recaps", app)
+        closeInsightsRecaps(app)
+        tab("sound", app); tap("Live sound check", app); openSoundRecaps(app)
+        label("No completed sound checks in this app session.", app)
+        closeSoundRecaps(app); app.buttons["Close"].firstMatch.tap()
+        try finishActualSoundCheck(app)
+        app.terminate(); app.launch()
+        tab("insights", app); try openInsightsRecaps(app)
+        label("No completed sound checks in this app session.", app)
+        screenshot("Insights recaps are empty in a new process", app)
+        closeInsightsRecaps(app)
+        tab("home", app); label("Connection not verified", app)
+    }
+
+    private func openInsightsRecaps(_ app: XCUIApplication) throws {
+        let entry = app.buttons["insights-sound-check-recaps"]
+        guard entry.waitForExistence(timeout: 5) else {
+            screenshot("Missing recent sound checks in Insights", app)
+            XCTFail("Missing recent sound checks in Insights")
+            throw NSError(domain: "AQSSInsightsRecaps", code: 1)
+        }
+        entry.tap()
+        XCTAssertTrue(app.scrollViews["sound-recaps-scroll"].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.buttons["sound-recaps-close"].isHittable)
+    }
+
+    private func closeInsightsRecaps(_ app: XCUIApplication) {
+        app.buttons["sound-recaps-close"].tap()
+        let closed = XCTNSPredicateExpectation(predicate: NSPredicate(format: "exists == false"), object: app.scrollViews["sound-recaps-scroll"])
+        XCTAssertEqual(XCTWaiter.wait(for: [closed], timeout: 5), .completed)
+        label("Audio trends", app)
+        XCTAssertTrue(app.buttons["insights-sound-check-recaps"].isHittable)
+        XCTAssertFalse(app.scrollViews["sound-check-scroll"].exists)
+    }
+
+    private func finishActualSoundCheck(_ app: XCUIApplication) throws {
+        tab("sound", app); tap("Live sound check", app)
+        app.buttons["sound-check-start-stop"].tap()
+        let status = app.staticTexts["sound-check-status"]
+        let input = XCTNSPredicateExpectation(predicate: NSPredicate(format: "label CONTAINS %@", "Microphone samples received"), object: status)
+        guard XCTWaiter.wait(for: [input], timeout: 8) == .completed else {
+            screenshot("Support report requires actual native input", app)
+            XCTFail("Require actual native samples before reporting observed input")
+            throw NSError(domain: "AQSSSupportReport", code: 1)
+        }
+        app.buttons["sound-check-start-stop"].tap()
+        label("No live input", app)
+        openSoundRecaps(app); label("Input samples observed", app); label("Stopped by you", app)
+        closeSoundRecaps(app); app.buttons["Close"].firstMatch.tap()
+    }
+
     func testPrivateSupportReportIncludesCompletedCheckAndClears() throws {
         try inspectCompletedSupportReport(buildOnly: false)
     }
@@ -21,21 +108,6 @@ final class AQSSReadOnlyUITests: XCTestCase {
         let empty = metadata + "\n\nRecent sound checks (this app session)\nNo completed sound checks in this app session.\n\nInput observations only; not proof of sound safety, protection or TV control."
         let completed = metadata + "\n\nRecent sound checks (this app session)\nCheck 1: Input samples observed\nStopped by you\n\nInput observations only; not proof of sound safety, protection or TV control."
         let app = launch()
-        func finishActualCheck() throws {
-            tab("sound", app); tap("Live sound check", app)
-            app.buttons["sound-check-start-stop"].tap()
-            let status = app.staticTexts["sound-check-status"]
-            let input = XCTNSPredicateExpectation(predicate: NSPredicate(format: "label CONTAINS %@", "Microphone samples received"), object: status)
-            guard XCTWaiter.wait(for: [input], timeout: 8) == .completed else {
-                screenshot("Support report requires actual native input", app)
-                XCTFail("Require actual native samples before reporting observed input")
-                throw NSError(domain: "AQSSSupportReport", code: 1)
-            }
-            app.buttons["sound-check-start-stop"].tap()
-            label("No live input", app)
-            openSoundRecaps(app); label("Input samples observed", app); label("Stopped by you", app)
-            closeSoundRecaps(app); app.buttons["Close"].firstMatch.tap()
-        }
         func openReport(_ expected: String) {
             tab("settings", app); tap("Advanced Settings", app); tap("About Private support report", app)
             label(expected, app)
@@ -45,7 +117,7 @@ final class AQSSReadOnlyUITests: XCTestCase {
             app.buttons["setting-help-close"].tap(); label("Advanced Settings", app)
             app.buttons["page-back"].tap(); label("Appearance", app)
         }
-        try finishActualCheck()
+        try finishActualSoundCheck(app)
         openReport(completed)
         screenshot("Support report contains only the completed input recap", app)
         if buildOnly {
@@ -75,7 +147,7 @@ final class AQSSReadOnlyUITests: XCTestCase {
         app.buttons["sound-recaps-clear"].tap(); label("No completed sound checks in this app session.", app)
         closeSoundRecaps(app); app.buttons["Close"].firstMatch.tap()
         openReport(empty); screenshot("New support report after Clear is empty", app); closeReport()
-        try finishActualCheck()
+        try finishActualSoundCheck(app)
         // End a process that really has a completed recap; restart must discard it.
         app.terminate(); app.launch()
         openReport(empty); screenshot("New process support report is empty", app); closeReport()
