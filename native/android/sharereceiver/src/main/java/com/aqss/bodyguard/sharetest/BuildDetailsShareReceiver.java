@@ -1,9 +1,13 @@
-package com.aqss.bodyguard.uiprobe;
+package com.aqss.bodyguard.sharetest;
 
 import android.app.Activity;
 import android.content.ClipData;
 import android.content.Intent;
 import android.os.Bundle;
+import android.widget.Button;
+import android.widget.LinearLayout;
+import android.widget.ScrollView;
+import android.widget.TextView;
 import java.io.FileOutputStream;
 import java.nio.charset.StandardCharsets;
 import org.json.JSONArray;
@@ -37,10 +41,28 @@ public final class BuildDetailsShareReceiver extends Activity {
             try (FileOutputStream output = openFileOutput("shared-build-details.json", MODE_PRIVATE)) {
                 output.write(observed.toString().getBytes(StandardCharsets.UTF_8));
             }
+            LinearLayout content = new LinearLayout(this);
+            content.setOrientation(LinearLayout.VERTICAL);
+            float density = getResources().getDisplayMetrics().density;
+            content.setPadding(Math.round(16 * density), Math.round(64 * density),
+                    Math.round(16 * density), Math.round(16 * density));
+            TextView title = new TextView(this);
+            title.setText("Build details received for test");
+            title.setTextSize(20);
+            content.addView(title);
+            TextView text = new TextView(this);
+            text.setText(input.getStringExtra(Intent.EXTRA_TEXT));
+            text.setTextSize(17);
+            content.addView(text);
+            Button back = new Button(this);
+            back.setText("Return to Build details");
+            back.setOnClickListener(view -> finish());
+            content.addView(back);
+            ScrollView scroll = new ScrollView(this);
+            scroll.addView(content);
+            setContentView(scroll);
         } catch (Exception error) {
             throw new IllegalStateException("Cannot record the native share handoff", error);
-        } finally {
-            finish();
         }
     }
 }

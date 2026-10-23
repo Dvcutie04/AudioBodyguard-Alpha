@@ -113,3 +113,23 @@ incorrectly queried Buttons, so it failed before cancellation or clipboard
 comparison. The observer now taps the observed Copy cell. The exact payload,
 native cancel/reopen, enabled Share control, Settings return and clipboard
 assertions are retained. Application code is unchanged by this test correction.
+
+
+Android's first implementation run 39876772314, job 120164156545, showed the
+exact four-field text in the native Sharesheet and preserved the preview on
+cancel, but its receiver record was unavailable. The initial receiver lived
+inside the UI observer's own package. [Android's instrumentation contract](https://developer.android.com/reference/android/content/Context#startInstrumentation(android.content.ComponentName,%20java.lang.String,%20android.os.Bundle))
+says starting instrumentation kills/restarts its target application.
+HierarchyProbe targets its own observer package, so re-observing that receiver
+could interrupt the very Activity being checked. This explains why returning
+to the underlying Build details view was not sufficient handoff evidence.
+
+The receiver now lives in a separate test-only APK/package, with no dependency
+from the delivered application. It writes the actual Intent record before
+displaying a native receiver checkpoint. The observer requires that checkpoint,
+the exact received text and receiver package, reads and retains the raw record,
+checks text/MIME/stream/URI boundaries, and explicitly returns to Build
+details. No retry or weaker payload assertion replaces receipt evidence.
+Both observer and receiver package markers are rejected by CI and the final
+APK validator if found in delivered DEX files. Application feature code
+remains unchanged from fbd8e4019b3ed94deab1f7139a758e52b745275e.

@@ -45,7 +45,7 @@ jobs:
       - name: Compile, test input arithmetic and freshness, and check Android lint
         run: |
           sdkmanager "platforms;android-36"
-          gradle -p native/android :testDebugUnitTest :app:assembleLiveInput :app:lintLiveInput :uiprobe:assembleDebug
+          gradle -p native/android :testDebugUnitTest :app:assembleLiveInput :app:lintLiveInput :uiprobe:assembleDebug :sharereceiver:assembleDebug
       - name: Enable emulator acceleration
         run: |
           echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules

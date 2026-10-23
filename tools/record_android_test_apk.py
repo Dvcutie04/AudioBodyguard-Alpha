@@ -32,8 +32,10 @@ def main():
     with zipfile.ZipFile(apk) as archive:
         poster = archive.read("res/drawable-nodpi-v4/startup_artwork.jpg")
         for name in archive.namelist():
-            if name.endswith(".dex") and b"Lcom/aqss/bodyguard/uiprobe/" in archive.read(name):
-                raise RuntimeError("Test observer code was packaged into the delivered APK")
+            if name.endswith(".dex"):
+                dex = archive.read(name)
+                if any(marker in dex for marker in (b"Lcom/aqss/bodyguard/uiprobe/", b"Lcom/aqss/bodyguard/sharetest/")):
+                    raise RuntimeError("Test observer or share receiver code was packaged into the delivered APK")
             if name.rsplit("/", 1)[-1] in fixture_names:
                 raise RuntimeError("Synthetic photo fixture was packaged into the delivered APK")
     poster_sha = hashlib.sha256(poster).hexdigest()
@@ -49,6 +51,7 @@ def main():
         "opening_poster_sha256": poster_sha,
         "signature_verified": True,
         "test_observer_excluded": True,
+        "test_share_receiver_excluded": True,
         "scope": "CI-built test APK and emulator checks; no physical input/output qualification",
     }
     (output / "apk-provenance.json").write_text(json.dumps(record, indent=2) + "\n")
