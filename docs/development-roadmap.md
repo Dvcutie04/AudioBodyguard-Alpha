@@ -6,6 +6,15 @@ Checkpoint: October 23, 2026. Continue from the restored a-Shell baseline and th
 
 ## Current checkpoint
 
+October 23 recap report access: the
+[0.25 record](recap-support-report-2026-10-23.md) adds Review support report
+inside the shared Recent sound checks presentation on Android and iPhone/iPad.
+The existing preview reviews an immutable snapshot of the visible completed
+recaps. Include resets on reopening; Back returns to the same list, and Share
+remains explicit. No input, persistence, permission or output authority is
+added. Source-bound red/green results and artifact identity belong to draft
+PR #57; handset, signed iPhone and N2b–N5 remain unqualified.
+
 October 23 iPhone Voice stop guidance: the
 [0.24 record](ios-voice-stop-guidance-2026-10-23.md) separates the existing
 microphone permission, speech permission, recognizer availability and engine

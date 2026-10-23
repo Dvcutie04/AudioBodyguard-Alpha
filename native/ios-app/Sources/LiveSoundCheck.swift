@@ -296,6 +296,11 @@ struct RecentSoundChecksView: View {
     let theme: AppTheme
     @Environment(\.dismiss) private var dismiss
     @State private var rows: [SoundCheckRecap] = []
+    private struct ReportReview: Identifiable {
+        let id = UUID()
+        let snapshot: PrivateSupportReportSnapshot
+    }
+    @State private var reportReview: ReportReview?
     var body: some View {
         VStack(spacing: 12) {
             HStack {
@@ -320,12 +325,42 @@ struct RecentSoundChecksView: View {
                         .font(.caption).foregroundColor(theme.muted)
                 }.padding()
             }.accessibilityIdentifier("sound-recaps-scroll")
-            if !rows.isEmpty {
-                Button("Clear recaps") { SoundCheckRecaps.shared.clear(); rows = [] }
+            VStack(spacing: 12) {
+                Button("Review support report") {
+                    reportReview = ReportReview(snapshot: PrivateSupportReportSnapshot(buildDetails: installedAppBuildDetails(), recaps: rows))
+                }
                     .buttonStyle(AppButtonStyle(theme: theme))
-                    .accessibilityIdentifier("sound-recaps-clear").padding()
-            }
+                    .accessibilityIdentifier("recaps-review-support-report")
+                if !rows.isEmpty {
+                    Button("Clear recaps") { SoundCheckRecaps.shared.clear(); rows = [] }
+                        .buttonStyle(AppButtonStyle(theme: theme))
+                        .accessibilityIdentifier("sound-recaps-clear")
+                }
+            }.padding()
         }.background(theme.background.ignoresSafeArea()).foregroundColor(theme.text)
             .onAppear { rows = SoundCheckRecaps.shared.snapshot() }
+            .sheet(item: $reportReview) { item in RecapSupportReportView(theme: theme, report: item.snapshot) }
+    }
+}
+
+private struct RecapSupportReportView: View {
+    let theme: AppTheme
+    let report: PrivateSupportReportSnapshot
+    @Environment(\.dismiss) private var dismiss
+    @State private var includeRecentChecks = true
+    var body: some View {
+        VStack(spacing: 0) {
+            HStack(alignment: .top, spacing: 12) {
+                Text("Private support report").font(.title2.bold()).fixedSize(horizontal: false, vertical: true)
+                    .frame(maxWidth: .infinity, alignment: .leading).accessibilityAddTraits(.isHeader)
+                RoseButton(title: "Back", theme: theme, compact: true) { dismiss() }
+                    .accessibilityIdentifier("recap-report-back")
+            }.padding(20)
+            ScrollView {
+                VStack(alignment: .leading, spacing: 20) {
+                    SupportReportReviewContent(theme: theme, report: report, includeRecentChecks: $includeRecentChecks)
+                }.frame(maxWidth: .infinity, alignment: .leading).padding(20)
+            }.accessibilityIdentifier("recap-report-scroll")
+        }.background(theme.background).foregroundColor(theme.text)
     }
 }

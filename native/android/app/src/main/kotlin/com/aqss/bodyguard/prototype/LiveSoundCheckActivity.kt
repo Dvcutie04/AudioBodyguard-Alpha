@@ -17,6 +17,7 @@ import android.widget.*
 import com.aqss.nativefeedback.SoundCheckWindow
 import com.aqss.nativefeedback.SoundCheckEnd
 import com.aqss.nativefeedback.SoundCheckRecaps
+import com.aqss.nativefeedback.PrivateSupportReportSnapshot
 import java.util.Locale
 
 /** Real microphone input display; no output actuation or protective-state authority. */
@@ -286,6 +287,12 @@ internal fun showRecentSoundChecks(activity: Activity, skin: InterfaceTheme) {
         line(row.end.label)
     }
     line("These are meter observations from this phone, not proof of continuous listening, sound safety or TV control. Audio and recognized words are not kept in recaps.")
+    content.addView(Button(activity).apply {
+        text = "Review support report"; skin.style(this)
+        setOnClickListener {
+            showPrivateSupportReport(activity, skin, PrivateSupportReportSnapshot(installedAppBuildDetails(activity), rows))
+        }
+    }, LinearLayout.LayoutParams(-1, -2))
     val dialog = AlertDialog.Builder(activity).setTitle("Recent sound checks")
         .setView(ScrollView(activity).apply { addView(content) })
         .setPositiveButton("Close", null)
