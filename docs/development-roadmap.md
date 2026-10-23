@@ -6,6 +6,14 @@ Checkpoint: October 23, 2026. Continue from the restored a-Shell baseline and th
 
 ## Current checkpoint
 
+October 23 Voice failure guidance: the
+[0.23 record](voice-error-guidance-2026-10-23.md) gives common Android speech
+errors a short explanation and next step, with generic handling for every other
+integer. Words remain provisional; the existing admission, stop, cleanup and
+explicit-Start rules remain. iPhone logic retains 0.22 behavior. Exact candidate
+runs and APK identity belong to its draft pull request; handset, signed iPhone
+and N2b–N5 remain unqualified.
+
 October 23 input startup reliability: the
 [0.22 record](input-activation-cleanup-2026-10-23.md) closes an iPhone gate path
 that skipped deactivation when session configuration threw. Cleanup responsibility

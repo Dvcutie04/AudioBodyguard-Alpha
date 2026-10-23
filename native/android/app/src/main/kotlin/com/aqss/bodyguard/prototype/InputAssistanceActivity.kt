@@ -174,7 +174,7 @@ class InputAssistanceActivity : Activity() {
                 }
                 override fun onBufferReceived(buffer: ByteArray?) { /* No raw audio retained. */ }
                 override fun onEndOfSpeech() { if (valid()) { status.text = "Finishing recognition…"; meter.clear(); levelText.text = "No live microphone samples" } }
-                override fun onError(error: Int) { if (valid()) stopVoice("Recognition stopped or unavailable (code $error). Words may be incomplete. Tap Start to retry.") }
+                override fun onError(error: Int) { if (valid()) stopVoice(voiceErrorMessage(error)) }
                 private fun words(results: Bundle?) { results?.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION)?.firstOrNull()?.let { details.text = boundedRecognizedWords(it) } }
                 override fun onResults(results: Bundle?) { if (valid()) { words(results); stopVoice("Finished — review the words. Nothing was sent to a TV.") } }
                 override fun onPartialResults(partialResults: Bundle?) { if (valid()) words(partialResults) }
@@ -188,6 +188,30 @@ class InputAssistanceActivity : Activity() {
             })
             if (running) handler.post(voiceWatchdog)
         } catch (_: Exception) { stopVoice("Microphone could not start. Check permission and the installed speech service.") }
+    }
+    private fun voiceErrorMessage(error: Int): String {
+        // Describe the service's reported result; never infer room silence,
+        // change permission state, download a model or restart recognition.
+        val guidance = when (error) {
+            SpeechRecognizer.ERROR_AUDIO ->
+                "Microphone input could not be read. Check microphone access, then tap Start."
+            SpeechRecognizer.ERROR_SPEECH_TIMEOUT ->
+                "No speech was detected. Tap Start and speak normally."
+            SpeechRecognizer.ERROR_NO_MATCH ->
+                "No words matched. Tap Start and try again."
+            SpeechRecognizer.ERROR_RECOGNIZER_BUSY ->
+                "The speech service is busy. Wait a moment, then tap Start."
+            SpeechRecognizer.ERROR_INSUFFICIENT_PERMISSIONS ->
+                "Speech access was denied. Check app permissions, then tap Start."
+            SpeechRecognizer.ERROR_TOO_MANY_REQUESTS ->
+                "Too many voice checks were requested. Wait a moment, then tap Start."
+            SpeechRecognizer.ERROR_LANGUAGE_NOT_SUPPORTED ->
+                "This language is not supported here. Try Live sound check for microphone levels."
+            SpeechRecognizer.ERROR_LANGUAGE_UNAVAILABLE ->
+                "Speech for this language is unavailable. Try Live sound check for microphone levels."
+            else -> "Voice recognition stopped. Tap Start to try again."
+        }
+        return "$guidance Words may be incomplete."
     }
     private fun validVoice(token: Long): Boolean {
         if (!running || generation != token) return false

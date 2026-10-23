@@ -36,6 +36,10 @@ The [0.22 startup cleanup repair](docs/input-activation-cleanup-2026-10-23.md)
 keeps iPhone microphone ownership through cleanup when session configuration
 throws. A cleanup error blocks both input tools until the app process exits.
 
+The [0.23 Voice guidance](docs/voice-error-guidance-2026-10-23.md) replaces
+common Android speech error numbers with a short explanation and next step.
+Stopping, permission checks and cleanup retain their existing behavior.
+
 The [internal TestFlight preparation](docs/testflight-beta-preparation.md)
 automates checks on an exact reviewed source revision and provides a manually
 requested signing/upload lane after Apple account and signing setup. It does
