@@ -6,6 +6,16 @@ Checkpoint: October 23, 2026. Continue from the restored a-Shell baseline and th
 
 ## Current checkpoint
 
+October 23 responsiveness evidence: the
+[0.26 record](frame-clock-evidence-2026-10-23.md) closes a parser path that
+qualified frame comparisons despite a regressed dump uptime. Such comparisons
+now withhold attributed frames and summaries. Android live-input verification
+retains bounded raw dumps and source/build-labelled comparisons around report
+Open and Back with empty and completed recaps. App behavior remains 0.25; no
+renderer optimization or installed-phone performance claim follows. Exact
+red/green results, observed samples and artifact identity belong to draft
+PR #58. iPhone/iPad regression coverage remains; N2b–N5 are unqualified.
+
 October 23 recap report access: the
 [0.25 record](recap-support-report-2026-10-23.md) adds Review support report
 inside the shared Recent sound checks presentation on Android and iPhone/iPad.

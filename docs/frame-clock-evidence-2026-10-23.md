@@ -46,3 +46,32 @@ Candidate identities will advance to Android code 26 /
 `0.26-frame-clock-evidence-live-input` and Apple 0.26.0 build 1. Exact source,
 red/green checks, observed sample counts and APK/archive identity belong to
 the candidate's draft pull request after verification.
+
+## Recorded red and implementation
+
+Tests-only source `21029381f1dfed4ce8e65d506569e4f5ff3fa506`, tree
+`25fce440e5e70dd0fe652aa39bf9b234fc1f1ecb`, retains the verified 0.25 parser,
+app production and versions. The two new cases failed locally at the intended
+`timing_qualified` assertion; all five existing frame cases passed.
+[Hosted red run 40029402514](https://github.com/Dvcutie04/AudioBodyguard-Alpha/actions/runs/40029402514),
+Python job 120673611916, reproduced exactly those two failures while the other
+1,879 tests and 19 subtests passed. That log was inspected before the parser
+was changed.
+
+The parser now retains each observed uptime, reports `uptime_order_valid`,
+and discards cross-snapshot frame attribution when both headers are present
+and the after uptime is lower. Header presence remains separate from ordering.
+Missing clocks still withhold summaries while retaining their existing raw
+diagnostic treatment; equal/advancing uptime is not proof of device identity
+or uninterrupted clock continuity. Existing local plausibility limits remain.
+
+The live-input runner captures four labelled transitions: report Open and
+Back, each with empty and completed recaps. Each dump has a 10-second collection
+limit and a 2 MiB retained-output limit. A timeout, command failure or over-limit
+dump becomes explicit unavailable evidence; it does not bypass a functional
+UI assertion or turn into a zero-latency claim. Comparisons carry the workflow
+source/run/attempt and actual installed package/version/build. The native app
+and the private support report contain none of these diagnostics.
+
+Final verification and artifact identity are recorded in
+[draft PR #58](https://github.com/Dvcutie04/AudioBodyguard-Alpha/pull/58).

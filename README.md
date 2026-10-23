@@ -50,6 +50,11 @@ The [0.25 recap shortcut](docs/recap-support-report-2026-10-23.md) adds
 Review the visible recap snapshot, optionally exclude checks, then explicitly
 Share. Back returns to the same recap list.
 
+The [0.26 responsiveness evidence repair](docs/frame-clock-evidence-2026-10-23.md)
+rejects comparisons when recorded Android uptime regresses and retains hosted
+renderer snapshots around report Open and Back. App behavior remains 0.25;
+these diagnostics do not establish installed-phone smoothness or physical latency.
+
 The [internal TestFlight preparation](docs/testflight-beta-preparation.md)
 automates checks on an exact reviewed source revision and provides a manually
 requested signing/upload lane after Apple account and signing setup. It does
