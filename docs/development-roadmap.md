@@ -1,10 +1,19 @@
 # AQSS development roadmap
 
-Checkpoint: October 22, 2026. Continue from the restored a-Shell baseline and the existing native endpoint qualification research. iPhone/iOS and Android remain equal product targets.
+Checkpoint: October 23, 2026. Continue from the restored a-Shell baseline and the existing native endpoint qualification research. iPhone/iOS and Android remain equal product targets.
 
 **INFERENCE IS NOT REALITY. AI proposes. Policy authorizes. Physical Commit verifies.**
 
 ## Current checkpoint
+
+October 23 input startup reliability: the
+[0.22 record](input-activation-cleanup-2026-10-23.md) closes an iPhone gate path
+that skipped deactivation when session configuration threw. Cleanup responsibility
+now begins on configuration entry. Successful cleanup permits a later explicit
+Start; failed cleanup keeps both tools blocked until process exit. Android's
+existing teardown policy is retained. Both platforms keep the 0.21 navigation
+and input behavior. Source-bound results and artifact identity belong to draft
+PR #54; handset, signed iPhone and N2b–N5 remain unqualified.
 
 October 22 Insights access: the [0.21 record](insights-sound-checks-2026-10-22.md)
 adds Recent sound checks directly to Insights, reusing the bounded process-only
