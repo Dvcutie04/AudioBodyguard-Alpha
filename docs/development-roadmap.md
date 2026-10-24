@@ -6,6 +6,15 @@ Checkpoint: October 24, 2026. Continue from the restored a-Shell baseline and th
 
 ## Current checkpoint
 
+October 24 frame-column evidence: the
+[0.30 record](frame-schema-evidence-2026-10-24.md) requires unique complete
+Flags, IntendedVsync and FrameCompleted headers before frame attribution.
+Duplicate or missing required names clear the mapping and make the snapshot's
+schema unavailable; later valid tables cannot erase that ambiguity. The new
+diagnostic field stays outside the app's support report. Exact source-bound
+red/green checks and artifacts belong to the draft PR. App flow remains 0.25;
+signed iPhone delivery, handset responsiveness and N2b–N5 remain unqualified.
+
 October 24 uptime header evidence: the
 [0.29 record](frame-uptime-evidence-2026-10-24.md) rejects numeric prefixes,
 cross-line values and conflicting or malformed additional uptime headers.

@@ -71,6 +71,11 @@ requires complete integer uptime tokens and agreement between repeated headers.
 Malformed or conflicting clocks withhold timing summaries; existing valid-subset
 diagnostics remain. Hosted observations do not establish a speed improvement.
 
+The [0.30 frame-column evidence repair](docs/frame-schema-evidence-2026-10-24.md)
+rejects duplicate or missing required column names before attributing frames.
+The diagnostic JSON reports schema availability; the app's support report and
+input flow retain their existing behavior.
+
 The [internal TestFlight preparation](docs/testflight-beta-preparation.md)
 automates checks on an exact reviewed source revision and provides a manually
 requested signing/upload lane after Apple account and signing setup. It does

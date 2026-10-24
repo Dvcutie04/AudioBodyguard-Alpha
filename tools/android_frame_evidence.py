@@ -7,6 +7,7 @@ import statistics
 from pathlib import Path
 
 SCOPE = "rendered frames; not touch-to-response or physical latency"
+FRAME_COLUMNS = ("Flags", "IntendedVsync", "FrameCompleted")
 
 def _process_identity(text):
     identities = set()
@@ -37,6 +38,8 @@ def _uptime_ms(text):
 
 def _snapshot(text):
     columns = None
+    header_seen = False
+    schema_valid = True
     frames = set()
     watermark = None
     invalid = set()
@@ -46,9 +49,19 @@ def _snapshot(text):
     horizon = (uptime_ms + 60_000) * 1_000_000 if uptime_ms is not None else None
     for line in text.splitlines():
         fields = next(csv.reader([line]))
-        if "Flags" in fields and "IntendedVsync" in fields and "FrameCompleted" in fields:
-            columns = {name: i for i, name in enumerate(fields)}
-            continue
+        if any(name in fields for name in FRAME_COLUMNS):
+            try:
+                int(fields[0])
+            except ValueError:
+                # A numeric timing row can have an unreadable completion whose
+                # text is a column name. Only a nonnumeric row is a header.
+                header_seen = True
+                if any(fields.count(name) != 1 for name in FRAME_COLUMNS):
+                    schema_valid = False  # Later headers cannot erase ambiguity.
+                    columns = None
+                else:
+                    columns = {name: fields.index(name) for name in FRAME_COLUMNS}
+                continue
         if columns is None:
             continue
         try:
@@ -76,27 +89,29 @@ def _snapshot(text):
             invalid.add((start, end))
         else:
             frames.add((start, end))
-    return watermark, frames, invalid, uptime_ms, _process_identity(text)
+    return watermark, frames, invalid, uptime_ms, _process_identity(text), header_seen and schema_valid
 
 def compare_frames(before, after):
-    cutoff, _, _, before_uptime, before_process = _snapshot(before)
-    _, frames, invalid, after_uptime, after_process = _snapshot(after)
+    cutoff, _, _, before_uptime, before_process, before_schema = _snapshot(before)
+    _, frames, invalid, after_uptime, after_process, after_schema = _snapshot(after)
+    schemas_available = before_schema and after_schema
     identities_available = before_process is not None and after_process is not None
     identities_match = identities_available and before_process == after_process
     clocks_available = before_uptime is not None and after_uptime is not None
     uptime_order_valid = clocks_available and after_uptime >= before_uptime
     uptime_regressed = clocks_available and not uptime_order_valid
     invalid_count = sum(1 for start, _ in invalid if cutoff is not None and start > cutoff)
-    qualified = cutoff is not None and identities_match and uptime_order_valid and not invalid_count
+    qualified = cutoff is not None and schemas_available and identities_match and uptime_order_valid and not invalid_count
     # A known regression invalidates attribution even if each dump's rows are
-    # individually plausible. An unknown or changed process also has no common
-    # frame scope. Preserve the raw dumps instead of attributing those samples.
+    # individually plausible. An unknown/changed process or unavailable column
+    # mapping also has no common frame scope. Retain the raw dumps instead.
     durations = sorted((end - start) / 1_000_000 for start, end in frames
-                       if identities_match and not uptime_regressed and cutoff is not None and start > cutoff)
+                       if schemas_available and identities_match and not uptime_regressed and cutoff is not None and start > cutoff)
     n = len(durations)
     return {
         "scope": SCOPE,
         "baseline_available": cutoff is not None,
+        "frame_schema_available": schemas_available,
         "frame_count": n,
         "invalid_timing_count": invalid_count,
         "clock_bound_available": clocks_available,
