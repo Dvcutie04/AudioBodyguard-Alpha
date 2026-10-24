@@ -6,6 +6,15 @@ Checkpoint: October 24, 2026. Continue from the restored a-Shell baseline and th
 
 ## Current checkpoint
 
+October 24 CSV evidence handling: the
+[0.31 record](frame-csv-evidence-2026-10-24.md) rejects malformed CSV quoting
+and handles the existing reader's field-limit errors as unavailable timing
+evidence. Unreadable lines clear the column mapping and latch the existing
+schema-availability flag, while known facts and raw dumps remain. Functional
+native checks can continue. App flow remains 0.25; exact source-bound red/green
+checks and artifacts belong to the draft PR. Signed iPhone delivery, handset
+responsiveness and N2b–N5 remain unqualified.
+
 October 24 frame-column evidence: the
 [0.30 record](frame-schema-evidence-2026-10-24.md) requires unique complete
 Flags, IntendedVsync and FrameCompleted headers before frame attribution.

@@ -1,4 +1,5 @@
 from tools.android_frame_evidence import compare_frames
+import csv
 import pytest
 
 
@@ -7,6 +8,59 @@ PROCESS = "** Graphics info for pid 1234 [com.aqss.bodyguard.prototype.liveinput
 
 def _frame_table(columns, values):
     return ",".join(columns) + ",\n" + ",".join(map(str, values)) + ",\n"
+
+
+@pytest.mark.parametrize("side", ["before", "after"])
+@pytest.mark.parametrize("bad_first", [False, True], ids=["bad-last", "bad-first"])
+@pytest.mark.parametrize("broken", ["oversized-field", "unclosed-row", "unclosed-header", "after-quote"])
+def test_unreadable_csv_cannot_crash_or_retain_frame_attribution(side, bad_first, broken):
+    start = 1100000000 if side == "before" else 1600000000
+    bad = {
+        "oversized-field": f"0,{start}," + "x" * (csv.field_size_limit() + 1) + ",\n",
+        "unclosed-row": f'"0,{start},{start + 10000000},\n',
+        "unclosed-header": '"Flags,IntendedVsync,FrameCompleted,\n',
+        "after-quote": f'0,{start},"{start + 10000000}"x,\n',
+    }[broken]
+    assert len(bad.encode()) < 2097152  # Still inside the existing raw capture bound.
+    columns = ["Flags", "IntendedVsync", "FrameCompleted"]
+    before = _frame_table(columns, [0, 1000000000, 1010000000])
+    after = _frame_table(columns, [0, 1500000000, 1510000000])
+    if side == "before":
+        before = bad + before if bad_first else before + bad
+    else:
+        after = bad + after if bad_first else after + bad
+    result = compare_frames("Uptime: 2000 Realtime: 2000\n" + PROCESS + before,
+                            "Uptime: 2200 Realtime: 2200\n" + PROCESS + after)
+    assert result["frame_count"] == 0
+    assert result["durations_ms"] == []
+    assert result["frame_schema_available"] is False
+    assert result["timing_qualified"] is False
+    assert result["baseline_available"] is True
+    assert result["clock_bound_available"] is True
+    assert result["uptime_order_valid"] is True
+    assert result["process_identity_matches"] is True
+    assert result["median_ms"] is None
+    assert result["maximum_ms"] is None
+
+
+@pytest.mark.parametrize("rows,invalid", [
+    ('"Flags","IntendedVsync","FrameCompleted",\n"0","1500000000","1510000000",\n', 0),
+    ('"GPU description, with comma",unrelated,\nFlags,IntendedVsync,FrameCompleted,\n0,1500000000,1510000000,\n', 0),
+    ('Flags,IntendedVsync,FrameCompleted,\n0,1500000000,1510000000,\n0,1600000000,"not""time",\n', 1),
+    ("Flags,IntendedVsync,FrameCompleted,\n0,1500000000,1510000000,\n0,1600000000,'unreadable,\n", 1),
+], ids=["quoted-fields", "quoted-metadata", "escaped-quote", "literal-apostrophe"])
+def test_valid_csv_quoting_preserves_known_schema_and_existing_timing_rules(rows, invalid):
+    prefix = "Uptime: 2200 Realtime: 2200\n" + PROCESS
+    before = prefix + _frame_table(["Flags", "IntendedVsync", "FrameCompleted"],
+                                   [0, 1000000000, 1010000000])
+    result = compare_frames(before, prefix + rows)
+    assert result["frame_schema_available"] is True
+    assert result["frame_count"] == 1
+    assert result["durations_ms"] == [10.0]
+    assert result["invalid_timing_count"] == invalid
+    assert result["timing_qualified"] is (invalid == 0)
+    assert result["median_ms"] == (10.0 if invalid == 0 else None)
+    assert result["maximum_ms"] == (10.0 if invalid == 0 else None)
 
 
 @pytest.mark.parametrize("side", ["before", "after"])
