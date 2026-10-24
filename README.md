@@ -61,6 +61,11 @@ changed, ambiguous or malformed process headers withhold attribution and timing
 summaries. Matching headers do not prove uninterrupted process/device identity;
 the app flow and physical qualification boundaries remain unchanged.
 
+The [0.28 completion evidence repair](docs/frame-completion-evidence-2026-10-24.md)
+preserves an observed frame start even when its completion field is unreadable.
+New unreadable completions withhold timing summaries while retaining valid-subset
+diagnostics; an already observed start cannot become a new frame on completion.
+
 The [internal TestFlight preparation](docs/testflight-beta-preparation.md)
 automates checks on an exact reviewed source revision and provides a manually
 requested signing/upload lane after Apple account and signing setup. It does

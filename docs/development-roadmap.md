@@ -1,10 +1,19 @@
 # AQSS development roadmap
 
-Checkpoint: October 23, 2026. Continue from the restored a-Shell baseline and the existing native endpoint qualification research. iPhone/iOS and Android remain equal product targets.
+Checkpoint: October 24, 2026. Continue from the restored a-Shell baseline and the existing native endpoint qualification research. iPhone/iOS and Android remain equal product targets.
 
 **INFERENCE IS NOT REALITY. AI proposes. Policy authorizes. Physical Commit verifies.**
 
 ## Current checkpoint
+
+October 24 unreadable completion evidence: the
+[0.28 record](frame-completion-evidence-2026-10-24.md) repairs discarded frame
+starts and silently omitted unreadable completion fields. A known eligible start
+still sets the baseline watermark; an unreadable new completion invalidates the
+timing summary while valid-subset durations remain diagnostics. Process, clock,
+timestamp and raw-capture bounds remain required. Exact source-bound red/green
+checks and artifacts belong to the draft PR; phone responsiveness, signed iPhone
+delivery and N2b–N5 remain unqualified.
 
 October 23 renderer process scope: the
 [0.27 record](frame-process-evidence-2026-10-23.md) closes a comparator path
