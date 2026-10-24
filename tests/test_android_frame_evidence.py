@@ -5,6 +5,65 @@ import pytest
 PROCESS = "** Graphics info for pid 1234 [com.aqss.bodyguard.prototype.liveinput] **\n"
 
 
+def _unreadable_completion_row(start, completion, flag=0):
+    return f"{flag},{start}" + (f",{completion},\n" if completion is not None else "\n")
+
+
+@pytest.mark.parametrize("baseline_completion", [0, 1010000000], ids=["inflight", "completed"])
+@pytest.mark.parametrize("completion", ["unreadable", "1.5", "", None],
+                         ids=["text", "fraction", "empty", "missing"])
+def test_unreadable_new_completion_withholds_summary_but_retains_valid_subset(
+        baseline_completion, completion):
+    columns = PROCESS + "Flags,IntendedVsync,FrameCompleted,\n"
+    before = "Uptime: 2000 Realtime: 2000\n" + columns + f"0,1000000000,{baseline_completion},\n"
+    bad = _unreadable_completion_row(1600000000, completion)
+    after = "Uptime: 2100 Realtime: 2100\n" + columns + "0,1500000000,1510000000,\n" + bad + bad
+    result = compare_frames(before, after)
+    assert result["baseline_available"] is True
+    assert result["clock_bound_available"] is True
+    assert result["uptime_order_valid"] is True
+    assert result["process_identity_matches"] is True
+    assert result["invalid_timing_count"] == 1
+    assert result["timing_qualified"] is False
+    assert result["frame_count"] == 1
+    assert result["durations_ms"] == [10.0]
+    assert result["median_ms"] is None
+    assert result["maximum_ms"] is None
+
+
+@pytest.mark.parametrize("earlier_completed", [False, True], ids=["only-baseline", "later-baseline"])
+@pytest.mark.parametrize("completion", ["unreadable", "1.5", "", None],
+                         ids=["text", "fraction", "empty", "missing"])
+def test_unreadable_baseline_completion_does_not_erase_observed_start(earlier_completed, completion):
+    columns = PROCESS + "Flags,IntendedVsync,FrameCompleted,\n"
+    before = "Uptime: 2000 Realtime: 2000\n" + columns
+    if earlier_completed:
+        before += "0,500000000,510000000,\n"
+    before += _unreadable_completion_row(1000000000, completion)
+    after = "Uptime: 2100 Realtime: 2100\n" + columns + "0,1000000000,1100000000,\n0,1500000000,1510000000,\n"
+    result = compare_frames(before, after)
+    assert result["baseline_available"] is True
+    assert result["invalid_timing_count"] == 0
+    assert result["frame_count"] == 1
+    assert result["durations_ms"] == [10.0]
+    assert result["timing_qualified"] is True
+    assert result["median_ms"] == 10.0
+    assert result["maximum_ms"] == 10.0
+
+
+@pytest.mark.parametrize("flag,start", [(1, 1600000000), (0, 1000000000)], ids=["flagged", "not-new"])
+def test_unreadable_completion_outside_new_eligible_frames_does_not_poison_summary(flag, start):
+    columns = PROCESS + "Flags,IntendedVsync,FrameCompleted,\n"
+    before = "Uptime: 2000 Realtime: 2000\n" + columns + "0,1000000000,1010000000,\n"
+    after = "Uptime: 2100 Realtime: 2100\n" + columns + "0,1500000000,1510000000,\n" + _unreadable_completion_row(start, "unreadable", flag)
+    result = compare_frames(before, after)
+    assert result["invalid_timing_count"] == 0
+    assert result["durations_ms"] == [10.0]
+    assert result["timing_qualified"] is True
+    assert result["median_ms"] == 10.0
+    assert result["maximum_ms"] == 10.0
+
+
 @pytest.mark.parametrize("baseline_completion", [0, 1010000000])
 @pytest.mark.parametrize("before_process,after_process,available", [
     (PROCESS, PROCESS.replace("1234", "5678"), True),

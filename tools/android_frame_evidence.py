@@ -37,15 +37,24 @@ def _snapshot(text):
         if columns is None:
             continue
         try:
-            flag, start, end = (int(fields[columns[name]]) for name in ("Flags", "IntendedVsync", "FrameCompleted"))
+            flag, start = (int(fields[columns[name]]) for name in ("Flags", "IntendedVsync"))
         except (ValueError, IndexError):
             continue
         if flag != 0 or not 0 < start < 2**63 - 1:
             continue
+        try:
+            end = int(fields[columns["FrameCompleted"]])
+        except (ValueError, IndexError):
+            end = None
         if horizon is not None and start > horizon:
             invalid.add((start, end))
             continue
         watermark = start if watermark is None else max(watermark, start)
+        if end is None:
+            # The start is still observed; an unreadable completion is not an
+            # absent frame or a duration, and must not qualify a new interval.
+            invalid.add((start, None))
+            continue
         if end == 0:
             continue  # In-flight or unpopulated completion, not a duration.
         if not start < end < 2**63 - 1 or end - start > 60_000_000_000 or (horizon is not None and end > horizon):
