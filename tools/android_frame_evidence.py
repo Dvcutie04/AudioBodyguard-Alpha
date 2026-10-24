@@ -19,13 +19,28 @@ def _process_identity(text):
         identities.add((match.group(1), match.group(2).strip()))
     return next(iter(identities)) if len(identities) == 1 else None
 
+def _uptime_ms(text):
+    uptimes = set()
+    for line in text.splitlines():
+        if not line.startswith("Uptime:"):
+            continue
+        # Read one complete integer on this line, never a numeric prefix or a
+        # value borrowed from the next line. Every observed header must agree.
+        match = re.match(r"Uptime:[ \t]*([0-9]+)(?:[ \t]|$)", line)
+        if match is None:
+            return None
+        try:
+            uptimes.add(int(match.group(1)))
+        except ValueError:
+            return None
+    return next(iter(uptimes)) if len(uptimes) == 1 else None
+
 def _snapshot(text):
     columns = None
     frames = set()
     watermark = None
     invalid = set()
-    clock = re.search(r"(?m)^Uptime:\s*(\d+)", text)
-    uptime_ms = int(clock.group(1)) if clock else None
+    uptime_ms = _uptime_ms(text)
     # A generous diagnostic horizon tolerates dump collection after its header.
     # Samples outside it are unknown, never clipped into an apparently fast frame.
     horizon = (uptime_ms + 60_000) * 1_000_000 if uptime_ms is not None else None

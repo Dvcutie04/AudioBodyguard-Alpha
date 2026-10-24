@@ -6,6 +6,15 @@ Checkpoint: October 24, 2026. Continue from the restored a-Shell baseline and th
 
 ## Current checkpoint
 
+October 24 uptime header evidence: the
+[0.29 record](frame-uptime-evidence-2026-10-24.md) rejects numeric prefixes,
+cross-line values and conflicting or malformed additional uptime headers.
+Every observed header must contain the same complete integer uptime before
+the clock can qualify a summary. Existing valid-subset diagnostics and known
+regression handling remain. App behavior remains 0.25; exact source-bound
+red/green checks and artifacts belong to the draft PR. Signed iPhone delivery,
+handset responsiveness and N2b–N5 remain unqualified.
+
 October 24 unreadable completion evidence: the
 [0.28 record](frame-completion-evidence-2026-10-24.md) repairs discarded frame
 starts and silently omitted unreadable completion fields. A known eligible start
