@@ -40,6 +40,11 @@ Photo identities (SHA-256) for the user-retained source files:
 
 Record actual values and links to immutable instrument output. Leave a field **unknown** rather than guessing.
 
+The [private inventory template and checker](n2b-inventory-preparation-2026-10-24.md)
+record these eight rows and check the hashes of referenced local evidence.
+An unfilled template stays incomplete; even a complete record remains
+unverified and leaves N2b–N5 pending.
+
 | Field | Actual lab value / evidence |
 | --- | --- |
 | Owner, date, host OS/kernel/build, compiler, ALSA library and driver versions | Unknown |

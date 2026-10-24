@@ -1,0 +1,18 @@
+{
+  "schema_version": 1,
+  "revision": null,
+  "observed_on": null,
+  "qualified": false,
+  "production_ready": false,
+  "sections": {
+    "host": {"status": "unknown", "details": null, "evidence_refs": []},
+    "output_route": {"status": "unknown", "details": null, "evidence_refs": []},
+    "format": {"status": "unknown", "details": null, "evidence_refs": []},
+    "capture": {"status": "unknown", "details": null, "evidence_refs": []},
+    "ownership": {"status": "unknown", "details": null, "evidence_refs": []},
+    "work": {"status": "unknown", "details": null, "evidence_refs": []},
+    "continuity": {"status": "unknown", "details": null, "evidence_refs": []},
+    "consent": {"status": "unknown", "details": null, "evidence_refs": []}
+  },
+  "evidence": []
+}

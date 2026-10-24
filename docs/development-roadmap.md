@@ -6,6 +6,16 @@ Checkpoint: October 24, 2026. Continue from the restored a-Shell baseline and th
 
 ## Current checkpoint
 
+October 24 N2b inventory preparation: the
+[private inventory record and checker](n2b-inventory-preparation-2026-10-24.md)
+implement the eight existing hardware/protocol rows with explicit unknown or
+unavailable states and bounded local evidence hash checks. A filled record is
+unverified; no adapter, playback or physical gate is opened. The actual
+host/output/independent-capture inventory is still missing. Mobile app version
+remains 0.31, with the 0.25 app flow; this preparation has no new installer.
+Exact software verification belongs to its draft PR. N2b–N5, installed-phone
+responsiveness and signed iPhone delivery remain pending.
+
 October 24 CSV evidence handling: the
 [0.31 record](frame-csv-evidence-2026-10-24.md) rejects malformed CSV quoting
 and handles the existing reader's field-limit errors as unavailable timing
@@ -473,7 +483,7 @@ The sequence follows the native qualification brief, `AQSS_N2_Owned_Output_Lab_R
 | N4 — Conditional evidence and activation | Pending, dependent on N3 | Authenticated native retirement evidence; reject stale, replayed, conflicting-successor, and invalid-at-submission evidence |
 | N5 — Both mobile products | Pending | Independently qualified iPhone/iOS and Android lifecycle/output paths, resource budgets, consent, and packaging |
 
-The next engineering gate is **N2b: inventory a real owned output path before implementing an adapter**. The [N2b qualification record](n2b-lab-qualification-record.md) supplies the scope, required inventory, event distinctions, and falsifiable trials. Fill its actual host/device/route/capture fields before any hardware claim. Do not purchase or require customer hardware by assumption. Before adding any new OS or driver API, refresh research under the charter. Cleanup after closure must continue to release existing references without creating new mutating work.
+The next engineering gate is **N2b: inventory a real owned output path before implementing an adapter**. The [N2b qualification record](n2b-lab-qualification-record.md) supplies the scope, required inventory, event distinctions, and falsifiable trials. Its [private record and checker](n2b-inventory-preparation-2026-10-24.md) make missing observations explicit and bind local references to file hashes without qualifying the hardware. Fill the actual host/device/route/capture fields before any hardware claim. Do not purchase or require customer hardware by assumption. Before adding any new OS or driver API, refresh research under the charter. Cleanup after closure must continue to release existing references without creating new mutating work.
 
 The legacy optical remote mapper now reports a remote-button hypothesis as `NOT_EXECUTED` and requires review at every eligible confidence band; invalid confidence fails closed. An 11-case regression covers these proposal-only semantics. The mapper does not discover actual hardware capability, authenticate a command, invoke an adapter, or verify a physical result. It must not be used to infer current TV caption state from an unknown IR toggle.
 
