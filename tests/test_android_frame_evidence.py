@@ -37,15 +37,15 @@ def test_ambiguous_or_incomplete_frame_schema_withholds_attribution(side, bad_fi
         after = bad + after if bad_first else after + bad
     result = compare_frames("Uptime: 2000 Realtime: 2000\n" + PROCESS + before,
                             "Uptime: 2200 Realtime: 2200\n" + PROCESS + after)
-    # Fail first on the old semantic defect, before checking the new evidence field.
+    # Fail first on retained attribution, before checking the new evidence field.
+    assert result["frame_count"] == 0
+    assert result["durations_ms"] == []
     assert result["timing_qualified"] is False
     assert result["frame_schema_available"] is False
     assert result["baseline_available"] is True  # A valid observed start is still known.
     assert result["clock_bound_available"] is True
     assert result["uptime_order_valid"] is True
     assert result["process_identity_matches"] is True
-    assert result["frame_count"] == 0
-    assert result["durations_ms"] == []
     assert result["median_ms"] is None
     assert result["maximum_ms"] is None
 
@@ -71,6 +71,22 @@ def test_unique_required_frame_columns_preserve_existing_summary(columns, values
     assert result["durations_ms"] == [10.0]
     assert result["median_ms"] == 10.0
     assert result["maximum_ms"] == 10.0
+
+
+@pytest.mark.parametrize("completion", ["Flags", "IntendedVsync", "FrameCompleted"])
+def test_column_name_in_unreadable_completion_remains_a_timing_row(completion):
+    prefix = "Uptime: 2200 Realtime: 2200\n" + PROCESS
+    columns = ["Flags", "IntendedVsync", "FrameCompleted"]
+    before = prefix + _frame_table(columns, [0, 1000000000, 1010000000])
+    after = prefix + _frame_table(columns, [0, 1500000000, 1510000000])
+    after += f"0,1600000000,{completion},\n"
+    result = compare_frames(before, after)
+    assert result["timing_qualified"] is False
+    assert result["invalid_timing_count"] == 1
+    assert result["frame_count"] == 1
+    assert result["durations_ms"] == [10.0]
+    assert result["median_ms"] is None
+    assert result["maximum_ms"] is None
 
 
 @pytest.mark.parametrize("side", ["before", "after"])
