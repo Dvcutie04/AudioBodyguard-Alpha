@@ -11,8 +11,8 @@ android {
         applicationId = "com.aqss.bodyguard.prototype"
         minSdk = 26
         targetSdk = 36
-        versionCode = 29
-        versionName = "0.29-frame-uptime-evidence"
+        versionCode = 30
+        versionName = "0.30-frame-schema-evidence"
     }
 
     buildTypes {
