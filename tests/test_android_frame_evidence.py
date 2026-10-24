@@ -5,6 +5,74 @@ import pytest
 PROCESS = "** Graphics info for pid 1234 [com.aqss.bodyguard.prototype.liveinput] **\n"
 
 
+def _frame_table(columns, values):
+    return ",".join(columns) + ",\n" + ",".join(map(str, values)) + ",\n"
+
+
+@pytest.mark.parametrize("side", ["before", "after"])
+@pytest.mark.parametrize("bad_first", [False, True], ids=["bad-last", "bad-first"])
+@pytest.mark.parametrize("kind,column", [
+    (kind, column) for kind in ("duplicate", "missing")
+    for column in ("Flags", "IntendedVsync", "FrameCompleted")
+])
+def test_ambiguous_or_incomplete_frame_schema_withholds_attribution(side, bad_first, kind, column):
+    columns = ["Flags", "IntendedVsync", "FrameCompleted"]
+    start = 1100000000 if side == "before" else 1600000000
+    values = [0, start, start + 10000000]
+    index = columns.index(column)
+    if kind == "duplicate":
+        columns.insert(index, column)
+        values.insert(index, {"Flags": 1, "IntendedVsync": start - 100000000,
+                              "FrameCompleted": start + 100000000}[column])
+    else:
+        columns.pop(index)
+        values.pop(index)
+    bad = _frame_table(columns, values)
+    native = ["Flags", "IntendedVsync", "FrameCompleted"]
+    before = _frame_table(native, [0, 1000000000, 1010000000])
+    after = _frame_table(native, [0, 1500000000, 1510000000])
+    if side == "before":
+        before = bad + before if bad_first else before + bad
+    else:
+        after = bad + after if bad_first else after + bad
+    result = compare_frames("Uptime: 2000 Realtime: 2000\n" + PROCESS + before,
+                            "Uptime: 2200 Realtime: 2200\n" + PROCESS + after)
+    # Fail first on the old semantic defect, before checking the new evidence field.
+    assert result["timing_qualified"] is False
+    assert result["frame_schema_available"] is False
+    assert result["baseline_available"] is True  # A valid observed start is still known.
+    assert result["clock_bound_available"] is True
+    assert result["uptime_order_valid"] is True
+    assert result["process_identity_matches"] is True
+    assert result["frame_count"] == 0
+    assert result["durations_ms"] == []
+    assert result["median_ms"] is None
+    assert result["maximum_ms"] is None
+
+
+@pytest.mark.parametrize("columns,values,repeat", [
+    (["Flags", "IntendedVsync", "FrameCompleted"], [0, 1500000000, 1510000000], False),
+    (["FrameCompleted", "Extra", "Flags", "IntendedVsync"], [1510000000, 9, 0, 1500000000], False),
+    (["Flags", "Extra", "Extra", "IntendedVsync", "FrameCompleted", ""],
+     [0, 8, 9, 1500000000, 1510000000, ""], False),
+    (["FrameCompleted", "Flags", "IntendedVsync"], [1510000000, 0, 1500000000], True),
+], ids=["native", "reordered", "unrelated-duplicates", "repeated-reordered"])
+def test_unique_required_frame_columns_preserve_existing_summary(columns, values, repeat):
+    prefix = "Uptime: 2200 Realtime: 2200\n" + PROCESS
+    before = prefix + _frame_table(["Flags", "IntendedVsync", "FrameCompleted"],
+                                   [0, 1000000000, 1010000000])
+    after = prefix + _frame_table(columns, values)
+    if repeat:
+        after += _frame_table(["Flags", "IntendedVsync", "FrameCompleted"],
+                              [0, 1500000000, 1510000000])
+    result = compare_frames(before, after)
+    assert result["timing_qualified"] is True
+    assert result["frame_count"] == 1
+    assert result["durations_ms"] == [10.0]
+    assert result["median_ms"] == 10.0
+    assert result["maximum_ms"] == 10.0
+
+
 @pytest.mark.parametrize("side", ["before", "after"])
 @pytest.mark.parametrize("bad_clock", [
     "Uptime: 2100.5 Realtime: 2100\n",
