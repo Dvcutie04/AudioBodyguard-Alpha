@@ -48,7 +48,14 @@ def _snapshot(text):
     # Samples outside it are unknown, never clipped into an apparently fast frame.
     horizon = (uptime_ms + 60_000) * 1_000_000 if uptime_ms is not None else None
     for line in text.splitlines():
-        fields = next(csv.reader([line]))
+        try:
+            fields = next(csv.reader([line], strict=True))
+        except csv.Error:
+            # An unreadable line can conceal a new header or timing row. Keep
+            # known facts, but do not reuse old indices or qualify this dump.
+            schema_valid = False
+            columns = None
+            continue
         if any(name in fields for name in FRAME_COLUMNS):
             try:
                 int(fields[0])

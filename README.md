@@ -76,6 +76,11 @@ rejects duplicate or missing required column names before attributing frames.
 The diagnostic JSON reports schema availability; the app's support report and
 input flow retain their existing behavior.
 
+The [0.31 CSV evidence repair](docs/frame-csv-evidence-2026-10-24.md)
+handles malformed quoting and CSV field-limit errors as unavailable diagnostics.
+These read errors withhold attribution and let native UI checks continue.
+Valid quoting still works within the existing raw-capture limits.
+
 The [internal TestFlight preparation](docs/testflight-beta-preparation.md)
 automates checks on an exact reviewed source revision and provides a manually
 requested signing/upload lane after Apple account and signing setup. It does
