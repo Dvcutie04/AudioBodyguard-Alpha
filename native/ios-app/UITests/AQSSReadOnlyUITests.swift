@@ -897,13 +897,20 @@ final class AQSSReadOnlyUITests: XCTestCase {
             }
             let image = try XCTUnwrap(candidates.count == 1 ? candidates.first : nil,
                                      "Require exactly one imported-date fixture; never guess among Photos assets")
-            // A fully visible remote Photos thumbnail can reject XCTest's AX
-            // scroll-to-visible action. Touch its identified on-screen center,
-            // as the button helper does; retain normal scrolling when offscreen.
+            // A remote Photos thumbnail can reject XCTest's AX scrolling even
+            // at the screen edge. Permit only half a point of horizontal frame
+            // rounding, and clamp the actual touch to the strict viewport.
+            // Offscreen images retain the native scroll-and-tap path.
             let frame = image.frame
+            let appFrame = app.frame
+            let viewport = appFrame.insetBy(dx: 0, dy: 24)
+            let visible = frame.intersection(viewport)
+            print("PHOTO_PICKER_GEOMETRY image=\(frame) viewport=\(viewport) visible=\(visible)")
             if frame.width >= 44, frame.height >= 44,
-               app.frame.insetBy(dx: 0, dy: 24).contains(frame) {
-                let offset = CGVector(dx: frame.midX - app.frame.minX, dy: frame.midY - app.frame.minY)
+               visible.width >= 44, visible.height >= 44,
+               viewport.insetBy(dx: -0.5, dy: 0).contains(frame) {
+                screenshot("Dated photo fixture ready", app)
+                let offset = CGVector(dx: visible.midX - appFrame.minX, dy: visible.midY - appFrame.minY)
                 app.coordinate(withNormalizedOffset: CGVector(dx: 0, dy: 0)).withOffset(offset).tap()
             } else { image.tap() }
             // Import and OCR have the existing 30-second app result window.

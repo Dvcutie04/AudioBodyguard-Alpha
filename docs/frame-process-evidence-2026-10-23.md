@@ -110,3 +110,26 @@ App result deadlines, app sources, Android verification and version identities
 are unchanged. Android run 40041309673 passed on source
 `5dad9cb6ed80ea8e67053f1bdd5dbc750de43d05`; final evidence binds that APK
 source separately from the subsequent iPhone test-only correction.
+
+The next Apple run 40042575273/job 120716822907 failed before reaching the
+photo result wait. The uniquely dated native image was reported at
+`{{-0.0, 352.7}, {129.7, 129.7}}`; the test took its native accessibility
+scroll-and-tap branch, which computed `{-1, -1}` and failed with
+`kAXErrorCannotComplete`. Artifact 12539962367 (ZIP SHA-256
+`ce9788da2c6667beba7f145bb6a96d4af48dcb2db5e87f6f67fb6a5a9b1c464a`)
+was inspected, including its decompressed native picker inventory and runtime
+log. The inventory identifies the expected image and the app frame is
+`{{0, 0}, {393, 852}}`. The rounded negative-zero horizontal image edge is
+consistent with a fractional boundary failing the strict containment guard;
+this is an inference, not proof of every underlying Photos geometry detail.
+The separate iPad eight-test and speech-permission one-test jobs passed.
+
+The existing coordinate-tap guard now permits at most half a point of
+horizontal frame rounding. It still requires a 44-point image and visible
+intersection, and full vertical containment with the existing 24-point inset.
+The tap uses the center of the strict viewport intersection, anchored to one
+app-frame snapshot; genuinely offscreen images retain native scroll-and-tap.
+Each selection records its exact geometry and an on-screen picker screenshot.
+Unique imported-date matching, the result wait, and all photo content,
+replacement, cancellation, unknown-state and Clear assertions remain. No app
+source, Android source or version identity changes.
