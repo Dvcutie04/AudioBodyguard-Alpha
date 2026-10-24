@@ -66,6 +66,11 @@ preserves an observed frame start even when its completion field is unreadable.
 New unreadable completions withhold timing summaries while retaining valid-subset
 diagnostics; an already observed start cannot become a new frame on completion.
 
+The [0.29 uptime evidence repair](docs/frame-uptime-evidence-2026-10-24.md)
+requires complete integer uptime tokens and agreement between repeated headers.
+Malformed or conflicting clocks withhold timing summaries; existing valid-subset
+diagnostics remain. Hosted observations do not establish a speed improvement.
+
 The [internal TestFlight preparation](docs/testflight-beta-preparation.md)
 automates checks on an exact reviewed source revision and provides a manually
 requested signing/upload lane after Apple account and signing setup. It does

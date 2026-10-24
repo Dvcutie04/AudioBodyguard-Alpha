@@ -5,6 +5,57 @@ import pytest
 PROCESS = "** Graphics info for pid 1234 [com.aqss.bodyguard.prototype.liveinput] **\n"
 
 
+@pytest.mark.parametrize("side", ["before", "after"])
+@pytest.mark.parametrize("bad_clock", [
+    "Uptime: 2100.5 Realtime: 2100\n",
+    "Uptime: 2100ms Realtime: 2100\n",
+    "Uptime: 2100e3 Realtime: 2100\n",
+    "Uptime:\n2100 Realtime: 2100\n",
+    "Uptime: 2100 Realtime: 2100\nUptime: 1900 Realtime: 1900\n",
+    "Uptime: 1900 Realtime: 1900\nUptime: 2100 Realtime: 2100\n",
+    "Uptime: 2100 Realtime: 2100\nUptime: unreadable Realtime: 2100\n",
+    "Uptime: unreadable Realtime: 2100\nUptime: 2100 Realtime: 2100\n",
+], ids=["fraction", "unit-suffix", "exponent", "split-line", "conflicting-descending",
+        "conflicting-ascending", "malformed-last", "malformed-first"])
+def test_malformed_or_ambiguous_uptime_cannot_qualify_timing(side, bad_clock):
+    columns = PROCESS + "Flags,IntendedVsync,FrameCompleted,\n"
+    before_clock, after_clock = "Uptime: 2000 Realtime: 2000\n", "Uptime: 2200 Realtime: 2200\n"
+    if side == "before":
+        before_clock = bad_clock
+    else:
+        after_clock = bad_clock
+    result = compare_frames(before_clock + columns + "0,1000000000,1010000000,\n",
+                            after_clock + columns + "0,1500000000,1510000000,\n")
+    assert result["baseline_available"] is True
+    assert result["process_identity_matches"] is True
+    assert result["clock_bound_available"] is False
+    assert result["uptime_order_valid"] is False
+    assert result["timing_qualified"] is False
+    # Unknown clocks retain the existing valid-subset diagnostic treatment.
+    assert result["frame_count"] == 1
+    assert result["durations_ms"] == [10.0]
+    assert result["median_ms"] is None
+    assert result["maximum_ms"] is None
+
+
+@pytest.mark.parametrize("clock", [
+    "Uptime: 2100 Realtime: 2100\n",
+    "Uptime: 2100\n",
+    "Uptime:\t2100\tRealtime: 2100\n",
+    "Uptime: 2100 Realtime: 2100\nUptime: 2100 Realtime: 2100\n",
+], ids=["native", "uptime-only", "horizontal-whitespace", "identical-duplicate"])
+def test_unambiguous_integer_uptime_retains_qualified_summary(clock):
+    columns = PROCESS + "Flags,IntendedVsync,FrameCompleted,\n"
+    result = compare_frames(clock + columns + "0,1000000000,1010000000,\n",
+                            clock + columns + "0,1500000000,1510000000,\n")
+    assert result["clock_bound_available"] is True
+    assert result["uptime_order_valid"] is True
+    assert result["timing_qualified"] is True
+    assert result["durations_ms"] == [10.0]
+    assert result["median_ms"] == 10.0
+    assert result["maximum_ms"] == 10.0
+
+
 def _unreadable_completion_row(start, completion, flag=0):
     return f"{flag},{start}" + (f",{completion},\n" if completion is not None else "\n")
 
