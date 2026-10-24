@@ -13,6 +13,26 @@ import xml.etree.ElementTree as ET
 from android_frame_evidence import compare_frames
 
 
+def _visible_share_target(root):
+    targets = []
+
+    def visit(node, clip=None):
+        values = re.findall(r"-?\d+", node.get("bounds", ""))
+        if len(values) != 4:
+            return
+        bounds = tuple(map(int, values))
+        visible = bounds if clip is None else (max(bounds[0], clip[0]), max(bounds[1], clip[1]),
+                                               min(bounds[2], clip[2]), min(bounds[3], clip[3]))
+        if node.get("text") == "Build details test" and node.get("package") == "com.android.intentresolver":
+            targets.append(bounds if visible == bounds and bounds[0] < bounds[2] and bounds[1] < bounds[3] else None)
+        for child in node:
+            visit(child, visible)
+
+    for node in root:
+        visit(node)
+    return targets[0] if len(targets) == 1 else None
+
+
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--apk", default="native/android/app/build/outputs/apk/liveInput/app-liveInput.apk")
@@ -122,6 +142,19 @@ def main():
             return False
         raise AssertionError(f"Missing tap target: {text}")
 
+    def select_share_receiver(name):
+        previous = None
+        for attempt in range(6):
+            root, _ = screen(f"{name}_settle_{attempt}")
+            bounds = _visible_share_target(root)
+            if bounds is not None and bounds == previous:
+                tap("Build details test", name)
+                return
+            previous = bounds
+            time.sleep(1)
+        screenshot(name + "_unsettled")
+        raise AssertionError("Native share receiver target did not settle fully inside its ancestor viewports")
+
     def scroll_meter(name, down):
         root, _ = screen(name)
         bounds = next(n.get("bounds") for n in root.iter("node") if n.get("bounds"))
@@ -186,7 +219,7 @@ def main():
                 wait_for_all((reviewed, "Share support report"), name + "_report_cancel_return")
                 assert adb("shell", "run-as", receiver, "cat", receiver_file) == previous
                 tap("Share support report", name + "_report_reshare")
-                tap("Build details test", name + "_report_receiver")
+                select_share_receiver(name + "_report_receiver")
                 received = wait_for_all((reviewed, "Return to Build details"), name + "_report_received")
                 assert any(n.get("package") == receiver for n in received.iter("node"))
                 raw = adb("shell", "run-as", receiver, "cat", receiver_file)
@@ -320,7 +353,7 @@ def main():
     screenshot("build_share_cancel_return")
     tap("Share build details", "build_share_reopen")
     wait_for("Build details test", "build_share_native_chooser_again")
-    tap("Build details test", "build_share_select_test_receiver")
+    select_share_receiver("build_share_select_test_receiver")
     received = wait_for_all(("Build details received for test", expected_share, "Return to Build details"), "build_share_receiver_observed")
     assert any(node.get("package") == receiver for node in received.iter("node")), "Require the independent receiver Activity"
     screenshot("build_share_receiver_observed")
@@ -367,7 +400,7 @@ def main():
     assert adb("shell", "run-as", receiver, "cat", receiver_file) == receipt
     screenshot("support_report_cancel_return")
     tap("Share support report", "support_report_reopen")
-    tap("Build details test", "support_report_select_test_receiver")
+    select_share_receiver("support_report_select_test_receiver")
     report_received = wait_for_all(("Build details received for test", expected_report, "Return to Build details"), "support_report_receiver_observed")
     assert any(n.get("package") == receiver for n in report_received.iter("node"))
     report_receipt = adb("shell", "run-as", receiver, "cat", receiver_file)
@@ -419,7 +452,7 @@ def main():
             wait_for_all((expected, "Share support report"), name + "_cancel_return")
             assert adb("shell", "run-as", receiver, "cat", receiver_file) == previous
             tap("Share support report", name + "_reopen")
-            tap("Build details test", name + "_receiver")
+            select_share_receiver(name + "_receiver")
             received = wait_for_all((expected, "Return to Build details"), name + "_received")
             assert any(n.get("package") == receiver for n in received.iter("node"))
             raw = adb("shell", "run-as", receiver, "cat", receiver_file)

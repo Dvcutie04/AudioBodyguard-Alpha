@@ -8,6 +8,17 @@ from pathlib import Path
 
 SCOPE = "rendered frames; not touch-to-response or physical latency"
 
+def _process_identity(text):
+    identities = set()
+    for line in text.splitlines():
+        if not line.lstrip().startswith("** Graphics info for pid"):
+            continue
+        match = re.fullmatch(r"\*\* Graphics info for pid ([1-9][0-9]*) \[([^\[\]\r\n]+)\] \*\*", line.strip())
+        if match is None or not match.group(2).strip():
+            return None  # A malformed additional header cannot be ignored.
+        identities.add((match.group(1), match.group(2).strip()))
+    return next(iter(identities)) if len(identities) == 1 else None
+
 def _snapshot(text):
     columns = None
     frames = set()
@@ -41,20 +52,23 @@ def _snapshot(text):
             invalid.add((start, end))
         else:
             frames.add((start, end))
-    return watermark, frames, invalid, uptime_ms
+    return watermark, frames, invalid, uptime_ms, _process_identity(text)
 
 def compare_frames(before, after):
-    cutoff, _, _, before_uptime = _snapshot(before)
-    _, frames, invalid, after_uptime = _snapshot(after)
+    cutoff, _, _, before_uptime, before_process = _snapshot(before)
+    _, frames, invalid, after_uptime, after_process = _snapshot(after)
+    identities_available = before_process is not None and after_process is not None
+    identities_match = identities_available and before_process == after_process
     clocks_available = before_uptime is not None and after_uptime is not None
     uptime_order_valid = clocks_available and after_uptime >= before_uptime
     uptime_regressed = clocks_available and not uptime_order_valid
     invalid_count = sum(1 for start, _ in invalid if cutoff is not None and start > cutoff)
-    qualified = cutoff is not None and uptime_order_valid and not invalid_count
+    qualified = cutoff is not None and identities_match and uptime_order_valid and not invalid_count
     # A known regression invalidates attribution even if each dump's rows are
-    # individually plausible. Preserve the raw dumps instead of comparing them.
+    # individually plausible. An unknown or changed process also has no common
+    # frame scope. Preserve the raw dumps instead of attributing those samples.
     durations = sorted((end - start) / 1_000_000 for start, end in frames
-                       if not uptime_regressed and cutoff is not None and start > cutoff)
+                       if identities_match and not uptime_regressed and cutoff is not None and start > cutoff)
     n = len(durations)
     return {
         "scope": SCOPE,
@@ -63,6 +77,8 @@ def compare_frames(before, after):
         "invalid_timing_count": invalid_count,
         "clock_bound_available": clocks_available,
         "uptime_order_valid": uptime_order_valid,
+        "process_identity_available": identities_available,
+        "process_identity_matches": identities_match,
         "timing_qualified": bool(qualified and n),
         "diagnostic_horizon_ms": 60_000,
         "durations_ms": durations,

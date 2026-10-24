@@ -802,8 +802,8 @@ final class AQSSReadOnlyUITests: XCTestCase {
         XCTAssertTrue(app.buttons["Close"].firstMatch.waitForExistence(timeout: 5))
         XCTAssertTrue(app.buttons["Close"].firstMatch.isHittable)
     }
-    private func label(_ text: String, _ app: XCUIApplication) {
-        XCTAssertTrue(app.staticTexts.containing(NSPredicate(format: "label CONTAINS %@", text)).firstMatch.waitForExistence(timeout: 10), "Missing: \(text)")
+    private func label(_ text: String, _ app: XCUIApplication, timeout: TimeInterval = 10) {
+        XCTAssertTrue(app.staticTexts.containing(NSPredicate(format: "label CONTAINS %@", text)).firstMatch.waitForExistence(timeout: timeout), "Missing: \(text)")
     }
     private func tap(_ title: String, _ app: XCUIApplication, scroll explicitScroll: XCUIElement? = nil) {
         // Match within the active surface. A sheet can coexist with an
@@ -897,16 +897,28 @@ final class AQSSReadOnlyUITests: XCTestCase {
             }
             let image = try XCTUnwrap(candidates.count == 1 ? candidates.first : nil,
                                      "Require exactly one imported-date fixture; never guess among Photos assets")
-            // A fully visible remote Photos thumbnail can reject XCTest's AX
-            // scroll-to-visible action. Touch its identified on-screen center,
-            // as the button helper does; retain normal scrolling when offscreen.
+            // A remote Photos thumbnail can reject XCTest's AX scrolling even
+            // at the screen edge. Permit only half a point of horizontal frame
+            // rounding, and clamp the actual touch to the strict viewport.
+            // Offscreen images retain the native scroll-and-tap path.
             let frame = image.frame
+            let appFrame = app.frame
+            let viewport = appFrame.insetBy(dx: 0, dy: 24)
+            let visible = frame.intersection(viewport)
+            print("PHOTO_PICKER_GEOMETRY image=\(frame) viewport=\(viewport) visible=\(visible)")
             if frame.width >= 44, frame.height >= 44,
-               app.frame.insetBy(dx: 0, dy: 24).contains(frame) {
-                let offset = CGVector(dx: frame.midX - app.frame.minX, dy: frame.midY - app.frame.minY)
+               visible.width >= 44, visible.height >= 44,
+               viewport.insetBy(dx: -0.5, dy: 0).contains(frame) {
+                screenshot("Dated photo fixture ready", app)
+                let offset = CGVector(dx: visible.midX - appFrame.minX, dy: visible.midY - appFrame.minY)
                 app.coordinate(withNormalizedOffset: CGVector(dx: 0, dy: 0)).withOffset(offset).tap()
             } else { image.tap() }
-            for text in expected { label(text, app) }
+            // Import and OCR have the existing 30-second app result window.
+            // Allow that window plus presentation before the first result;
+            // every expected value still has to match, without another read.
+            for (index, text) in expected.enumerated() {
+                label(text, app, timeout: index == 0 ? 35 : 10)
+            }
         }
         try selectFixture(expected: identified)
         screenshot("Native photo review before replacement", app)
