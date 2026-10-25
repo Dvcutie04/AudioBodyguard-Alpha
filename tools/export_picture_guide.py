@@ -9,6 +9,7 @@ if __package__ in (None, ""):
 else:
     from .generate_setup_guides import validate
 ROOT = Path(__file__).resolve().parents[1]
+SAMSUNG_TV_PICTURES = {'samsung_ok': {15}, 'samsung_pin': {15}}
 TV_SCREEN_PICTURES = {'google_fast': {4}, 'sony_new': {5, 10},
                       'vizio_walmart': {3, 5}, 'vizio_account': {7},
                       'fire_setup': {5, 6}}
@@ -31,12 +32,13 @@ def svg(step, number, route):
         for i,s in enumerate(left): row(36,80+i*54,272,s,(number==2 and s=='Settings') or (number==3 and s==('System' if model else 'Network')))
         if number>=3:
             for i,s in enumerate(right):row(324,80+i*54,272,s,number==4 and s=='About' or number==5 and i==step['focus'])
-    elif number in TV_SCREEN_PICTURES.get(route['id'], set()):
+    elif number in TV_SCREEN_PICTURES.get(route['id'], set()) or number in SAMSUNG_TV_PICTURES.get(route['id'], set()):
         text(28,52,'On your TV: '+step['screen'][:34],size=22)
         rect(28,78,420,260,'#243958');text(48,113,'TV screen',size=19)
         row(48,142,380,label,True)
         rect(216,338,44,12,'#536c96');rect(178,350,120,7,'#536c96')
-        if step['action']=='check':text(466,166,'Check the TV',size=18)
+        if step['surface']=='tv':text(458,166,'Use TV remote' if step['action']=='select' else 'Read TV PIN',size=17)
+        elif step['action']=='check':text(466,166,'Check the TV',size=18)
         else:
             text(458,115,'Phone camera' if step['action']=='scan' else 'Phone app',size=17)
             rect(476,140,128,192,'#243958')

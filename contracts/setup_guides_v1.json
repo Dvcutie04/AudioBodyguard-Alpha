@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "mode": "illustrated_guidance_only",
-  "reviewed_at": "2026-10-06",
+  "reviewed_at": "2026-10-25",
   "sources": [
     {
       "id": "samsung_pair",
@@ -186,6 +186,7 @@
       "routes": [
         "samsung_ok",
         "samsung_pin",
+        "samsung_phone",
         "samsung_model_new",
         "samsung_model_old",
         "google_samsung",
@@ -195,8 +196,7 @@
         "identify"
       ],
       "primary_routes": [
-        "samsung_ok",
-        "samsung_pin"
+        "samsung_ok"
       ]
     },
     {
@@ -412,7 +412,8 @@
         "samsung_ok",
         "lg_pair",
         "google_remote",
-        "vizio_pair"
+        "vizio_pair",
+        "samsung_pin"
       ],
       "primary_routes": [
         "identify"
@@ -808,8 +809,8 @@
     },
     {
       "id": "samsung_ok",
-      "title": "Samsung — TV shows OK approval",
-      "applies_to": "Compatible Samsung SmartThings TVs. Both devices need the same Samsung account. Choose the approval screen your actual model displays.",
+      "title": "Samsung — connect with SmartThings",
+      "applies_to": "Compatible Samsung SmartThings TVs. Use the same home Wi-Fi and Samsung account. Follow the request your TV actually displays.",
       "models": [],
       "sources": [
         "samsung_pair"
@@ -817,7 +818,7 @@
       "steps": [
         {
           "title": "Use the same home network",
-          "instruction": "Turn on the TV. Connect your phone to the same home Wi-Fi.",
+          "instruction": "Turn on the TV. Connect the TV and this phone to the same home Wi-Fi.",
           "surface": "both",
           "screen": "Wi-Fi",
           "items": [
@@ -825,7 +826,7 @@
           ],
           "focus": 0,
           "action": "check",
-          "note": "A network name or IP address alone does not identify or authorize a TV."
+          "note": "Use the TV’s Network settings first, then connect the phone. If your menu differs, open Need help and the official reference."
         },
         {
           "title": "Install SmartThings",
@@ -941,8 +942,8 @@
           "note": "Use your real device. This picture is an illustration."
         },
         {
-          "title": "Open Samsung TV setup",
-          "instruction": "Select TV.",
+          "title": "Confirm the TV category",
+          "instruction": "Under Samsung devices, select TV again.",
           "surface": "phone",
           "screen": "Samsung devices",
           "items": [
@@ -950,7 +951,7 @@
           ],
           "focus": 0,
           "action": "tap",
-          "note": "Use your real device. This picture is an illustration."
+          "note": "The first TV choice selected a device type. This second choice opens Samsung’s TV setup."
         },
         {
           "title": "Begin setup",
@@ -991,7 +992,7 @@
         },
         {
           "title": "Approve on the television",
-          "instruction": "Read the request on your TV. Select OK only for the phone you are pairing.",
+          "instruction": "Read the request on your TV. Select OK for your phone. If the TV displays a PIN, choose TV shows a PIN below.",
           "surface": "tv",
           "screen": "Connection request",
           "items": [
@@ -1000,7 +1001,7 @@
           ],
           "focus": 1,
           "action": "select",
-          "note": "No request appeared? Do not assume approval. Check the official guide."
+          "note": "Approve only the phone you are pairing. No request? Use My screen looks different; do not assume approval."
         },
         {
           "title": "Finish in SmartThings",
@@ -1033,7 +1034,7 @@
     {
       "id": "samsung_pin",
       "title": "Samsung — TV shows a PIN",
-      "applies_to": "Compatible Samsung SmartThings TVs. Both devices need the same Samsung account. Choose the approval screen your actual model displays.",
+      "applies_to": "Compatible Samsung SmartThings TVs. Use the same home Wi-Fi and Samsung account. Follow the request your TV actually displays.",
       "models": [],
       "sources": [
         "samsung_pair"
@@ -1041,7 +1042,7 @@
       "steps": [
         {
           "title": "Use the same home network",
-          "instruction": "Turn on the TV. Connect your phone to the same home Wi-Fi.",
+          "instruction": "Turn on the TV. Connect the TV and this phone to the same home Wi-Fi.",
           "surface": "both",
           "screen": "Wi-Fi",
           "items": [
@@ -1049,7 +1050,7 @@
           ],
           "focus": 0,
           "action": "check",
-          "note": "A network name or IP address alone does not identify or authorize a TV."
+          "note": "Use the TV’s Network settings first, then connect the phone. If your menu differs, open Need help and the official reference."
         },
         {
           "title": "Install SmartThings",
@@ -1165,8 +1166,8 @@
           "note": "Use your real device. This picture is an illustration."
         },
         {
-          "title": "Open Samsung TV setup",
-          "instruction": "Select TV.",
+          "title": "Confirm the TV category",
+          "instruction": "Under Samsung devices, select TV again.",
           "surface": "phone",
           "screen": "Samsung devices",
           "items": [
@@ -1174,7 +1175,7 @@
           ],
           "focus": 0,
           "action": "tap",
-          "note": "Use your real device. This picture is an illustration."
+          "note": "The first TV choice selected a device type. This second choice opens Samsung’s TV setup."
         },
         {
           "title": "Begin setup",
@@ -1215,19 +1216,19 @@
         },
         {
           "title": "Read the TV PIN",
-          "instruction": "Leave the PIN displayed on your real TV.",
+          "instruction": "Read the PIN on your actual TV. This picture does not contain a PIN.",
           "surface": "tv",
           "screen": "Pairing PIN",
           "items": [
-            "TV PIN: ••••"
+            "Your TV PIN"
           ],
           "focus": 0,
           "action": "check",
-          "note": "Dots stand for your private TV code; this picture has no working PIN."
+          "note": "Use every digit shown on your TV. The illustration assumes no code length and contains no working PIN."
         },
         {
           "title": "Enter the TV PIN",
-          "instruction": "Type the same PIN into SmartThings and continue.",
+          "instruction": "In SmartThings on your phone, enter the complete PIN shown on your TV.",
           "surface": "phone",
           "screen": "Pair Samsung TV",
           "items": [
@@ -1262,6 +1263,79 @@
           "focus": 0,
           "action": "check",
           "note": "Finishing this guide does not connect Audio Bodyguard or activate protection."
+        }
+      ]
+    },
+    {
+      "id": "samsung_phone",
+      "title": "2. Check Samsung on your phone",
+      "applies_to": "Use after adding the TV in SmartThings. Check the existing TV without repeating pairing. This does not connect Audio Bodyguard.",
+      "models": [],
+      "sources": [
+        "samsung_pair"
+      ],
+      "steps": [
+        {
+          "title": "Open SmartThings",
+          "instruction": "On the phone you used for TV setup, open SmartThings.",
+          "surface": "phone",
+          "screen": "Your phone",
+          "items": [
+            "SmartThings"
+          ],
+          "focus": 0,
+          "action": "tap",
+          "note": "Use the official SmartThings app. If you have not added the TV, use the pairing help."
+        },
+        {
+          "title": "Open your devices",
+          "instruction": "In SmartThings, open Devices.",
+          "surface": "phone",
+          "screen": "SmartThings",
+          "items": [
+            "Favorites",
+            "Devices",
+            "Life"
+          ],
+          "focus": 1,
+          "action": "tap",
+          "note": "The tab may be labelled Device in some app versions."
+        },
+        {
+          "title": "Choose the same home",
+          "instruction": "Choose the location where you added your Samsung TV.",
+          "surface": "phone",
+          "screen": "Devices",
+          "items": [
+            "Home / location"
+          ],
+          "focus": 0,
+          "action": "tap",
+          "note": "Use the same Samsung account and location from TV setup."
+        },
+        {
+          "title": "Find the TV you added",
+          "instruction": "Select the TV you added in the first setup guide.",
+          "surface": "phone",
+          "screen": "Your devices",
+          "items": [
+            "Your Samsung TV"
+          ],
+          "focus": 0,
+          "action": "tap",
+          "note": "If the TV is missing, return to this guide’s introduction and choose TV is missing — open pairing."
+        },
+        {
+          "title": "Check the phone controls",
+          "instruction": "Check that SmartThings shows controls for that TV. Return to Audio Bodyguard to finish these pictures.",
+          "surface": "phone",
+          "screen": "SmartThings TV controls",
+          "items": [
+            "TV controls"
+          ],
+          "focus": 0,
+          "action": "check",
+          "note": "Controls in SmartThings do not establish an Audio Bodyguard connection or active audio protection."
         }
       ]
     },

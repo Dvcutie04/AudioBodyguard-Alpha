@@ -101,6 +101,11 @@ automates checks on an exact reviewed source revision and provides a manually
 requested signing/upload lane after Apple account and signing setup. It does
 not invite testers or certify physical protection.
 
+The [0.32.1 Samsung setup repair](docs/samsung-setup-review-2026-10-25.md)
+starts one SmartThings guide, offers the PIN path when the TV asks for it, and
+checks the existing SmartThings TV in the phone part. Back and resume preserve
+the selected approval step. Guide completion does not verify a connection.
+
 ## Current a-Shell baseline
 
 The source baseline comes from the verified a-Shell exports supplied on September 24, 2026: 423 original paths plus 18 supplement paths. Every exported file is accounted for in the [synchronization manifest](docs/a-shell-sync-manifest.json): 431 retain their exact bytes, nine have documented maintenance fixes, and one unused corrupt Python module was retired. This records the supplied snapshots; later edits on the phone require another synchronization.

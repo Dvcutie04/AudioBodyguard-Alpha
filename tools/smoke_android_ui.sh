@@ -239,7 +239,8 @@ tap_scroll_label "Back to Tutorial" tutorial_resume
 capture_ui tutorial_exact_resume
 assert_tutorial_label tutorial_exact_resume "Step 4 of 6"
 tap_scroll_label "Show Samsung steps" setup_from_plan
-tap_scroll_label "Samsung — TV shows OK approval" setup_samsung_route
+capture_ui setup_samsung_route
+assert_tutorial_label setup_samsung_route "Samsung — connect with SmartThings"
 tap_tutorial_label "Start guide" setup_samsung_begin
 capture_ui setup_pair_step_1
 assert_tutorial_label setup_pair_step_1 "Step 1 of 17"
@@ -269,6 +270,10 @@ tap_scroll_label "Need help?" phone_help_open
 assert_scroll_label "official phone app" phone_help_limits
 tap_scroll_label "Hide help" phone_help_close
 tap_scroll_label "Phone pictures" phone_wifi_open
+capture_ui samsung_phone_intro
+assert_tutorial_label samsung_phone_intro "2. Check Samsung on your phone"
+tap_scroll_label "Need help?" samsung_phone_help
+tap_scroll_label "Phone Wi-Fi pictures" samsung_wifi_help
 capture_ui pixel_wifi_intro
 # The emulator identifies itself as a generic Android device on some images.
 # That correctly opens the phone chooser instead of assuming Pixel menus.
@@ -295,7 +300,8 @@ capture_ui phone_wifi_plan_return
 assert_tutorial_label phone_wifi_plan_return "Step 5 of 6"
 tap_scroll_label "Need help?" phone_previous_steps_help
 tap_scroll_label "Show Samsung steps" setup_from_phone
-tap_scroll_label "Samsung — TV shows OK approval" setup_phone_route
+capture_ui setup_phone_route
+assert_tutorial_label setup_phone_route "Samsung — connect with SmartThings"
 tap_tutorial_label "Back to Tutorial" setup_phone_cancel
 capture_ui phone_cancelled_return
 assert_tutorial_label phone_cancelled_return "Step 5 of 6"

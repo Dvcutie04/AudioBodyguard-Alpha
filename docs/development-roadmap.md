@@ -6,6 +6,13 @@ Checkpoint: October 24, 2026. Continue from the restored a-Shell baseline and th
 
 ## Current checkpoint
 
+October 25 Samsung setup repair: [0.32.1 review](samsung-setup-review-2026-10-25.md)
+starts one SmartThings guide, moves the PIN alternative to the actual approval
+step, and sends the phone part to a check of the existing SmartThings TV.
+PIN Back/resume and separate TV/phone pictures retain their context. This is
+a revision of 0.32, with Android build 33. Exact native results and installer
+identity belong to the draft PR; physical connection and N2b–N5 stay pending.
+
 October 24 phone-output research and 0.32 inventory: the owner confirmed
 **Ready** for the model/research step. The
 [primary-source research](phone-output-research-2026-10-24.md) selects a
