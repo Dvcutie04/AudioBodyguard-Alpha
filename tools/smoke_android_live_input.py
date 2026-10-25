@@ -383,7 +383,7 @@ def main():
         tap_scroll("Back to Tutorial", "samsung_resume_tutorial")
         tap("Start picture setup", "samsung_begin_tutorial")
         tap_scroll("Samsung", "samsung_choose_tv"); tap("Next", "samsung_choose_home_step")
-        tap_scroll("Neither", "samsung_no_assistant"); tap("Next", "samsung_plan")
+        tap_scroll("Neither / not sure", "samsung_no_assistant"); tap("Next", "samsung_plan")
         tap_scroll("Show Samsung steps", "samsung_pair_from_tutorial")
         tap("Start guide", "samsung_ok_start")
         for number in range(14):
