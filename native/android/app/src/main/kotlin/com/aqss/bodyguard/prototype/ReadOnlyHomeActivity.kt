@@ -407,6 +407,9 @@ class ReadOnlyHomeActivity : Activity() {
     }
 
     private fun soundPage() {
+        destination("Output inventory", "Check this phone’s available audio outputs") {
+            startActivity(Intent(this, OutputInventoryActivity::class.java).putExtra("dark", skin.dark))
+        }
         destination("Live sound check", "Try the phone microphone for 30 seconds") {
             startActivity(Intent(this, LiveSoundCheckActivity::class.java).putExtra("dark", skin.dark))
         }

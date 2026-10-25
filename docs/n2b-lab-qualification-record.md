@@ -31,8 +31,10 @@ Two phones establish availability only. Their exact current builds, output
 route, acquisition configuration, calibration and clock relationship remain
 unknown. A second phone's microphone reading cannot by itself establish
 calibrated output, end-to-end latency, containment or TV control. N2b–N5 stay
-pending. The roadmap requires the owner's switch to **6 Astra Max** and
-confirmation before the new substantive mobile-backend research begins.
+pending. The owner subsequently confirmed **Ready** for that research step.
+The [completed bounded research](phone-output-research-2026-10-24.md) selects
+the 0.32 Android read-only inventory before a playback adapter. Its metadata
+can supply current phone observations; it does not select or verify a route.
 
 ## Available TV observations — October 18, 2026
 
