@@ -601,6 +601,30 @@ def main():
     wait_for("Connection not verified", "camera_probe_returned_home")
 
     tap("Sound", "sound_page")
+    tap("Output inventory. Check this phone’s available audio outputs", "output_inventory_open")
+    inventory_idle = wait_for_all(("Not read yet. Tap Refresh outputs.",
+                                   "Selected playback route: Unknown", "Negotiated format: Unknown"),
+                                  "output_inventory_idle")
+    assert not has(inventory_idle, "Start sound check")
+    tap("Refresh outputs", "output_inventory_refresh")
+    inventory = wait_for_all(("available output device", "Snapshot only.",
+                              "Selected playback route: Unknown", "Advertised sample rates:"),
+                             "output_inventory_read")
+    assert not has(inventory, "Output inventory unavailable")
+    screenshot("output_inventory_read")
+    permission = adb("shell", "dumpsys", "package", package).decode()
+    assert "android.permission.RECORD_AUDIO: granted=false" in permission, "Inventory must not request microphone access"
+    adb("shell", "input", "keyevent", "KEYCODE_HOME")
+    launch()
+    wait_for_all(("Output inventory", "Not read yet. Tap Refresh outputs."), "output_inventory_resume_cleared")
+    tap("Refresh outputs", "output_inventory_refresh_again")
+    wait_for("Snapshot only.", "output_inventory_refreshed_again")
+    tap("Back", "output_inventory_back")
+    wait_for("Live sound check", "output_inventory_back_in_sound")
+    tap("Output inventory. Check this phone’s available audio outputs", "output_inventory_reopen")
+    wait_for("Not read yet. Tap Refresh outputs.", "output_inventory_reopened_empty")
+    tap("Back", "output_inventory_close_again")
+    print("OUTPUT_INVENTORY_OBSERVED: explicit metadata refresh, route/format unknown, microphone permission unrequested, background/resume clears snapshot, Back/reopen clears snapshot; no playback or physical qualification", flush=True)
     tap("Live sound check. Try the phone microphone for 30 seconds", "open_check")
     idle_meter = wait_for("Microphone off", "microphone_off")
     assert not has(idle_meter, "Open app settings"), "Permission shortcut appeared before an attempted request"

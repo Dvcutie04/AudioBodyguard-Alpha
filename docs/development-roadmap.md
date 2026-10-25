@@ -6,6 +6,18 @@ Checkpoint: October 24, 2026. Continue from the restored a-Shell baseline and th
 
 ## Current checkpoint
 
+October 24 phone-output research and 0.32 inventory: the owner confirmed
+**Ready** for the model/research step. The
+[primary-source research](phone-output-research-2026-10-24.md) selects a
+read-only Android inventory before playback. Candidate 0.32 adds
+**Sound → Output inventory**, showing the current model, Android/API version,
+available output kinds and advertised capabilities after explicit Refresh.
+Snapshot details clear on leaving. Actual route and negotiated format stay
+unknown; no player, focus request, microphone, route selection, export or
+permission is added. Empty capability arrays retain Android's arbitrary-support
+meaning. Exact candidate tests and installer identity belong to its draft PR.
+The iPhone app remains at 0.31; signed delivery and physical N2b–N5 stay pending.
+
 October 24 available-equipment update: the owner confirms **two phones**;
 the earlier account identifies Android and iPhone. The
 [N2b record](n2b-lab-qualification-record.md#available-equipment-update--october-24-2026)
@@ -13,9 +25,10 @@ now targets an owned mobile-output research package. Linux/ALSA remains a
 historical lab candidate and no computer purchase is required. Review Android
 first because test APK delivery is available, retaining equal iPhone product
 scope. Exact mobile output, observer capability, calibration and clock mapping
-are unresolved; signed iPhone installation is pending. The standing 6 Astra
-Max confirmation precedes the new substantive backend research. No new audio
-adapter or installer has been built; 0.31 remains current.
+are unresolved; signed iPhone installation is pending. The owner subsequently
+confirmed Ready, as recorded above; that confirmation covers this bounded
+phone-output research. No playback adapter has been built. Candidate 0.32
+supplies inventory observations for review.
 
 October 24 N2b inventory preparation: the
 [private inventory record and checker](n2b-inventory-preparation-2026-10-24.md)

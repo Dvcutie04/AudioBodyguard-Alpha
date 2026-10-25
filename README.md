@@ -86,8 +86,15 @@ adds a private template and checker for the existing host, output route,
 independent capture and related protocol inventory. It checks bounded local
 evidence hashes while keeping every physical gate pending. The owner has now
 confirmed two phones; the next research package reviews an owned mobile-output
-path. Exact backend/route/capture details remain pending. The mobile app stays
-at 0.31 and this step has no new APK.
+path. Exact backend/route/capture details remain pending. The inventory-file
+preparation itself does not change the mobile app.
+
+The [0.32 phone-output research and preflight](docs/phone-output-research-2026-10-24.md)
+adds **Sound → Output inventory** on Android. Tap **Refresh outputs** to see
+this phone's current model/OS, available output types and advertised format
+capabilities. The details clear when leaving. No sound is played, and actual
+playback route and negotiated format remain unknown. The iPhone app remains
+at 0.31; its signed installation and all physical output gates stay pending.
 
 The [internal TestFlight preparation](docs/testflight-beta-preparation.md)
 automates checks on an exact reviewed source revision and provides a manually
