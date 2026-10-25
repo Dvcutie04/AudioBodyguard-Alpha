@@ -148,7 +148,11 @@ def main():
             root, _ = screen(f"{name}_settle_{attempt}")
             bounds = _visible_share_target(root)
             if bounds is not None and bounds == previous:
-                tap("Build details test", name)
+                # Exercise the actual native tile. An accepted accessibility
+                # ancestor action did not launch the receiver in retained 0.32
+                # evidence; keep the exact receiver/receipt assertions below.
+                x0, y0, x1, y1 = bounds
+                adb("shell", "input", "tap", str((x0 + x1) // 2), str((y0 + y1) // 2))
                 return
             previous = bounds
             time.sleep(1)
