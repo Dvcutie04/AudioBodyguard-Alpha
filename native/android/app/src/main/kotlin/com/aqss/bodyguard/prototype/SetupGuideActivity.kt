@@ -80,6 +80,7 @@ class SetupGuideActivity : Activity() {
     private fun startingRoute(): String? = when {
         groupId == "voice" -> "voice"
         groupId == "phone" -> phoneRoute
+        groupId == "samsung" -> samsungStartingRoute()
         platforms.isNotEmpty() -> null
         else -> group?.primaryRoutes?.singleOrNull()
     }
@@ -100,10 +101,10 @@ class SetupGuideActivity : Activity() {
             .takeIf { id -> SetupContent.groups.any { it.id == id } } ?: ""
         selectedSystem = savedInstanceState?.getString(SELECTED_SYSTEM) ?: intent.getStringExtra("deviceGroup")
         val companion = if (savedInstanceState == null && groupId == "phone") SetupContent.groups.firstOrNull {
-            it.id == selectedSystem && "roku_phone" in it.routes && it.primaryRoutes.isNotEmpty() && it.primaryRoutes.all { route -> route in listOf("roku_network", "roku_model") }
+            it.id == selectedSystem && (it.id == "samsung" || ("roku_phone" in it.routes && it.primaryRoutes.isNotEmpty() && it.primaryRoutes.all { route -> route in listOf("roku_network", "roku_model") }))
         } else null
         if (companion != null) groupId = companion.id
-        routeId = if (savedInstanceState == null) { if (companion != null) "roku_phone" else startingRoute() } else savedInstanceState.getString("route")?.takeIf { group?.routes?.contains(it) == true }
+        routeId = if (savedInstanceState == null) { if (companion != null) { if (companion.id == "samsung") "samsung_phone" else "roku_phone" } else startingRoute() } else savedInstanceState.getString("route")?.takeIf { group?.routes?.contains(it) == true }
         completedTVRoute = savedInstanceState?.getString("completedTVRoute")?.takeIf { it in listOf("roku_network", "roku_model") }
         completedTVRoute?.let { setResult(RESULT_OK, Intent().putExtra(COMPLETED_TV_ROUTE, it)) }
         index = if (savedInstanceState == null && groupId == "voice") 0 else (savedInstanceState?.getInt("index", -1) ?: -1).takeIf { it == -1 || route?.steps?.indices?.contains(it) == true } ?: -1
@@ -181,12 +182,19 @@ class SetupGuideActivity : Activity() {
         history.addLast(location())
     }
     private fun chooseRoute(id: String) {
-        remember(); routeId = id; index = -1; mismatch = false; detailsExpanded = false; referencesExpanded = false; render()
+        remember(); routeId = if (id == "samsung_ok") samsungStartingRoute() else id; index = -1; mismatch = false; detailsExpanded = false; referencesExpanded = false; render()
+    }
+    private fun samsungStartingRoute(): String = if (SetupContent.routes.firstOrNull { it.id == "samsung_pin" }?.let { resumeIndex(it) } != null) "samsung_pin" else "samsung_ok"
+    private fun switchSamsungApproval(id: String) {
+        if (mismatch || index != 14 || routeId !in listOf("samsung_ok", "samsung_pin") || id !in listOf("samsung_ok", "samsung_pin") || id == routeId || group?.routes?.contains(id) != true) return
+        remember(); routeId = id; detailsExpanded = false; referencesExpanded = false; render()
     }
     private fun resumeIndex(route: SetupRoute): Int? = getSharedPreferences("aqss-presentation", MODE_PRIVATE).getInt("setup-progress-${route.id}", -1).takeIf { route.id != "voice" && it in route.steps.indices }
     private fun saveProgress(route: SetupRoute, value: Int?) {
         if (value != null && resumeIndex(route) == value) return
-        val edit = getSharedPreferences("aqss-presentation", MODE_PRIVATE).edit()
+        val preferences = getSharedPreferences("aqss-presentation", MODE_PRIVATE)
+        if (value == null && !preferences.contains("setup-progress-${route.id}")) return
+        val edit = preferences.edit()
         if (value == null) edit.remove("setup-progress-${route.id}") else edit.putInt("setup-progress-${route.id}", value)
         edit.apply()
     }
@@ -200,7 +208,10 @@ class SetupGuideActivity : Activity() {
         val step = route?.steps?.getOrNull(index)?.let { original ->
             if (original.screen == "App Store or Google Play") original.copy(screen = "Android • Google Play", instruction = original.instruction.replace("App Store or Google Play", "Google Play")) else original
         }
-        if (route != null && route.id != "voice" && step != null && !mismatch) saveProgress(route, index)
+        if (route != null && route.id != "voice" && step != null && !mismatch) {
+            if (route.id in listOf("samsung_ok", "samsung_pin")) SetupContent.routes.filter { it.id in listOf("samsung_ok", "samsung_pin") && it.id != route.id }.forEach { saveProgress(it, null) }
+            saveProgress(route, index)
+        }
         progressLabel.text = if (route != null && index >= 0) "Step ${index + 1} of ${route.steps.size}" else "Illustrated setup"
         progressBar.visibility = if (route != null && index >= 0) View.VISIBLE else View.GONE
         if (route != null && index >= 0) { progressBar.max = route.steps.size; progressBar.setProgress(index + 1, false) }
@@ -213,6 +224,9 @@ class SetupGuideActivity : Activity() {
             route != null && step != null -> {
                 words(content, when (step.surface) { "tv" -> "On your TV · use the remote"; "both" -> "Your TV + your phone"; else -> "On your phone" }, 15f, skin.accent, true)
                 words(content, step.instruction, 16f, bold = true)
+                if (index == 14 && route.id == "samsung_ok") action(content, "TV shows a PIN") { switchSamsungApproval("samsung_pin") }
+                if (index == 14 && route.id == "samsung_pin") action(content, "TV shows OK instead") { switchSamsungApproval("samsung_ok") }
+                if (route.id == "samsung_phone") action(content, "TV is missing — open pairing") { chooseRoute("samsung_ok") }
                 content.addView(if (route.id == "roku_network" || route.id == "roku_model") rokuIllustration(step, index + 1, route.id) else if (route.id == "philips_voice_remote" && index in 1..2) profileIllustration(step, index + 1) else illustration(step, index + 1, index + 1 in (tvScreenPictures[route.id] ?: emptySet())), LinearLayout.LayoutParams(-1, -2).apply { bottomMargin = dp(18) })
                 action(content, if (detailsExpanded) "Hide help" else "Need help?") { detailsExpanded = !detailsExpanded; render(true) }
                 if (detailsExpanded) {
@@ -256,9 +270,9 @@ class SetupGuideActivity : Activity() {
         backButton.text = if (mismatch) "Return to step" else "Back"
         nextButton.visibility = if (route != null && !mismatch) View.VISIBLE else View.GONE
         if (route != null && !mismatch) nextButton.text = if (index < 0) {
-            if (resumeIndex(route) == null) { if (route.id == "roku_phone") "Start part two" else "Start guide" } else "Resume guide"
+            if (resumeIndex(route) == null) { if (route.id in listOf("roku_phone", "samsung_phone")) "Start part two" else "Start guide" } else "Resume guide"
         } else if (index == route.steps.lastIndex) {
-            if (route.id == "voice") "Open Voice check" else if (route.id in listOf("roku_network", "roku_model")) "Finish part one" else if (route.id == "roku_phone") "Finish part two" else "Finish guide"
+            if (route.id == "voice") "Open Voice check" else if (route.id in listOf("roku_network", "roku_model")) "Finish part one" else if (route.id in listOf("roku_phone", "samsung_phone")) "Finish part two" else "Finish guide"
         } else "Next"
         scroll.post {
             // Ignore callbacks for a replaced step or an Activity that is closing.
@@ -288,6 +302,7 @@ class SetupGuideActivity : Activity() {
         words(content, if (route.id.startsWith("phone_")) "Have your phone and home Wi-Fi password ready." else if (route.id == "roku_phone") "Keep your phone and TV on the same Wi-Fi." else if (route.steps.first().surface == "tv") "Have your TV remote ready." else "Have your phone and TV ready.")
         words(content, "${route.steps.size} pictures. One step at a time.", 18f, skin.accent)
         words(content, route.appliesTo, 13f, skin.muted)
+        if (route.id == "samsung_phone") action(content, "TV is missing — open pairing") { chooseRoute("samsung_ok") }
         resumeIndex(route)?.let { saved -> words(content, "Continue at picture ${saved + 1}.", color = skin.accent) }
         action(content, if (detailsExpanded) "Hide help" else "Need help?") { detailsExpanded = !detailsExpanded; render(true) }
         if (detailsExpanded) {

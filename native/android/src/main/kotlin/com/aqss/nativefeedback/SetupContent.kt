@@ -5,7 +5,7 @@ data class SetupGroup(val id: String, val title: String, val routes: List<String
 data class SetupStep(val title: String, val instruction: String, val surface: String, val screen: String, val items: List<String>, val focus: Int, val action: String, val note: String)
 data class SetupRoute(val id: String, val title: String, val appliesTo: String, val models: List<String>, val sources: List<String>, val steps: List<SetupStep>)
 object SetupContent {
-    const val reviewedAt = "2026-10-06"
+    const val reviewedAt = "2026-10-25"
     val sources: List<SetupSource> = listOf(
         SetupSource("samsung_pair", "Samsung: add a TV to SmartThings", "https://www.samsung.com/us/support/answer/ANS10005262/"),
         SetupSource("samsung_assist", "Samsung: Google and Alexa account linking", "https://www.samsung.com/us/support/answer/ANS10006871/"),
@@ -44,7 +44,7 @@ object SetupContent {
         SetupSource("galaxy_wifi", "Samsung: Galaxy Wi-Fi menus (Canada)", "https://www.samsung.com/ca/support/mobile-devices/connect-your-samsung-galaxy-to-the-internet/"),
     )
     val groups: List<SetupGroup> = listOf(
-        SetupGroup("samsung", "Samsung", listOf("samsung_ok", "samsung_pin", "samsung_model_new", "samsung_model_old", "google_samsung", "samsung_alexa", "google_legacy", "google_legacy_add", "identify"), listOf("samsung_ok", "samsung_pin")),
+        SetupGroup("samsung", "Samsung", listOf("samsung_ok", "samsung_pin", "samsung_phone", "samsung_model_new", "samsung_model_old", "google_samsung", "samsung_alexa", "google_legacy", "google_legacy_add", "identify"), listOf("samsung_ok")),
         SetupGroup("lg", "LG", listOf("lg_pair", "lg_account5", "lg_account6", "lg_model_new", "lg_model_mid", "lg_model_2020", "lg_model_old", "google_lg", "lg_alexa", "google_legacy", "google_legacy_add", "identify"), listOf("lg_pair")),
         SetupGroup("sony", "Sony", listOf("google_remote", "sony_new", "sony_legacy", "google_setup", "google_fast", "identify"), listOf("google_remote")),
         SetupGroup("tcl", "TCL", listOf("roku_network", "roku_model", "tcl_models", "google_remote", "google_setup", "google_fast", "roku_alexa", "google_roku", "fire_alexa", "google_legacy", "google_legacy_add", "identify", "roku_phone"), listOf("roku_network", "google_remote")),
@@ -55,7 +55,7 @@ object SetupContent {
         SetupGroup("google", "Google Home", listOf("google_samsung", "google_lg", "google_roku", "google_vidaa", "google_vizio", "google_legacy", "google_legacy_add", "google_setup", "google_fast", "google_remote", "vidaa_google", "lg_account5", "lg_account6", "vizio_google"), listOf("google_samsung", "google_lg", "google_roku")),
         SetupGroup("alexa", "Amazon Alexa", listOf("samsung_alexa", "lg_alexa", "sony_new", "sony_legacy", "roku_alexa", "vidaa_alexa", "fire_alexa", "lg_account5", "lg_account6", "vizio_alexa"), listOf("samsung_alexa", "lg_alexa", "roku_alexa")),
         SetupGroup("both", "Google Home + Alexa", listOf("google_samsung", "google_lg", "google_roku", "google_vidaa", "google_vizio", "google_legacy", "google_legacy_add", "google_setup", "google_fast", "google_remote", "vidaa_google", "lg_account5", "lg_account6", "samsung_alexa", "lg_alexa", "sony_new", "sony_legacy", "roku_alexa", "vidaa_alexa", "vizio_assist", "fire_alexa", "vizio_google", "vizio_alexa"), listOf("google_samsung", "samsung_alexa", "google_roku")),
-        SetupGroup("neither", "Neither / not sure", listOf("identify", "samsung_ok", "lg_pair", "google_remote", "vizio_pair"), listOf("identify")),
+        SetupGroup("neither", "Neither / not sure", listOf("identify", "samsung_ok", "lg_pair", "google_remote", "vizio_pair", "samsung_pin"), listOf("identify")),
         SetupGroup("voice", "Voice check", listOf("voice"), listOf("voice")),
         SetupGroup("tcl_roku", "TCL • Roku TV", listOf("roku_network", "roku_model", "roku_alexa", "google_roku", "identify", "roku_phone"), listOf("roku_network")),
         SetupGroup("tcl_google", "TCL • Google TV / Android TV", listOf("tcl_models", "google_remote", "google_setup", "google_fast", "google_legacy", "google_legacy_add", "identify"), listOf("google_remote")),
@@ -89,8 +89,8 @@ object SetupContent {
             SetupStep("Find the model", "On the TV, select About This TV.", "tv", "Support", listOf("About This TV"), 0, "select", "Some Samsung menus use Contact Samsung instead. Follow the matching label on your TV; pause if neither is present."),
             SetupStep("Read the full model code", "Write down the full Model Code shown on your TV. Keep regional letters.", "tv", "About This TV", listOf("Model Code", "Software version"), 0, "check", "Some older TVs use Contact Samsung instead. A matching brand is not enough."),
         )),
-        SetupRoute("samsung_ok", "Samsung — TV shows OK approval", "Compatible Samsung SmartThings TVs. Both devices need the same Samsung account. Choose the approval screen your actual model displays.", listOf(), listOf("samsung_pair"), listOf(
-            SetupStep("Use the same home network", "Turn on the TV. Connect your phone to the same home Wi-Fi.", "both", "Wi-Fi", listOf("Phone + TV → same Wi-Fi"), 0, "check", "A network name or IP address alone does not identify or authorize a TV."),
+        SetupRoute("samsung_ok", "Samsung — connect with SmartThings", "Compatible Samsung SmartThings TVs. Use the same home Wi-Fi and Samsung account. Follow the request your TV actually displays.", listOf(), listOf("samsung_pair"), listOf(
+            SetupStep("Use the same home network", "Turn on the TV. Connect the TV and this phone to the same home Wi-Fi.", "both", "Wi-Fi", listOf("Phone + TV → same Wi-Fi"), 0, "check", "Use the TV’s Network settings first, then connect the phone. If your menu differs, open Need help and the official reference."),
             SetupStep("Install SmartThings", "Open your phone’s app store. Find the official SmartThings app and install it. If already installed, continue.", "phone", "App Store or Google Play", listOf("Search", "SmartThings", "Install"), 2, "tap", "Check that this is the official app from the TV or app maker. Use your real phone for any download or account approval."),
             SetupStep("Use the official account screen", "Sign in to SmartThings with the same Samsung account used on your TV.", "phone", "SmartThings", listOf("Account", "Sign in"), 1, "type", "Enter passwords only in the official app or its sign-in page, never in this guide."),
             SetupStep("Open Devices", "In SmartThings, tap Devices.", "phone", "SmartThings", listOf("Favorites", "Devices", "Life"), 1, "tap", "Use your real device. This picture is an illustration."),
@@ -100,16 +100,16 @@ object SetupContent {
             SetupStep("Browse device types", "Select By device type.", "phone", "Add device", listOf("By device type"), 0, "tap", "Use your real device. This picture is an illustration."),
             SetupStep("Choose TV", "Select TV in the device types.", "phone", "By device type", listOf("TV"), 0, "tap", "Use your real device. This picture is an illustration."),
             SetupStep("Choose Samsung", "Select Samsung as the maker.", "phone", "TV brands", listOf("Samsung"), 0, "tap", "Use your real device. This picture is an illustration."),
-            SetupStep("Open Samsung TV setup", "Select TV.", "phone", "Samsung devices", listOf("TV"), 0, "tap", "Use your real device. This picture is an illustration."),
+            SetupStep("Confirm the TV category", "Under Samsung devices, select TV again.", "phone", "Samsung devices", listOf("TV"), 0, "tap", "The first TV choice selected a device type. This second choice opens Samsung’s TV setup."),
             SetupStep("Begin setup", "Tap Start.", "phone", "Samsung TV", listOf("Start"), 0, "tap", "Use your real device. This picture is an illustration."),
             SetupStep("Choose the room", "Choose the TV’s room and continue.", "phone", "Location and room", listOf("Room", "Next"), 1, "tap", "Use your real device. This picture is an illustration."),
             SetupStep("Select your actual TV", "Choose the TV that matches the one in front of you.", "phone", "Available TVs", listOf("Your Samsung TV"), 0, "tap", "If several TVs look alike, stop and confirm the device before approval."),
-            SetupStep("Approve on the television", "Read the request on your TV. Select OK only for the phone you are pairing.", "tv", "Connection request", listOf("Cancel", "OK"), 1, "select", "No request appeared? Do not assume approval. Check the official guide."),
+            SetupStep("Approve on the television", "Read the request on your TV. Select OK for your phone. If the TV displays a PIN, choose TV shows a PIN below.", "tv", "Connection request", listOf("Cancel", "OK"), 1, "select", "Approve only the phone you are pairing. No request? Use My screen looks different; do not assume approval."),
             SetupStep("Finish in SmartThings", "Give the TV a recognizable name, then tap Done.", "phone", "Name TV", listOf("TV name", "Done"), 1, "tap", "Use your real device. This picture is an illustration."),
             SetupStep("Check the actual result", "Look in SmartThings for your TV. If it is missing, use “My screen looks different”.", "phone", "SmartThings", listOf("Your TV appears", "TV missing? Get help"), 0, "check", "Finishing this guide does not connect Audio Bodyguard or activate protection."),
         )),
-        SetupRoute("samsung_pin", "Samsung — TV shows a PIN", "Compatible Samsung SmartThings TVs. Both devices need the same Samsung account. Choose the approval screen your actual model displays.", listOf(), listOf("samsung_pair"), listOf(
-            SetupStep("Use the same home network", "Turn on the TV. Connect your phone to the same home Wi-Fi.", "both", "Wi-Fi", listOf("Phone + TV → same Wi-Fi"), 0, "check", "A network name or IP address alone does not identify or authorize a TV."),
+        SetupRoute("samsung_pin", "Samsung — TV shows a PIN", "Compatible Samsung SmartThings TVs. Use the same home Wi-Fi and Samsung account. Follow the request your TV actually displays.", listOf(), listOf("samsung_pair"), listOf(
+            SetupStep("Use the same home network", "Turn on the TV. Connect the TV and this phone to the same home Wi-Fi.", "both", "Wi-Fi", listOf("Phone + TV → same Wi-Fi"), 0, "check", "Use the TV’s Network settings first, then connect the phone. If your menu differs, open Need help and the official reference."),
             SetupStep("Install SmartThings", "Open your phone’s app store. Find the official SmartThings app and install it. If already installed, continue.", "phone", "App Store or Google Play", listOf("Search", "SmartThings", "Install"), 2, "tap", "Check that this is the official app from the TV or app maker. Use your real phone for any download or account approval."),
             SetupStep("Use the official account screen", "Sign in to SmartThings with the same Samsung account used on your TV.", "phone", "SmartThings", listOf("Account", "Sign in"), 1, "type", "Enter passwords only in the official app or its sign-in page, never in this guide."),
             SetupStep("Open Devices", "In SmartThings, tap Devices.", "phone", "SmartThings", listOf("Favorites", "Devices", "Life"), 1, "tap", "Use your real device. This picture is an illustration."),
@@ -119,14 +119,21 @@ object SetupContent {
             SetupStep("Browse device types", "Select By device type.", "phone", "Add device", listOf("By device type"), 0, "tap", "Use your real device. This picture is an illustration."),
             SetupStep("Choose TV", "Select TV in the device types.", "phone", "By device type", listOf("TV"), 0, "tap", "Use your real device. This picture is an illustration."),
             SetupStep("Choose Samsung", "Select Samsung as the maker.", "phone", "TV brands", listOf("Samsung"), 0, "tap", "Use your real device. This picture is an illustration."),
-            SetupStep("Open Samsung TV setup", "Select TV.", "phone", "Samsung devices", listOf("TV"), 0, "tap", "Use your real device. This picture is an illustration."),
+            SetupStep("Confirm the TV category", "Under Samsung devices, select TV again.", "phone", "Samsung devices", listOf("TV"), 0, "tap", "The first TV choice selected a device type. This second choice opens Samsung’s TV setup."),
             SetupStep("Begin setup", "Tap Start.", "phone", "Samsung TV", listOf("Start"), 0, "tap", "Use your real device. This picture is an illustration."),
             SetupStep("Choose the room", "Choose the TV’s room and continue.", "phone", "Location and room", listOf("Room", "Next"), 1, "tap", "Use your real device. This picture is an illustration."),
             SetupStep("Select your actual TV", "Choose the TV that matches the one in front of you.", "phone", "Available TVs", listOf("Your Samsung TV"), 0, "tap", "If several TVs look alike, stop and confirm the device before approval."),
-            SetupStep("Read the TV PIN", "Leave the PIN displayed on your real TV.", "tv", "Pairing PIN", listOf("TV PIN: ••••"), 0, "check", "Dots stand for your private TV code; this picture has no working PIN."),
-            SetupStep("Enter the TV PIN", "Type the same PIN into SmartThings and continue.", "phone", "Pair Samsung TV", listOf("Enter TV PIN"), 0, "type", "Use your real device. This picture is an illustration."),
+            SetupStep("Read the TV PIN", "Read the PIN on your actual TV. This picture does not contain a PIN.", "tv", "Pairing PIN", listOf("Your TV PIN"), 0, "check", "Use every digit shown on your TV. The illustration assumes no code length and contains no working PIN."),
+            SetupStep("Enter the TV PIN", "In SmartThings on your phone, enter the complete PIN shown on your TV.", "phone", "Pair Samsung TV", listOf("Enter TV PIN"), 0, "type", "Use your real device. This picture is an illustration."),
             SetupStep("Finish in SmartThings", "Give the TV a recognizable name, then tap Done.", "phone", "Name TV", listOf("TV name", "Done"), 1, "tap", "Use your real device. This picture is an illustration."),
             SetupStep("Check the actual result", "Look in SmartThings for your TV. If it is missing, use “My screen looks different”.", "phone", "SmartThings", listOf("Your TV appears", "TV missing? Get help"), 0, "check", "Finishing this guide does not connect Audio Bodyguard or activate protection."),
+        )),
+        SetupRoute("samsung_phone", "2. Check Samsung on your phone", "Use after adding the TV in SmartThings. Check the existing TV without repeating pairing. This does not connect Audio Bodyguard.", listOf(), listOf("samsung_pair"), listOf(
+            SetupStep("Open SmartThings", "On the phone you used for TV setup, open SmartThings.", "phone", "Your phone", listOf("SmartThings"), 0, "tap", "Use the official SmartThings app. If you have not added the TV, use the pairing help."),
+            SetupStep("Open your devices", "In SmartThings, open Devices.", "phone", "SmartThings", listOf("Favorites", "Devices", "Life"), 1, "tap", "The tab may be labelled Device in some app versions."),
+            SetupStep("Choose the same home", "Choose the location where you added your Samsung TV.", "phone", "Devices", listOf("Home / location"), 0, "tap", "Use the same Samsung account and location from TV setup."),
+            SetupStep("Find the TV you added", "Select the TV you added in the first setup guide.", "phone", "Your devices", listOf("Your Samsung TV"), 0, "tap", "If the TV is missing, return to this guide’s introduction and choose TV is missing — open pairing."),
+            SetupStep("Check the phone controls", "Check that SmartThings shows controls for that TV. Return to Audio Bodyguard to finish these pictures.", "phone", "SmartThings TV controls", listOf("TV controls"), 0, "check", "Controls in SmartThings do not establish an Audio Bodyguard connection or active audio protection."),
         )),
         SetupRoute("lg_model_new", "LG — model information (webOS 23+)", "Follow only if your webOS version and menu labels match.", listOf(), listOf("lg_model"), listOf(
             SetupStep("Find TV information", "Press the Settings (gear) button on the remote.", "tv", "TV home", listOf("Settings"), 0, "settings", "Use your real device. This picture is an illustration."),

@@ -11,8 +11,8 @@ android {
         applicationId = "com.aqss.bodyguard.prototype"
         minSdk = 26
         targetSdk = 36
-        versionCode = 32
-        versionName = "0.32-output-inventory"
+        versionCode = 33
+        versionName = "0.32.1-samsung-setup"
     }
 
     buildTypes {

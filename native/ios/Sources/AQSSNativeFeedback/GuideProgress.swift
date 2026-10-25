@@ -29,7 +29,7 @@ public struct AQSSGuideProgress: Equatable, Sendable {
               ["connectionPlan", "connectionCheck"].contains(expectedTarget),
               (AQSSTutorialContent.pictureContinueRoutes.contains(routeID) ||
                (expectedTarget == "connectionPlan" && ["roku_network", "roku_model"].contains(routeID))),
-              routeID != "roku_phone" || expectedTarget == "connectionCheck" else { return false }
+              !["roku_phone", "samsung_phone"].contains(routeID) || expectedTarget == "connectionCheck" else { return false }
         return next()
     }
     public mutating func back() { if index > 0 { index -= 1 } }

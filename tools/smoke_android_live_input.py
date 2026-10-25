@@ -35,6 +35,7 @@ def _visible_share_target(root):
 
 def main():
     parser = argparse.ArgumentParser()
+    parser.add_argument("--samsung-setup-only", action="store_true")
     parser.add_argument("--apk", default="native/android/app/build/outputs/apk/liveInput/app-liveInput.apk")
     parser.add_argument("--package", default="com.aqss.bodyguard.prototype.liveinput")
     parser.add_argument("--probe-apk", default="native/android/uiprobe/build/outputs/apk/debug/uiprobe-debug.apk")
@@ -329,6 +330,90 @@ def main():
     version, build = versions[0].strip(), builds[0]
     (out / "installed-build-identity.json").write_text(
         json.dumps({"application_id": package, "version": version, "build": build}, sort_keys=True))
+    if args.samsung_setup_only:
+        def tap_scroll(label, name):
+            for attempt in range(8):
+                root, clicked = screen(f"{name}-{attempt}", click=label)
+                if clicked:
+                    return
+                scroll_meter(f"{name}-scroll-{attempt}", down=True)
+            raise AssertionError(f"Samsung setup target unavailable: {label}")
+
+        def open_samsung(name):
+            tap_scroll("Illustrated setup guides", name + "_guides")
+            tap_scroll("Samsung", name + "_brand")
+
+        tap("Devices", "samsung_devices")
+        open_samsung("samsung_first")
+        intro = wait_for("Samsung — connect with SmartThings", "samsung_single_intro")
+        assert not has(intro, "TV shows a PIN"), "Do not predict the TV request at the entry screen"
+        tap("Start guide", "samsung_start")
+        for number in range(14):
+            tap("Next", f"samsung_prefix_{number}")
+        wait_for_all(("Step 15 of 17", "Approve on the television"), "samsung_ok_request")
+        screenshot("samsung_ok_request")
+        tap_scroll("TV shows a PIN", "samsung_switch_pin")
+        wait_for_all(("Step 15 of 18", "Read the TV PIN", "On your TV"), "samsung_tv_pin")
+        screenshot("samsung_tv_pin")
+        adb("shell", "input", "keyevent", "KEYCODE_BACK")
+        wait_for_all(("Step 15 of 17", "Approve on the television"), "samsung_branch_back")
+        tap_scroll("TV shows a PIN", "samsung_switch_pin_again")
+        tap("Next", "samsung_pin_phone")
+        wait_for_all(("Step 16 of 18", "Enter the TV PIN", "On your phone"), "samsung_phone_pin")
+        screenshot("samsung_phone_pin")
+        adb("shell", "settings", "put", "system", "accelerometer_rotation", "0")
+        adb("shell", "settings", "put", "system", "user_rotation", "1")
+        wait_for_all(("Step 16 of 18", "Enter the TV PIN"), "samsung_pin_rotated")
+        adb("shell", "settings", "put", "system", "user_rotation", "0")
+        wait_for("Enter the TV PIN", "samsung_pin_portrait")
+        tap("Close", "samsung_close_pin")
+        open_samsung("samsung_reopen_pin")
+        wait_for("Continue at picture 16.", "samsung_pin_resume_intro")
+        tap("Resume guide", "samsung_resume_pin")
+        wait_for("Enter the TV PIN", "samsung_resumed_phone_pin")
+        tap("Next", "samsung_name"); tap("Next", "samsung_result")
+        wait_for("Check the actual result", "samsung_pin_result")
+        tap("Finish guide", "samsung_pin_finish")
+        wait_for("No qualified device connected", "samsung_pin_finished_unknown")
+        open_samsung("samsung_cleared")
+        root = wait_for_all(("Samsung — connect with SmartThings", "Start guide"), "samsung_pairing_bookmark_cleared")
+        assert not has(root, "Continue at picture"), "Completing the variant must clear the shared pairing bookmark"
+        tap("Close", "samsung_close_cleared")
+        tap("Home", "samsung_home")
+        tap_scroll("Back to Tutorial", "samsung_resume_tutorial")
+        tap("Start picture setup", "samsung_begin_tutorial")
+        tap_scroll("Samsung", "samsung_choose_tv"); tap("Next", "samsung_choose_home_step")
+        tap_scroll("Neither", "samsung_no_assistant"); tap("Next", "samsung_plan")
+        tap_scroll("Show Samsung steps", "samsung_pair_from_tutorial")
+        tap("Start guide", "samsung_ok_start")
+        for number in range(14):
+            tap("Next", f"samsung_ok_prefix_{number}")
+        wait_for("Approve on the television", "samsung_ok_actual_request")
+        tap("Next", "samsung_ok_name"); tap("Next", "samsung_ok_result")
+        tap("Finish guide", "samsung_ok_finish")
+        wait_for("Step 5 of 6", "samsung_phone_part")
+        tap_scroll("Phone pictures", "samsung_phone_pictures")
+        wait_for_all(("2. Check Samsung on your phone", "TV is missing — open pairing"), "samsung_phone_intro")
+        tap_scroll("TV is missing — open pairing", "samsung_missing_help")
+        wait_for("Samsung — connect with SmartThings", "samsung_missing_pairing_intro")
+        tap("Back", "samsung_missing_back")
+        wait_for("2. Check Samsung on your phone", "samsung_missing_returns_to_phone_intro")
+        tap("Start part two", "samsung_phone_begin")
+        for number in range(4):
+            tap("Next", f"samsung_phone_check_{number}")
+        wait_for("Check the phone controls", "samsung_phone_controls")
+        screenshot("samsung_phone_controls")
+        tap("Finish part two", "samsung_phone_finish")
+        wait_for("Step 6 of 6", "samsung_both_parts_complete")
+        tap("Exit tutorial", "samsung_exit")
+        wait_for("Connection not verified", "samsung_still_unknown")
+        record = {"source_commit": os.environ.get("GITHUB_SHA"), "workflow_run_id": os.environ.get("GITHUB_RUN_ID"),
+                  "version": version, "build": build, "scope": "native emulator guide navigation, no physical pairing",
+                  "checks": ["single entry", "OK/PIN choice at request", "PIN Back", "PIN rotation", "PIN resume", "pairing bookmark cleared", "OK completion", "Samsung phone companion", "missing TV help and Back", "both tutorial parts", "connection remains unverified"]}
+        (out / "samsung-setup-observed.json").write_text(json.dumps(record, indent=2))
+        print("SAMSUNG_SETUP_EMULATOR_OBSERVED " + json.dumps(record, sort_keys=True), flush=True)
+        return
+
     review_insights_recaps("insights_recaps_empty", ("No completed sound checks in this app session.",), return_sound=False, report=True)
     tap("Recent sound checks", "insights_recaps_reopen_empty")
     wait_for("No completed sound checks in this app session.", "insights_recaps_reopened_empty")

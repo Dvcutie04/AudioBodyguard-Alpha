@@ -1360,10 +1360,42 @@ final class AQSSReadOnlyUITests: XCTestCase {
         tab("home", app); label("Connection not verified", app)
     }
 
+    func testSamsungPinChoiceBackAndResumeStayAtTheApproval() {
+        let app = launch()
+        tab("devices", app); tap("Illustrated setup guides", app); tap("Samsung", app)
+        label("Samsung — connect with SmartThings", app)
+        XCTAssertFalse(app.buttons["setup-samsung-pin"].exists)
+        if app.buttons["setup-next"].label == "Resume guide" {
+            tap("Need help?", app); tap("Start from the beginning", app)
+        } else { app.buttons["setup-next"].tap() }
+        for _ in 0..<14 { app.buttons["setup-next"].tap() }
+        label("Approve on the television", app)
+        tap("TV shows a PIN", app); label("Step 15 of 18", app)
+        label("Read the TV PIN", app); screenshot("Samsung PIN shown on TV", app)
+        app.buttons["setup-back"].tap()
+        label("Step 15 of 17", app); label("Approve on the television", app)
+        tap("TV shows a PIN", app); app.buttons["setup-next"].tap()
+        label("Step 16 of 18", app); label("Enter the TV PIN", app)
+        screenshot("Samsung PIN entered on phone", app)
+        app.buttons["setup-close"].tap()
+        tap("Illustrated setup guides", app); tap("Samsung", app)
+        label("Continue at picture 16.", app)
+        XCTAssertEqual(app.buttons["setup-next"].label, "Resume guide")
+        app.buttons["setup-next"].tap(); label("Enter the TV PIN", app)
+        app.buttons["setup-next"].tap(); app.buttons["setup-next"].tap()
+        label("Check the actual result", app); app.buttons["setup-next"].tap()
+        label("No qualified device connected", app)
+        tap("Illustrated setup guides", app); tap("Samsung", app)
+        label("Samsung — connect with SmartThings", app)
+        XCTAssertEqual(app.buttons["setup-next"].label, "Start guide")
+        app.buttons["setup-close"].tap(); tab("home", app)
+        label("Connection not verified", app)
+    }
+
     func testIllustratedApprovalFinishesWithoutClaimingConnection() {
         let app = launch()
         tab("devices", app); tap("Illustrated setup guides", app); tap("Samsung", app)
-        tap("Samsung — TV shows OK approval", app); app.buttons["setup-next"].tap()
+        label("Samsung — connect with SmartThings", app); app.buttons["setup-next"].tap()
         XCTAssertFalse(app.staticTexts["Use your real device. This picture is an illustration."].exists)
         XCTAssertFalse(app.staticTexts.containing(NSPredicate(format: "label CONTAINS %@", "Illustrations may differ from your screen")).firstMatch.exists)
         for _ in 0..<14 { app.buttons["setup-next"].tap() }
@@ -1386,9 +1418,9 @@ final class AQSSReadOnlyUITests: XCTestCase {
     func testFinishedPairingPicturesAdvanceLocallyAndCloseKeepsThePhoneStep() {
         let app = launch(true)
         next(app); tap("Samsung", app); next(app); tap("Neither", app); next(app)
-        tap("Show Samsung steps", app); tap("Samsung — TV shows OK approval", app)
+        tap("Show Samsung steps", app); label("Samsung — connect with SmartThings", app)
         app.buttons["setup-close"].tap(); label("Step 4 of 6", app)
-        tap("Show Samsung steps", app); tap("Samsung — TV shows OK approval", app)
+        tap("Show Samsung steps", app); label("Samsung — connect with SmartThings", app)
         app.buttons["setup-next"].tap()
         for _ in 0..<16 { app.buttons["setup-next"].tap() }
         label("Check the actual result", app)
@@ -1402,6 +1434,9 @@ final class AQSSReadOnlyUITests: XCTestCase {
         tap("Hide help", app)
         screenshot("Picture completion continues to phone setup", app)
         tap("Phone pictures", app)
+        label("2. Check Samsung on your phone", app)
+        XCTAssertTrue(app.buttons["setup-samsung-pairing-help"].exists)
+        tap("Need help?", app); tap("Phone Wi-Fi pictures", app)
         label("iPhone — connect to your home Wi-Fi", app)
         XCTAssertFalse(app.buttons["setup-route-phone_pixel"].exists)
         XCTAssertFalse(app.buttons["setup-route-phone_galaxy"].exists)
@@ -1415,11 +1450,17 @@ final class AQSSReadOnlyUITests: XCTestCase {
         app.buttons["setup-next"].tap()
         label("Step 5 of 6", app)
         tap("Need help?", app)
-        tap("Show Samsung steps", app); tap("Samsung — TV shows OK approval", app)
+        tap("Show Samsung steps", app); label("Samsung — connect with SmartThings", app)
         app.buttons["setup-close"].tap(); label("Step 5 of 6", app)
         XCTAssertTrue(app.buttons["setup-from-samsung"].exists)
         tap("Hide help", app)
         XCTAssertFalse(app.buttons["setup-from-samsung"].exists)
+        tap("Phone pictures", app); label("2. Check Samsung on your phone", app)
+        app.buttons["setup-next"].tap(); label("Step 1 of 5", app)
+        for _ in 0..<4 { app.buttons["setup-next"].tap() }
+        label("Check the phone controls", app)
+        screenshot("Samsung phone part checks existing SmartThings pairing", app)
+        app.buttons["setup-next"].tap(); label("Step 6 of 6", app)
         exit(app); label("Connection not verified", app)
     }
 
@@ -1508,7 +1549,7 @@ final class AQSSReadOnlyUITests: XCTestCase {
         exit(app); XCTAssertTrue(app.buttons["page-picker"].isHittable)
         app.buttons["page-back"].tap(); label("DEVICES", app)
         tap("Illustrated setup guides", app); tap("Samsung", app)
-        tap("Samsung — TV shows OK approval", app); app.buttons["setup-next"].tap()
+        label("Samsung — connect with SmartThings", app); app.buttons["setup-next"].tap()
         label("Step 1 of 17", app)
         XCTAssertTrue(app.buttons["setup-close"].isHittable)
         XCTAssertTrue(app.buttons["setup-next"].isHittable)

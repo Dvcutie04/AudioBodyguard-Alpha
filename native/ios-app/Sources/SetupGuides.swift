@@ -103,6 +103,15 @@ struct SetupGuidesView: View {
                             Label(step.surface == "tv" ? "On your TV · use the remote" : step.surface == "both" ? "Your TV + your phone" : "On your phone", systemImage: step.surface == "phone" ? "iphone" : "tv")
                                 .font(.subheadline.weight(.semibold)).foregroundColor(theme.accent)
                             Text(step.instruction).font(.body.weight(.medium)).fixedSize(horizontal: false, vertical: true)
+                            if index == 14 && route.id == "samsung_ok" {
+                                control("TV shows a PIN", icon: "number", id: "setup-samsung-pin") { switchSamsungApproval("samsung_pin") }
+                            }
+                            if index == 14 && route.id == "samsung_pin" {
+                                control("TV shows OK instead", icon: "checkmark", id: "setup-samsung-ok") { switchSamsungApproval("samsung_ok") }
+                            }
+                            if route.id == "samsung_phone" {
+                                control("TV is missing — open pairing", icon: "tv", id: "setup-samsung-pairing-help") { chooseRoute("samsung_ok") }
+                            }
                             if route.id == "roku_network" || route.id == "roku_model" {
                                 RokuMenuIllustration(step: step, number: index + 1, routeID: route.id, theme: theme)
                             } else if route.id == "philips_voice_remote" && [1, 2].contains(index) {
@@ -158,16 +167,17 @@ struct SetupGuidesView: View {
             .onAppear {
                 if !initialized {
                     initialized = true
-                    if initialGroup == "phone", let tv = AQSSSetupContent.groups.first(where: { $0.id == deviceGroup }),
+                    if initialGroup == "phone", deviceGroup == "samsung" {
+                        chooseGroup("samsung", recording: false); routeID = "samsung_phone"
+                    } else if initialGroup == "phone", let tv = AQSSSetupContent.groups.first(where: { $0.id == deviceGroup }),
                        tv.routes.contains("roku_phone"), !tv.primaryRoutes.isEmpty,
                        tv.primaryRoutes.allSatisfy({ ["roku_network", "roku_model"].contains($0) }) {
                         chooseGroup(tv.id, recording: false); routeID = "roku_phone"
                     } else { chooseGroup(initialGroup, recording: false) }
                 }
             }
-            .onChange(of: index) { value in
-                if let route = route, route.id != "voice", route.steps.indices.contains(value) { writeProgress(route.id, value) }
-            }
+            .onChange(of: index) { _ in recordCurrentProgress() }
+            .onChange(of: routeID) { _ in recordCurrentProgress() }
     }
 
     private func platformChoice(_ title: String, subtitle: String, group: String, blue: Bool) -> some View {
@@ -190,7 +200,22 @@ struct SetupGuidesView: View {
         history.append(Location(group: groupID, route: routeID, index: index, mismatch: mismatch, details: detailsExpanded, picker: pickerExpanded, references: referencesExpanded))
     }
     private func chooseRoute(_ id: String) {
-        remember(); routeID = id; index = -1; mismatch = false; detailsExpanded = false; referencesExpanded = false
+        remember(); routeID = id == "samsung_ok" ? samsungStartingRoute() : id; index = -1; mismatch = false; detailsExpanded = false; referencesExpanded = false
+    }
+    private func samsungStartingRoute() -> String { progress.resumeIndex("samsung_pin") != nil ? "samsung_pin" : "samsung_ok" }
+    private func recordCurrentProgress() {
+        guard let route = route, route.id != "voice", route.steps.indices.contains(index), !mismatch else { return }
+        if ["samsung_ok", "samsung_pin"].contains(route.id) {
+            writeProgress(route.id == "samsung_ok" ? "samsung_pin" : "samsung_ok", nil)
+        }
+        writeProgress(route.id, index)
+    }
+    private func switchSamsungApproval(_ id: String) {
+        guard !mismatch, index == 14, let routeID = routeID,
+              ["samsung_ok", "samsung_pin"].contains(routeID),
+              ["samsung_ok", "samsung_pin"].contains(id), id != routeID,
+              group?.routes.contains(id) == true else { return }
+        remember(); self.routeID = id; detailsExpanded = false; referencesExpanded = false
     }
     private func chooseGroup(_ id: String, recording: Bool = true) {
         if recording { remember() }
@@ -202,7 +227,7 @@ struct SetupGuidesView: View {
         pickerExpanded = false
         referencesExpanded = false
         if routeID == nil, platforms.isEmpty, let primary = group?.primaryRoutes, primary.count == 1 {
-            routeID = primary[0]
+            routeID = groupID == "samsung" ? samsungStartingRoute() : primary[0]
         }
         if !["", "google", "alexa", "both", "neither", "phone", "voice"].contains(groupID) { onDeviceGroupSelected?(groupID) }
     }
@@ -228,6 +253,9 @@ struct SetupGuidesView: View {
         Text(route.id.hasPrefix("phone_") ? "Have your phone and home Wi-Fi password ready." : route.id == "roku_phone" ? "Keep your phone and TV on the same Wi-Fi." : route.steps.first?.surface == "tv" ? "Have your TV remote ready." : "Have your phone and TV ready.").font(.body)
         Text("\(route.steps.count) pictures. One step at a time.").foregroundColor(theme.accent)
         Text(route.appliesTo).font(.caption).foregroundColor(theme.muted)
+        if route.id == "samsung_phone" {
+            control("TV is missing — open pairing", icon: "tv", id: "setup-samsung-pairing-help") { chooseRoute("samsung_ok") }
+        }
         if let saved = resumeIndex(route) { Text("Continue at picture \(saved + 1).").foregroundColor(theme.accent) }
         disclosure("Need help?", id: "setup-details") { detailsExpanded.toggle() }
         if detailsExpanded {
@@ -307,7 +335,7 @@ struct SetupGuidesView: View {
                         dismiss()
                     } else { remember(); index = index < 0 ? resumeIndex(route) ?? 0 : index + 1; detailsExpanded = false; referencesExpanded = false }
                 } label: {
-                    navigationLabel(index < 0 ? (resumeIndex(route) == nil ? (route.id == "roku_phone" ? "Start part two" : "Start guide") : "Resume guide") : index == route.steps.count - 1 ? (route.id == "voice" && onVoiceCheck != nil ? "Open Voice check" : ["roku_network", "roku_model"].contains(route.id) ? "Finish part one" : route.id == "roku_phone" ? "Finish part two" : "Finish guide") : "Next", icon: index == route.steps.count - 1 ? (route.id == "voice" && onVoiceCheck != nil ? "mic" : "checkmark") : "arrow.right")
+                    navigationLabel(index < 0 ? (resumeIndex(route) == nil ? (["roku_phone", "samsung_phone"].contains(route.id) ? "Start part two" : "Start guide") : "Resume guide") : index == route.steps.count - 1 ? (route.id == "voice" && onVoiceCheck != nil ? "Open Voice check" : ["roku_network", "roku_model"].contains(route.id) ? "Finish part one" : ["roku_phone", "samsung_phone"].contains(route.id) ? "Finish part two" : "Finish guide") : "Next", icon: index == route.steps.count - 1 ? (route.id == "voice" && onVoiceCheck != nil ? "mic" : "checkmark") : "arrow.right")
                         .frame(maxWidth: .infinity, minHeight: 44)
                 }.buttonStyle(AppButtonStyle(theme: theme, primary: true)).accessibilityIdentifier("setup-next")
             }
