@@ -340,7 +340,7 @@ def main():
             raise AssertionError(f"Samsung setup target unavailable: {label}")
 
         def open_samsung(name):
-            tap_scroll("Illustrated setup guides", name + "_guides")
+            tap_scroll("Illustrated setup guides. TV pairing, Google Home & Alexa · one picture at a time", name + "_guides")
             tap_scroll("Samsung", name + "_brand")
 
         tap("Devices", "samsung_devices")
