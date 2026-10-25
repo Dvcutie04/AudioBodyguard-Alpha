@@ -4,6 +4,36 @@
 
 The researched first experiment is an AQSS-owned Linux playback service with one specifically named ALSA PCM resource and an independent capture of its selected physical output. This is a lab candidate, not a mandatory customer accessory or a claim that consumer TV controls can be made equivalent. iPhone/iOS and Android remain equal product targets for later native qualification.
 
+## Available equipment update — October 24, 2026
+
+The owner answered the computer-versus-phones question with **two phones**.
+The earlier October 17 account identifies one Android and one iPhone; this
+update confirms the phone-only constraint without rechecking their models,
+OS builds, routes or network state. A computer is outside the reported setup.
+No purchase is required by this record.
+
+The recovered September 24–25
+`AQSS_N2_Owned_Output_Lab_Research_2026-09-24.md`, section 5, explicitly
+allows an owned iOS or Android lab path when only phones are available,
+with a refresh of that exact backend's details and the same measurement
+obligations. Linux/ALSA remains a historical candidate rather than a
+prerequisite for this owner's next step.
+
+The next research package is an owned mobile-output experiment. Android is
+the first candidate to review because its test APK is already deliverable;
+iPhone remains an equal product target, with signed installation separately
+pending. Review app-owned playback and bounded stopping, lifecycle/route
+changes, residual buffers, trace retention and the second phone's possible
+observer role before choosing an API or implementing an adapter. No test
+signal or live endpoint is started by this plan.
+
+Two phones establish availability only. Their exact current builds, output
+route, acquisition configuration, calibration and clock relationship remain
+unknown. A second phone's microphone reading cannot by itself establish
+calibrated output, end-to-end latency, containment or TV control. N2b–N5 stay
+pending. The roadmap requires the owner's switch to **6 Astra Max** and
+confirmation before the new substantive mobile-backend research begins.
+
 ## Available TV observations — October 18, 2026
 
 User-supplied photographs confirm a VIZIO **V505M-K09** and these visible
@@ -47,16 +77,16 @@ unverified and leaves N2b–N5 pending.
 
 | Field | Actual lab value / evidence |
 | --- | --- |
-| Owner, date, host OS/kernel/build, compiler, ALSA library and driver versions | Unknown |
+| Owner, date, host OS/kernel/build, compiler, chosen backend library and driver versions | Two phones reported October 24; Android/iPhone identified in the earlier October 17 account. Exact current mobile builds/backend unknown; no computer in the reported setup. |
 | Output device make/model/firmware and exact physical route, mixer and PCM device name | Unknown |
 | Input/output negotiated format, channels, sample rate, periods/buffer sizes, write mode, conversion/plugins | Unknown |
-| Separate capture interface, loopback/acoustic path, calibration and capture clock provenance | Unknown |
+| Separate capture interface, loopback/acoustic path, calibration and capture clock provenance | Second phone available; acquisition path, calibration and clock provenance unknown. |
 | Exclusive owner process, service start/stop, process identity and one authoritative admission/hold cut | Unknown |
 | Background jobs, callbacks, ramps, queued descendants, native buffers and inherited route ownership | Unknown |
 | Monotonic clock epochs, trace storage bound, crash recovery and tamper/rollback protection | Unknown |
 | Privacy/consent for capture, safe volume and secure test environment | Unknown |
 
-Do not acquire access to a live home endpoint or schedule a potentially disruptive playback trial from an empty form. The user can supply an existing lab host and capture arrangement later; no purchase is assumed.
+Do not acquire access to a live home endpoint or schedule a potentially disruptive playback trial from an incomplete form. Inventory the available mobile path and capture arrangement under the research refresh; no purchase is assumed. The Linux-specific API examples below describe the historical candidate and must not be treated as a mobile implementation contract.
 
 ## Separate event levels and failure traces
 

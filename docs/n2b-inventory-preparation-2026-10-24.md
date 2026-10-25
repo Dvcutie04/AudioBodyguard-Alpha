@@ -2,9 +2,12 @@
 
 The next physical engineering gate remains the inventory of an actual owned
 output path. The existing [qualification record](n2b-lab-qualification-record.md)
-defines that inventory and the later trials. No computer/OS, output resource or
-independent capture setup has been supplied for the Linux lab candidate. Older
-TV connector and phone-input observations do not fill those fields.
+defines that inventory and the later trials. The owner has now confirmed two
+phones as the available setup. The earlier account identifies Android and
+iPhone; an actual mobile output resource and independent capture setup remain
+unselected. The next research package reviews an owned mobile path under the
+existing charter. Older TV connector and phone-input observations do not fill
+those fields.
 
 This increment adds a private JSON inventory template and a local checker for
 the eight existing inventory rows. It implements the existing protocol without
@@ -38,9 +41,11 @@ check the content against the qualification record.
 | `continuity` | Monotonic clock epochs, bounded trace storage, crash recovery and tamper/rollback protection |
 | `consent` | Capture consent, safe test volume and secure test environment |
 
-The first information needed from the owner is the available computer and OS,
-the output device/route, and any separate capture interface or recorder. Use
-existing equipment; no purchase or particular customer accessory is assumed.
+The owner has supplied the initial availability answer: two phones, with no
+computer in the reported setup. The next inventory needs their current OS
+builds, the proposed owned output route and the other phone's possible capture
+configuration. Use existing equipment; no purchase or particular customer
+accessory is assumed.
 Leave negotiation and implementation observations unknown until they can be
 observed. Record a constraint rather than inventing a compatible configuration.
 
@@ -95,7 +100,9 @@ path containment, symlink rejection, read bounds and the unverified result.
 They contain no real hardware observations. Source-bound execution results
 belong to the draft PR for this increment.
 
-Next, obtain the actual host/output/capture inventory and review its evidence.
-The roadmap requires a research refresh under the existing charter before a
-new OS/driver adapter, followed by independent physical measurements. Signed
-iPhone distribution separately still needs the owner's Apple setup.
+Next, refresh the exact owned-mobile backend and acquisition questions, then
+complete and review the actual phone/output/capture inventory. The roadmap
+requires the owner's switch to 6 Astra Max and confirmation before that new
+substantive research. A new OS/driver adapter and independent physical
+measurements follow separately. Signed iPhone distribution still needs the
+owner's Apple setup.

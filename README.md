@@ -84,8 +84,10 @@ Valid quoting still works within the existing raw-capture limits.
 The [N2b inventory preparation](docs/n2b-inventory-preparation-2026-10-24.md)
 adds a private template and checker for the existing host, output route,
 independent capture and related protocol inventory. It checks bounded local
-evidence hashes while keeping every physical gate pending. Actual equipment
-details remain missing; the mobile app stays at 0.31 and this step has no new APK.
+evidence hashes while keeping every physical gate pending. The owner has now
+confirmed two phones; the next research package reviews an owned mobile-output
+path. Exact backend/route/capture details remain pending. The mobile app stays
+at 0.31 and this step has no new APK.
 
 The [internal TestFlight preparation](docs/testflight-beta-preparation.md)
 automates checks on an exact reviewed source revision and provides a manually
