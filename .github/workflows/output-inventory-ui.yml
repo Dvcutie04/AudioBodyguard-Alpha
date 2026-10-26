@@ -28,7 +28,23 @@ jobs:
         with:
           gradle-version: "8.13"
       - uses: android-actions/setup-android@v4
-      - name: Compile the unchanged app and the callback regression probe
+      - name: Record exact verification source
+        run: |
+          python3 - <<'PYTHON'
+          import json, os, pathlib, subprocess
+          source = subprocess.check_output(['git', 'rev-parse', 'HEAD'], text=True).strip()
+          assert source == os.environ['GITHUB_SHA']
+          output = pathlib.Path('artifacts/ui/android-live-input')
+          output.mkdir(parents=True, exist_ok=True)
+          (output / 'source-identity.json').write_text(json.dumps({
+              'source_commit': source,
+              'source_tree': subprocess.check_output(['git', 'rev-parse', 'HEAD^{tree}'], text=True).strip(),
+              'workflow_run_id': os.environ['GITHUB_RUN_ID'],
+              'workflow_attempt': os.environ['GITHUB_RUN_ATTEMPT'],
+              'scope': 'Synthetic device callbacks and native lifecycle; no physical disconnect qualification'
+          }, indent=2) + '\n')
+          PYTHON
+      - name: Compile app and callback regression probe
         run: |
           sdkmanager "platforms;android-36"
           gradle -p native/android :app:assembleLiveInput :uiprobe:assembleDebug :sharereceiver:assembleDebug
