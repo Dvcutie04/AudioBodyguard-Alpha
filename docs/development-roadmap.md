@@ -6,6 +6,14 @@ Checkpoint: October 24, 2026. Continue from the restored a-Shell baseline and th
 
 ## Current checkpoint
 
+October 25 output freshness repair: [0.32.2 review](output-inventory-freshness-2026-10-25.md)
+withdraws displayed Android output advertisements when a relevant device-change
+notice arrives. Refresh remains explicit. Pause retires the callback before
+unregistering, and old callbacks cannot alter a later foreground snapshot.
+No playback, route selection, microphone access, export or physical verification
+is added. Samsung guidance remains included and iPhone source stays at 0.32.1.
+Actual source-bound red/green tests and installer identity belong to the draft PR.
+
 October 25 Samsung setup repair: [0.32.1 review](samsung-setup-review-2026-10-25.md)
 starts one SmartThings guide, moves the PIN alternative to the actual approval
 step, and sends the phone part to a check of the existing SmartThings TV.

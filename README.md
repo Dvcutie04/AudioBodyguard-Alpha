@@ -96,6 +96,12 @@ capabilities. The details clear when leaving. No sound is played, and actual
 playback route and negotiated format remain unknown. The iPhone app remains
 at 0.31; its signed installation and all physical output gates stay pending.
 
+The [0.32.2 output freshness repair](docs/output-inventory-freshness-2026-10-25.md)
+withdraws displayed Android inventory rows when an output-change notice arrives.
+Tap **Refresh outputs** to read again. Background visits retire their listener,
+so late old callbacks cannot alter a newer snapshot. The Samsung setup repair
+from 0.32.1 stays included; iPhone source remains 0.32.1.
+
 The [internal TestFlight preparation](docs/testflight-beta-preparation.md)
 automates checks on an exact reviewed source revision and provides a manually
 requested signing/upload lane after Apple account and signing setup. It does

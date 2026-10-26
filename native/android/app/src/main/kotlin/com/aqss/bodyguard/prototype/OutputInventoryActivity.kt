@@ -1,11 +1,14 @@
 package com.aqss.bodyguard.prototype
 
 import android.app.Activity
+import android.media.AudioDeviceCallback
 import android.media.AudioDeviceInfo
 import android.media.AudioFormat
 import android.media.AudioManager
 import android.os.Build
 import android.os.Bundle
+import android.os.Handler
+import android.os.Looper
 import android.view.WindowInsets
 import android.widget.Button
 import android.widget.LinearLayout
@@ -13,12 +16,26 @@ import android.widget.ScrollView
 import android.widget.TextView
 import com.aqss.nativefeedback.OutputDeviceAdvertisement
 import com.aqss.nativefeedback.OutputDeviceInventory
+import java.lang.ref.WeakReference
 
 /** Available OS metadata only. Never opens a stream or requests audio focus. */
 class OutputInventoryActivity : Activity() {
     private lateinit var skin: InterfaceTheme
     private lateinit var results: TextView
     private var visible = false
+    private var hasSnapshot = false
+    private var deviceCallback: AudioDeviceCallback? = null
+    private var callbackManager: AudioManager? = null
+
+    private class DeviceChanges(owner: OutputInventoryActivity) : AudioDeviceCallback() {
+        private val owner = WeakReference(owner)
+        override fun onAudioDevicesAdded(addedDevices: Array<out AudioDeviceInfo>) {
+            owner.get()?.invalidateOutputs(this, addedDevices)
+        }
+        override fun onAudioDevicesRemoved(removedDevices: Array<out AudioDeviceInfo>) {
+            owner.get()?.invalidateOutputs(this, removedDevices)
+        }
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         val dark = intent.getBooleanExtra("dark", true)
@@ -47,7 +64,7 @@ class OutputInventoryActivity : Activity() {
         words("${Build.MANUFACTURER.take(64)} ${Build.MODEL.take(64)}\nAndroid ${Build.VERSION.RELEASE.take(64)} · API ${Build.VERSION.SDK_INT}", 15f)
         words("Selected playback route: Unknown\nNegotiated format: Unknown", 18f)
         words("Available outputs can change. Listed capabilities do not identify an active route or prove a working connection.", 15f)
-        results = words("Not read yet. Tap Refresh outputs.", 16f)
+        results = words(IDLE, 16f)
         words("This screen plays no sound and uses no microphone. Details stay on this screen and clear when you leave. It cannot verify TV control or audio protection.", 15f)
         root.addView(ScrollView(this).apply { addView(column) }, LinearLayout.LayoutParams(-1, 0, 1f))
         root.addView(Button(this).apply {
@@ -67,16 +84,56 @@ class OutputInventoryActivity : Activity() {
 
     override fun onResume() {
         super.onResume(); visible = true
-        results.text = "Not read yet. Tap Refresh outputs."
+        hasSnapshot = false; results.text = IDLE
+        registerNotices()
     }
 
     override fun onPause() {
-        visible = false; results.text = "Not read yet. Tap Refresh outputs."
+        visible = false; hasSnapshot = false; results.text = IDLE
+        unregisterNotices()
         super.onPause()
+    }
+
+    override fun onDestroy() {
+        unregisterNotices()
+        super.onDestroy()
+    }
+
+    private fun registerNotices() {
+        val manager = try { getSystemService(AUDIO_SERVICE) as? AudioManager }
+            catch (_: RuntimeException) { null } ?: return
+        val callback = DeviceChanges(this)
+        try {
+            manager.registerAudioDeviceCallback(callback, Handler(Looper.getMainLooper()))
+            callbackManager = manager; deviceCallback = callback
+        } catch (_: RuntimeException) {
+            // A partially registered observer must never gain UI authority.
+            runCatching { manager.unregisterAudioDeviceCallback(callback) }
+        }
+    }
+
+    private fun unregisterNotices() {
+        val callback = deviceCallback
+        val manager = callbackManager
+        // Retire before cleanup: an already queued notice may still arrive.
+        deviceCallback = null; callbackManager = null
+        if (callback != null && manager != null) {
+            runCatching { manager.unregisterAudioDeviceCallback(callback) }
+        }
+    }
+
+    private fun invalidateOutputs(source: AudioDeviceCallback, devices: Array<out AudioDeviceInfo>) {
+        if (!visible || deviceCallback !== source || !hasSnapshot || isFinishing || isDestroyed) return
+        // Oversized notices invalidate conservatively without scanning an
+        // unbounded list. No descriptor, name, address or ID is retained.
+        if (devices.size <= OutputDeviceInventory.MAX_DEVICES && devices.none { it.isSink }) return
+        hasSnapshot = false
+        results.text = "Output list needs a fresh check. Tap Refresh outputs."
     }
 
     private fun refreshOutputs() {
         if (!visible || !hasWindowFocus() || isFinishing || isDestroyed) return
+        hasSnapshot = false
         results.text = try {
             val manager = getSystemService(AUDIO_SERVICE) as? AudioManager
                 ?: throw IllegalStateException("Audio service unavailable")
@@ -103,8 +160,9 @@ class OutputInventoryActivity : Activity() {
                     append("\nAdvertised channel counts: ${device.channelCountsText}")
                     append("\nAdvertised encodings: ${device.encodingsText}")
                 }
+                if (deviceCallback == null) append("\n\nAutomatic change notices unavailable.")
                 append("\n\nSnapshot only. Tap Refresh outputs to read again.")
-            }
+            }.also { hasSnapshot = true }
         } catch (_: RuntimeException) {
             "Output inventory unavailable. Tap Refresh outputs to try again.\nNo output route has been verified."
         }
@@ -134,5 +192,9 @@ class OutputInventoryActivity : Activity() {
         AudioFormat.ENCODING_PCM_16BIT -> "PCM 16-bit"
         AudioFormat.ENCODING_PCM_FLOAT -> "PCM float"
         else -> "Other encoding ($value)"
+    }
+
+    companion object {
+        private const val IDLE = "Not read yet. Tap Refresh outputs."
     }
 }
