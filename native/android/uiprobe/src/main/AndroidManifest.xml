@@ -6,4 +6,5 @@
     <instrumentation android:name=".CameraCaptureProbe" android:targetPackage="com.aqss.bodyguard.prototype.liveinput" />
     <instrumentation android:name=".PhotoDeadlineProbe" android:targetPackage="com.aqss.bodyguard.prototype.liveinput" />
     <instrumentation android:name=".VoicePermissionProbe" android:targetPackage="com.aqss.bodyguard.prototype.liveinput" />
+    <instrumentation android:name=".OutputInventoryProbe" android:targetPackage="com.aqss.bodyguard.prototype.liveinput" />
 </manifest>

@@ -36,6 +36,7 @@ def _visible_share_target(root):
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--samsung-setup-only", action="store_true")
+    parser.add_argument("--output-inventory-only", action="store_true")
     parser.add_argument("--apk", default="native/android/app/build/outputs/apk/liveInput/app-liveInput.apk")
     parser.add_argument("--package", default="com.aqss.bodyguard.prototype.liveinput")
     parser.add_argument("--probe-apk", default="native/android/uiprobe/build/outputs/apk/debug/uiprobe-debug.apk")
@@ -330,6 +331,22 @@ def main():
     version, build = versions[0].strip(), builds[0]
     (out / "installed-build-identity.json").write_text(
         json.dumps({"application_id": package, "version": version, "build": build}, sort_keys=True))
+    def check_output_freshness():
+        observation = adb("shell", "am", "instrument", "-w",
+                          "com.aqss.bodyguard.uiprobe/.OutputInventoryProbe", timeout=90).decode()
+        (out / "output-inventory-callbacks.txt").write_text(observation)
+        assert "INSTRUMENTATION_RESULT: output_inventory=passed:" in observation, observation
+        for name in ("output-freshness-read", "output-freshness-removed",
+                     "output-freshness-added", "output-freshness-resumed"):
+            (out / f"{name}.png").write_bytes(adb("exec-out", "run-as", package, "cat", f"files/{name}.png"))
+            adb("shell", "run-as", package, "rm", f"files/{name}.png")
+        permission = adb("shell", "dumpsys", "package", package).decode()
+        assert "android.permission.RECORD_AUDIO: granted=false" in permission, "Inventory must not request microphone access"
+        print("OUTPUT_FRESHNESS_OBSERVED: synthetic callback invalidation and native lifecycle passed; no physical disconnect or routing claim", flush=True)
+
+    if args.output_inventory_only:
+        check_output_freshness()
+        return
     if args.samsung_setup_only:
         def tap_scroll(label, name):
             for attempt in range(8):
@@ -714,6 +731,10 @@ def main():
     wait_for("Not read yet. Tap Refresh outputs.", "output_inventory_reopened_empty")
     tap("Back", "output_inventory_close_again")
     print("OUTPUT_INVENTORY_OBSERVED: explicit metadata refresh, route/format unknown, microphone permission unrequested, background/resume clears snapshot, Back/reopen clears snapshot; no playback or physical qualification", flush=True)
+    check_output_freshness()
+    launch()
+    wait_for("Connection not verified", "output_probe_returned_home")
+    tap("Sound", "sound_after_output_probe")
     tap("Live sound check. Try the phone microphone for 30 seconds", "open_check")
     idle_meter = wait_for("Microphone off", "microphone_off")
     assert not has(idle_meter, "Open app settings"), "Permission shortcut appeared before an attempted request"
