@@ -23,6 +23,9 @@ public final class BuildDetailsShareReceiver extends Activity {
             observed.put("action", input.getAction());
             observed.put("type", input.getType());
             observed.put("text", input.getStringExtra(Intent.EXTRA_TEXT));
+            java.util.List<String> keys = input.getExtras() == null ? new java.util.ArrayList<>() : new java.util.ArrayList<>(input.getExtras().keySet());
+            java.util.Collections.sort(keys);
+            observed.put("extra_keys", new JSONArray(keys));
             observed.put("has_stream", input.hasExtra(Intent.EXTRA_STREAM));
             observed.put("data", input.getData() == null ? JSONObject.NULL : input.getData().toString());
             JSONArray clips = new JSONArray();

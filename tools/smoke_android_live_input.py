@@ -37,6 +37,7 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--samsung-setup-only", action="store_true")
     parser.add_argument("--output-inventory-only", action="store_true")
+    parser.add_argument("--output-report-only", action="store_true")
     parser.add_argument("--tv-guides-only", action="store_true")
     parser.add_argument("--apk", default="native/android/app/build/outputs/apk/liveInput/app-liveInput.apk")
     parser.add_argument("--package", default="com.aqss.bodyguard.prototype.liveinput")
@@ -332,6 +333,108 @@ def main():
     version, build = versions[0].strip(), builds[0]
     (out / "installed-build-identity.json").write_text(
         json.dumps({"application_id": package, "version": version, "build": build}, sort_keys=True))
+    def check_output_report():
+        receiver = "com.aqss.bodyguard.sharetest"
+        receipt_path = "files/shared-build-details.json"
+
+        def review_button(root):
+            return next((n for n in root.iter("node") if n.get("text") == "Review output report"), None)
+
+        def preview_text(root):
+            rows = [n.get("text", "") for n in root.iter("node")
+                    if n.get("text", "").startswith("Audio Bodyguard output inventory (v1)\n")]
+            assert len(rows) == 1, "Require one complete native report preview"
+            return rows[0]
+
+        tap("Sound", "output_report_sound")
+        tap("Output inventory. Check this phone’s available audio outputs", "output_report_open")
+        idle = wait_for("Not read yet. Tap Refresh outputs.", "output_report_idle")
+        button = review_button(idle)
+        assert button is not None, "Output inventory has no Review output report control"
+        assert button.get("enabled") == "false", "Review must be disabled without a successful read"
+        tap("Refresh outputs", "output_report_refresh")
+        actual = wait_for("Advertised sample rates:", "output_report_snapshot")
+        button = review_button(actual)
+        assert button is not None and button.get("enabled") == "true"
+        tap("Review output report", "output_report_review")
+        root = wait_for_all(("Review output report", "Share output report",
+                            "Snapshot only. Outputs may have changed."), "output_report_preview")
+        assert not has(root, "Build details test"), "Review alone must not launch sharing"
+        reviewed = preview_text(root)
+        metadata = f"Audio Bodyguard\nPlatform: Android\nVersion: {version}\nBuild: {build}"
+        assert metadata in reviewed
+        for text in ("Phone:", "Android:", "Selected playback route: Unknown", "Negotiated format: Unknown",
+                     "Independent output capture: Not recorded", "Physical output and protection: Not verified"):
+            assert text in reviewed, text
+        assert len(reviewed) <= 24 * 1024 and len(reviewed.encode()) <= 48 * 1024
+        assert "Recent sound checks" not in reviewed and "Recognized words" not in reviewed
+        (out / "output-report-reviewed.txt").write_text(reviewed)
+        screenshot("output_report_preview")
+        tap("Back", "output_report_preview_back")
+        back = wait_for_all(("Output inventory", "Snapshot only."), "output_report_back_to_inventory")
+        assert review_button(back).get("enabled") == "true", "Closing review must preserve an unchanged live inventory"
+        tap("Review output report", "output_report_review_again")
+        assert preview_text(wait_for("Share output report", "output_report_same_review")) == reviewed
+
+        # The native chooser must require a user choice and preserve the exact
+        # reviewed payload through Cancel and an isolated receiver handoff.
+        before = None
+        try:
+            before = adb("shell", "run-as", receiver, "cat", receipt_path)
+        except subprocess.CalledProcessError:
+            pass
+        tap("Share output report", "output_report_share_cancel")
+        chooser = wait_for("Build details test", "output_report_chooser_cancel")
+        assert any(n.get("package") == "com.android.intentresolver" for n in chooser.iter("node"))
+        screenshot("output_report_native_chooser")
+        adb("shell", "input", "keyevent", "KEYCODE_BACK")
+        returned = wait_for("Share output report", "output_report_cancel_return")
+        assert preview_text(returned) == reviewed
+        share = next(n for n in returned.iter("node") if n.get("text") == "Share output report")
+        assert share.get("enabled") == "true", "Cancel must leave a fresh explicit Share available"
+        if before is not None:
+            assert adb("shell", "run-as", receiver, "cat", receipt_path) == before, "Cancel must not deliver a new payload"
+        tap("Share output report", "output_report_share_receiver")
+        wait_for("Build details test", "output_report_chooser_receiver")
+        select_share_receiver("output_report_select_receiver")
+        wait_for("Build details received for test", "output_report_received")
+        raw = adb("shell", "run-as", receiver, "cat", receipt_path)
+        received = json.loads(raw.decode())
+        assert received["action"] == "android.intent.action.SEND" and received["type"] == "text/plain"
+        assert received["text"] == reviewed and received["data"] is None and received["has_stream"] is False
+        assert received["extra_keys"] == ["android.intent.extra.TEXT"], received["extra_keys"]
+        assert all(c["text"] == reviewed and c["uri"] is None and c["has_intent"] is False for c in received["clips"])
+        (out / "output-report-share-receipt.json").write_text(json.dumps(received, sort_keys=True))
+        # The test receiver is a ScrollView; its Return control can be below a
+        # long payload. Native Back returns to the same reviewed report.
+        adb("shell", "input", "keyevent", "KEYCODE_BACK")
+        root = wait_for("Share output report", "output_report_receiver_return")
+        assert preview_text(root) == reviewed
+        screenshot("output_report_receiver_return")
+        tap("Back", "output_report_close_review")
+        idle = wait_for("Not read yet. Tap Refresh outputs.", "output_report_after_share")
+        assert review_button(idle).get("enabled") == "false"
+        tap("Refresh outputs", "output_report_fresh_read")
+        wait_for("Snapshot only.", "output_report_refreshed")
+        tap("Review output report", "output_report_background_review")
+        wait_for("Share output report", "output_report_before_background")
+        adb("shell", "input", "keyevent", "KEYCODE_HOME")
+        launch()
+        root = wait_for("Share output report", "output_report_background_return")
+        # An open review remains a labelled historical copy. It is not a new
+        # inventory read, active route or negotiated-format observation.
+        assert "Snapshot only. Outputs may have changed." in preview_text(root)
+        tap("Back", "output_report_background_close")
+        idle = wait_for("Not read yet. Tap Refresh outputs.", "output_report_background_inventory_cleared")
+        assert review_button(idle).get("enabled") == "false"
+        tap("Back", "output_report_inventory_back")
+        wait_for("Live sound check", "output_report_back_in_sound")
+        permission = adb("shell", "dumpsys", "package", package).decode()
+        assert "android.permission.RECORD_AUDIO: granted=false" in permission, "Report must not request microphone permission"
+        tap("Home", "output_report_home")
+        wait_for("Connection not verified", "output_report_still_unverified")
+        print("OUTPUT_REPORT_OBSERVED: disabled-before-read, explicit immutable preview, Back preserves unchanged inventory, native Cancel and exact text-only receiver handoff, review return and background clearing; no microphone, playback or physical qualification", flush=True)
+
     def check_output_freshness():
         observation = adb("shell", "am", "instrument", "-w",
                           "com.aqss.bodyguard.uiprobe/.OutputInventoryProbe", timeout=90).decode()
@@ -345,6 +448,9 @@ def main():
         assert "android.permission.RECORD_AUDIO: granted=false" in permission, "Inventory must not request microphone access"
         print("OUTPUT_FRESHNESS_OBSERVED: synthetic callback invalidation and native lifecycle passed; no physical disconnect or routing claim", flush=True)
 
+    if args.output_report_only:
+        check_output_report()
+        return
     if args.tv_guides_only:
         def guide_tap(label, name):
             for attempt in range(8):
@@ -904,6 +1010,7 @@ def main():
     wait_for("Not read yet. Tap Refresh outputs.", "output_inventory_reopened_empty")
     tap("Back", "output_inventory_close_again")
     print("OUTPUT_INVENTORY_OBSERVED: explicit metadata refresh, route/format unknown, microphone permission unrequested, background/resume clears snapshot, Back/reopen clears snapshot; no playback or physical qualification", flush=True)
+    check_output_report()
     check_output_freshness()
     launch()
     wait_for("Connection not verified", "output_probe_returned_home")
