@@ -11,8 +11,8 @@ android {
         applicationId = "com.aqss.bodyguard.prototype"
         minSdk = 26
         targetSdk = 36
-        versionCode = 35
-        versionName = "0.32.3-tv-guide-clarity"
+        versionCode = 36
+        versionName = "0.33-output-report"
     }
 
     buildTypes {
