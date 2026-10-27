@@ -36,11 +36,6 @@ class SetupGuideActivity : Activity() {
             "Finishing this guide does not connect Audio Bodyguard or activate protection.",
             "Use the numbered highlight on your real device. This illustration does not confirm a connection to Audio Bodyguard."
         )
-        private val tvScreenPictures = mapOf(
-            "google_fast" to setOf(4), "sony_new" to setOf(5, 10),
-            "vizio_walmart" to setOf(3, 5), "vizio_account" to setOf(7),
-            "fire_setup" to setOf(5, 6)
-        )
     }
     private lateinit var skin: InterfaceTheme
     private lateinit var root: LinearLayout
@@ -101,20 +96,21 @@ class SetupGuideActivity : Activity() {
             .takeIf { id -> SetupContent.groups.any { it.id == id } } ?: ""
         selectedSystem = savedInstanceState?.getString(SELECTED_SYSTEM) ?: intent.getStringExtra("deviceGroup")
         val companion = if (savedInstanceState == null && groupId == "phone") SetupContent.groups.firstOrNull {
-            it.id == selectedSystem && (it.id == "samsung" || ("roku_phone" in it.routes && it.primaryRoutes.isNotEmpty() && it.primaryRoutes.all { route -> route in listOf("roku_network", "roku_model") }))
+            it.id == selectedSystem && it.phoneRoute != null
         } else null
         if (companion != null) groupId = companion.id
-        routeId = if (savedInstanceState == null) { if (companion != null) { if (companion.id == "samsung") "samsung_phone" else "roku_phone" } else startingRoute() } else savedInstanceState.getString("route")?.takeIf { group?.routes?.contains(it) == true }
+        routeId = if (savedInstanceState == null) { companion?.phoneRoute ?: startingRoute() } else savedInstanceState.getString("route")?.takeIf { group?.routes?.contains(it) == true }
         completedTVRoute = savedInstanceState?.getString("completedTVRoute")?.takeIf { it in listOf("roku_network", "roku_model") }
         completedTVRoute?.let { setResult(RESULT_OK, Intent().putExtra(COMPLETED_TV_ROUTE, it)) }
         index = if (savedInstanceState == null && groupId == "voice") 0 else (savedInstanceState?.getInt("index", -1) ?: -1).takeIf { it == -1 || route?.steps?.indices?.contains(it) == true } ?: -1
+        if (savedInstanceState != null && !compatibleLocation(savedInstanceState)) index = -1
         mismatch = savedInstanceState?.getBoolean("mismatch", false) ?: false
         detailsExpanded = savedInstanceState?.getBoolean("details") ?: false
         pickerExpanded = savedInstanceState?.getBoolean("picker") ?: false
         referencesExpanded = savedInstanceState?.getBoolean("references") ?: false
         @Suppress("DEPRECATION")
         val savedHistory = savedInstanceState?.getParcelableArrayList<Bundle>("setupHistory")
-        savedHistory?.takeLast(100)?.let { history.addAll(it) }
+        savedHistory?.takeLast(100)?.filter { compatibleLocation(it) }?.let { history.addAll(it) }
         root = column().apply { setBackgroundColor(skin.background) }
         header = column().apply { setPadding(dp(16), dp(12), dp(16), dp(12)); setBackgroundColor(skin.surface) }
         content = column().apply { setPadding(dp(20), dp(20), dp(20), dp(20)) }
@@ -175,7 +171,13 @@ class SetupGuideActivity : Activity() {
     }
     private fun location() = Bundle().apply {
         putString("group", groupId); putString("route", routeId); putInt("index", index); putBoolean("mismatch", mismatch)
+        putString("guideBookmarkID", route?.bookmarkID)
         putBoolean("details", detailsExpanded); putBoolean("picker", pickerExpanded); putBoolean("references", referencesExpanded)
+    }
+    private fun compatibleLocation(saved: Bundle): Boolean {
+        val id = saved.getString("route") ?: return true
+        val guide = SetupContent.routes.firstOrNull { it.id == id } ?: return false
+        return guide.progressVersion == 1 || saved.getString("guideBookmarkID") == guide.bookmarkID
     }
     private fun remember() {
         if (history.size >= 100) history.removeFirst()
@@ -189,13 +191,28 @@ class SetupGuideActivity : Activity() {
         if (mismatch || index != 14 || routeId !in listOf("samsung_ok", "samsung_pin") || id !in listOf("samsung_ok", "samsung_pin") || id == routeId || group?.routes?.contains(id) != true) return
         remember(); routeId = id; detailsExpanded = false; referencesExpanded = false; render()
     }
-    private fun resumeIndex(route: SetupRoute): Int? = getSharedPreferences("aqss-presentation", MODE_PRIVATE).getInt("setup-progress-${route.id}", -1).takeIf { route.id != "voice" && it in route.steps.indices }
+    private fun isPhonePart(route: SetupRoute) = SetupContent.groups.any { it.phoneRoute == route.id }
+    private fun pairingHelp(route: SetupRoute) {
+        route.pairingRoute?.takeIf { group?.routes?.contains(it) == true }?.let { target ->
+            action(content, if (route.id == "samsung_phone") "TV is missing — open pairing" else "Open pairing pictures") { chooseRoute(target) }
+        }
+    }
+    private fun manualHelp(route: SetupRoute) {
+        if (route.id in listOf("google_setup", "google_fast", "tcl_models") && group?.routes?.contains("google_manual") == true) {
+            action(content, "Use the TV remote instead") { chooseRoute("google_manual") }
+        }
+    }
+    private fun skipTo(id: String, from: Int, to: Int) {
+        if (mismatch || routeId != id || index != from || route?.steps?.indices?.contains(to) != true || to <= from) return
+        remember(); index = to; detailsExpanded = false; referencesExpanded = false; render()
+    }
+    private fun resumeIndex(route: SetupRoute): Int? = getSharedPreferences("aqss-presentation", MODE_PRIVATE).getInt("setup-progress-${route.bookmarkID}", -1).takeIf { route.id != "voice" && it in route.steps.indices }
     private fun saveProgress(route: SetupRoute, value: Int?) {
         if (value != null && resumeIndex(route) == value) return
         val preferences = getSharedPreferences("aqss-presentation", MODE_PRIVATE)
-        if (value == null && !preferences.contains("setup-progress-${route.id}")) return
+        if (value == null && !preferences.contains("setup-progress-${route.bookmarkID}")) return
         val edit = preferences.edit()
-        if (value == null) edit.remove("setup-progress-${route.id}") else edit.putInt("setup-progress-${route.id}", value)
+        if (value == null) edit.remove("setup-progress-${route.bookmarkID}") else edit.putInt("setup-progress-${route.bookmarkID}", value)
         edit.apply()
     }
     private fun render(preserveScroll: Boolean = false) {
@@ -222,14 +239,18 @@ class SetupGuideActivity : Activity() {
         when {
             mismatch -> mismatchContent(route)
             route != null && step != null -> {
-                words(content, when (step.surface) { "tv" -> "On your TV · use the remote"; "both" -> "Your TV + your phone"; else -> "On your phone" }, 15f, skin.accent, true)
+                words(content, if (step.pictureKind == "remote") "On your TV remote" else when (step.surface) { "tv" -> "On your TV · use the remote"; "both" -> "Your TV + your phone"; else -> "On your phone" }, 15f, skin.accent, true)
                 words(content, step.instruction, 16f, bold = true)
                 if (index == 14 && route.id == "samsung_ok") action(content, "TV shows a PIN") { switchSamsungApproval("samsung_pin") }
                 if (index == 14 && route.id == "samsung_pin") action(content, "TV shows OK instead") { switchSamsungApproval("samsung_ok") }
-                if (route.id == "samsung_phone") action(content, "TV is missing — open pairing") { chooseRoute("samsung_ok") }
-                content.addView(if (route.id == "roku_network" || route.id == "roku_model") rokuIllustration(step, index + 1, route.id) else if (route.id == "philips_voice_remote" && index in 1..2) profileIllustration(step, index + 1) else illustration(step, index + 1, index + 1 in (tvScreenPictures[route.id] ?: emptySet())), LinearLayout.LayoutParams(-1, -2).apply { bottomMargin = dp(18) })
+                pairingHelp(route)
+                if (route.id == "philips_voice_remote" && index == 4) action(content, "Remote already connected") { skipTo(route.id, 4, 9) }
+                if (route.id == "philips_voice_remote" && index == 5) action(content, "Light is not blinking") { skipTo(route.id, 5, 6) }
+                if (route.id == "fire_setup" && index in 5..6) action(content, "Account sign-in finished") { skipTo(route.id, index, 7) }
+                content.addView(if (route.id == "roku_network" || route.id == "roku_model") rokuIllustration(step, index + 1, route.id) else if (route.id == "philips_voice_remote" && index in 1..2) profileIllustration(step, index + 1) else if (step.pictureKind == "remote") remoteIllustration(step, index + 1) else illustration(step, index + 1), LinearLayout.LayoutParams(-1, -2).apply { bottomMargin = dp(18) })
                 action(content, if (detailsExpanded) "Hide help" else "Need help?") { detailsExpanded = !detailsExpanded; render(true) }
                 if (detailsExpanded) {
+                    manualHelp(route)
                     if (step.note !in repeatedPictureNotes) words(content, step.note, color = skin.muted)
                     action(content, "My screen looks different") { remember(); mismatch = true; detailsExpanded = false; referencesExpanded = false; render() }
                     action(content, if (referencesExpanded) "Hide reference links" else "Reference links") { referencesExpanded = !referencesExpanded; render(true) }
@@ -270,10 +291,10 @@ class SetupGuideActivity : Activity() {
         backButton.text = if (mismatch) "Return to step" else "Back"
         nextButton.visibility = if (route != null && !mismatch) View.VISIBLE else View.GONE
         if (route != null && !mismatch) nextButton.text = if (index < 0) {
-            if (resumeIndex(route) == null) { if (route.id in listOf("roku_phone", "samsung_phone")) "Start part two" else "Start guide" } else "Resume guide"
+            if (resumeIndex(route) == null) { if (isPhonePart(route)) "Start part two" else "Start guide" } else "Resume guide"
         } else if (index == route.steps.lastIndex) {
-            if (route.id == "voice") "Open Voice check" else if (route.id in listOf("roku_network", "roku_model")) "Finish part one" else if (route.id in listOf("roku_phone", "samsung_phone")) "Finish part two" else "Finish guide"
-        } else "Next"
+            if (route.id == "voice") "Open Voice check" else if (route.id in listOf("roku_network", "roku_model")) "Finish part one" else if (isPhonePart(route)) "Finish part two" else "Finish guide"
+        } else if (route.id == "philips_voice_remote" && index == 4) "Pair this remote" else if (route.id == "philips_voice_remote" && index == 5) "Light is blinking" else "Next"
         scroll.post {
             // Ignore callbacks for a replaced step or an Activity that is closing.
             if (version == renderVersion && !isFinishing && !isDestroyed) {
@@ -296,16 +317,17 @@ class SetupGuideActivity : Activity() {
             saveProgress(route, null)
             if (route.id != "voice") setResult(RESULT_OK, resultPayload().putExtra(COMPLETED_ROUTE, route.id))
             finish()
-        } else { remember(); index = if (index < 0) resumeIndex(route) ?: 0 else index + 1; detailsExpanded = false; referencesExpanded = false; render() }
+        } else { remember(); index = if (index < 0) resumeIndex(route) ?: 0 else if (route.id == "philips_voice_remote" && index == 5) 7 else index + 1; detailsExpanded = false; referencesExpanded = false; render() }
     }
     private fun intro(route: SetupRoute) {
         words(content, if (route.id.startsWith("phone_")) "Have your phone and home Wi-Fi password ready." else if (route.id == "roku_phone") "Keep your phone and TV on the same Wi-Fi." else if (route.steps.first().surface == "tv") "Have your TV remote ready." else "Have your phone and TV ready.")
         words(content, "${route.steps.size} pictures. One step at a time.", 18f, skin.accent)
         words(content, route.appliesTo, 13f, skin.muted)
-        if (route.id == "samsung_phone") action(content, "TV is missing — open pairing") { chooseRoute("samsung_ok") }
+        pairingHelp(route)
         resumeIndex(route)?.let { saved -> words(content, "Continue at picture ${saved + 1}.", color = skin.accent) }
         action(content, if (detailsExpanded) "Hide help" else "Need help?") { detailsExpanded = !detailsExpanded; render(true) }
         if (detailsExpanded) {
+            manualHelp(route)
             if (!route.id.startsWith("phone_")) action(content, "Phone Wi-Fi pictures") { chooseGroup("phone") }
             if ((group?.routes?.size ?: 0) > 1) action(content, "Other setup options") {
                 remember(); routeId = null; index = -1; mismatch = false; detailsExpanded = false; pickerExpanded = true; referencesExpanded = false; render()
@@ -400,35 +422,56 @@ class SetupGuideActivity : Activity() {
         return box
     }
 
-    private fun illustration(step: SetupStep, number: Int, showsTVScreen: Boolean): View {
-        val screenOnTV = step.surface == "tv" || showsTVScreen
+    private fun remoteIllustration(step: SetupStep, number: Int): View {
+        val box = column().apply {
+            setPadding(dp(14), dp(14), dp(14), dp(14)); background = skin.shape(skin.raised, 22)
+            contentDescription = "Illustration $number. TV remote. Highlighted: ${step.focusLabel}. Action: ${step.action}. ${step.instruction}"
+            importantForAccessibility = View.IMPORTANT_FOR_ACCESSIBILITY_YES
+        }
+        words(box, "Illustration · TV remote", 13f, skin.muted)
+        val buttons = step.focusLabel.split(" + ")
+        words(box, "$number → " + if (buttons.size > 1) "Hold both buttons together" else step.focusLabel, 17f, skin.accent, true)
+        val remote = column().apply { setPadding(dp(18), dp(18), dp(18), dp(18)); background = skin.shape(skin.surface, 28, true); importantForAccessibility = View.IMPORTANT_FOR_ACCESSIBILITY_NO_HIDE_DESCENDANTS }
+        buttons.forEach { label -> remote.addView(TextView(this).apply {
+            text = label; textSize = 17f; gravity = Gravity.CENTER; setTypeface(null, Typeface.BOLD)
+            setTextColor(skin.controlText); setPadding(dp(8), dp(18), dp(8), dp(18)); background = skin.shape(skin.control, 12)
+        }, LinearLayout.LayoutParams(-1, -2).apply { bottomMargin = dp(18) }) }
+        box.addView(remote, LinearLayout.LayoutParams(dp(220), -2).apply { gravity = Gravity.CENTER })
+        return box
+    }
+    private fun illustration(step: SetupStep, number: Int): View {
+        val screenOnTV = step.pictureKind == "tv" || (step.pictureKind == "choice" && step.surface == "tv")
+        val screenOnPhone = step.pictureKind == "phone" || (step.pictureKind == "choice" && step.surface == "phone")
+        val choice = step.pictureKind == "choice"
         val box = column().apply {
             setPadding(dp(14), dp(14), dp(14), dp(14)); background = skin.shape(skin.raised, 22)
             importantForAccessibility = View.IMPORTANT_FOR_ACCESSIBILITY_YES
-            contentDescription = "Illustration $number. ${if (showsTVScreen) "TV screen; use your phone where the step asks" else step.surface}: ${step.screen}. Highlighted: ${step.items[step.focus]}. Action: ${step.action}. ${step.instruction}"
+            contentDescription = "Illustration $number. ${if (screenOnTV) "TV screen" else if (screenOnPhone) "Phone screen" else "TV and phone"}: ${step.screen}. ${if (choice) "Choose one; neither is selected" else "Highlighted"}: ${step.focusLabel}. Action: ${step.action}. ${step.instruction}"
         }
         words(box, "Illustration", 11f, skin.muted, true).importantForAccessibility = View.IMPORTANT_FOR_ACCESSIBILITY_NO
         if (step.surface == "both") box.addView(SetupActionPicture(this, skin, "both", step.action), LinearLayout.LayoutParams(-1, dp(64)))
         val screen = column().apply { setPadding(dp(12), dp(12), dp(12), dp(12)); background = skin.shape(skin.surface, if (screenOnTV) 12 else 26, true); importantForAccessibility = View.IMPORTANT_FOR_ACCESSIBILITY_NO_HIDE_DESCENDANTS }
         box.addView(screen, LinearLayout.LayoutParams(-1, -2).apply { if (step.surface == "phone") { marginStart = dp(10); marginEnd = dp(10) } })
-        if (!screenOnTV) words(screen, "9:41                         ● ▰", 10f, skin.muted)
+        if (screenOnPhone) words(screen, "9:41                         ● ▰", 10f, skin.muted)
         words(screen, step.screen, 17f, bold = true)
+        if (choice) words(screen, "$number → Choose one", 17f, skin.accent, true)
         step.items.forEachIndexed { i, item ->
+            val selected = !choice && i == step.focus
             val row = LinearLayout(this).apply {
                 gravity = Gravity.CENTER_VERTICAL; setPadding(dp(10), dp(10), dp(10), dp(10)); minimumHeight = dp(48)
-                background = skin.shape(if (i == step.focus) skin.control else skin.raised, 9, true)
+                background = skin.shape(if (selected) skin.control else skin.raised, 9, true)
             }
-            val ink = if (i == step.focus) skin.controlText else skin.muted
-            row.addView(TextView(this).apply { text = if (i == step.focus) number.toString() else "○"; textSize = 14f; setTypeface(null, Typeface.BOLD); setTextColor(ink); gravity = Gravity.CENTER }, LinearLayout.LayoutParams(dp(30), -2))
-            row.addView(TextView(this).apply { text = item; textSize = 15f; setTextColor(ink); if (i == step.focus) setTypeface(null, Typeface.BOLD) }, LinearLayout.LayoutParams(0, -2, 1f))
-            row.addView(TextView(this).apply { text = if (i == step.focus) "←" else "›"; textSize = 20f; setTextColor(ink) }, LinearLayout.LayoutParams(dp(22), -2))
+            val ink = if (selected) skin.controlText else skin.text
+            row.addView(TextView(this).apply { text = if (selected) number.toString() else "○"; textSize = 14f; setTypeface(null, Typeface.BOLD); setTextColor(ink); gravity = Gravity.CENTER }, LinearLayout.LayoutParams(dp(30), -2))
+            row.addView(TextView(this).apply { text = item; textSize = 15f; setTextColor(ink); if (selected) setTypeface(null, Typeface.BOLD) }, LinearLayout.LayoutParams(0, -2, 1f))
+            row.addView(TextView(this).apply { text = if (selected) "←" else if (choice) "" else "›"; textSize = 20f; setTextColor(ink) }, LinearLayout.LayoutParams(dp(22), -2))
             screen.addView(row, LinearLayout.LayoutParams(-1, -2).apply { bottomMargin = dp(8) })
         }
         if (screenOnTV) {
             box.addView(View(this).apply { setBackgroundColor(skin.outline) }, LinearLayout.LayoutParams(dp(14), dp(12)).apply { gravity = Gravity.CENTER })
             box.addView(View(this).apply { background = skin.shape(skin.outline, 4) }, LinearLayout.LayoutParams(dp(90), dp(4)).apply { gravity = Gravity.CENTER })
-        } else screen.addView(View(this).apply { background = skin.shape(skin.muted, 4) }, LinearLayout.LayoutParams(dp(70), dp(4)).apply { gravity = Gravity.CENTER; topMargin = dp(8) })
-        box.addView(SetupActionPicture(this, skin, if (step.surface == "both") "phone" else step.surface, step.action), LinearLayout.LayoutParams(-1, dp(64)).apply { topMargin = dp(8) })
+        } else if (screenOnPhone) screen.addView(View(this).apply { background = skin.shape(skin.muted, 4) }, LinearLayout.LayoutParams(dp(70), dp(4)).apply { gravity = Gravity.CENTER; topMargin = dp(8) })
+        if (step.surface != "both" || step.action in listOf("scan", "type")) box.addView(SetupActionPicture(this, skin, if (step.surface == "both") "phone" else step.surface, step.action), LinearLayout.LayoutParams(-1, dp(64)).apply { topMargin = dp(8) })
         return box
     }
     private fun back() {

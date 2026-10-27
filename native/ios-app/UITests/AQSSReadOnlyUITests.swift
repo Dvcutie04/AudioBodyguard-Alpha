@@ -1464,19 +1464,153 @@ final class AQSSReadOnlyUITests: XCTestCase {
         exit(app); label("Connection not verified", app)
     }
 
+    private func restartPictureGuide(_ app: XCUIApplication) {
+        if app.buttons["setup-next"].label == "Resume guide" {
+            tap("Need help?", app); tap("Start from the beginning", app)
+        } else { app.buttons["setup-next"].tap() }
+    }
+    private func pictureDescription(_ app: XCUIApplication) -> String {
+        let picture = app.descendants(matching: .any).matching(identifier: "setup-illustration").firstMatch
+        XCTAssertTrue(picture.waitForExistence(timeout: 5))
+        return picture.label
+    }
+
+    func testTVCodePicturesSeparateTheTVFromPhoneAndKeepOptionalLinksNeutral() {
+        let app = launch()
+        tab("devices", app); tap("Illustrated setup guides", app); tap("Sony", app)
+        restartPictureGuide(app)
+        for _ in 0..<5 { app.buttons["setup-next"].tap() }
+        label("Step 6 of 9", app); label("Read your TV code", app)
+        XCTAssertTrue(pictureDescription(app).contains("TV screen"))
+        screenshot("Google TV code is read on the television", app)
+        app.buttons["setup-next"].tap(); label("Step 7 of 9", app)
+        XCTAssertTrue(pictureDescription(app).contains("Phone screen"))
+        screenshot("Google TV code is entered on the phone", app)
+        app.buttons["setup-back"].tap(); label("Step 6 of 9", app)
+        app.buttons["setup-close"].tap()
+        tap("Illustrated setup guides", app); tap("Sony", app)
+        label("Continue at picture 6.", app); app.buttons["setup-next"].tap()
+        label("Read your TV code", app); app.buttons["setup-close"].tap()
+
+        tap("Illustrated setup guides", app); tap("LG", app); restartPictureGuide(app)
+        for _ in 0..<10 { app.buttons["setup-next"].tap() }
+        label("Step 11 of 13", app); label("Decide whether to link accounts", app)
+        let choice = pictureDescription(app)
+        XCTAssertTrue(choice.contains("neither is selected"))
+        XCTAssertTrue(choice.contains("Link or Skip"))
+        screenshot("LG account linking and Skip are equal choices", app)
+        app.buttons["setup-back"].tap(); label("Step 10 of 13", app)
+        app.buttons["setup-close"].tap()
+
+        tap("Illustrated setup guides", app); tap("Vizio", app); tap("Other setup options", app)
+        tap("Vizio — link the TV account", app); restartPictureGuide(app)
+        for number in 2...11 {
+            app.buttons["setup-next"].tap(); label("Step \(number) of 11", app)
+            if [5, 6, 7, 8, 9, 10].contains(number) { screenshot("VIZIO legacy account picture \(number)", app) }
+            if number == 9 { XCTAssertTrue(pictureDescription(app).contains("TV screen")) }
+            if number == 10 { XCTAssertTrue(pictureDescription(app).contains("Phone screen")) }
+        }
+        app.buttons["setup-close"].tap(); tab("home", app); label("Connection not verified", app)
+    }
+
+    func testBrandPlatformsKeepRokuMenusSeparateAndOfferManualGoogleTVSetup() {
+        let app = launch(); tab("devices", app)
+        for (brand, platform, heading, highlight) in [
+            ("TCL", "Roku TV", "Find my IP address", "Network"),
+            ("Sharp", "", "Find my exact model", "System"),
+            ("Roku-branded TV", "", "Find my IP address", "Network"),
+            ("Philips", "Roku TV", "Find my IP address", "Network")
+        ] {
+            tap("Illustrated setup guides", app); tap(brand, app)
+            if !platform.isEmpty { tap(platform, app) }
+            label(heading, app); restartPictureGuide(app)
+            app.buttons["setup-next"].tap(); app.buttons["setup-next"].tap()
+            label("Step 3 of 5", app)
+            XCTAssertTrue(pictureDescription(app).contains(highlight))
+            screenshot("\(brand) \(platform) uses \(highlight)", app)
+            app.buttons["setup-close"].tap()
+        }
+        tap("Illustrated setup guides", app); tap("Hisense", app); tap("VIDAA", app)
+        label("43A6GV / VIDAA U5", app); screenshot("Hisense asks for the matching VIDAA menu", app)
+        app.buttons["setup-close"].tap()
+
+        tap("Illustrated setup guides", app); tap("Insignia", app); tap("Fire TV", app)
+        restartPictureGuide(app)
+        for _ in 0..<4 { app.buttons["setup-next"].tap() }
+        XCTAssertTrue(pictureDescription(app).contains("neither is selected"))
+        screenshot("Fire TV phone or remote Wi-Fi choice", app)
+        app.buttons["setup-next"].tap(); label("Step 6 of 8", app)
+        XCTAssertTrue(pictureDescription(app).contains("TV screen"))
+        tap("Account sign-in finished", app); label("Step 8 of 8", app)
+        app.buttons["setup-back"].tap(); label("Step 6 of 8", app)
+        screenshot("Fire TV account completion can skip manual code entry", app)
+        app.buttons["setup-close"].tap()
+
+        tap("Illustrated setup guides", app); tap("TCL", app); tap("Google TV / Android TV", app)
+        tap("Need help?", app); tap("Other setup options", app)
+        tap("Google TV — first setup with Google Home", app)
+        restartPictureGuide(app)
+        for _ in 0..<8 { app.buttons["setup-next"].tap() }
+        label("Step 9 of 13", app); XCTAssertTrue(pictureDescription(app).contains("Phone screen"))
+        screenshot("Google Home opens the scanner on the phone", app)
+        app.buttons["setup-next"].tap(); label("Step 10 of 13", app)
+        XCTAssertTrue(pictureDescription(app).contains("TV screen"))
+        screenshot("Google Home scanner points to the television QR code", app)
+        tap("Need help?", app); tap("Use the TV remote instead", app)
+        label("Google TV — finish setup with the TV remote", app)
+        restartPictureGuide(app); app.buttons["setup-next"].tap()
+        label("Step 2 of 7", app); XCTAssertTrue(pictureDescription(app).contains("TV remote"))
+        screenshot("Google TV manual setup uses the physical Down button", app)
+        app.buttons["setup-back"].tap(); label("Step 1 of 7", app)
+        app.buttons["setup-close"].tap(); tab("home", app); label("Connection not verified", app)
+    }
+
+    func testLGVizioAndGoogleTVContinueIntoTheirOwnPhoneAppPictures() {
+        for (brand, pairingChoice, count, phoneTitle) in [
+            ("LG", "", 13, "2. Check LG ThinQ on your phone"),
+            ("Vizio", "Vizio — pair the phone", 9, "2. Check VIZIO Mobile on your phone"),
+            ("Sony", "", 9, "2. Check Google TV on your phone")
+        ] {
+            let app = launch(true)
+            next(app); tap(brand, app); next(app); tap("Neither", app); next(app)
+            tap("Show \(brand) steps", app)
+            if !pairingChoice.isEmpty { tap(pairingChoice, app) }
+            restartPictureGuide(app)
+            for _ in 1..<count { app.buttons["setup-next"].tap() }
+            app.buttons["setup-next"].tap(); label("Step 5 of 6", app)
+            tap("Phone pictures", app); label(phoneTitle, app)
+            XCTAssertTrue(app.buttons["setup-pairing-help"].exists)
+            screenshot("\(brand) continues to its matching phone app", app)
+            restartPictureGuide(app)
+            for _ in 0..<4 { app.buttons["setup-next"].tap() }
+            XCTAssertEqual(app.buttons["setup-next"].label, "Finish part two")
+            app.buttons["setup-next"].tap(); label("Step 6 of 6", app)
+            exit(app); label("Connection not verified", app); app.terminate()
+        }
+    }
+
     func testPhilipsAlreadyConnectedSkipsPairingAndBackRestoresTheChoice() {
         let app = launch()
         tab("devices", app); tap("Illustrated setup guides", app)
         tap("Philips", app); tap("Google TV / Android TV", app)
         tap("Need help?", app); tap("Other setup options", app)
         tap("Philips Google TV — pair the voice remote", app)
-        app.buttons["setup-next"].tap()
+        if app.buttons["setup-next"].label == "Resume guide" {
+            tap("Need help?", app); tap("Start from the beginning", app)
+        } else { app.buttons["setup-next"].tap() }
         for _ in 0..<4 { app.buttons["setup-next"].tap() }
         label("Step 5 of 10", app)
         tap("Remote already connected", app)
         label("Step 10 of 10", app); label("Check the real status", app)
         screenshot("Philips already connected skips pairing", app)
         app.buttons["setup-back"].tap(); label("Step 5 of 10", app)
+        app.buttons["setup-next"].tap(); label("Step 6 of 10", app)
+        XCTAssertTrue(pictureDescription(app).contains("TV remote"))
+        screenshot("Philips remote button combination", app)
+        app.buttons["setup-next"].tap(); label("Step 8 of 10", app)
+        app.buttons["setup-back"].tap(); label("Step 6 of 10", app)
+        tap("Light is not blinking", app); label("Step 7 of 10", app)
+        screenshot("Philips reset only when pairing light fails", app)
     }
 
     func testNewBrandPicturesAreReachable() {

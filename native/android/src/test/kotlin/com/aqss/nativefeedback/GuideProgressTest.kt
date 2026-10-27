@@ -70,4 +70,15 @@ class GuideProgressTest {
         assertTrue(guide.completePictures("connectionCheck", "samsung_phone"))
         assertTrue(guide.isLast)
     }
+    @Test fun everyBrandPhoneCompanionAdvancesOnlyThePhonePart() {
+        SetupContent.groups.mapNotNull { it.phoneRoute }.toSet().forEach { route ->
+            val guide = GuideProgress()
+            guide.restore("getting_started", 3, mapOf("chooseTV" to "lg", "chooseHome" to "neither"))
+            assertFalse(guide.completePictures("connectionPlan", route), route)
+            assertEquals(3, guide.index)
+            assertTrue(guide.completePictures("connectionPlan", "lg_pair"))
+            assertTrue(guide.completePictures("connectionCheck", route), route)
+            assertTrue(guide.isLast)
+        }
+    }
 }

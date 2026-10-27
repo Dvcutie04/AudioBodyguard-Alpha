@@ -9,21 +9,25 @@ if __package__ in (None, ""):
 else:
     from .generate_setup_guides import validate
 ROOT = Path(__file__).resolve().parents[1]
-SAMSUNG_TV_PICTURES = {'samsung_ok': {15}, 'samsung_pin': {15}}
-TV_SCREEN_PICTURES = {'google_fast': {4}, 'sony_new': {5, 10},
-                      'vizio_walmart': {3, 5}, 'vizio_account': {7},
-                      'fire_setup': {5, 6}}
+TV_SCREEN_PICTURES = {
+    route['id']: {n for n, step in enumerate(route['steps'], 1)
+                  if step['surface'] == 'both' and step.get('picture_surface') == 'tv'}
+    for route in json.loads((ROOT/'contracts/setup_guides_v1.json').read_text())['routes']
+}
+TV_SCREEN_PICTURES = {key: value for key, value in TV_SCREEN_PICTURES.items() if value}
 
 def esc(s): return html.escape(str(s), quote=True)
 def svg(step, number, route):
     label = step['items'][step['focus']]
+    kind = step.get('picture_surface', step['surface'])
+    if kind == 'choice': label = 'Choose one: ' + ' or '.join(step['items'])
     title = f"Picture {number}. {step['screen']}. Highlighted: {label}."
     pieces = [f'<svg viewBox="0 0 640 420" role="img" aria-label="{esc(title)}"><title>{esc(title)}</title>', '<rect width="640" height="420" rx="22" fill="#18253c"/>']
     def rect(x,y,w,h,color): pieces.append(f'<rect x="{x}" y="{y}" width="{w}" height="{h}" rx="8" fill="{color}"/>')
     def text(x,y,s,color='#f8fbff',size=19): pieces.append(f'<text x="{x}" y="{y}" fill="{color}" font-size="{size}" font-family="Arial,sans-serif">{esc(s)}</text>')
-    def row(x,y,w,s,selected):
+    def row(x,y,w,s,selected,numbered=True):
         rect(x,y,w,48,'#ffffff' if selected else '#243958')
-        for j,line in enumerate(textwrap.wrap(s, 25 if w<300 else 42)[:2]): text(x+12,y+21+j*19,(f'{number} → ' if selected and j==0 else '')+line,'#071321' if selected else '#f8fbff',16)
+        for j,line in enumerate(textwrap.wrap(s, 25 if w<300 else 42)[:2]): text(x+12,y+21+j*19,(f'{number} → ' if selected and numbered and j==0 else '')+line,'#071321' if selected else '#f8fbff',16)
     if route['id'] in ('roku_network','roku_model') and number > 1:
         rect(18,18,604,348,'#063e97');text(36,58,step['screen'],size=27)
         model=route['id']=='roku_model'
@@ -32,26 +36,47 @@ def svg(step, number, route):
         for i,s in enumerate(left): row(36,80+i*54,272,s,(number==2 and s=='Settings') or (number==3 and s==('System' if model else 'Network')))
         if number>=3:
             for i,s in enumerate(right):row(324,80+i*54,272,s,number==4 and s=='About' or number==5 and i==step['focus'])
-    elif number in TV_SCREEN_PICTURES.get(route['id'], set()) or number in SAMSUNG_TV_PICTURES.get(route['id'], set()):
+    elif kind == 'tv' and step['surface'] != 'tv':
         text(28,52,'On your TV: '+step['screen'][:34],size=22)
         rect(28,78,420,260,'#243958');text(48,113,'TV screen',size=19)
         row(48,142,380,label,True)
         rect(216,338,44,12,'#536c96');rect(178,350,120,7,'#536c96')
-        if step['surface']=='tv':text(458,166,'Use TV remote' if step['action']=='select' else 'Read TV PIN',size=17)
-        elif step['action']=='check':text(466,166,'Check the TV',size=18)
+        if step['action']=='check':text(466,166,'Check the TV',size=18)
         else:
             text(458,115,'Phone camera' if step['action']=='scan' else 'Phone app',size=17)
             rect(476,140,128,192,'#243958')
-            text(491,195,'Scan the' if step['action']=='scan' else 'Enter the',size=18)
-            text(491,221,'TV code',size=18)
+            text(491,195,'Scan the' if step['action']=='scan' else 'Follow',size=18)
+            text(491,221,'TV code' if step['action']=='scan' else 'TV setup',size=18)
     elif route['id']=='philips_voice_remote' and number in (2,3):
         text(30,54,'Google TV',size=25);row(418,25,195,'Profile',number==2)
         text(30,110,'For you · Apps');rect(30,142,125,78,'#243958');rect(169,142,125,78,'#243958');rect(307,142,96,78,'#243958')
         if number==3:
             rect(415,88,195,202,'#243958');text(428,121,'Your account',size=16);row(428,150,170,'Settings',True)
+    elif kind == 'choice':
+        text(28,52,step['screen'],size=25)
+        row(28,78,584,'Choose one',True)
+        for i,item in enumerate(step['items']):row(28,140+i*54,584,item,False)
+    elif kind == 'remote':
+        text(28,42,step['screen'],size=23)
+        rect(208,60,224,308,'#536c96');rect(216,68,208,292,'#0c172c')
+        buttons = label.split(' + ')
+        if len(buttons) > 1:
+            text(28,104,f'{number} → Hold together',size=17)
+            for i,button in enumerate(buttons):row(228,132+i*74,184,button,True,False)
+        else:row(228,150,184,label,True)
+        text(250,337,'TV remote',size=16)
     else:
-        text(28,52,step['screen'][:48],size=25)
-        for i,item in enumerate(step['items']):row(28,78+i*54,584,item,i==step['focus'])
+        phone = kind == 'phone'
+        x,w = (92,456) if phone else (18,604)
+        rect(x,18,w,342,'#536c96');rect(x+6,24,w-12,330,'#0c172c')
+        text(x+18,52,('On your TV: ' if kind=='tv' else '')+step['screen'],size=22 if phone else 20)
+        text(x+w-140,380,'Phone screen' if phone else 'TV screen' if kind=='tv' else 'TV + phone',size=12)
+        for i,item in enumerate(step['items']):row(x+18,78+i*54,w-36,item,i==step['focus'])
+        if kind == 'tv':rect(292,360,56,12,'#536c96');rect(250,372,140,6,'#536c96')
+        elif phone:rect(286,344,68,4,'#536c96')
+        elif kind == 'both' and len(step['items']) <= 2:
+            rect(80,236,210,100,'#243958');rect(173,336,24,10,'#536c96')
+            rect(420,214,82,132,'#243958');text(114,276,'TV',size=21);text(430,276,'Phone',size=14)
     text(28,398,('TV remote: arrows + OK' if step['surface']=='tv' else 'TV + phone' if step['surface']=='both' else 'On your phone')+' · '+step['action'],color='#60d8e5',size=19)
     pieces.append('</svg>');return ''.join(pieces)
 

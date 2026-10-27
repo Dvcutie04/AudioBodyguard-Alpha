@@ -29,7 +29,7 @@ public struct AQSSGuideProgress: Equatable, Sendable {
               ["connectionPlan", "connectionCheck"].contains(expectedTarget),
               (AQSSTutorialContent.pictureContinueRoutes.contains(routeID) ||
                (expectedTarget == "connectionPlan" && ["roku_network", "roku_model"].contains(routeID))),
-              !["roku_phone", "samsung_phone"].contains(routeID) || expectedTarget == "connectionCheck" else { return false }
+              !AQSSSetupContent.groups.contains(where: { $0.phoneRoute == routeID }) || expectedTarget == "connectionCheck" else { return false }
         return next()
     }
     public mutating func back() { if index > 0 { index -= 1 } }
@@ -46,19 +46,20 @@ public struct AQSSGuideProgress: Equatable, Sendable {
 /// Cached local guide bookmarks. These indices never represent a paired device.
 public struct AQSSSetupProgress: Equatable, Sendable {
     private var indices: [String: Int]
-    private static let limits = Dictionary(uniqueKeysWithValues: AQSSSetupContent.routes.filter { $0.id != "voice" }.map { ($0.id, $0.steps.count) })
+    private static let routes = Dictionary(uniqueKeysWithValues: AQSSSetupContent.routes.filter { $0.id != "voice" }.map { ($0.id, $0) })
+    private static let limits = Dictionary(uniqueKeysWithValues: routes.values.map { ($0.bookmarkID, $0.steps.count) })
     public init(serialized: String? = nil) {
         guard let serialized, serialized.utf8.count <= 16_384,
               let data = serialized.data(using: .utf8),
               let decoded = try? JSONDecoder().decode([String: Int].self, from: data) else { indices = [:]; return }
         indices = decoded.filter { id, value in Self.limits[id].map { value >= 0 && value < $0 } ?? false }
     }
-    public func resumeIndex(_ id: String) -> Int? { indices[id] }
+    public func resumeIndex(_ id: String) -> Int? { Self.routes[id].flatMap { indices[$0.bookmarkID] } }
     /// Returns false for unchanged, invalid or voice-only bookmarks.
     @discardableResult public mutating func record(_ id: String, _ value: Int?) -> Bool {
-        guard let count = Self.limits[id], value.map({ $0 >= 0 && $0 < count }) ?? true,
-              indices[id] != value else { return false }
-        indices[id] = value
+        guard let route = Self.routes[id], value.map({ $0 >= 0 && $0 < route.steps.count }) ?? true,
+              indices[route.bookmarkID] != value else { return false }
+        indices[route.bookmarkID] = value
         return true
     }
     public func serialized() -> String? {

@@ -215,8 +215,10 @@ def test_tv_codes_and_results_appear_on_the_tv_in_all_both_device_pictures():
 
 def test_faster_google_setup_states_platform_limits_and_checks_the_tv_result():
     route = setup_routes()['google_fast']
-    assert 'iOS 17' in route['applies_to'] and 'Android 9' in route['applies_to']
-    assert '3.3100002' in route['steps'][1]['note']
+    assert 'phone-camera setup instructions' in route['applies_to']
+    assert 'TV and phone software' in route['applies_to']
+    assert 'current phone requirements' in route['steps'][1]['note']
+    assert 'Google Home or manual setup' in route['steps'][1]['note']
     assert route['steps'][-1]['surface'] == 'tv'
     assert 'Home screen' in route['steps'][-1]['instruction']
 
@@ -225,7 +227,7 @@ def test_google_home_first_setup_uses_the_current_add_path():
     route = setup_routes()['google_setup']
     phone_steps = route['steps'][4:9]
     assert [step['title'] for step in phone_steps] == [
-        'Open Devices', 'Open Add', 'Choose the device setup option', 'Choose your home', 'Scan the actual TV screen'
+        'Open Devices', 'Open Add', 'Choose the device setup option', 'Choose your home', 'Open the phone scanner'
     ]
     assert [step['items'][step['focus']] for step in phone_steps] == [
         'Devices', 'Add', 'Google Nest or partner device', 'Your home', 'Scan code'
