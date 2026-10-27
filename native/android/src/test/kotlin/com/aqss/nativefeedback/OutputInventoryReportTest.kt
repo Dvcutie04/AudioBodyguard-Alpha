@@ -15,7 +15,7 @@ class OutputInventoryReportTest {
 
     @Test fun capturedTextContainsOnlyTheReviewedMetadataAndExplicitUnknowns() {
         val text = report().text
-        assertTrue(text.startsWith("Audio Bodyguard output inventory (v1)\nCaptured at (phone clock, UTC): 2026-10-27T16:00:00Z\n\n$build"))
+        assertTrue(text.startsWith("Audio Bodyguard output inventory (v1)\nRead finished at (phone clock, UTC): 2026-10-27T16:00:00Z\n\n$build"))
         assertTrue(text.contains("Phone: Maker Phone\nAndroid: 16 · API 36"))
         assertTrue(text.contains("1 available output device reported.\n\n1. Built-in speaker\nAdvertised sample rates: 48000 Hz\nAdvertised channel counts: 2\nAdvertised encodings: PCM 16-bit"))
         for (line in listOf("Selected playback route: Unknown", "Negotiated format: Unknown",
@@ -62,7 +62,7 @@ class OutputInventoryReportTest {
     }
 
     @Test fun boundedPhoneTextCannotInjectReportLinesOrHideTruncation() {
-        val text = report(manufacturer = "Maker\nPrivate:", model = "X".repeat(100), release = "\t").text
+        val text = report(manufacturer = "Maker\u2028Private:", model = "X".repeat(100), release = "\t").text
         assertTrue(text.contains("Phone: Maker Private: " + "X".repeat(64) + " (truncated)"))
         assertTrue(text.contains("Android: Unavailable · API 36"))
         assertFalse(text.contains("\nPrivate:"))
@@ -71,7 +71,7 @@ class OutputInventoryReportTest {
 
     @Test fun buildEnvelopeClockAndAdvertisementControlsFailClosed() {
         for (details in listOf(build + "\nSecret: hidden", build.replace("Platform: Android", "Platform: Unknown"),
-                build.replace("Build: 36", "Build: 36\u0000"), build.replace("Version: 0.33-output-report-live-input", "Version: " + "v".repeat(97)))) {
+                build.replace("Build: 36", "Build: 36\u0000"), build.replace("Version: ", "Version: \u2029"), build.replace("Version: 0.33-output-report-live-input", "Version: " + "v".repeat(97)))) {
             assertFailsWith<IllegalArgumentException> { report(details = details) }
         }
         assertFailsWith<IllegalArgumentException> { report(api = 0) }
@@ -87,7 +87,7 @@ class OutputInventoryReportTest {
         assertFailsWith<IllegalArgumentException> { report(OutputDeviceInventory.from(listOf(
             OutputDeviceAdvertisement("Built-in speaker", listOf(48000), listOf(2), listOf("x".repeat(1025)))))) }
         val dense = OutputDeviceInventory.from(List(16) { OutputDeviceAdvertisement("界".repeat(64),
-            (1..16).map { Int.MAX_VALUE }, (1..16).map { Int.MAX_VALUE }, listOf("界".repeat(1024))) })
+            listOf(48000), listOf(2), listOf("界".repeat(1024))) })
         assertFailsWith<IllegalArgumentException> { report(dense) }
     }
 }

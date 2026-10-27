@@ -1,6 +1,9 @@
 package com.aqss.bodyguard.prototype
 
 import android.app.Activity
+import android.app.AlertDialog
+import android.content.ActivityNotFoundException
+import android.content.Intent
 import android.media.AudioDeviceCallback
 import android.media.AudioDeviceInfo
 import android.media.AudioFormat
@@ -14,16 +17,22 @@ import android.widget.Button
 import android.widget.LinearLayout
 import android.widget.ScrollView
 import android.widget.TextView
+import android.widget.Toast
 import com.aqss.nativefeedback.OutputDeviceAdvertisement
 import com.aqss.nativefeedback.OutputDeviceInventory
+import com.aqss.nativefeedback.OutputInventoryReportSnapshot
 import java.lang.ref.WeakReference
 
 /** Available OS metadata only. Never opens a stream or requests audio focus. */
 class OutputInventoryActivity : Activity() {
     private lateinit var skin: InterfaceTheme
     private lateinit var results: TextView
+    private lateinit var reviewButton: Button
     private var visible = false
     private var hasSnapshot = false
+    private var reportSnapshot: OutputInventoryReportSnapshot? = null
+    private var reportDialog: AlertDialog? = null
+    private var reportShareButton: Button? = null
     private var deviceCallback: AudioDeviceCallback? = null
     private var callbackManager: AudioManager? = null
 
@@ -61,12 +70,17 @@ class OutputInventoryActivity : Activity() {
             setPadding(0, skin.dp(10), 0, skin.dp(10)); column.addView(this)
         }
         words("Check the audio outputs Android currently lists for this phone.")
-        words("${Build.MANUFACTURER.take(64)} ${Build.MODEL.take(64)}\nAndroid ${Build.VERSION.RELEASE.take(64)} · API ${Build.VERSION.SDK_INT}", 15f)
+        words("${OutputInventoryReportSnapshot.phoneText(Build.MANUFACTURER)} ${OutputInventoryReportSnapshot.phoneText(Build.MODEL)}\nAndroid ${OutputInventoryReportSnapshot.phoneText(Build.VERSION.RELEASE)} · API ${Build.VERSION.SDK_INT}", 15f)
         words("Selected playback route: Unknown\nNegotiated format: Unknown", 18f)
         words("Available outputs can change. Listed capabilities do not identify an active route or prove a working connection.", 15f)
         results = words(IDLE, 16f)
-        words("This screen plays no sound and uses no microphone. Details stay on this screen and clear when you leave. It cannot verify TV control or audio protection.", 15f)
+        words("This screen plays no sound and uses no microphone. The live list clears when you leave. You can review a snapshot before sharing it.", 15f)
         root.addView(ScrollView(this).apply { addView(column) }, LinearLayout.LayoutParams(-1, 0, 1f))
+        reviewButton = Button(this).apply {
+            text = "Review output report"; skin.style(this); isEnabled = false
+            setOnClickListener { showReport() }
+        }
+        root.addView(reviewButton, LinearLayout.LayoutParams(-1, -2))
         root.addView(Button(this).apply {
             text = "Refresh outputs"; skin.style(this, primary = true)
             setOnClickListener { refreshOutputs() }
@@ -84,17 +98,20 @@ class OutputInventoryActivity : Activity() {
 
     override fun onResume() {
         super.onResume(); visible = true
-        hasSnapshot = false; results.text = IDLE
+        clearSnapshot(IDLE)
         registerNotices()
+        if (reportDialog?.isShowing == true) reportShareButton?.isEnabled = true
     }
 
     override fun onPause() {
-        visible = false; hasSnapshot = false; results.text = IDLE
+        visible = false; clearSnapshot(IDLE)
         unregisterNotices()
         super.onPause()
     }
 
     override fun onDestroy() {
+        visible = false
+        reportDialog?.dismiss()
         unregisterNotices()
         super.onDestroy()
     }
@@ -127,13 +144,17 @@ class OutputInventoryActivity : Activity() {
         // Oversized notices invalidate conservatively without scanning an
         // unbounded list. No descriptor, name, address or ID is retained.
         if (devices.size <= OutputDeviceInventory.MAX_DEVICES && devices.none { it.isSink }) return
-        hasSnapshot = false
-        results.text = "Output list needs a fresh check. Tap Refresh outputs."
+        clearSnapshot("Output list needs a fresh check. Tap Refresh outputs.")
+    }
+
+    private fun clearSnapshot(message: String) {
+        hasSnapshot = false; reportSnapshot = null; results.text = message
+        reviewButton.isEnabled = false
     }
 
     private fun refreshOutputs() {
         if (!visible || !hasWindowFocus() || isFinishing || isDestroyed) return
-        hasSnapshot = false
+        clearSnapshot(IDLE)
         results.text = try {
             val manager = getSystemService(AUDIO_SERVICE) as? AudioManager
                 ?: throw IllegalStateException("Audio service unavailable")
@@ -152,6 +173,11 @@ class OutputInventoryActivity : Activity() {
                 )
             }
             val inventory = OutputDeviceInventory.from(rows, devices.size)
+            reportSnapshot = try {
+                OutputInventoryReportSnapshot.capture(installedAppBuildDetails(this),
+                    Build.MANUFACTURER, Build.MODEL, Build.VERSION.RELEASE, Build.VERSION.SDK_INT,
+                    System.currentTimeMillis(), deviceCallback != null, inventory)
+            } catch (_: RuntimeException) { null }
             buildString {
                 append(inventory.summaryText)
                 inventory.devices.forEachIndexed { index, device ->
@@ -161,11 +187,71 @@ class OutputInventoryActivity : Activity() {
                     append("\nAdvertised encodings: ${device.encodingsText}")
                 }
                 if (deviceCallback == null) append("\n\nAutomatic change notices unavailable.")
+                if (reportSnapshot == null) append("\n\nReport unavailable for this snapshot.")
                 append("\n\nSnapshot only. Tap Refresh outputs to read again.")
-            }.also { hasSnapshot = true }
+            }.also { hasSnapshot = true; reviewButton.isEnabled = reportSnapshot != null }
         } catch (_: RuntimeException) {
             "Output inventory unavailable. Tap Refresh outputs to try again.\nNo output route has been verified."
         }
+    }
+
+    /** A historical copy remains immutable through notices and native sharing.
+     * It is never substituted for the live list or restored after recreation. */
+    private fun showReport() {
+        val report = reportSnapshot ?: return
+        if (!visible || !hasSnapshot || !hasWindowFocus() || isFinishing || isDestroyed || reportDialog?.isShowing == true) return
+        val root = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            setPadding(skin.dp(16), skin.dp(12), skin.dp(16), skin.dp(12))
+            setBackgroundColor(skin.background)
+        }
+        val header = LinearLayout(this).apply { gravity = android.view.Gravity.CENTER_VERTICAL }
+        header.addView(TextView(this).apply {
+            text = "Review output report"; textSize = 22f; setTextColor(skin.text)
+            setTypeface(typeface, android.graphics.Typeface.BOLD)
+        }, LinearLayout.LayoutParams(0, -2, 1f))
+        val share = Button(this).apply { text = "Share output report"; skin.style(this, primary = true) }
+        val dialog = object : AlertDialog(this) {
+            override fun onWindowFocusChanged(hasFocus: Boolean) {
+                super.onWindowFocusChanged(hasFocus)
+                if (hasFocus && visible && isShowing) share.isEnabled = true
+            }
+        }
+        header.addView(roseButton(this, skin, "Back", compact = true) { dialog.dismiss() })
+        root.addView(header)
+        val preview = TextView(this).apply {
+            text = report.text; textSize = 16f; setTextColor(skin.text)
+            tag = "output-report-preview"; setTextIsSelectable(true)
+            setPadding(0, skin.dp(12), 0, skin.dp(12))
+        }
+        root.addView(ScrollView(this).apply { addView(preview) }, LinearLayout.LayoutParams(-1, 0, 1f))
+        root.addView(share, LinearLayout.LayoutParams(-1, -2).apply { topMargin = skin.dp(8) })
+        dialog.setView(root)
+        dialog.setOnDismissListener {
+            if (reportDialog === dialog) { reportDialog = null; reportShareButton = null }
+        }
+        share.setOnClickListener {
+            if (!visible || isFinishing || isDestroyed || !dialog.isShowing ||
+                dialog.window?.decorView?.hasWindowFocus() != true || !share.isEnabled) return@setOnClickListener
+            share.isEnabled = false
+            // Leaving for a chooser never leaves an apparently current list
+            // behind. The separately reviewed text remains the same copy.
+            clearSnapshot(IDLE)
+            val send = Intent(Intent.ACTION_SEND).apply {
+                type = "text/plain"; putExtra(Intent.EXTRA_TEXT, report.text)
+            }
+            try { startActivity(Intent.createChooser(send, null)) }
+            catch (error: RuntimeException) {
+                share.isEnabled = true
+                if (error !is ActivityNotFoundException && error !is SecurityException) throw error
+                Toast.makeText(this, "Sharing is unavailable. You can read the report shown here.", Toast.LENGTH_LONG).show()
+            }
+        }
+        reportDialog = dialog; reportShareButton = share
+        dialog.show()
+        val display = resources.displayMetrics
+        dialog.window?.setLayout(minOf(display.widthPixels - skin.dp(24), skin.dp(680)),
+            (display.heightPixels * .85f).toInt())
     }
 
     private fun outputKind(type: Int): String = when (type) {

@@ -356,6 +356,7 @@ def main():
         actual = wait_for("Advertised sample rates:", "output_report_snapshot")
         button = review_button(actual)
         assert button is not None and button.get("enabled") == "true"
+        opening_before = frame_snapshot("output-report-open-frames_before")
         tap("Review output report", "output_report_review")
         root = wait_for_all(("Review output report", "Share output report",
                             "Snapshot only. Outputs may have changed."), "output_report_preview")
@@ -370,9 +371,12 @@ def main():
         assert "Recent sound checks" not in reviewed and "Recognized words" not in reviewed
         (out / "output-report-reviewed.txt").write_text(reviewed)
         screenshot("output_report_preview")
+        complete_frame_evidence("output-report-open-frames", opening_before)
+        back_before = frame_snapshot("output-report-back-frames_before")
         tap("Back", "output_report_preview_back")
         back = wait_for_all(("Output inventory", "Snapshot only."), "output_report_back_to_inventory")
         assert review_button(back).get("enabled") == "true", "Closing review must preserve an unchanged live inventory"
+        complete_frame_evidence("output-report-back-frames", back_before)
         tap("Review output report", "output_report_review_again")
         assert preview_text(wait_for("Share output report", "output_report_same_review")) == reviewed
 
@@ -394,6 +398,8 @@ def main():
         assert share.get("enabled") == "true", "Cancel must leave a fresh explicit Share available"
         if before is not None:
             assert adb("shell", "run-as", receiver, "cat", receipt_path) == before, "Cancel must not deliver a new payload"
+        else:
+            adb("shell", shlex.join(["run-as", receiver, "sh", "-c", "test ! -e " + receipt_path]))
         tap("Share output report", "output_report_share_receiver")
         wait_for("Build details test", "output_report_chooser_receiver")
         select_share_receiver("output_report_select_receiver")
@@ -427,6 +433,34 @@ def main():
         tap("Back", "output_report_background_close")
         idle = wait_for("Not read yet. Tap Refresh outputs.", "output_report_background_inventory_cleared")
         assert review_button(idle).get("enabled") == "false"
+        tap("Refresh outputs", "output_report_before_rotation_read")
+        wait_for("Snapshot only.", "output_report_rotation_snapshot")
+        tap("Review output report", "output_report_rotation_review")
+        wait_for("Share output report", "output_report_rotate_open")
+        adb("shell", "settings", "put", "system", "accelerometer_rotation", "0")
+        adb("shell", "settings", "put", "system", "user_rotation", "1")
+        idle = wait_for("Not read yet. Tap Refresh outputs.", "output_report_rotation_cleared")
+        assert review_button(idle).get("enabled") == "false" and not has(idle, "Share output report")
+        adb("shell", "settings", "put", "system", "user_rotation", "0")
+        wait_for("Not read yet. Tap Refresh outputs.", "output_report_portrait_cleared")
+        adb("shell", "settings", "put", "system", "font_scale", "1.5")
+        wait_for("Not read yet. Tap Refresh outputs.", "output_report_large_font_idle")
+        tap("Refresh outputs", "output_report_large_font_read")
+        wait_for("Snapshot only.", "output_report_large_font_snapshot")
+        tap("Review output report", "output_report_large_font_review")
+        large = wait_for("Share output report", "output_report_large_font_preview")
+        share = next(n for n in large.iter("node") if n.get("text") == "Share output report")
+        assert share.get("enabled") == "true"
+        screenshot("output_report_large_font")
+        adb("shell", "am", "force-stop", package)
+        adb("shell", "settings", "put", "system", "font_scale", "1.0")
+        launch()
+        home = wait_for("Connection not verified", "output_report_new_process")
+        assert not has(home, "Share output report")
+        tap("Sound", "output_report_new_process_sound")
+        tap("Output inventory. Check this phone’s available audio outputs", "output_report_new_process_inventory")
+        idle = wait_for("Not read yet. Tap Refresh outputs.", "output_report_new_process_empty")
+        assert review_button(idle).get("enabled") == "false"
         tap("Back", "output_report_inventory_back")
         wait_for("Live sound check", "output_report_back_in_sound")
         permission = adb("shell", "dumpsys", "package", package).decode()
@@ -441,7 +475,7 @@ def main():
         (out / "output-inventory-callbacks.txt").write_text(observation)
         assert "INSTRUMENTATION_RESULT: output_inventory=passed:" in observation, observation
         for name in ("output-freshness-read", "output-freshness-removed",
-                     "output-freshness-added", "output-freshness-resumed"):
+                     "output-freshness-added", "output-freshness-resumed", "output-freshness-report-cleared"):
             (out / f"{name}.png").write_bytes(adb("exec-out", "run-as", package, "cat", f"files/{name}.png"))
             adb("shell", "run-as", package, "rm", f"files/{name}.png")
         permission = adb("shell", "dumpsys", "package", package).decode()

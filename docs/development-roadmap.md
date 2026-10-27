@@ -1,10 +1,21 @@
 # AQSS development roadmap
 
-Checkpoint: October 26, 2026. Continue from the restored a-Shell baseline and the existing native endpoint qualification research. iPhone/iOS and Android remain equal product targets.
+Checkpoint: October 27, 2026. Continue from the restored a-Shell baseline and the existing native endpoint qualification research. iPhone/iOS and Android remain equal product targets.
 
 **INFERENCE IS NOT REALITY. AI proposes. Policy authorizes. Physical Commit verifies.**
 
 ## Current checkpoint
+
+October 27 reviewed inventory increment: [0.33 research and contract](output-inventory-report-2026-10-27.md)
+uses the existing manual Android inventory to build a dated metadata report.
+Review is explicit, its copy stays immutable, and Share uses the native chooser.
+Live-list invalidation and callback retirement remain; a historical report is
+labelled that outputs may have changed. App/build, bounded phone details and
+advertised output capabilities can now be shared after review. Actual routing,
+negotiation, independent capture/calibration and physical output stay unknown
+or unverified. Android is build 36; iPhone source remains 0.32.3. Source-bound
+red/green and installer receipts belong to its draft PR. N2b still requires the
+actual inventory and exact backend review before an adapter or physical trial.
 
 October 26 TV picture-direction phase: [0.32.3 review](tv-guide-review-2026-10-26.md)
 reviews every existing non-Samsung TV brand choice and its platform routes.

@@ -1,6 +1,7 @@
 package com.aqss.bodyguard.uiprobe;
 
 import android.app.Activity;
+import android.app.AlertDialog;
 import android.content.Context;
 import android.content.Intent;
 import android.media.AudioDeviceCallback;
@@ -8,6 +9,7 @@ import android.media.AudioDeviceInfo;
 import android.media.AudioManager;
 import android.os.Bundle;
 import android.widget.TextView;
+import android.widget.Button;
 import java.lang.reflect.Field;
 
 /** Test APK only. Delivers synthetic change callbacks with real OS descriptors.
@@ -61,6 +63,23 @@ public final class OutputInventoryProbe extends CameraCaptureProbe {
             });
             require(refreshed.equals(details()), "Input-only or empty notifications invalidated outputs");
 
+            runOnMainSync(() -> require(click(activity.getWindow().getDecorView(), "Review output report"), "Review control missing"));
+            waitForIdleSync();
+            AlertDialog review = (AlertDialog) field("reportDialog").get(activity);
+            require(review != null && review.isShowing(), "Review must open an actual native dialog");
+            TextView preview = (TextView) review.getWindow().getDecorView().findViewWithTag("output-report-preview");
+            require(preview != null, "Native report preview missing");
+            String[] frozen = new String[1];
+            runOnMainSync(() -> frozen[0] = preview.getText().toString());
+            require(frozen[0].startsWith("Audio Bodyguard output inventory (v1)"), "Report envelope missing");
+            runOnMainSync(() -> callback.onAudioDevicesRemoved(outputs));
+            assertCleared();
+            runOnMainSync(() -> require(frozen[0].equals(preview.getText().toString()), "Notice rewrote the historical report under review"));
+            require(review.isShowing(), "A notice unexpectedly navigated away from the reviewed copy");
+            runOnMainSync(review::dismiss);
+            recordScreen("output-freshness-report-cleared");
+            refresh();
+
             overlay = startActivitySync(new Intent().setClassName(getTargetContext().getPackageName(),
                     "com.aqss.bodyguard.prototype.SetupGuideActivity").addFlags(Intent.FLAG_ACTIVITY_NEW_TASK));
             waitForIdleSync();
@@ -86,7 +105,7 @@ public final class OutputInventoryProbe extends CameraCaptureProbe {
             runOnMainSync(() -> current.onAudioDevicesAdded(outputs));
             require(IDLE.equals(details()), "Callback changed closed inventory details");
 
-            result.putString("output_inventory", "passed: synthetic output add/remove callbacks clear real inventory; no automatic reread; explicit refresh; input-only/empty ignored; pause unregisters; resume renews; old and closed callbacks ignored; route/format remain unknown. No physical disconnect or route qualification.");
+            result.putString("output_inventory", "passed: synthetic output add/remove callbacks clear real inventory and disable new Review; an already reviewed historical copy stays immutable; no automatic reread; explicit refresh; input-only/empty ignored; pause unregisters; resume renews; old and closed callbacks ignored; route/format remain unknown. No physical disconnect or route qualification.");
             finish(Activity.RESULT_OK, result);
         } catch (Exception | AssertionError error) {
             result.putString("output_inventory_error", error.toString());
@@ -115,6 +134,8 @@ public final class OutputInventoryProbe extends CameraCaptureProbe {
     private void assertCleared() throws Exception {
         waitForText(CHANGED);
         require(CHANGED.equals(details()), "Old output rows remained after invalidation");
+        require(field("reportSnapshot").get(activity) == null, "A withdrawn inventory retained a new-report payload");
+        require(!((Button) field("reviewButton").get(activity)).isEnabled(), "Withdrawn inventory left Review enabled");
         waitForText("Selected playback route: Unknown"); waitForText("Negotiated format: Unknown");
     }
 }

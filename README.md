@@ -110,6 +110,15 @@ and makes Philips/Fire decision paths return correctly with Back. The shared
 catalog now contains 51 routes and 436 illustrations. Android build 35 and
 current iPhone/iPad source identify as 0.32.3; physical pairing remains unverified.
 
+The [0.33 output inventory report](docs/output-inventory-report-2026-10-27.md)
+adds **Sound → Output inventory → Refresh outputs → Review output report**
+on Android. Review shows a dated, bounded metadata snapshot; Share sends exactly
+that text through the native Sharesheet. Live rows still clear on leaving or a
+change notice. The report retains unknown route/format and unverified physical
+output, and contains no audio-device names/addresses/IDs, audio, photos or TV
+information. Android is build 36; iPhone source stays 0.32.3. This supplies partial
+phone observations for N2b inventory and does not implement playback.
+
 The [internal TestFlight preparation](docs/testflight-beta-preparation.md)
 automates checks on an exact reviewed source revision and provides a manually
 requested signing/upload lane after Apple account and signing setup. It does

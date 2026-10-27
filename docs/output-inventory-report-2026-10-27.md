@@ -43,8 +43,9 @@ Device/capability truncation and Android's empty-array arbitrary-support meaning
 remain visible. Selected route and negotiated format remain Unknown; independent
 capture/calibration are not recorded, and physical output/protection is unverified.
 
-The report contains no device IDs, addresses, product names, serial numbers,
-network/TV details, recordings, words, photos, recaps, log dump or recipient.
+The report queries no audio-device IDs, addresses, product names or serial-number
+API. It contains no network/TV details, recordings, words, photos, recaps, log
+dump or recipient.
 The existing native caller supplies fixed output-kind and encoding labels.
 The report factory accepts the fixed four-line installed-build envelope, bounded
 single-line advertisement fields, and a bounded capture clock. Malformed or
@@ -77,8 +78,9 @@ and rejection of malformed/oversized inputs. The native Android test must first
 fail on 0.32.3's absent Review control, then exercise disabled-before-read,
 preview without sharing, native Cancel/receiver round trips, exact Intent text,
 no extra URI/stream payload, callback invalidation, Back, lifecycle/process
-clearing, large text and unchanged microphone permission. Test observers and
-the receiver remain outside the delivered APK. Retain source identity, screenshots,
+clearing, large text and unchanged microphone permission. Synthetic callbacks also test that withdrawing the live list disables new
+Review while preserving the already labelled historical copy. Test observers
+and the receiver remain outside the delivered APK. Retain source identity, screenshots,
 receipts, unit/lint results and signed-APK byte identity in CI.
 
 The draft PR records actual red/green results and artifact identities. A software
@@ -86,3 +88,9 @@ report can supply some phone observations for the [private N2b record](n2b-inven
 It does not fill the complete host/backend, route, negotiated format, capture,
 ownership, work, continuity or consent inventory, authenticate its device,
 qualify physical output, activate protection or advance N2b–N5.
+
+The tests-only baseline is `19f3b67d5035253cc7538ffc16f6dff751964784`.
+Native UI run 40512820172 reached the actual old inventory and failed because
+Review output report was absent. Its Kotlin test compile separately rejected
+the missing report API. Those failures precede the new native report flow;
+final green runs and APK identity belong to the implementation PR.
