@@ -9,7 +9,15 @@ final class AQSSReadOnlyUITests: XCTestCase {
     ]
 
     private func openTestSetup(_ app: XCUIApplication) throws {
-        tab("sound", app)
+        if app.buttons["page-picker"].exists {
+            app.buttons["page-picker"].tap()
+            let menu = app.scrollViews["menu-scroll"]
+            tap("Sound", app, scroll: menu)
+            let closed = XCTNSPredicateExpectation(predicate: NSPredicate(format: "exists == false"), object: menu)
+            XCTAssertEqual(XCTWaiter.wait(for: [closed], timeout: 5), .completed)
+        } else {
+            tab("sound", app)
+        }
         let entry = app.buttons["test-setup-open"]
         guard entry.waitForExistence(timeout: 5) else {
             screenshot("Test setup entry missing from Sound", app)
