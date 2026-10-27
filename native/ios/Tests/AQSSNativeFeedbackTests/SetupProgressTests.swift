@@ -2,6 +2,16 @@ import XCTest
 @testable import AQSSNativeFeedback
 
 final class SetupProgressTests: XCTestCase {
+    func testReorderedGuidesDoNotInterpretAnOldPictureIndexAsANewStep() {
+        var saved = AQSSSetupProgress(serialized: "{\"google_remote\":6,\"vizio_account\":6,\"google_setup\":8,\"tcl_models\":8,\"roku_network\":2}")
+        XCTAssertNil(saved.resumeIndex("google_remote"))
+        XCTAssertNil(saved.resumeIndex("vizio_account"))
+        XCTAssertNil(saved.resumeIndex("google_setup"))
+        XCTAssertNil(saved.resumeIndex("tcl_models"))
+        XCTAssertEqual(saved.resumeIndex("roku_network"), 2)
+        XCTAssertTrue(saved.record("google_remote", 6))
+        XCTAssertEqual(AQSSSetupProgress(serialized: saved.serialized()).resumeIndex("google_remote"), 6)
+    }
     func testBookmarksRoundTripAndFinishClearsOnlyThatRoute() {
         var saved = AQSSSetupProgress()
         XCTAssertTrue(saved.record("roku_network", 3))

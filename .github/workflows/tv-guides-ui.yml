@@ -1,0 +1,140 @@
+name: TV brand picture guide verification
+
+on:
+  push:
+    branches: ["aqss/tv-guide-clarity-0323"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: tv-guide-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  android-tv-guides:
+    name: TV guides on Android
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Record exact verification source
+        run: |
+          python3 - <<'PYTHON'
+          import json, os, pathlib, subprocess
+          source = subprocess.check_output(['git', 'rev-parse', 'HEAD'], text=True).strip()
+          assert source == os.environ['GITHUB_SHA']
+          record = {'source_commit': source,
+                    'source_tree': subprocess.check_output(['git', 'rev-parse', 'HEAD^{tree}'], text=True).strip(),
+                    'workflow_run_id': os.environ['GITHUB_RUN_ID'],
+                    'workflow_attempt': os.environ['GITHUB_RUN_ATTEMPT'],
+                    'scope': 'Android emulator guide navigation; no physical pairing'}
+          output = pathlib.Path('artifacts/ui/android-live-input')
+          output.mkdir(parents=True, exist_ok=True)
+          (output / 'source-identity.json').write_text(json.dumps(record, indent=2) + '\n')
+          print(json.dumps(record, sort_keys=True))
+          PYTHON
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: "8.13"
+      - uses: android-actions/setup-android@v4
+      - name: Compile app and isolated UI observers
+        run: |
+          sdkmanager "platforms;android-36"
+          gradle -p native/android :app:assembleLiveInput :uiprobe:assembleDebug :sharereceiver:assembleDebug
+      - name: Enable emulator acceleration
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+      - name: Verify TV guide navigation
+        uses: reactivecircus/android-emulator-runner@a421e43855164a8197daf9d8d40fe71c6996bb0d
+        with:
+          api-level: 36
+          arch: x86_64
+          profile: pixel_5
+          emulator-options: -no-window -gpu swiftshader -no-snapshot -noaudio -no-boot-anim -delay-adb
+          script: timeout 1500 python3 tools/smoke_android_live_input.py --tv-guides-only
+      - name: Retain TV guide Android UI evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: tv-guides-android-ui
+          path: artifacts/ui/android-live-input/
+          if-no-files-found: error
+          retention-days: 14
+
+  iphone-tv-guides:
+    name: TV guides on ${{ matrix.device }} Simulator
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - device: iPhone
+            artifact: iphone
+          - device: iPad
+            artifact: ipad
+    runs-on: macos-14
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Record exact verification source
+        run: |
+          python3 - <<'PYTHON'
+          import json, os, pathlib, subprocess
+          source = subprocess.check_output(['git', 'rev-parse', 'HEAD'], text=True).strip()
+          assert source == os.environ['GITHUB_SHA']
+          record = {'source_commit': source,
+                    'source_tree': subprocess.check_output(['git', 'rev-parse', 'HEAD^{tree}'], text=True).strip(),
+                    'workflow_run_id': os.environ['GITHUB_RUN_ID'],
+                    'workflow_attempt': os.environ['GITHUB_RUN_ATTEMPT'],
+                    'scope': '${{ matrix.device }} Simulator guide navigation; no signed installation or physical pairing'}
+          output = pathlib.Path(os.environ['RUNNER_TEMP']) / 'sound-check-screenshots'
+          output.mkdir(parents=True, exist_ok=True)
+          (output / 'source-identity.json').write_text(json.dumps(record, indent=2) + '\n')
+          print(json.dumps(record, sort_keys=True))
+          PYTHON
+      - name: Verify TV guide choices and large text
+        shell: bash
+        run: |
+          set -euo pipefail
+          simulator_udid="$(xcrun simctl list devices available -j | python3 -c 'import json,sys; print(next(d["udid"] for group in json.load(sys.stdin)["devices"].values() for d in group if d["name"].startswith("${{ matrix.device }}") and d.get("isAvailable",True)))')"
+          xcodebuild -project native/ios-app/AQSSReadOnly.xcodeproj -scheme AQSSReadOnly \
+            -configuration Release -destination "platform=iOS Simulator,id=$simulator_udid" \
+            -parallel-testing-enabled NO -resultBundlePath "$RUNNER_TEMP/sound-tv-guides.xcresult" \
+            -only-testing:AQSSReadOnlyUITests/AQSSReadOnlyUITests/testTVCodePicturesSeparateTheTVFromPhoneAndKeepOptionalLinksNeutral \
+            -only-testing:AQSSReadOnlyUITests/AQSSReadOnlyUITests/testBrandPlatformsKeepRokuMenusSeparateAndOfferManualGoogleTVSetup \
+            -only-testing:AQSSReadOnlyUITests/AQSSReadOnlyUITests/testLGVizioAndGoogleTVContinueIntoTheirOwnPhoneAppPictures \
+            -only-testing:AQSSReadOnlyUITests/AQSSReadOnlyUITests/testPhilipsAlreadyConnectedSkipsPairingAndBackRestoresTheChoice \
+            -only-testing:AQSSReadOnlyUITests/AQSSReadOnlyUITests/testNewBrandPicturesAreReachable \
+            -only-testing:AQSSReadOnlyUITests/AQSSReadOnlyUITests/testNewVizioTVShowsAccountThenPhonePicturesInOrder \
+            -only-testing:AQSSReadOnlyUITests/AQSSReadOnlyUITests/testLargestTextKeepsExitAndNextReachable \
+            CODE_SIGNING_ALLOWED=NO test
+      - name: Export native TV guide screenshots
+        if: always()
+        run: python3 tools/export_ios_input_screenshots.py "$RUNNER_TEMP" tv-guides
+      - name: Retain TV guide iPhone screenshot evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: tv-guides-${{ matrix.artifact }}-ui
+          path: ${{ runner.temp }}/sound-check-screenshots/
+          if-no-files-found: error
+          retention-days: 14
+      - name: Retain TV guide iPhone test result
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: tv-guides-${{ matrix.artifact }}-xcresult
+          path: ${{ runner.temp }}/sound-tv-guides.xcresult
+          if-no-files-found: ignore
+          retention-days: 14

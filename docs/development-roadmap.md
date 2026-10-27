@@ -1,10 +1,19 @@
 # AQSS development roadmap
 
-Checkpoint: October 24, 2026. Continue from the restored a-Shell baseline and the existing native endpoint qualification research. iPhone/iOS and Android remain equal product targets.
+Checkpoint: October 26, 2026. Continue from the restored a-Shell baseline and the existing native endpoint qualification research. iPhone/iOS and Android remain equal product targets.
 
 **INFERENCE IS NOT REALITY. AI proposes. Policy authorizes. Physical Commit verifies.**
 
 ## Current checkpoint
+
+October 26 TV picture-direction phase: [0.32.3 review](tv-guide-review-2026-10-26.md)
+reviews every existing non-Samsung TV brand choice and its platform routes.
+Explicit picture surfaces, separate code-reading/entry, neutral optional choices,
+brand-matched phone checks, a Google TV manual fallback and Philips/Fire decision
+navigation clarify setup. Reordered guides invalidate old numeric bookmarks.
+The shared catalog has 51 routes and 436 illustrations. Android is build 35;
+iPhone/iPad source is 0.32.3. Final source-bound results and installer identity
+belong to its draft PR. Physical connection and N2b–N5 remain pending.
 
 October 25 output freshness repair: [0.32.2 review](output-inventory-freshness-2026-10-25.md)
 withdraws displayed Android output advertisements when a relevant device-change

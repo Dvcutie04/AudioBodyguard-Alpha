@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "mode": "illustrated_guidance_only",
-  "reviewed_at": "2026-10-25",
+  "reviewed_at": "2026-10-26",
   "sources": [
     {
       "id": "samsung_pair",
@@ -45,7 +45,7 @@
     },
     {
       "id": "google_remote",
-      "title": "Google TV: phone remote on iPhone and Android",
+      "title": "Google TV: phone remote on Android",
       "url": "https://support.google.com/googletv/answer/11136134?hl=en"
     },
     {
@@ -177,6 +177,21 @@
       "id": "galaxy_wifi",
       "title": "Samsung: Galaxy Wi-Fi menus (Canada)",
       "url": "https://www.samsung.com/ca/support/mobile-devices/connect-your-samsung-galaxy-to-the-internet/"
+    },
+    {
+      "id": "google_remote_ios",
+      "title": "Google TV: phone remote on iPhone and iPad",
+      "url": "https://support.google.com/googletv/answer/11136134?co=GENIE.Platform%3DiOS&hl=en"
+    },
+    {
+      "id": "lg_google",
+      "title": "LG — Google speaker linking (matching TVs and services only)",
+      "url": "https://www.lg.com/us/support/smart-thinq-google-assistant-voice-control"
+    },
+    {
+      "id": "lg_login_change",
+      "title": "LG — affected social sign-in and assistant reconnection notice",
+      "url": "https://www.lg.com/sa_en/support/announcement/Notice-of-Discontinuation-of-Certain-Social-Account-Login-Services/"
     }
   ],
   "groups": [
@@ -197,7 +212,8 @@
       ],
       "primary_routes": [
         "samsung_ok"
-      ]
+      ],
+      "phone_route": "samsung_phone"
     },
     {
       "id": "lg",
@@ -214,11 +230,13 @@
         "lg_alexa",
         "google_legacy",
         "google_legacy_add",
+        "lg_phone",
         "identify"
       ],
       "primary_routes": [
         "lg_pair"
-      ]
+      ],
+      "phone_route": "lg_phone"
     },
     {
       "id": "sony",
@@ -229,11 +247,14 @@
         "sony_legacy",
         "google_setup",
         "google_fast",
+        "google_phone",
+        "google_manual",
         "identify"
       ],
       "primary_routes": [
         "google_remote"
-      ]
+      ],
+      "phone_route": "google_phone"
     },
     {
       "id": "tcl",
@@ -250,6 +271,7 @@
         "fire_alexa",
         "google_legacy",
         "google_legacy_add",
+        "google_manual",
         "identify",
         "roku_phone"
       ],
@@ -271,6 +293,7 @@
         "roku_alexa",
         "google_roku",
         "fire_alexa",
+        "google_manual",
         "identify",
         "roku_phone"
       ],
@@ -289,6 +312,7 @@
         "vizio_account",
         "vizio_assist",
         "google_vizio",
+        "vizio_phone",
         "identify",
         "vizio_google",
         "vizio_alexa"
@@ -296,12 +320,14 @@
       "primary_routes": [
         "vizio_pair",
         "vizio_walmart"
-      ]
+      ],
+      "phone_route": "vizio_phone"
     },
     {
       "id": "other",
       "title": "Another brand",
       "routes": [
+        "google_manual",
         "identify",
         "google_remote",
         "google_setup",
@@ -442,7 +468,8 @@
       ],
       "primary_routes": [
         "roku_network"
-      ]
+      ],
+      "phone_route": "roku_phone"
     },
     {
       "id": "tcl_google",
@@ -454,11 +481,14 @@
         "google_fast",
         "google_legacy",
         "google_legacy_add",
+        "google_phone",
+        "google_manual",
         "identify"
       ],
       "primary_routes": [
         "google_remote"
-      ]
+      ],
+      "phone_route": "google_phone"
     },
     {
       "id": "tcl_fire",
@@ -483,6 +513,7 @@
         "roku_network",
         "roku_alexa",
         "google_roku",
+        "google_manual",
         "identify",
         "roku_phone"
       ],
@@ -504,7 +535,8 @@
       ],
       "primary_routes": [
         "roku_model"
-      ]
+      ],
+      "phone_route": "roku_phone"
     },
     {
       "id": "roku",
@@ -519,7 +551,8 @@
       ],
       "primary_routes": [
         "roku_network"
-      ]
+      ],
+      "phone_route": "roku_phone"
     },
     {
       "id": "insignia",
@@ -566,7 +599,8 @@
       ],
       "primary_routes": [
         "roku_network"
-      ]
+      ],
+      "phone_route": "roku_phone"
     },
     {
       "id": "hisense_google",
@@ -575,11 +609,14 @@
         "google_remote",
         "google_setup",
         "google_fast",
+        "google_phone",
+        "google_manual",
         "identify"
       ],
       "primary_routes": [
         "google_remote"
-      ]
+      ],
+      "phone_route": "google_phone"
     },
     {
       "id": "hisense_vidaa",
@@ -613,11 +650,14 @@
         "google_remote",
         "philips_voice_remote",
         "google_setup",
+        "google_phone",
+        "google_manual",
         "identify"
       ],
       "primary_routes": [
         "google_remote"
-      ]
+      ],
+      "phone_route": "google_phone"
     },
     {
       "id": "philips_roku",
@@ -632,7 +672,8 @@
       ],
       "primary_routes": [
         "roku_network"
-      ]
+      ],
+      "phone_route": "roku_phone"
     },
     {
       "id": "insignia_roku",
@@ -647,7 +688,8 @@
       ],
       "primary_routes": [
         "roku_network"
-      ]
+      ],
+      "phone_route": "roku_phone"
     },
     {
       "id": "insignia_fire",
@@ -1337,7 +1379,8 @@
           "action": "check",
           "note": "Controls in SmartThings do not establish an Audio Bodyguard connection or active audio protection."
         }
-      ]
+      ],
+      "pairing_route": "samsung_ok"
     },
     {
       "id": "lg_model_new",
@@ -1669,7 +1712,8 @@
       "applies_to": "Supported LG TVs, generally 2017 or later; some models are excluded. This is a menu-family guide, not a guarantee for every LG model.",
       "models": [],
       "sources": [
-        "lg_pair"
+        "lg_pair",
+        "lg_login_change"
       ],
       "steps": [
         {
@@ -1709,7 +1753,7 @@
           ],
           "focus": 1,
           "action": "type",
-          "note": "Enter passwords only in the official app or its sign-in page, never in this guide."
+          "note": "Use the same LG account that holds this TV. If LG no longer offers your old social sign-in, use the email linked to that LG account and follow LG’s recovery guidance. Enter passwords only in the official app."
         },
         {
           "title": "Add your television",
@@ -1763,15 +1807,15 @@
         },
         {
           "title": "Read the TV code",
-          "instruction": "Keep the TV PIN visible.",
+          "instruction": "Read the complete PIN on your TV. Keep this screen open.",
           "surface": "tv",
           "screen": "ThinQ pairing",
           "items": [
-            "TV PIN: ••••"
+            "PIN shown on your TV"
           ],
           "focus": 0,
           "action": "check",
-          "note": "Use your real device. This picture is an illustration."
+          "note": "PIN length varies. Read your actual TV; do not use an example code."
         },
         {
           "title": "Enter the real PIN",
@@ -1809,8 +1853,9 @@
             "Skip"
           ],
           "focus": 0,
-          "action": "tap",
-          "note": "The Link highlight is an example, not a recommendation. Choose Skip if you do not want this optional account link."
+          "action": "check",
+          "note": "Link is optional. Choose Link or Skip in ThinQ according to your preference. Neither option grants Audio Bodyguard access.",
+          "picture_surface": "choice"
         },
         {
           "title": "Finish registration",
@@ -1845,7 +1890,8 @@
       "applies_to": "For an already set-up Google TV or Android TV, including compatible Sony, TCL and Hisense variants. Use the official Google TV app on iPhone or Android. This does not link Alexa.",
       "models": [],
       "sources": [
-        "google_remote"
+        "google_remote",
+        "google_remote_ios"
       ],
       "steps": [
         {
@@ -1911,17 +1957,28 @@
           "note": "Use your real device. This picture is an illustration."
         },
         {
-          "title": "Match the screen code",
-          "instruction": "Read the code on the TV and enter it in the phone app.",
-          "surface": "both",
-          "screen": "Pair with TV",
+          "title": "Read your TV code",
+          "instruction": "On your TV, read the pairing code. Keep this screen open.",
+          "surface": "tv",
+          "screen": "Google TV pairing",
           "items": [
-            "TV code: ••••••",
-            "Enter code"
+            "Pairing code shown on your TV"
           ],
-          "focus": 1,
+          "focus": 0,
+          "action": "check",
+          "note": "Use the complete code on your own TV. Its length can vary; this picture supplies no sample code."
+        },
+        {
+          "title": "Enter the TV code",
+          "instruction": "In Google TV on your phone, enter the complete code shown on your TV.",
+          "surface": "phone",
+          "screen": "Google TV • Pairing",
+          "items": [
+            "Enter TV code"
+          ],
+          "focus": 0,
           "action": "type",
-          "note": "Use your real device. This picture is an illustration."
+          "note": "The code comes from the TV you selected. Next, confirm pairing in the official Google TV app."
         },
         {
           "title": "Confirm pairing",
@@ -1948,7 +2005,8 @@
           "action": "check",
           "note": "Finishing this guide does not connect Audio Bodyguard or activate protection."
         }
-      ]
+      ],
+      "progress_version": 2
     },
     {
       "id": "google_setup",
@@ -1992,11 +2050,12 @@
           "surface": "tv",
           "screen": "Set up with Google Home",
           "items": [
-            "TV setup code"
+            "TV setup QR code"
           ],
           "focus": 0,
-          "action": "scan",
-          "note": "The guide deliberately contains no scannable QR code."
+          "action": "wait",
+          "note": "The guide deliberately contains no scannable QR code.",
+          "picture_surface": "tv"
         },
         {
           "title": "Open Google Home",
@@ -2059,16 +2118,30 @@
           "note": "Use your real device. This picture is an illustration."
         },
         {
-          "title": "Scan the actual TV screen",
-          "instruction": "Tap Scan code, then scan the QR code on your real TV.",
+          "title": "Open the phone scanner",
+          "instruction": "In Google Home, tap Scan code.",
           "surface": "phone",
-          "screen": "Choose a home",
+          "screen": "Google Home",
           "items": [
             "Scan code"
           ],
           "focus": 0,
+          "action": "tap",
+          "note": "If camera permission is requested, review it on your phone. If you prefer TV-remote setup, use Need help?.",
+          "picture_surface": "phone"
+        },
+        {
+          "title": "Scan the TV setup code",
+          "instruction": "Point your phone camera at the QR code on your real TV.",
+          "surface": "both",
+          "screen": "TV setup QR code",
+          "items": [
+            "TV QR code"
+          ],
+          "focus": 0,
           "action": "scan",
-          "note": "Use your real device. This picture is an illustration."
+          "note": "Scan the setup code currently shown by this TV. This illustration does not contain a usable QR code.",
+          "picture_surface": "tv"
         },
         {
           "title": "Review Google sign-in",
@@ -2110,7 +2183,8 @@
           "action": "check",
           "note": "Finishing this guide does not connect Audio Bodyguard or activate protection."
         }
-      ]
+      ],
+      "progress_version": 2
     },
     {
       "id": "tcl_models",
@@ -2161,11 +2235,12 @@
           "surface": "tv",
           "screen": "Set up with Google Home",
           "items": [
-            "TV setup code"
+            "TV setup QR code"
           ],
           "focus": 0,
-          "action": "scan",
-          "note": "The guide deliberately contains no scannable QR code."
+          "action": "wait",
+          "note": "The guide deliberately contains no scannable QR code.",
+          "picture_surface": "tv"
         },
         {
           "title": "Open Google Home",
@@ -2228,16 +2303,30 @@
           "note": "Use your real device. This picture is an illustration."
         },
         {
-          "title": "Scan the actual TV screen",
-          "instruction": "Tap Scan code, grant camera access if you agree, then scan the TV code.",
+          "title": "Open the phone scanner",
+          "instruction": "In Google Home, tap Scan code.",
           "surface": "phone",
-          "screen": "Set up device",
+          "screen": "Google Home",
           "items": [
             "Scan code"
           ],
           "focus": 0,
+          "action": "tap",
+          "note": "If camera permission is requested, review it on your phone. If you prefer TV-remote setup, use Need help?.",
+          "picture_surface": "phone"
+        },
+        {
+          "title": "Scan the TV setup code",
+          "instruction": "Point your phone camera at the QR code on your real TV.",
+          "surface": "both",
+          "screen": "TV setup QR code",
+          "items": [
+            "TV QR code"
+          ],
+          "focus": 0,
           "action": "scan",
-          "note": "Use your real device. This picture is an illustration."
+          "note": "Scan the setup code currently shown by this TV. This illustration does not contain a usable QR code.",
+          "picture_surface": "tv"
         },
         {
           "title": "Review Google sign-in",
@@ -2279,12 +2368,13 @@
           "action": "check",
           "note": "Finishing this guide does not connect Audio Bodyguard or activate protection."
         }
-      ]
+      ],
+      "progress_version": 2
     },
     {
       "id": "google_fast",
       "title": "Google TV — faster phone setup",
-      "applies_to": "Only for TVs showing the newer phone-camera setup instructions. Requires iOS 17 or later, or Android 9 or later. This is a separate path from Google Home app setup.",
+      "applies_to": "Only for TVs showing phone-camera setup instructions. Availability depends on the TV and phone software. If that prompt is absent, use Google Home or TV-remote setup.",
       "models": [],
       "sources": [
         "google_setup"
@@ -2313,7 +2403,7 @@
           ],
           "focus": 0,
           "action": "check",
-          "note": "Use current phone software. If Google TV is already installed on iPhone, Google specifies app version 3.3100002 or later."
+          "note": "Use the phone-camera route only when your TV offers it. Follow current phone requirements in the official instructions; choose Google Home or manual setup if unavailable."
         },
         {
           "title": "Prepare the phone",
@@ -2332,13 +2422,14 @@
           "title": "Scan your TV code",
           "instruction": "Use your phone camera to scan the code on the actual TV.",
           "surface": "both",
-          "screen": "Phone camera",
+          "screen": "TV setup QR code",
           "items": [
             "TV setup code"
           ],
           "focus": 0,
           "action": "scan",
-          "note": "Use your real device. This picture is an illustration."
+          "note": "Use your real device. This picture is an illustration.",
+          "picture_surface": "tv"
         },
         {
           "title": "Review account and permissions",
@@ -2510,11 +2601,13 @@
     {
       "id": "google_lg",
       "title": "LG ThinQ → Google Home (Add device menus)",
-      "applies_to": "First register the TV with LG ThinQ. Use this path when Google Home shows Add → Device → Add a different way. Availability depends on model, region and provider.",
+      "applies_to": "First register the TV with LG ThinQ. Use this path when Google Home shows Add → Device → Add a different way. Availability depends on model, region and provider. Use only if the official LG ThinQ provider offers your TV. External-speaker linking and the TV’s built-in voice assistant are separate features.",
       "models": [],
       "sources": [
         "google_link",
-        "lg_assist"
+        "lg_assist",
+        "lg_login_change",
+        "lg_google"
       ],
       "steps": [
         {
@@ -2615,7 +2708,7 @@
           ],
           "focus": 2,
           "action": "check",
-          "note": "A missing service or TV is not a successful connection."
+          "note": "Use the same LG account that holds this TV. If LG no longer offers your old social sign-in, use the email linked to that LG account and follow LG’s recovery guidance. Enter passwords only in the official app."
         },
         {
           "title": "Check the actual result",
@@ -3239,7 +3332,8 @@
       "models": [],
       "sources": [
         "lg_alexa",
-        "lg_assist"
+        "lg_assist",
+        "lg_login_change"
       ],
       "steps": [
         {
@@ -3292,16 +3386,17 @@
         },
         {
           "title": "Select the TV-capable skill",
-          "instruction": "Where the documented choices appear, select LG ThinQ – Complete (Smart Appliance and TV).",
+          "instruction": "Choose the official LG ThinQ skill whose description supports your TV. Where Basic and Complete both include TV support, either is valid.",
           "surface": "phone",
           "screen": "LG ThinQ",
           "items": [
             "LG ThinQ – Basic",
             "LG ThinQ – Complete"
           ],
-          "focus": 1,
-          "action": "tap",
-          "note": "Use your real device. This picture is an illustration."
+          "focus": 0,
+          "action": "check",
+          "note": "Check the skill description for your model and region. Neither choice links an account until you approve the official request.",
+          "picture_surface": "choice"
         },
         {
           "title": "Enable and authorize",
@@ -3315,7 +3410,7 @@
           ],
           "focus": 2,
           "action": "check",
-          "note": "Use your real device. This picture is an illustration."
+          "note": "Use the same LG account that holds this TV. If LG no longer offers your old social sign-in, use the email linked to that LG account and follow LG’s recovery guidance. Enter passwords only in the official app."
         },
         {
           "title": "Discover registered devices",
@@ -3413,7 +3508,8 @@
           ],
           "focus": 0,
           "action": "scan",
-          "note": "Use your real device. This picture is an illustration."
+          "note": "Use your real device. This picture is an illustration.",
+          "picture_surface": "tv"
         },
         {
           "title": "Complete account sign-in",
@@ -3446,12 +3542,13 @@
           "surface": "tv",
           "screen": "Remote start",
           "items": [
-            "Yes",
-            "No"
+            "Enable voice power-on",
+            "Leave voice power-on off"
           ],
           "focus": 0,
-          "action": "select",
-          "note": "Yes is an illustrated choice only. Select No if you do not want remote power-on. Enabling standby access can use more power."
+          "action": "check",
+          "note": "Choose in the actual TV prompt. Enabling Remote start permits voice power-on and can affect standby energy. This illustration selects neither option.",
+          "picture_surface": "choice"
         },
         {
           "title": "Choose Alexa on the TV",
@@ -3475,7 +3572,8 @@
           ],
           "focus": 0,
           "action": "scan",
-          "note": "If unavailable, open Alexa and search BRAVIA in Search for Skills; select Sony’s TV Skill, not Basic."
+          "note": "If unavailable, open Alexa and search BRAVIA in Search for Skills; select Sony’s TV Skill, not Basic.",
+          "picture_surface": "tv"
         },
         {
           "title": "Enable and link the same account",
@@ -3655,12 +3753,13 @@
           "surface": "tv",
           "screen": "Remote start",
           "items": [
-            "Yes",
-            "No"
+            "Enable voice power-on",
+            "Leave voice power-on off"
           ],
           "focus": 0,
-          "action": "select",
-          "note": "Yes is an illustrated choice only. Select No if you do not want remote power-on. Enabling standby access can use more power."
+          "action": "check",
+          "note": "Choose in the actual TV prompt. Enabling Remote start permits voice power-on and can affect standby energy. This illustration selects neither option.",
+          "picture_surface": "choice"
         },
         {
           "title": "Choose the TV Google account",
@@ -4446,7 +4545,8 @@
           ],
           "focus": 0,
           "action": "scan",
-          "note": "Scan the code on your own TV. The illustration is not a working QR code."
+          "note": "Scan the code on your own TV. The illustration is not a working QR code.",
+          "picture_surface": "tv"
         },
         {
           "title": "Sign in on your phone",
@@ -4470,7 +4570,8 @@
           ],
           "focus": 0,
           "action": "check",
-          "note": "This is a descriptive picture, not an exact button. If setup is incomplete, follow the prompts on your TV."
+          "note": "This is a descriptive picture, not an exact button. If setup is incomplete, follow the prompts on your TV.",
+          "picture_surface": "tv"
         },
         {
           "title": "Use the same home Wi-Fi",
@@ -4645,8 +4746,20 @@
           "note": "Enter passwords only in the official app or its sign-in page, never in this guide."
         },
         {
-          "title": "Open your account",
-          "instruction": "In VIZIO Mobile, open Account, then VIZIO Account.",
+          "title": "Open the Account tab",
+          "instruction": "In VIZIO Mobile, tap Account.",
+          "surface": "phone",
+          "screen": "VIZIO Mobile",
+          "items": [
+            "Account"
+          ],
+          "focus": 0,
+          "action": "tap",
+          "note": "Use the matching screen in the official VIZIO app. If labels differ, open My screen looks different."
+        },
+        {
+          "title": "Open VIZIO Account",
+          "instruction": "Select VIZIO Account.",
           "surface": "phone",
           "screen": "Account",
           "items": [
@@ -4654,32 +4767,55 @@
           ],
           "focus": 0,
           "action": "tap",
-          "note": "Use your real device. This picture is an illustration."
+          "note": "Use the matching screen in the official VIZIO app. If labels differ, open My screen looks different."
         },
         {
-          "title": "Add this television",
-          "instruction": "Choose Devices & TVs, then Add TV.",
+          "title": "Open Devices & TVs",
+          "instruction": "Select Devices & TVs.",
           "surface": "phone",
           "screen": "VIZIO Account",
           "items": [
-            "Devices & TVs",
-            "Add TV"
+            "Devices & TVs"
           ],
-          "focus": 1,
+          "focus": 0,
           "action": "tap",
-          "note": "Use your real device. This picture is an illustration."
+          "note": "Use the matching screen in the official VIZIO app. If labels differ, open My screen looks different."
         },
         {
-          "title": "Use the actual TV code",
-          "instruction": "Scan the TV code, or type its six-digit account code in the official app.",
-          "surface": "both",
-          "screen": "Link TV account",
+          "title": "Add this television",
+          "instruction": "Select Add TV.",
+          "surface": "phone",
+          "screen": "Devices & TVs",
           "items": [
-            "6-digit code: ••••••"
+            "Add TV"
+          ],
+          "focus": 0,
+          "action": "tap",
+          "note": "Use the matching screen in the official VIZIO app. If labels differ, open My screen looks different."
+        },
+        {
+          "title": "Read the account code on your TV",
+          "instruction": "Read the six-digit account code on your TV. Keep that screen open.",
+          "surface": "tv",
+          "screen": "TV • Extras • VIZIO Account",
+          "items": [
+            "6-digit account code on your TV"
+          ],
+          "focus": 0,
+          "action": "check",
+          "note": "This account code differs from VIZIO Mobile’s four-digit remote-pairing code."
+        },
+        {
+          "title": "Enter the account code on your phone",
+          "instruction": "In the official VIZIO app, enter the six-digit code shown on your TV.",
+          "surface": "phone",
+          "screen": "VIZIO Account • Add TV",
+          "items": [
+            "Enter 6-digit code (account)"
           ],
           "focus": 0,
           "action": "type",
-          "note": "Use your real device. This picture is an illustration."
+          "note": "Use the actual code on your TV. If you prefer the QR alternative offered by the official app, follow that flow there."
         },
         {
           "title": "Check the actual result",
@@ -4694,7 +4830,8 @@
           "action": "check",
           "note": "Finishing this guide does not connect Audio Bodyguard or activate protection."
         }
-      ]
+      ],
+      "progress_version": 2
     },
     {
       "id": "vizio_assist",
@@ -5617,8 +5754,9 @@
             "Hold 3–5 seconds"
           ],
           "focus": 0,
-          "action": "check",
-          "note": "Use the numbered highlight on your real device. This illustration does not confirm a connection to Audio Bodyguard."
+          "action": "hold",
+          "note": "Hold both named buttons together for 3–5 seconds on the documented Philips remote. Do not use this combination for a different remote.",
+          "picture_surface": "remote"
         },
         {
           "title": "If the light does not blink",
@@ -5630,8 +5768,9 @@
             "Only when pairing mode failed"
           ],
           "focus": 0,
-          "action": "check",
-          "note": "Use the numbered highlight on your real device. This illustration does not confirm a connection to Audio Bodyguard."
+          "action": "hold",
+          "note": "Hold both named buttons together for 3–5 seconds on the documented Philips remote. Do not use this combination for a different remote.",
+          "picture_surface": "remote"
         },
         {
           "title": "Find the remote on the TV",
@@ -5702,8 +5841,9 @@
             "Home — hold about 10 seconds"
           ],
           "focus": 0,
-          "action": "home",
-          "note": "Use the numbered highlight on your real device. This illustration does not confirm a connection to Audio Bodyguard."
+          "action": "hold",
+          "note": "Use the numbered highlight on your real device. This illustration does not confirm a connection to Audio Bodyguard.",
+          "picture_surface": "remote"
         },
         {
           "title": "Continue on the TV",
@@ -5735,11 +5875,13 @@
           "surface": "both",
           "screen": "Network setup",
           "items": [
-            "QR code or TV remote setup"
+            "Phone QR setup",
+            "TV remote setup"
           ],
           "focus": 0,
-          "action": "scan",
-          "note": "Use the numbered highlight on your real device. This illustration does not confirm a connection to Audio Bodyguard."
+          "action": "check",
+          "note": "Use the numbered highlight on your real device. This illustration does not confirm a connection to Audio Bodyguard.",
+          "picture_surface": "choice"
         },
         {
           "title": "Read the account approval screen",
@@ -5751,20 +5893,20 @@
           ],
           "focus": 0,
           "action": "scan",
-          "note": "Use the numbered highlight on your real device. This illustration does not confirm a connection to Audio Bodyguard."
+          "note": "Use the numbered highlight on your real device. This illustration does not confirm a connection to Audio Bodyguard.",
+          "picture_surface": "tv"
         },
         {
-          "title": "Enter the TV verification code",
-          "instruction": "On your phone or computer, sign in to Amazon and enter the code shown on your TV.",
+          "title": "Follow the account prompt on your phone",
+          "instruction": "Sign in on the official Amazon page. If it asks for a code, enter the code shown on your TV.",
           "surface": "phone",
           "screen": "Amazon device approval",
           "items": [
-            "Enter code from your TV",
-            "Approve your TV"
+            "TV code — only if requested"
           ],
           "focus": 0,
           "action": "type",
-          "note": "On your own phone or computer, sign in to the official Amazon page and enter the verification code shown on your own TV. Never use a code drawn in an example."
+          "note": "QR sign-in may finish without typing a code. If sign-in has finished, continue to the TV check."
         },
         {
           "title": "Check setup on your TV",
@@ -5859,7 +6001,8 @@
           "action": "check",
           "note": "Only your own TV can show whether the Roku app connection worked."
         }
-      ]
+      ],
+      "pairing_route": "roku_network"
     },
     {
       "id": "phone_iphone",
@@ -6314,6 +6457,323 @@
           "focus": 0,
           "action": "check",
           "note": "Finishing this guide does not connect Audio Bodyguard or activate protection."
+        }
+      ]
+    },
+    {
+      "id": "lg_phone",
+      "title": "2. Check LG ThinQ on your phone",
+      "applies_to": "Use after adding your TV in LG ThinQ. Check the existing TV without repeating setup. This does not connect Audio Bodyguard.",
+      "models": [],
+      "sources": [
+        "lg_pair",
+        "lg_login_change"
+      ],
+      "steps": [
+        {
+          "title": "Check the phone network",
+          "instruction": "Connect your phone to the same home Wi-Fi as your TV.",
+          "surface": "phone",
+          "screen": "Phone • Wi-Fi",
+          "items": [
+            "Same home Wi-Fi"
+          ],
+          "focus": 0,
+          "action": "check",
+          "note": "Follow the matching screen in the official app. This does not verify a connection to Audio Bodyguard."
+        },
+        {
+          "title": "Open LG ThinQ",
+          "instruction": "Open LG ThinQ on your phone.",
+          "surface": "phone",
+          "screen": "Phone apps",
+          "items": [
+            "LG ThinQ"
+          ],
+          "focus": 0,
+          "action": "tap",
+          "note": "Follow the matching screen in the official app. This does not verify a connection to Audio Bodyguard."
+        },
+        {
+          "title": "Use the same ThinQ account",
+          "instruction": "Use the LG ThinQ account that holds the TV you added.",
+          "surface": "phone",
+          "screen": "LG ThinQ • Account",
+          "items": [
+            "Account used for this TV"
+          ],
+          "focus": 0,
+          "action": "check",
+          "note": "Use the same LG account that holds this TV. If LG no longer offers your old social sign-in, use the email linked to that LG account and follow LG’s recovery guidance. Enter passwords only in the official app."
+        },
+        {
+          "title": "Open your registered LG TV",
+          "instruction": "Select the TV you registered in LG ThinQ.",
+          "surface": "phone",
+          "screen": "LG ThinQ • Home",
+          "items": [
+            "Your LG TV"
+          ],
+          "focus": 0,
+          "action": "tap",
+          "note": "Follow the matching screen in the official app. This does not verify a connection to Audio Bodyguard."
+        },
+        {
+          "title": "Check the phone controls",
+          "instruction": "Check the official app’s remote controls against your own TV. Return to pairing if the app requests a new code.",
+          "surface": "phone",
+          "screen": "LG ThinQ • TV controls",
+          "items": [
+            "Phone remote controls"
+          ],
+          "focus": 0,
+          "action": "check",
+          "note": "If the TV is missing, use TV is missing — open pairing. Completing pictures changes local learning progress only."
+        }
+      ],
+      "pairing_route": "lg_pair"
+    },
+    {
+      "id": "vizio_phone",
+      "title": "2. Check VIZIO Mobile on your phone",
+      "applies_to": "Use after adding your TV in VIZIO Mobile. Check the existing TV without repeating setup. This does not connect Audio Bodyguard.",
+      "models": [],
+      "sources": [
+        "vizio_pair"
+      ],
+      "steps": [
+        {
+          "title": "Check the phone network",
+          "instruction": "Connect your phone to the same home Wi-Fi as your TV.",
+          "surface": "phone",
+          "screen": "Phone • Wi-Fi",
+          "items": [
+            "Same home Wi-Fi"
+          ],
+          "focus": 0,
+          "action": "check",
+          "note": "Follow the matching screen in the official app. This does not verify a connection to Audio Bodyguard."
+        },
+        {
+          "title": "Open VIZIO Mobile",
+          "instruction": "Open VIZIO Mobile on your phone.",
+          "surface": "phone",
+          "screen": "Phone apps",
+          "items": [
+            "VIZIO Mobile"
+          ],
+          "focus": 0,
+          "action": "tap",
+          "note": "Follow the matching screen in the official app. This does not verify a connection to Audio Bodyguard."
+        },
+        {
+          "title": "Open the VIZIO device selector",
+          "instruction": "Open the device selector in VIZIO Mobile.",
+          "surface": "phone",
+          "screen": "VIZIO Mobile",
+          "items": [
+            "Device selector"
+          ],
+          "focus": 0,
+          "action": "tap",
+          "note": "Follow the matching screen in the official app. This does not verify a connection to Audio Bodyguard."
+        },
+        {
+          "title": "Choose your paired VIZIO TV",
+          "instruction": "Select the TV you paired in VIZIO Mobile.",
+          "surface": "phone",
+          "screen": "VIZIO Mobile • Devices",
+          "items": [
+            "Your VIZIO TV"
+          ],
+          "focus": 0,
+          "action": "tap",
+          "note": "Follow the matching screen in the official app. This does not verify a connection to Audio Bodyguard."
+        },
+        {
+          "title": "Check the phone controls",
+          "instruction": "Check the official app’s remote controls against your own TV. Return to pairing if the app requests a new code.",
+          "surface": "phone",
+          "screen": "VIZIO Mobile • TV controls",
+          "items": [
+            "Phone remote controls"
+          ],
+          "focus": 0,
+          "action": "check",
+          "note": "If the TV is missing, use TV is missing — open pairing. Completing pictures changes local learning progress only."
+        }
+      ],
+      "pairing_route": "vizio_pair"
+    },
+    {
+      "id": "google_phone",
+      "title": "2. Check Google TV on your phone",
+      "applies_to": "Use after adding your TV in Google TV. Check the existing TV without repeating setup. This does not connect Audio Bodyguard.",
+      "models": [],
+      "sources": [
+        "google_remote",
+        "google_remote_ios"
+      ],
+      "steps": [
+        {
+          "title": "Check the phone network",
+          "instruction": "Connect your phone to the same home Wi-Fi as your TV.",
+          "surface": "phone",
+          "screen": "Phone • Wi-Fi",
+          "items": [
+            "Same home Wi-Fi"
+          ],
+          "focus": 0,
+          "action": "check",
+          "note": "Follow the matching screen in the official app. This does not verify a connection to Audio Bodyguard."
+        },
+        {
+          "title": "Open Google TV",
+          "instruction": "Open Google TV on your phone.",
+          "surface": "phone",
+          "screen": "Phone apps",
+          "items": [
+            "Google TV"
+          ],
+          "focus": 0,
+          "action": "tap",
+          "note": "Follow the matching screen in the official app. This does not verify a connection to Audio Bodyguard."
+        },
+        {
+          "title": "Open nearby TVs",
+          "instruction": "In Google TV, tap TVs nearby.",
+          "surface": "phone",
+          "screen": "Google TV",
+          "items": [
+            "TVs nearby"
+          ],
+          "focus": 0,
+          "action": "tap",
+          "note": "Follow the matching screen in the official app. This does not verify a connection to Audio Bodyguard."
+        },
+        {
+          "title": "Choose the same Google TV",
+          "instruction": "Select the TV you paired in Google TV.",
+          "surface": "phone",
+          "screen": "Google TV • Nearby TVs",
+          "items": [
+            "Your Google TV"
+          ],
+          "focus": 0,
+          "action": "tap",
+          "note": "Follow the matching screen in the official app. This does not verify a connection to Audio Bodyguard."
+        },
+        {
+          "title": "Check the phone controls",
+          "instruction": "Check the official app’s remote controls against your own TV. Return to pairing if the app requests a new code.",
+          "surface": "phone",
+          "screen": "Google TV • TV controls",
+          "items": [
+            "Phone remote controls"
+          ],
+          "focus": 0,
+          "action": "check",
+          "note": "If the TV is missing, use TV is missing — open pairing. Completing pictures changes local learning progress only."
+        }
+      ],
+      "pairing_route": "google_remote"
+    },
+    {
+      "id": "google_manual",
+      "title": "Google TV — finish setup with the TV remote",
+      "applies_to": "Use only from the TV’s QR-code setup screen. A phone app is not required for this route. This is first setup, not a factory-reset procedure.",
+      "models": [],
+      "sources": [
+        "google_setup",
+        "tcl_setup"
+      ],
+      "steps": [
+        {
+          "title": "Keep the TV setup screen open",
+          "instruction": "Use this guide from the TV’s QR-code setup screen. Keep the TV remote ready.",
+          "surface": "tv",
+          "screen": "Google TV first setup",
+          "items": [
+            "TV setup QR screen"
+          ],
+          "focus": 0,
+          "action": "check",
+          "note": "Use the option actually shown on your TV. Passwords and account approvals stay in the official TV setup."
+        },
+        {
+          "title": "Open the manual option",
+          "instruction": "Press Down on your TV remote.",
+          "surface": "tv",
+          "screen": "TV remote",
+          "items": [
+            "Down button"
+          ],
+          "focus": 0,
+          "action": "select",
+          "note": "Use the option actually shown on your TV. Passwords and account approvals stay in the official TV setup.",
+          "picture_surface": "remote"
+        },
+        {
+          "title": "Choose TV-remote setup",
+          "instruction": "Select Set up on TV instead or Manual setup, whichever your TV shows.",
+          "surface": "tv",
+          "screen": "Google TV setup",
+          "items": [
+            "Set up on TV instead",
+            "Manual setup"
+          ],
+          "focus": 0,
+          "action": "check",
+          "note": "Use the option actually shown on your TV. Passwords and account approvals stay in the official TV setup.",
+          "picture_surface": "choice"
+        },
+        {
+          "title": "Choose your home Wi-Fi",
+          "instruction": "Use the TV remote to choose your home Wi-Fi network.",
+          "surface": "tv",
+          "screen": "TV • Network setup",
+          "items": [
+            "Your home Wi-Fi"
+          ],
+          "focus": 0,
+          "action": "select",
+          "note": "Use the option actually shown on your TV. Passwords and account approvals stay in the official TV setup."
+        },
+        {
+          "title": "Enter the Wi-Fi password",
+          "instruction": "Use the TV’s on-screen keyboard to enter your Wi-Fi password.",
+          "surface": "tv",
+          "screen": "TV • Wi-Fi password",
+          "items": [
+            "On-screen keyboard"
+          ],
+          "focus": 0,
+          "action": "type",
+          "note": "Use the option actually shown on your TV. Passwords and account approvals stay in the official TV setup."
+        },
+        {
+          "title": "Review the TV account prompts",
+          "instruction": "Follow the Google Account and manufacturer prompts on your TV. Review any access request before continuing.",
+          "surface": "tv",
+          "screen": "TV • Account setup",
+          "items": [
+            "Account and manufacturer prompts"
+          ],
+          "focus": 0,
+          "action": "check",
+          "note": "Use the option actually shown on your TV. Passwords and account approvals stay in the official TV setup."
+        },
+        {
+          "title": "Check the TV Home screen",
+          "instruction": "Continue until your actual TV shows its Home screen. If setup is incomplete, use My screen looks different.",
+          "surface": "tv",
+          "screen": "Google TV Home",
+          "items": [
+            "Home screen on your TV"
+          ],
+          "focus": 0,
+          "action": "check",
+          "note": "Use the option actually shown on your TV. Passwords and account approvals stay in the official TV setup."
         }
       ]
     }

@@ -71,4 +71,15 @@ final class GuideProgressTests: XCTestCase {
         XCTAssertTrue(guide.completePictures(expectedTarget: "connectionCheck", routeID: "samsung_phone"))
         XCTAssertTrue(guide.isLast)
     }
+    func testEveryBrandPhoneCompanionAdvancesOnlyThePhonePart() {
+        for route in Set(AQSSSetupContent.groups.compactMap(\.phoneRoute)) {
+            var guide = AQSSGuideProgress()
+            guide.restore("getting_started", index: 3, selections: ["chooseTV": "lg", "chooseHome": "neither"])
+            XCTAssertFalse(guide.completePictures(expectedTarget: "connectionPlan", routeID: route), route)
+            XCTAssertEqual(guide.index, 3)
+            XCTAssertTrue(guide.completePictures(expectedTarget: "connectionPlan", routeID: "lg_pair"))
+            XCTAssertTrue(guide.completePictures(expectedTarget: "connectionCheck", routeID: route), route)
+            XCTAssertTrue(guide.isLast)
+        }
+    }
 }

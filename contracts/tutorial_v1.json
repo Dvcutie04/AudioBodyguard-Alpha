@@ -558,7 +558,11 @@
       "roku_phone",
       "vizio_google",
       "vizio_alexa",
-      "samsung_phone"
+      "samsung_phone",
+      "lg_phone",
+      "vizio_phone",
+      "google_phone",
+      "google_manual"
     ]
   }
 }

@@ -102,6 +102,14 @@ Tap **Refresh outputs** to read again. Background visits retire their listener,
 so late old callbacks cannot alter a newer snapshot. The Samsung setup repair
 from 0.32.1 stays included; iPhone source remains 0.32.1.
 
+The [0.32.3 TV-picture review](docs/tv-guide-review-2026-10-26.md)
+checks the nine other supported TV brand choices and their platform variants.
+It separates TV codes from phone entry and opening the phone scanner from scanning, makes optional account choices neutral,
+adds matching LG/VIZIO/Google TV phone checks and a manual Google TV fallback,
+and makes Philips/Fire decision paths return correctly with Back. The shared
+catalog now contains 51 routes and 436 illustrations. Android build 35 and
+current iPhone/iPad source identify as 0.32.3; physical pairing remains unverified.
+
 The [internal TestFlight preparation](docs/testflight-beta-preparation.md)
 automates checks on an exact reviewed source revision and provides a manually
 requested signing/upload lane after Apple account and signing setup. It does

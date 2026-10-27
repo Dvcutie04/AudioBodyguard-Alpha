@@ -8,10 +8,6 @@ struct SetupGuideRequest: Identifiable {
 
 /// Local, illustrative instructions. No device session, credentials or control API.
 struct SetupGuidesView: View {
-    private static let tvScreenPictures: [String: Set<Int>] = [
-        "google_fast": [4], "sony_new": [5, 10], "vizio_walmart": [3, 5],
-        "vizio_account": [7], "fire_setup": [5, 6]
-    ]
     private static let repeatedPictureNotes: Set<String> = [
         "Use your real device. This picture is an illustration.",
         "Finishing this guide does not connect Audio Bodyguard or activate protection.",
@@ -62,7 +58,7 @@ struct SetupGuidesView: View {
         guard let route = route, route.steps.indices.contains(index) else { return nil }
         let step = route.steps[index]
         guard step.screen == "App Store or Google Play" else { return step }
-        return AQSSSetupStep(title: step.title, instruction: step.instruction.replacingOccurrences(of: "App Store or Google Play", with: "App Store"), surface: step.surface, screen: "iPhone • App Store", items: step.items.map { $0 == "Install" ? "Get" : $0 }, focus: step.focus, action: step.action, note: step.note)
+        return AQSSSetupStep(title: step.title, instruction: step.instruction.replacingOccurrences(of: "App Store or Google Play", with: "App Store"), surface: step.surface, screen: "iPhone • App Store", items: step.items.map { $0 == "Install" ? "Get" : $0 }, focus: step.focus, action: step.action, note: step.note, pictureSurface: step.pictureSurface)
     }
     private var key: String { "\(groupID)-\(routeID ?? "")-\(index)-\(mismatch)" }
     private var title: String { mismatch ? "Find the right screen" : step?.title ?? route?.title ?? (group == nil ? "Choose your TV or app" : group!.title) }
@@ -100,7 +96,7 @@ struct SetupGuidesView: View {
                     if mismatch { mismatchContent }
                     else if let route = route {
                         if let step = step {
-                            Label(step.surface == "tv" ? "On your TV · use the remote" : step.surface == "both" ? "Your TV + your phone" : "On your phone", systemImage: step.surface == "phone" ? "iphone" : "tv")
+                            Label(step.pictureKind == "remote" ? "On your TV remote" : step.surface == "tv" ? "On your TV · use the remote" : step.surface == "both" ? "Your TV + your phone" : "On your phone", systemImage: step.pictureKind == "remote" ? "appletvremote.gen1" : step.surface == "phone" ? "iphone" : "tv")
                                 .font(.subheadline.weight(.semibold)).foregroundColor(theme.accent)
                             Text(step.instruction).font(.body.weight(.medium)).fixedSize(horizontal: false, vertical: true)
                             if index == 14 && route.id == "samsung_ok" {
@@ -109,16 +105,26 @@ struct SetupGuidesView: View {
                             if index == 14 && route.id == "samsung_pin" {
                                 control("TV shows OK instead", icon: "checkmark", id: "setup-samsung-ok") { switchSamsungApproval("samsung_ok") }
                             }
-                            if route.id == "samsung_phone" {
-                                control("TV is missing — open pairing", icon: "tv", id: "setup-samsung-pairing-help") { chooseRoute("samsung_ok") }
+                            pairingHelp(route)
+                            if route.id == "philips_voice_remote" && index == 4 {
+                                control("Remote already connected", icon: "checkmark", id: "setup-philips-connected") { skipTo(route.id, from: 4, to: 9) }
+                            }
+                            if route.id == "philips_voice_remote" && index == 5 {
+                                control("Light is not blinking", icon: "questionmark.circle", id: "setup-philips-not-blinking") { skipTo(route.id, from: 5, to: 6) }
+                            }
+                            if route.id == "fire_setup" && [5, 6].contains(index) {
+                                control("Account sign-in finished", icon: "checkmark", id: "setup-fire-account-finished") { skipTo(route.id, from: index, to: 7) }
                             }
                             if route.id == "roku_network" || route.id == "roku_model" {
                                 RokuMenuIllustration(step: step, number: index + 1, routeID: route.id, theme: theme)
                             } else if route.id == "philips_voice_remote" && [1, 2].contains(index) {
                                 ProfileMenuIllustration(step: step, number: index + 1, theme: theme)
-                            } else { SetupScreenIllustration(step: step, number: index + 1, theme: theme, showsTVScreen: Self.tvScreenPictures[route.id]?.contains(index + 1) == true) }
+                            } else if step.pictureKind == "remote" {
+                                RemoteButtonsIllustration(step: step, number: index + 1, theme: theme)
+                            } else { SetupScreenIllustration(step: step, number: index + 1, theme: theme) }
                             disclosure("Need help?", id: "setup-step-details") { detailsExpanded.toggle() }
                             if detailsExpanded {
+                                manualHelp(route)
                                 if !Self.repeatedPictureNotes.contains(step.note) { Text(step.note).font(.callout).foregroundColor(theme.muted) }
                                 control("My screen looks different", icon: "questionmark.circle", id: "setup-mismatch") { remember(); mismatch = true; detailsExpanded = false; referencesExpanded = false }
                                 control(referencesExpanded ? "Hide reference links" : "Reference links", icon: "doc.text", id: "setup-step-references") { referencesExpanded.toggle() }
@@ -167,12 +173,8 @@ struct SetupGuidesView: View {
             .onAppear {
                 if !initialized {
                     initialized = true
-                    if initialGroup == "phone", deviceGroup == "samsung" {
-                        chooseGroup("samsung", recording: false); routeID = "samsung_phone"
-                    } else if initialGroup == "phone", let tv = AQSSSetupContent.groups.first(where: { $0.id == deviceGroup }),
-                       tv.routes.contains("roku_phone"), !tv.primaryRoutes.isEmpty,
-                       tv.primaryRoutes.allSatisfy({ ["roku_network", "roku_model"].contains($0) }) {
-                        chooseGroup(tv.id, recording: false); routeID = "roku_phone"
+                    if initialGroup == "phone", let tv = AQSSSetupContent.groups.first(where: { $0.id == deviceGroup }), let companion = tv.phoneRoute {
+                        chooseGroup(tv.id, recording: false); routeID = companion
                     } else { chooseGroup(initialGroup, recording: false) }
                 }
             }
@@ -201,6 +203,32 @@ struct SetupGuidesView: View {
     }
     private func chooseRoute(_ id: String) {
         remember(); routeID = id == "samsung_ok" ? samsungStartingRoute() : id; index = -1; mismatch = false; detailsExpanded = false; referencesExpanded = false
+    }
+    private func isPhonePart(_ route: AQSSSetupRoute) -> Bool { AQSSSetupContent.groups.contains { $0.phoneRoute == route.id } }
+    private func skipTo(_ id: String, from: Int, to: Int) {
+        guard !mismatch, routeID == id, index == from, route?.steps.indices.contains(to) == true, to > from else { return }
+        remember(); index = to; detailsExpanded = false; referencesExpanded = false
+    }
+    private func nextTitle(_ route: AQSSSetupRoute) -> String {
+        if index < 0 { return resumeIndex(route) == nil ? (isPhonePart(route) ? "Start part two" : "Start guide") : "Resume guide" }
+        if index == route.steps.count - 1 {
+            if route.id == "voice" && onVoiceCheck != nil { return "Open Voice check" }
+            if ["roku_network", "roku_model"].contains(route.id) { return "Finish part one" }
+            return isPhonePart(route) ? "Finish part two" : "Finish guide"
+        }
+        if route.id == "philips_voice_remote", index == 4 { return "Pair this remote" }
+        if route.id == "philips_voice_remote", index == 5 { return "Light is blinking" }
+        return "Next"
+    }
+    @ViewBuilder private func pairingHelp(_ route: AQSSSetupRoute) -> some View {
+        if let target = route.pairingRoute, group?.routes.contains(target) == true {
+            control(route.id == "samsung_phone" ? "TV is missing — open pairing" : "Open pairing pictures", icon: "tv", id: route.id == "samsung_phone" ? "setup-samsung-pairing-help" : "setup-pairing-help") { chooseRoute(target) }
+        }
+    }
+    @ViewBuilder private func manualHelp(_ route: AQSSSetupRoute) -> some View {
+        if ["google_setup", "google_fast", "tcl_models"].contains(route.id), group?.routes.contains("google_manual") == true {
+            control("Use the TV remote instead", icon: "appletvremote.gen1", id: "setup-manual-help") { chooseRoute("google_manual") }
+        }
     }
     private func samsungStartingRoute() -> String { progress.resumeIndex("samsung_pin") != nil ? "samsung_pin" : "samsung_ok" }
     private func recordCurrentProgress() {
@@ -253,12 +281,11 @@ struct SetupGuidesView: View {
         Text(route.id.hasPrefix("phone_") ? "Have your phone and home Wi-Fi password ready." : route.id == "roku_phone" ? "Keep your phone and TV on the same Wi-Fi." : route.steps.first?.surface == "tv" ? "Have your TV remote ready." : "Have your phone and TV ready.").font(.body)
         Text("\(route.steps.count) pictures. One step at a time.").foregroundColor(theme.accent)
         Text(route.appliesTo).font(.caption).foregroundColor(theme.muted)
-        if route.id == "samsung_phone" {
-            control("TV is missing — open pairing", icon: "tv", id: "setup-samsung-pairing-help") { chooseRoute("samsung_ok") }
-        }
+        pairingHelp(route)
         if let saved = resumeIndex(route) { Text("Continue at picture \(saved + 1).").foregroundColor(theme.accent) }
         disclosure("Need help?", id: "setup-details") { detailsExpanded.toggle() }
         if detailsExpanded {
+            manualHelp(route)
             VStack(alignment: .leading, spacing: 14) {
                 Text("Use the official setup screens for passwords and approvals.").font(.callout)
                 if !route.id.hasPrefix("phone_") {
@@ -333,9 +360,9 @@ struct SetupGuidesView: View {
                         else { onFinish?(route.id) }
                         writeProgress(route.id, nil)
                         dismiss()
-                    } else { remember(); index = index < 0 ? resumeIndex(route) ?? 0 : index + 1; detailsExpanded = false; referencesExpanded = false }
+                    } else { remember(); index = index < 0 ? resumeIndex(route) ?? 0 : route.id == "philips_voice_remote" && index == 5 ? 7 : index + 1; detailsExpanded = false; referencesExpanded = false }
                 } label: {
-                    navigationLabel(index < 0 ? (resumeIndex(route) == nil ? (["roku_phone", "samsung_phone"].contains(route.id) ? "Start part two" : "Start guide") : "Resume guide") : index == route.steps.count - 1 ? (route.id == "voice" && onVoiceCheck != nil ? "Open Voice check" : ["roku_network", "roku_model"].contains(route.id) ? "Finish part one" : ["roku_phone", "samsung_phone"].contains(route.id) ? "Finish part two" : "Finish guide") : "Next", icon: index == route.steps.count - 1 ? (route.id == "voice" && onVoiceCheck != nil ? "mic" : "checkmark") : "arrow.right")
+                    navigationLabel(nextTitle(route), icon: index == route.steps.count - 1 ? (route.id == "voice" && onVoiceCheck != nil ? "mic" : "checkmark") : "arrow.right")
                         .frame(maxWidth: .infinity, minHeight: 44)
                 }.buttonStyle(AppButtonStyle(theme: theme, primary: true)).accessibilityIdentifier("setup-next")
             }
@@ -371,8 +398,9 @@ private struct SetupScreenIllustration: View {
     let step: AQSSSetupStep
     let number: Int
     let theme: AppTheme
-    let showsTVScreen: Bool
-    private var screenOnTV: Bool { step.surface == "tv" || showsTVScreen }
+    private var choice: Bool { step.pictureKind == "choice" }
+    private var screenOnTV: Bool { step.pictureKind == "tv" || (choice && step.surface == "tv") }
+    private var screenOnPhone: Bool { step.pictureKind == "phone" || (choice && step.surface == "phone") }
     private var glyph: String {
         switch step.action {
         case "home": return "house.fill"
@@ -383,6 +411,7 @@ private struct SetupScreenIllustration: View {
         case "speak": return "mic.fill"
         case "stop": return "stop.fill"
         case "wait": return "hourglass"
+        case "hold": return "hand.point.up.left.fill"
         default: return step.surface == "tv" ? "arrow.up.and.down.and.arrow.left.and.right" : "hand.tap.fill"
         }
     }
@@ -397,7 +426,7 @@ private struct SetupScreenIllustration: View {
                 }.foregroundColor(theme.violet).padding(.vertical, 6)
             }
             VStack(spacing: 0) {
-                if !screenOnTV {
+                if screenOnPhone {
                     HStack { Text("9:41"); Spacer(); Image(systemName: "wifi"); Image(systemName: "battery.100") }
                         .font(.caption2).padding(.horizontal, 16).padding(.top, 10).foregroundColor(theme.muted)
                 }
@@ -408,23 +437,25 @@ private struct SetupScreenIllustration: View {
                 }.padding(14).foregroundColor(theme.text)
                 Divider().overlay(theme.outline)
                 VStack(spacing: 9) {
+                    if choice { Text("\(number) → Choose one").font(.headline).foregroundColor(theme.violet).frame(maxWidth: .infinity, alignment: .leading) }
                     ForEach(Array(step.items.enumerated()), id: \.offset) { i, item in
+                        let selected = !choice && i == step.focus
                         HStack(alignment: .center, spacing: 8) {
-                            if i == step.focus {
+                            if selected {
                                 Text("\(number)").font(.caption.bold()).frame(minWidth: 26, minHeight: 26)
                                     .background(theme.controlText).foregroundColor(theme.control).clipShape(Circle())
                             } else { Image(systemName: "circle").frame(width: 26) }
-                            Text(item).font(.subheadline.weight(i == step.focus ? .bold : .regular)).fixedSize(horizontal: false, vertical: true)
+                            Text(item).font(.subheadline.weight(selected ? .bold : .regular)).fixedSize(horizontal: false, vertical: true)
                             Spacer(minLength: 0)
-                            Image(systemName: i == step.focus ? "arrow.left" : "chevron.right").font(.caption.bold())
+                            Image(systemName: selected ? "arrow.left" : choice ? "circle" : "chevron.right").font(.caption.bold())
                         }.padding(12).frame(maxWidth: .infinity, minHeight: 48, alignment: .leading)
-                            .foregroundColor(i == step.focus ? theme.controlText : theme.muted)
-                            .background(i == step.focus ? theme.control : theme.raised)
+                            .foregroundColor(selected ? theme.controlText : theme.text)
+                            .background(selected ? theme.control : theme.raised)
                             .clipShape(RoundedRectangle(cornerRadius: 9))
-                            .overlay(RoundedRectangle(cornerRadius: 9).stroke(i == step.focus ? theme.controlBorder : theme.outline, lineWidth: i == step.focus ? 2 : 1))
+                            .overlay(RoundedRectangle(cornerRadius: 9).stroke(selected ? theme.controlBorder : theme.outline, lineWidth: selected ? 2 : 1))
                     }
                 }.padding(12)
-                if !screenOnTV { Capsule().fill(theme.muted).frame(width: 70, height: 4).padding(10) }
+                if screenOnPhone { Capsule().fill(theme.muted).frame(width: 70, height: 4).padding(10) }
             }.background(theme.surface).clipShape(RoundedRectangle(cornerRadius: screenOnTV ? 12 : 26))
                 .overlay(RoundedRectangle(cornerRadius: screenOnTV ? 12 : 26).stroke(theme.outline, lineWidth: 3))
                 .padding(.horizontal, step.surface == "phone" ? 12 : 0)
@@ -443,7 +474,35 @@ private struct SetupScreenIllustration: View {
             }.foregroundColor(theme.violet).padding(.top, 4)
         }.padding(14).background(theme.raised.opacity(0.7)).clipShape(RoundedRectangle(cornerRadius: 22))
             .accessibilityElement(children: .ignore)
-            .accessibilityLabel("Illustration \(number). \(showsTVScreen ? "TV screen; use your phone where the step asks" : step.surface == "tv" ? "TV screen" : step.surface == "both" ? "TV and phone" : "Phone screen"): \(step.screen). Highlighted: \(step.items[step.focus]). Action: \(step.action). \(step.instruction)")
+            .accessibilityLabel("Illustration \(number). \(screenOnTV ? "TV screen" : screenOnPhone ? "Phone screen" : "TV and phone"): \(step.screen). \(choice ? "Choose one; neither is selected" : "Highlighted"): \(step.focusLabel). Action: \(step.action). \(step.instruction)")
+            .accessibilityIdentifier("setup-illustration")
+    }
+}
+
+private struct RemoteButtonsIllustration: View {
+    let step: AQSSSetupStep
+    let number: Int
+    let theme: AppTheme
+    private var buttons: [String] { step.focusLabel.components(separatedBy: " + ") }
+    var body: some View {
+        VStack(alignment: .leading, spacing: 14) {
+            Text("Illustration · TV remote").font(.caption).foregroundColor(theme.muted)
+            Text("\(number) → \(buttons.count > 1 ? "Hold both buttons together" : step.focusLabel)")
+                .font(.headline).foregroundColor(theme.violet).fixedSize(horizontal: false, vertical: true)
+            VStack(spacing: 18) {
+                ForEach(buttons, id: \.self) { button in
+                    Text(button).font(.headline).fixedSize(horizontal: false, vertical: true)
+                        .frame(maxWidth: .infinity, minHeight: 54).padding(12)
+                        .foregroundColor(theme.controlText).background(theme.control)
+                        .clipShape(RoundedRectangle(cornerRadius: 12))
+                }
+            }.padding(20).frame(maxWidth: 220).background(theme.surface)
+                .clipShape(RoundedRectangle(cornerRadius: 28))
+                .overlay(RoundedRectangle(cornerRadius: 28).stroke(theme.outline, lineWidth: 3))
+                .frame(maxWidth: .infinity)
+        }.padding(14).background(theme.raised.opacity(0.7)).clipShape(RoundedRectangle(cornerRadius: 22))
+            .accessibilityElement(children: .ignore)
+            .accessibilityLabel("Illustration \(number). TV remote. Highlighted: \(step.focusLabel). Action: \(step.action). \(step.instruction)")
             .accessibilityIdentifier("setup-illustration")
     }
 }
