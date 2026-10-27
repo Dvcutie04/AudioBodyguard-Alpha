@@ -6,6 +6,16 @@ Checkpoint: October 27, 2026. Continue from the restored a-Shell baseline and th
 
 ## Current checkpoint
 
+October 27 callback-lifetime prerequisite: the isolated Kotlin lab now has a
+[bounded callback and child registry](../native/lab/pcm16_accounting/CALLBACK_LIFETIME.md)
+following the existing C fixture and mobile ownership review. Queued/active
+deliveries and retained children block scripted final release and metadata
+transfer. Reference cleanup is bookkeeping only; a waiting owner needs explicit
+worker resumption, and unresolved call accounting or quarantine still blocks it.
+Stable non-reused tickets reject foreign/replayed deliveries. This adds no OS
+producer, real concurrency, app dependency or new APK. Exact red/green results
+belong to its draft PR; actual inventory, native retirement and N2b–N5 stay pending.
+
 October 27 continued phone-independent work: the
 [scripted run-controls model](../native/lab/pcm16_accounting/RUN_CONTROLS.md)
 adds declared admission, one pending task, fixed-domain deadline/attempt bounds,

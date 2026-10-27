@@ -156,6 +156,12 @@ cleanup quarantine. Each backend observation must be recorded before another
 operation or slot release. Native ownership, phone configuration and physical
 output remain unimplemented and unqualified.
 
+The [callback lifetime increment](native/lab/pcm16_accounting/CALLBACK_LIFETIME.md)
+retains queued, active and child references in a bounded registry. Scripted
+final release waits for their last use plus actual call-return accounting.
+Stale tickets reject through the retained context; no native producer or
+physical retirement is qualified by the managed-object tests.
+
 The [internal TestFlight preparation](docs/testflight-beta-preparation.md)
 automates checks on an exact reviewed source revision and provides a manually
 requested signing/upload lane after Apple account and signing setup. It does
