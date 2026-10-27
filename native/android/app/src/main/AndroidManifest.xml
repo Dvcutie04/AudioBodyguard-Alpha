@@ -12,6 +12,7 @@
         </provider>
         <activity android:name=".LiveSoundCheckActivity" android:exported="false" android:theme="@style/AQSSReadOnlyTheme" />
         <activity android:name=".OutputInventoryActivity" android:exported="false" android:theme="@style/AQSSReadOnlyTheme" />
+        <activity android:name=".TestSetupActivity" android:exported="false" android:enableOnBackInvokedCallback="true" android:theme="@style/AQSSReadOnlyTheme" />
         <activity android:name=".SetupGuideActivity" android:exported="false" android:enableOnBackInvokedCallback="true" android:theme="@style/AQSSReadOnlyTheme" />
         <activity android:name=".InputAssistanceActivity" android:exported="false" android:theme="@style/AQSSReadOnlyTheme" />
         <activity android:name=".ReadOnlyHomeActivity" android:exported="true"

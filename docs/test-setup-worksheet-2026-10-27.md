@@ -75,9 +75,10 @@ N2b rows nor authorizes recording, playback, a trial or successor activation.
 
 ## Verification obligations
 
-Before implementing the UI, Kotlin/Swift report cases must fail on the missing
-model API, and real native UI tests must reach Sound and fail on the missing
-Test setup entry. Then verify optional/empty notes, quoted text and control
+A tests-only source is preserved before implementation. Its Kotlin/Swift report
+cases must reject the missing model API, and real native UI tests must reach
+Sound and fail on the missing Test setup entry before accepting the candidate.
+Then verify optional/empty notes, quoted text and control
 normalization, bounds/Unicode, build/clock validation and frozen snapshots.
 Native checks cover six-field entry, preview without sharing, Cancel without
 delivery, exact native text handoff, Back/edit/Clear, rotation/background,
@@ -89,3 +90,12 @@ screenshots, clipboard/receiver receipts and APK byte/signature identity.
 iPhone/iPad simulator coverage is separate from signed iPhone distribution,
 which still depends on the owner's Apple setup. N2b–N5 remain pending physical
 inventory and qualification.
+
+The tests-only source is `0e6fb98f8ca19bc657ae2e32f1f7ebdb433dc4fa`.
+Android native run 40526754708 reached Sound and failed because its Test setup
+entry was absent; core run 40526754639 rejected the missing Kotlin report API.
+The same native run reproduced the missing worksheet entry on iPhone and iPad.
+The original Swift unit job remained queued. The iPhone workflow also reruns
+that exact preserved Swift source in isolation and requires its missing-API
+diagnostic, keeping the negative control independent of the implementation.
+Final model, simulator/device-build and installer results belong to the PR.

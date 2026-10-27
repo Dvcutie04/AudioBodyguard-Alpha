@@ -102,6 +102,34 @@ jobs:
               'scope': '${{ matrix.device }} Simulator worksheet; no signed installation or physical qualification'
           }, indent=2) + '\n')
           PYTHON
+      - name: Reproduce preserved Swift missing-API baseline
+        if: matrix.device == 'iPhone'
+        shell: bash
+        run: |
+          set -euo pipefail
+          setup_red_sha=0e6fb98f8ca19bc657ae2e32f1f7ebdb433dc4fa
+          setup_red_root="$RUNNER_TEMP/test-setup-red"
+          mkdir -p "$setup_red_root"
+          git fetch --depth=1 origin "$setup_red_sha"
+          git archive "$setup_red_sha" native/ios | tar -x -C "$setup_red_root"
+          if swift test --package-path "$setup_red_root/native/ios" > "$RUNNER_TEMP/sound-check-screenshots/swift-model-red.log" 2>&1; then
+            echo 'Preserved missing-API baseline unexpectedly passed' >&2
+            exit 1
+          fi
+          python3 - <<'PYTHON'
+          import json, os, pathlib, subprocess
+          output = pathlib.Path(os.environ['RUNNER_TEMP']) / 'sound-check-screenshots'
+          text = (output / 'swift-model-red.log').read_text()
+          assert 'TestSetupReportTests.swift' in text
+          assert "cannot find type 'TestSetupReportSnapshot'" in text or "cannot find type 'TestSetupField'" in text
+          source = '0e6fb98f8ca19bc657ae2e32f1f7ebdb433dc4fa'
+          (output / 'swift-model-red-source.json').write_text(json.dumps({
+              'source_commit': source,
+              'source_tree': subprocess.check_output(['git', 'rev-parse', source + '^{tree}'], text=True).strip(),
+              'expected_missing_api_observed': True
+          }, indent=2) + '\n')
+          print('SWIFT_SETUP_MISSING_API_REPRODUCED ' + source)
+          PYTHON
       - name: Build and prepare native worksheet tests
         shell: bash
         run: |
