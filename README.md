@@ -129,6 +129,14 @@ N2b and does not authorize playback or recording. Android is build 37; iPhone
 source is 0.34.0. Native test results and installer identity belong to its PR;
 signed iPhone delivery and physical output qualification remain pending.
 
+The [0.35 combined setup report](docs/setup-output-report-2026-10-27.md)
+adds **Add setup notes** to Android's reviewed output inventory. The worksheet
+includes that exact dated output snapshot with optional notes in one reviewed
+share. Remove output details and Clear notes are separate choices. Closing or
+a new process discards both. Android is build 38; iPhone source remains 0.34.0.
+This remains partial, unverified N2b intake before a playback adapter. Actual
+test results and installer identity belong to its draft PR.
+
 The [internal TestFlight preparation](docs/testflight-beta-preparation.md)
 automates checks on an exact reviewed source revision and provides a manually
 requested signing/upload lane after Apple account and signing setup. It does

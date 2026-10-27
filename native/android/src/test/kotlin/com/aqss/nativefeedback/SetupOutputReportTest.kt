@@ -89,6 +89,10 @@ class SetupOutputReportTest {
 
     @Test fun aNewProcessOwnerCannotRestoreAnOldAttachmentFromItsTicket() {
         val old = SetupOutputReportHandoff().offer(output())
-        assertNull(SetupOutputReportHandoff().take(old))
+        val fresh = SetupOutputReportHandoff()
+        assertNull(fresh.take(old))
+        val current = output(); val currentTicket = fresh.offer(current)
+        assertNull(fresh.take(old))
+        assertSame(current, fresh.take(currentTicket))
     }
 }

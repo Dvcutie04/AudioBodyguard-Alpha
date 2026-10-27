@@ -81,3 +81,9 @@ worksheet, input/photo/permission and callback regressions still run. Downloaded
 receipts, screenshots, installed build, signature, source identity, artwork and
 test-code exclusion must be inspected before the 0.35 APK handoff. Actual
 source-bound red/green results and installer identity belong to the draft PR.
+
+The preserved tests-only source is `06d15cfe6355b630cc717bc1badfc0dd5308ea79`.
+Native run 40539831634 reached the actual 0.34 output preview and failed with
+“Reviewed output has no Add setup notes action.” Core run 40539831309 failed
+Kotlin compilation at the absent outputReport parameter, combined bounds and
+SetupOutputReportHandoff API. Final candidate results belong to the PR.
