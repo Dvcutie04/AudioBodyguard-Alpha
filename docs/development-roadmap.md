@@ -6,6 +6,16 @@ Checkpoint: October 27, 2026. Continue from the restored a-Shell baseline and th
 
 ## Current checkpoint
 
+October 27 continued phone-independent work: the
+[scripted run-controls model](../native/lab/pcm16_accounting/RUN_CONTROLS.md)
+adds declared admission, one pending task, fixed-domain deadline/attempt bounds,
+stale task/event rejection, stop-before-retry and staged cleanup/quarantine to
+the isolated Kotlin lab. Actual returned results need separate accounting before
+the occupied slot can release. Two retained histories bound fixture work and
+preserve old uncertainty. These are deterministic software policies, with no
+native API binding, OS scheduler or concurrency claim. Source-bound validation
+belongs to its draft PR; app versions, production gates and N2b–N5 stay unchanged.
+
 October 27 phone-independent prerequisite: the owner requested continuing work
 that can proceed while the actual phone report is unavailable. The
 [isolated PCM16 accounting lab](../native/lab/pcm16_accounting/README.md)
