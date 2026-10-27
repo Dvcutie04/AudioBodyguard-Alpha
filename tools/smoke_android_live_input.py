@@ -37,6 +37,7 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--samsung-setup-only", action="store_true")
     parser.add_argument("--output-inventory-only", action="store_true")
+    parser.add_argument("--tv-guides-only", action="store_true")
     parser.add_argument("--apk", default="native/android/app/build/outputs/apk/liveInput/app-liveInput.apk")
     parser.add_argument("--package", default="com.aqss.bodyguard.prototype.liveinput")
     parser.add_argument("--probe-apk", default="native/android/uiprobe/build/outputs/apk/debug/uiprobe-debug.apk")
@@ -344,6 +345,33 @@ def main():
         assert "android.permission.RECORD_AUDIO: granted=false" in permission, "Inventory must not request microphone access"
         print("OUTPUT_FRESHNESS_OBSERVED: synthetic callback invalidation and native lifecycle passed; no physical disconnect or routing claim", flush=True)
 
+    if args.tv_guides_only:
+        def guide_tap(label, name):
+            for attempt in range(8):
+                root, clicked = screen(f"{name}-{attempt}", click=label)
+                if clicked:
+                    return
+                scroll_meter(f"{name}-scroll-{attempt}", down=True)
+            raise AssertionError(f"TV guide target unavailable: {label}")
+
+        tap("Devices", "tv_guides_devices")
+        guide_tap("Illustrated setup guides. TV pairing, Google Home & Alexa · one picture at a time", "tv_guides_open")
+        guide_tap("Philips", "tv_guides_philips")
+        guide_tap("Google TV / Android TV", "tv_guides_philips_platform")
+        guide_tap("Need help?", "tv_guides_philips_help")
+        guide_tap("Other setup options", "tv_guides_philips_options")
+        guide_tap("Philips Google TV — pair the voice remote", "tv_guides_philips_remote")
+        tap("Start guide", "tv_guides_philips_start")
+        for number in range(4):
+            tap("Next", f"tv_guides_philips_prefix_{number}")
+        wait_for_all(("Step 5 of 10", "Check whether the remote is already paired"), "tv_guides_philips_decision")
+        guide_tap("Remote already connected", "tv_guides_philips_connected")
+        wait_for_all(("Step 10 of 10", "Check the real status"), "tv_guides_philips_skipped")
+        screenshot("tv_guides_philips_skipped")
+        tap("Back", "tv_guides_philips_decision_back")
+        wait_for("Step 5 of 10", "tv_guides_philips_back_at_decision")
+        print("TV_GUIDES_OBSERVED: already-connected Philips remote skips pairing and Back restores the decision; guide only, no physical pairing", flush=True)
+        return
     if args.output_inventory_only:
         check_output_freshness()
         return

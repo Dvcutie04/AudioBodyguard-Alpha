@@ -1464,6 +1464,21 @@ final class AQSSReadOnlyUITests: XCTestCase {
         exit(app); label("Connection not verified", app)
     }
 
+    func testPhilipsAlreadyConnectedSkipsPairingAndBackRestoresTheChoice() {
+        let app = launch()
+        tab("devices", app); tap("Illustrated setup guides", app)
+        tap("Philips", app); tap("Google TV / Android TV", app)
+        tap("Need help?", app); tap("Other setup options", app)
+        tap("Philips Google TV — pair the voice remote", app)
+        app.buttons["setup-next"].tap()
+        for _ in 0..<4 { app.buttons["setup-next"].tap() }
+        label("Step 5 of 10", app)
+        tap("Remote already connected", app)
+        label("Step 10 of 10", app); label("Check the real status", app)
+        screenshot("Philips already connected skips pairing", app)
+        app.buttons["setup-back"].tap(); label("Step 5 of 10", app)
+    }
+
     func testNewBrandPicturesAreReachable() {
         let app = launch()
         tab("devices", app); tap("Illustrated setup guides", app); tap("Philips", app); tap("Google TV / Android TV", app); tap("Need help?", app); tap("Other setup options", app)
