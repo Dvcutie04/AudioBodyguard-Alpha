@@ -85,7 +85,10 @@ phone companions, resume and large text. It retains Android screenshots and
 hierarchies and iPhone/iPad XCTest screenshots/results with exact source identity.
 Full Python/C/Swift/Kotlin checks and the Android live-input/lint lane remain
 required. The draft PR records final run results and installer identity against
-one exact candidate source; this document does not imply those runs passed.
+identified candidate sources. A test-only correction opens More TV brands before
+selecting Vizio in the new phone-handoff test; it does not change either app.
+The PR distinguishes APK-build source from the corrected UI-harness source
+and records product-tree equality. This document does not imply those runs passed.
 
 No emulator or simulator result is physical TV testing. User testing of the
 installed candidate is still required before any model-specific pairing claim.

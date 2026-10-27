@@ -1566,13 +1566,16 @@ final class AQSSReadOnlyUITests: XCTestCase {
     }
 
     func testLGVizioAndGoogleTVContinueIntoTheirOwnPhoneAppPictures() {
+        continueAfterFailure = false
         for (brand, pairingChoice, count, phoneTitle) in [
             ("LG", "", 13, "2. Check LG ThinQ on your phone"),
             ("Vizio", "Vizio — pair the phone", 9, "2. Check VIZIO Mobile on your phone"),
             ("Sony", "", 9, "2. Check Google TV on your phone")
         ] {
             let app = launch(true)
-            next(app); tap(brand, app); next(app); tap("Neither", app); next(app)
+            next(app)
+            if brand == "Vizio" { tap("More TV brands", app) }
+            tap(brand, app); next(app); tap("Neither", app); next(app)
             tap("Show \(brand) steps", app)
             if !pairingChoice.isEmpty { tap(pairingChoice, app) }
             restartPictureGuide(app)
