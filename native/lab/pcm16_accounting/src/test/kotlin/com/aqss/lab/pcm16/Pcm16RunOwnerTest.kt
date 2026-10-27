@@ -508,4 +508,67 @@ class Pcm16RunOwnerTest {
         assertNull(owner.requestStart(plan(id = 2), admitted(), source(), Backend()))
         assertFalse(owner.snapshot(run)!!.trace.any { it.kind == LabTraceKind.CALL_RETURNED })
     }
+
+    @Test fun interruptionSweepPreservesAccountingAcrossAllOperationWindows() {
+        val events = listOf<LabEvent?>(null, LabEvent.FOCUS_LOSS, LabEvent.FOCUS_DUCK,
+            LabEvent.FOREGROUND_LOSS, LabEvent.ROUTE_CHANGE, LabEvent.INPUT_BUSY)
+        var scenarios = 0
+        for (operation in LabOperation.entries) for (window in 0..2) for (event in events) {
+            val owner = Pcm16RunOwner(); val backend = Backend(); val run = start(owner, backend)
+            backend.results.add(2)
+            if (operation != LabOperation.ACQUIRE) advance(owner)
+            if (operation !in listOf(LabOperation.ACQUIRE, LabOperation.ACTIVATE)) advance(owner)
+            if (operation in listOf(LabOperation.QUIESCE, LabOperation.DISCARD, LabOperation.RELEASE)) {
+                advance(owner)
+                owner.stop(run)
+            }
+            if (operation in listOf(LabOperation.DISCARD, LabOperation.RELEASE)) advance(owner)
+            if (operation == LabOperation.RELEASE) advance(owner)
+            val task = assertNotNull(owner.pendingTask)
+            assertEquals(operation, task.operation)
+            var callsAtCut: List<LabOperation>? = null
+            val cut = {
+                callsAtCut = backend.calls.toList()
+                if (event == null) assertTrue(owner.stop(run)) else assertTrue(owner.notify(run, event))
+                if (owner.slotOccupied) {
+                    assertNull(owner.requestStart(plan(id = 2), admitted(), source(), Backend()))
+                }
+            }
+            when (window) {
+                0 -> {
+                    cut()
+                    val entered = owner.execute(task, tick(0))
+                    val cleanup = operation in listOf(LabOperation.QUIESCE, LabOperation.DISCARD, LabOperation.RELEASE)
+                    assertEquals(cleanup, entered)
+                    if (entered) assertTrue(owner.record(task, tick(0)))
+                }
+                1 -> {
+                    backend.onCall = { if (it == operation) cut() }
+                    assertTrue(owner.execute(task, tick(0)))
+                    assertTrue(owner.record(task, tick(0)))
+                }
+                else -> {
+                    assertTrue(owner.execute(task, tick(0)))
+                    cut()
+                    assertTrue(owner.record(task, tick(0)))
+                }
+            }
+            backend.onCall = null
+            drain(owner)
+            val before = assertNotNull(callsAtCut)
+            for (op in listOf(LabOperation.ACQUIRE, LabOperation.ACTIVATE, LabOperation.WRITE)) {
+                assertEquals(before.count { it == op }, backend.calls.count { it == op })
+            }
+            val snapshot = owner.snapshot(run)!!
+            assertEquals(if (backend.payloads.isEmpty()) 0 else 2, snapshot.accountedSamples)
+            assertEquals(LabRunState.RELEASED, snapshot.state)
+            assertFalse(owner.slotOccupied)
+            assertEquals((1..snapshot.trace.size).toList(), snapshot.trace.map { it.sequence })
+            val entered = snapshot.trace.count { it.kind == LabTraceKind.CALL_ENTERED }
+            assertEquals(entered, snapshot.trace.count { it.kind == LabTraceKind.CALL_RETURNED })
+            assertEquals(entered, snapshot.trace.count { it.kind == LabTraceKind.RETURN_RECORDED })
+            scenarios++
+        }
+        assertEquals(108, scenarios)
+    }
 }

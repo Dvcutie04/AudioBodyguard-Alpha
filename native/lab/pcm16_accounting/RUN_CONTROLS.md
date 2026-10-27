@@ -110,13 +110,29 @@ copies are external and require their own integration bounds. The stable model
 and histories remain alive during stale deliveries. No native metadata is freed
 and no producer-unregistration/quiescence contract is supplied.
 
-The 31 added scenarios exercise failed admission, startup/cleanup ownership,
+The 32 added test cases exercise failed admission, startup/cleanup ownership,
 exact delayed suffix retries, configured attempt/deadline limits, both call
 accounting windows, negative/invalid/exceptional results, injected clock faults,
 overflow, interruption/positive events, foreign tickets, bounded history and
-full trace capacity. They run with the original 18 accounting cases. The
-tests-first revision `f04ff5f9fafe13744a5b3d1ad25e9a6b87649df2` is recorded in
+full trace capacity. One case sweeps 108 combinations of six operations, three
+call/accounting windows and six stop/interruption actions. They run with the
+original 18 accounting cases. The
+initial 31-case tests-first revision `f04ff5f9fafe13744a5b3d1ad25e9a6b87649df2` is recorded in
 [run 40599185852](https://github.com/Dvcutie04/AudioBodyguard-Alpha/actions/runs/40599185852).
-Exact implementation results and source identity belong to the associated
-draft pull request. Actual phone inventory, adapter selection, real concurrency,
+The additional case performs the interruption sweep. Exact implementation
+results and source identity belong to [draft PR #74](https://github.com/Dvcutie04/AudioBodyguard-Alpha/pull/74).
+Actual phone inventory, adapter selection, real concurrency,
 native timestamps, output observation and both mobile qualifications remain pending.
+
+## Coverage against the paper review
+
+| Reviewed obligation | Implemented synthetic check | Still needs the actual adapter/setup |
+| --- | --- | --- |
+| Failed admission leaves mutating calls uncalled | Declared foreground/focus/input/route and trace/source rejection before acquisition | Observe real state, obtain authority and bind it at native entry |
+| Accepted prefix, zero and fatal result | Exact immutable suffixes, typed count accounting and terminal errors | Native overload/format/return observations on the named resource |
+| Hold and late return | Close admission before queued tasks; preserve an entered call through actual return and recording | Real synchronization and an independently deliverable control cut |
+| Finite retry policy | One pending ticket, fixed injected domain/deadline, positive delay and 1–8 attempts | Actual timer/worker latency, buffer and power budgets |
+| Teardown and unresolved ownership | Every scripted stage needs separate accounting; delay/exception cannot release the slot | Valid native cleanup sequence, handles and observed completion |
+| Stale callbacks/tasks | Exact retained token identity; positive events cannot restart; no reuse/eviction of two histories | Actual producer registry, descendant lifetime and quiescence |
+| Bounded trace | Full reservation before acquisition, immutable snapshots, cleanup capacity | Native trace collection, clock provenance, persistence and uncertainty |
+| Physical outcome and restart | Old model uncertainty/history survives; no production readiness is granted | Independent output acquisition, crash history and qualified retirement evidence |
