@@ -6,6 +6,19 @@ Checkpoint: October 27, 2026. Continue from the restored a-Shell baseline and th
 
 ## Current checkpoint
 
+October 27 phone-only intake increment: [0.34 worksheet contract](test-setup-worksheet-2026-10-27.md)
+implements the existing inventory questions as six optional technical notes
+on both mobile sources. Explicit Review freezes the installed build, phone-clock
+time and quoted notes for native sharing. Back/edit, Clear, temporary draft
+retention across configuration and fresh state after Close/process restart
+remain bounded. The worksheet records a proposed arrangement; actual routing,
+negotiation, independent capture, calibration, ownership and consent remain
+unknown or pending review. Android is build 37; iPhone/iPad source is 0.34.0.
+Source-bound red/green results and APK identity belong to its draft PR. This
+partial intake supports N2b; it neither completes the eight-row record nor
+authorizes an adapter or physical trial. Exact backend research still follows
+the actual inventory under the standing charter.
+
 October 27 reviewed inventory increment: [0.33 research and contract](output-inventory-report-2026-10-27.md)
 uses the existing manual Android inventory to build a dated metadata report.
 Review is explicit, its copy stays immutable, and Share uses the native chooser.

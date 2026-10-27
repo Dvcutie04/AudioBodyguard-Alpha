@@ -2,6 +2,146 @@ import XCTest
 import UIKit
 
 final class AQSSReadOnlyUITests: XCTestCase {
+    private let setupAnswers = [
+        ("playback_phone", "Android 16 test phone"), ("intended_output", "Phone speaker"),
+        ("observer_phone", "iPhone iOS 26"), ("recording_app", "Voice Memos mode unknown"),
+        ("placement", "Two phones on table"), ("constraints", "No calibration")
+    ]
+
+    private func openTestSetup(_ app: XCUIApplication) throws {
+        if app.buttons["page-picker"].exists {
+            app.buttons["page-picker"].tap()
+            let menu = app.scrollViews["menu-scroll"]
+            tap("Sound", app, scroll: menu)
+            let closed = XCTNSPredicateExpectation(predicate: NSPredicate(format: "exists == false"), object: menu)
+            XCTAssertEqual(XCTWaiter.wait(for: [closed], timeout: 5), .completed)
+        } else {
+            tab("sound", app)
+        }
+        let entry = app.buttons["test-setup-open"]
+        guard entry.waitForExistence(timeout: 5) else {
+            screenshot("Test setup entry missing from Sound", app)
+            XCTFail("Sound has no Test setup worksheet entry")
+            throw NSError(domain: "AQSSTestSetup", code: 1)
+        }
+        entry.tap()
+        XCTAssertTrue(app.buttons["test-setup-review"].waitForExistence(timeout: 5))
+    }
+
+    private func fillTestSetup(_ app: XCUIApplication) {
+        let scroll = app.scrollViews["test-setup-form"]
+        for (id, value) in setupAnswers {
+            let field = app.textFields["test-setup-" + id]
+            for _ in 0..<10 {
+                let viewport = scroll.frame.intersection(app.frame).insetBy(dx: 0, dy: 15)
+                if field.isHittable && viewport.contains(CGPoint(x: field.frame.midX, y: field.frame.midY)) { break }
+                scroll.swipeUp(velocity: .slow)
+            }
+            XCTAssertTrue(field.isHittable, id); field.tap(); field.typeText(value + "\n")
+        }
+    }
+
+    private func inspectTestSetupShare(_ app: XCUIApplication, copy: Bool) throws {
+        fillTestSetup(app)
+        app.buttons["test-setup-review"].tap()
+        let preview = app.staticTexts["test-setup-preview"]
+        XCTAssertTrue(preview.waitForExistence(timeout: 5))
+        let reviewed = preview.label
+        XCTAssertTrue(reviewed.hasPrefix("Audio Bodyguard test setup (v1)\n"))
+        for (_, value) in setupAnswers { XCTAssertTrue(reviewed.contains("\"\(value)\""), value) }
+        XCTAssertTrue(reviewed.contains("Actual playback route: Unknown"))
+        XCTAssertTrue(reviewed.contains("Physical output and protection: Not verified"))
+        XCTAssertTrue(app.staticTexts["test-setup-notice"].isHittable)
+        XCTAssertFalse(app.cells["Copy"].firstMatch.exists)
+        let attachment = XCTAttachment(string: reviewed)
+        attachment.name = "Test setup reviewed text"; attachment.lifetime = .keepAlways; add(attachment)
+        screenshot("Test setup reviewed before sharing", app)
+        let share = app.buttons["test-setup-share"]
+        XCTAssertTrue(share.isHittable); share.tap()
+        let nativeCopy = app.cells["Copy"].firstMatch
+        XCTAssertTrue(nativeCopy.waitForExistence(timeout: 8))
+        screenshot("Test setup native share UI", app)
+        if copy { nativeCopy.tap() }
+        else if UIDevice.current.userInterfaceIdiom == .pad {
+            let heading = app.staticTexts["test-setup-heading"]
+            let point = heading.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5))
+            let popover = app.popovers.firstMatch
+            guard heading.exists, popover.exists, app.frame.contains(point.screenPoint), !popover.frame.contains(point.screenPoint) else {
+                XCTFail("Require an observed heading point outside the native share popover")
+                throw NSError(domain: "AQSSTestSetup", code: 2)
+            }
+            point.tap()
+        } else {
+            let close = app.navigationBars["UIActivityContentView"].buttons["Close"].firstMatch
+            XCTAssertTrue(close.waitForExistence(timeout: 5)); close.tap()
+        }
+        let returned = XCTNSPredicateExpectation(predicate: NSPredicate(format: "enabled == true AND hittable == true"), object: share)
+        XCTAssertEqual(XCTWaiter.wait(for: [returned], timeout: 8), .completed)
+        XCTAssertFalse(nativeCopy.exists); XCTAssertEqual(preview.label, reviewed)
+        screenshot("Test setup native sharing returns to frozen preview", app)
+        app.buttons["test-setup-back"].tap()
+        XCTAssertTrue(app.buttons["test-setup-clear"].isEnabled)
+        app.buttons["test-setup-clear"].tap()
+        XCTAssertFalse(app.buttons["test-setup-clear"].isEnabled)
+        app.buttons["test-setup-review"].tap()
+        XCTAssertTrue(preview.waitForExistence(timeout: 5))
+        XCTAssertTrue(preview.label.contains("Playback phone: Unknown"))
+        XCTAssertFalse(preview.label.contains("Android 16 test phone"))
+        app.buttons["test-setup-back"].tap(); app.buttons["test-setup-back"].tap()
+        XCTAssertTrue(app.buttons["test-setup-open"].waitForExistence(timeout: 5))
+        XCTAssertEqual(app.alerts.count, 0)
+    }
+
+    func testTestSetupWorksheetCancelSharePreservesPreview() throws {
+        let app = launch(); try openTestSetup(app); try inspectTestSetupShare(app, copy: false)
+    }
+
+    func testTestSetupWorksheetCopySharesExactReviewedText() throws {
+        let app = launch(); try openTestSetup(app); try inspectTestSetupShare(app, copy: true)
+    }
+
+    func testTestSetupWorksheetRotationClearCloseAndRestart() throws {
+        let app = launch(); try openTestSetup(app)
+        XCTAssertFalse(app.buttons["test-setup-clear"].isEnabled)
+        app.buttons["test-setup-review"].tap()
+        let preview = app.staticTexts["test-setup-preview"]
+        XCTAssertTrue(preview.waitForExistence(timeout: 5)); XCTAssertTrue(preview.label.contains("Playback phone: Unknown"))
+        app.buttons["test-setup-back"].tap(); fillTestSetup(app)
+        XCUIDevice.shared.orientation = .landscapeLeft
+        app.buttons["test-setup-review"].tap()
+        XCTAssertTrue(preview.waitForExistence(timeout: 5)); let reviewed = preview.label
+        XCTAssertTrue(reviewed.contains("Phone speaker"))
+        XCUIDevice.shared.orientation = .portrait
+        XCTAssertTrue(preview.waitForExistence(timeout: 5))
+        XCTAssertEqual(preview.label, reviewed, "Portrait return must preserve the reviewed copy")
+        screenshot("Test setup portrait retains the reviewed copy", app)
+        XCUIDevice.shared.press(.home); app.activate()
+        guard preview.waitForExistence(timeout: 5) else {
+            screenshot("Test setup background preview missing", app)
+            XCTFail("Background return must preserve the reviewed copy: \(app.debugDescription)")
+            throw NSError(domain: "AQSSTestSetup", code: 3)
+        }
+        XCTAssertEqual(preview.label, reviewed)
+        screenshot("Test setup rotation and background preserve reviewed notes", app)
+        app.buttons["test-setup-back"].tap(); app.buttons["test-setup-back"].tap()
+        app.buttons["test-setup-open"].tap()
+        XCTAssertFalse(app.buttons["test-setup-clear"].isEnabled)
+        fillTestSetup(app); app.buttons["test-setup-review"].tap()
+        app.terminate(); app.launch(); try openTestSetup(app)
+        XCTAssertFalse(app.buttons["test-setup-clear"].isEnabled)
+        app.buttons["test-setup-back"].tap(); app.terminate()
+        app.launchArguments += ["-UIPreferredContentSizeCategoryName", "UICTContentSizeCategoryAccessibilityXXXL"]
+        app.launch(); try openTestSetup(app); app.buttons["test-setup-review"].tap()
+        XCTAssertTrue(preview.waitForExistence(timeout: 5))
+        XCTAssertTrue(app.buttons["test-setup-share"].isHittable)
+        XCTAssertEqual(app.buttons["test-setup-share"].label, "Share setup report")
+        XCTAssertTrue(app.buttons["test-setup-back"].isHittable)
+        XCTAssertTrue(app.staticTexts["test-setup-notice"].isHittable)
+        screenshot("Test setup largest text keeps review navigation and notice reachable", app)
+        XCTAssertFalse(app.buttons["sound-check-start-stop"].exists)
+        XCTAssertEqual(app.alerts.count, 0)
+    }
+
     func testInsightsRecapReportPreviewReturnsWithoutCapture() throws {
         let app = launch()
         tab("insights", app); try openInsightsRecaps(app)

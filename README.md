@@ -119,6 +119,16 @@ output, and contains no audio-device names/addresses/IDs, audio, photos or TV
 information. Android is build 36; iPhone source stays 0.32.3. This supplies partial
 phone observations for N2b inventory and does not implement playback.
 
+The [0.34 two-phone setup worksheet](docs/test-setup-worksheet-2026-10-27.md)
+adds **Sound → Test setup → Review setup report** to Android and iPhone/iPad
+source. Record six optional, brief technical notes about the phones, intended
+output and observer arrangement. Blanks remain Unknown. Review freezes the
+text before a separate native Share action. Back keeps the draft; Clear,
+closing and a new process discard it. This is partial, unverified intake for
+N2b and does not authorize playback or recording. Android is build 37; iPhone
+source is 0.34.0. Native test results and installer identity belong to its PR;
+signed iPhone delivery and physical output qualification remain pending.
+
 The [internal TestFlight preparation](docs/testflight-beta-preparation.md)
 automates checks on an exact reviewed source revision and provides a manually
 requested signing/upload lane after Apple account and signing setup. It does

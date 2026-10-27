@@ -407,6 +407,9 @@ class ReadOnlyHomeActivity : Activity() {
     }
 
     private fun soundPage() {
+        destination("Test setup", "Record the two-phone test arrangement") {
+            startActivity(Intent(this, TestSetupActivity::class.java).putExtra("dark", skin.dark))
+        }
         destination("Output inventory", "Check this phone’s available audio outputs") {
             startActivity(Intent(this, OutputInventoryActivity::class.java).putExtra("dark", skin.dark))
         }
