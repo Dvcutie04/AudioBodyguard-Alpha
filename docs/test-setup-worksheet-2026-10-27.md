@@ -39,7 +39,9 @@ Current primary UI references were consulted for implementation details:
 The existing native Sharesheet/presenter and 0.33 sharing research are reused.
 Retain only plain note strings and an immutable report across configuration;
 never retain an Activity, View or controller. A missing retained draft opens an
-empty form. Process recreation and closing discard notes.
+empty form. On iOS the presentation parent owns the draft so sheet content
+rebuilds retain the same notes and frozen report. Process recreation and closing
+discard notes.
 
 ## Contract
 

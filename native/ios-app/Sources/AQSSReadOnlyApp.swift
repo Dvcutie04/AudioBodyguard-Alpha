@@ -193,7 +193,7 @@ private struct ReadOnlyHomeView: View {
     @State private var liveSoundCheckVisible = false
     @State private var soundRecapsVisible = false
     @State private var testSetupVisible = false
-    @State private var testSetupSession = UUID()
+    @StateObject private var testSetupDraft = TestSetupDraft()
     @State private var photoCheckVisible = false
     @State private var suggestedTVBrand: String?
     @State private var setupRequest: SetupGuideRequest?
@@ -299,7 +299,11 @@ private struct ReadOnlyHomeView: View {
             .sheet(isPresented: $voiceCheckVisible) { VoiceCheckView(theme: theme) }
             .sheet(isPresented: $liveSoundCheckVisible) { LiveSoundCheckView(theme: theme) }
             .sheet(isPresented: $soundRecapsVisible) { RecentSoundChecksView(theme: theme) }
-            .sheet(isPresented: $testSetupVisible) { TestSetupView(theme: theme).id(testSetupSession) }
+            .sheet(isPresented: $testSetupVisible, onDismiss: {
+                if !testSetupVisible { testSetupDraft.clear() }
+            }) {
+                TestSetupView(theme: theme, draft: testSetupDraft)
+            }
             .sheet(isPresented: $photoCheckVisible, onDismiss: {
                 guard let brand = suggestedTVBrand else { return }
                 suggestedTVBrand = nil
@@ -464,8 +468,8 @@ private struct ReadOnlyHomeView: View {
 
     private var soundPage: some View {
         VStack(alignment: .leading, spacing: 18) {
-            destinationCard("Test setup", subtitle: "Record the two-phone test arrangement", icon: "list.clipboard") {
-                testSetupSession = UUID(); testSetupVisible = true
+            destinationCard("Test setup", subtitle: "Record the two-phone test arrangement", icon: "doc.text") {
+                testSetupDraft.clear(); testSetupVisible = true
             }.accessibilityIdentifier("test-setup-open")
             destinationCard("Live sound check", subtitle: "Try a 30-second microphone check", icon: "mic") { liveSoundCheckVisible = true }
             destinationCard("Voice check", subtitle: "See microphone activity and recognized words", icon: "waveform") { voiceCheckVisible = true }

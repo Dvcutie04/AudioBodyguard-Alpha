@@ -364,7 +364,8 @@ def main():
         tap("Review setup report", "test_setup_blank_review")
         blank = preview(wait_for("Share setup report", "test_setup_blank_preview"))
         assert "Playback phone: Unknown" in blank and "Independent capture: Not recorded" in blank
-        tap("Back", "test_setup_blank_back")
+        adb("shell", "input", "keyevent", "KEYCODE_BACK")
+        wait_for("Clear notes", "test_setup_system_back_to_form")
         for index, (label, value) in enumerate(answers):
             setup_tap(label, f"test_setup_field_{index}")
             adb("shell", "input", "text", value.replace(" ", "%s"))

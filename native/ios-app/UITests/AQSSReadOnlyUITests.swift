@@ -104,8 +104,16 @@ final class AQSSReadOnlyUITests: XCTestCase {
         XCTAssertTrue(preview.waitForExistence(timeout: 5)); let reviewed = preview.label
         XCTAssertTrue(reviewed.contains("Phone speaker"))
         XCUIDevice.shared.orientation = .portrait
+        XCTAssertTrue(preview.waitForExistence(timeout: 5))
+        XCTAssertEqual(preview.label, reviewed, "Portrait return must preserve the reviewed copy")
+        screenshot("Test setup portrait retains the reviewed copy", app)
         XCUIDevice.shared.press(.home); app.activate()
-        XCTAssertTrue(preview.waitForExistence(timeout: 5)); XCTAssertEqual(preview.label, reviewed)
+        guard preview.waitForExistence(timeout: 5) else {
+            screenshot("Test setup background preview missing", app)
+            XCTFail("Background return must preserve the reviewed copy: \(app.debugDescription)")
+            throw NSError(domain: "AQSSTestSetup", code: 3)
+        }
+        XCTAssertEqual(preview.label, reviewed)
         screenshot("Test setup rotation and background preserve reviewed notes", app)
         app.buttons["test-setup-back"].tap(); app.buttons["test-setup-back"].tap()
         app.buttons["test-setup-open"].tap()

@@ -65,6 +65,7 @@ class TestSetupActivity : Activity() {
         super.onDestroy()
     }
     @Deprecated("API 26–32 Back fallback")
+    @android.annotation.SuppressLint("GestureBackNavigation") // API 33+ uses the registered platform OnBackInvokedCallback.
     override fun onBackPressed() { goBack() }
 
     private fun goBack() {

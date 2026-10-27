@@ -1,29 +1,35 @@
 import Foundation
 import SwiftUI
 
+/// Owned by the presentation parent so a sheet rebuild cannot erase its draft.
+final class TestSetupDraft: ObservableObject {
+    @Published var notes: [TestSetupField: String] = [:]
+    @Published var reviewed: TestSetupReportSnapshot?
+    @Published var error: String?
+    func clear() { notes.removeAll(); reviewed = nil; error = nil }
+}
+
 /// Temporary manual notes; no audio session, discovery or measurement work.
 struct TestSetupView: View {
     let theme: AppTheme
+    @ObservedObject var draft: TestSetupDraft
     @Environment(\.dismiss) private var dismiss
-    @State private var notes: [TestSetupField: String] = [:]
-    @State private var reviewed: TestSetupReportSnapshot?
-    @State private var error: String?
     @FocusState private var focused: TestSetupField?
-    private var hasNotes: Bool { notes.values.contains { !$0.isEmpty } }
+    private var hasNotes: Bool { draft.notes.values.contains { !$0.isEmpty } }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
             HStack(alignment: .center, spacing: 12) {
-                Text(reviewed == nil ? "Test setup" : "Review setup report")
+                Text(draft.reviewed == nil ? "Test setup" : "Review setup report")
                     .font(.title2.bold()).fixedSize(horizontal: false, vertical: true)
                     .accessibilityAddTraits(.isHeader).accessibilityIdentifier("test-setup-heading")
                 Spacer(minLength: 0)
                 RoseButton(title: "Back", theme: theme, compact: true) {
                     focused = nil
-                    if reviewed != nil { reviewed = nil } else { dismiss() }
+                    if draft.reviewed != nil { draft.reviewed = nil } else { draft.clear(); dismiss() }
                 }.accessibilityIdentifier("test-setup-back")
             }
-            if let report = reviewed {
+            if let report = draft.reviewed {
                 ScrollView {
                     Text(report.text).font(.body).fixedSize(horizontal: false, vertical: true)
                         .frame(maxWidth: .infinity, alignment: .leading).textSelection(.enabled)
@@ -44,8 +50,8 @@ struct TestSetupView: View {
                             VStack(alignment: .leading, spacing: 6) {
                                 Text(field.title).font(.headline).fixedSize(horizontal: false, vertical: true)
                                 TextField(field.hint, text: Binding(
-                                    get: { notes[field] ?? "" },
-                                    set: { notes[field] = TestSetupReportSnapshot.limitInput($0); error = nil }))
+                                    get: { draft.notes[field] ?? "" },
+                                    set: { draft.notes[field] = TestSetupReportSnapshot.limitInput($0); draft.error = nil }))
                                     .textInputAutocapitalization(.never).disableAutocorrection(true)
                                     .submitLabel(.done).focused($focused, equals: field)
                                     .onSubmit { focused = nil }
@@ -57,12 +63,12 @@ struct TestSetupView: View {
                         }
                         Text("Notes are temporary. Closing this worksheet clears them.")
                             .font(.subheadline).fixedSize(horizontal: false, vertical: true)
-                        if let message = error {
+                        if let message = draft.error {
                             Text(message).foregroundColor(theme.warning).fixedSize(horizontal: false, vertical: true)
                         }
                     }.frame(maxWidth: .infinity, alignment: .leading)
                 }.accessibilityIdentifier("test-setup-form")
-                Button { focused = nil; notes.removeAll(); error = nil } label: {
+                Button { focused = nil; draft.clear() } label: {
                     Text("Clear notes").frame(maxWidth: .infinity, minHeight: 44)
                 }.buttonStyle(AppButtonStyle(theme: theme)).disabled(!hasNotes)
                     .accessibilityIdentifier("test-setup-clear")
@@ -82,14 +88,14 @@ struct TestSetupView: View {
         focused = nil
         let milliseconds = Date().timeIntervalSince1970 * 1000
         guard milliseconds.isFinite, milliseconds >= 0, milliseconds < Double(Int64.max) else {
-            error = "Check this phone’s date and the notes, then try again."; return
+            draft.error = "Check this phone’s date and the notes, then try again."; return
         }
         do {
-            reviewed = try TestSetupReportSnapshot.capture(buildDetails: installedAppBuildDetails(),
-                notes: notes, reviewedAtMillis: Int64(milliseconds))
-            error = nil
+            draft.reviewed = try TestSetupReportSnapshot.capture(buildDetails: installedAppBuildDetails(),
+                notes: draft.notes, reviewedAtMillis: Int64(milliseconds))
+            draft.error = nil
         } catch {
-            self.error = "Check this phone’s date and the notes, then try again."
+            draft.error = "Check this phone’s date and the notes, then try again."
         }
     }
 }
