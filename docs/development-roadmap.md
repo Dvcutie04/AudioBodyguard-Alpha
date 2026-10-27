@@ -6,6 +6,16 @@ Checkpoint: October 27, 2026. Continue from the restored a-Shell baseline and th
 
 ## Current checkpoint
 
+October 27 joined intake increment: [0.35 combined-report contract](setup-output-report-2026-10-27.md)
+adds Add setup notes inside Android's reviewed output report. A one-use,
+bounded in-memory handoff carries the typed snapshot into the existing
+worksheet. Its original capture time and text stay distinct from the notes'
+review time; native Share sends the exact combined preview. Clear notes and
+Remove output details are independent; Close/process restart discard both.
+Android is build 38; iPhone/iPad source remains 0.34.0. Source-bound red/green
+results and installer identity belong to its draft PR. This supplies partial
+N2b intake, not verified routing, capture, ownership or playback authority.
+
 October 27 phone-only intake increment: [0.34 worksheet contract](test-setup-worksheet-2026-10-27.md)
 implements the existing inventory questions as six optional technical notes
 on both mobile sources. Explicit Review freezes the installed build, phone-clock

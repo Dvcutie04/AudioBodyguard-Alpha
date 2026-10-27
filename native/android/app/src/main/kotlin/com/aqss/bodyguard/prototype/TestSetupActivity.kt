@@ -23,13 +23,33 @@ import android.widget.TextView
 import android.widget.Toast
 import com.aqss.nativefeedback.TestSetupField
 import com.aqss.nativefeedback.TestSetupReportSnapshot
+import com.aqss.nativefeedback.OutputInventoryReportSnapshot
+import com.aqss.nativefeedback.SetupOutputReportHandoff
 
 /** Manual intake only; never opens an audio, discovery or measurement owner. */
 class TestSetupActivity : Activity() {
-    private data class Retained(val notes: Map<TestSetupField, String>, val report: TestSetupReportSnapshot?)
+    private data class Retained(val notes: Map<TestSetupField, String>, val report: TestSetupReportSnapshot?,
+                                val output: OutputInventoryReportSnapshot?, val attachmentUnavailable: Boolean)
+    companion object {
+        private const val OUTPUT_TICKET = "setup_output_ticket"
+        private val outputHandoff = SetupOutputReportHandoff()
+
+        fun openWithOutput(activity: Activity, dark: Boolean, report: OutputInventoryReportSnapshot) {
+            val ticket = outputHandoff.offer(report)
+            try {
+                activity.startActivity(Intent(activity, TestSetupActivity::class.java)
+                    .putExtra("dark", dark).putExtra(OUTPUT_TICKET, ticket))
+            } catch (error: RuntimeException) {
+                outputHandoff.discard(ticket)
+                throw error
+            }
+        }
+    }
     private lateinit var skin: InterfaceTheme
     private val notes = mutableMapOf<TestSetupField, String>()
     private var reviewed: TestSetupReportSnapshot? = null
+    private var outputReport: OutputInventoryReportSnapshot? = null
+    private var attachmentUnavailable = false
     private var visible = false
     private var shareButton: Button? = null
     private var backCallback: android.window.OnBackInvokedCallback? = null
@@ -41,7 +61,15 @@ class TestSetupActivity : Activity() {
         skin = InterfaceTheme(this, dark)
         if (Build.VERSION.SDK_INT >= 30) window.setDecorFitsSystemWindows(false)
         window.setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE)
-        (lastNonConfigurationInstance as? Retained)?.let { notes.putAll(it.notes); reviewed = it.report }
+        val retained = lastNonConfigurationInstance as? Retained
+        if (retained != null) {
+            notes.putAll(retained.notes); reviewed = retained.report
+            outputReport = retained.output; attachmentUnavailable = retained.attachmentUnavailable
+        } else {
+            val ticket = intent.getStringExtra(OUTPUT_TICKET)
+            outputReport = outputHandoff.take(ticket)
+            attachmentUnavailable = ticket != null && outputReport == null
+        }
         if (Build.VERSION.SDK_INT >= 33) {
             backCallback = android.window.OnBackInvokedCallback { goBack() }.also {
                 onBackInvokedDispatcher.registerOnBackInvokedCallback(android.window.OnBackInvokedDispatcher.PRIORITY_DEFAULT, it)
@@ -56,12 +84,12 @@ class TestSetupActivity : Activity() {
         super.onWindowFocusChanged(hasFocus)
         if (hasFocus && visible) shareButton?.isEnabled = true
     }
-    override fun onRetainNonConfigurationInstance(): Any = Retained(notes.toMap(), reviewed)
+    override fun onRetainNonConfigurationInstance(): Any = Retained(notes.toMap(), reviewed, outputReport, attachmentUnavailable)
     override fun onDestroy() {
         visible = false
         if (Build.VERSION.SDK_INT >= 33) backCallback?.let { onBackInvokedDispatcher.unregisterOnBackInvokedCallback(it) }
         backCallback = null; shareButton = null
-        if (isFinishing) { notes.clear(); reviewed = null }
+        if (isFinishing) { notes.clear(); reviewed = null; outputReport = null }
         super.onDestroy()
     }
     @Deprecated("API 26–32 Back fallback")
@@ -119,6 +147,15 @@ class TestSetupActivity : Activity() {
         val column = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; isFocusableInTouchMode = true }
         words(column, "Record the two-phone test arrangement. These are your notes, not verified measurements.")
         words(column, "Every answer is optional. Leave blank for Unknown. Brief technical details only.", 15f)
+        if (outputReport != null) {
+            words(column, "Output snapshot included. Outputs may have changed.", 15f)
+            column.addView(Button(this).apply {
+                text = "Remove output details"; skin.style(this)
+                setOnClickListener { hideKeyboard(); outputReport = null; attachmentUnavailable = false; renderForm() }
+            }, LinearLayout.LayoutParams(-1, -2))
+        } else if (attachmentUnavailable) {
+            words(column, "Output details were cleared. To include them, reopen Output inventory and refresh.", 15f)
+        }
         val entries = mutableListOf<EditText>()
         val clear = Button(this).apply { text = "Clear notes"; skin.style(this) }
         fun updateClear() { clear.isEnabled = notes.values.any { it.isNotEmpty() } }
@@ -157,7 +194,7 @@ class TestSetupActivity : Activity() {
             setOnClickListener {
                 if (!visible || !hasWindowFocus() || isFinishing || isDestroyed) return@setOnClickListener
                 hideKeyboard()
-                val report = try { TestSetupReportSnapshot.capture(installedAppBuildDetails(this@TestSetupActivity), notes, System.currentTimeMillis()) }
+                val report = try { TestSetupReportSnapshot.capture(installedAppBuildDetails(this@TestSetupActivity), notes, System.currentTimeMillis(), outputReport) }
                     catch (_: IllegalArgumentException) {
                         Toast.makeText(this@TestSetupActivity, "Check this phone’s date and the notes, then try again.", Toast.LENGTH_LONG).show()
                         return@setOnClickListener
@@ -175,7 +212,7 @@ class TestSetupActivity : Activity() {
             setPadding(0, skin.dp(12), 0, skin.dp(12))
         }
         root.addView(ScrollView(this).apply { addView(preview) }, LinearLayout.LayoutParams(-1, 0, 1f))
-        words(root, TestSetupReportSnapshot.NOTICE, 14f)
+        words(root, TestSetupReportSnapshot.NOTICE + if (outputReport != null) "\n${TestSetupReportSnapshot.OUTPUT_NOTICE}" else "", 14f)
         val share = Button(this).apply { text = "Share setup report"; skin.style(this, primary = true) }
         shareButton = share
         share.setOnClickListener {

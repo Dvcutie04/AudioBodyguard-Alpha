@@ -5,7 +5,7 @@ import java.time.Instant
 /** A bounded historical metadata copy. It is neither an output owner nor
  * physical evidence. The native caller supplies fixed kind/encoding labels,
  * not device names, IDs, addresses, or arbitrary logs. */
-class OutputInventoryReportSnapshot private constructor(val text: String) {
+class OutputInventoryReportSnapshot private constructor(val text: String, internal val buildDetails: String) {
     companion object {
         const val MAX_CHARACTERS = 24 * 1024
         const val MAX_UTF8_BYTES = 48 * 1024
@@ -65,7 +65,7 @@ class OutputInventoryReportSnapshot private constructor(val text: String) {
                 append("\nAdvertised metadata only; not physical output evidence.")
             }
             require(text.length <= MAX_CHARACTERS && text.toByteArray(Charsets.UTF_8).size <= MAX_UTF8_BYTES) { "Report exceeds its text bound" }
-            return OutputInventoryReportSnapshot(text)
+            return OutputInventoryReportSnapshot(text, buildDetails)
         }
 
         private fun unsafe(value: Char) = value.isISOControl() || value == '\u2028' || value == '\u2029' || Character.getType(value) == Character.FORMAT.toInt()

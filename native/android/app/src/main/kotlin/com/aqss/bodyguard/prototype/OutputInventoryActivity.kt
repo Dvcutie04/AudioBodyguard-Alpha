@@ -33,6 +33,7 @@ class OutputInventoryActivity : Activity() {
     private var reportSnapshot: OutputInventoryReportSnapshot? = null
     private var reportDialog: AlertDialog? = null
     private var reportShareButton: Button? = null
+    private var reportNotesButton: Button? = null
     private var deviceCallback: AudioDeviceCallback? = null
     private var callbackManager: AudioManager? = null
 
@@ -100,7 +101,7 @@ class OutputInventoryActivity : Activity() {
         super.onResume(); visible = true
         clearSnapshot(IDLE)
         registerNotices()
-        if (reportDialog?.isShowing == true) reportShareButton?.isEnabled = true
+        if (reportDialog?.isShowing == true) { reportShareButton?.isEnabled = true; reportNotesButton?.isEnabled = true }
     }
 
     override fun onPause() {
@@ -211,10 +212,11 @@ class OutputInventoryActivity : Activity() {
             setTypeface(typeface, android.graphics.Typeface.BOLD)
         }, LinearLayout.LayoutParams(0, -2, 1f))
         val share = Button(this).apply { text = "Share output report"; skin.style(this, primary = true) }
+        val addNotes = Button(this).apply { text = "Add setup notes"; skin.style(this) }
         val dialog = object : AlertDialog(this) {
             override fun onWindowFocusChanged(hasFocus: Boolean) {
                 super.onWindowFocusChanged(hasFocus)
-                if (hasFocus && visible && isShowing) share.isEnabled = true
+                if (hasFocus && visible && isShowing) { share.isEnabled = true; addNotes.isEnabled = true }
             }
         }
         header.addView(roseButton(this, skin, "Back", compact = true) { dialog.dismiss() })
@@ -229,10 +231,23 @@ class OutputInventoryActivity : Activity() {
             text = "Snapshot only. Outputs may have changed."; textSize = 14f
             setTextColor(skin.text); setPadding(0, skin.dp(8), 0, 0)
         }, LinearLayout.LayoutParams(-1, -2))
+        root.addView(addNotes, LinearLayout.LayoutParams(-1, -2).apply { topMargin = skin.dp(8) })
         root.addView(share, LinearLayout.LayoutParams(-1, -2).apply { topMargin = skin.dp(8) })
         dialog.setView(root)
         dialog.setOnDismissListener {
-            if (reportDialog === dialog) { reportDialog = null; reportShareButton = null }
+            if (reportDialog === dialog) { reportDialog = null; reportShareButton = null; reportNotesButton = null }
+        }
+        addNotes.setOnClickListener {
+            if (!visible || isFinishing || isDestroyed || !dialog.isShowing ||
+                dialog.window?.decorView?.hasWindowFocus() != true || !addNotes.isEnabled) return@setOnClickListener
+            addNotes.isEnabled = false
+            clearSnapshot(IDLE)
+            try { TestSetupActivity.openWithOutput(this, skin.dark, report) }
+            catch (error: RuntimeException) {
+                addNotes.isEnabled = true
+                if (error !is ActivityNotFoundException && error !is SecurityException) throw error
+                Toast.makeText(this, "Setup notes are unavailable. You can still share the output report.", Toast.LENGTH_LONG).show()
+            }
         }
         share.setOnClickListener {
             if (!visible || isFinishing || isDestroyed || !dialog.isShowing ||
@@ -251,7 +266,7 @@ class OutputInventoryActivity : Activity() {
                 Toast.makeText(this, "Sharing is unavailable. You can read the report shown here.", Toast.LENGTH_LONG).show()
             }
         }
-        reportDialog = dialog; reportShareButton = share
+        reportDialog = dialog; reportShareButton = share; reportNotesButton = addNotes
         dialog.show()
         val display = resources.displayMetrics
         dialog.window?.setLayout(minOf(display.widthPixels - skin.dp(24), skin.dp(680)),
