@@ -3,7 +3,7 @@ name: PCM16 accounting lab (no audio backend)
 on:
   workflow_dispatch:
   push:
-    branches: ["aqss/**"]
+    branches: ["main", "master", "aqss/**"]
     paths:
       - "native/lab/pcm16_accounting/**"
       - ".github/workflows/pcm16-accounting.yml"

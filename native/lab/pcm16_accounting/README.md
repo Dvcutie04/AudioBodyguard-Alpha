@@ -85,3 +85,13 @@ absence of a modelled call, not physical NOT_APPLIED evidence. Test results are
 synthetic accounting evidence. They cannot establish speaker output, containment,
 latency, TV control or either mobile product's qualification. Production gates
 and N2b–N5 remain unchanged.
+
+## Verification provenance
+
+The tests-first revision `35876410ff15f0b276df097454d389e7adf4d3bb`
+failed at `compileTestKotlin` in
+[run 40597544817](https://github.com/Dvcutie04/AudioBodyguard-Alpha/actions/runs/40597544817)
+because the model's types did not yet exist. Java/Gradle setup succeeded.
+The implementation suite contains 18 test cases. Exact implementation run,
+JUnit results and source identity are recorded in
+[draft PR #73](https://github.com/Dvcutie04/AudioBodyguard-Alpha/pull/73).
