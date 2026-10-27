@@ -8,6 +8,7 @@ import android.media.AudioDeviceCallback;
 import android.media.AudioDeviceInfo;
 import android.media.AudioManager;
 import android.os.Bundle;
+import android.os.SystemClock;
 import android.widget.TextView;
 import android.widget.Button;
 import java.lang.reflect.Field;
@@ -17,6 +18,8 @@ import java.lang.reflect.Field;
 public final class OutputInventoryProbe extends CameraCaptureProbe {
     private static final String IDLE = "Not read yet. Tap Refresh outputs.";
     private static final String CHANGED = "Output list needs a fresh check. Tap Refresh outputs.";
+    private String phase = "launch";
+    private int refreshCount;
 
     @Override public void onStart() {
         Bundle result = new Bundle();
@@ -44,6 +47,7 @@ public final class OutputInventoryProbe extends CameraCaptureProbe {
             AudioDeviceInfo[] inputs = manager.getDevices(AudioManager.GET_DEVICES_INPUTS);
             require(outputs.length > 0 && inputs.length > 0, "Configured emulator needs output/input descriptors");
 
+            phase = "remove notice";
             runOnMainSync(() -> callback.onAudioDevicesRemoved(outputs));
             assertCleared(); recordScreen("output-freshness-removed");
             // Repeated notifications cannot replace the guidance or reread.
@@ -63,6 +67,8 @@ public final class OutputInventoryProbe extends CameraCaptureProbe {
             });
             require(refreshed.equals(details()), "Input-only or empty notifications invalidated outputs");
 
+            phase = "open review";
+            waitForInventoryFocus();
             runOnMainSync(() -> require(click(activity.getWindow().getDecorView(), "Review output report"), "Review control missing"));
             waitForIdleSync();
             AlertDialog review = (AlertDialog) field("reportDialog").get(activity);
@@ -72,6 +78,7 @@ public final class OutputInventoryProbe extends CameraCaptureProbe {
             String[] frozen = new String[1];
             runOnMainSync(() -> frozen[0] = preview.getText().toString());
             require(frozen[0].startsWith("Audio Bodyguard output inventory (v1)"), "Report envelope missing");
+            phase = "notice during review";
             runOnMainSync(() -> callback.onAudioDevicesRemoved(outputs));
             assertCleared();
             runOnMainSync(() -> require(frozen[0].equals(preview.getText().toString()), "Notice rewrote the historical report under review"));
@@ -80,6 +87,7 @@ public final class OutputInventoryProbe extends CameraCaptureProbe {
             recordScreen("output-freshness-report-cleared");
             refresh();
 
+            phase = "pause and resume";
             overlay = startActivitySync(new Intent().setClassName(getTargetContext().getPackageName(),
                     "com.aqss.bodyguard.prototype.SetupGuideActivity").addFlags(Intent.FLAG_ACTIVITY_NEW_TASK));
             waitForIdleSync();
@@ -108,7 +116,18 @@ public final class OutputInventoryProbe extends CameraCaptureProbe {
             result.putString("output_inventory", "passed: synthetic output add/remove callbacks clear real inventory and disable new Review; an already reviewed historical copy stays immutable; no automatic reread; explicit refresh; input-only/empty ignored; pause unregisters; resume renews; old and closed callbacks ignored; route/format remain unknown. No physical disconnect or route qualification.");
             finish(Activity.RESULT_OK, result);
         } catch (Exception | AssertionError error) {
-            result.putString("output_inventory_error", error.toString());
+            result.putString("output_inventory_error", phase + ": " + error);
+            if (activity != null) {
+                try {
+                    result.putString("output_inventory_details", details());
+                    boolean[] focus = new boolean[1];
+                    runOnMainSync(() -> focus[0] = activity.hasWindowFocus());
+                    result.putBoolean("output_inventory_focus", focus[0]);
+                    recordScreen("output-freshness-failure");
+                } catch (Exception | AssertionError diagnostic) {
+                    result.putString("output_inventory_diagnostic", diagnostic.toString());
+                }
+            }
             finish(Activity.RESULT_CANCELED, result);
         } finally {
             if (overlay != null) { Activity closing = overlay; runOnMainSync(closing::finish); }
@@ -127,9 +146,21 @@ public final class OutputInventoryProbe extends CameraCaptureProbe {
         return value[0];
     }
     private void refresh() {
+        phase = "refresh " + (++refreshCount);
         waitForIdleSync();
+        waitForInventoryFocus();
         runOnMainSync(() -> require(click(activity.getWindow().getDecorView(), "Refresh outputs"), "Refresh button missing"));
         waitForText("Snapshot only.");
+    }
+    private void waitForInventoryFocus() {
+        long deadline = SystemClock.uptimeMillis() + 5000;
+        while (SystemClock.uptimeMillis() < deadline) {
+            boolean[] focused = new boolean[1];
+            runOnMainSync(() -> focused[0] = !activity.isFinishing() && !activity.isDestroyed() && activity.hasWindowFocus());
+            if (focused[0]) return;
+            SystemClock.sleep(50);
+        }
+        throw new AssertionError("Inventory window never became interactive before the test click");
     }
     private void assertCleared() throws Exception {
         waitForText(CHANGED);

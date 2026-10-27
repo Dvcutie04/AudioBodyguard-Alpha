@@ -492,6 +492,11 @@ def main():
         observation = adb("shell", "am", "instrument", "-w",
                           "com.aqss.bodyguard.uiprobe/.OutputInventoryProbe", timeout=90).decode()
         (out / "output-inventory-callbacks.txt").write_text(observation)
+        if "INSTRUMENTATION_RESULT: output_inventory=passed:" not in observation:
+            try:
+                (out / "output-freshness-failure.png").write_bytes(adb("exec-out", "run-as", package, "cat", "files/output-freshness-failure.png"))
+            except subprocess.CalledProcessError:
+                pass
         assert "INSTRUMENTATION_RESULT: output_inventory=passed:" in observation, observation
         for name in ("output-freshness-read", "output-freshness-removed",
                      "output-freshness-added", "output-freshness-resumed", "output-freshness-report-cleared"):
@@ -503,6 +508,7 @@ def main():
 
     if args.output_report_only:
         check_output_report()
+        check_output_freshness()
         return
     if args.tv_guides_only:
         def guide_tap(label, name):
