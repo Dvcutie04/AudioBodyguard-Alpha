@@ -74,6 +74,9 @@ and ownership review Pending, independent capture Not recorded, calibration
 and clock mapping Unknown, playback/capture consent Not collected, and physical
 output/protection Not verified. A completed worksheet neither fills all eight
 N2b rows nor authorizes recording, playback, a trial or successor activation.
+At iOS accessibility text sizes, short visible Review/Share report labels keep
+the complete actions readable; their accessibility labels retain the full
+setup-report action names. The report body and shared text do not change.
 
 ## Verification obligations
 

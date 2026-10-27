@@ -14,13 +14,14 @@ struct TestSetupView: View {
     let theme: AppTheme
     @ObservedObject var draft: TestSetupDraft
     @Environment(\.dismiss) private var dismiss
+    @Environment(\.dynamicTypeSize) private var textSize
     @FocusState private var focused: TestSetupField?
     private var hasNotes: Bool { draft.notes.values.contains { !$0.isEmpty } }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
             HStack(alignment: .center, spacing: 12) {
-                Text(draft.reviewed == nil ? "Test setup" : "Review setup report")
+                Text(draft.reviewed == nil ? "Test setup" : textSize.isAccessibilitySize ? "Review report" : "Review setup report")
                     .font(.title2.bold()).fixedSize(horizontal: false, vertical: true)
                     .accessibilityAddTraits(.isHeader).accessibilityIdentifier("test-setup-heading")
                 Spacer(minLength: 0)
@@ -38,7 +39,8 @@ struct TestSetupView: View {
                 Text(TestSetupReportSnapshot.notice).font(.subheadline)
                     .fixedSize(horizontal: false, vertical: true).accessibilityIdentifier("test-setup-notice")
                 ReviewedTextShareButton(text: report.text, theme: theme,
-                    title: "Share setup report", identifier: "test-setup-share")
+                    title: textSize.isAccessibilitySize ? "Share report" : "Share setup report", identifier: "test-setup-share")
+                    .accessibilityLabel("Share setup report")
             } else {
                 ScrollView {
                     VStack(alignment: .leading, spacing: 16) {
@@ -73,8 +75,10 @@ struct TestSetupView: View {
                 }.buttonStyle(AppButtonStyle(theme: theme)).disabled(!hasNotes)
                     .accessibilityIdentifier("test-setup-clear")
                 Button(action: review) {
-                    Text("Review setup report").frame(maxWidth: .infinity, minHeight: 44)
+                    Text(textSize.isAccessibilitySize ? "Review report" : "Review setup report")
+                        .frame(maxWidth: .infinity, minHeight: 44)
                 }.buttonStyle(AppButtonStyle(theme: theme, primary: true))
+                    .accessibilityLabel("Review setup report")
                     .accessibilityIdentifier("test-setup-review")
             }
         }

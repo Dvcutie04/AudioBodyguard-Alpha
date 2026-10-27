@@ -134,6 +134,7 @@ final class AQSSReadOnlyUITests: XCTestCase {
         app.launch(); try openTestSetup(app); app.buttons["test-setup-review"].tap()
         XCTAssertTrue(preview.waitForExistence(timeout: 5))
         XCTAssertTrue(app.buttons["test-setup-share"].isHittable)
+        XCTAssertEqual(app.buttons["test-setup-share"].label, "Share setup report")
         XCTAssertTrue(app.buttons["test-setup-back"].isHittable)
         XCTAssertTrue(app.staticTexts["test-setup-notice"].isHittable)
         screenshot("Test setup largest text keeps review navigation and notice reachable", app)
