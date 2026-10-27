@@ -38,6 +38,7 @@ def main():
     parser.add_argument("--samsung-setup-only", action="store_true")
     parser.add_argument("--output-inventory-only", action="store_true")
     parser.add_argument("--output-report-only", action="store_true")
+    parser.add_argument("--test-setup-only", action="store_true")
     parser.add_argument("--tv-guides-only", action="store_true")
     parser.add_argument("--apk", default="native/android/app/build/outputs/apk/liveInput/app-liveInput.apk")
     parser.add_argument("--package", default="com.aqss.bodyguard.prototype.liveinput")
@@ -333,6 +334,117 @@ def main():
     version, build = versions[0].strip(), builds[0]
     (out / "installed-build-identity.json").write_text(
         json.dumps({"application_id": package, "version": version, "build": build}, sort_keys=True))
+    def check_test_setup():
+        answers = (("Playback phone", "Android 16 test phone"), ("Intended output", "Phone speaker"),
+                   ("Second phone", "iPhone iOS 26"), ("Recording app and mode", "Voice Memos mode unknown"),
+                   ("Phone placement", "Two phones on table"), ("Setup constraints", "No calibration"))
+        def setup_tap(label, name):
+            for attempt in range(10):
+                root, clicked = screen(name + f"_{attempt}", click=label)
+                if clicked:
+                    return
+                scroller = next((n for n in root.iter("node") if n.get("class") == "android.widget.ScrollView"), None)
+                assert scroller is not None, "Worksheet content viewport unavailable"
+                x0, y0, x1, y1 = map(int, re.findall(r"-?\d+", scroller.get("bounds")))
+                x = (x0 + x1) // 2
+                adb("shell", "input", "swipe", str(x), str(int(y0 + (y1-y0)*.8)), str(x), str(int(y0 + (y1-y0)*.2)), "350")
+            raise AssertionError("Worksheet field unreachable: " + label)
+        def preview(root):
+            rows = [n.get("text", "") for n in root.iter("node") if n.get("text", "").startswith("Audio Bodyguard test setup (v1)\n")]
+            assert len(rows) == 1, "Require one complete worksheet preview"
+            return rows[0]
+        def button(root, label):
+            return next(n for n in root.iter("node") if n.get("text") == label)
+        tap("Sound", "test_setup_sound")
+        root, _ = screen("test_setup_sound_entry")
+        assert any(n.get("content-desc") == "Test setup. Record the two-phone test arrangement" for n in root.iter("node")), "Sound has no Test setup worksheet entry"
+        tap("Test setup. Record the two-phone test arrangement", "test_setup_open")
+        form = wait_for("Review setup report", "test_setup_empty")
+        assert button(form, "Clear notes").get("enabled") == "false"
+        tap("Review setup report", "test_setup_blank_review")
+        blank = preview(wait_for("Share setup report", "test_setup_blank_preview"))
+        assert "Playback phone: Unknown" in blank and "Independent capture: Not recorded" in blank
+        tap("Back", "test_setup_blank_back")
+        for index, (label, value) in enumerate(answers):
+            setup_tap(label, f"test_setup_field_{index}")
+            adb("shell", "input", "text", value.replace(" ", "%s"))
+            adb("shell", "input", "keyevent", "KEYCODE_ENTER")
+        adb("shell", "settings", "put", "system", "accelerometer_rotation", "0")
+        adb("shell", "settings", "put", "system", "user_rotation", "1")
+        wait_for("Review setup report", "test_setup_form_rotated")
+        adb("shell", "settings", "put", "system", "user_rotation", "0")
+        tap("Review setup report", "test_setup_filled_review")
+        root = wait_for("Share setup report", "test_setup_filled_preview")
+        reviewed = preview(root)
+        assert f"Audio Bodyguard\nPlatform: Android\nVersion: {version}\nBuild: {build}" in reviewed
+        for _, value in answers:
+            assert '"' + value + '"' in reviewed, value
+        for value in ("Actual playback route: Unknown", "Negotiated format: Unknown", "Playback/capture consent: Not collected", "Physical output and protection: Not verified"):
+            assert value in reviewed, value
+        assert len(reviewed) <= 4096 and len(reviewed.encode()) <= 8192
+        (out / "test-setup-reviewed.txt").write_text(reviewed)
+        screenshot("test_setup_review")
+        assert not has(root, "Build details test")
+        receiver = "com.aqss.bodyguard.sharetest"
+        receipt = "files/shared-build-details.json"
+        before = None
+        try:
+            before = adb("shell", "run-as", receiver, "cat", receipt)
+        except subprocess.CalledProcessError:
+            pass
+        tap("Share setup report", "test_setup_share_cancel")
+        wait_for("Build details test", "test_setup_chooser_cancel")
+        adb("shell", "input", "keyevent", "KEYCODE_BACK")
+        returned = wait_for("Share setup report", "test_setup_cancel_return")
+        assert preview(returned) == reviewed and button(returned, "Share setup report").get("enabled") == "true"
+        if before is None:
+            adb("shell", shlex.join(["run-as", receiver, "sh", "-c", "test ! -e " + receipt]))
+        else:
+            assert adb("shell", "run-as", receiver, "cat", receipt) == before
+        tap("Share setup report", "test_setup_share_receiver")
+        wait_for("Build details test", "test_setup_chooser_receiver")
+        select_share_receiver("test_setup_select_receiver")
+        wait_for("Build details received for test", "test_setup_received")
+        received = json.loads(adb("shell", "run-as", receiver, "cat", receipt))
+        assert received["text"] == reviewed and received["type"] == "text/plain"
+        assert received["action"] == "android.intent.action.SEND" and received["extra_keys"] == ["android.intent.extra.TEXT"]
+        assert received["data"] is None and not received["has_stream"]
+        assert all(c["text"] == reviewed and c["uri"] is None and not c["has_intent"] for c in received["clips"])
+        (out / "test-setup-share-receipt.json").write_text(json.dumps(received, sort_keys=True))
+        adb("shell", "input", "keyevent", "KEYCODE_BACK")
+        assert preview(wait_for("Share setup report", "test_setup_receiver_return")) == reviewed
+        adb("shell", "input", "keyevent", "KEYCODE_HOME"); launch()
+        assert preview(wait_for("Share setup report", "test_setup_background_return")) == reviewed
+        adb("shell", "settings", "put", "system", "font_scale", "1.5")
+        assert preview(wait_for("Share setup report", "test_setup_large_review")) == reviewed
+        screenshot("test_setup_large_font")
+        adb("shell", "settings", "put", "system", "font_scale", "1.0")
+        tap("Back", "test_setup_edit_return")
+        form = wait_for("Clear notes", "test_setup_notes_retained")
+        assert button(form, "Clear notes").get("enabled") == "true"
+        tap("Clear notes", "test_setup_clear")
+        form = wait_for("Review setup report", "test_setup_cleared")
+        assert button(form, "Clear notes").get("enabled") == "false"
+        tap("Review setup report", "test_setup_cleared_review")
+        cleared = preview(wait_for("Share setup report", "test_setup_cleared_preview"))
+        assert "Playback phone: Unknown" in cleared and "Android 16 test phone" not in cleared
+        tap("Back", "test_setup_back_to_form"); tap("Back", "test_setup_close")
+        tap("Test setup. Record the two-phone test arrangement", "test_setup_reopen")
+        assert button(wait_for("Clear notes", "test_setup_reopened_empty"), "Clear notes").get("enabled") == "false"
+        setup_tap("Playback phone", "test_setup_before_process")
+        adb("shell", "input", "text", "Temporary%snotes"); adb("shell", "input", "keyevent", "KEYCODE_ENTER")
+        tap("Review setup report", "test_setup_before_process_review")
+        assert "Temporary notes" in preview(wait_for("Share setup report", "test_setup_before_process_preview"))
+        adb("shell", "am", "force-stop", package); launch()
+        wait_for("Connection not verified", "test_setup_new_process_home")
+        tap("Sound", "test_setup_new_process_sound")
+        tap("Test setup. Record the two-phone test arrangement", "test_setup_new_process_open")
+        assert button(wait_for("Clear notes", "test_setup_new_process_empty"), "Clear notes").get("enabled") == "false"
+        tap("Back", "test_setup_new_process_close"); tap("Home", "test_setup_home")
+        wait_for("Connection not verified", "test_setup_still_unverified")
+        assert "android.permission.RECORD_AUDIO: granted=false" in adb("shell", "dumpsys", "package", package).decode()
+        print("TEST_SETUP_OBSERVED: six optional bounded notes, Unknowns, immutable review, native Cancel and exact text-only receiver handoff, rotation/background/large text, Back/Clear/Close/process clearing; no microphone or physical qualification", flush=True)
+
     def check_output_report():
         receiver = "com.aqss.bodyguard.sharetest"
         receipt_path = "files/shared-build-details.json"
@@ -506,6 +618,9 @@ def main():
         assert "android.permission.RECORD_AUDIO: granted=false" in permission, "Inventory must not request microphone access"
         print("OUTPUT_FRESHNESS_OBSERVED: synthetic callback invalidation and native lifecycle passed; no physical disconnect or routing claim", flush=True)
 
+    if args.test_setup_only:
+        check_test_setup()
+        return
     if args.output_report_only:
         check_output_report()
         check_output_freshness()
@@ -1069,6 +1184,7 @@ def main():
     wait_for("Not read yet. Tap Refresh outputs.", "output_inventory_reopened_empty")
     tap("Back", "output_inventory_close_again")
     print("OUTPUT_INVENTORY_OBSERVED: explicit metadata refresh, route/format unknown, microphone permission unrequested, background/resume clears snapshot, Back/reopen clears snapshot; no playback or physical qualification", flush=True)
+    check_test_setup()
     check_output_report()
     check_output_freshness()
     launch()

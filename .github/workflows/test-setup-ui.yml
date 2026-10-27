@@ -1,0 +1,179 @@
+name: Two-phone test setup worksheet verification
+
+on:
+  push:
+    branches: ["aqss/test-setup-worksheet"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: test-setup-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  android-test-setup:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: "8.13"
+      - uses: android-actions/setup-android@v4
+      - name: Record exact verification source
+        run: |
+          python3 - <<'PYTHON'
+          import json, os, pathlib, subprocess
+          source = subprocess.check_output(['git', 'rev-parse', 'HEAD'], text=True).strip()
+          assert source == os.environ['GITHUB_SHA']
+          output = pathlib.Path('artifacts/ui/android-live-input')
+          output.mkdir(parents=True, exist_ok=True)
+          (output / 'source-identity.json').write_text(json.dumps({
+              'source_commit': source,
+              'source_tree': subprocess.check_output(['git', 'rev-parse', 'HEAD^{tree}'], text=True).strip(),
+              'workflow_run_id': os.environ['GITHUB_RUN_ID'],
+              'workflow_attempt': os.environ['GITHUB_RUN_ATTEMPT'],
+              'scope': 'Manual setup notes, review and native sharing; no playback or physical qualification'
+          }, indent=2) + '\n')
+          PYTHON
+      - name: Compile app and callback regression probe
+        run: |
+          sdkmanager "platforms;android-36"
+          gradle -p native/android :app:assembleLiveInput :uiprobe:assembleDebug :sharereceiver:assembleDebug
+      - name: Enable emulator acceleration
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+      - name: Verify manual worksheet and exact native sharing
+        uses: reactivecircus/android-emulator-runner@a421e43855164a8197daf9d8d40fe71c6996bb0d
+        with:
+          api-level: 36
+          arch: x86_64
+          profile: pixel_5
+          emulator-options: -no-window -gpu swiftshader -no-snapshot -noaudio -no-boot-anim -delay-adb
+          script: timeout 600 python3 tools/smoke_android_live_input.py --test-setup-only
+      - name: Retain native output evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-setup-android-ui
+          path: artifacts/ui/android-live-input/
+          if-no-files-found: error
+          retention-days: 14
+
+  ios-test-setup:
+    name: Test setup on ${{ matrix.device }} Simulator
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - device: iPhone
+            artifact: iphone
+          - device: iPad
+            artifact: ipad
+    runs-on: macos-14
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Record exact verification source
+        run: |
+          python3 - <<'PYTHON'
+          import json, os, pathlib, subprocess
+          source = subprocess.check_output(['git', 'rev-parse', 'HEAD'], text=True).strip()
+          assert source == os.environ['GITHUB_SHA']
+          output = pathlib.Path(os.environ['RUNNER_TEMP']) / 'sound-check-screenshots'
+          output.mkdir(parents=True, exist_ok=True)
+          (output / 'source-identity.json').write_text(json.dumps({
+              'source_commit': source,
+              'source_tree': subprocess.check_output(['git', 'rev-parse', 'HEAD^{tree}'], text=True).strip(),
+              'workflow_run_id': os.environ['GITHUB_RUN_ID'],
+              'workflow_attempt': os.environ['GITHUB_RUN_ATTEMPT'],
+              'scope': '${{ matrix.device }} Simulator worksheet; no signed installation or physical qualification'
+          }, indent=2) + '\n')
+          PYTHON
+      - name: Build and prepare native worksheet tests
+        shell: bash
+        run: |
+          set -euo pipefail
+          simulator_udid="$(xcrun simctl list devices available -j | python3 -c 'import json,sys; print(next(d["udid"] for group in json.load(sys.stdin)["devices"].values() for d in group if d["name"].startswith("${{ matrix.device }}") and d.get("isAvailable",True)))')"
+          echo "AQSS_SIMULATOR=$simulator_udid" >> "$GITHUB_ENV"
+          xcodebuild -project native/ios-app/AQSSReadOnly.xcodeproj -scheme AQSSReadOnly \
+            -configuration Release -destination "platform=iOS Simulator,id=$simulator_udid" \
+            -derivedDataPath "$RUNNER_TEMP/test-setup-build" CODE_SIGNING_ALLOWED=NO build-for-testing
+          xcrun simctl boot "$simulator_udid" || true
+          xcrun simctl bootstatus "$simulator_udid" -b
+          xcrun simctl install "$simulator_udid" "$RUNNER_TEMP/test-setup-build/Build/Products/Release-iphonesimulator/AQSSReadOnly.app"
+          xcrun simctl privacy "$simulator_udid" revoke microphone com.aqss.bodyguard.prototype
+          python3 - "$RUNNER_TEMP/test-setup-build/Build/Products" <<'PYTHON'
+          import pathlib, plistlib, sys
+          root = pathlib.Path(sys.argv[1])
+          original, = root.glob('*.xctestrun')
+          data = plistlib.loads(original.read_bytes())
+          info = plistlib.loads((root / 'Release-iphonesimulator/AQSSReadOnly.app/Info.plist').read_bytes())
+          targets = [v for v in data.values() if isinstance(v, dict) and v.get('IsUITestBundle')]
+          assert len(targets) == 1
+          environment = targets[0].setdefault('EnvironmentVariables', {})
+          environment['AQSS_TEST_APP_VERSION'] = info['CFBundleShortVersionString']
+          environment['AQSS_TEST_APP_BUILD'] = info['CFBundleVersion']
+          (root / 'test-setup.xctestrun').write_bytes(plistlib.dumps(data))
+          PYTHON
+      - name: Verify Cancel, optional notes, lifecycle and largest text
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 tools/check_ios_build_share_clipboard.py prepare "$AQSS_SIMULATOR" --output "$RUNNER_TEMP/setup-clipboard"
+          xcodebuild test-without-building \
+            -xctestrun "$RUNNER_TEMP/test-setup-build/Build/Products/test-setup.xctestrun" \
+            -destination "platform=iOS Simulator,id=$AQSS_SIMULATOR" -parallel-testing-enabled NO \
+            -resultBundlePath "$RUNNER_TEMP/sound-test-setup-cancel.xcresult" \
+            -only-testing:AQSSReadOnlyUITests/AQSSReadOnlyUITests/testTestSetupWorksheetCancelSharePreservesPreview \
+            -only-testing:AQSSReadOnlyUITests/AQSSReadOnlyUITests/testTestSetupWorksheetRotationClearCloseAndRestart
+          python3 tools/check_ios_build_share_clipboard.py cancel "$AQSS_SIMULATOR" --output "$RUNNER_TEMP/setup-clipboard"
+      - name: Verify exact native Copy of the actual reviewed text
+        shell: bash
+        run: |
+          set -euo pipefail
+          xcodebuild test-without-building \
+            -xctestrun "$RUNNER_TEMP/test-setup-build/Build/Products/test-setup.xctestrun" \
+            -destination "platform=iOS Simulator,id=$AQSS_SIMULATOR" -parallel-testing-enabled NO \
+            -resultBundlePath "$RUNNER_TEMP/sound-test-setup-copy.xcresult" \
+            -only-testing:AQSSReadOnlyUITests/AQSSReadOnlyUITests/testTestSetupWorksheetCopySharesExactReviewedText
+          python3 tools/check_ios_test_setup_clipboard.py "$AQSS_SIMULATOR" \
+            "$RUNNER_TEMP/sound-test-setup-copy.xcresult" \
+            "$RUNNER_TEMP/test-setup-build/Build/Products/Release-iphonesimulator/AQSSReadOnly.app/Info.plist" \
+            "$RUNNER_TEMP/setup-clipboard"
+      - name: Clear isolated clipboard fixture
+        if: always()
+        run: python3 tools/check_ios_build_share_clipboard.py clear "$AQSS_SIMULATOR" --output "$RUNNER_TEMP/setup-clipboard"
+      - name: Export native worksheet screenshots
+        if: always()
+        run: python3 tools/export_ios_input_screenshots.py "$RUNNER_TEMP" test-setup-cancel test-setup-copy
+      - name: Retain worksheet receipts and screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-setup-${{ matrix.artifact }}-ui
+          path: |
+            ${{ runner.temp }}/sound-check-screenshots/
+            ${{ runner.temp }}/setup-clipboard/
+          if-no-files-found: error
+          retention-days: 14
+      - name: Retain native worksheet test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-setup-${{ matrix.artifact }}-xcresult
+          path: ${{ runner.temp }}/sound-test-setup-*.xcresult
+          if-no-files-found: ignore
+          retention-days: 14
