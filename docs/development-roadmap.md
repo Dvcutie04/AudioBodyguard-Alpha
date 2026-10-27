@@ -6,6 +6,14 @@ Checkpoint: October 27, 2026. Continue from the restored a-Shell baseline and th
 
 ## Current checkpoint
 
+October 27 next-phase preparation: the [mobile-output review brief](n2b-mobile-output-review-2026-10-27.md)
+maps the existing 0.35 report to the eight N2b inventory sections and pins the
+pending backend/ownership/acquisition questions and test sequence. The actual
+owner report has not been received. New exact-backend research awaits the
+standing model switch and Ready confirmation; the earlier confirmation covered
+the bounded read-only inventory research. No adapter or new APK is added by
+this preparation. Android remains 0.35/build 38 and iPhone/iPad remains 0.34.0.
+
 October 27 joined intake increment: [0.35 combined-report contract](setup-output-report-2026-10-27.md)
 adds Add setup notes inside Android's reviewed output report. A one-use,
 bounded in-memory handoff carries the typed snapshot into the existing
