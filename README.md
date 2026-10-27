@@ -137,6 +137,12 @@ a new process discards both. Android is build 38; iPhone source remains 0.34.0.
 This remains partial, unverified N2b intake before a playback adapter. Actual
 test results and installer identity belong to its draft PR.
 
+The [next mobile-output backend review](docs/mobile-output-backend-research-2026-10-27.md)
+records the owner's Ready confirmation, current primary-source findings,
+conditional lab recommendation and pending ownership/accounting tests. The
+actual 0.35 setup report is still needed before selecting an adapter. This
+paper review adds no native output path or new installer.
+
 The [internal TestFlight preparation](docs/testflight-beta-preparation.md)
 automates checks on an exact reviewed source revision and provides a manually
 requested signing/upload lane after Apple account and signing setup. It does
