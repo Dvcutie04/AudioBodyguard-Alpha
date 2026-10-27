@@ -17,7 +17,7 @@ that command and retains JUnit receipts. There is no APK or app version bump
 for this lab. The implementation uses Kotlin 2.1.0, matching the Android
 source toolchain, without Android framework dependencies.
 
-## Contract and bounds
+## Accounting contract and bounds
 
 One model copies one interleaved PCM16 source of 1–4096 samples. The 8192-byte
 payload ceiling is a synthetic lab bound, not a device buffer, selected channel
@@ -87,6 +87,11 @@ latency, TV control or either mobile product's qualification. Production gates
 and N2b–N5 remain unchanged.
 
 ## Verification provenance
+
+The [run-controls extension](RUN_CONTROLS.md) adds a separate serial driver for
+synthetic admission, bounded task policy, lifecycle invalidation and staged
+cleanup. Its mock operations do not supply a real backend or output authority.
+The original accounting contract and its 18 cases remain unchanged.
 
 The tests-first revision `35876410ff15f0b276df097454d389e7adf4d3bb`
 failed at `compileTestKotlin` in

@@ -150,6 +150,12 @@ Its bounded source, ticket and trace checks do not select an adapter or add an
 app dependency. Android remains 0.35 and iPhone source remains 0.34.0; there is
 no new installer for this prerequisite.
 
+Its [scripted run-controls extension](native/lab/pcm16_accounting/RUN_CONTROLS.md)
+models admission, fixed-domain deadlines, one delayed retry, lifecycle holds and
+cleanup quarantine. Each backend observation must be recorded before another
+operation or slot release. Native ownership, phone configuration and physical
+output remain unimplemented and unqualified.
+
 The [internal TestFlight preparation](docs/testflight-beta-preparation.md)
 automates checks on an exact reviewed source revision and provides a manually
 requested signing/upload lane after Apple account and signing setup. It does

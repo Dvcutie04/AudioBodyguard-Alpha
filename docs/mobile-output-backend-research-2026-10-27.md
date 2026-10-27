@@ -182,6 +182,12 @@ audio resource, scheduler or mobile-app dependency. The adapter-specific and
 physical checks above remain pending. This is implementation of the existing
 review, not a new backend selection or research approval request.
 
+The subsequent [scripted run-controls extension](../native/lab/pcm16_accounting/RUN_CONTROLS.md)
+implements declared admission, bounded pending-task policy and staged cleanup
+observations on a mock backend. It supplies no native handle, real scheduler,
+resource lease, concurrent cut or physical retirement evidence. The exact
+backend, worker/callback lifetime and actual phone trials remain separate.
+
 ## Source register
 
 All URLs below are primary publisher sources. Kotlin reference URLs were used
