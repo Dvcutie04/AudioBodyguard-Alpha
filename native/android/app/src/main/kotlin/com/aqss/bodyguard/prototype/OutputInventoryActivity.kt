@@ -225,6 +225,10 @@ class OutputInventoryActivity : Activity() {
             setPadding(0, skin.dp(12), 0, skin.dp(12))
         }
         root.addView(ScrollView(this).apply { addView(preview) }, LinearLayout.LayoutParams(-1, 0, 1f))
+        root.addView(TextView(this).apply {
+            text = "Snapshot only. Outputs may have changed."; textSize = 14f
+            setTextColor(skin.text); setPadding(0, skin.dp(8), 0, 0)
+        }, LinearLayout.LayoutParams(-1, -2))
         root.addView(share, LinearLayout.LayoutParams(-1, -2).apply { topMargin = skin.dp(8) })
         dialog.setView(root)
         dialog.setOnDismissListener {

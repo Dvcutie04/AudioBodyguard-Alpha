@@ -346,6 +346,25 @@ def main():
             assert len(rows) == 1, "Require one complete native report preview"
             return rows[0]
 
+        def wait_inventory_idle(name):
+            # Rotation/large text can put the idle message below the fold.
+            # Scroll the actual content viewport, retaining the fixed disabled
+            # Review/no-dialog assertions rather than inferring from a timeout.
+            wait_for_all(("Output inventory", "Refresh outputs"), name + "_inventory")
+            for attempt in range(6):
+                root, _ = screen(name + f"_scroll_{attempt}")
+                button = review_button(root)
+                assert button is not None and button.get("enabled") == "false"
+                assert not has(root, "Share output report")
+                if has(root, "Not read yet. Tap Refresh outputs."):
+                    return root
+                scroller = next(n for n in root.iter("node") if n.get("class") == "android.widget.ScrollView")
+                x0, y0, x1, y1 = map(int, re.findall(r"-?\d+", scroller.get("bounds")))
+                x = (x0 + x1) // 2
+                adb("shell", "input", "swipe", str(x), str(int(y0 + (y1-y0) * .8)),
+                    str(x), str(int(y0 + (y1-y0) * .2)), "350")
+            raise AssertionError("Cleared inventory message not reachable by bounded content scrolling")
+
         tap("Sound", "output_report_sound")
         tap("Output inventory. Check this phone’s available audio outputs", "output_report_open")
         idle = wait_for("Not read yet. Tap Refresh outputs.", "output_report_idle")
@@ -439,12 +458,12 @@ def main():
         wait_for("Share output report", "output_report_rotate_open")
         adb("shell", "settings", "put", "system", "accelerometer_rotation", "0")
         adb("shell", "settings", "put", "system", "user_rotation", "1")
-        idle = wait_for("Not read yet. Tap Refresh outputs.", "output_report_rotation_cleared")
+        idle = wait_inventory_idle("output_report_rotation_cleared")
         assert review_button(idle).get("enabled") == "false" and not has(idle, "Share output report")
         adb("shell", "settings", "put", "system", "user_rotation", "0")
-        wait_for("Not read yet. Tap Refresh outputs.", "output_report_portrait_cleared")
+        wait_inventory_idle("output_report_portrait_cleared")
         adb("shell", "settings", "put", "system", "font_scale", "1.5")
-        wait_for("Not read yet. Tap Refresh outputs.", "output_report_large_font_idle")
+        wait_inventory_idle("output_report_large_font_idle")
         tap("Refresh outputs", "output_report_large_font_read")
         wait_for("Snapshot only.", "output_report_large_font_snapshot")
         tap("Review output report", "output_report_large_font_review")

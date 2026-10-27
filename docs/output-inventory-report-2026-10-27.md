@@ -54,8 +54,8 @@ characters and 48 KiB UTF-8. This bounds presentation/Intent data; framework
 array allocation retains the limitations documented in the original research.
 
 Opening Review reads no framework data and opens no share target. The preview
-is an explicitly dated historical snapshot, always labelled that outputs may
-have changed. A change notification still withdraws the live inventory and
+is an explicitly dated historical snapshot, with a fixed notice above Share
+that outputs may have changed even when the report body is scrolled. A change notification still withdraws the live inventory and
 its Review action. It cannot rewrite a report already under review. Sharing
 uses precisely the displayed immutable string, clears the live snapshot before
 leaving, and requires a separate native target choice. Cancel or return preserves
