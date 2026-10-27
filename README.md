@@ -143,6 +143,13 @@ conditional lab recommendation and pending ownership/accounting tests. The
 actual 0.35 setup report is still needed before selecting an adapter. This
 paper review adds no native output path or new installer.
 
+The [isolated PCM16 accounting lab](native/lab/pcm16_accounting/README.md)
+implements the reviewed sample/frame/byte, partial-return and hold-accounting
+rules with synthetic Kotlin/JVM observations while the actual setup is pending.
+Its bounded source, ticket and trace checks do not select an adapter or add an
+app dependency. Android remains 0.35 and iPhone source remains 0.34.0; there is
+no new installer for this prerequisite.
+
 The [internal TestFlight preparation](docs/testflight-beta-preparation.md)
 automates checks on an exact reviewed source revision and provides a manually
 requested signing/upload lane after Apple account and signing setup. It does

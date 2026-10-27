@@ -87,6 +87,13 @@ duration, route preference or test-volume default is selected by this brief.
 
 ## Implementation sequence after review
 
+While the actual report is pending, the owner authorized work on prerequisites
+that do not need the phone. The [separate PCM16 accounting model](../native/lab/pcm16_accounting/README.md)
+implements only the already researched synthetic units/suffix/hold contract.
+It neither selects a device adapter nor changes the inventory-before-adapter
+sequence below. Its acknowledgement covers modelled accounting only; native
+resource teardown remains unimplemented.
+
 1. Record the model confirmation for the new research, recover any remaining
    relevant research, refresh the exact backend's primary sources, and identify
    missing owner observations. The report can be supplied after APK testing;

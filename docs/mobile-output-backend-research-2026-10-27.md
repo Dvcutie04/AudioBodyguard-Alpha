@@ -172,6 +172,16 @@ control/entry/return/accounting stages independently. Measure failures and
 residual effects as well as successful traces. A native test or emulator can
 verify software ordering, not speaker output containment or calibrated latency.
 
+## Phone-independent implementation prerequisite
+
+The owner subsequently requested continued work that does not require the
+unavailable phone report. The [isolated Kotlin/JVM accounting lab](../native/lab/pcm16_accounting/README.md)
+implements the units, immutable suffix and staged hold/return-accounting portion
+of this reviewed contract using synthetic observations. It has no native API,
+audio resource, scheduler or mobile-app dependency. The adapter-specific and
+physical checks above remain pending. This is implementation of the existing
+review, not a new backend selection or research approval request.
+
 ## Source register
 
 All URLs below are primary publisher sources. Kotlin reference URLs were used

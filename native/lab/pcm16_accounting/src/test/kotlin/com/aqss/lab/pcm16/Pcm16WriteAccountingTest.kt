@@ -111,7 +111,7 @@ class Pcm16WriteAccountingTest {
     }
 
     @Test fun oversizedAndUnalignedReturnsInhibitWithoutInventingAnAcceptedCount() {
-        for (raw in listOf(1, 7, Int.MAX_VALUE)) {
+        for (raw in listOf(1, 7, 8, Int.MAX_VALUE)) {
             val owner = ledger(count = 8)
             complete(owner, 2)
             val request = assertNotNull(owner.beginWrite())
@@ -243,6 +243,32 @@ class Pcm16WriteAccountingTest {
         assertEquals(Pcm16InhibitReason.USER_HOLD, owner.inhibitReason)
         assertEquals(1, owner.trace.count { it.kind == Pcm16EventKind.HOLD_REQUESTED })
         assertEquals(Pcm16ResultKind.NATIVE_ERROR, owner.trace.first { it.kind == Pcm16EventKind.CALL_RETURNED }.resultKind)
+    }
+
+    @Test fun holdAfterZeroNeverResubmitsTheOldSuffix() {
+        val owner = ledger(count = 8)
+        complete(owner, 2)
+        val zero = complete(owner, 0)
+        owner.hold()
+        assertTrue(owner.acknowledgeHold())
+        repeat(10) { assertNull(owner.beginWrite()) }
+        assertEquals(2, owner.callsStarted)
+        assertEquals(2, owner.accountedSamples)
+        assertEquals(6, owner.remainingSamples)
+        assertEquals(2, zero.span.offsetSamples)
+        assertTrue(owner.outcomeUnknown)
+    }
+
+    @Test fun repeatedZeroReturnsReachAFiniteLimitWithoutAutomaticRetries() {
+        val owner = ledger()
+        repeat(8) { complete(owner, 0) }
+        assertEquals(8, owner.callsStarted)
+        assertEquals(0, owner.accountedSamples)
+        assertEquals(16, owner.remainingSamples)
+        assertNull(owner.beginWrite())
+        assertEquals(Pcm16InhibitReason.TRACE_FULL, owner.inhibitReason)
+        assertTrue(owner.acknowledgeHold())
+        assertTrue(owner.outcomeUnknown)
     }
 
     @Test fun invalidSourceIdentityOrCapacityCannotCreateAnOwner() {

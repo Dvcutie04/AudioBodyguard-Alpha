@@ -6,6 +6,16 @@ Checkpoint: October 27, 2026. Continue from the restored a-Shell baseline and th
 
 ## Current checkpoint
 
+October 27 phone-independent prerequisite: the owner requested continuing work
+that can proceed while the actual phone report is unavailable. The
+[isolated PCM16 accounting lab](../native/lab/pcm16_accounting/README.md)
+implements the already researched count/suffix and hold-accounting contract in
+Kotlin/JVM. It is a separate build with synthetic observations, not a selected
+AudioTrack adapter, native output owner or mobile app dependency. Its fixed
+payload/call/trace bounds are fixture limits. Exact red/green evidence belongs
+to its draft PR. This advances an implementation prerequisite without completing
+N2b; Android remains 0.35/build 38 and iPhone/iPad remains 0.34.0.
+
 October 27 mobile-backend review: the owner confirmed **Ready** for the new
 research. The [completed paper review](mobile-output-backend-research-2026-10-27.md)
 compares AudioTrack and Oboe/AAudio, specifies the units/error translation and
