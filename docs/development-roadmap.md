@@ -6,13 +6,16 @@ Checkpoint: October 27, 2026. Continue from the restored a-Shell baseline and th
 
 ## Current checkpoint
 
-October 27 next-phase preparation: the [mobile-output review brief](n2b-mobile-output-review-2026-10-27.md)
-maps the existing 0.35 report to the eight N2b inventory sections and pins the
-pending backend/ownership/acquisition questions and test sequence. The actual
-owner report has not been received. New exact-backend research awaits the
-standing model switch and Ready confirmation; the earlier confirmation covered
-the bounded read-only inventory research. No adapter or new APK is added by
-this preparation. Android remains 0.35/build 38 and iPhone/iPad remains 0.34.0.
+October 27 mobile-backend review: the owner confirmed **Ready** for the new
+research. The [completed paper review](mobile-output-backend-research-2026-10-27.md)
+compares AudioTrack and Oboe/AAudio, specifies the units/error translation and
+ownership/stopping obligations, and retains independent iOS engine/session
+requirements. The conditional recommendation favors the smallest AudioTrack
+accounting lab for the current Kotlin stack, not a latency or physical result.
+The [preparation brief](n2b-mobile-output-review-2026-10-27.md) maps the 0.35 report
+to all eight N2b sections. The actual owner report has not been received and
+is required before choosing the adapter. No native output or new APK is added
+by the paper review. Android remains 0.35/build 38 and iPhone/iPad remains 0.34.0.
 
 October 27 joined intake increment: [0.35 combined-report contract](setup-output-report-2026-10-27.md)
 adds Add setup notes inside Android's reviewed output report. A one-use,

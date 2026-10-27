@@ -116,7 +116,9 @@ researched increment. That exemption covers this preparation, not the new
 exact-backend review above. The October 24 Ready confirmation covered the
 bounded research that selected the read-only inventory.
 
-Preparation is complete. The next backend review awaits the requested model
-switch and a new Ready confirmation. The actual 0.35 report is also pending;
-it informs the review and is required before an adapter is chosen. Android
-remains 0.35/build 38 and iPhone/iPad remains 0.34.0. N2b–N5 remain pending.
+The owner subsequently replied **Ready** on October 27. The authorized
+[backend paper review](mobile-output-backend-research-2026-10-27.md) is now
+complete, with a conditional lab recommendation and implementation checks.
+The actual 0.35 report remains pending and is required before an adapter is
+chosen for the owner's setup. Android remains 0.35/build 38 and iPhone/iPad
+remains 0.34.0. N2b–N5 remain pending.
