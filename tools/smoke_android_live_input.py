@@ -39,6 +39,7 @@ def main():
     parser.add_argument("--output-inventory-only", action="store_true")
     parser.add_argument("--output-report-only", action="store_true")
     parser.add_argument("--test-setup-only", action="store_true")
+    parser.add_argument("--setup-output-report-only", action="store_true")
     parser.add_argument("--tv-guides-only", action="store_true")
     parser.add_argument("--apk", default="native/android/app/build/outputs/apk/liveInput/app-liveInput.apk")
     parser.add_argument("--package", default="com.aqss.bodyguard.prototype.liveinput")
@@ -446,6 +447,124 @@ def main():
         assert "android.permission.RECORD_AUDIO: granted=false" in adb("shell", "dumpsys", "package", package).decode()
         print("TEST_SETUP_OBSERVED: six optional bounded notes, Unknowns, immutable review, native Cancel and exact text-only receiver handoff, rotation/background/large text, Back/Clear/Close/process clearing; no microphone or physical qualification", flush=True)
 
+    def check_setup_output_report():
+        receiver = "com.aqss.bodyguard.sharetest"
+        receipt_path = "files/shared-build-details.json"
+
+        def text_copy(root, prefix):
+            rows = [n.get("text", "") for n in root.iter("node") if n.get("text", "").startswith(prefix)]
+            assert len(rows) == 1, "Require one complete report preview"
+            return rows[0]
+
+        def open_attachment(name):
+            tap("Output inventory. Check this phone’s available audio outputs", name + "_inventory")
+            wait_for("Not read yet. Tap Refresh outputs.", name + "_idle")
+            tap("Refresh outputs", name + "_refresh")
+            wait_for("Advertised sample rates:", name + "_read")
+            tap("Review output report", name + "_review")
+            root = wait_for("Share output report", name + "_output_preview")
+            original = text_copy(root, "Audio Bodyguard output inventory (v1)\n")
+            assert has(root, "Add setup notes"), "Reviewed output has no Add setup notes action"
+            tap("Add setup notes", name + "_add_notes")
+            form = wait_for("Review setup report", name + "_form")
+            assert has(form, "Output snapshot included. Outputs may have changed.")
+            assert has(form, "Remove output details")
+            return original
+
+        tap("Sound", "combined_sound")
+        original = open_attachment("combined")
+        (out / "combined-output-original.txt").write_text(original)
+        # The attachment is a typed in-memory copy, not a new inventory query.
+        tap("Playback phone", "combined_phone_note")
+        adb("shell", "input", "text", "My%stest%sphone")
+        adb("shell", "input", "keyevent", "KEYCODE_ENTER")
+        tap("Review setup report", "combined_review")
+        root = wait_for("Share setup report", "combined_preview")
+        reviewed = text_copy(root, "Audio Bodyguard test setup (v1)\n")
+        assert reviewed.endswith("\n\nAttached output snapshot\nSnapshot only. Outputs may have changed.\n\n" + original)
+        assert 'Playback phone: "My test phone"' in reviewed
+        assert "Actual playback route: Unknown" in reviewed and "Selected playback route: Unknown" in reviewed
+        assert "Physical output and protection: Not verified" in reviewed
+        assert not has(root, "Build details test"), "Review must not open sharing"
+        assert len(reviewed) <= 32 * 1024 and len(reviewed.encode()) <= 64 * 1024
+        (out / "combined-setup-reviewed.txt").write_text(reviewed)
+        screenshot("combined_setup_review")
+        before = None
+        try:
+            before = adb("shell", "run-as", receiver, "cat", receipt_path)
+        except subprocess.CalledProcessError:
+            pass
+        tap("Share setup report", "combined_cancel_share")
+        wait_for("Build details test", "combined_cancel_chooser")
+        adb("shell", "input", "keyevent", "KEYCODE_BACK")
+        assert text_copy(wait_for("Share setup report", "combined_cancel_return"), "Audio Bodyguard test setup (v1)\n") == reviewed
+        if before is None:
+            adb("shell", shlex.join(["run-as", receiver, "sh", "-c", "test ! -e " + receipt_path]))
+        else:
+            assert adb("shell", "run-as", receiver, "cat", receipt_path) == before
+        tap("Share setup report", "combined_receiver_share")
+        wait_for("Build details test", "combined_receiver_chooser")
+        select_share_receiver("combined_receiver_select")
+        wait_for("Build details received for test", "combined_received")
+        received = json.loads(adb("shell", "run-as", receiver, "cat", receipt_path))
+        assert received["text"] == reviewed and received["type"] == "text/plain"
+        assert received["action"] == "android.intent.action.SEND" and received["extra_keys"] == ["android.intent.extra.TEXT"]
+        assert received["data"] is None and not received["has_stream"]
+        assert all(c["text"] == reviewed and c["uri"] is None and not c["has_intent"] for c in received["clips"])
+        (out / "combined-setup-share-receipt.json").write_text(json.dumps(received, sort_keys=True))
+        adb("shell", "input", "keyevent", "KEYCODE_BACK")
+        assert text_copy(wait_for("Share setup report", "combined_receiver_return"), "Audio Bodyguard test setup (v1)\n") == reviewed
+        adb("shell", "input", "keyevent", "KEYCODE_HOME"); launch()
+        assert text_copy(wait_for("Share setup report", "combined_background_return"), "Audio Bodyguard test setup (v1)\n") == reviewed
+        adb("shell", "settings", "put", "system", "user_rotation", "1")
+        assert text_copy(wait_for("Share setup report", "combined_rotation"), "Audio Bodyguard test setup (v1)\n") == reviewed
+        adb("shell", "settings", "put", "system", "user_rotation", "0")
+        wait_for("Share setup report", "combined_portrait")
+        adb("shell", "settings", "put", "system", "font_scale", "1.5")
+        assert text_copy(wait_for("Share setup report", "combined_large_text"), "Audio Bodyguard test setup (v1)\n") == reviewed
+        screenshot("combined_setup_large_font")
+        adb("shell", "settings", "put", "system", "font_scale", "1.0")
+        wait_for("Share setup report", "combined_normal_text")
+        adb("shell", "input", "keyevent", "KEYCODE_BACK")
+        form = wait_for("Remove output details", "combined_back_to_notes")
+        assert has(form, "Output snapshot included. Outputs may have changed.")
+        tap("Clear notes", "combined_clear_notes")
+        tap("Review setup report", "combined_clear_review")
+        cleared = text_copy(wait_for("Share setup report", "combined_cleared"), "Audio Bodyguard test setup (v1)\n")
+        assert "Playback phone: Unknown" in cleared and cleared.endswith(original)
+        tap("Back", "combined_remove_back")
+        tap("Remove output details", "combined_remove_attachment")
+        tap("Review setup report", "combined_notes_only_review")
+        detached = text_copy(wait_for("Share setup report", "combined_notes_only"), "Audio Bodyguard test setup (v1)\n")
+        assert "Attached output snapshot" not in detached and original not in detached
+        tap("Back", "combined_notes_only_back"); tap("Back", "combined_close_notes")
+        # Rotation may have recreated the parent inventory; never infer a fresh
+        # read from the surviving attachment. Return to Sound either way.
+        root, _ = screen("combined_parent")
+        if has(root, "Share output report"):
+            assert text_copy(root, "Audio Bodyguard output inventory (v1)\n") == original
+            tap("Back", "combined_parent_preview_back")
+        root = wait_for("Refresh outputs", "combined_parent_inventory")
+        assert next(n for n in root.iter("node") if n.get("text") == "Review output report").get("enabled") == "false"
+        tap("Back", "combined_return_sound")
+        tap("Test setup. Record the two-phone test arrangement", "combined_direct_open")
+        form = wait_for("Review setup report", "combined_direct_empty")
+        assert not has(form, "Remove output details")
+        tap("Review setup report", "combined_direct_review")
+        assert "Attached output snapshot" not in text_copy(wait_for("Share setup report", "combined_direct_preview"), "Audio Bodyguard test setup (v1)\n")
+        tap("Back", "combined_direct_back"); tap("Back", "combined_direct_close")
+        open_attachment("combined_before_process")
+        adb("shell", "am", "force-stop", package); launch()
+        wait_for("Connection not verified", "combined_new_process")
+        tap("Sound", "combined_new_process_sound")
+        tap("Test setup. Record the two-phone test arrangement", "combined_new_process_notes")
+        form = wait_for("Review setup report", "combined_new_process_empty")
+        assert not has(form, "Remove output details")
+        tap("Back", "combined_final_close"); tap("Home", "combined_home")
+        wait_for("Connection not verified", "combined_still_unverified")
+        assert "android.permission.RECORD_AUDIO: granted=false" in adb("shell", "dumpsys", "package", package).decode()
+        print("SETUP_OUTPUT_REPORT_OBSERVED: original dated output text, separate notes review, exact text-only sharing, Cancel, lifecycle/rotation/large text, independent Clear/remove, Close/process discard; no new output read or physical qualification", flush=True)
+
     def check_output_report():
         receiver = "com.aqss.bodyguard.sharetest"
         receipt_path = "files/shared-build-details.json"
@@ -619,6 +738,9 @@ def main():
         assert "android.permission.RECORD_AUDIO: granted=false" in permission, "Inventory must not request microphone access"
         print("OUTPUT_FRESHNESS_OBSERVED: synthetic callback invalidation and native lifecycle passed; no physical disconnect or routing claim", flush=True)
 
+    if args.setup_output_report_only:
+        check_setup_output_report()
+        return
     if args.test_setup_only:
         check_test_setup()
         return
@@ -1186,6 +1308,7 @@ def main():
     tap("Back", "output_inventory_close_again")
     print("OUTPUT_INVENTORY_OBSERVED: explicit metadata refresh, route/format unknown, microphone permission unrequested, background/resume clears snapshot, Back/reopen clears snapshot; no playback or physical qualification", flush=True)
     check_test_setup()
+    check_setup_output_report()
     check_output_report()
     check_output_freshness()
     launch()
