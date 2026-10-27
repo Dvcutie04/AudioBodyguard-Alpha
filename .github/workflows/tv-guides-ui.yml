@@ -61,7 +61,7 @@ jobs:
           arch: x86_64
           profile: pixel_5
           emulator-options: -no-window -gpu swiftshader -no-snapshot -noaudio -no-boot-anim -delay-adb
-          script: timeout 420 python3 tools/smoke_android_live_input.py --tv-guide-only
+          script: timeout 420 python3 tools/smoke_android_live_input.py --tv-guides-only
       - name: Retain TV guide Android UI evidence
         if: always()
         uses: actions/upload-artifact@v4
