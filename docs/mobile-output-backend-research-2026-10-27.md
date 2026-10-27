@@ -188,6 +188,12 @@ observations on a mock backend. It supplies no native handle, real scheduler,
 resource lease, concurrent cut or physical retirement evidence. The exact
 backend, worker/callback lifetime and actual phone trials remain separate.
 
+The [callback/child lifetime increment](../native/lab/pcm16_accounting/CALLBACK_LIFETIME.md)
+also implements the already researched bounded reference rules in that serial
+fixture. It gates scripted final release and managed-object transfer, not real
+producer quiescence or native memory reclamation. The actual worker/producer
+binding and last-use observations still need the selected backend and setup.
+
 ## Source register
 
 All URLs below are primary publisher sources. Kotlin reference URLs were used

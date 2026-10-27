@@ -32,7 +32,7 @@ enum class LabOperation { ACQUIRE, ACTIVATE, WRITE, QUIESCE, DISCARD, RELEASE }
 enum class LabRunState { RESERVED, ACTIVE, CLOSING, RELEASED, QUARANTINED }
 enum class LabStopReason { USER_STOP, FOCUS_LOSS, FOREGROUND_LOSS, ROUTE_CHANGE, INPUT_BUSY,
     CLOCK_FAULT, DEADLINE, ATTEMPT_LIMIT, ACQUIRE_ERROR, ACTIVATE_ERROR, WRITE_ERROR,
-    INVALID_RETURN, CLEANUP_ERROR }
+    INVALID_RETURN, CLEANUP_ERROR, REFERENCE_LIMIT, CALLBACK_ERROR }
 enum class LabEvent { FOCUS_LOSS, FOCUS_DUCK, FOREGROUND_LOSS, ROUTE_CHANGE, INPUT_BUSY,
     FOCUS_GAIN, FOREGROUND_RETURN, ROUTE_RETURN }
 enum class LabTraceKind { START_RESERVED, CALL_ENTERED, CALL_RETURNED, RETURN_RECORDED,
@@ -63,7 +63,9 @@ data class LabRunSnapshot(val plan: Pcm16RunPlan, val state: LabRunState,
                           val inFlight: Boolean, val awaitingAccounting: Boolean,
                           val accountedSamples: Int, val remainingSamples: Int,
                           val attempts: Int, val outcomeUnknown: Boolean,
-                          val trace: List<LabRunTrace>, val accountingTrace: List<Pcm16TraceEvent>)
+                          val trace: List<LabRunTrace>, val accountingTrace: List<Pcm16TraceEvent>,
+                          val waitingForReferences: Boolean = false,
+                          val callbacks: LabCallbackSnapshot? = null)
 
 /**
  * A serial, externally driven run/worker lab. execute() invokes a scripted
@@ -86,6 +88,8 @@ class Pcm16RunOwner {
         var acquired = false
         var activationEntered = false
         var cleanupStarted = false
+        var waitingForReferences = false
+        var callbacks: LabCallbackFamily<*>? = null
         val trace = ArrayList<LabRunTrace>(plan.traceCapacity)
     }
 
@@ -112,10 +116,28 @@ class Pcm16RunOwner {
         return run.token
     }
 
+    fun <M : Any> attachCallbacks(token: LabRunToken, metadata: M): LabCallbackFamily<M>? {
+        val run = active?.takeIf { it.token === token && it.admissionOpen && it.callbacks == null }
+            ?: return null
+        val family = LabCallbackFamily(token, metadata,
+            ownerOpen = { active === run && run.admissionOpen },
+            ownerReleased = { run.state == LabRunState.RELEASED },
+            fault = { close(run, it) })
+        run.callbacks = family
+        return family
+    }
+
+    /** Explicit worker check after reference bookkeeping, never called by releaseChild. */
+    fun resumeCleanup(token: LabRunToken): Boolean {
+        val run = active?.takeIf { it.token === token } ?: return false
+        return resumeFinalRelease(run)
+    }
+
     /** true means one backend call occurred, not that output succeeded. */
     fun execute(task: LabTask, now: LabTick): Boolean {
         val run = active ?: return false
         if (run.token !== task.run || run.pending !== task || run.flight != null) return false
+        if (task.operation == LabOperation.RELEASE && run.callbacks?.referencesDrained == false) return false
         val cleanup = isCleanup(task.operation)
         if (!cleanup) {
             if (!run.admissionOpen || !observeClock(run, now)) return false
@@ -209,7 +231,7 @@ class Pcm16RunOwner {
                 }
             }
             LabOperation.QUIESCE -> queue(run, LabOperation.DISCARD, run.lastTick)
-            LabOperation.DISCARD -> queue(run, LabOperation.RELEASE, run.lastTick)
+            LabOperation.DISCARD -> waitForFinalRelease(run)
             LabOperation.RELEASE -> releaseSlot(run)
         }
         return true
@@ -246,7 +268,8 @@ class Pcm16RunOwner {
         return LabRunSnapshot(run.plan, run.state, run.admissionOpen, run.reason,
             run.flight != null, run.flight?.result != null, run.ledger.accountedSamples,
             run.ledger.remainingSamples, run.ledger.callsStarted, run.ledger.outcomeUnknown,
-            Collections.unmodifiableList(ArrayList(run.trace)), run.ledger.trace)
+            Collections.unmodifiableList(ArrayList(run.trace)), run.ledger.trace,
+            run.waitingForReferences, run.callbacks?.snapshot())
     }
 
     private fun observeClock(run: Run, now: LabTick): Boolean {
@@ -276,14 +299,31 @@ class Pcm16RunOwner {
     private fun continueCleanup(run: Run) {
         if (run.cleanupStarted || run.flight != null) return
         check(run.ledger.acknowledgeHold())
-        if (!run.acquireEntered) { releaseSlot(run); return }
-        if (!run.acquired) { quarantine(run); return }
         run.cleanupStarted = true
-        queue(run, if (run.activationEntered) LabOperation.QUIESCE else LabOperation.RELEASE, run.lastTick)
+        if (!run.acquireEntered) { waitForFinalRelease(run); return }
+        if (!run.acquired) { quarantine(run); return }
+        if (run.activationEntered) queue(run, LabOperation.QUIESCE, run.lastTick)
+        else waitForFinalRelease(run)
+    }
+
+    private fun waitForFinalRelease(run: Run) {
+        check(run.pending == null && run.flight == null)
+        run.waitingForReferences = true
+        resumeFinalRelease(run)
+    }
+
+    private fun resumeFinalRelease(run: Run): Boolean {
+        if (!run.waitingForReferences || run.state != LabRunState.CLOSING ||
+            run.admissionOpen || run.flight != null || run.pending != null ||
+            run.callbacks?.referencesDrained == false) return false
+        run.waitingForReferences = false
+        if (!run.acquireEntered) releaseSlot(run)
+        else queue(run, LabOperation.RELEASE, run.lastTick)
+        return true
     }
 
     private fun releaseSlot(run: Run) {
-        check(run.flight == null && !run.admissionOpen)
+        check(run.flight == null && !run.admissionOpen && run.callbacks?.referencesDrained != false)
         run.pending = null
         run.state = LabRunState.RELEASED
         append(run, LabTraceKind.SLOT_RELEASED)
@@ -292,6 +332,7 @@ class Pcm16RunOwner {
 
     private fun quarantine(run: Run) {
         run.pending = null
+        run.waitingForReferences = false
         run.state = LabRunState.QUARANTINED
         append(run, LabTraceKind.QUARANTINED)
         // Keep the current slot occupied. There is no timeout/reset/recovery API.

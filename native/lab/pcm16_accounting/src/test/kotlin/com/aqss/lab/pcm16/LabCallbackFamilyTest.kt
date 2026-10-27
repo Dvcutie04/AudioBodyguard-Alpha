@@ -7,9 +7,12 @@ class LabCallbackFamilyTest {
     private class Backend : LabOutputBackend {
         val calls = mutableListOf<LabOperation>()
         var failRelease = false
+        var onWrite: (() -> Unit)? = null
         override fun acquire() { calls.add(LabOperation.ACQUIRE) }
         override fun activate() { calls.add(LabOperation.ACTIVATE) }
-        override fun write(request: Pcm16WriteRequest): Int { calls.add(LabOperation.WRITE); return 2 }
+        override fun write(request: Pcm16WriteRequest): Int {
+            calls.add(LabOperation.WRITE); onWrite?.invoke(); return 2
+        }
         override fun quiesce() { calls.add(LabOperation.QUIESCE) }
         override fun discard() { calls.add(LabOperation.DISCARD) }
         override fun release() {
@@ -141,6 +144,12 @@ class LabCallbackFamilyTest {
         assertNull(family.metadataFor(wrong))
         assertFalse(family.releaseChild(LabChildTicket(run, 0, parent)))
         assertFalse(family.releaseChild(LabChildTicket(run, Int.MAX_VALUE, parent)))
+        val other = Pcm16RunOwner(); val otherRun = start(other, Backend()); val foreign = attach(other, otherRun)
+        val otherParent = assertNotNull(foreign.queue()); var foreignChild: LabChildTicket? = null
+        foreign.deliver(otherParent) { foreignChild = assertNotNull(foreign.retainChild(otherParent)) }
+        assertFalse(family.releaseChild(foreignChild!!))
+        assertNull(family.metadataFor(foreignChild!!))
+        assertEquals(1, foreign.snapshot().retainedChildren)
         assertTrue(family.releaseChild(children[0]))
         assertFalse(family.releaseChild(children[0]))
         assertEquals(1, family.snapshot().retainedChildren)
@@ -349,5 +358,34 @@ class LabCallbackFamilyTest {
         assertNull(owner.attachCallbacks(run, Metadata()))
         assertSame(metadata, family.takeMetadata())
         assertNull(owner.snapshot(foreign))
+    }
+
+    @Test fun drainedCallbackReferencesCannotBypassAnEnteredWritesReturnAccounting() {
+        val owner = Pcm16RunOwner(); val backend = Backend(); val run = start(owner, backend)
+        val metadata = Metadata(); val family = attach(owner, run, metadata)
+        val parent = assertNotNull(family.queue()); var child: LabChildTicket? = null
+        activate(owner)
+        backend.onWrite = {
+            family.deliver(parent) {
+                child = assertNotNull(family.retainChild(parent))
+                owner.stop(run)
+                assertNull(owner.pendingTask)
+                assertFalse(owner.resumeCleanup(run))
+                assertNull(family.takeMetadata())
+            }
+        }
+        val write = assertNotNull(owner.pendingTask)
+        assertTrue(owner.execute(write, LabTick(1, 0)))
+        assertTrue(family.releaseChild(assertNotNull(child)))
+        assertTrue(family.referencesDrained)
+        assertEquals(0, owner.snapshot(run)?.accountedSamples)
+        assertFalse(owner.resumeCleanup(run))
+        assertNull(owner.pendingTask)
+        assertNull(family.takeMetadata())
+        assertTrue(owner.record(write, LabTick(1, 0)))
+        drain(owner)
+        assertEquals(2, owner.snapshot(run)?.accountedSamples)
+        assertTrue(owner.snapshot(run)!!.outcomeUnknown)
+        assertSame(metadata, family.takeMetadata())
     }
 }

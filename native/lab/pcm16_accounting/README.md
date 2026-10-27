@@ -88,6 +88,11 @@ and N2b–N5 remain unchanged.
 
 ## Verification provenance
 
+The [callback/child lifetime extension](CALLBACK_LIFETIME.md) binds one bounded
+registry to a run. Pending deliveries and retained children block final release;
+their cleanup bookkeeping never queues work. Explicit owner cleanup and metadata
+transfer remain separate from real native retirement or physical qualification.
+
 The [run-controls extension](RUN_CONTROLS.md) adds a separate serial driver for
 synthetic admission, bounded task policy, lifecycle invalidation and staged
 cleanup. Its mock operations do not supply a real backend or output authority.
