@@ -99,6 +99,7 @@ public final class OutputInventoryProbe extends CameraCaptureProbe {
             Activity closing = overlay;
             runOnMainSync(closing::finish); overlay = null;
             waitForIdleSync(); waitForText(IDLE);
+            waitForInventoryFocus();
             AudioDeviceCallback current = (AudioDeviceCallback) callbackField.get(activity);
             require(current != null && current != callback, "Resume reused a retired callback");
             refresh();
@@ -108,7 +109,19 @@ public final class OutputInventoryProbe extends CameraCaptureProbe {
             recordScreen("output-freshness-resumed");
             runOnMainSync(() -> current.onAudioDevicesRemoved(outputs));
             assertCleared();
+            phase = "closed inventory cleanup";
             runOnMainSync(() -> activity.finish()); waitForIdleSync();
+            // finish() requests a lifecycle transition; an idle app queue can
+            // precede the system's pause/destroy transaction. Assert cleanup
+            // after actual destruction rather than treating the request as it.
+            long closedDeadline = SystemClock.uptimeMillis() + 5000;
+            boolean[] destroyed = new boolean[1];
+            while (SystemClock.uptimeMillis() < closedDeadline) {
+                runOnMainSync(() -> destroyed[0] = activity.isDestroyed());
+                if (destroyed[0]) break;
+                SystemClock.sleep(50);
+            }
+            require(destroyed[0], "Inventory finish request did not reach destruction");
             require(callbackField.get(activity) == null, "Closed screen retained its active callback");
             runOnMainSync(() -> current.onAudioDevicesAdded(outputs));
             require(IDLE.equals(details()), "Callback changed closed inventory details");
