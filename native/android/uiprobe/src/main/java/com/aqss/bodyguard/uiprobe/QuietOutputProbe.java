@@ -101,6 +101,88 @@ public final class QuietOutputProbe extends CameraCaptureProbe {
         runOnMainSync(() -> preview[0] = activity.getWindow().getDecorView().findViewWithTag("test-setup-report-preview"));
         require(preview[0] != null, "Missing actual setup preview"); return preview[0].getText().toString();
     }
+    private void recreateQuiet() {
+        Activity original = activity;
+        ActivityMonitor monitor = addMonitor("com.aqss.bodyguard.prototype.QuietOutputCheckActivity", null, false);
+        runOnMainSync(original::recreate);
+        Activity replacement = waitForMonitorWithTimeout(monitor, 5000); removeMonitor(monitor);
+        require(replacement != null && replacement != original, "Quiet screen recreation missing");
+        activity = replacement; waitForIdleSync(); focus(replacement);
+    }
+    private void guidanceLifecycle(Activity inventory, Object capture, String frozen, Bundle receipt) throws Exception {
+        phase = "synthetic pending-completion presentation";
+        String previous = ((TextView) read(activity, "status")).getText().toString();
+        AtomicBoolean completedFlag = (AtomicBoolean) get(capture, "getCompleted");
+        // The real stream has already returned and released. Only the observer
+        // toggles this completion flag to inspect a retained closing screen.
+        completedFlag.set(false);
+        try {
+            recreateQuiet(); waitForText("Closing quiet check…");
+            require(read(activity, "capture") == capture, "Closing recreation created another worker");
+            require(!((Button) read(activity, "start")).isEnabled(), "Closing screen offered another Start");
+            require(!((Button) read(activity, "review")).isEnabled(), "Closing screen offered a completed report");
+            shot("quiet-output-pending-close");
+        } finally { completedFlag.set(true); }
+        waitForText(previous);
+        require(((Button) read(activity, "start")).isEnabled(), "Completed reference check did not restore manual Start");
+
+        phase = "synthetic process cleanup quarantine";
+        ClassLoader loader = getTargetContext().getClassLoader();
+        Class<?> gateType = loader.loadClass("com.aqss.nativefeedback.ForegroundAudioExclusion");
+        Class<?> toolType = loader.loadClass("com.aqss.nativefeedback.ForegroundAudioExclusion$Tool");
+        Object gate = get(gateType.getField("Companion").get(null), "getProcess");
+        Object outputTool = toolType.getField("OUTPUT").get(null);
+        Object lease = gateType.getMethod("acquire", toolType, Object.class).invoke(gate, outputTool, new Object());
+        require(lease != null, "Reference native run retained the exclusion lease");
+        require(!((Boolean) gateType.getMethod("release", lease.getClass(), boolean.class).invoke(gate, lease, false)),
+                "Synthetic failed cleanup unexpectedly released its lease");
+        require((Boolean) get(gate, "getBlocked"), "Synthetic cleanup did not retain process quarantine");
+        recreateQuiet();
+        String retained = ((TextView) read(activity, "status")).getText().toString();
+        require(retained.contains("unresolved cleanup") && retained.indexOf("Review") >= 0 && retained.indexOf("Review") < retained.indexOf("force stop"),
+                "Cleanup recovery did not preserve the report before force stop");
+        require(!((Button) read(activity, "start")).isEnabled(), "Quarantine offered another Start");
+        require(((Button) read(activity, "review")).isEnabled(), "Quarantine hid the retained report");
+        shot("quiet-output-blocked-report");
+        press("Review check report"); AlertDialog dialog = (AlertDialog) read(activity, "reportDialog");
+        TextView preview = dialog.getWindow().getDecorView().findViewWithTag("quiet-output-report-preview");
+        require(preview != null && frozen.equals(preview.getText().toString()), "Quarantine rewrote the historical report");
+        final int[] sent = {0};
+        ActivityMonitor share = new ActivityMonitor() {
+            @Override public ActivityResult onStartActivity(Intent intent) {
+                if (!Intent.ACTION_CHOOSER.equals(intent.getAction())) return null;
+                Intent send = intent.getParcelableExtra(Intent.EXTRA_INTENT);
+                require(send != null && Intent.ACTION_SEND.equals(send.getAction()) && "text/plain".equals(send.getType()),
+                        "Blocked report did not offer plain-text sharing");
+                require(frozen.equals(send.getStringExtra(Intent.EXTRA_TEXT)), "Blocked share changed the historical report");
+                sent[0]++; return new ActivityResult(Activity.RESULT_CANCELED, null);
+            }
+        };
+        addMonitor(share);
+        try {
+            runOnMainSync(() -> require(click(dialog.getWindow().getDecorView(), "Share check report"), "Blocked report lost Share"));
+            waitForIdleSync(); require(sent[0] == 1, "Blocked report did not send one exact share intent");
+            require(frozen.equals(preview.getText().toString()), "Cancelled blocked share changed the report");
+        } finally { removeMonitor(share); }
+        runOnMainSync(dialog::dismiss);
+        receipt.putString("quiet_guidance_report_status_b64", Base64.encodeToString(retained.getBytes(java.nio.charset.StandardCharsets.UTF_8), Base64.NO_WRAP));
+
+        phase = "new screen during process quarantine";
+        press("Back"); activity = inventory; waitForIdleSync(); focus(inventory);
+        ActivityMonitor open = addMonitor("com.aqss.bodyguard.prototype.QuietOutputCheckActivity", null, false);
+        press("Quiet output check"); Activity fresh = waitForMonitorWithTimeout(open, 5000); removeMonitor(open);
+        require(fresh != null, "Quarantined screen could not be inspected"); activity = fresh; waitForIdleSync(); focus(fresh);
+        String empty = ((TextView) read(fresh, "status")).getText().toString();
+        require(read(fresh, "capture") == null, "Entering a quarantined screen started another worker");
+        require(empty.contains("unresolved cleanup") && empty.contains("Force stop") && !empty.contains("Review"),
+                "Empty quarantined screen offered a nonexistent report or a ready state");
+        require(!((Button) read(fresh, "start")).isEnabled() && !((Button) read(fresh, "review")).isEnabled(),
+                "Empty quarantined screen enabled Start or Review");
+        require((Boolean) get(gate, "getBlocked"), "Presentation cleared sticky process quarantine");
+        shot("quiet-output-blocked-entry");
+        receipt.putString("quiet_guidance_entry_status_b64", Base64.encodeToString(empty.getBytes(java.nio.charset.StandardCharsets.UTF_8), Base64.NO_WRAP));
+        receipt.putString("quiet_guidance", "passed: actual busy admission; synthetic pending-completion retention and sticky cleanup quarantine; original report/share retained; fresh entry starts no worker");
+    }
     private void combinedSetup(AlertDialog dialog, String frozen, Bundle receipt) throws Exception {
         Activity parent = activity; Object source = read(parent, "lastReport"), capture = read(parent, "capture");
         ActivityMonitor open = addMonitor("com.aqss.bodyguard.prototype.TestSetupActivity", null, false);
@@ -246,6 +328,8 @@ public final class QuietOutputProbe extends CameraCaptureProbe {
             TextView restoredPreview = restored.getWindow().getDecorView().findViewWithTag("quiet-output-report-preview");
             require(frozen.equals(restoredPreview.getText().toString()), "Rotation changed the reviewed snapshot");
             shot("quiet-output-rotated"); runOnMainSync(restored::dismiss);
+
+            guidanceLifecycle(inventory, capture, frozen, receipt);
 
             phase = "back to immediate parent";
             press("Back"); waitForIdleSync(); focus(inventory);

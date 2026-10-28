@@ -6,6 +6,15 @@ Checkpoint: October 28, 2026. Continue from the restored a-Shell baseline and th
 
 ## Current checkpoint
 
+October 28 owner-requested 0.39: [quiet-check result guidance](quiet-result-guidance-2026-10-28.md)
+adds distinct next steps for the existing ending reasons and asks owners to
+preserve available reports before force-stop recovery. Current quarantine or
+unresolved cleanup overrides a completed result; closing recreation and empty
+blocked entry keep Start disabled. Android is build 42, with the worker and
+immutable report contract unchanged. Final source-bound checks and installer
+identity belong to the draft PR. iPhone/iPad source remains 0.38.0/build 1;
+actual phone/signing and N2b–N5 gates remain pending.
+
 October 28 picture continuation: the [offline row-bound repair](picture-row-bounds-2026-10-28.md)
 fixes an overflowing Fire TV Home-hold label, includes the number/arrow in line
 wrapping and rejects rows that would lose their final words. The regenerated
