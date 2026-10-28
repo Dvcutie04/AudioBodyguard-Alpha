@@ -2,7 +2,7 @@ name: iPhone and iPad output details verification
 
 on:
   push:
-    branches: ["aqss/ios-output-details"]
+    branches: ["aqss/ios-output-details", "aqss/ios-setup-output-report"]
   workflow_dispatch:
 
 permissions:
@@ -73,7 +73,10 @@ jobs:
             -destination "platform=iOS Simulator,id=$AQSS_SIMULATOR" -parallel-testing-enabled NO \
             -resultBundlePath "$RUNNER_TEMP/sound-output-details-cancel.xcresult" \
             -only-testing:AQSSReadOnlyUITests/OutputDetailsUITests/testOutputDetailsCancelPreservesReviewedSnapshot \
-            -only-testing:AQSSReadOnlyUITests/OutputDetailsUITests/testOutputDetailsLifecycleAndLargestText
+            -only-testing:AQSSReadOnlyUITests/OutputDetailsUITests/testOutputDetailsLifecycleAndLargestText \
+            -only-testing:AQSSReadOnlyUITests/OutputDetailsUITests/testCombinedSetupCancelPreservesOriginalSnapshot \
+            -only-testing:AQSSReadOnlyUITests/OutputDetailsUITests/testCombinedSetupClearRemoveLifecycleAndLargestText \
+            -only-testing:AQSSReadOnlyUITests/AQSSReadOnlyUITests/testTestSetupWorksheetRotationClearCloseAndRestart
           python3 tools/check_ios_build_share_clipboard.py cancel "$AQSS_SIMULATOR" --output "$RUNNER_TEMP/output-details-receipts/cancel"
       - name: Verify exact native Copy of the reviewed snapshot
         shell: bash
@@ -88,12 +91,25 @@ jobs:
             "$RUNNER_TEMP/sound-output-details-copy.xcresult" \
             "$RUNNER_TEMP/output-details-build/Build/Products/Release-iphonesimulator/AQSSReadOnly.app/Info.plist" \
             "$RUNNER_TEMP/output-details-receipts/copy"
+      - name: Verify exact native Copy of combined setup and original snapshot
+        shell: bash
+        run: |
+          set -euo pipefail
+          xcodebuild test-without-building \
+            -xctestrun "$RUNNER_TEMP/output-details-build/Build/Products/output-details.xctestrun" \
+            -destination "platform=iOS Simulator,id=$AQSS_SIMULATOR" -parallel-testing-enabled NO \
+            -resultBundlePath "$RUNNER_TEMP/sound-combined-setup-copy.xcresult" \
+            -only-testing:AQSSReadOnlyUITests/OutputDetailsUITests/testCombinedSetupCopyMatchesActualReviewedText
+          python3 tools/check_ios_combined_setup_clipboard.py "$AQSS_SIMULATOR" \
+            "$RUNNER_TEMP/sound-combined-setup-copy.xcresult" \
+            "$RUNNER_TEMP/output-details-build/Build/Products/Release-iphonesimulator/AQSSReadOnly.app/Info.plist" \
+            "$RUNNER_TEMP/output-details-receipts/combined-copy"
       - name: Clear isolated clipboard fixture
         if: always()
         run: python3 tools/check_ios_build_share_clipboard.py clear "$AQSS_SIMULATOR" --output "$RUNNER_TEMP/output-details-receipts/cancel"
       - name: Export native output details screenshots
         if: always()
-        run: python3 tools/export_ios_input_screenshots.py "$RUNNER_TEMP" output-details-cancel output-details-copy
+        run: python3 tools/export_ios_input_screenshots.py "$RUNNER_TEMP" output-details-cancel output-details-copy combined-setup-copy
       - name: Retain output details receipts and screenshots
         if: always()
         uses: actions/upload-artifact@v4
@@ -109,6 +125,8 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: ios-output-details-${{ matrix.artifact }}-xcresult
-          path: ${{ runner.temp }}/sound-output-details-*.xcresult
+          path: |
+            ${{ runner.temp }}/sound-output-details-*.xcresult
+            ${{ runner.temp }}/sound-combined-setup-*.xcresult
           if-no-files-found: ignore
           retention-days: 14

@@ -27,14 +27,17 @@ public enum TestSetupField: String, CaseIterable, Hashable {
     }
 }
 
-public enum TestSetupReportError: Error { case invalidBuild, invalidNotes, invalidClock, oversizedReport }
+public enum TestSetupReportError: Error, Equatable { case invalidBuild, invalidNotes, invalidClock, oversizedReport, invalidOutput }
 
 /// Immutable user notes, never measured output or authorization.
 public struct TestSetupReportSnapshot {
     public let text: String
+    public let reviewNotice: String
     public static let maxFieldUnits = 160
     public static let maxCharacters = 4 * 1024
     public static let maxUTF8Bytes = 8 * 1024
+    public static let maxCombinedCharacters = 16 * 1024
+    public static let maxCombinedUTF8Bytes = 32 * 1024
     public static let notice = "Setup notes only. Nothing is verified."
 
     public static func limitInput(_ value: String) -> String {
@@ -43,7 +46,8 @@ public struct TestSetupReportSnapshot {
         return String(decoding: prefix, as: UTF16.self)
     }
 
-    public static func capture(buildDetails: String, notes: [TestSetupField: String], reviewedAtMillis: Int64) throws -> Self {
+    public static func capture(buildDetails: String, notes: [TestSetupField: String], reviewedAtMillis: Int64,
+                               outputDetails: OutputDetailsSnapshot? = nil) throws -> Self {
         guard Array(buildDetails.utf16.prefix(513)).count <= 512 else { throw TestSetupReportError.invalidBuild }
         let lines = buildDetails.components(separatedBy: "\n")
         guard lines.count == 4, lines[0] == "Audio Bodyguard", lines[1] == "Platform: iPhone/iPad",
@@ -56,11 +60,17 @@ public struct TestSetupReportSnapshot {
             throw TestSetupReportError.invalidBuild
         }
         guard (0...253_402_300_799_999).contains(reviewedAtMillis) else { throw TestSetupReportError.invalidClock }
+        if let output = outputDetails {
+            // String equality accepts canonically equivalent Unicode. The installed
+            // build envelope must instead have the exact same bytes in both parts.
+            guard output.buildDetails.utf8.elementsEqual(buildDetails.utf8) else { throw TestSetupReportError.invalidOutput }
+        }
         let utc = ISO8601DateFormatter()
         utc.timeZone = TimeZone(secondsFromGMT: 0)
         utc.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
         let clock = utc.string(from: Date(timeIntervalSince1970: Double(reviewedAtMillis) / 1000))
-        var body = ["Audio Bodyguard test setup (v1)", "Notes reviewed at (phone clock, UTC): " + clock,
+        let reviewNotice = outputDetails == nil ? notice : "Setup notes and session details. Nothing is verified."
+        var body = [outputDetails == nil ? "Audio Bodyguard test setup (v1)" : "Audio Bodyguard test setup (v2)", "Notes reviewed at (phone clock, UTC): " + clock,
                     "", buildDetails, "", "Your notes (not verified)"]
         for field in TestSetupField.allCases {
             let value = try normalized(notes[field] ?? "")
@@ -71,11 +81,17 @@ public struct TestSetupReportSnapshot {
         body += ["", "Actual playback route: Unknown", "Negotiated format: Unknown",
                  "Backend and ownership review: Pending", "Independent capture: Not recorded",
                  "Calibration and clock mapping: Unknown", "Playback/capture consent: Not collected",
-                 "Physical output and protection: Not verified", "", notice,
+                 "Physical output and protection: Not verified", "", reviewNotice,
                  "This worksheet does not authorize playback or recording."]
+        if let output = outputDetails {
+            body += ["", "Included output details (historical snapshot)",
+                     "The original capture time belongs to the session snapshot. Notes were reviewed separately.", "", output.text]
+        }
         let text = body.joined(separator: "\n")
-        guard text.utf16.count <= maxCharacters, text.utf8.count <= maxUTF8Bytes else { throw TestSetupReportError.oversizedReport }
-        return Self(text: text)
+        let characterLimit = outputDetails == nil ? maxCharacters : maxCombinedCharacters
+        let byteLimit = outputDetails == nil ? maxUTF8Bytes : maxCombinedUTF8Bytes
+        guard text.utf16.count <= characterLimit, text.utf8.count <= byteLimit else { throw TestSetupReportError.oversizedReport }
+        return Self(text: text, reviewNotice: reviewNotice)
     }
 
     private static func normalized(_ value: String) throws -> String {
