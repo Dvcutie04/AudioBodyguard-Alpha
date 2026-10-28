@@ -2,7 +2,7 @@ name: Quiet native output check verification
 
 on:
   push:
-    branches: ["aqss/quiet-output-check", "aqss/quiet-setup-report", "aqss/quiet-report-cleanup"]
+    branches: ["aqss/quiet-output-check", "aqss/quiet-setup-report", "aqss/quiet-report-cleanup", "aqss/quiet-result-guidance"]
   workflow_dispatch:
 
 permissions:

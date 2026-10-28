@@ -82,6 +82,14 @@ class QuietOutputCheckActivity : Activity() {
                     skin.dp(16) + bars.right, skin.dp(12) + bars.bottom)
             }; insets
         }
+        if (capture?.completed?.get() == false) {
+            // The previous activity already closed admission on leaving. A
+            // retained call may still be closing; recreation cannot offer Start.
+            stopping = true; status.text = "Closing quiet check…"
+            start.text = "Stop quiet check"; start.isEnabled = false; review.isEnabled = false
+        } else if (capture != null || ForegroundAudioExclusion.process.blocked) {
+            showCompletedResult(capture?.result)
+        }
     }
 
     private fun beginCheck() {
@@ -110,29 +118,20 @@ class QuietOutputCheckActivity : Activity() {
             val current = capture ?: return
             if (current.completed.get()) {
                 watchdog?.let { handler.removeCallbacks(it) }; watchdog = null
-                lastResult = current.result; stopping = false
-                val result = lastResult
-                status.text = when {
-                    result?.quarantined == true || result?.cleanupSucceeded == false || ForegroundAudioExclusion.process.blocked ->
-                        "Audio cleanup is unresolved. Force stop this app in Android Settings before trying again."
-                    result == null -> "The check could not start. Tap Start to try again."
-                    result.reason == QuietStop.COMPLETE -> "Quiet check ended. Review the report for Android's observations."
-                    result.reason == QuietStop.BUSY -> "Another audio tool is running or closing. Stop it, then tap Start."
-                    result.reason == QuietStop.FOCUS_DENIED -> "Audio focus was not granted. Tap Start to try again."
-                    result.reason == QuietStop.UNSUPPORTED -> "This check is unavailable on this configuration."
-                    result.reason == QuietStop.ROUTE_CHANGED -> "Check stopped after an output-change notice."
-                    result.reason == QuietStop.TIME_LIMIT -> "Check stopped after its time budget expired."
-                    result.reason == QuietStop.INACTIVE -> "Check stopped when you left the screen."
-                    else -> "Check stopped. Review the report for details."
-                }
-                start.text = "Start quiet check"
-                start.isEnabled = liveBuild && !ForegroundAudioExclusion.process.blocked && result?.cleanupSucceeded != false
-                review.isEnabled = result != null
+                showCompletedResult(current.result)
                 return
             }
             if (!stopping) status.text = "Quiet check is running…"
             handler.postDelayed(this, 50)
         }
+    }
+
+    private fun showCompletedResult(result: QuietOutputResult?) {
+        lastResult = result; stopping = false
+        val guidance = QuietOutputGuidance.from(result, ForegroundAudioExclusion.process.blocked)
+        status.text = guidance.message
+        start.text = "Start quiet check"; start.isEnabled = liveBuild && guidance.canStart
+        review.isEnabled = guidance.canReview
     }
 
     private fun showReport() {
@@ -209,6 +208,7 @@ class QuietOutputCheckActivity : Activity() {
         super.onResume(); visible = true
         capture?.setForeground(hasWindowFocus())
         if (capture != null) handler.post(tick)
+        else if (ForegroundAudioExclusion.process.blocked) showCompletedResult(null)
     }
     override fun onWindowFocusChanged(hasFocus: Boolean) {
         super.onWindowFocusChanged(hasFocus)

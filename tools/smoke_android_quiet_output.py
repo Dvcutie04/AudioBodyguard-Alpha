@@ -42,6 +42,20 @@ def main():
                     pass
                 raise AssertionError(observation)
             assert "INSTRUMENTATION_RESULT: quiet_setup=passed:" in observation
+            assert "INSTRUMENTATION_RESULT: quiet_guidance=passed:" in observation
+            for name in ("report", "entry"):
+                matched = re.search(rf"^INSTRUMENTATION_RESULT: quiet_guidance_{name}_status_b64=(.+)$", observation, re.MULTILINE)
+                assert matched, f"Missing native {name} cleanup guidance"
+                guidance = base64.b64decode(matched.group(1).strip(), validate=True).decode("utf-8")
+                assert "unresolved cleanup" in guidance and "force stop" in guidance.lower()
+                if name == "report":
+                    assert 0 <= guidance.index("Review") < guidance.index("force stop")
+                else:
+                    assert "Review" not in guidance
+                (out / f"quiet-guidance-{label}-{name}.txt").write_text(guidance)
+            for name in ("pending-close", "blocked-report", "blocked-entry"):
+                (out / f"quiet-output-{label}-{name}.png").write_bytes(
+                    adb("exec-out", "run-as", package, "cat", f"files/quiet-output-{name}.png"))
             busy_match = re.search(r"^INSTRUMENTATION_RESULT: quiet_busy_report_b64=(.+)$", observation, re.MULTILINE)
             assert busy_match, "Missing actual denied-admission report"
             busy_report = base64.b64decode(busy_match.group(1).strip(), validate=True).decode("utf-8")
@@ -65,7 +79,7 @@ def main():
             assert f"Version: {version}\nBuild: {build}" in report
             assert joined.endswith(report), "Combined report differs from its original quiet snapshot"
             assert "Physical output and protection: Not verified" in report
-            assert version == "0.38-quiet-report-live-input" and build == "41"
+            assert version == "0.39-quiet-guidance-live-input" and build == "42"
             (out / f"quiet-output-{label}-report.txt").write_text(report)
             intake = verify_native_setup_intake(out / f"quiet-setup-{label}-report.txt",
                 out / f"quiet-setup-{label}-intake", platform="Android", version=version,
@@ -78,9 +92,9 @@ def main():
             assert "android.permission.RECORD_AUDIO: granted=false" in permissions
         (out / "quiet-output-summary.json").write_text(json.dumps({
             "version": version, "build": build, "font_scales": [1.0, 1.5],
-            "scope": "Actual emulator framework stream, synthetic input exclusion and exact cancelled share intent; no acoustic/physical qualification",
+            "scope": "Actual emulator framework stream, synthetic input exclusion/completion/quarantine and exact cancelled share intent; no acoustic/physical qualification",
         }, indent=2) + "\n")
-        print("QUIET_OUTPUT_OBSERVED: native framework, input exclusion, truthful denied-admission cleanup, frozen share intent, rotation, large text, Back and private intake passed; physical output unverified", flush=True)
+        print("QUIET_OUTPUT_OBSERVED: native framework, input exclusion, truthful denied-admission cleanup, frozen share intent, closing/recovery guidance, rotation, large text, Back and private intake passed; physical output unverified", flush=True)
     finally:
         adb("shell", "settings", "put", "system", "font_scale", "1.0")
 
