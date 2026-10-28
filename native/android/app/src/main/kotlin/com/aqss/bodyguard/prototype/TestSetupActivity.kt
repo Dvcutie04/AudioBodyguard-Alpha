@@ -168,7 +168,7 @@ class TestSetupActivity : Activity() {
                 setOnClickListener { hideKeyboard(); outputReport = null; quietReport = null; attachmentUnavailable = false; renderForm() }
             }, LinearLayout.LayoutParams(-1, -2))
         } else if (attachmentUnavailable) {
-            words(column, "Output details were cleared. To include them, reopen Output inventory and refresh.", 15f)
+            words(column, "Output details were cleared. Reopen Output inventory or Quiet output check, review a new report, then choose Add setup notes.", 15f)
         }
         val entries = mutableListOf<EditText>()
         val clear = Button(this).apply { text = "Clear notes"; skin.style(this) }
