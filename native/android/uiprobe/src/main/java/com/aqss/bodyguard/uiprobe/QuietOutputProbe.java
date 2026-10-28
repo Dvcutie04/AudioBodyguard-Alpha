@@ -47,9 +47,19 @@ public final class QuietOutputProbe extends CameraCaptureProbe {
     private void press(String label) {
         focus(activity);
         boolean[] clicked = {false};
-        runOnMainSync(() -> clicked[0] = click(activity.getWindow().getDecorView(), label));
+        runOnMainSync(() -> clicked[0] = clickControl(activity.getWindow().getDecorView(), label));
         require(clicked[0], "Missing control: " + label);
         waitForIdleSync();
+    }
+    private boolean clickControl(View view, String label) {
+        boolean named = view instanceof TextView && label.contentEquals(((TextView) view).getText());
+        named |= view.getContentDescription() != null && label.contentEquals(view.getContentDescription());
+        if (named && view.isShown() && view.isEnabled() && view.isClickable()) return view.performClick();
+        if (view instanceof ViewGroup) {
+            ViewGroup group = (ViewGroup) view;
+            for (int i = 0; i < group.getChildCount(); i++) if (clickControl(group.getChildAt(i), label)) return true;
+        }
+        return false;
     }
     private Object completed() throws Exception {
         long end = SystemClock.uptimeMillis() + 10000;
