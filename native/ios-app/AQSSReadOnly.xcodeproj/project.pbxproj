@@ -6,6 +6,7 @@
     objects = {
 
 /* Begin PBXBuildFile section */
+        B80000000000000000000003 /* OutputDetailsUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B80000000000000000000013; };
         B70000000000000000000002 /* TestSetupReport.swift in Sources */ = {isa = PBXBuildFile; fileRef = B70000000000000000000012; };
         B70000000000000000000001 /* TestSetup.swift in Sources */ = {isa = PBXBuildFile; fileRef = B70000000000000000000011; };
         B60000000000000000000001 /* PhotoWorkSlot.swift in Sources */ = {isa = PBXBuildFile; fileRef = B60000000000000000000011; };
@@ -35,6 +36,7 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
+        B80000000000000000000013 /* OutputDetailsUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = OutputDetailsUITests.swift; path = UITests/OutputDetailsUITests.swift; sourceTree = SOURCE_ROOT; };
         B70000000000000000000012 /* TestSetupReport.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = TestSetupReport.swift; path = ../ios/Sources/AQSSNativeFeedback/TestSetupReport.swift; sourceTree = SOURCE_ROOT; };
         B70000000000000000000011 /* TestSetup.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = TestSetup.swift; path = Sources/TestSetup.swift; sourceTree = SOURCE_ROOT; };
         B60000000000000000000011 /* PhotoWorkSlot.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = PhotoWorkSlot.swift; path = ../ios/Sources/AQSSNativeFeedback/PhotoWorkSlot.swift; sourceTree = SOURCE_ROOT; };
@@ -79,7 +81,7 @@
 
 /* Begin PBXSourcesBuildPhase section */
         A10000000000000000000040 /* Sources */ = {isa = PBXSourcesBuildPhase; buildActionMask = 2147483647; files = (B70000000000000000000002, B70000000000000000000001, B60000000000000000000001, B50000000000000000000001, B40000000000000000000001, B30000000000000000000001, B20000000000000000000002, B20000000000000000000001, E10000000000000000000001, D10000000000000000000001, D10000000000000000000002, C10000000000000000000002, C10000000000000000000001, A10000000000000000000008 /* GuideProgress.swift in Sources */, A10000000000000000000006 /* InterfaceContent.swift in Sources */, A10000000000000000000005 /* TutorialContent.swift in Sources */, A10000000000000000000001 /* AQSSReadOnlyApp.swift in Sources */, A10000000000000000000002 /* SessionEvidenceView.swift in Sources */); runOnlyForDeploymentPostprocessing = 0; };
-        A10000000000000000000041 /* Sources */ = {isa = PBXSourcesBuildPhase; buildActionMask = 2147483647; files = (A10000000000000000000003 /* AQSSReadOnlyUITests.swift in Sources */); runOnlyForDeploymentPostprocessing = 0; };
+        A10000000000000000000041 /* Sources */ = {isa = PBXSourcesBuildPhase; buildActionMask = 2147483647; files = (B80000000000000000000003, A10000000000000000000003 /* AQSSReadOnlyUITests.swift in Sources */); runOnlyForDeploymentPostprocessing = 0; };
 /* End PBXSourcesBuildPhase section */
 
 /* Begin PBXResourcesBuildPhase section */
