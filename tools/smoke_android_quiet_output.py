@@ -36,6 +36,15 @@ def main():
                     pass
                 raise AssertionError(observation)
             assert "INSTRUMENTATION_RESULT: quiet_setup=passed:" in observation
+            busy_match = re.search(r"^INSTRUMENTATION_RESULT: quiet_busy_report_b64=(.+)$", observation, re.MULTILINE)
+            assert busy_match, "Missing actual denied-admission report"
+            busy_report = base64.b64decode(busy_match.group(1).strip(), validate=True).decode("utf-8")
+            assert "Resource cleanup calls: Not entered" in busy_report and "Resource cleanup calls: Returned" not in busy_report
+            assert "Known accepted samples: 0\nWrite attempts: 0" in busy_report
+            assert f"Version: {version}\nBuild: {build}" in busy_report
+            (out / f"quiet-output-{label}-busy-report.txt").write_text(busy_report)
+            (out / f"quiet-output-{label}-busy-report.png").write_bytes(
+                adb("exec-out", "run-as", package, "cat", "files/quiet-output-busy-report.png"))
             joined_match = re.search(r"^INSTRUMENTATION_RESULT: quiet_setup_b64=(.+)$", observation, re.MULTILINE)
             assert joined_match, "Missing actual combined quiet/setup preview"
             joined = base64.b64decode(joined_match.group(1).strip(), validate=True).decode("utf-8")
@@ -50,7 +59,7 @@ def main():
             assert f"Version: {version}\nBuild: {build}" in report
             assert joined.endswith(report), "Combined report differs from its original quiet snapshot"
             assert "Physical output and protection: Not verified" in report
-            assert version == "0.37-quiet-setup-live-input" and build == "40"
+            assert version == "0.38-quiet-report-live-input" and build == "41"
             (out / f"quiet-output-{label}-report.txt").write_text(report)
             for name in ("busy", "main", "report", "rotated"):
                 (out / f"quiet-output-{label}-{name}.png").write_bytes(

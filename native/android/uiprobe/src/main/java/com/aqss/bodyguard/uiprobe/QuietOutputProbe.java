@@ -174,6 +174,18 @@ public final class QuietOutputProbe extends CameraCaptureProbe {
             require(!((Boolean) get(busy, "getAllocationEntered")), "Busy input allocated a native track");
             require(((List<?>) get(busy, "getTrace")).isEmpty(), "Busy admission entered backend work");
             shot("quiet-output-busy");
+            phase = "denied-admission report";
+            press("Review check report");
+            AlertDialog busyDialog = (AlertDialog) read(activity, "reportDialog");
+            require(busyDialog != null && busyDialog.isShowing(), "Missing denied-admission report");
+            TextView busyPreview = busyDialog.getWindow().getDecorView().findViewWithTag("quiet-output-report-preview");
+            require(busyPreview != null, "Missing denied-admission report text");
+            String busyText = busyPreview.getText().toString();
+            require(busyText.contains("Resource cleanup calls: Not entered") && !busyText.contains("Resource cleanup calls: Returned"),
+                    "Denied-admission report invented returned cleanup calls");
+            require(busyText.contains("Known accepted samples: 0\nWrite attempts: 0"), "Denied admission reported output work");
+            receipt.putString("quiet_busy_report_b64", Base64.encodeToString(busyText.getBytes(java.nio.charset.StandardCharsets.UTF_8), Base64.NO_WRAP));
+            shot("quiet-output-busy-report"); runOnMainSync(busyDialog::dismiss);
             require((Boolean) microphone.getClass().getMethod("release", inputLease.getClass(), boolean.class)
                     .invoke(microphone, inputLease, true), "Fixture lease did not release"); inputLease = null;
 

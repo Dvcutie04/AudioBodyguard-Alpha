@@ -281,4 +281,54 @@ class QuietOutputCheckTest {
         old.retire(); old.focusChanged(-1); old.routeChanged(); assertNull(fresh.reason)
         QuietOutputEvents(fresh).routeChanged(); assertEquals(QuietStop.ROUTE_CHANGED, fresh.reason)
     }
+
+    private fun reportText(result: QuietOutputResult) = QuietOutputReportSnapshot.capture(
+        "Audio Bodyguard\nPlatform: Android\nVersion: 0.38-quiet-report-live-input\nBuild: 41", result, 0).text
+
+    @Test fun deniedAdmissionCannotReportCleanupCallsThatNeverEntered() {
+        for (mode in 0..3) {
+            val port = Port(); val gate = ForegroundAudioExclusion(); val control = QuietOutputControl()
+            if (mode == 0) control.stop(QuietStop.USER)
+            if (mode == 2) gate.acquire(ForegroundAudioExclusion.Tool.INPUT, Any())
+            if (mode == 3) {
+                val old = assertNotNull(gate.acquire(ForegroundAudioExclusion.Tool.OUTPUT, Any()))
+                gate.release(old, false)
+            }
+            val result = check(port, gate, control, foreground = { mode != 1 }).execute()
+            assertTrue(result.trace.isEmpty()); assertTrue(port.calls.isEmpty())
+            val text = reportText(result)
+            assertTrue(text.contains("Resource cleanup calls: Not entered"))
+            assertFalse(text.contains("Resource cleanup calls: Returned"))
+            assertTrue(text.contains("Known accepted samples: 0\nWrite attempts: 0"))
+            assertTrue(text.contains("Physical output and protection: Not verified"))
+        }
+    }
+
+    @Test fun returnedCleanupRemainsAnApplicationObservationInTheReport() {
+        val port = Port(); val result = check(port).execute()
+        val text = reportText(result)
+        assertTrue(text.contains("Resource cleanup calls: Returned"))
+        assertTrue(result.trace.any { it.operation == QuietOperation.RELEASE && it.stage == QuietStage.RECORDED && !it.exception })
+        assertTrue(text.contains("No acoustic latency, silence or retirement is established."))
+    }
+
+    @Test fun laterReleaseReturnCannotEraseAnEarlierCleanupFailureFromTheReport() {
+        val port = Port().apply { fail = QuietOperation.PAUSE }
+        val result = check(port).execute(); val text = reportText(result)
+        assertTrue(port.calls.contains(QuietOperation.RELEASE))
+        assertTrue(text.contains("Resource cleanup calls: Unresolved"))
+        assertFalse(text.contains("Resource cleanup calls: Returned"))
+        assertTrue(text.contains("Process audio exclusion quarantined: true"))
+    }
+
+    @Test fun anUnreportedCallIsNotRelabelledAsNoCleanupEntered() {
+        val port = Port().apply { fatal = QuietOperation.WRITE }; val run = check(port)
+        assertFailsWith<AssertionError> { run.execute() }
+        val result = assertNotNull(run.result)
+        assertTrue(result.unreportedCall)
+        val text = reportText(result)
+        assertTrue(text.contains("Resource cleanup calls: Unresolved"))
+        assertFalse(text.contains("Resource cleanup calls: Not entered"))
+        assertTrue(text.contains("Process audio exclusion quarantined: true"))
+    }
 }
