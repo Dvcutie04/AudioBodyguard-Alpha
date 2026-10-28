@@ -11,7 +11,10 @@ import android.os.Bundle;
 import android.os.SystemClock;
 import android.util.Base64;
 import android.widget.Button;
+import android.widget.EditText;
 import android.widget.TextView;
+import android.view.View;
+import android.view.ViewGroup;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.lang.reflect.Field;
@@ -23,6 +26,11 @@ public final class QuietOutputProbe extends CameraCaptureProbe {
     private String phase = "inventory entry";
     private Object microphone;
     private Object inputLease;
+    private boolean requireSetupNotes;
+    @Override public void onCreate(Bundle arguments) {
+        requireSetupNotes = arguments != null && "1".equals(arguments.getString("quiet_setup"));
+        super.onCreate(arguments);
+    }
     private static Object read(Object object, String name) throws Exception {
         Field field = object.getClass().getDeclaredField(name); field.setAccessible(true); return field.get(object);
     }
@@ -39,9 +47,19 @@ public final class QuietOutputProbe extends CameraCaptureProbe {
     private void press(String label) {
         focus(activity);
         boolean[] clicked = {false};
-        runOnMainSync(() -> clicked[0] = click(activity.getWindow().getDecorView(), label));
+        runOnMainSync(() -> clicked[0] = clickControl(activity.getWindow().getDecorView(), label));
         require(clicked[0], "Missing control: " + label);
         waitForIdleSync();
+    }
+    private boolean clickControl(View view, String label) {
+        boolean named = view instanceof TextView && label.contentEquals(((TextView) view).getText());
+        named |= view.getContentDescription() != null && label.contentEquals(view.getContentDescription());
+        if (named && view.isShown() && view.isEnabled() && view.isClickable()) return view.performClick();
+        if (view instanceof ViewGroup) {
+            ViewGroup group = (ViewGroup) view;
+            for (int i = 0; i < group.getChildCount(); i++) if (clickControl(group.getChildAt(i), label)) return true;
+        }
+        return false;
     }
     private Object completed() throws Exception {
         long end = SystemClock.uptimeMillis() + 10000;
@@ -61,6 +79,76 @@ public final class QuietOutputProbe extends CameraCaptureProbe {
         try (FileOutputStream out = new FileOutputStream(new File(getTargetContext().getFilesDir(), name + ".png"))) {
             require(bitmap.compress(Bitmap.CompressFormat.PNG, 100, out), "Cannot retain native screenshot");
         } finally { bitmap.recycle(); }
+    }
+    private EditText entry(View view, String title) {
+        if (view instanceof EditText && view.getContentDescription() != null && title.contentEquals(view.getContentDescription())) return (EditText) view;
+        if (view instanceof ViewGroup) {
+            ViewGroup group = (ViewGroup) view;
+            for (int i = 0; i < group.getChildCount(); i++) {
+                EditText found = entry(group.getChildAt(i), title); if (found != null) return found;
+            }
+        }
+        return null;
+    }
+    private void note(String title, String text) {
+        EditText[] field = {null};
+        runOnMainSync(() -> field[0] = entry(activity.getWindow().getDecorView(), title));
+        require(field[0] != null, "Missing setup field: " + title);
+        runOnMainSync(() -> field[0].setText(text)); waitForIdleSync();
+    }
+    private String setupPreview() {
+        TextView[] preview = {null};
+        runOnMainSync(() -> preview[0] = activity.getWindow().getDecorView().findViewWithTag("test-setup-report-preview"));
+        require(preview[0] != null, "Missing actual setup preview"); return preview[0].getText().toString();
+    }
+    private void combinedSetup(AlertDialog dialog, String frozen, Bundle receipt) throws Exception {
+        Activity parent = activity; Object source = read(parent, "lastReport"), capture = read(parent, "capture");
+        ActivityMonitor open = addMonitor("com.aqss.bodyguard.prototype.TestSetupActivity", null, false);
+        boolean[] clicked = {false};
+        runOnMainSync(() -> clicked[0] = click(dialog.getWindow().getDecorView(), "Add setup notes"));
+        require(clicked[0], "Quiet report has no Add setup notes control");
+        Activity child = waitForMonitorWithTimeout(open, 5000); removeMonitor(open);
+        require(child != null, "Quiet report did not open setup notes"); activity = child; waitForIdleSync(); focus(child);
+        require(read(child, "quietReport") == source, "Handoff did not preserve the exact typed quiet snapshot");
+        require(!child.getIntent().hasExtra(Intent.EXTRA_TEXT), "Report text was serialized in an Intent");
+        note("Intended output", "Phone speaker"); note("Setup constraints", "No calibration");
+        press("Review setup report"); String joined = setupPreview();
+        require(joined.startsWith("Audio Bodyguard test setup (v2)"), "Missing combined quiet envelope");
+        require(joined.endsWith(frozen), "Original quiet report changed during handoff");
+        require(joined.contains("Intended output: \"Phone speaker\""), "Notes missing from actual preview");
+        require(joined.contains("Physical output and protection: Not verified"), "Physical uncertainty missing");
+        shot("quiet-setup-report");
+        final int[] sent = {0};
+        ActivityMonitor share = new ActivityMonitor() {
+            @Override public ActivityResult onStartActivity(Intent intent) {
+                if (!Intent.ACTION_CHOOSER.equals(intent.getAction())) return null;
+                Intent send = intent.getParcelableExtra(Intent.EXTRA_INTENT);
+                require(send != null && Intent.ACTION_SEND.equals(send.getAction()) && "text/plain".equals(send.getType()), "Combined share is not plain text");
+                require(joined.equals(send.getStringExtra(Intent.EXTRA_TEXT)), "Combined share differs from actual preview");
+                sent[0]++; return new ActivityResult(Activity.RESULT_CANCELED, null);
+            }
+        };
+        addMonitor(share);
+        try { press("Share setup report"); require(sent[0] == 1, "Expected one cancelled combined share"); }
+        finally { removeMonitor(share); }
+        require(setupPreview().equals(joined), "Cancelled share changed the frozen combination");
+        ActivityMonitor rotate = addMonitor("com.aqss.bodyguard.prototype.TestSetupActivity", null, false);
+        runOnMainSync(child::recreate); Activity replacement = waitForMonitorWithTimeout(rotate, 5000); removeMonitor(rotate);
+        require(replacement != null && replacement != child, "Setup recreation missing");
+        activity = replacement; waitForIdleSync(); focus(replacement);
+        require(read(replacement, "quietReport") == source && setupPreview().equals(joined), "Recreation lost the included quiet report");
+        shot("quiet-setup-rotated");
+        press("Back"); press("Clear notes"); press("Review setup report");
+        String cleared = setupPreview();
+        require(cleared.endsWith(frozen) && cleared.contains("Intended output: Unknown"), "Clear notes discarded quiet data or retained old notes");
+        press("Back"); note("Intended output", "Phone speaker"); press("Remove output details"); press("Review setup report");
+        String removed = setupPreview();
+        require(removed.contains("Intended output: \"Phone speaker\"") && !removed.contains("Attached quiet check report"), "Remove output details discarded notes or retained quiet data");
+        shot("quiet-setup-removed"); press("Back"); press("Back"); activity = parent; waitForIdleSync();
+        require(read(parent, "capture") == capture, "Notes launched another quiet worker");
+        require(dialog.isShowing() && frozen.equals(((TextView) dialog.getWindow().getDecorView().findViewWithTag("quiet-output-report-preview")).getText().toString()), "Back did not return to the original quiet report");
+        receipt.putString("quiet_setup", "passed: typed single-use handoff, exact combined preview/intent, recreation, independent Clear/remove and Back; no new output work");
+        receipt.putString("quiet_setup_b64", Base64.encodeToString(joined.getBytes(java.nio.charset.StandardCharsets.UTF_8), Base64.NO_WRAP));
     }
     @Override public void onStart() {
         Bundle receipt = new Bundle(); Activity inventory = null; ActivityMonitor chooser = null;
@@ -127,6 +215,7 @@ public final class QuietOutputProbe extends CameraCaptureProbe {
             waitForIdleSync(); require(sent[0] == 1, "Expected one exact share intent");
             require(frozen.equals(preview.getText().toString()), "Cancelled share changed reviewed text");
             removeMonitor(chooser); chooser = null;
+            if (requireSetupNotes) { phase = "quiet report and setup notes"; combinedSetup(dialog, frozen, receipt); }
             runOnMainSync(dialog::dismiss);
 
             phase = "configuration retention";

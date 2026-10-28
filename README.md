@@ -164,6 +164,14 @@ notes have their own review time. Clear notes and Remove output details are
 separate actions. This is preparation data, with signing and physical output
 qualification still pending. Android's current installable test remains 0.36.
 
+The [Android 0.37 quiet/setup report](docs/quiet-setup-report-2026-10-27.md)
+adds Add setup notes to the frozen quiet-check report. Its original dated trace
+and the later notes review stay distinct, with separate Clear/remove choices
+and exact native sharing. One process-local typed handoff slot accepts either
+inventory or quiet data and never starts another audio worker. Android is build
+40; iOS source remains 0.38.0/build 1. Installer and validation receipts belong
+to its draft PR; physical qualification and signed iPhone delivery remain pending.
+
 The [isolated PCM16 accounting lab](native/lab/pcm16_accounting/README.md)
 implements the reviewed sample/frame/byte, partial-return and hold-accounting
 rules with synthetic Kotlin/JVM observations while the actual setup is pending.

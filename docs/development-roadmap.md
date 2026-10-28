@@ -6,6 +6,14 @@ Checkpoint: October 27, 2026. Continue from the restored a-Shell baseline and th
 
 ## Current checkpoint
 
+October 27 Android continuation: [0.37 quiet check with setup notes](quiet-setup-report-2026-10-27.md)
+adds an explicit single-use handoff of the frozen quiet-check report into the
+optional worksheet. One typed slot accepts inventory or quiet data; stale labels
+cannot consume another report. The original review time/trace stay separate
+from note review. No new audio work is started. Android is build 40; iOS source
+remains 0.38.0/build 1. Exact tests and delivered APK identity belong to its draft
+PR. Real-phone and signing dependencies remain pending.
+
 October 27 next automatic increment: the [iPhone/iPad combined setup report](ios-setup-output-report-2026-10-27.md)
 adds Add setup notes to the reviewed session snapshot. A typed in-memory handoff
 preserves the original capture text/time separately from the notes' review time.

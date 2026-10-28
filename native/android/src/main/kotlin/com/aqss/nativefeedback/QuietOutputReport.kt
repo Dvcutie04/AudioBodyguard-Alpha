@@ -3,7 +3,7 @@ package com.aqss.nativefeedback
 import java.time.Instant
 import java.time.format.DateTimeFormatterBuilder
 
-class QuietOutputReportSnapshot private constructor(val text: String) {
+class QuietOutputReportSnapshot private constructor(val text: String, val buildDetails: String) {
     companion object {
         const val NOTICE = "Framework check only. Sound and protection are not verified."
         fun capture(buildDetails: String, result: QuietOutputResult, reviewedAtMillis: Long): QuietOutputReportSnapshot {
@@ -41,7 +41,7 @@ class QuietOutputReportSnapshot private constructor(val text: String) {
                 append("\nNo acoustic latency, silence or retirement is established.\n\n$NOTICE")
             }
             require(text.length <= 32768 && text.toByteArray(Charsets.UTF_8).size <= 32768)
-            return QuietOutputReportSnapshot(text)
+            return QuietOutputReportSnapshot(text, buildDetails)
         }
     }
 }
