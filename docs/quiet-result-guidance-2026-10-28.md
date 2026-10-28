@@ -68,6 +68,16 @@ signature verification and exclusion of observer/share-fixture code remain
 required. Final runs, counts and installer hashes belong to the draft PR and
 delivery report, rather than being inferred from a queued run.
 
+The first implementation's core and focused checks passed. Full run
+`40771307515` passed the existing app regression, then its new blocked-share
+observer clicked immediately after opening the report, before waiting for that
+window's focus. It saw no share intent; the product intentionally ignores an
+unfocused click. The observer now waits up to five seconds for the showing
+report window to have focus, keeping the exact-one-intent and byte-equality
+assertions. This corrects the test interaction, not the application's focus
+guard, sharing implementation or audio worker. Final delivery requires the
+subsequent complete APK run.
+
 No quiet-check source samples, gain, budget, retry policy, trace, native API,
 permission, resource ownership or cleanup sequence changes. The original
 report schema and raw ending reason remain available. The work implements

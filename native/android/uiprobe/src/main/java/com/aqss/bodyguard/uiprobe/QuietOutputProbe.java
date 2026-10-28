@@ -44,6 +44,16 @@ public final class QuietOutputProbe extends CameraCaptureProbe {
         }
         throw new AssertionError("Expected focused foreground activity");
     }
+    private void focus(AlertDialog target) {
+        long end = SystemClock.uptimeMillis() + 5000; boolean[] ready = new boolean[1];
+        while (SystemClock.uptimeMillis() < end) {
+            runOnMainSync(() -> ready[0] = target.isShowing() && target.getWindow() != null &&
+                    target.getWindow().getDecorView().hasWindowFocus());
+            if (ready[0]) return;
+            SystemClock.sleep(25);
+        }
+        throw new AssertionError("Expected focused report window before sharing");
+    }
     private void press(String label) {
         focus(activity);
         boolean[] clicked = {false};
@@ -145,6 +155,7 @@ public final class QuietOutputProbe extends CameraCaptureProbe {
         require(((Button) read(activity, "review")).isEnabled(), "Quarantine hid the retained report");
         shot("quiet-output-blocked-report");
         press("Review check report"); AlertDialog dialog = (AlertDialog) read(activity, "reportDialog");
+        focus(dialog);
         TextView preview = dialog.getWindow().getDecorView().findViewWithTag("quiet-output-report-preview");
         require(preview != null && frozen.equals(preview.getText().toString()), "Quarantine rewrote the historical report");
         final int[] sent = {0};
