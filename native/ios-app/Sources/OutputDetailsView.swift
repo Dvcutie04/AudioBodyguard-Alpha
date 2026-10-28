@@ -17,7 +17,7 @@ private enum SessionOutputReader {
             case .bluetoothHFP: return .bluetoothHFP
             case .bluetoothLE: return .bluetoothLE
             case .airPlay: return .airPlay
-            case .USBAudio: return .usb
+            case .usbAudio: return .usb
             case .HDMI: return .hdmi
             case .lineOut: return .lineOut
             case .carAudio: return .car
