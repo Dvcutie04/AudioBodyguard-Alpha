@@ -45,7 +45,7 @@ struct OutputDetailsView: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
             HStack(spacing: 12) {
-                Text(reviewing ? "Review output details" : "Output details")
+                Text(reviewing ? (textSize.isAccessibilitySize ? "Review details" : "Review output details") : "Output details")
                     .font(.title2.bold()).fixedSize(horizontal: false, vertical: true)
                     .accessibilityAddTraits(.isHeader).accessibilityIdentifier("output-details-heading")
                 Spacer(minLength: 0)
@@ -62,7 +62,7 @@ struct OutputDetailsView: View {
                 Text(OutputDetailsSnapshot.notice).font(.subheadline).fixedSize(horizontal: false, vertical: true)
                     .accessibilityIdentifier("output-details-notice")
                 ReviewedTextShareButton(text: report.text, theme: theme,
-                    title: textSize.isAccessibilitySize ? "Share details" : "Share output details", identifier: "output-details-share")
+                    title: textSize.isAccessibilitySize ? "Share" : "Share output details", identifier: "output-details-share")
                     .accessibilityLabel("Share output details")
             } else {
                 ScrollView {
