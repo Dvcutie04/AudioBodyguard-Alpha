@@ -2,6 +2,7 @@
 
 import hashlib
 import json
+import os
 from pathlib import Path
 import stat
 import subprocess
@@ -10,6 +11,7 @@ import sys
 import pytest
 
 from tools.mobile_setup_intake import prepare_intake
+from tools import mobile_setup_intake
 from tools.n2b_inventory_record import assess, REQUIRED_SECTIONS
 
 
@@ -209,11 +211,19 @@ def test_input_and_native_attachment_bounds_are_enforced():
         prepare_intake(raw.replace(marker, b"x" * 32768), **options)
 
 
+def test_second_complete_report_cannot_hide_in_opaque_attachment_payload():
+    raw, options = _report(attachment="quiet")
+    marker = b"Audio Bodyguard quiet output check (v1)\n"
+    source = marker + raw.split(marker, 1)[1]
+    with pytest.raises(ValueError):
+        prepare_intake(raw + b"\n\n" + source, **options)
+
+
 def _cli(path, output, options):
     return subprocess.run([sys.executable, str(ROOT / "tools/mobile_setup_intake.py"), str(path),
                            "--output-dir", str(output), "--expected-platform", options["expected_platform"],
                            "--expected-version", options["expected_version"], "--expected-build", options["expected_build"],
-                           "--source-revision", options["source_revision"]], capture_output=True, text=True, check=False)
+                           "--source-revision", options["source_revision"]], capture_output=True, text=True, check=False, timeout=5)
 
 
 def test_cli_preserves_original_bytes_with_one_transport_newline_and_private_modes(tmp_path):
@@ -267,11 +277,45 @@ def test_cli_missing_directory_symlink_and_fifo_inputs_are_rejected(tmp_path):
     path.write_bytes(raw)
     alias = tmp_path / "alias.txt"
     alias.symlink_to(path)
-    for candidate in (tmp_path / "missing.txt", tmp_path, alias):
+    fifo = tmp_path / "not-an-input-stream"
+    os.mkfifo(fifo, 0o600)
+    for candidate in (tmp_path / "missing.txt", tmp_path, alias, fifo):
         result = _cli(candidate, tmp_path / "rejected", options)
         assert result.returncode == 2
         assert not (tmp_path / "rejected").exists()
         assert str(candidate) not in result.stdout + result.stderr
+
+
+def test_cli_oversized_file_is_rejected_without_output_or_private_echo(tmp_path):
+    _, options = _report()
+    path = tmp_path / "private-input.txt"
+    path.write_bytes(b"SYNTHETIC PRIVATE CONTENT" * 100000)
+    result = _cli(path, tmp_path / "rejected", options)
+    assert result.returncode == 2
+    assert not (tmp_path / "rejected").exists()
+    assert "SYNTHETIC PRIVATE CONTENT" not in result.stdout + result.stderr
+
+
+def test_write_failure_cleans_only_its_new_bundle(tmp_path, monkeypatch, capsys):
+    raw, options = _report()
+    path = tmp_path / "input.txt"
+    path.write_bytes(raw)
+    output = tmp_path / "partial"
+    original = Path.open
+
+    def fail_second_file(self, mode="r", *args, **kwargs):
+        if self == output / "intake.json" and mode == "xb":
+            raise OSError("Synthetic storage failure")
+        return original(self, mode, *args, **kwargs)
+
+    monkeypatch.setattr(Path, "open", fail_second_file)
+    monkeypatch.setattr(sys, "argv", ["mobile_setup_intake", str(path), "--output-dir", str(output),
+        "--expected-platform", options["expected_platform"], "--expected-version", options["expected_version"],
+        "--expected-build", options["expected_build"], "--source-revision", options["source_revision"]])
+    assert mobile_setup_intake.main() == 3
+    assert not output.exists()
+    assert path.read_bytes() == raw
+    assert str(path) not in capsys.readouterr().out
 
 
 def test_exact_source_hash_detects_later_edits_through_existing_inventory_checker(tmp_path):
