@@ -1,10 +1,18 @@
 # AQSS development roadmap
 
-Checkpoint: October 27, 2026. Continue from the restored a-Shell baseline and the existing native endpoint qualification research. iPhone/iOS and Android remain equal product targets.
+Checkpoint: October 28, 2026. Continue from the restored a-Shell baseline and the existing native endpoint qualification research. iPhone/iOS and Android remain equal product targets.
 
 **INFERENCE IS NOT REALITY. AI proposes. Policy authorizes. Physical Commit verifies.**
 
 ## Current checkpoint
+
+October 28 picture continuation: the [offline row-bound repair](picture-row-bounds-2026-10-28.md)
+fixes an overflowing Fire TV Home-hold label, includes the number/arrow in line
+wrapping and rejects rows that would lose their final words. The regenerated
+companion retains all 51 routes / 436 pictures. Local row/canvas measurements
+and before/after rendering are checked; exact final CI and the separate PDF
+review copy belong to the draft PR/delivery receipt. Native versions remain
+Android 0.38/build 41 and iPhone/iPad 0.38.0/build 1. Physical/signing gates remain.
 
 October 27 cleanup-report continuation: [Android 0.38 quiet report observations](quiet-report-cleanup-2026-10-27.md)
 distinguishes cleanup that never entered from returned or unresolved cleanup,

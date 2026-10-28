@@ -27,7 +27,13 @@ def svg(step, number, route):
     def text(x,y,s,color='#f8fbff',size=19): pieces.append(f'<text x="{x}" y="{y}" fill="{color}" font-size="{size}" font-family="Arial,sans-serif">{esc(s)}</text>')
     def row(x,y,w,s,selected,numbered=True):
         rect(x,y,w,48,'#ffffff' if selected else '#243958')
-        for j,line in enumerate(textwrap.wrap(s, 25 if w<300 else 42)[:2]): text(x+12,y+21+j*19,(f'{number} → ' if selected and numbered and j==0 else '')+line,'#071321' if selected else '#f8fbff',16)
+        # Wrap the numbered target as one label: its prefix also occupies space.
+        # Narrow remote buttons need a shorter line than the Roku menu rows.
+        label = (f'{number} → ' if selected and numbered else '') + s
+        lines = textwrap.wrap(label, 17 if w<200 else 25 if w<300 else 42)
+        if len(lines) > 2:
+            raise ValueError('Picture row exceeds its two-line text bound')
+        for j,line in enumerate(lines): text(x+12,y+21+j*19,line,'#071321' if selected else '#f8fbff',16)
     if route['id'] in ('roku_network','roku_model') and number > 1:
         rect(18,18,604,348,'#063e97');text(36,58,step['screen'],size=27)
         model=route['id']=='roku_model'
