@@ -101,6 +101,13 @@ verify exact boundary labels and separate notes/snapshot times with the current
 formatter. This adds regression coverage, retaining iOS source 0.38.0/build 1
 and Android APK 0.37/build 40. It does not qualify the device's actual clock.
 
+The [Android 0.38 quiet-report increment](docs/quiet-report-cleanup-2026-10-27.md)
+distinguishes cleanup that never entered from calls that returned, preserving
+unresolved cleanup/accounting. Native sharing checks on both platforms also
+exercise private report intake and verify that all hardware inventory rows stay
+unknown. Candidate Android is build 41; iPhone/iPad application source remains
+0.38.0/build 1. The audio worker and physical qualification gates are unchanged.
+
 The [0.32 phone-output research and preflight](docs/phone-output-research-2026-10-24.md)
 adds **Sound → Output inventory** on Android. Tap **Refresh outputs** to see
 this phone's current model/OS, available output types and advertised format

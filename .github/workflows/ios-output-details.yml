@@ -2,7 +2,7 @@ name: iPhone and iPad output details verification
 
 on:
   push:
-    branches: ["aqss/ios-output-details", "aqss/ios-setup-output-report"]
+    branches: ["aqss/ios-output-details", "aqss/ios-setup-output-report", "aqss/quiet-report-cleanup"]
   workflow_dispatch:
 
 permissions:
