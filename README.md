@@ -108,6 +108,12 @@ exercise private report intake and verify that all hardware inventory rows stay
 unknown. Candidate Android is build 41; iPhone/iPad application source remains
 0.38.0/build 1. The audio worker and physical qualification gates are unchanged.
 
+The [October 28 offline picture-row repair](docs/picture-row-bounds-2026-10-28.md)
+keeps Fire TV's full Home-hold label inside its remote-button picture and rejects
+rows that would silently lose words. All 51 routes / 436 offline diagrams are
+regenerated; native app versions remain unchanged. A separate PDF companion
+makes the existing directions available for review without an Android phone.
+
 The [0.32 phone-output research and preflight](docs/phone-output-research-2026-10-24.md)
 adds **Sound → Output inventory** on Android. Tap **Refresh outputs** to see
 this phone's current model/OS, available output types and advertised format
