@@ -23,10 +23,12 @@ def main():
             adb("shell", "settings", "put", "system", "font_scale", scale)
             adb("shell", "am", "force-stop", package)
             adb("shell", "pm", "revoke", package, "android.permission.RECORD_AUDIO")
+            adb("logcat", "-b", "crash", "-c")
             observation = adb("shell", "am", "instrument", "-w",
                               "com.aqss.bodyguard.uiprobe/.QuietOutputProbe").decode()
             (out / f"quiet-output-{label}.txt").write_text(observation)
             if "INSTRUMENTATION_RESULT: quiet_output=passed:" not in observation:
+                (out / f"quiet-output-{label}-crash.txt").write_bytes(adb("logcat", "-b", "crash", "-d", "-t", "200"))
                 try:
                     (out / f"quiet-output-{label}-failure.png").write_bytes(
                         adb("exec-out", "run-as", package, "cat", "files/quiet-output-failure.png"))

@@ -126,6 +126,9 @@ bounded research that selected the read-only inventory.
 The owner subsequently replied **Ready** on October 27. The authorized
 [backend paper review](mobile-output-backend-research-2026-10-27.md) is now
 complete, with a conditional lab recommendation and implementation checks.
-The actual 0.35 report remains pending and is required before an adapter is
-chosen for the owner's setup. Android remains 0.35/build 38 and iPhone/iPad
-remains 0.34.0. N2b–N5 remain pending.
+The owner subsequently authorized building intended features while the phone
+is unavailable. This amends the inventory-before-code sequence for the generic
+[0.36 quiet output check](quiet-output-check-2026-10-27.md); it does not provide
+the missing 0.35 report or qualify that adapter for the owner's setup. Android
+is 0.36/build 39; exact source/validation receipts belong to its draft PR.
+iPhone/iPad remains 0.34.0. N2b–N5 remain pending.

@@ -271,4 +271,14 @@ class QuietOutputCheckTest {
         @Suppress("UNCHECKED_CAST")
         assertFailsWith<UnsupportedOperationException> { (routes.types as MutableList<Int>).clear() }
     }
+
+    @Test fun callbackGainsAndRetiredNoticesCannotReopenOrStopAnotherContext() {
+        val active = QuietOutputControl(); val events = QuietOutputEvents(active)
+        events.focusChanged(1); assertNull(active.reason)
+        events.focusChanged(-3); assertEquals(QuietStop.FOCUS_LOSS, active.reason)
+        events.focusChanged(1); assertEquals(QuietStop.FOCUS_LOSS, active.reason)
+        val fresh = QuietOutputControl(); val old = QuietOutputEvents(fresh)
+        old.retire(); old.focusChanged(-1); old.routeChanged(); assertNull(fresh.reason)
+        QuietOutputEvents(fresh).routeChanged(); assertEquals(QuietStop.ROUTE_CHANGED, fresh.reason)
+    }
 }

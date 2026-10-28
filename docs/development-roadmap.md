@@ -6,6 +6,17 @@ Checkpoint: October 27, 2026. Continue from the restored a-Shell baseline and th
 
 ## Current checkpoint
 
+October 27 owner-authorized implementation: the owner explicitly requested
+building the remaining intended work while the test phone is unavailable.
+That amends the inventory-before-code sequence for a generic Android diagnostic;
+it does not supply hardware observations. The [0.36 quiet output check](quiet-output-check-2026-10-27.md)
+implements one foreground AudioTrack worker, zero-valued PCM16 samples and zero
+app gain, independent stop admission, finite retries, exact return accounting,
+shared input/output exclusion and sticky cleanup quarantine. Review and Share
+use one bounded immutable report. Android is 0.36/build 39; source-bound unit,
+native-emulator, lint and APK receipts belong to its draft PR. iPhone/iPad
+remains 0.34.0. Real N2b qualification and N3–N5 remain pending.
+
 October 27 callback-lifetime prerequisite: the isolated Kotlin lab now has a
 [bounded callback and child registry](../native/lab/pcm16_accounting/CALLBACK_LIFETIME.md)
 following the existing C fixture and mobile ownership review. Queued/active
@@ -607,7 +618,7 @@ The sequence follows the native qualification brief, `AQSS_N2_Owned_Output_Lab_R
 | N4 — Conditional evidence and activation | Pending, dependent on N3 | Authenticated native retirement evidence; reject stale, replayed, conflicting-successor, and invalid-at-submission evidence |
 | N5 — Both mobile products | Pending | Independently qualified iPhone/iOS and Android lifecycle/output paths, resource budgets, consent, and packaging |
 
-The next engineering gate is **N2b: inventory a real owned output path before implementing an adapter**. The [N2b qualification record](n2b-lab-qualification-record.md) supplies the scope, required inventory, event distinctions, and falsifiable trials. Its [private record and checker](n2b-inventory-preparation-2026-10-24.md) make missing observations explicit and bind local references to file hashes without qualifying the hardware. Fill the actual host/device/route/capture fields before any hardware claim. Do not purchase or require customer hardware by assumption. Before adding any new OS or driver API, refresh research under the charter. Cleanup after closure must continue to release existing references without creating new mutating work.
+The next hardware gate is **N2b: inventory and qualify a real owned output path**. The owner has authorized the generic 0.36 implementation above before the phone arrives; that does not waive the physical gate. The [N2b qualification record](n2b-lab-qualification-record.md) supplies the scope, required inventory, event distinctions, and falsifiable trials. Its [private record and checker](n2b-inventory-preparation-2026-10-24.md) make missing observations explicit and bind local references to file hashes without qualifying the hardware. Fill the actual host/device/route/capture fields before any hardware claim. Do not purchase or require customer hardware by assumption. Before adding any new OS or driver API, refresh research under the charter. Cleanup after closure must continue to release existing references without creating new mutating work.
 
 The legacy optical remote mapper now reports a remote-button hypothesis as `NOT_EXECUTED` and requires review at every eligible confidence band; invalid confidence fails closed. An 11-case regression covers these proposal-only semantics. The mapper does not discover actual hardware capability, authenticate a command, invoke an adapter, or verify a physical result. It must not be used to infer current TV caption state from an unknown IR toggle.
 

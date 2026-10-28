@@ -18,17 +18,29 @@ class QuietOutputControl {
     fun stop(reason: QuietStop) { stopped.compareAndSet(null, reason) }
 }
 
+/** Stable callback state with no track, activity or worker reference. */
+class QuietOutputEvents(private val control: QuietOutputControl) {
+    private val retired = AtomicBoolean(false)
+    fun retire() { retired.set(true) }
+    fun focusChanged(raw: Int) {
+        if (!retired.get() && raw != 1) control.stop(QuietStop.FOCUS_LOSS)
+    }
+    fun routeChanged() { if (!retired.get()) control.stop(QuietStop.ROUTE_CHANGED) }
+}
+
 data class QuietOutputFormat(val initialized: Boolean, val sampleRate: Int, val channels: Int,
                              val pcm16: Boolean, val bufferFrames: Int, val capacityFrames: Int) {
     val matchesProfile: Boolean get() = initialized && sampleRate == 48000 && channels == 1 && pcm16 &&
         bufferFrames in 1..131072 && capacityFrames in bufferFrames..131072
 }
-class QuietOutputRoutes private constructor(val types: List<Int>, val totalReported: Int, val multipleQuery: Boolean) {
+class QuietOutputRoutes private constructor(val types: List<Int>, val totalReported: Int,
+                                            val multipleQuery: Boolean, val available: Boolean) {
     companion object {
         fun from(types: List<Int>, totalReported: Int, multipleQuery: Boolean): QuietOutputRoutes {
             require(totalReported >= types.size && totalReported >= 0)
-            return QuietOutputRoutes(Collections.unmodifiableList(ArrayList(types.take(16))), totalReported, multipleQuery)
+            return QuietOutputRoutes(Collections.unmodifiableList(ArrayList(types.take(16))), totalReported, multipleQuery, true)
         }
+        fun unavailable(multipleQuery: Boolean) = QuietOutputRoutes(emptyList(), 0, multipleQuery, false)
     }
 }
 interface QuietOutputTrack {
@@ -56,7 +68,7 @@ data class QuietTraceEvent(val sequence: Int, val operation: QuietOperation, val
                            val elapsedMs: Long?, val rawValue: Int?, val exception: Boolean,
                            val offsetSamples: Int?, val requestedSamples: Int?, val acceptedSamples: Int)
 class QuietOutputResult internal constructor(
-    val reason: QuietStop, val acceptedSamples: Int, val attempts: Int,
+    val runId: String, val reason: QuietStop, val acceptedSamples: Int, val attempts: Int,
     val cleanupSucceeded: Boolean, val quarantined: Boolean, val allocationEntered: Boolean,
     val trackOpened: Boolean, val focusGranted: Boolean, val zeroGainAccepted: Boolean?,
     val constructed: QuietOutputFormat?, val routes: QuietOutputRoutes?, val requestedBufferBytes: Int?,
@@ -86,6 +98,7 @@ class QuietOutputCheck(
     }
     private class AdmissionClosed : RuntimeException()
     private val launched = AtomicBoolean(false)
+    private val runId = java.util.UUID.randomUUID().toString()
     private val source = ShortArray(SAMPLE_COUNT)
     private val events = ArrayList<QuietTraceEvent>(MAX_EVENTS)
     private var backend: QuietOutputBackend? = null
@@ -249,7 +262,7 @@ class QuietOutputCheck(
     }
 
     private fun publish(cleanupSucceeded: Boolean): QuietOutputResult = QuietOutputResult(
-        control.reason ?: QuietStop.CLOCK_FAULT, accepted, attempts, cleanupSucceeded,
+        runId, control.reason ?: QuietStop.CLOCK_FAULT, accepted, attempts, cleanupSucceeded,
         gate.blocked, allocationEntered, owned != null, focusGranted, gainAccepted, constructed,
         routes, bufferBytes, inCall, Collections.unmodifiableList(ArrayList(events)),
     ).also { result = it }

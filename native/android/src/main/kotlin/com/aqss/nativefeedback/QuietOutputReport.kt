@@ -20,14 +20,16 @@ class QuietOutputReportSnapshot private constructor(val text: String) {
             val utc = DateTimeFormatterBuilder().appendInstant(3).toFormatter().format(Instant.ofEpochMilli(reviewedAtMillis))
             val text = buildString {
                 append("Audio Bodyguard quiet output check (v1)\nReviewed at (phone clock, UTC): $utc\n\n$buildDetails\n")
+                append("\nRun label (local, not authenticated): ${result.runId}")
                 append("\nRequested profile: 48000 Hz, mono, PCM16; 256 zero-valued samples")
+                append("\nAdmission budget: 2000 ms; Android calls may take longer to close")
                 append("\nApp stream gain requested: 0; accepted: ${result.zeroGainAccepted?.toString() ?: "Not attempted"}")
                 append("\nNative track allocation: ${if (result.trackOpened) "Returned" else if (result.allocationEntered) "Entered; outcome unavailable" else "Not entered"}")
                 append("\nConstructed stream (framework metadata): ${result.constructed ?: "Unavailable"}")
                 append("\nRequested buffer bytes: ${result.requestedBufferBytes ?: "Unavailable"}")
                 val routes = result.routes
-                append("\nFramework route type codes: ${routes?.types?.joinToString() ?: "Unavailable"}")
-                append("\nRoute query: ${if (routes == null) "Unavailable" else if (routes.multipleQuery) "Plural; ${routes.totalReported} reported, first 16 retained" else "Singular; additional routes unknown"}")
+                append("\nFramework route type codes: ${if (routes?.available == true) routes.types.joinToString().ifEmpty { "None reported" } else "Unavailable"}")
+                append("\nRoute query: ${if (routes == null || !routes.available) "Unavailable" else if (routes.multipleQuery) "Plural; ${routes.totalReported} reported, first 16 retained" else "Singular; additional routes unknown"}")
                 append("\nKnown accepted samples: ${result.acceptedSamples}\nWrite attempts: ${result.attempts}")
                 append("\nEnd reason: ${result.reason}\nResource cleanup calls: ${if (result.cleanupSucceeded) "Returned" else "Unresolved"}")
                 append("\nProcess audio exclusion quarantined: ${result.quarantined}")

@@ -150,7 +150,7 @@ class InputAssistanceActivity : Activity() {
         }
         val reservation = microphone.acquire()
         if (reservation == null) {
-            status.text = "Another microphone tool is using or closing the input. Stop it, then tap Start."; return
+            status.text = "Another audio tool is running or closing. Stop it, then tap Start."; return
         }
         microphoneLease = reservation
         val token = voiceRun.start(SystemClock.elapsedRealtime())
@@ -262,7 +262,7 @@ class InputAssistanceActivity : Activity() {
         microphone.release(microphoneLease, cleanupSucceeded = clean); microphoneLease = null
         if (::startButton.isInitialized) {
             startButton.text = "Start voice check"; startButton.isEnabled = !microphone.blocked
-            status.text = if (microphone.blocked) "Microphone cleanup failed. Force stop this app in Android Settings before trying again." else message
+            status.text = if (microphone.blocked) "Audio cleanup is unresolved. Force stop this app in Android Settings before trying again." else message
             meter.clear(); lastLevelAt = 0; levelText.text = "No live microphone samples"
         }
     }

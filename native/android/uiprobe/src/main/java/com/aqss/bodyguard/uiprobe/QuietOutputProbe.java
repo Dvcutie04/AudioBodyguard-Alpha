@@ -38,7 +38,9 @@ public final class QuietOutputProbe extends CameraCaptureProbe {
     }
     private void press(String label) {
         focus(activity);
-        runOnMainSync(() -> require(click(activity.getWindow().getDecorView(), label), "Missing control: " + label));
+        boolean[] clicked = {false};
+        runOnMainSync(() -> clicked[0] = click(activity.getWindow().getDecorView(), label));
+        require(clicked[0], "Missing control: " + label);
         waitForIdleSync();
     }
     private Object completed() throws Exception {
