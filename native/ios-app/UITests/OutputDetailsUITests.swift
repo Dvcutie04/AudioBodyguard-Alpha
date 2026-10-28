@@ -128,7 +128,7 @@ final class OutputDetailsUITests: XCTestCase {
         let preview = app.staticTexts["test-setup-preview"]; XCTAssertTrue(preview.waitForExistence(timeout: 5))
         let text = preview.label
         XCTAssertTrue(text.hasPrefix("Audio Bodyguard test setup (v2)\n")); XCTAssertTrue(text.hasSuffix(source))
-        XCTAssertTrue(text.contains("Intended output: \"Phone speaker\"")); XCTAssertTrue(text.contains("Constraints: \"No calibration\""))
+        XCTAssertTrue(text.contains("Intended output: \"Phone speaker\"")); XCTAssertTrue(text.contains("Setup constraints: \"No calibration\""))
         for (name, value) in [("Combined setup reviewed text", text), ("Included output details reviewed text", source)] {
             let attachment = XCTAttachment(string: value); attachment.name = name; attachment.lifetime = .keepAlways; add(attachment)
         }

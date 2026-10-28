@@ -71,7 +71,7 @@ final class CombinedSetupOutputReportTests: XCTestCase {
         let frozen = try report(source, notes: notes); let text = frozen.text
         source = try output([.headphones]); notes.removeAll()
         XCTAssertEqual(frozen.text, text); XCTAssertTrue(frozen.text.contains("Output 1: Built-in speaker"))
-        XCTAssertFalse(frozen.text.contains("Output 1: Headphones")); XCTAssertTrue(frozen.text.contains("Constraints: \"No calibration\""))
+        XCTAssertFalse(frozen.text.contains("Output 1: Headphones")); XCTAssertTrue(frozen.text.contains("Setup constraints: \"No calibration\""))
     }
 
     func testEmptyAndTruncatedPortSnapshotsDoNotResolvePlaybackUnknowns() throws {
