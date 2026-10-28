@@ -6,6 +6,15 @@ Checkpoint: October 27, 2026. Continue from the restored a-Shell baseline and th
 
 ## Current checkpoint
 
+October 27 cleanup-report continuation: [Android 0.38 quiet report observations](quiet-report-cleanup-2026-10-27.md)
+distinguishes cleanup that never entered from returned or unresolved cleanup,
+and reports existing call-accounting uncertainty. No quiet-worker policy or
+audio API changes. Native Android and iPhone/iPad sharing checks also run the
+private intake CLI on their actual report text, retaining unknown inventory
+rows and original byte hashes. Candidate Android is build 41; iPhone/iPad
+application source remains 0.38.0/build 1. Source-bound verification and the
+delivered APK identity belong to its draft PR; real-phone/signing gates remain.
+
 October 27 report preflight: the
 [iPhone/iPad clock boundary checks](ios-report-clock-checks-2026-10-27.md)
 cover epoch/millisecond/date limits and distinct notes versus snapshot clocks.

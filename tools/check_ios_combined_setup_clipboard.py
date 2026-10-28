@@ -7,6 +7,11 @@ import json
 import plistlib
 import subprocess
 
+if __package__:
+    from .verify_native_setup_intake import verify_native_setup_intake
+else:
+    from verify_native_setup_intake import verify_native_setup_intake
+
 
 def main():
     parser = argparse.ArgumentParser()
@@ -67,8 +72,12 @@ def main():
     assert text.startswith("Audio Bodyguard test setup (v2)\n") and metadata in text
     assert "Actual playback route: Unknown" in text and "Physical output and protection: Not verified" in text
     assert len(text.encode("utf-16-le")) // 2 <= 16384 and len(expected) <= 32768
+    source_revision = subprocess.check_output(["git", "rev-parse", "HEAD"], text=True).strip()
+    intake = verify_native_setup_intake(expected_file, args.output / "intake", platform="iPhone/iPad",
+        version=info["CFBundleShortVersionString"], build=info["CFBundleVersion"], source_revision=source_revision)
     receipt = {"text": text, "exact_preview_match": True, "original_snapshot_match": True, "bytes": len(expected),
-               "sha256": hashlib.sha256(expected).hexdigest(), "original_output_sha256": hashlib.sha256(original).hexdigest(), "scope": "Simulator native Copy only; no physical qualification"}
+               "sha256": hashlib.sha256(expected).hexdigest(), "original_output_sha256": hashlib.sha256(original).hexdigest(),
+               "intake": intake, "scope": "Simulator native Copy and engineering intake only; no physical qualification"}
     (args.output / "combined-setup-copy-receipt.json").write_text(json.dumps(receipt, indent=2) + "\n")
     print("COMBINED_SETUP_COPY_EXACT " + json.dumps({k: v for k, v in receipt.items() if k != "text"}, sort_keys=True))
 

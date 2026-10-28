@@ -6,6 +6,11 @@ import re
 import subprocess
 from pathlib import Path
 
+if __package__:
+    from .verify_native_setup_intake import verify_native_setup_intake
+else:
+    from verify_native_setup_intake import verify_native_setup_intake
+
 
 def adb(*args, timeout=120):
     return subprocess.check_output(["adb", *args], timeout=timeout)
@@ -18,6 +23,7 @@ def main():
     installed = adb("shell", "dumpsys", "package", package).decode()
     version = re.search(r"^\s*versionName=(.+)$", installed, re.MULTILINE).group(1).strip()
     build = re.search(r"^\s*versionCode=(\d+)\b", installed, re.MULTILINE).group(1)
+    revision = subprocess.check_output(["git", "rev-parse", "HEAD"], text=True).strip()
     try:
         for label, scale in (("normal", "1.0"), ("large", "1.5")):
             adb("shell", "settings", "put", "system", "font_scale", scale)
@@ -61,6 +67,10 @@ def main():
             assert "Physical output and protection: Not verified" in report
             assert version == "0.38-quiet-report-live-input" and build == "41"
             (out / f"quiet-output-{label}-report.txt").write_text(report)
+            intake = verify_native_setup_intake(out / f"quiet-setup-{label}-report.txt",
+                out / f"quiet-setup-{label}-intake", platform="Android", version=version,
+                build=build, source_revision=revision)
+            (out / f"quiet-setup-{label}-intake-receipt.json").write_text(json.dumps(intake, indent=2) + "\n")
             for name in ("busy", "main", "report", "rotated"):
                 (out / f"quiet-output-{label}-{name}.png").write_bytes(
                     adb("exec-out", "run-as", package, "cat", f"files/quiet-output-{name}.png"))
@@ -70,7 +80,7 @@ def main():
             "version": version, "build": build, "font_scales": [1.0, 1.5],
             "scope": "Actual emulator framework stream, synthetic input exclusion and exact cancelled share intent; no acoustic/physical qualification",
         }, indent=2) + "\n")
-        print("QUIET_OUTPUT_OBSERVED: native framework, input exclusion, cleanup, frozen share intent, rotation, large text and Back passed; physical output unverified", flush=True)
+        print("QUIET_OUTPUT_OBSERVED: native framework, input exclusion, truthful denied-admission cleanup, frozen share intent, rotation, large text, Back and private intake passed; physical output unverified", flush=True)
     finally:
         adb("shell", "settings", "put", "system", "font_scale", "1.0")
 

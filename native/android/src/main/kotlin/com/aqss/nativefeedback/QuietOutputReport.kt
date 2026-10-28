@@ -6,6 +6,8 @@ import java.time.format.DateTimeFormatterBuilder
 class QuietOutputReportSnapshot private constructor(val text: String, val buildDetails: String) {
     companion object {
         const val NOTICE = "Framework check only. Sound and protection are not verified."
+        private val cleanupOperations = setOf(QuietOperation.RETIRE, QuietOperation.PAUSE,
+            QuietOperation.FLUSH, QuietOperation.UNWATCH, QuietOperation.RELEASE, QuietOperation.ABANDON)
         fun capture(buildDetails: String, result: QuietOutputResult, reviewedAtMillis: Long): QuietOutputReportSnapshot {
             require(buildDetails.length <= 512)
             val lines = buildDetails.split('\n')
@@ -18,6 +20,11 @@ class QuietOutputReportSnapshot private constructor(val text: String, val buildD
             require(lines[3].removePrefix("Build: ").matches(Regex("[0-9]{1,19}|Unavailable")))
             require(reviewedAtMillis in 0..253402300799999L)
             val utc = DateTimeFormatterBuilder().appendInstant(3).toFormatter().format(Instant.ofEpochMilli(reviewedAtMillis))
+            val cleanup = when {
+                !result.cleanupSucceeded || result.unreportedCall -> "Unresolved"
+                result.trace.none { it.stage == QuietStage.ENTERED && it.operation in cleanupOperations } -> "Not entered"
+                else -> "Returned"
+            }
             val text = buildString {
                 append("Audio Bodyguard quiet output check (v1)\nReviewed at (phone clock, UTC): $utc\n\n$buildDetails\n")
                 append("\nRun label (local, not authenticated): ${result.runId}")
@@ -31,7 +38,8 @@ class QuietOutputReportSnapshot private constructor(val text: String, val buildD
                 append("\nFramework route type codes: ${if (routes?.available == true) routes.types.joinToString().ifEmpty { "None reported" } else "Unavailable"}")
                 append("\nRoute query: ${if (routes == null || !routes.available) "Unavailable" else if (routes.multipleQuery) "Plural; ${routes.totalReported} reported, first 16 retained" else "Singular; additional routes unknown"}")
                 append("\nKnown accepted samples: ${result.acceptedSamples}\nWrite attempts: ${result.attempts}")
-                append("\nEnd reason: ${result.reason}\nResource cleanup calls: ${if (result.cleanupSucceeded) "Returned" else "Unresolved"}")
+                append("\nEnd reason: ${result.reason}\nResource cleanup calls: $cleanup")
+                append("\nCall accounting incomplete: ${result.unreportedCall}")
                 append("\nProcess audio exclusion quarantined: ${result.quarantined}")
                 append("\nControl clock: elapsed realtime milliseconds (includes sleep)")
                 append("\nWorker operations (application observations, not hardware timing):")
