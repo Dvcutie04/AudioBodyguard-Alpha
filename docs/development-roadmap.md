@@ -6,6 +6,17 @@ Checkpoint: October 27, 2026. Continue from the restored a-Shell baseline and th
 
 ## Current checkpoint
 
+October 27 continued phone-independent preparation: the
+[private mobile report intake](mobile-setup-intake-2026-10-27.md) checks the
+shared worksheet against expected app labels and retains the exact source
+bytes/hash. Supported Android inventory/quiet and iPhone session attachments
+keep their original clock labels separate. All eight N2b inventory rows stay
+unknown, with a declared source revision and no invented observation date.
+Existing reviews are not overwritten. This local engineering step adds no
+phone API or installer; Android remains 0.37/build 40 and iOS source 0.38.0/build 1.
+The actual owner report, physical qualification and signed iPhone delivery
+remain pending. Source-bound verification belongs to its draft PR.
+
 October 27 Android continuation: [0.37 quiet check with setup notes](quiet-setup-report-2026-10-27.md)
 adds an explicit single-use handoff of the frozen quiet-check report into the
 optional worksheet. One typed slot accepts inventory or quiet data; stale labels

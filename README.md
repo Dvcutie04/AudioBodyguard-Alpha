@@ -89,6 +89,13 @@ confirmed two phones; the next research package reviews an owned mobile-output
 path. Exact backend/route/capture details remain pending. The inventory-file
 preparation itself does not change the mobile app.
 
+The [private mobile report intake](docs/mobile-setup-intake-2026-10-27.md)
+checks a shared setup worksheet against expected app labels, retains its exact
+bytes/hash and prepares the existing eight-row N2b record. Every row stays
+unknown until reviewed observations are supplied; free-text notes and framework
+metadata cannot qualify hardware. This engineering helper needs no phone,
+adds no installer and never replaces an existing private review directory.
+
 The [0.32 phone-output research and preflight](docs/phone-output-research-2026-10-24.md)
 adds **Sound → Output inventory** on Android. Tap **Refresh outputs** to see
 this phone's current model/OS, available output types and advertised format
