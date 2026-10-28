@@ -40,9 +40,25 @@ struct OutputDetailsView: View {
     @Environment(\.dynamicTypeSize) private var textSize
     @State private var snapshot: OutputDetailsSnapshot?
     @State private var reviewing = false
+    @State private var setupVisible = false
+    @StateObject private var setupDraft = TestSetupDraft()
     @State private var status = "Ready to read output details"
 
     var body: some View {
+        VStack(spacing: 0) {
+            if setupVisible {
+                TestSetupView(theme: theme, draft: setupDraft, onClose: { setupVisible = false })
+            } else { detailsContent }
+        }
+        .onChange(of: scenePhase) { if $0 != .active { clear() } }
+        .onReceive(NotificationCenter.default.publisher(for: AVAudioSession.routeChangeNotification).receive(on: DispatchQueue.main)) { _ in changed() }
+        .onReceive(NotificationCenter.default.publisher(for: AVAudioSession.interruptionNotification).receive(on: DispatchQueue.main)) { _ in changed() }
+        .onReceive(NotificationCenter.default.publisher(for: AVAudioSession.mediaServicesWereLostNotification).receive(on: DispatchQueue.main)) { _ in changed() }
+        .onReceive(NotificationCenter.default.publisher(for: AVAudioSession.mediaServicesWereResetNotification).receive(on: DispatchQueue.main)) { _ in changed() }
+        .onDisappear { clear(); setupDraft.clear() }
+    }
+
+    private var detailsContent: some View {
         VStack(alignment: .leading, spacing: 12) {
             HStack(spacing: 12) {
                 Text(reviewing ? (textSize.isAccessibilitySize ? "Review details" : "Review output details") : "Output details")
@@ -55,9 +71,14 @@ struct OutputDetailsView: View {
             }
             if reviewing, let report = snapshot {
                 ScrollView {
-                    Text(report.text).font(.body).fixedSize(horizontal: false, vertical: true)
-                        .frame(maxWidth: .infinity, alignment: .leading).textSelection(.enabled)
-                        .accessibilityIdentifier("output-details-preview")
+                    VStack(alignment: .leading, spacing: 16) {
+                        Button { beginSetup(report) } label: {
+                            Text("Add setup notes").frame(maxWidth: .infinity, minHeight: 44)
+                        }.buttonStyle(AppButtonStyle(theme: theme)).accessibilityIdentifier("output-details-add-notes")
+                        Text(report.text).font(.body).fixedSize(horizontal: false, vertical: true)
+                            .frame(maxWidth: .infinity, alignment: .leading).textSelection(.enabled)
+                            .accessibilityIdentifier("output-details-preview")
+                    }
                 }.accessibilityIdentifier("output-details-report-scroll")
                 Text(OutputDetailsSnapshot.notice).font(.subheadline).fixedSize(horizontal: false, vertical: true)
                     .accessibilityIdentifier("output-details-notice")
@@ -96,12 +117,11 @@ struct OutputDetailsView: View {
         }
         .padding(20).frame(maxWidth: 680, maxHeight: .infinity).frame(maxWidth: .infinity, maxHeight: .infinity)
         .foregroundColor(theme.text).accentColor(theme.accent).background(theme.background.ignoresSafeArea())
-        .onChange(of: scenePhase) { if $0 != .active { clear() } }
-        .onReceive(NotificationCenter.default.publisher(for: AVAudioSession.routeChangeNotification).receive(on: DispatchQueue.main)) { _ in changed() }
-        .onReceive(NotificationCenter.default.publisher(for: AVAudioSession.interruptionNotification).receive(on: DispatchQueue.main)) { _ in changed() }
-        .onReceive(NotificationCenter.default.publisher(for: AVAudioSession.mediaServicesWereLostNotification).receive(on: DispatchQueue.main)) { _ in changed() }
-        .onReceive(NotificationCenter.default.publisher(for: AVAudioSession.mediaServicesWereResetNotification).receive(on: DispatchQueue.main)) { _ in changed() }
-        .onDisappear { clear() }
+    }
+
+    private func beginSetup(_ report: OutputDetailsSnapshot) {
+        guard scenePhase == .active, reviewing, snapshot == report, !setupVisible else { return }
+        setupDraft.clear(); setupDraft.outputDetails = report; setupVisible = true
     }
 
     private func clear() { snapshot = nil; reviewing = false; status = "Ready to read output details" }

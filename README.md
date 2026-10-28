@@ -157,6 +157,13 @@ the session is never activated. Active playback, hardware format and protection
 stay unknown. Android's delivered APK remains 0.36/build 39. Signed iPhone
 distribution and actual phone trials remain pending.
 
+The [iPhone/iPad combined setup report](docs/ios-setup-output-report-2026-10-27.md)
+adds an explicit handoff from the reviewed output details into optional setup
+notes in source 0.38.0/build 1. The original snapshot stays verbatim and dated;
+notes have their own review time. Clear notes and Remove output details are
+separate actions. This is preparation data, with signing and physical output
+qualification still pending. Android's current installable test remains 0.36.
+
 The [isolated PCM16 accounting lab](native/lab/pcm16_accounting/README.md)
 implements the reviewed sample/frame/byte, partial-return and hold-accounting
 rules with synthetic Kotlin/JVM observations while the actual setup is pending.

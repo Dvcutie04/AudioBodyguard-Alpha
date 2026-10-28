@@ -6,6 +6,14 @@ Checkpoint: October 27, 2026. Continue from the restored a-Shell baseline and th
 
 ## Current checkpoint
 
+October 27 next automatic increment: the [iPhone/iPad combined setup report](ios-setup-output-report-2026-10-27.md)
+adds Add setup notes to the reviewed session snapshot. A typed in-memory handoff
+preserves the original capture text/time separately from the notes' review time.
+Clear notes and Remove output details remain independent. Native Share uses the
+immutable combined preview; Close/new process discard the draft. iOS source is
+0.38.0/build 1, with source-bound checks in its draft PR. Android's delivered APK
+remains 0.36/build 39; signing and physical qualification remain pending.
+
 October 27 automatic continuation: the owner requested proceeding from each
 completed phase into the next available phase. Finish and inspect the current
 increment's checks, then start the next already-authorized implementation

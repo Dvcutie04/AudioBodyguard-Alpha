@@ -6,13 +6,17 @@ final class TestSetupDraft: ObservableObject {
     @Published var notes: [TestSetupField: String] = [:]
     @Published var reviewed: TestSetupReportSnapshot?
     @Published var error: String?
-    func clear() { notes.removeAll(); reviewed = nil; error = nil }
+    @Published var outputDetails: OutputDetailsSnapshot?
+    func clearNotes() { notes.removeAll(); reviewed = nil; error = nil }
+    func removeOutputDetails() { outputDetails = nil; reviewed = nil; error = nil }
+    func clear() { clearNotes(); outputDetails = nil }
 }
 
 /// Temporary manual notes; no audio session, discovery or measurement work.
 struct TestSetupView: View {
     let theme: AppTheme
     @ObservedObject var draft: TestSetupDraft
+    var onClose: (() -> Void)? = nil
     @Environment(\.dismiss) private var dismiss
     @Environment(\.dynamicTypeSize) private var textSize
     @FocusState private var focused: TestSetupField?
@@ -27,7 +31,8 @@ struct TestSetupView: View {
                 Spacer(minLength: 0)
                 RoseButton(title: "Back", theme: theme, compact: true) {
                     focused = nil
-                    if draft.reviewed != nil { draft.reviewed = nil } else { draft.clear(); dismiss() }
+                    if draft.reviewed != nil { draft.reviewed = nil }
+                    else { draft.clear(); if let onClose = onClose { onClose() } else { dismiss() } }
                 }.accessibilityIdentifier("test-setup-back")
             }
             if let report = draft.reviewed {
@@ -36,10 +41,10 @@ struct TestSetupView: View {
                         .frame(maxWidth: .infinity, alignment: .leading).textSelection(.enabled)
                         .accessibilityIdentifier("test-setup-preview")
                 }.accessibilityIdentifier("test-setup-report-scroll")
-                Text(TestSetupReportSnapshot.notice).font(.subheadline)
+                Text(report.reviewNotice).font(.subheadline)
                     .fixedSize(horizontal: false, vertical: true).accessibilityIdentifier("test-setup-notice")
                 ReviewedTextShareButton(text: report.text, theme: theme,
-                    title: textSize.isAccessibilitySize ? "Share report" : "Share setup report", identifier: "test-setup-share")
+                    title: textSize.isAccessibilitySize ? "Share" : "Share setup report", identifier: "test-setup-share")
                     .accessibilityLabel("Share setup report")
             } else {
                 ScrollView {
@@ -48,6 +53,16 @@ struct TestSetupView: View {
                             .fixedSize(horizontal: false, vertical: true)
                         Text("Every answer is optional. Leave blank for Unknown. Brief technical details only.")
                             .font(.subheadline).fixedSize(horizontal: false, vertical: true)
+                        if draft.outputDetails != nil {
+                            Text("Original dated output details included")
+                                .font(.headline).fixedSize(horizontal: false, vertical: true)
+                                .accessibilityIdentifier("test-setup-output-status")
+                            Text("The snapshot keeps its own capture time. Clear notes keeps it; Remove output details leaves your notes.")
+                                .font(.subheadline).fixedSize(horizontal: false, vertical: true)
+                            Button { focused = nil; draft.removeOutputDetails() } label: {
+                                Text("Remove output details").frame(maxWidth: .infinity, minHeight: 44)
+                            }.buttonStyle(AppButtonStyle(theme: theme)).accessibilityIdentifier("test-setup-remove-output")
+                        }
                         ForEach(TestSetupField.allCases, id: \.self) { field in
                             VStack(alignment: .leading, spacing: 6) {
                                 Text(field.title).font(.headline).fixedSize(horizontal: false, vertical: true)
@@ -70,7 +85,7 @@ struct TestSetupView: View {
                         }
                     }.frame(maxWidth: .infinity, alignment: .leading)
                 }.accessibilityIdentifier("test-setup-form")
-                Button { focused = nil; draft.clear() } label: {
+                Button { focused = nil; draft.clearNotes() } label: {
                     Text("Clear notes").frame(maxWidth: .infinity, minHeight: 44)
                 }.buttonStyle(AppButtonStyle(theme: theme)).disabled(!hasNotes)
                     .accessibilityIdentifier("test-setup-clear")
@@ -96,7 +111,7 @@ struct TestSetupView: View {
         }
         do {
             draft.reviewed = try TestSetupReportSnapshot.capture(buildDetails: installedAppBuildDetails(),
-                notes: draft.notes, reviewedAtMillis: Int64(milliseconds))
+                notes: draft.notes, reviewedAtMillis: Int64(milliseconds), outputDetails: draft.outputDetails)
             draft.error = nil
         } catch {
             draft.error = "Check this phone’s date and the notes, then try again."
