@@ -150,6 +150,13 @@ Android is 0.36/build 39; installer and validation receipts belong to its draft
 PR. The owner's hardware, physical output and protection remain unverified;
 iPhone/iPad stays 0.34.0 with signed distribution pending.
 
+The [iPhone/iPad output details](docs/ios-output-details-2026-10-27.md)
+bring manual session metadata, immutable review and native sharing to iOS source
+0.37.0/build 1. Only fixed output port types and a bounded count are retained;
+the session is never activated. Active playback, hardware format and protection
+stay unknown. Android's delivered APK remains 0.36/build 39. Signed iPhone
+distribution and actual phone trials remain pending.
+
 The [isolated PCM16 accounting lab](native/lab/pcm16_accounting/README.md)
 implements the reviewed sample/frame/byte, partial-return and hold-accounting
 rules with synthetic Kotlin/JVM observations while the actual setup is pending.

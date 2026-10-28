@@ -192,6 +192,7 @@ private struct ReadOnlyHomeView: View {
     @State private var voiceCheckVisible = false
     @State private var liveSoundCheckVisible = false
     @State private var soundRecapsVisible = false
+    @State private var outputDetailsVisible = false
     @State private var testSetupVisible = false
     @StateObject private var testSetupDraft = TestSetupDraft()
     @State private var photoCheckVisible = false
@@ -299,6 +300,7 @@ private struct ReadOnlyHomeView: View {
             .sheet(isPresented: $voiceCheckVisible) { VoiceCheckView(theme: theme) }
             .sheet(isPresented: $liveSoundCheckVisible) { LiveSoundCheckView(theme: theme) }
             .sheet(isPresented: $soundRecapsVisible) { RecentSoundChecksView(theme: theme) }
+            .sheet(isPresented: $outputDetailsVisible) { OutputDetailsView(theme: theme) }
             .sheet(isPresented: $testSetupVisible, onDismiss: {
                 if !testSetupVisible { testSetupDraft.clear() }
             }) {
@@ -468,6 +470,9 @@ private struct ReadOnlyHomeView: View {
 
     private var soundPage: some View {
         VStack(alignment: .leading, spacing: 18) {
+            destinationCard("Output details", subtitle: "Review the session’s reported output types", icon: "speaker.wave.2") {
+                outputDetailsVisible = true
+            }.accessibilityIdentifier("output-details-open")
             destinationCard("Test setup", subtitle: "Record the two-phone test arrangement", icon: "doc.text") {
                 testSetupDraft.clear(); testSetupVisible = true
             }.accessibilityIdentifier("test-setup-open")
