@@ -6,6 +6,21 @@ Checkpoint: October 27, 2026. Continue from the restored a-Shell baseline and th
 
 ## Current checkpoint
 
+October 27 automatic continuation: the owner requested proceeding from each
+completed phase into the next available phase. Finish and inspect the current
+increment's checks, then start the next already-authorized implementation
+without asking for routine confirmation. Independent checks may run together;
+physical qualification and signing/account dependencies remain explicit.
+
+The [iPhone/iPad output-details increment](ios-output-details-2026-10-27.md)
+adds a manual session-port snapshot, immutable review and native text sharing
+to source version 0.37.0/build 1. It retains bounded fixed port types, not names
+or UIDs, and never activates the audio session. Route/format/playback/protection
+remain unverified. Native iPhone/iPad Simulator and Foundation receipts belong
+to its draft PR. Android's delivered APK remains 0.36/build 39. The next software
+increment is the iPhone worksheet's explicit snapshot handoff, following its
+already implemented Android counterpart.
+
 October 27 owner-authorized implementation: the owner explicitly requested
 building the remaining intended work while the test phone is unavailable.
 That amends the inventory-before-code sequence for a generic Android diagnostic;

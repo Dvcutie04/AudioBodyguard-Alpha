@@ -1,0 +1,114 @@
+name: iPhone and iPad output details verification
+
+on:
+  push:
+    branches: ["aqss/ios-output-details"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ios-output-details-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  output-details:
+    runs-on: macos-14
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - device: iPhone
+            artifact: iphone
+          - device: iPad
+            artifact: ipad
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Build and prepare native output details tests
+        shell: bash
+        run: |
+          set -euo pipefail
+          simulator_udid="$(xcrun simctl list devices available -j | python3 -c 'import json,sys; print(next(d["udid"] for group in json.load(sys.stdin)["devices"].values() for d in group if d["name"].startswith("${{ matrix.device }}") and d.get("isAvailable",True)))')"
+          echo "AQSS_SIMULATOR=$simulator_udid" >> "$GITHUB_ENV"
+          xcodebuild -project native/ios-app/AQSSReadOnly.xcodeproj -scheme AQSSReadOnly \
+            -configuration Release -destination "platform=iOS Simulator,id=$simulator_udid" \
+            -derivedDataPath "$RUNNER_TEMP/output-details-build" CODE_SIGNING_ALLOWED=NO build-for-testing
+          xcrun simctl boot "$simulator_udid" || true
+          xcrun simctl bootstatus "$simulator_udid" -b
+          xcrun simctl install "$simulator_udid" "$RUNNER_TEMP/output-details-build/Build/Products/Release-iphonesimulator/AQSSReadOnly.app"
+          xcrun simctl privacy "$simulator_udid" revoke microphone com.aqss.bodyguard.prototype
+          python3 - "$RUNNER_TEMP/output-details-build/Build/Products" <<'PYTHON'
+          import json, os, pathlib, plistlib, subprocess, sys
+          root = pathlib.Path(sys.argv[1])
+          original, = root.glob('*.xctestrun')
+          data = plistlib.loads(original.read_bytes())
+          info = plistlib.loads((root / 'Release-iphonesimulator/AQSSReadOnly.app/Info.plist').read_bytes())
+          targets = [v for v in data.values() if isinstance(v, dict) and v.get('IsUITestBundle')]
+          assert len(targets) == 1
+          environment = targets[0].setdefault('EnvironmentVariables', {})
+          environment['AQSS_TEST_APP_VERSION'] = info['CFBundleShortVersionString']
+          environment['AQSS_TEST_APP_BUILD'] = info['CFBundleVersion']
+          (root / 'output-details.xctestrun').write_bytes(plistlib.dumps(data))
+          output = pathlib.Path(os.environ['RUNNER_TEMP']) / 'output-details-receipts'
+          output.mkdir(exist_ok=True)
+          source = subprocess.check_output(['git', 'rev-parse', 'HEAD'], text=True).strip()
+          assert source == os.environ['GITHUB_SHA']
+          (output / 'source-identity.json').write_text(json.dumps({
+              'source_commit': source, 'source_tree': subprocess.check_output(['git', 'rev-parse', 'HEAD^{tree}'], text=True).strip(),
+              'workflow_run_id': os.environ['GITHUB_RUN_ID'], 'version': info['CFBundleShortVersionString'],
+              'build': info['CFBundleVersion'], 'scope': 'Simulator session metadata and native UI only; no physical output qualification'
+          }, indent=2) + '\n')
+          PYTHON
+      - name: Verify explicit refresh, native Cancel and lifecycle
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 tools/check_ios_build_share_clipboard.py prepare "$AQSS_SIMULATOR" --output "$RUNNER_TEMP/output-details-receipts/cancel"
+          xcodebuild test-without-building \
+            -xctestrun "$RUNNER_TEMP/output-details-build/Build/Products/output-details.xctestrun" \
+            -destination "platform=iOS Simulator,id=$AQSS_SIMULATOR" -parallel-testing-enabled NO \
+            -resultBundlePath "$RUNNER_TEMP/sound-output-details-cancel.xcresult" \
+            -only-testing:AQSSReadOnlyUITests/OutputDetailsUITests/testOutputDetailsCancelPreservesReviewedSnapshot \
+            -only-testing:AQSSReadOnlyUITests/OutputDetailsUITests/testOutputDetailsLifecycleAndLargestText
+          python3 tools/check_ios_build_share_clipboard.py cancel "$AQSS_SIMULATOR" --output "$RUNNER_TEMP/output-details-receipts/cancel"
+      - name: Verify exact native Copy of the reviewed snapshot
+        shell: bash
+        run: |
+          set -euo pipefail
+          xcodebuild test-without-building \
+            -xctestrun "$RUNNER_TEMP/output-details-build/Build/Products/output-details.xctestrun" \
+            -destination "platform=iOS Simulator,id=$AQSS_SIMULATOR" -parallel-testing-enabled NO \
+            -resultBundlePath "$RUNNER_TEMP/sound-output-details-copy.xcresult" \
+            -only-testing:AQSSReadOnlyUITests/OutputDetailsUITests/testOutputDetailsCopyMatchesActualReviewedSnapshot
+          python3 tools/check_ios_output_details_clipboard.py "$AQSS_SIMULATOR" \
+            "$RUNNER_TEMP/sound-output-details-copy.xcresult" \
+            "$RUNNER_TEMP/output-details-build/Build/Products/Release-iphonesimulator/AQSSReadOnly.app/Info.plist" \
+            "$RUNNER_TEMP/output-details-receipts/copy"
+      - name: Clear isolated clipboard fixture
+        if: always()
+        run: python3 tools/check_ios_build_share_clipboard.py clear "$AQSS_SIMULATOR" --output "$RUNNER_TEMP/output-details-receipts/cancel"
+      - name: Export native output details screenshots
+        if: always()
+        run: python3 tools/export_ios_input_screenshots.py "$RUNNER_TEMP" output-details-cancel output-details-copy
+      - name: Retain output details receipts and screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ios-output-details-${{ matrix.artifact }}-ui
+          path: |
+            ${{ runner.temp }}/sound-check-screenshots/
+            ${{ runner.temp }}/output-details-receipts/
+          if-no-files-found: error
+          retention-days: 14
+      - name: Retain native output details test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ios-output-details-${{ matrix.artifact }}-xcresult
+          path: ${{ runner.temp }}/sound-output-details-*.xcresult
+          if-no-files-found: ignore
+          retention-days: 14
