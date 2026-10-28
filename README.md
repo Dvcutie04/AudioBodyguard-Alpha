@@ -140,21 +140,27 @@ test results and installer identity belong to its draft PR.
 The [next mobile-output backend review](docs/mobile-output-backend-research-2026-10-27.md)
 records the owner's Ready confirmation, current primary-source findings,
 conditional lab recommendation and pending ownership/accounting tests. The
-actual 0.35 setup report is still needed before selecting an adapter. This
-paper review adds no native output path or new installer.
+actual 0.35 setup report remains needed for setup-specific qualification. The
+owner subsequently authorized generic implementation while the phone is away;
+the [0.36 quiet output check](docs/quiet-output-check-2026-10-27.md) now adds an
+explicit Android AudioTrack diagnostic. It uses zero-valued samples and zero
+app gain, shares an exclusion gate with microphone tools, closes admission on
+Stop or interruption, and reviews an immutable report before native Share.
+Android is 0.36/build 39; installer and validation receipts belong to its draft
+PR. The owner's hardware, physical output and protection remain unverified;
+iPhone/iPad stays 0.34.0 with signed distribution pending.
 
 The [isolated PCM16 accounting lab](native/lab/pcm16_accounting/README.md)
 implements the reviewed sample/frame/byte, partial-return and hold-accounting
 rules with synthetic Kotlin/JVM observations while the actual setup is pending.
 Its bounded source, ticket and trace checks do not select an adapter or add an
-app dependency. Android remains 0.35 and iPhone source remains 0.34.0; there is
-no new installer for this prerequisite.
+app dependency. That prerequisite itself made no app or installer change.
 
 Its [scripted run-controls extension](native/lab/pcm16_accounting/RUN_CONTROLS.md)
 models admission, fixed-domain deadlines, one delayed retry, lifecycle holds and
 cleanup quarantine. Each backend observation must be recorded before another
-operation or slot release. Native ownership, phone configuration and physical
-output remain unimplemented and unqualified.
+operation or slot release. Its scripted results do not qualify the separate
+0.36 native implementation, the phone configuration or physical output.
 
 The [callback lifetime increment](native/lab/pcm16_accounting/CALLBACK_LIFETIME.md)
 retains queued, active and child references in a bounded registry. Scripted

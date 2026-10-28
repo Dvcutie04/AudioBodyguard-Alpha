@@ -1,24 +1,23 @@
 package com.aqss.nativefeedback
 
 /** Process-local arbitration of foreground input tools; never output authority. */
-class ForegroundMicrophoneGate {
-    class Lease internal constructor()
-    companion object { val process = ForegroundMicrophoneGate() }
+class ForegroundMicrophoneGate(private val exclusion: ForegroundAudioExclusion = ForegroundAudioExclusion()) {
+    class Lease internal constructor(internal val shared: ForegroundAudioExclusion.Lease)
+    companion object { val process = ForegroundMicrophoneGate(ForegroundAudioExclusion.process) }
     private var owner: Lease? = null
-    @Volatile var blocked = false
-        private set
+    val blocked: Boolean get() = exclusion.blocked
 
     @Synchronized fun acquire(): Lease? {
         if (owner != null || blocked) return null
-        return Lease().also { owner = it }
+        val shared = exclusion.acquire(ForegroundAudioExclusion.Tool.INPUT, this) ?: return null
+        return Lease(shared).also { owner = it }
     }
 
     /** A missing/stale lease cannot release or quarantine someone else's run. */
     @Synchronized fun release(lease: Lease?, cleanupSucceeded: Boolean): Boolean {
         if (lease == null || owner !== lease || blocked) return false
-        if (!cleanupSucceeded) { blocked = true; return false }
-        owner = null
-        return true
+        if (!exclusion.release(lease.shared, cleanupSucceeded)) return false
+        owner = null; return true
     }
 }
 

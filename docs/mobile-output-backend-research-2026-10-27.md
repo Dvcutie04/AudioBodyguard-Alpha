@@ -4,8 +4,11 @@ October 27, 2026. The owner replied **Ready** after the requested model-switch
 step. This records the authorized next research increment. It completes the
 paper review described in the [preparation brief](n2b-mobile-output-review-2026-10-27.md),
 with a conditional lab recommendation and implementation obligations. The
-owner's actual 0.35 report has not been received. No adapter has been selected
-for that setup, no native output code has been added, and no trial has run.
+owner's actual 0.35 report has not been received. At the paper-review checkpoint,
+no native output code or trial was added. The owner subsequently authorized
+generic implementation before the phone arrives; see the
+[0.36 quiet output check](quiet-output-check-2026-10-27.md) for that separate
+increment. No adapter has been qualified for the owner's unobserved setup.
 
 ## Scope and decision
 
@@ -220,7 +223,10 @@ the selected Xcode/device availability before implementation.
 The bounded backend paper review is complete. The owner confirmation is
 recorded; no repeat confirmation is needed for follow-ups within this review
 or implementation of its already researched contract. The standing rule
-continues to apply to genuinely new research beyond this scope. The actual 0.35 setup report is
-still needed before choosing the adapter for the owner's setup. No 0.36 APK
-has been built. Android remains 0.35/build 38 and iPhone/iPad remains 0.34.0;
-N2b–N5, physical output/protection and signed iPhone distribution stay pending.
+continues to apply to genuinely new research beyond this scope. The owner then
+authorized implementation before the phone arrives, amending the earlier
+inventory-before-code sequence for the generic 0.36 AudioTrack diagnostic.
+Android is 0.36/build 39; exact build/validation receipts belong to its draft PR.
+The actual 0.35 report remains pending for setup-specific qualification.
+iPhone/iPad remains 0.34.0; N2b–N5, physical output/protection and signed iPhone
+distribution stay pending.

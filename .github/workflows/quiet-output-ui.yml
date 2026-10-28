@@ -1,0 +1,57 @@
+name: Quiet native output check verification
+
+on:
+  push:
+    branches: ["aqss/quiet-output-check"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: quiet-output-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  quiet-output:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: "8.13"
+      - uses: android-actions/setup-android@v4
+      - name: Compile native candidate and observer
+        run: |
+          sdkmanager "platforms;android-36"
+          gradle -p native/android :app:assembleLiveInput :uiprobe:assembleDebug :sharereceiver:assembleDebug
+      - name: Enable emulator acceleration
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+      - name: Inspect actual quiet output screen and return accounting
+        uses: reactivecircus/android-emulator-runner@a421e43855164a8197daf9d8d40fe71c6996bb0d
+        with:
+          api-level: 36
+          arch: x86_64
+          profile: pixel_5
+          emulator-options: -no-window -gpu swiftshader -no-snapshot -noaudio -no-boot-anim -delay-adb
+          script: |
+            timeout 600 python3 tools/smoke_android_live_input.py --setup-output-report-only
+            timeout 300 python3 tools/smoke_android_quiet_output.py
+      - name: Retain native observations
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: quiet-output-ui
+          path: artifacts/ui/android-live-input/
+          if-no-files-found: ignore
+          retention-days: 14

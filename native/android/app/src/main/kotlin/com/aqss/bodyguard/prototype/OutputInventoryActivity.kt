@@ -86,6 +86,13 @@ class OutputInventoryActivity : Activity() {
             text = "Refresh outputs"; skin.style(this, primary = true)
             setOnClickListener { refreshOutputs() }
         }, LinearLayout.LayoutParams(-1, -2))
+        if (packageName == "com.aqss.bodyguard.prototype.liveinput") root.addView(Button(this).apply {
+            text = "Quiet output check"; skin.style(this)
+            setOnClickListener {
+                if (visible && hasWindowFocus() && !isFinishing && !isDestroyed)
+                    startActivity(Intent(this@OutputInventoryActivity, QuietOutputCheckActivity::class.java).putExtra("dark", skin.dark))
+            }
+        }, LinearLayout.LayoutParams(-1, -2))
         setContentView(root)
         root.setOnApplyWindowInsetsListener { view, insets ->
             if (Build.VERSION.SDK_INT >= 30) {
