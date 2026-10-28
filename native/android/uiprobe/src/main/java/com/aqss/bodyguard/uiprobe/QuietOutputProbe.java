@@ -113,10 +113,20 @@ public final class QuietOutputProbe extends CameraCaptureProbe {
     }
     private void recreateQuiet() {
         Activity original = activity;
+        waitForIdleSync(); focus(original);
         ActivityMonitor monitor = addMonitor("com.aqss.bodyguard.prototype.QuietOutputCheckActivity", null, false);
-        runOnMainSync(original::recreate);
-        Activity replacement = waitForMonitorWithTimeout(monitor, 5000); removeMonitor(monitor);
-        require(replacement != null && replacement != original, "Quiet screen recreation missing");
+        Activity replacement = null;
+        long end = SystemClock.uptimeMillis() + 10000;
+        try {
+            runOnMainSync(original::recreate);
+            while (SystemClock.uptimeMillis() < end) {
+                Activity candidate = waitForMonitorWithTimeout(monitor, Math.max(1, end - SystemClock.uptimeMillis()));
+                // An outstanding resume event can describe the original activity.
+                // It is not evidence that the requested recreation completed.
+                if (candidate != null && candidate != original) { replacement = candidate; break; }
+            }
+        } finally { removeMonitor(monitor); }
+        require(replacement != null, "No distinct quiet activity observed after recreation");
         activity = replacement; waitForIdleSync(); focus(replacement);
     }
     private void guidanceLifecycle(Activity inventory, Object capture, String frozen, Bundle receipt) throws Exception {
@@ -328,11 +338,7 @@ public final class QuietOutputProbe extends CameraCaptureProbe {
 
             phase = "configuration retention";
             Object capture = read(activity, "capture");
-            ActivityMonitor rotate = addMonitor("com.aqss.bodyguard.prototype.QuietOutputCheckActivity", null, false);
-            runOnMainSync(() -> activity.recreate());
-            Activity replacement = waitForMonitorWithTimeout(rotate, 5000); removeMonitor(rotate);
-            require(replacement != null && replacement != activity, "Activity recreation missing");
-            activity = replacement; waitForIdleSync(); focus(activity);
+            recreateQuiet();
             require(read(activity, "capture") == capture, "Rotation replaced the completed run with new work");
             press("Review check report");
             AlertDialog restored = (AlertDialog) read(activity, "reportDialog");

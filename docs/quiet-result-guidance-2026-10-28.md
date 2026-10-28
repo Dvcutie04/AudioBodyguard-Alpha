@@ -78,6 +78,19 @@ assertions. This corrects the test interaction, not the application's focus
 guard, sharing implementation or audio worker. Final delivery requires the
 subsequent complete APK run.
 
+The focus-corrected focused run `40773895314` subsequently failed in the
+older configuration-retention observer before reaching the new blocked-share
+interaction. That observer accepted the first monitor result after requesting
+recreation. A separate observer-only continuation waits for the old window to
+regain focus and then observes a distinct recreated Activity within a bounded
+ten-second test window, ignoring a late resume event for the old instance.
+The distinct-instance, retained-capture and exact-report assertions remain.
+This changes only the observer/workflow and this note; Android application,
+core model, resources, dependencies and versions remain identical. The APK's
+full run is allowed to finish independently. Delivery records must distinguish
+the APK source from any later observer source and check their application trees
+for equality rather than silently treating different revisions as one.
+
 No quiet-check source samples, gain, budget, retry policy, trace, native API,
 permission, resource ownership or cleanup sequence changes. The original
 report schema and raw ending reason remain available. The work implements
