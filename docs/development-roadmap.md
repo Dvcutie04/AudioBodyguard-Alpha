@@ -6,6 +6,14 @@ Checkpoint: October 27, 2026. Continue from the restored a-Shell baseline and th
 
 ## Current checkpoint
 
+October 27 report preflight: the
+[iPhone/iPad clock boundary checks](ios-report-clock-checks-2026-10-27.md)
+cover epoch/millisecond/date limits and distinct notes versus snapshot clocks.
+The existing implementation passed; two additional Foundation cases preserve
+that behavior without an app-code or version change. iOS remains 0.38.0/build 1
+and Android's delivered APK remains 0.37/build 40. Physical qualification and
+signed iPhone delivery remain pending; exact receipts belong to the draft PR.
+
 October 27 continued phone-independent preparation: the
 [private mobile report intake](mobile-setup-intake-2026-10-27.md) checks the
 shared worksheet against expected app labels and retains the exact source

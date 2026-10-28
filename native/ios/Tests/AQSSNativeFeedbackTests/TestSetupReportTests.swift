@@ -70,4 +70,31 @@ final class TestSetupReportTests: XCTestCase {
             XCTAssertLessThanOrEqual(text.utf8.count, TestSetupReportSnapshot.maxUTF8Bytes)
         }
     }
+
+    func testNotesClockKeepsExactMillisecondsAcrossItsSupportedRange() throws {
+        let cases: [(Int64, String)] = [
+            (0, "1970-01-01T00:00:00.000Z"),
+            (1, "1970-01-01T00:00:00.001Z"),
+            (999, "1970-01-01T00:00:00.999Z"),
+            (1000, "1970-01-01T00:00:01.000Z"),
+            (253_402_300_799_001, "9999-12-31T23:59:59.001Z"),
+            (253_402_300_799_999, "9999-12-31T23:59:59.999Z"),
+        ]
+        for (milliseconds, expected) in cases {
+            XCTAssertTrue(try report(time: milliseconds).text.hasPrefix(
+                "Audio Bodyguard test setup (v1)\nNotes reviewed at (phone clock, UTC): \(expected)\n\n"), expected)
+        }
+    }
+
+    func testCombinedNotesAndSnapshotClocksStayExactAndSeparateAtTheUpperBound() throws {
+        let output = try OutputDetailsSnapshot.capture(buildDetails: build, osVersion: "26.0",
+            portTypes: [], totalReported: 0, capturedAtMillis: 253_402_300_799_000)
+        let combined = try TestSetupReportSnapshot.capture(buildDetails: build, notes: [:],
+            reviewedAtMillis: 253_402_300_799_999, outputDetails: output)
+        XCTAssertTrue(combined.text.contains("Notes reviewed at (phone clock, UTC): 9999-12-31T23:59:59.999Z"))
+        XCTAssertTrue(combined.text.hasSuffix(output.text))
+        XCTAssertTrue(output.text.contains("Captured at (phone clock, UTC): 9999-12-31T23:59:59.000Z"))
+        XCTAssertEqual(output.capturedAtMillis, 253_402_300_799_000)
+        XCTAssertTrue(combined.text.contains("Physical output and protection: Not verified"))
+    }
 }
