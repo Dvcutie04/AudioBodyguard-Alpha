@@ -173,6 +173,9 @@ public final class QuietOutputProbe extends CameraCaptureProbe {
             press("Start quiet check"); Object busy = completed();
             require(!((Boolean) get(busy, "getAllocationEntered")), "Busy input allocated a native track");
             require(((List<?>) get(busy, "getTrace")).isEmpty(), "Busy admission entered backend work");
+            waitForText("Another audio tool is running or closing. Stop it and wait for it to close before tapping Start.");
+            require(((TextView) read(activity, "status")).getText().toString().contains("wait for it to close"),
+                    "Busy guidance did not distinguish stopping from completed cleanup");
             shot("quiet-output-busy");
             phase = "denied-admission report";
             press("Review check report");
