@@ -11,7 +11,7 @@ class QuietOutputCheckTest {
         val calls = mutableListOf<QuietOperation>()
         val slices = mutableListOf<Pair<Int, List<Short>>>()
         val returns = java.util.ArrayDeque<Int>()
-        var focus = true
+        var focus = 1
         var minimum = 512
         var gain = 0
         var configured = QuietOutputFormat(true, 48000, 1, true, 256, 256)
@@ -26,10 +26,10 @@ class QuietOutputCheckTest {
             if (fail == op) throw IllegalStateException("scripted API exception")
         }
         override fun minimumBufferBytes(): Int { enter(QuietOperation.MINIMUM); return minimum }
-        override fun requestFocus(): Boolean { enter(QuietOperation.FOCUS); return focus }
+        override fun requestFocus(): Int { enter(QuietOperation.FOCUS); return focus }
         override fun open(bufferBytes: Int) { enter(QuietOperation.OPEN); check(bufferBytes in 512..262144); owned = this }
         override fun retireCallbacks() { enter(QuietOperation.RETIRE) }
-        override fun abandonFocus(): Boolean { enter(QuietOperation.ABANDON); return true }
+        override fun abandonFocus(): Int { enter(QuietOperation.ABANDON); return 1 }
         override fun format(): QuietOutputFormat { enter(QuietOperation.FORMAT); return configured }
         override fun zeroGain(): Int { enter(QuietOperation.ZERO_GAIN); return gain }
         override fun watchRoute() { enter(QuietOperation.WATCH) }
@@ -97,7 +97,7 @@ class QuietOutputCheckTest {
     }
 
     @Test fun deniedFocusCannotAllocateOrPlayAndNeverStartsLater() {
-        val port = Port().apply { focus = false }; val control = QuietOutputControl()
+        val port = Port().apply { focus = 0 }; val control = QuietOutputControl()
         val result = check(port, control = control).execute()
         assertEquals(QuietStop.FOCUS_DENIED, result.reason)
         assertFalse(port.calls.contains(QuietOperation.OPEN))
@@ -205,7 +205,7 @@ class QuietOutputCheckTest {
     @Test fun deadlineClockRollbackAndOverflowNeverCreateFurtherNativeWork() {
         for (mode in 0..2) {
             val port = Port(); var now = if (mode == 2) Long.MAX_VALUE else 100L
-            if (mode < 2) port.hook = { if (it == QuietOperation.ZERO_GAIN) now = if (mode == 0) 600 else 99 }
+            if (mode < 2) port.hook = { if (it == QuietOperation.ZERO_GAIN) now = if (mode == 0) 2100 else 99 }
             val result = check(port, clock = { now }).execute()
             assertFalse(port.calls.contains(QuietOperation.PLAY))
             assertFalse(port.calls.contains(QuietOperation.WRITE))
