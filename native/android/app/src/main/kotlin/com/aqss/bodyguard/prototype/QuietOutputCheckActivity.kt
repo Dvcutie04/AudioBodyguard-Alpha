@@ -148,10 +148,11 @@ class QuietOutputCheckActivity : Activity() {
         val header = LinearLayout(this)
         header.addView(TextView(this).apply { text = "Review check report"; textSize = 21f; setTextColor(skin.text) }, LinearLayout.LayoutParams(0, -2, 1f))
         val share = Button(this).apply { text = "Share check report"; skin.style(this, primary = true) }
+        val addNotes = Button(this).apply { text = "Add setup notes"; skin.style(this) }
         val dialog = object : AlertDialog(this) {
             override fun onWindowFocusChanged(hasFocus: Boolean) {
                 super.onWindowFocusChanged(hasFocus)
-                if (hasFocus && visible && isShowing) share.isEnabled = true
+                if (hasFocus && visible && isShowing) { share.isEnabled = true; addNotes.isEnabled = true }
             }
         }
         header.addView(roseButton(this, skin, "Back", compact = true) { dialog.dismiss() })
@@ -160,7 +161,12 @@ class QuietOutputCheckActivity : Activity() {
             text = report.text; textSize = 15f; setTextColor(skin.text); setTextIsSelectable(true)
             tag = "quiet-output-report-preview"; setPadding(0, skin.dp(12), 0, skin.dp(12))
         }
-        root.addView(ScrollView(this).apply { addView(preview) }, LinearLayout.LayoutParams(-1, 0, 1f))
+        val reportColumn = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            addView(addNotes, LinearLayout.LayoutParams(-1, -2))
+            addView(preview, LinearLayout.LayoutParams(-1, -2))
+        }
+        root.addView(ScrollView(this).apply { addView(reportColumn) }, LinearLayout.LayoutParams(-1, 0, 1f))
         root.addView(TextView(this).apply {
             text = QuietOutputReportSnapshot.NOTICE; textSize = 14f; setTextColor(skin.text)
             setPadding(0, skin.dp(8), 0, skin.dp(8))
@@ -180,6 +186,17 @@ class QuietOutputCheckActivity : Activity() {
                 share.isEnabled = true
                 if (error !is ActivityNotFoundException && error !is SecurityException) throw error
                 Toast.makeText(this, "Sharing is unavailable. You can read the report shown here.", Toast.LENGTH_LONG).show()
+            }
+        }
+        addNotes.setOnClickListener {
+            if (!visible || isFinishing || isDestroyed || !dialog.isShowing || !addNotes.isEnabled ||
+                dialog.window?.decorView?.hasWindowFocus() != true) return@setOnClickListener
+            addNotes.isEnabled = false
+            try { TestSetupActivity.openWithQuiet(this, skin.dark, report) }
+            catch (error: RuntimeException) {
+                addNotes.isEnabled = true
+                if (error !is ActivityNotFoundException && error !is SecurityException) throw error
+                Toast.makeText(this, "Setup notes are unavailable. You can still read or share this check report.", Toast.LENGTH_LONG).show()
             }
         }
         reportDialog = dialog; dialog.show()

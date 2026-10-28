@@ -50,7 +50,7 @@ def main():
             assert f"Version: {version}\nBuild: {build}" in report
             assert joined.endswith(report), "Combined report differs from its original quiet snapshot"
             assert "Physical output and protection: Not verified" in report
-            assert version == "0.36-quiet-output-live-input" and build == "39"
+            assert version == "0.37-quiet-setup-live-input" and build == "40"
             (out / f"quiet-output-{label}-report.txt").write_text(report)
             for name in ("busy", "main", "report", "rotated"):
                 (out / f"quiet-output-{label}-{name}.png").write_bytes(

@@ -20,8 +20,11 @@ class TestSetupReportSnapshot private constructor(val text: String) {
         const val MAX_UTF8_BYTES = 8 * 1024
         const val MAX_COMBINED_CHARACTERS = 32 * 1024
         const val MAX_COMBINED_UTF8_BYTES = 64 * 1024
+        const val MAX_QUIET_COMBINED_CHARACTERS = 48 * 1024
+        const val MAX_QUIET_COMBINED_UTF8_BYTES = 48 * 1024
         const val NOTICE = "Setup notes only. Nothing is verified."
         const val OUTPUT_NOTICE = "Snapshot only. Outputs may have changed."
+        const val QUIET_NOTICE = "Framework check only. Sound and protection are not verified."
         private const val MAX_CLOCK = 253_402_300_799_999L
         private val utc = DateTimeFormatterBuilder().appendInstant(3).toFormatter()
 
@@ -31,7 +34,8 @@ class TestSetupReportSnapshot private constructor(val text: String) {
         }
 
         fun capture(buildDetails: String, notes: Map<TestSetupField, String>, reviewedAtMillis: Long,
-                    outputReport: OutputInventoryReportSnapshot? = null): TestSetupReportSnapshot {
+                    outputReport: OutputInventoryReportSnapshot? = null,
+                    quietReport: QuietOutputReportSnapshot? = null): TestSetupReportSnapshot {
             require(buildDetails.length <= 512) { "Bounded installed-build envelope required" }
             val lines = buildDetails.split('\n')
             require(lines.size == 4 && lines[0] == "Audio Bodyguard" && lines[1] == "Platform: Android" &&
@@ -42,8 +46,10 @@ class TestSetupReportSnapshot private constructor(val text: String) {
             require(build.matches(Regex("[0-9]{1,19}|Unavailable"))) { "Invalid installed build" }
             require(reviewedAtMillis in 0..MAX_CLOCK) { "Unavailable phone clock" }
             require(outputReport == null || outputReport.buildDetails == buildDetails) { "Output snapshot must match the installed build" }
+            require(quietReport == null || quietReport.buildDetails == buildDetails) { "Quiet report must match the installed build" }
+            require(outputReport == null || quietReport == null) { "One typed attachment per worksheet" }
             val text = buildString {
-                append("Audio Bodyguard test setup (v1)\n")
+                append(if (quietReport == null) "Audio Bodyguard test setup (v1)\n" else "Audio Bodyguard test setup (v2)\n")
                 append("Notes reviewed at (phone clock, UTC): ${utc.format(Instant.ofEpochMilli(reviewedAtMillis))}\n\n")
                 append(buildDetails); append("\n\nYour notes (not verified)")
                 for (field in TestSetupField.entries) {
@@ -58,9 +64,14 @@ class TestSetupReportSnapshot private constructor(val text: String) {
                 append("\n\n$NOTICE\nThis worksheet does not authorize playback or recording.")
             }
             require(text.length <= MAX_CHARACTERS && text.toByteArray(Charsets.UTF_8).size <= MAX_UTF8_BYTES) { "Setup report exceeds its text bound" }
-            val combined = if (outputReport == null) text else text +
-                "\n\nAttached output snapshot\n$OUTPUT_NOTICE\n\n" + outputReport.text
-            require(combined.length <= MAX_COMBINED_CHARACTERS && combined.toByteArray(Charsets.UTF_8).size <= MAX_COMBINED_UTF8_BYTES) { "Combined report exceeds its text bound" }
+            val combined = when {
+                outputReport != null -> text + "\n\nAttached output snapshot\n$OUTPUT_NOTICE\n\n" + outputReport.text
+                quietReport != null -> text + "\n\nAttached quiet check report\n$QUIET_NOTICE\n\n" + quietReport.text
+                else -> text
+            }
+            val characterLimit = if (quietReport == null) MAX_COMBINED_CHARACTERS else MAX_QUIET_COMBINED_CHARACTERS
+            val byteLimit = if (quietReport == null) MAX_COMBINED_UTF8_BYTES else MAX_QUIET_COMBINED_UTF8_BYTES
+            require(combined.length <= characterLimit && combined.toByteArray(Charsets.UTF_8).size <= byteLimit) { "Combined report exceeds its text bound" }
             return TestSetupReportSnapshot(combined)
         }
 
