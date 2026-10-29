@@ -69,9 +69,9 @@ public final class SoundAvailabilityProbe extends CameraCaptureProbe {
     private AccessibilityNodeInfo node(AccessibilityNodeInfo root, String text, boolean prefix) {
         if (root == null) return null;
         CharSequence value = root.getText();
-        if (value != null && (prefix ? value.toString().startsWith(text) : text.contentEquals(value))) return root;
+        if (value != null && (prefix ? value.toString().startsWith(text) : text.equalsIgnoreCase(value.toString()))) return root;
         CharSequence description = root.getContentDescription();
-        if (!prefix && description != null && text.contentEquals(description)) return root;
+        if (!prefix && description != null && text.equalsIgnoreCase(description.toString())) return root;
         for (int i = 0; i < root.getChildCount(); i++) {
             AccessibilityNodeInfo found = node(root.getChild(i), text, prefix); if (found != null) return found;
         }

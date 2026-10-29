@@ -81,5 +81,11 @@ that description and scrolls backward to the header after a long report, while
 retaining actual visible/enabled button clicks, exact sharing and quarantine
 assertions. This is an observer correction; application navigation and sharing
 are unchanged. Subsequent complete source-bound checks are required.
+The corrected Back observation subsequently passed, and focused run
+`40794031438` reached the Recent sound checks dialog before its case-sensitive
+lookup missed Android's rendered `CLEAR RECAPS` label. Control lookup now
+accepts the framework's capitalization; report-prefix and exact shared-byte
+assertions remain case-sensitive. `Close` uses the same system-button rule.
+This also changes only the observer and this evidence note.
 N2b–N5 qualification, actual phone reports and signed iPhone delivery remain
 pending. No connection, continuous protection or physical silence is inferred.
