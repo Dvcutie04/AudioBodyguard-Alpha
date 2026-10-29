@@ -70,6 +70,8 @@ public final class SoundAvailabilityProbe extends CameraCaptureProbe {
         if (root == null) return null;
         CharSequence value = root.getText();
         if (value != null && (prefix ? value.toString().startsWith(text) : text.contentEquals(value))) return root;
+        CharSequence description = root.getContentDescription();
+        if (!prefix && description != null && text.contentEquals(description)) return root;
         for (int i = 0; i < root.getChildCount(); i++) {
             AccessibilityNodeInfo found = node(root.getChild(i), text, prefix); if (found != null) return found;
         }
@@ -84,19 +86,22 @@ public final class SoundAvailabilityProbe extends CameraCaptureProbe {
         }
         throw new AssertionError("Missing active-window text: " + text);
     }
-    private boolean scroll(AccessibilityNodeInfo root) {
+    private boolean scroll(AccessibilityNodeInfo root, boolean backward) {
         if (root == null) return false;
-        for (int i = 0; i < root.getChildCount(); i++) if (scroll(root.getChild(i))) return true;
-        return root.isScrollable() && root.performAction(AccessibilityNodeInfo.ACTION_SCROLL_FORWARD);
+        for (int i = 0; i < root.getChildCount(); i++) if (scroll(root.getChild(i), backward)) return true;
+        return root.isScrollable() && root.performAction(backward ? AccessibilityNodeInfo.ACTION_SCROLL_BACKWARD : AccessibilityNodeInfo.ACTION_SCROLL_FORWARD);
     }
     private void pressWindow(String text) {
+        pressWindow(text, false);
+    }
+    private void pressWindow(String text, boolean backward) {
         for (int attempt = 0; attempt < 12; attempt++) {
             AccessibilityNodeInfo root = getUiAutomation().getRootInActiveWindow();
             AccessibilityNodeInfo control = node(root, text, false);
             if (control != null && control.isVisibleToUser() && control.isEnabled() && control.performAction(AccessibilityNodeInfo.ACTION_CLICK)) {
                 waitForIdleSync(); return;
             }
-            scroll(root); SystemClock.sleep(100);
+            scroll(root, backward); SystemClock.sleep(100);
         }
         throw new AssertionError("Active-window button unavailable: " + text);
     }
@@ -182,7 +187,7 @@ public final class SoundAvailabilityProbe extends CameraCaptureProbe {
             removeMonitor(share); share = null;
             require(frozen.equals(waitNode("Audio Bodyguard\nPlatform: Android\n", true).getText().toString()), "Cancelled sharing changed historical report");
             shot("sound-availability-report");
-            pressWindow("Back"); pressWindow("Clear recaps"); pressWindow("Close"); focus();
+            pressWindow("Back", true); pressWindow("Clear recaps"); pressWindow("Close"); focus();
             require(((List<?>) get(recaps, "snapshot")).isEmpty(), "Clear recaps did not clear presentation rows");
             require((Boolean) get(gate, "getBlocked"), "Review, Share or Clear released quarantine");
             require(!((Button) read(activity, "start")).isEnabled() && read(activity, "capture") == null, "Report action restarted microphone work");

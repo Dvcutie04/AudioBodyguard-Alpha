@@ -73,5 +73,13 @@ unit tests, lint, source/signature/artwork checks and observer exclusion.
 
 Final source/run identities, observed counts, visual review and APK bytes/hash
 belong to the draft PR and delivery checkpoint after those checks complete.
+The first implementation's core Android checks passed. Its focused run
+`40793282194` reached the exact historical support sharing checks, then failed
+on the observer's report Back lookup. The existing compact button exposes
+`Back` as its accessibility description, with no text. The observer now matches
+that description and scrolls backward to the header after a long report, while
+retaining actual visible/enabled button clicks, exact sharing and quarantine
+assertions. This is an observer correction; application navigation and sharing
+are unchanged. Subsequent complete source-bound checks are required.
 N2b–N5 qualification, actual phone reports and signed iPhone delivery remain
 pending. No connection, continuous protection or physical silence is inferred.
