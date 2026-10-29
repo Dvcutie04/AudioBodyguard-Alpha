@@ -79,7 +79,7 @@ def main():
             assert f"Version: {version}\nBuild: {build}" in report
             assert joined.endswith(report), "Combined report differs from its original quiet snapshot"
             assert "Physical output and protection: Not verified" in report
-            assert version == "0.39-quiet-guidance-live-input" and build == "42"
+            assert version == "0.40-sound-cleanup-live-input" and build == "43"
             (out / f"quiet-output-{label}-report.txt").write_text(report)
             intake = verify_native_setup_intake(out / f"quiet-setup-{label}-report.txt",
                 out / f"quiet-setup-{label}-intake", platform="Android", version=version,
