@@ -11,8 +11,8 @@ android {
         applicationId = "com.aqss.bodyguard.prototype"
         minSdk = 26
         targetSdk = 36
-        versionCode = 42
-        versionName = "0.39-quiet-guidance"
+        versionCode = 43
+        versionName = "0.40-sound-cleanup"
     }
 
     buildTypes {

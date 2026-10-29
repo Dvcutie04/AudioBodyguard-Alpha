@@ -45,8 +45,8 @@ internal class MicrophoneCapture(context: Context) {
         val reservation = gate.acquire()
         if (reservation == null) {
             cleanupFailed = gate.blocked
-            result.set(End(if (gate.blocked) SoundCheckEnd.CLEANUP_FAILED else SoundCheckEnd.INPUT_UNAVAILABLE, if (gate.blocked) "Audio cleanup is unresolved. Force stop this app in Android Settings before trying again."
-                else "Another audio tool is running or closing. Stop it, then tap Start."))
+            result.set(End(if (cleanupFailed) SoundCheckEnd.CLEANUP_FAILED else SoundCheckEnd.INPUT_UNAVAILABLE,
+                if (cleanupFailed) MicrophoneAvailabilityGuidance.BLOCKED else MicrophoneAvailabilityGuidance.BUSY))
             completed.set(true)
             return
         }
@@ -164,7 +164,7 @@ internal class MicrophoneCapture(context: Context) {
                     try { audio.stop() } catch (_: Exception) {}
                     try { audio.release() } catch (_: Exception) {
                         cleanupFailed = true
-                        result.set(End(SoundCheckEnd.CLEANUP_FAILED, "Microphone cleanup failed. Force stop this app in Android Settings before trying again."))
+                        result.set(End(SoundCheckEnd.CLEANUP_FAILED, MicrophoneAvailabilityGuidance.BLOCKED))
                     }
                 }
             }

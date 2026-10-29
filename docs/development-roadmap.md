@@ -6,6 +6,14 @@ Checkpoint: October 28, 2026. Continue from the restored a-Shell baseline and th
 
 ## Current checkpoint
 
+October 28 owner-requested 0.40: [microphone cleanup guidance](sound-cleanup-guidance-2026-10-28.md)
+observes app-owned audio availability before a microphone permission prompt,
+explains waiting for occupied cleanup and preserves Recent sound checks/report
+actions during quarantine. Only native acquire/release admit audio work; only
+a new explicit Start may retry. Android candidate is build 43. Final checks and
+installer identity belong to its draft PR and delivery checkpoint. iPhone/iPad
+source remains 0.38.0/build 1; phone/signing and N2b–N5 gates remain pending.
+
 October 28 owner-requested 0.39: [quiet-check result guidance](quiet-result-guidance-2026-10-28.md)
 adds distinct next steps for the existing ending reasons and asks owners to
 preserve available reports before force-stop recovery. Current quarantine or

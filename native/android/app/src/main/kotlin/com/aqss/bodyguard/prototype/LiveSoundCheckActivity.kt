@@ -18,6 +18,7 @@ import com.aqss.nativefeedback.SoundCheckWindow
 import com.aqss.nativefeedback.SoundCheckEnd
 import com.aqss.nativefeedback.SoundCheckRecaps
 import com.aqss.nativefeedback.PrivateSupportReportSnapshot
+import com.aqss.nativefeedback.ForegroundAudioExclusion
 import java.util.Locale
 
 /** Real microphone input display; no output actuation or protective-state authority. */
@@ -38,6 +39,7 @@ class LiveSoundCheckActivity : Activity() {
     private var visible = false
     private var stopping = false
     private var permissionGuidance = false
+    private var availabilityGuidance = false
     private val permissionDeniedMessage = "Microphone permission denied. In app settings, choose Permissions, then Microphone."
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -112,11 +114,34 @@ class LiveSoundCheckActivity : Activity() {
 
     override fun onResume() {
         super.onResume(); visible = true
-        if (permissionGuidance) refreshPermissionGuidance()
+        if (!showAudioUnavailable() && permissionGuidance) refreshPermissionGuidance()
         if (capture != null) handler.post(tick)
     }
 
+    /** Observes only. A later explicit Start must still win native admission. */
+    private fun showAudioUnavailable(): Boolean {
+        if (capture?.completed?.get() == false) return false
+        val state = ForegroundAudioExclusion.process.state
+        if (state == ForegroundAudioExclusion.State.AVAILABLE) {
+            if (availabilityGuidance) {
+                availabilityGuidance = false
+                status.text = "Microphone off"
+            }
+            return false
+        }
+        availabilityGuidance = true
+        permissionGuidance = false
+        permissionSettings.visibility = View.GONE
+        status.text = if (state == ForegroundAudioExclusion.State.BLOCKED)
+            MicrophoneAvailabilityGuidance.BLOCKED else MicrophoneAvailabilityGuidance.BUSY
+        start.text = "Start sound check"
+        start.isEnabled = state != ForegroundAudioExclusion.State.BLOCKED
+        recent.isEnabled = true
+        return true
+    }
+
     private fun refreshPermissionGuidance() {
+        if (showAudioUnavailable()) return
         val granted = checkSelfPermission(Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED
         permissionSettings.visibility = if (permissionGuidance && !granted && capture == null) View.VISIBLE else View.GONE
         if (!permissionGuidance || capture != null) return
@@ -125,6 +150,7 @@ class LiveSoundCheckActivity : Activity() {
 
     private fun openPermissionSettings() {
         if (!permissionGuidance || !visible || !hasWindowFocus() || isFinishing || isDestroyed || capture != null) return
+        if (showAudioUnavailable()) return
         if (checkSelfPermission(Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED) {
             refreshPermissionGuidance(); return
         }
@@ -138,6 +164,7 @@ class LiveSoundCheckActivity : Activity() {
 
     private fun startCapture() {
         if (!visible || !hasWindowFocus() || capture != null) return
+        if (showAudioUnavailable()) return
         if (checkSelfPermission(Manifest.permission.RECORD_AUDIO) != PackageManager.PERMISSION_GRANTED) {
             permissionGuidance = true
             requestPermissions(arrayOf(Manifest.permission.RECORD_AUDIO), 73); return
@@ -162,7 +189,7 @@ class LiveSoundCheckActivity : Activity() {
         capture?.let {
             stopping = true; it.stop(reason, message); status.text = "Stopping microphone…"
             start.isEnabled = false
-        } ?: run { status.text = message }
+        } ?: run { status.text = message; showAudioUnavailable() }
     }
 
     private val tick = object : Runnable {

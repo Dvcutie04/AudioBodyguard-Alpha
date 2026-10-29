@@ -114,6 +114,13 @@ rows that would silently lose words. All 51 routes / 436 offline diagrams are
 regenerated; native app versions remain unchanged. A separate PDF companion
 makes the existing directions available for review without an Android phone.
 
+The [Android 0.40 microphone cleanup guidance](docs/sound-cleanup-guidance-2026-10-28.md)
+explains audio availability before requesting microphone permission, asks owners
+to wait for an occupied tool to close, and keeps historical report actions
+available during cleanup quarantine. Only explicit Start can retry; the native
+gate still admits every owner. Android candidate is build 43; iPhone/iPad source
+remains 0.38.0/build 1. Physical qualification and signing remain pending.
+
 The [Android 0.39 result guidance](docs/quiet-result-guidance-2026-10-28.md)
 explains quiet-check interruptions and failures, preserves report access before
 force-stop recovery, and keeps Start disabled during retained closing or
