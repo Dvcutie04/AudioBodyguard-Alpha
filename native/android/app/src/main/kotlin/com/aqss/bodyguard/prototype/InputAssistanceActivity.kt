@@ -17,6 +17,7 @@ import com.aqss.nativefeedback.PhotoWorkSlot
 import com.aqss.nativefeedback.boundedTVPhotoText
 import com.aqss.nativefeedback.TutorialContent
 import com.aqss.nativefeedback.ForegroundMicrophoneGate
+import com.aqss.nativefeedback.ForegroundAudioExclusion
 import com.aqss.nativefeedback.VoiceInputRun
 import com.aqss.nativefeedback.boundedRecognizedWords
 import com.google.mlkit.vision.common.InputImage
@@ -46,7 +47,9 @@ class InputAssistanceActivity : Activity() {
     private var visible = false
     private var running = false
     private var permissionGuidance = false
+    private var availabilityGuidance = false
     private var permissionSettingsButton: Button? = null
+    private var recent: Button? = null
     private val microphoneDeniedMessage = "Microphone permission denied. In app settings, choose Permissions, then Microphone."
     private var lastLevelAt = 0L
     private val photoRun = PhotoReviewRun(SystemClock::elapsedRealtime)
@@ -123,6 +126,10 @@ class InputAssistanceActivity : Activity() {
         label("Digital input levels over time, when available on your phone.")
         label("Recent recognized words · may change", true)
         details = label("No words recognized yet")
+        recent = action("Recent sound checks") {
+            if (visible && hasWindowFocus() && !isFinishing && !isDestroyed &&
+                !running && recognizer == null && microphone.blocked) showRecentSoundChecks(this, skin)
+        }.apply { visibility = View.GONE }
         startButton = action("Start voice check", primary = true) { if (running) stopVoice() else startVoice() }
         val clear = action("Clear words") { stopVoice(); details.text = "No words recognized yet" }
         column.removeView(startButton); column.removeView(clear)
@@ -133,7 +140,7 @@ class InputAssistanceActivity : Activity() {
     private fun startVoice() {
         if (!visible || !hasWindowFocus() || isFinishing) return
         stopVoice(); details.text = "No words recognized yet"
-        if (microphone.blocked) return
+        if (showVoiceAudioUnavailable()) return
         if (checkSelfPermission(Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED) {
             permissionGuidance = false; permissionSettingsButton?.visibility = View.GONE
         }
@@ -150,7 +157,8 @@ class InputAssistanceActivity : Activity() {
         }
         val reservation = microphone.acquire()
         if (reservation == null) {
-            status.text = "Another audio tool is running or closing. Stop it, then tap Start."; return
+            if (!showVoiceAudioUnavailable()) status.text = MicrophoneAvailabilityGuidance.BUSY
+            return
         }
         microphoneLease = reservation
         val token = voiceRun.start(SystemClock.elapsedRealtime())
@@ -226,8 +234,32 @@ class InputAssistanceActivity : Activity() {
         stopVoice(message)
         return false
     }
+    /** Presentation only. A later explicit Start must still acquire native ownership. */
+    private fun showVoiceAudioUnavailable(): Boolean {
+        if (!isVoice || !::startButton.isInitialized || running || recognizer != null) return false
+        val state = ForegroundAudioExclusion.process.state
+        if (state == ForegroundAudioExclusion.State.AVAILABLE) {
+            recent?.visibility = View.GONE
+            if (availabilityGuidance) {
+                availabilityGuidance = false
+                status.text = "Microphone off"
+            }
+            return false
+        }
+        availabilityGuidance = true
+        permissionGuidance = false
+        permissionSettingsButton?.visibility = View.GONE
+        status.text = if (state == ForegroundAudioExclusion.State.BLOCKED)
+            MicrophoneAvailabilityGuidance.BLOCKED else MicrophoneAvailabilityGuidance.BUSY
+        startButton.text = "Start voice check"
+        startButton.isEnabled = state != ForegroundAudioExclusion.State.BLOCKED
+        recent?.apply { visibility = if (state == ForegroundAudioExclusion.State.BLOCKED) View.VISIBLE else View.GONE; isEnabled = true }
+        meter.clear(); lastLevelAt = 0; levelText.text = "No live microphone samples"
+        return true
+    }
     private fun refreshVoicePermissionGuidance() {
-        if (!isVoice || !permissionGuidance || !::status.isInitialized || isDestroyed || isFinishing) return
+        if (!isVoice || !::status.isInitialized || isDestroyed || isFinishing) return
+        if (showVoiceAudioUnavailable() || !permissionGuidance) return
         if (running || recognizer != null || microphone.blocked) {
             permissionSettingsButton?.visibility = View.GONE; return
         }
@@ -238,7 +270,8 @@ class InputAssistanceActivity : Activity() {
     }
     private fun openVoicePermissionSettings() {
         if (!visible || !hasWindowFocus() || !isVoice || running || recognizer != null ||
-            microphone.blocked || isDestroyed || isFinishing) return
+            isDestroyed || isFinishing) return
+        if (showVoiceAudioUnavailable()) return
         if (checkSelfPermission(Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED) {
             refreshVoicePermissionGuidance(); return
         }
@@ -262,8 +295,9 @@ class InputAssistanceActivity : Activity() {
         microphone.release(microphoneLease, cleanupSucceeded = clean); microphoneLease = null
         if (::startButton.isInitialized) {
             startButton.text = "Start voice check"; startButton.isEnabled = !microphone.blocked
-            status.text = if (microphone.blocked) "Audio cleanup is unresolved. Force stop this app in Android Settings before trying again." else message
+            status.text = message
             meter.clear(); lastLevelAt = 0; levelText.text = "No live microphone samples"
+            showVoiceAudioUnavailable()
         }
     }
     override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<out String>, grantResults: IntArray) {

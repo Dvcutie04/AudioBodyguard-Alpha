@@ -6,6 +6,14 @@ Checkpoint: October 28, 2026. Continue from the restored a-Shell baseline and th
 
 ## Current checkpoint
 
+October 28 owner-requested 0.41: [Voice cleanup recovery](voice-cleanup-guidance-2026-10-28.md)
+extends app-owned availability presentation to Voice before speech availability
+and permission guidance. Sticky cleanup preserves historical meter report
+actions during recovery only; native admission and manual-only Start remain.
+Android candidate is build 44. Source-bound checks and installer identity belong
+to its draft PR and delivery checkpoint. iPhone/iPad source remains 0.38.0/build 1;
+phone/signing and N2b–N5 gates remain pending.
+
 October 28 owner-requested 0.40: [microphone cleanup guidance](sound-cleanup-guidance-2026-10-28.md)
 observes app-owned audio availability before a microphone permission prompt,
 explains waiting for occupied cleanup and preserves Recent sound checks/report
