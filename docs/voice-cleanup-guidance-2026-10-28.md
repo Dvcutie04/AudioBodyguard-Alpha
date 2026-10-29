@@ -70,6 +70,16 @@ test observer remains outside the delivered app. A tests-only source precedes
 implementation; its native busy-entry failure and final source-bound receipts
 belong to the draft PR and delivery checkpoint.
 
+Tests-only source `427113cf15c94f5b853b7369af6a0f2ce2bacc93` passed all four
+core jobs in [run 40814993814](https://github.com/Dvcutie04/AudioBodyguard-Alpha/actions/runs/40814993814),
+as expected for this UI-only gap. The focused native candidate and observer
+built successfully, passed the existing combined setup-report observations,
+then [run 40814993816](https://github.com/Dvcutie04/AudioBodyguard-Alpha/actions/runs/40814993816),
+job `123253863772`, failed on actual Voice busy entry: `Microphone off` rather
+than the wait-for-cleanup message. No production/version change preceded that
+receipt. It establishes the missing entry guidance, not an isolated native
+failure for every later recovery assertion.
+
 Final delivery also requires the complete existing Android regression, unit
 tests, lint, quiet checks, exact sharing and private intake, four core CI jobs,
 APK source/run/package/version/build/hash/signature/artwork checks and visual

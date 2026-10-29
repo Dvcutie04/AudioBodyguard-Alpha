@@ -114,6 +114,13 @@ rows that would silently lose words. All 51 routes / 436 offline diagrams are
 regenerated; native app versions remain unchanged. A separate PDF companion
 makes the existing directions available for review without an Android phone.
 
+The [Android 0.41 Voice cleanup guidance](docs/voice-cleanup-guidance-2026-10-28.md)
+explains occupied audio before speech availability and microphone permission,
+and offers existing historical meter reports during cleanup recovery. Start
+stays manual and native admission remains authoritative. Android candidate is
+build 44; iPhone/iPad source remains 0.38.0/build 1. Physical qualification and
+signing remain pending.
+
 The [Android 0.40 microphone cleanup guidance](docs/sound-cleanup-guidance-2026-10-28.md)
 explains audio availability before requesting microphone permission, asks owners
 to wait for an occupied tool to close, and keeps historical report actions

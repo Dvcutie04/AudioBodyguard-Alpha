@@ -2,7 +2,7 @@ name: Android live microphone input test
 
 on:
   push:
-    branches: ["aqss/android-live-sound-check", "aqss/android-microphone-lifecycle", "aqss/sound-check-recaps", "aqss/android-input-deadlines", "aqss/tv-photo-labels", "aqss/tv-photo-text-bounds", "aqss/tv-photo-selection", "aqss/android-full-photo", "aqss/photo-review-deadline", "aqss/photo-work-ownership", "aqss/photo-work-ready", "aqss/photo-retry-guidance", "aqss/sound-permission-settings", "aqss/voice-permission-settings", "aqss/build-details", "aqss/share-build-details", "aqss/private-support-report", "aqss/support-report-privacy", "aqss/insights-sound-checks", "aqss/input-activation-cleanup", "aqss/voice-error-guidance", "aqss/ios-voice-stop-guidance", "aqss/recap-support-report", "aqss/frame-clock-evidence", "aqss/frame-process-evidence", "aqss/frame-completion-evidence", "aqss/frame-uptime-evidence", "aqss/frame-schema-evidence", "aqss/frame-csv-evidence", "aqss/phone-output-inventory", "aqss/samsung-setup-review", "aqss/output-inventory-freshness", "aqss/tv-guide-clarity-0323", "aqss/output-inventory-report", "aqss/test-setup-worksheet", "aqss/setup-output-report", "aqss/quiet-output-check", "aqss/quiet-setup-report", "aqss/quiet-report-cleanup", "aqss/quiet-result-guidance", "aqss/sound-cleanup-guidance"]
+    branches: ["aqss/android-live-sound-check", "aqss/android-microphone-lifecycle", "aqss/sound-check-recaps", "aqss/android-input-deadlines", "aqss/tv-photo-labels", "aqss/tv-photo-text-bounds", "aqss/tv-photo-selection", "aqss/android-full-photo", "aqss/photo-review-deadline", "aqss/photo-work-ownership", "aqss/photo-work-ready", "aqss/photo-retry-guidance", "aqss/sound-permission-settings", "aqss/voice-permission-settings", "aqss/build-details", "aqss/share-build-details", "aqss/private-support-report", "aqss/support-report-privacy", "aqss/insights-sound-checks", "aqss/input-activation-cleanup", "aqss/voice-error-guidance", "aqss/ios-voice-stop-guidance", "aqss/recap-support-report", "aqss/frame-clock-evidence", "aqss/frame-process-evidence", "aqss/frame-completion-evidence", "aqss/frame-uptime-evidence", "aqss/frame-schema-evidence", "aqss/frame-csv-evidence", "aqss/phone-output-inventory", "aqss/samsung-setup-review", "aqss/output-inventory-freshness", "aqss/tv-guide-clarity-0323", "aqss/output-inventory-report", "aqss/test-setup-worksheet", "aqss/setup-output-report", "aqss/quiet-output-check", "aqss/quiet-setup-report", "aqss/quiet-report-cleanup", "aqss/quiet-result-guidance", "aqss/sound-cleanup-guidance", "aqss/voice-cleanup-guidance"]
     paths:
       - "native/android/**"
       - "native/ios/Tests/AQSSNativeFeedbackTests/Fixtures/**"
@@ -68,6 +68,7 @@ jobs:
           emulator-options: -no-window -gpu swiftshader -no-snapshot -noaudio -no-boot-anim -delay-adb
           script: |
             timeout 1200 python3 tools/smoke_android_live_input.py
+            timeout 300 python3 tools/smoke_android_sound_availability.py --voice
             timeout 300 python3 tools/smoke_android_sound_availability.py
             timeout 300 python3 tools/smoke_android_quiet_output.py
       - name: Verify APK signature, opening poster and exact source identity
