@@ -226,13 +226,12 @@ jobs:
             --build-number "$BUILD_NUMBER" --revision "$SOURCE_REVISION" --tree-sha "$SOURCE_TREE" \
             --workflow-run-id "$GITHUB_RUN_ID" --workflow-attempt "$GITHUB_RUN_ATTEMPT" \
             --output "$RUNNER_TEMP/testflight-upload-provenance.json"
-          xcrun altool --validate-app --file "$IPA" --type ios --apiKey "$ASC_KEY_ID" --apiIssuer "$ASC_ISSUER_ID"
+          python3 tools/testflight_altool.py validate --ipa "$IPA"
       - name: Upload to Apple without inviting testers
         shell: bash
         run: |
           set -euo pipefail
-          xcrun altool --upload-app --file "$TASK_DIR/export/AQSSReadOnly.ipa" \
-            --type ios --apiKey "$ASC_KEY_ID" --apiIssuer "$ASC_ISSUER_ID"
+          python3 tools/testflight_altool.py upload --ipa "$TASK_DIR/export/AQSSReadOnly.ipa"
           python3 - <<'PY'
           import json, os, pathlib, subprocess
           path = pathlib.Path(os.environ['RUNNER_TEMP'])/'testflight-upload-provenance.json'

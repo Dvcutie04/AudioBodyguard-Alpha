@@ -89,6 +89,18 @@ allow the workflow to record
 processing, installation or physical protection. Missing signing setup or
 signing permissions produces a failed job with no upload.
 
+Apple acceptance requires an explicit validation/upload success message, a zero
+exit status and no error messages. `tools/testflight_altool.py` enforces all three:
+altool can exit zero even after Apple rejects a bundle. Unknown output fails
+closed and does not promote provenance to an accepted upload. Device preflight
+and exported-package inspection also check the generated orientation metadata;
+the universal app declares all four orientations required for iPad multitasking.
+
+Historical correction: [run 4](https://github.com/Dvcutie04/AudioBodyguard-Alpha/actions/runs/41151614165)
+archived and exported successfully but Apple rejected build **1.0.0 (4.1)** for
+missing orientations. Its green badge and upload-accepted provenance are invalid
+delivery evidence. Use a later run with explicit Apple acceptance instead.
+
 The release automation is staged for this repository. Its Linux package tests
 are reproducible; a real signed execution requires the owner's Apple setup and
 must be checked from the resulting workflow. It is not a claim that a signed

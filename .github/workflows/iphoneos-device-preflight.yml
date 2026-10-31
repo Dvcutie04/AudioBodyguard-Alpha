@@ -82,11 +82,13 @@ jobs:
           import pathlib
           import plistlib
           import subprocess
+          from tools.testflight_package import validate_orientations
 
           temporary = pathlib.Path(os.environ["RUNNER_TEMP"])
           archive = temporary / "AQSSReadOnly-unsigned-device.xcarchive.zip"
           app = temporary / "AQSSReadOnly.xcarchive/Products/Applications/AQSSReadOnly.app"
           metadata = plistlib.loads((app / "Info.plist").read_bytes())
+          validate_orientations(metadata)
           privacy_bytes = (app / "PrivacyInfo.xcprivacy").read_bytes()
           privacy = plistlib.loads(privacy_bytes)
           reasons = {

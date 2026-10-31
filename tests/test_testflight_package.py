@@ -3,7 +3,7 @@ import zipfile
 
 import pytest
 
-from tools.testflight_package import inspect_package
+from tools.testflight_package import ORIENTATIONS, inspect_package
 
 
 TEAM = 'ABCDEFGHIJ'
@@ -17,6 +17,8 @@ def package_fixture(tmp_path, *, platform='iphoneos', changes=None):
         'CFBundleVersion': '1.1',
         'CFBundleSupportedPlatforms': ['iPhoneOS' if platform == 'iphoneos' else 'iPhoneSimulator'],
         'DTPlatformName': platform,
+        'UIDeviceFamily': [1, 2],
+        'UISupportedInterfaceOrientations': sorted(ORIENTATIONS),
     }
     info.update(changes or {})
     privacy = {
@@ -53,6 +55,26 @@ def inspect(path, profile=None):
 def test_simulator_package_is_rejected_before_upload(tmp_path):
     with pytest.raises(ValueError, match='physical iOS'):
         inspect(package_fixture(tmp_path, platform='iphonesimulator'))
+
+
+@pytest.mark.parametrize('changes', [
+    {'UISupportedInterfaceOrientations': []},
+    {'UISupportedInterfaceOrientations': 'UIInterfaceOrientationPortrait'},
+    {'UISupportedInterfaceOrientations': ['UIInterfaceOrientationPortrait']},
+    {'UISupportedInterfaceOrientations~ipad': []},
+    {'UISupportedInterfaceOrientations~ipad': ['UIInterfaceOrientationPortrait']},
+    {'UIDeviceFamily': []},
+])
+def test_missing_or_incomplete_orientations_are_rejected_before_apple(tmp_path, changes):
+    with pytest.raises(ValueError):
+        inspect(package_fixture(tmp_path, changes=changes))
+
+
+def test_ipad_orientation_override_is_respected(tmp_path):
+    inspect(package_fixture(tmp_path, changes={
+        'UISupportedInterfaceOrientations': ['UIInterfaceOrientationPortrait'],
+        'UISupportedInterfaceOrientations~ipad': sorted(ORIENTATIONS),
+    }))
 
 
 def test_metadata_report_never_claims_signing_delivery_or_physical_qualification(tmp_path):
