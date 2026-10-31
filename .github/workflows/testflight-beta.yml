@@ -190,14 +190,16 @@ jobs:
           set -euo pipefail
           test -d "$DEVELOPER_DIR"
           xcodebuild -version
+          # A CI archive needs no registered development device. Preserve
+          # entitlement processing with a local ad-hoc signature; export below
+          # replaces it with the required App Store distribution signature.
           xcodebuild -project native/ios-app/AQSSReadOnly.xcodeproj -scheme AQSSReadOnly \
             -configuration Release -sdk iphoneos -destination 'generic/platform=iOS' \
             -archivePath "$TASK_DIR/AQSSReadOnly.xcarchive" \
-            -allowProvisioningUpdates -authenticationKeyPath "$API_PRIVATE_KEYS_DIR/AuthKey_$ASC_KEY_ID.p8" \
-            -authenticationKeyID "$ASC_KEY_ID" -authenticationKeyIssuerID "$ASC_ISSUER_ID" \
             DEVELOPMENT_TEAM="$APPLE_TEAM_ID" PRODUCT_BUNDLE_IDENTIFIER="$IOS_BUNDLE_ID" \
             MARKETING_VERSION="$RELEASE_VERSION" CURRENT_PROJECT_VERSION="$BUILD_NUMBER" \
-            CODE_SIGN_STYLE=Automatic SWIFT_ACTIVE_COMPILATION_CONDITIONS= archive
+            CODE_SIGN_STYLE=Automatic CODE_SIGN_IDENTITY=- AD_HOC_CODE_SIGNING_ALLOWED=YES \
+            SWIFT_ACTIVE_COMPILATION_CONDITIONS= archive
           python3 - <<'PY'
           import os, pathlib, plistlib
           options = {'method': 'app-store-connect', 'destination': 'export',
