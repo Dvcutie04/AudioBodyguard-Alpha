@@ -8,6 +8,27 @@ from pathlib import Path
 import zipfile
 
 
+ORIENTATIONS = {
+    'UIInterfaceOrientationPortrait', 'UIInterfaceOrientationPortraitUpsideDown',
+    'UIInterfaceOrientationLandscapeLeft', 'UIInterfaceOrientationLandscapeRight',
+}
+
+
+def validate_orientations(info):
+    families = info.get('UIDeviceFamily')
+    if not isinstance(families, list) or not families or not set(families) <= {1, 2}:
+        raise ValueError('Expected iPhone/iPad device families')
+    for family in families:
+        suffix = '~ipad' if family == 2 else '~iphone'
+        orientations = info.get('UISupportedInterfaceOrientations'+suffix,
+                                info.get('UISupportedInterfaceOrientations'))
+        if (not isinstance(orientations, list) or not orientations
+                or not set(orientations) <= ORIENTATIONS):
+            raise ValueError('Supported interface orientations are missing or invalid')
+        if family == 2 and set(orientations) != ORIENTATIONS:
+            raise ValueError('iPad multitasking requires all four interface orientations')
+
+
 def inspect_package(path, *, bundle_id, version, build_number, team_id, provisioning_profile):
     if not re.fullmatch(r'[A-Z0-9]{10}', team_id):
         raise ValueError('Invalid Apple team identifier')
@@ -24,6 +45,7 @@ def inspect_package(path, *, bundle_id, version, build_number, team_id, provisio
             raise ValueError('A physical iOS package is required; Simulator apps cannot be uploaded')
         if 'AQSSPreviewMode' in info:
             raise ValueError('A demonstration package cannot be uploaded')
+        validate_orientations(info)
         for key, expected in [('CFBundleIdentifier', bundle_id), ('CFBundleShortVersionString', version), ('CFBundleVersion', build_number)]:
             if info.get(key) != expected:
                 raise ValueError(f'Package {key} does not match the release identity')
