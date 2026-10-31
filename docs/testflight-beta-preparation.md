@@ -71,8 +71,11 @@ same SHA before the signed job can start. The workflow:
 - refuses non-main workflow runs and source commits outside main's history;
 - checks the signing checkout's commit and tree against the tested identity;
 - assigns build number `run_number.run_attempt`, so retries use a new number;
-- archives the physical-device app with the connected appearance demo excluded;
-- uses Xcode automatic provisioning and cloud signing with the configured key;
+- archives the physical-device app with the connected appearance demo excluded,
+  using a local ad-hoc signature so CI does not request a development profile
+  or require a registered iPhone; entitlement processing remains enabled;
+- uses Xcode automatic provisioning and cloud signing with the configured key
+  during App Store export, replacing the archive's temporary signature;
 - requests an internal-only export and checks the IPA's signature, embedded profile,
   platform, bundle/version/build identity and required privacy manifest;
 - validates with Apple, uploads and records the exact signed IPA SHA-256;
@@ -90,6 +93,16 @@ The release automation is staged for this repository. Its Linux package tests
 are reproducible; a real signed execution requires the owner's Apple setup and
 must be checked from the resulting workflow. It is not a claim that a signed
 upload has already worked.
+
+If archiving reports that the team has no devices and requests an **iOS App
+Development** profile, verify that the archive command uses
+`CODE_SIGN_IDENTITY=- AD_HOC_CODE_SIGNING_ALLOWED=YES`. This is a temporary
+archive signature, not the **Ad Hoc** distribution method. The export must
+remain `app-store-connect`; do not disable final signature/profile validation.
+The two-stage CI approach preserves entitlement processing, unlike disabling
+code signing altogether. See the [CI signing discussion on Apple Developer
+Forums](https://developer.apple.com/forums/thread/756119) and Apple's
+[automated cloud signing presentation](https://developer.apple.com/videos/play/wwdc2021/10204/).
 
 ## Install and test before broader invitations
 
