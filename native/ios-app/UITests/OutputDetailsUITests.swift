@@ -15,11 +15,17 @@ final class OutputDetailsUITests: XCTestCase {
             let closed = XCTNSPredicateExpectation(predicate: NSPredicate(format: "exists == false"), object: menu)
             XCTAssertEqual(XCTWaiter.wait(for: [closed], timeout: 5), .completed)
         } else { app.buttons["tab-sound"].tap() }
+        if !app.buttons["output-details-open"].exists {
+            let more = app.buttons["more-sound-tools"]
+            XCTAssertTrue(more.waitForExistence(timeout: 5))
+            reach(more, in: app.scrollViews["home-scroll"], app: app); more.tap()
+        }
         let entry = app.buttons["output-details-open"]
         guard entry.waitForExistence(timeout: 5) else {
             shot("Output details entry missing", app); XCTFail("Sound has no Output details entry")
             throw NSError(domain: "AQSSOutputDetails", code: 1)
         }
+        reach(entry, in: app.scrollViews["home-scroll"], app: app)
         entry.tap(); XCTAssertTrue(app.buttons["output-details-refresh"].waitForExistence(timeout: 5))
     }
     private func launch() -> XCUIApplication {

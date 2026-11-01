@@ -1,4 +1,4 @@
-name: AQSS read-only simulator UI smoke
+name: AQSS native software UI verification
 
 on:
   workflow_dispatch:
@@ -16,7 +16,11 @@ permissions:
 
 jobs:
   ios-simulator:
-    name: Launch and inspect iOS simulation screen
+    name: Verify iPhone ${{ matrix.suite }}
+    strategy:
+      fail-fast: false
+      matrix:
+        suite: [navigation, pictures, tools]
     runs-on: macos-14
     timeout-minutes: 35
     steps:
@@ -24,16 +28,22 @@ jobs:
         with:
           persist-credentials: false
           ref: ${{ inputs.source_revision || '' }}
-      - name: Run read-only XCUITest on an available iPhone Simulator
+      - name: Run current software UI suite on an available iPhone Simulator
         shell: bash
         run: |
           set -euo pipefail
           simulator_udid="$(xcrun simctl list devices available -j | python3 -c 'import json,sys; devices=json.load(sys.stdin)["devices"]; print(next(d["udid"] for group in devices.values() for d in group if d["name"].startswith("iPhone") and d.get("isAvailable", True)))')"
+          python3 tools/prepare_ios_software_ui.py --check
           xcodebuild -project native/ios-app/AQSSReadOnly.xcodeproj \
             -scheme AQSSReadOnly -configuration Release \
             -destination "platform=iOS Simulator,id=$simulator_udid" \
-            -resultBundlePath "$RUNNER_TEMP/aqss-read-only-ui.xcresult" \
-            CODE_SIGNING_ALLOWED=NO test
+            -derivedDataPath "$RUNNER_TEMP/software-ui-build" \
+            CODE_SIGNING_ALLOWED=NO build-for-testing
+          xcrun simctl boot "$simulator_udid" || true
+          xcrun simctl bootstatus "$simulator_udid" -b
+          python3 tools/prepare_ios_software_ui.py \
+            "$RUNNER_TEMP/software-ui-build/Build/Products" "${{ matrix.suite }}" \
+            --run "$simulator_udid" "$RUNNER_TEMP/aqss-read-only-ui.xcresult"
       - name: Export compact iOS screenshot evidence
         if: always()
         shell: bash
@@ -79,7 +89,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: aqss-ios-screenshots
+          name: aqss-ios-screenshots-${{ matrix.suite }}
           path: ${{ runner.temp }}/aqss-ios-screenshots/
           if-no-files-found: ignore
           retention-days: 7
@@ -87,11 +97,12 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: aqss-ios-simulator-ui
+          name: aqss-ios-simulator-ui-${{ matrix.suite }}
           path: ${{ runner.temp }}/aqss-read-only-ui.xcresult
           if-no-files-found: ignore
           retention-days: 7
       - name: Build and package ARM iOS Simulator app for browser inspection
+        if: matrix.suite == 'navigation'
         shell: bash
         run: |
           set -euo pipefail
@@ -106,6 +117,7 @@ jobs:
           test "$(/usr/libexec/PlistBuddy -c 'Print :CFBundleIdentifier' "$app/Info.plist")" = 'com.aqss.bodyguard.prototype'
           ditto -c -k --keepParent "$app" "$RUNNER_TEMP/AQSSReadOnly-iOS-SIMULATION.app.zip"
       - name: Keep unsigned iOS Simulator app for browser inspection
+        if: matrix.suite == 'navigation'
         uses: actions/upload-artifact@v4
         with:
           name: aqss-ios-simulation-app-${{ github.run_id }}
@@ -228,7 +240,7 @@ jobs:
           retention-days: 7
 
   android-emulator:
-    name: Launch and inspect Android simulation screen
+    name: Verify Android setup and contextual help
     runs-on: ubuntu-latest
     timeout-minutes: 35
     steps:
@@ -247,78 +259,33 @@ jobs:
           gradle-version: "8.13"
       - name: Set up Android SDK command-line tools
         uses: android-actions/setup-android@v4
-      - name: Install Android compile SDK and build read-only APK
+      - name: Build Android UI test app and observers
         run: |
           sdkmanager "platforms;android-36"
-          gradle -p native/android :app:assembleDebug
+          gradle -p native/android :app:assembleDebug :app:assembleLiveInput :uiprobe:assembleDebug :sharereceiver:assembleDebug
       - name: Enable KVM on hosted Linux runner
         run: |
           echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
           sudo udevadm control --reload-rules
           sudo udevadm trigger --name-match=kvm
-      - name: Boot Android Emulator and inspect read-only UI
+      - name: Inspect setup without starting microphone capture
+        timeout-minutes: 15
         uses: reactivecircus/android-emulator-runner@a421e43855164a8197daf9d8d40fe71c6996bb0d # v2
         with:
-          api-level: 35
+          api-level: 36
           arch: x86_64
-          profile: pixel_7_pro
-          script: bash tools/smoke_android_ui.sh
+          profile: pixel_5
+          emulator-options: -no-window -gpu swiftshader -no-snapshot -noaudio -no-boot-anim -delay-adb
+          script: |
+            timeout 600 python3 tools/smoke_android_live_input.py --style-only
+            # Stop only this isolated runner’s headless emulator after successful checks.
+            pkill -KILL -f "^$ANDROID_HOME/emulator/qemu/[^ ]*/qemu-system-x86_64-headless( |$)" || true
       - name: Keep compact Android review screenshots
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: aqss-android-review-screenshots
-          path: |
-            artifacts/ui/android/home.png
-            artifacts/ui/android/rose_home.png
-            artifacts/ui/android/setup_alexa_for_samsung.png
-            artifacts/ui/android/tutorial_exact_resume.png
-            artifacts/ui/android/pixel_wifi_picture.png
-            artifacts/ui/android/galaxy_wifi_picture.png
-            artifacts/ui/android/beginner_step_1.png
-            artifacts/ui/android/welcome_features.png
-            artifacts/ui/android/welcome_features_last.png
-            artifacts/ui/android/beginner_step_5.png
-            artifacts/ui/android/setup_plan_return.png
-            artifacts/ui/android/phone_cancelled_return.png
-            artifacts/ui/android/settings.png
-            artifacts/ui/android/advanced_settings.png
-            artifacts/ui/android/setting_attempt_cyan.png
-            artifacts/ui/android/setting_attempt_reset.png
-            artifacts/ui/android/setting_caption_help.png
-            artifacts/ui/android/future_voice_detail.png
-            artifacts/ui/android/future_voice_help.png
-            artifacts/ui/android/setting_nested_back.png
-            artifacts/ui/android/large_advanced_settings.png
-            artifacts/ui/android/large_setting_help_text.png
-            artifacts/ui/android/large_setting_background_reset.png
-            artifacts/ui/android/large_setting_background_reset.xml
-            artifacts/ui/android/setting_attempt_state.xml
-            artifacts/ui/android/setting_attempt_reset.xml
-            artifacts/ui/android/activity-state.txt
-            artifacts/ui/android/window-state.txt
-            artifacts/ui/android/daylight_settings.png
-            artifacts/ui/android/daylight_home.png
-            artifacts/ui/android/setup_tv_approval.png
-            artifacts/ui/android/setup_large_step.png
-            artifacts/ui/android/beginner_tv_selected.png
-            artifacts/ui/android/roku_settings_picture.png
-            artifacts/ui/android/roku_model_system_picture.png
-            artifacts/ui/android/roku_about_picture.png
-            artifacts/ui/android/roku_ip_picture.png
-            artifacts/ui/android/vizio_my_hub_picture.png
-            artifacts/ui/android/vizio_account_qr_picture.png
-            artifacts/ui/android/vizio_walmart_signin_picture.png
-            artifacts/ui/android/roku_phone_intro.png
-            artifacts/ui/android/roku_phone_picture.png
-            artifacts/ui/android/roku_main_phone_resume.png
-            artifacts/ui/android/roku_main_phone_back.png
-            artifacts/ui/android/roku_remembered_system.png
-            artifacts/ui/android/tv_platform_help_return.png
-            artifacts/ui/android/roku-frame-summary.txt
-            artifacts/ui/android/roku-*-frames*.txt
-            artifacts/ui/android/roku-*-frames.json
-            artifacts/ui/android/philips_profile_picture.png
+          path: artifacts/ui/android-live-input/*.png
           if-no-files-found: ignore
           retention-days: 7
       - name: Keep Android simulation APK
@@ -333,6 +300,6 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: aqss-android-emulator-ui
-          path: artifacts/ui/android/
+          path: artifacts/ui/android-live-input/
           if-no-files-found: ignore
           retention-days: 7

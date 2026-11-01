@@ -1,0 +1,71 @@
+{
+  "suites": {
+    "navigation": [
+      "AQSSReadOnlyUITests/testSimplifiedSetupAndContextualJumps",
+      "AQSSReadOnlyUITests/testSimplifiedSetupWithLargestTextAndReducedMotion",
+      "AQSSReadOnlyUITests/testTVChoiceOffersPhotoAndKeepsOtherBrandsOnDemand",
+      "AQSSReadOnlyUITests/testRoseExitResumesTheExactTutorialAndHeadStaysDisconnected",
+      "AQSSReadOnlyUITests/testAllFivePagesKeepHelpAndTruthfulEmptyStates",
+      "AQSSReadOnlyUITests/testFirstVisitHasOnePathChoiceGatesTailoredPlanAndReplay",
+      "AQSSReadOnlyUITests/testOptionsAndAdvancedRemainUnavailable",
+      "AQSSReadOnlyUITests/testAdvancedSwitchAttemptResetsAfterTwoSecondsAndHelpReturnsToCaller",
+      "AQSSReadOnlyUITests/testAdvancedSwitchResetSurvivesNavigationBackgroundAndLargestText",
+      "AQSSReadOnlyUITests/testExitAtWelcomeAndContextualGuideRestoreFullApp",
+      "AQSSReadOnlyUITests/testExampleAppearanceAndFutureFeatureDoNotClaimAudio",
+      "AQSSReadOnlyUITests/testSimpleDefaultsAndBackRestoreTheActualPreviousPage",
+      "AQSSReadOnlyUITests/testSelectingATVAdvancesAndBackKeepsTheScrollAndHomePreference",
+      "AQSSReadOnlyUITests/testLargestTextKeepsExitAndNextReachable"
+    ],
+    "pictures": [
+      "AQSSReadOnlyUITests/testRokuPicturesResumeAndFinishWithoutClaimingConnection",
+      "AQSSReadOnlyUITests/testNewVizioTVShowsAccountThenPhonePicturesInOrder",
+      "AQSSReadOnlyUITests/testRokuPartOneImmediatelyOpensPhonePicturesInFirstVisit",
+      "AQSSReadOnlyUITests/testIllustratedGuideFromTCLPlanAndVoiceHelp",
+      "AQSSReadOnlyUITests/testSamsungPinChoiceBackAndResumeStayAtTheApproval",
+      "AQSSReadOnlyUITests/testIllustratedApprovalFinishesWithoutClaimingConnection",
+      "AQSSReadOnlyUITests/testFinishedPairingPicturesAdvanceLocallyAndCloseKeepsThePhoneStep",
+      "AQSSReadOnlyUITests/testTVCodePicturesSeparateTheTVFromPhoneAndKeepOptionalLinksNeutral",
+      "AQSSReadOnlyUITests/testBrandPlatformsKeepRokuMenusSeparateAndOfferManualGoogleTVSetup",
+      "AQSSReadOnlyUITests/testLGVizioAndGoogleTVContinueIntoTheirOwnPhoneAppPictures",
+      "AQSSReadOnlyUITests/testPhilipsAlreadyConnectedSkipsPairingAndBackRestoresTheChoice",
+      "AQSSReadOnlyUITests/testNewBrandPicturesAreReachable",
+      "AQSSReadOnlyUITests/testIllustratedGuideKeepsScrollContainerAndResetsPosition"
+    ],
+    "tools": [
+      "AQSSReadOnlyUITests/testTestSetupWorksheetCancelSharePreservesPreview",
+      "AQSSReadOnlyUITests/testTestSetupWorksheetCopySharesExactReviewedText",
+      "AQSSReadOnlyUITests/testTestSetupWorksheetRotationClearCloseAndRestart",
+      "AQSSReadOnlyUITests/testInsightsRecapReportPreviewReturnsWithoutCapture",
+      "AQSSReadOnlyUITests/testInsightsRecapsStartEmptyAndReturnWithoutCapture",
+      "AQSSReadOnlyUITests/testPrivateSupportReportBuildOnlyCancelReturnsWithoutCopy",
+      "AQSSReadOnlyUITests/testPrivateSupportReportBuildOnlyCopySharesOnlyBuildDetails",
+      "AQSSReadOnlyUITests/testPrivateSupportReportCancelReturnsWithoutCopy",
+      "AQSSReadOnlyUITests/testPrivateSupportReportSharesOnlyPreviewedFieldsAndReturns",
+      "AQSSReadOnlyUITests/testBuildDetailsShareOnlyInstalledMetadataAndReturn",
+      "AQSSReadOnlyUITests/testBuildDetailsShareCancelReturnsWithoutCopy",
+      "AQSSReadOnlyUITests/testBuildDetailsMatchInstalledMetadataAndReturnToSettings",
+      "AQSSReadOnlyUITests/testVoiceCheckStartsIdleAndClosingItLeavesMeterUsable",
+      "AQSSReadOnlyUITests/testLiveSoundCheckStartsOffAndHelpReturnsWithoutCapture",
+      "AQSSReadOnlyUITests/testInputToolsStartIdleAndNeverClaimAConnection",
+      "OutputDetailsUITests/testOutputDetailsCancelPreservesReviewedSnapshot",
+      "OutputDetailsUITests/testOutputDetailsCopyMatchesActualReviewedSnapshot",
+      "OutputDetailsUITests/testOutputDetailsLifecycleAndLargestText",
+      "OutputDetailsUITests/testCombinedSetupCancelPreservesOriginalSnapshot",
+      "OutputDetailsUITests/testCombinedSetupCopyMatchesActualReviewedText",
+      "OutputDetailsUITests/testCombinedSetupClearRemoveLifecycleAndLargestText"
+    ]
+  },
+  "dedicated_fixture_tests": [
+    "AQSSReadOnlyUITests/testInsightsRecapsReviewClearAndRestart",
+    "AQSSReadOnlyUITests/testPrivateSupportReportIncludesCompletedCheckAndClears",
+    "AQSSReadOnlyUITests/testPrivateSupportReportExcludesCompletedCheckWithoutClearing",
+    "AQSSReadOnlyUITests/testVoiceCheckDeniedMicrophoneCannotRequestSpeechOrCapture",
+    "AQSSReadOnlyUITests/testVoiceSpeechPermissionGrantDoesNotStartDeferredCapture",
+    "AQSSReadOnlyUITests/testLiveSoundCheckDeniedPermissionNeverStartsCapture",
+    "AQSSReadOnlyUITests/testVoiceMicrophoneSettingsReturnStaysOff",
+    "AQSSReadOnlyUITests/testVoiceSpeechSettingsReturnStaysOff",
+    "AQSSReadOnlyUITests/testLiveSoundCheckStopsOnHomeAndRequiresAnotherStart",
+    "AQSSReadOnlyUITests/testConnectedDemoAppearanceKeepsPhysicalReadinessUnverified",
+    "AQSSReadOnlyUITests/testPhotoReviewGuidanceAndReplacement"
+  ]
+}

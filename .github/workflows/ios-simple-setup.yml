@@ -10,6 +10,8 @@ on:
       - "tools/generate_tutorial_content.py"
       - "tools/generate_setup_guides.py"
       - "tools/export_ios_input_screenshots.py"
+      - "tools/prepare_ios_software_ui.py"
+      - ".github/workflows/read-only-ui-smoke.yml"
   workflow_dispatch:
 
 permissions:
@@ -20,6 +22,11 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  release-regressions:
+    uses: ./.github/workflows/read-only-ui-smoke.yml
+    with:
+      source_revision: ${{ github.sha }}
+
   ios-simple-setup:
     name: Simple setup on ${{ matrix.device }}
     strategy:
