@@ -14,12 +14,12 @@ public struct AQSSTutorialTopic: Equatable, Sendable {
 public enum AQSSTutorialContent {
     public static let topics: [AQSSTutorialTopic] = [
         AQSSTutorialTopic(id: "getting_started", title: "TV & smart-home guide", steps: [
-            AQSSTutorialStep(target: "welcome", area: "overview", title: "Your TV. Your comfort.", explanation: "Follow the pictures for both your TV and phone.", example: ""),
-            AQSSTutorialStep(target: "chooseTV", area: "connection", title: "Which TV do you use?", explanation: "Choose the brand on your TV or remote.", example: "Example: if the remote says Samsung, choose Samsung. If you cannot find a name, choose Not sure / no TV."),
+            AQSSTutorialStep(target: "welcome", area: "overview", title: "Your TV. Your comfort.", explanation: "Set up both your TV and phone, one picture at a time.", example: ""),
+            AQSSTutorialStep(target: "chooseTV", area: "connection", title: "Which TV do you use?", explanation: "Use a photo to find the brand, or choose it yourself.", example: "Example: if the remote says Samsung, choose Samsung. If you cannot find a name, choose Not sure / no TV."),
             AQSSTutorialStep(target: "chooseHome", area: "connection", title: "Use a home app?", explanation: "Choose the home app you use. Neither is fine.", example: "Example: if you say “Alexa” to an Echo speaker, choose Amazon Alexa. If you manage devices in the Google Home app, choose Google Home."),
-            AQSSTutorialStep(target: "connectionPlan", area: "connection", title: "1. Connect to your TV or home device", explanation: "Follow the highlighted pictures on your TV or in its official app.", example: "Example: follow your TV maker’s app steps, then review any approval request on the television."),
-            AQSSTutorialStep(target: "connectionCheck", area: "connection", title: "2. Connect to your phone", explanation: "Open your TV's official phone app and follow the pictures.", example: "Example: open the official phone app, follow its pairing prompts and review requested permissions."),
-            AQSSTutorialStep(target: "guideFinish", area: "connection", title: "Your next step is ready", explanation: "Explore the controls. Replay the pictures anytime from Help.", example: "Example: open Insights and select Explore an example to see a sample graph."),
+            AQSSTutorialStep(target: "connectionPlan", area: "connection", title: "1. Connect to your TV or home device", explanation: "Start the pictures for your TV. We’ll keep your place.", example: "Example: follow your TV maker’s app steps, then review any approval request on the television."),
+            AQSSTutorialStep(target: "connectionCheck", area: "connection", title: "2. Connect to your phone", explanation: "Open the matching app and follow the pictures. Your TV choice is filled in.", example: "Example: open the official phone app, follow its pairing prompts and review requested permissions."),
+            AQSSTutorialStep(target: "guideFinish", area: "connection", title: "Picture setup complete", explanation: "Help can open a sound check. Your TV connection still needs verification.", example: "Example: jump to a sound or voice check from ? Setup help. Return here to replay the pictures."),
         ]),
         AQSSTutorialTopic(id: "home", title: "Home and coverage", steps: [
             AQSSTutorialStep(target: "coverage", area: "home", title: "Read the coverage state", explanation: "Unknown physical state means the sound coming from the speakers still needs an independent check.", example: "Example: a phone can show a TV as connected while the room is using a separate soundbar. The app must check the actual sound output."),
@@ -112,7 +112,7 @@ public enum AQSSTutorialContent {
         AQSSTutorialFeature(id: "input", title: "Voice input display and recognized words", detail: "Review the recognized words on your phone.", availability: "preview"),
     ]
     public static let featuredIDs: [String] = ["series_intro", "commercial_volume", "remote"]
-    public static let pictureContinueRoutes: [String] = ["samsung_ok", "samsung_pin", "lg_pair", "google_remote", "google_setup", "tcl_models", "google_fast", "google_samsung", "google_lg", "google_roku", "google_vidaa", "google_vizio", "google_legacy", "samsung_alexa", "lg_alexa", "sony_new", "sony_legacy", "roku_alexa", "vidaa_google", "vidaa_alexa", "vizio_pair", "vizio_account", "vizio_assist", "fire_alexa", "lg_account5", "lg_account6", "google_legacy_add", "fire_setup", "roku_phone", "vizio_google", "vizio_alexa"]
+    public static let pictureContinueRoutes: [String] = ["samsung_ok", "samsung_pin", "lg_pair", "google_remote", "google_setup", "tcl_models", "google_fast", "google_samsung", "google_lg", "google_roku", "google_vidaa", "google_vizio", "google_legacy", "samsung_alexa", "lg_alexa", "sony_new", "sony_legacy", "roku_alexa", "vidaa_google", "vidaa_alexa", "vizio_pair", "vizio_account", "vizio_assist", "fire_alexa", "lg_account5", "lg_account6", "google_legacy_add", "fire_setup", "roku_phone", "vizio_google", "vizio_alexa", "samsung_phone", "lg_phone", "vizio_phone", "google_phone", "google_manual"]
     public static let previewNotice = "Picture guide"
     public static let startLabel = "Start picture setup"
     public static let moreFeaturesLabel = "More features"

@@ -11,10 +11,240 @@ repairs and **1,867 passing Python tests plus 19 subtests**. Fresh native CI,
 a signed TestFlight build and actual phone trials remain required before beta
 invitations. The current beta scope is the read-only interface and setup guides.
 
+The [October 15 Android live-input increment](docs/android-live-sound-check-2026-10-15.md)
+adds an optional **Sound → Live sound check** using real foreground microphone
+samples. Its separate **Audio Bodyguard Live Test** APK can coexist with the
+preview. Digital input levels do not establish acoustic safety or active
+protection. TV control and qualified output paths remain unavailable.
+
+The [private support report](docs/private-support-report-2026-10-22.md)
+lets testers preview installed build details and up to five temporary meter
+summaries in **Settings → Advanced Settings → Private support report**, then
+choose **Share support report**. It excludes audio, words, photos, TV/network
+details and generic logs. Native sharing does not prove recipient delivery or
+physical audio protection.
+
+The [0.21 Insights entry](docs/insights-sound-checks-2026-10-22.md) opens
+**Recent sound checks** directly from Insights. Review or clear the existing
+five temporary completed-check summaries, then Close returns to Insights.
+The microphone tool does not open; Audio trends remain separate.
+
+The [0.20 report choice](docs/support-report-choice-2026-10-22.md) lets testers
+leave recent sound checks out of the shared text without clearing recaps.
+
+The [0.22 startup cleanup repair](docs/input-activation-cleanup-2026-10-23.md)
+keeps iPhone microphone ownership through cleanup when session configuration
+throws. A cleanup error blocks both input tools until the app process exits.
+
+The [0.23 Voice guidance](docs/voice-error-guidance-2026-10-23.md) replaces
+common Android speech error numbers with a short explanation and next step.
+Stopping, permission checks and cleanup retain their existing behavior.
+
+The [0.24 iPhone Voice guidance](docs/ios-voice-stop-guidance-2026-10-23.md)
+distinguishes unavailable microphone access, speech access, recognition and input
+when a running check stops. Recognition or input loss no longer points to
+permissions when the permission checks have passed.
+
+The [0.25 recap shortcut](docs/recap-support-report-2026-10-23.md) adds
+**Review support report** inside Recent sound checks on Android and iPhone/iPad.
+Review the visible recap snapshot, optionally exclude checks, then explicitly
+Share. Back returns to the same recap list.
+
+The [0.26 responsiveness evidence repair](docs/frame-clock-evidence-2026-10-23.md)
+rejects comparisons when recorded Android uptime regresses and retains hosted
+renderer snapshots around report Open and Back. App behavior remains 0.25;
+these diagnostics do not establish installed-phone smoothness or physical latency.
+
+The [0.27 process attribution repair](docs/frame-process-evidence-2026-10-23.md)
+also requires one matching observed PID/name pair in both frame dumps. Missing,
+changed, ambiguous or malformed process headers withhold attribution and timing
+summaries. Matching headers do not prove uninterrupted process/device identity;
+the app flow and physical qualification boundaries remain unchanged.
+
+The [0.28 completion evidence repair](docs/frame-completion-evidence-2026-10-24.md)
+preserves an observed frame start even when its completion field is unreadable.
+New unreadable completions withhold timing summaries while retaining valid-subset
+diagnostics; an already observed start cannot become a new frame on completion.
+
+The [0.29 uptime evidence repair](docs/frame-uptime-evidence-2026-10-24.md)
+requires complete integer uptime tokens and agreement between repeated headers.
+Malformed or conflicting clocks withhold timing summaries; existing valid-subset
+diagnostics remain. Hosted observations do not establish a speed improvement.
+
+The [0.30 frame-column evidence repair](docs/frame-schema-evidence-2026-10-24.md)
+rejects duplicate or missing required column names before attributing frames.
+The diagnostic JSON reports schema availability; the app's support report and
+input flow retain their existing behavior.
+
+The [0.31 CSV evidence repair](docs/frame-csv-evidence-2026-10-24.md)
+handles malformed quoting and CSV field-limit errors as unavailable diagnostics.
+These read errors withhold attribution and let native UI checks continue.
+Valid quoting still works within the existing raw-capture limits.
+
+The [N2b inventory preparation](docs/n2b-inventory-preparation-2026-10-24.md)
+adds a private template and checker for the existing host, output route,
+independent capture and related protocol inventory. It checks bounded local
+evidence hashes while keeping every physical gate pending. The owner has now
+confirmed two phones; the next research package reviews an owned mobile-output
+path. Exact backend/route/capture details remain pending. The inventory-file
+preparation itself does not change the mobile app.
+
+The [private mobile report intake](docs/mobile-setup-intake-2026-10-27.md)
+checks a shared setup worksheet against expected app labels, retains its exact
+bytes/hash and prepares the existing eight-row N2b record. Every row stays
+unknown until reviewed observations are supplied; free-text notes and framework
+metadata cannot qualify hardware. This engineering helper needs no phone,
+adds no installer and never replaces an existing private review directory.
+
+The [iPhone/iPad report clock checks](docs/ios-report-clock-checks-2026-10-27.md)
+verify exact boundary labels and separate notes/snapshot times with the current
+formatter. This adds regression coverage, retaining iOS source 0.38.0/build 1
+and Android APK 0.37/build 40. It does not qualify the device's actual clock.
+
+The [Android 0.38 quiet-report increment](docs/quiet-report-cleanup-2026-10-27.md)
+distinguishes cleanup that never entered from calls that returned, preserving
+unresolved cleanup/accounting. Native sharing checks on both platforms also
+exercise private report intake and verify that all hardware inventory rows stay
+unknown. Candidate Android is build 41; iPhone/iPad application source remains
+0.38.0/build 1. The audio worker and physical qualification gates are unchanged.
+
+The [October 28 offline picture-row repair](docs/picture-row-bounds-2026-10-28.md)
+keeps Fire TV's full Home-hold label inside its remote-button picture and rejects
+rows that would silently lose words. All 51 routes / 436 offline diagrams are
+regenerated; native app versions remain unchanged. A separate PDF companion
+makes the existing directions available for review without an Android phone.
+
+The [Android 0.41 Voice cleanup guidance](docs/voice-cleanup-guidance-2026-10-28.md)
+explains occupied audio before speech availability and microphone permission,
+and offers existing historical meter reports during cleanup recovery. Start
+stays manual and native admission remains authoritative. Android candidate is
+build 44; iPhone/iPad source remains 0.38.0/build 1. Physical qualification and
+signing remain pending.
+
+The [Android 0.40 microphone cleanup guidance](docs/sound-cleanup-guidance-2026-10-28.md)
+explains audio availability before requesting microphone permission, asks owners
+to wait for an occupied tool to close, and keeps historical report actions
+available during cleanup quarantine. Only explicit Start can retry; the native
+gate still admits every owner. Android candidate is build 43; iPhone/iPad source
+remains 0.38.0/build 1. Physical qualification and signing remain pending.
+
+The [Android 0.39 result guidance](docs/quiet-result-guidance-2026-10-28.md)
+explains quiet-check interruptions and failures, preserves report access before
+force-stop recovery, and keeps Start disabled during retained closing or
+unresolved cleanup. Blocked entry starts no worker. Android is build 42;
+iPhone/iPad source remains 0.38.0/build 1. The audio worker, report snapshots
+and physical qualification gates are unchanged.
+
+The [0.32 phone-output research and preflight](docs/phone-output-research-2026-10-24.md)
+adds **Sound → Output inventory** on Android. Tap **Refresh outputs** to see
+this phone's current model/OS, available output types and advertised format
+capabilities. The details clear when leaving. No sound is played, and actual
+playback route and negotiated format remain unknown. The iPhone app remains
+at 0.31; its signed installation and all physical output gates stay pending.
+
+The [0.32.2 output freshness repair](docs/output-inventory-freshness-2026-10-25.md)
+withdraws displayed Android inventory rows when an output-change notice arrives.
+Tap **Refresh outputs** to read again. Background visits retire their listener,
+so late old callbacks cannot alter a newer snapshot. The Samsung setup repair
+from 0.32.1 stays included; iPhone source remains 0.32.1.
+
+The [0.32.3 TV-picture review](docs/tv-guide-review-2026-10-26.md)
+checks the nine other supported TV brand choices and their platform variants.
+It separates TV codes from phone entry and opening the phone scanner from scanning, makes optional account choices neutral,
+adds matching LG/VIZIO/Google TV phone checks and a manual Google TV fallback,
+and makes Philips/Fire decision paths return correctly with Back. The shared
+catalog now contains 51 routes and 436 illustrations. Android build 35 and
+current iPhone/iPad source identify as 0.32.3; physical pairing remains unverified.
+
+The [0.33 output inventory report](docs/output-inventory-report-2026-10-27.md)
+adds **Sound → Output inventory → Refresh outputs → Review output report**
+on Android. Review shows a dated, bounded metadata snapshot; Share sends exactly
+that text through the native Sharesheet. Live rows still clear on leaving or a
+change notice. The report retains unknown route/format and unverified physical
+output, and contains no audio-device names/addresses/IDs, audio, photos or TV
+information. Android is build 36; iPhone source stays 0.32.3. This supplies partial
+phone observations for N2b inventory and does not implement playback.
+
+The [0.34 two-phone setup worksheet](docs/test-setup-worksheet-2026-10-27.md)
+adds **Sound → Test setup → Review setup report** to Android and iPhone/iPad
+source. Record six optional, brief technical notes about the phones, intended
+output and observer arrangement. Blanks remain Unknown. Review freezes the
+text before a separate native Share action. Back keeps the draft; Clear,
+closing and a new process discard it. This is partial, unverified intake for
+N2b and does not authorize playback or recording. Android is build 37; iPhone
+source is 0.34.0. Native test results and installer identity belong to its PR;
+signed iPhone delivery and physical output qualification remain pending.
+
+The [0.35 combined setup report](docs/setup-output-report-2026-10-27.md)
+adds **Add setup notes** to Android's reviewed output inventory. The worksheet
+includes that exact dated output snapshot with optional notes in one reviewed
+share. Remove output details and Clear notes are separate choices. Closing or
+a new process discards both. Android is build 38; iPhone source remains 0.34.0.
+This remains partial, unverified N2b intake before a playback adapter. Actual
+test results and installer identity belong to its draft PR.
+
+The [next mobile-output backend review](docs/mobile-output-backend-research-2026-10-27.md)
+records the owner's Ready confirmation, current primary-source findings,
+conditional lab recommendation and pending ownership/accounting tests. The
+actual 0.35 setup report remains needed for setup-specific qualification. The
+owner subsequently authorized generic implementation while the phone is away;
+the [0.36 quiet output check](docs/quiet-output-check-2026-10-27.md) now adds an
+explicit Android AudioTrack diagnostic. It uses zero-valued samples and zero
+app gain, shares an exclusion gate with microphone tools, closes admission on
+Stop or interruption, and reviews an immutable report before native Share.
+Android is 0.36/build 39; installer and validation receipts belong to its draft
+PR. The owner's hardware, physical output and protection remain unverified;
+iPhone/iPad stays 0.34.0 with signed distribution pending.
+
+The [iPhone/iPad output details](docs/ios-output-details-2026-10-27.md)
+bring manual session metadata, immutable review and native sharing to iOS source
+0.37.0/build 1. Only fixed output port types and a bounded count are retained;
+the session is never activated. Active playback, hardware format and protection
+stay unknown. Android's delivered APK remains 0.36/build 39. Signed iPhone
+distribution and actual phone trials remain pending.
+
+The [iPhone/iPad combined setup report](docs/ios-setup-output-report-2026-10-27.md)
+adds an explicit handoff from the reviewed output details into optional setup
+notes in source 0.38.0/build 1. The original snapshot stays verbatim and dated;
+notes have their own review time. Clear notes and Remove output details are
+separate actions. This is preparation data, with signing and physical output
+qualification still pending. Android's current installable test remains 0.36.
+
+The [Android 0.37 quiet/setup report](docs/quiet-setup-report-2026-10-27.md)
+adds Add setup notes to the frozen quiet-check report. Its original dated trace
+and the later notes review stay distinct, with separate Clear/remove choices
+and exact native sharing. One process-local typed handoff slot accepts either
+inventory or quiet data and never starts another audio worker. Android is build
+40; iOS source remains 0.38.0/build 1. Installer and validation receipts belong
+to its draft PR; physical qualification and signed iPhone delivery remain pending.
+
+The [isolated PCM16 accounting lab](native/lab/pcm16_accounting/README.md)
+implements the reviewed sample/frame/byte, partial-return and hold-accounting
+rules with synthetic Kotlin/JVM observations while the actual setup is pending.
+Its bounded source, ticket and trace checks do not select an adapter or add an
+app dependency. That prerequisite itself made no app or installer change.
+
+Its [scripted run-controls extension](native/lab/pcm16_accounting/RUN_CONTROLS.md)
+models admission, fixed-domain deadlines, one delayed retry, lifecycle holds and
+cleanup quarantine. Each backend observation must be recorded before another
+operation or slot release. Its scripted results do not qualify the separate
+0.36 native implementation, the phone configuration or physical output.
+
+The [callback lifetime increment](native/lab/pcm16_accounting/CALLBACK_LIFETIME.md)
+retains queued, active and child references in a bounded registry. Scripted
+final release waits for their last use plus actual call-return accounting.
+Stale tickets reject through the retained context; no native producer or
+physical retirement is qualified by the managed-object tests.
+
 The [internal TestFlight preparation](docs/testflight-beta-preparation.md)
 automates checks on an exact reviewed source revision and provides a manually
 requested signing/upload lane after Apple account and signing setup. It does
 not invite testers or certify physical protection.
+
+The [0.32.1 Samsung setup repair](docs/samsung-setup-review-2026-10-25.md)
+starts one SmartThings guide, offers the PIN path when the TV asks for it, and
+checks the existing SmartThings TV in the phone part. Back and resume preserve
+the selected approval step. Guide completion does not verify a connection.
 
 ## Current a-Shell baseline
 

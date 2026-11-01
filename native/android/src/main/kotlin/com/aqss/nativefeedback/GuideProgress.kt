@@ -10,29 +10,48 @@ class GuideProgress {
     val choices get() = TutorialContent.choices[step?.target].orEmpty()
     val canContinue get() = step != null && (choices.isEmpty() || choices.any { it.id == selections[step?.target] })
     val isLast get() = topic?.let { index == it.steps.lastIndex } ?: false
+    private val visibleIndices get() = topic?.steps?.indices?.filter { topicId != "getting_started" || topic?.steps?.get(it)?.target != "chooseHome" }.orEmpty()
+    val stepCount get() = visibleIndices.size
+    val stepNumber get() = visibleIndices.indexOf(index).takeIf { it >= 0 }?.plus(1) ?: 2
     fun selected(target: String) = TutorialContent.choices[target]?.firstOrNull { it.id == selections[target] }
     fun start(id: String): Boolean {
         if (TutorialContent.topics.none { it.id == id }) return false
-        topicId = id; index = 0; selections.clear(); return true
+        topicId = id; index = 0; selections.clear()
+        if (id == "getting_started") selections["chooseHome"] = "neither"
+        return true
     }
     fun select(id: String): Boolean {
         val current = step ?: return false
         if (choices.none { it.id == id }) return false
         selections[current.target] = id; return true
     }
+    /** Accept only a user-confirmed photo suggestion in the TV selection flow. */
+    fun acceptPhotoBrand(brand: String?): Boolean {
+        if (topicId != "getting_started" || step?.target !in listOf("welcome", "chooseTV") ||
+            brand == null || TutorialContent.choices["chooseTV"]?.none { it.id == brand && it.id != "unsure" } != false) return false
+        if (step?.target == "welcome") next()
+        if (!select(brand)) return false
+        return next()
+    }
     fun next(): Boolean {
         if (!canContinue || isLast) return false
-        index++; return true
+        index = visibleIndices.firstOrNull { it > index } ?: return false
+        return true
+    }
+    /** Optional guide preference, never account linking or device authorization. */
+    fun selectHomeApp(id: String): Boolean {
+        if (topicId != "getting_started" || TutorialContent.choices["chooseHome"]?.none { it.id == id } != false) return false
+        selections["chooseHome"] = id; return true
     }
     /** Finishing pictures advances learning only, never a verified connection. */
     fun completePictures(expectedTarget: String, routeId: String): Boolean {
         if (topicId != "getting_started" || step?.target != expectedTarget ||
             expectedTarget !in listOf("connectionPlan", "connectionCheck") ||
             (routeId !in TutorialContent.pictureContinueRoutes && !(expectedTarget == "connectionPlan" && routeId in listOf("roku_network", "roku_model"))) ||
-            (routeId == "roku_phone" && expectedTarget != "connectionCheck")) return false
+            (SetupContent.groups.any { it.phoneRoute == routeId } && expectedTarget != "connectionCheck")) return false
         return next()
     }
-    fun back() { if (index > 0) index-- }
+    fun back() { visibleIndices.lastOrNull { it < index }?.let { index = it } }
     fun close() { topicId = null; index = 0; selections.clear() }
     fun snapshot(): Map<String, String> = selections.toMap()
     /** Untrusted restoration cannot skip an unanswered earlier question. */

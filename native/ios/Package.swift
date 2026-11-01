@@ -18,7 +18,8 @@ let package = Package(
         .testTarget(
             name: "AQSSNativeFeedbackTests",
             dependencies: ["AQSSNativeFeedback"],
-            path: "Tests/AQSSNativeFeedbackTests"
+            path: "Tests/AQSSNativeFeedbackTests",
+            resources: [.copy("Fixtures")]
         )
     ]
 )

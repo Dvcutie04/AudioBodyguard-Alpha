@@ -106,8 +106,8 @@
     {
       "id": "support",
       "title": "Private support report",
-      "detail": "Planned · review before sharing",
-      "explanation": "Planned support reports: review a small, redacted record before choosing to share it."
+      "detail": "Available · review before sharing",
+      "explanation": "Review installed build details in Advanced Settings. Choose whether to include recent sound checks before sharing. Audio, words, photos and TV/network details are excluded."
     }
   ],
   "settings": [
