@@ -51,10 +51,13 @@ class InterfaceTheme(val activity: Activity, val dark: Boolean) {
         button.background = RippleDrawable(ColorStateList.valueOf(outline), shape(if (primary) control else raised, 14).apply { setStroke(dp(1), if (primary) controlBorder else outline) }, null)
         button.stateListAnimator = null
     }
-    fun menu(title: String, items: List<Pair<String, () -> Unit>>) {
+    fun menu(title: String, items: List<Pair<String, () -> Unit>>, message: String = "") {
         val list = LinearLayout(activity).apply { orientation = LinearLayout.VERTICAL; setPadding(dp(20), dp(10), dp(20), dp(10)) }
         val scroll = ScrollView(activity).apply { addView(list); setBackgroundColor(this@InterfaceTheme.background) }
         val dialog = AlertDialog.Builder(activity).setTitle(title).setView(scroll).create()
+        if (message.isNotEmpty()) list.addView(android.widget.TextView(activity).apply {
+            text = message; textSize = 18f; setTextColor(this@InterfaceTheme.text); setPadding(0, dp(8), 0, dp(20))
+        }, LinearLayout.LayoutParams(-1, -2))
         for ((label, action) in items) {
             list.addView(Button(activity).apply {
                 text = label; style(this); setOnClickListener { dialog.dismiss(); action() }
@@ -62,6 +65,19 @@ class InterfaceTheme(val activity: Activity, val dark: Boolean) {
         }
         list.addView(roseButton(activity, this, "Cancel") { dialog.dismiss() }, LinearLayout.LayoutParams(-1, -2))
         dialog.show()
+    }
+
+    /** One short cue when a new picture appears; no looping animation or timer. */
+    fun guideCue(view: View) {
+        if (!android.animation.ValueAnimator.areAnimatorsEnabled()) return
+        view.addOnAttachStateChangeListener(object : View.OnAttachStateChangeListener {
+            override fun onViewAttachedToWindow(v: View) {
+                if (!android.animation.ValueAnimator.areAnimatorsEnabled()) return
+                v.translationX = dp(6).toFloat()
+                v.animate().translationX(0f).setDuration(300).start()
+            }
+            override fun onViewDetachedFromWindow(v: View) { v.animate().cancel(); v.translationX = 0f }
+        })
     }
 
 }

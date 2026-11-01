@@ -116,7 +116,7 @@ class ReadOnlyHomeActivity : Activity() {
         brand = TextView(this).apply { text = if (resources.configuration.fontScale >= 1.5f) "AQSS" else "BODYGUARD"; textSize = 12f; setTypeface(null, Typeface.BOLD); setTextColor(skin.accent); letterSpacing = .13f }
         header.addView(brand, LinearLayout.LayoutParams(0, -2, 1f))
         header.addView(button("Jump to") { tutorial.chooseSection() }, LinearLayout.LayoutParams(-2, -2).apply { marginEnd = dp(8) })
-        help = roseButton(this, skin, "Help") { tutorial.chooseTopic() }.apply { contentDescription = "Help & tutorials" }
+        help = button("? Help") { tutorial.chooseTopic() }.apply { contentDescription = "Help & tutorials" }
         header.addView(help)
         root.addView(header)
         val body = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL }
@@ -128,7 +128,8 @@ class ReadOnlyHomeActivity : Activity() {
         tutorial = TutorialGuide(this, scroll, targets, skin,
             currentPage = { page },
             openSetup = { group -> openSetup(group) },
-            openPhoto = { openInputTool("photo", fromTutorial = true) },
+            openPhoto = { openInputTool("photo", fromTutorial = tutorial.isActive) },
+            openTool = { tool -> if (tool == "voice") openInputTool("voice") else startActivity(Intent(this, LiveSoundCheckActivity::class.java).putExtra("dark", skin.dark)) },
             navigate = { target, area ->
                 val destination = InterfaceContent.targetPages[target] ?: "home"
                 if (destination != page || (destination == "settings" && !advancedExpanded && target != "appearance")) rememberPage()
@@ -136,7 +137,7 @@ class ReadOnlyHomeActivity : Activity() {
                 chartValuesVisible = false
                 page = InterfaceContent.targetPages[target] ?: "home"
                 if (page == "sound") optionsExpanded = true
-                if (page == "settings") advancedExpanded = true
+                if (page == "settings") advancedExpanded = target != "appearance"
                 if (page == "devices") deviceDetails = true
                 detailSections.add(target)
                 if (area == "checklist") checklistExpanded = true
@@ -361,7 +362,7 @@ class ReadOnlyHomeActivity : Activity() {
             label(c, if (coverage.state == SessionState.ACTIVE) "Connection active" else "Connection not verified", 18f, bold = true)
             action(c, if (beginnerTourFinished) "Replay connection guide" else "TV & smart-home guide", true) { tutorial.start("getting_started") }
             if (tutorial.hasPausedTutorial) c.addView(roseButton(this, skin, "Back to Tutorial") { tutorial.returnToTutorial() }, LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(8) })
-            action(c, if ("coverage" in detailSections) "Hide status details" else "Status details", expanded = "coverage" in detailSections) { toggleDetails("coverage") }
+            action(c, if ("coverage" in detailSections) "? Hide status help" else "? Status help", expanded = "coverage" in detailSections) { toggleDetails("coverage") }
             if ("coverage" in detailSections) {
                 label(c, "Unknown physical state", 18f, skin.warning, true)
                 label(c, "No output observation", 15f)
@@ -407,19 +408,20 @@ class ReadOnlyHomeActivity : Activity() {
     }
 
     private fun soundPage() {
-        destination("Test setup", "Record the two-phone test arrangement") {
-            startActivity(Intent(this, TestSetupActivity::class.java).putExtra("dark", skin.dark))
-        }
-        destination("Output inventory", "Check this phone’s available audio outputs") {
-            startActivity(Intent(this, OutputInventoryActivity::class.java).putExtra("dark", skin.dark))
-        }
         destination("Live sound check", "Try the phone microphone for 30 seconds") {
             startActivity(Intent(this, LiveSoundCheckActivity::class.java).putExtra("dark", skin.dark))
         }
         destination("Voice check", "See microphone activity and recognized words") { openInputTool("voice") }
+        action(column, "? More sound tools") {
+            skin.menu("More sound tools", listOf(
+                "Jump to Test setup" to { startActivity(Intent(this, TestSetupActivity::class.java).putExtra("dark", skin.dark)) },
+                "Jump to Output inventory" to { startActivity(Intent(this, OutputInventoryActivity::class.java).putExtra("dark", skin.dark)) },
+                "Jump to recent sound checks" to { showRecentSoundChecks(this, skin) }
+            ))
+        }
         card("options") { c ->
             label(c, "Sound options", 22f, bold = true)
-            action(c, if (optionsExpanded) "Hide options" else "Options", expanded = optionsExpanded) { tutorial.close(false); optionsExpanded = !optionsExpanded; renderPage(true) }
+            action(c, if (optionsExpanded) "? Hide sound options" else "? Sound options", expanded = optionsExpanded) { tutorial.close(false); optionsExpanded = !optionsExpanded; renderPage(true) }
             if (optionsExpanded) {
                 action(c, "Help with options") { tutorial.start("sound") }
             }
@@ -443,11 +445,12 @@ class ReadOnlyHomeActivity : Activity() {
         section("Captions", "Not observed", "No authored caption track has been discovered or selected.", "captions")
     }
     private fun devicesPage() {
-        destination("TV photo setup", "Read a model label or Network settings photo") { openInputTool("photo") }
-        destination("Illustrated setup guides", "TV pairing, Google Home & Alexa · one picture at a time") { openSetup() }
-        label(column, "No qualified device connected", 16f, skin.muted)
-        action(column, if (deviceDetails) "Hide device details" else "More device details", expanded = deviceDetails) { deviceDetails = !deviceDetails; renderPage(true) }
+        destination("Set up your TV", "One picture at a time") { tutorial.start("getting_started") }
+        label(column, "Connection not verified", 16f, skin.muted)
+        action(column, if (deviceDetails) "? Hide device help" else "? Device help", expanded = deviceDetails) { deviceDetails = !deviceDetails; renderPage(true) }
         if (!deviceDetails) return
+        destination("TV photo setup", "Read a model label or settings photo") { openInputTool("photo") }
+        destination("Illustrated setup guides", "Jump to a TV or home app") { openSetup() }
         action(column, "TV & smart-home guide") { tutorial.start("getting_started") }
         column.addView(tutorial.connectionOverview(), LinearLayout.LayoutParams(-1, -2).apply { bottomMargin = dp(18) })
         card("capability") { c ->
@@ -497,7 +500,7 @@ class ReadOnlyHomeActivity : Activity() {
                 label(c, "No measurements yet", 21f, bold = true)
                 action(c, if ("trends" in detailSections) "Hide measurement details" else "Measurement details", expanded = "trends" in detailSections) { toggleDetails("trends") }
                 if ("trends" in detailSections) label(c, "A qualified observation source is needed before a real trend can appear. Missing measurements cannot establish safe audio.", 16f, skin.muted)
-                action(c, "Explore an example", true) { showingExample = true; renderPage() }
+                action(c, "? Insights help") { skin.menu("Insights help", listOf("Explore an example" to { showingExample = true; renderPage() }), "Real recent checks are shown separately. The example graph uses invented values.") }
             }
         }
         section("Session history", "No observed events", "A missing history cannot establish continuous coverage. Requests and verified results will need distinct records.", "history")
@@ -529,14 +532,19 @@ class ReadOnlyHomeActivity : Activity() {
             label(heading, "Appearance", 22f, bold = true).layoutParams = LinearLayout.LayoutParams(0, -2, 1f)
             heading.addView(question("Appearance", "Midnight uses a dark background. Daylight uses a light background. System follows your phone’s appearance. This choice is saved on this phone and works without a TV connection.", "appearance"))
             c.addView(heading)
-            for (value in listOf("midnight", "daylight", "system")) {
-                c.addView(button(value.replaceFirstChar { it.uppercase() } + if (appearance == value) "  ✓" else "", primary = appearance == value) {
+            action(c, "Appearance · ${appearance.replaceFirstChar { it.uppercase() }}") {
+                skin.menu("Appearance", listOf("midnight", "daylight", "system").map { value -> value.replaceFirstChar { it.uppercase() } to {
                     val state = Bundle(); savePresentation(state); tutorial.pause(); appearance = value; build(state)
-                }.apply { contentDescription = value.replaceFirstChar { it.uppercase() }; isSelected = appearance == value }, LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(8) })
+                } })
             }
         }
-        action(column, "Build details") { showBuildDetails() }
-        action(column, "Advanced Settings") { rememberPage(); tutorial.close(false); advancedExpanded = true; renderPage() }
+        action(column, "? More settings") {
+            skin.menu("More settings", listOf(
+                "Jump to Advanced Settings" to { rememberPage(); tutorial.close(false); advancedExpanded = true; renderPage() },
+                "Build details" to { showBuildDetails() },
+                "Private support report" to { showSupportReport() }
+            ))
+        }
     }
 
     private fun installedBuildDetails() = installedAppBuildDetails(this)

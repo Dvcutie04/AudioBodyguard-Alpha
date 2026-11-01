@@ -301,13 +301,14 @@ struct VoiceCheckView: View {
     @Environment(\.scenePhase) private var phase
     @StateObject private var voice = VoiceCheck()
     @State private var setupVisible = false
+    @State private var voiceHelp = false
     var body: some View {
         VStack(spacing: 12) {
             HStack { Text("Voice check").font(.title2.bold()); Spacer(); RoseButton(title: "Close", theme: theme) { voice.clear(); dismiss() } }.padding()
             ScrollView {
                 VStack(alignment: .leading, spacing: 18) {
                     Text("See what your phone hears").font(.title.bold())
-                    Button("Help · show voice steps") { voice.clear(); setupVisible = true }.buttonStyle(AppButtonStyle(theme: theme))
+
                     Text("Tap Start, then say: ‘Make the TV quieter.’ See the incoming sound bars and recognized words.")
                     Text("This check may pause other audio on your iPhone.").font(.caption).foregroundColor(theme.muted)
                     Text(voice.status).font(.headline).accessibilityIdentifier("voice-status")
@@ -331,15 +332,17 @@ struct VoiceCheckView: View {
                     Text("Digital input levels over time (dBFS).").font(.caption).foregroundColor(theme.muted)
                     Text("Recent recognized words · may change").font(.headline)
                     Text(voice.transcript.isEmpty ? "No words recognized yet" : voice.transcript).accessibilityIdentifier("voice-transcript")
-                    Text("Review recognized words before using them. Noise and overlapping voices can change what appears.").foregroundColor(theme.muted)
-                    Text("Recognition stays on this phone. Words clear when you close the screen; listening stops when you leave.").font(.caption).foregroundColor(theme.muted)
+                    DisclosureGroup(isExpanded: $voiceHelp) {
+                        Text("Review recognized words before using them. Noise can change what appears. Recognition stays on this phone. Listening stops when you leave.")
+                        Button("Jump to voice steps") { voice.clear(); setupVisible = true }.buttonStyle(AppButtonStyle(theme: theme))
+                        Button("Clear words") { voice.clear() }.buttonStyle(AppButtonStyle(theme: theme))
+                    } label: { Label("Voice help", systemImage: "questionmark.circle") }.accessibilityIdentifier("voice-help")
                 }.padding()
             }
             HStack {
                 Button(voice.running || voice.requesting ? "Stop listening" : "Start voice check") {
                     if voice.running || voice.requesting { voice.stop() } else { voice.start() }
                 }.buttonStyle(AppButtonStyle(theme: theme, primary: true)).disabled(voice.cleanupFailed).accessibilityIdentifier("voice-start-stop")
-                Button("Clear words") { voice.clear() }.buttonStyle(AppButtonStyle(theme: theme))
             }.padding()
         }.background(theme.background.ignoresSafeArea()).foregroundColor(theme.text)
             .sheet(isPresented: $setupVisible) { SetupGuidesView(theme: theme, initialGroup: "voice", onVoiceCheck: {}) }
@@ -515,38 +518,35 @@ struct TVPhotoView: View {
                 VStack(alignment: .leading, spacing: 18) {
                     Image(systemName: "tv").font(.system(size: 42)).foregroundColor(theme.violet).accessibilityHidden(true)
                     Text("Find your TV details").font(.title.bold())
-                    Text(onUseBrand == nil
-                         ? "Take a clear picture of the TV’s model label, or its Network / IP settings screen. Avoid including passwords. You do not need to move a heavy or wall-mounted TV: use its About screen instead."
-                         : "Photograph the TV’s model label or About screen. Keep passwords out of the picture.")
+                    Text("Photograph the TV’s About screen or model label. Keep passwords out of the picture.")
                     Button("Take a TV photo") { choosePhoto(camera: true) }.buttonStyle(AppButtonStyle(theme: theme, primary: true))
                     Button("Choose a photo") { choosePhoto(camera: false) }.buttonStyle(AppButtonStyle(theme: theme))
                     if !cameraNotice.isEmpty { Text(cameraNotice).foregroundColor(theme.warning) }
                     Text(photo.status).font(.headline).accessibilityIdentifier("photo-status")
-                    Text("Brand: \(photo.hints.brand ?? "Not identified")")
+                    if let brand = photo.hints.brand { Text("Brand: " + brand).font(.headline) }
                     if let choice = suggestedChoice, let onUseBrand = onUseBrand {
                         Button("Use \(choice.title) and continue") { onUseBrand(choice.id); photo.clear(); dismiss() }
                             .buttonStyle(AppButtonStyle(theme: theme, primary: true))
                             .accessibilityIdentifier("photo-use-brand")
                     }
-                    if onUseBrand == nil || detailsExpanded {
+                    if detailsExpanded {
                         Text("Model: \(photo.hints.model ?? "Not identified")")
                         Text("TV IP hint: \(photo.hints.address ?? "Not identified")")
                     }
                     Text("Check the suggested details on your TV. A photo does not connect it. Choosing another picture clears these details.").font(.caption).foregroundColor(theme.muted)
-                    if onUseBrand != nil {
-                        Button(detailsExpanded ? "Hide photo details" : "Show photo details") { detailsExpanded.toggle() }.buttonStyle(AppButtonStyle(theme: theme))
-                    } else {
-                        Button("Illustrated setup guides") { setupRequest = SetupGuideRequest(group: photo.hints.brand?.lowercased() ?? "") }.buttonStyle(AppButtonStyle(theme: theme))
-                    }
-                    Button(instructions ? "Hide help" : "Need help?") { instructions.toggle() }.buttonStyle(AppButtonStyle(theme: theme))
+                    Button(instructions ? "? Hide photo help" : "? Photo help") { instructions.toggle() }.buttonStyle(AppButtonStyle(theme: theme)).accessibilityIdentifier("photo-help")
                     if instructions {
                         Text("1. On your TV, open Settings. Look for About, Support or Device information to find the model. Menu names differ by TV.")
                         Text("2. Look for Network, Connection or Network status, then IP settings. Photograph the row labeled IP address — not Gateway or DNS. A label on the back usually does not show the current IP address.")
                         Text("3. Put your phone and TV on the same home Wi-Fi. Avoid a guest network. An IP address can change and does not prove which TV owns it.")
                         Text("4. For Samsung, supported models use SmartThings and may ask you to approve on the TV. For Alexa or Google Home, add/link a supported TV in that app and follow its approval steps. Compatibility varies by model.")
                     }
-                    Button("Clear photo details") { photo.clear() }.buttonStyle(AppButtonStyle(theme: theme))
-                    Text("Text recognition stays on this phone. Details clear when you close this screen. Your original photo remains in Photos until you delete it there.").font(.caption).foregroundColor(theme.muted)
+                    if instructions {
+                        Button(detailsExpanded ? "Hide photo details" : "Show photo details") { detailsExpanded.toggle() }.buttonStyle(AppButtonStyle(theme: theme))
+                        Button("Jump to illustrated setup guides") { setupRequest = SetupGuideRequest(group: photo.hints.brand?.lowercased() ?? "") }.buttonStyle(AppButtonStyle(theme: theme))
+                        Button("Clear photo details") { photo.clear() }.buttonStyle(AppButtonStyle(theme: theme))
+                        Text("Text recognition stays on this phone. Details clear on close. Your original photo remains in Photos.").font(.caption).foregroundColor(theme.muted)
+                    }
                 }.padding()
             }.accessibilityIdentifier("photo-review-scroll")
         }.background(theme.background.ignoresSafeArea()).foregroundColor(theme.text)

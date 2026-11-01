@@ -2,6 +2,22 @@ import XCTest
 @testable import AQSSNativeFeedback
 
 final class GuideProgressTests: XCTestCase {
+    func testConfirmedPhotoSkipsTheOptionalHomeQuestionAndBackReturnsToTV() {
+        for index in [0, 1] {
+            var guide = AQSSGuideProgress()
+            guide.restore("getting_started", index: index, selections: [:])
+            for invalid in [nil, "invented", "alexa", "unsure"] as [String?] {
+                XCTAssertFalse(guide.acceptPhotoBrand(invalid)); XCTAssertEqual(guide.index, index)
+            }
+            XCTAssertTrue(guide.acceptPhotoBrand("samsung"))
+            XCTAssertEqual(guide.step?.target, "connectionPlan")
+            XCTAssertEqual(guide.selected("chooseHome")?.id, "neither")
+            XCTAssertFalse(guide.acceptPhotoBrand("lg"))
+            guide.back(); XCTAssertEqual(guide.step?.target, "chooseTV")
+        }
+        var guide = AQSSGuideProgress(); guide.start("readiness")
+        XCTAssertFalse(guide.acceptPhotoBrand("samsung")); XCTAssertFalse(guide.selectHomeApp("google"))
+    }
     func testChoicesGateEachNextStepAndNeverSkip() {
         var guide = AQSSGuideProgress()
         XCTAssertFalse(guide.next()); XCTAssertFalse(guide.start("unknown"))
@@ -9,12 +25,15 @@ final class GuideProgressTests: XCTestCase {
         XCTAssertTrue(guide.next()); XCTAssertEqual(guide.step?.target, "chooseTV")
         XCTAssertFalse(guide.next()); XCTAssertFalse(guide.select("alexa")); XCTAssertFalse(guide.select("invented"))
         XCTAssertTrue(guide.select("samsung")); XCTAssertTrue(guide.next())
-        XCTAssertEqual(guide.step?.target, "chooseHome"); XCTAssertFalse(guide.next())
-        XCTAssertTrue(guide.select("alexa")); XCTAssertTrue(guide.next())
         XCTAssertEqual(guide.step?.target, "connectionPlan")
+        XCTAssertEqual(guide.selected("chooseHome")?.id, "neither")
+        XCTAssertEqual(guide.stepNumber, 3); XCTAssertEqual(guide.stepCount, 5)
+        XCTAssertTrue(guide.selectHomeApp("alexa")); XCTAssertFalse(guide.selectHomeApp("invented"))
         XCTAssertEqual(guide.selected("chooseTV")?.title, "Samsung")
-        guide.back(); XCTAssertEqual(guide.selected("chooseHome")?.id, "alexa")
-        XCTAssertTrue(guide.select("neither")); XCTAssertTrue(guide.next())
+        guide.back(); XCTAssertEqual(guide.step?.target, "chooseTV")
+        XCTAssertEqual(guide.selected("chooseHome")?.id, "alexa")
+        XCTAssertTrue(guide.select("lg")); XCTAssertTrue(guide.next())
+        XCTAssertEqual(guide.step?.target, "connectionPlan")
         while guide.next() {}
         XCTAssertTrue(guide.isLast); XCTAssertEqual(guide.index, 5); XCTAssertFalse(guide.next())
         guide.close(); XCTAssertNil(guide.topic); XCTAssertTrue(guide.selections.isEmpty)
@@ -24,7 +43,7 @@ final class GuideProgressTests: XCTestCase {
         var guide = AQSSGuideProgress()
         guide.restore("getting_started", index: 100, selections: [:]); XCTAssertEqual(guide.index, 1)
         guide.restore("getting_started", index: 6, selections: ["chooseTV": "invalid", "chooseHome": "alexa"]); XCTAssertEqual(guide.index, 1)
-        guide.restore("getting_started", index: 6, selections: ["chooseTV": "unsure"]); XCTAssertEqual(guide.index, 2)
+        guide.restore("getting_started", index: 6, selections: ["chooseTV": "unsure"]); XCTAssertEqual(guide.index, 5)
         guide.restore("getting_started", index: 6, selections: ["chooseTV": "unsure", "chooseHome": "neither"]); XCTAssertEqual(guide.index, 5)
         guide.restore("getting_started", index: -9, selections: [:]); XCTAssertEqual(guide.index, 0)
     }

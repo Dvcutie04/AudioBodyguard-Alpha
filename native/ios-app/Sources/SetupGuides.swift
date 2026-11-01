@@ -105,7 +105,6 @@ struct SetupGuidesView: View {
                             if index == 14 && route.id == "samsung_pin" {
                                 control("TV shows OK instead", icon: "checkmark", id: "setup-samsung-ok") { switchSamsungApproval("samsung_ok") }
                             }
-                            pairingHelp(route)
                             if route.id == "philips_voice_remote" && index == 4 {
                                 control("Remote already connected", icon: "checkmark", id: "setup-philips-connected") { skipTo(route.id, from: 4, to: 9) }
                             }
@@ -115,6 +114,8 @@ struct SetupGuidesView: View {
                             if route.id == "fire_setup" && [5, 6].contains(index) {
                                 control("Account sign-in finished", icon: "checkmark", id: "setup-fire-account-finished") { skipTo(route.id, from: index, to: 7) }
                             }
+                            GuidePictureCue(screenKey: key) {
+                                Group {
                             if route.id == "roku_network" || route.id == "roku_model" {
                                 RokuMenuIllustration(step: step, number: index + 1, routeID: route.id, theme: theme)
                             } else if route.id == "philips_voice_remote" && [1, 2].contains(index) {
@@ -122,8 +123,12 @@ struct SetupGuidesView: View {
                             } else if step.pictureKind == "remote" {
                                 RemoteButtonsIllustration(step: step, number: index + 1, theme: theme)
                             } else { SetupScreenIllustration(step: step, number: index + 1, theme: theme) }
-                            disclosure("Need help?", id: "setup-step-details") { detailsExpanded.toggle() }
+                                }
+                            }
+                            disclosure("? Step help", id: "setup-step-details") { detailsExpanded.toggle() }
                             if detailsExpanded {
+                                pictureJumps(route)
+                                pairingHelp(route)
                                 manualHelp(route)
                                 if !Self.repeatedPictureNotes.contains(step.note) { Text(step.note).font(.callout).foregroundColor(theme.muted) }
                                 control("My screen looks different", icon: "questionmark.circle", id: "setup-mismatch") { remember(); mismatch = true; detailsExpanded = false; referencesExpanded = false }
@@ -136,7 +141,7 @@ struct SetupGuidesView: View {
                         ForEach(platforms, id: \.1) { name, id in
                             platformChoice(name, subtitle: "The TV must show " + name, group: id, blue: id.hasSuffix("_roku"))
                         }
-                        disclosure("Need help?", id: "setup-platform-help") { detailsExpanded.toggle() }
+                        disclosure("? Step help", id: "setup-platform-help") { detailsExpanded.toggle() }
                         if detailsExpanded {
                             Text("Match the name on your TV’s Home screen. If you’re unsure, use the identification pictures.").font(.callout).foregroundColor(theme.muted)
                             control("Help identify my TV", icon: "tv", id: "setup-identify") { chooseRoute("identify") }
@@ -151,7 +156,7 @@ struct SetupGuidesView: View {
                             }
                         }
                         if group.routes.contains(where: { !group.primaryRoutes.contains($0) }) {
-                            control(pickerExpanded ? "Hide other options" : "Other setup options", icon: pickerExpanded ? "chevron.up" : "chevron.down", id: "setup-more-options") { pickerExpanded.toggle() }
+                            control(pickerExpanded ? "? Hide other options" : "? Other setup options", icon: pickerExpanded ? "chevron.up" : "chevron.down", id: "setup-more-options") { pickerExpanded.toggle() }
                         }
                         if pickerExpanded {
                             ForEach(group.routes.filter { !group.primaryRoutes.contains($0) }, id: \.self) { id in
@@ -280,11 +285,12 @@ struct SetupGuidesView: View {
             .font(.system(size: 36)).foregroundColor(theme.violet).accessibilityHidden(true)
         Text(route.id.hasPrefix("phone_") ? "Have your phone and home Wi-Fi password ready." : route.id == "roku_phone" ? "Keep your phone and TV on the same Wi-Fi." : route.steps.first?.surface == "tv" ? "Have your TV remote ready." : "Have your phone and TV ready.").font(.body)
         Text("\(route.steps.count) pictures. One step at a time.").foregroundColor(theme.accent)
-        Text(route.appliesTo).font(.caption).foregroundColor(theme.muted)
-        pairingHelp(route)
         if let saved = resumeIndex(route) { Text("Continue at picture \(saved + 1).").foregroundColor(theme.accent) }
-        disclosure("Need help?", id: "setup-details") { detailsExpanded.toggle() }
+        disclosure("? Step help", id: "setup-details") { detailsExpanded.toggle() }
         if detailsExpanded {
+            Text(route.appliesTo).font(.callout).foregroundColor(theme.muted)
+            pictureJumps(route)
+            pairingHelp(route)
             manualHelp(route)
             VStack(alignment: .leading, spacing: 14) {
                 Text("Use the official setup screens for passwords and approvals.").font(.callout)
@@ -312,8 +318,16 @@ struct SetupGuidesView: View {
             }.foregroundColor(theme.muted).padding(.top, 12)
         }
     }
+    private func pictureJumps(_ route: AQSSSetupRoute) -> some View {
+        Menu {
+            ForEach(Array(route.steps.enumerated()), id: \.offset) { n, step in
+                Button("\(n + 1). \(step.title)") { remember(); index = n; mismatch = false; detailsExpanded = false; referencesExpanded = false }
+            }
+        } label: { Label("Jump to a picture", systemImage: "arrow.right").frame(maxWidth: .infinity, minHeight: 44, alignment: .leading) }
+            .buttonStyle(AppButtonStyle(theme: theme)).accessibilityIdentifier("setup-picture-jump")
+    }
     private func disclosure(_ title: String, id: String, action: @escaping () -> Void) -> some View {
-        Button(action: action) { Label(detailsExpanded ? "Hide help" : title, systemImage: "questionmark.circle").frame(maxWidth: .infinity, minHeight: 44, alignment: .leading) }
+        Button(action: action) { Label(detailsExpanded ? "? Hide step help" : title, systemImage: "questionmark.circle").frame(maxWidth: .infinity, minHeight: 44, alignment: .leading) }
             .buttonStyle(AppButtonStyle(theme: theme)).accessibilityIdentifier(id).accessibilityValue(detailsExpanded ? "Expanded" : "Collapsed")
     }
     @ViewBuilder private func sources(_ route: AQSSSetupRoute) -> some View {
@@ -333,7 +347,7 @@ struct SetupGuidesView: View {
             control("Choose another model or menu", icon: "rectangle.stack", id: "setup-other-menu") { remember(); routeID = nil; index = -1; mismatch = false; pickerExpanded = true; detailsExpanded = false }
             control("Choose another TV or app", icon: "tv", id: "setup-other-group") { chooseGroup("") }
             if let route = route {
-                disclosure("Need help?", id: "setup-mismatch-details") { detailsExpanded.toggle() }
+                disclosure("? Step help", id: "setup-mismatch-details") { detailsExpanded.toggle() }
                 if detailsExpanded { Text(route.appliesTo); sources(route) }
             }
         }
@@ -607,5 +621,24 @@ private struct ProfileMenuIllustration: View {
         .accessibilityElement(children: .ignore)
         .accessibilityLabel("Picture \(number). Profile icon at upper right. Highlighted: \(step.items[step.focus]). \(step.instruction)")
         .accessibilityIdentifier("setup-illustration")
+    }
+}
+
+
+/// Brief cue on a new illustration; no loop and no motion when the system disables it.
+struct GuidePictureCue<Content: View>: View {
+    let screenKey: String
+    @ViewBuilder let content: () -> Content
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @State private var offset: CGFloat = 0
+    var body: some View {
+        content().offset(x: reduceMotion ? 0 : offset)
+            .task(id: screenKey) {
+                guard !reduceMotion else { offset = 0; return }
+                offset = 6
+                withAnimation(.easeOut(duration: 0.3)) { offset = 0 }
+            }
+            .onChange(of: reduceMotion) { _ in offset = 0 }
+            .onDisappear { offset = 0 }
     }
 }

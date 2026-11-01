@@ -2,6 +2,81 @@ import XCTest
 import UIKit
 
 final class AQSSReadOnlyUITests: XCTestCase {
+    func testSimplifiedSetupAndContextualJumps() { checkSimplifiedSetup(large: false) }
+    func testSimplifiedSetupWithLargestTextAndReducedMotion() { checkSimplifiedSetup(large: true) }
+    private func checkSimplifiedSetup(large: Bool) {
+        let app = XCUIApplication()
+        app.launchArguments = ["-aqssGuideDismissedV1", "NO", "-aqssSetupProgressV1", "{}"]
+        if large { app.launchArguments += ["-UIPreferredContentSizeCategoryName", "UICTContentSizeCategoryAccessibilityXXXL"] }
+        app.launch()
+        label("Step 1 of 5", app)
+        XCTAssertFalse(app.buttons["more-features"].exists)
+        XCTAssertTrue(app.buttons["guide-next"].isHittable)
+        screenshot("Simplified welcome \(large)", app)
+        next(app); label("Step 2 of 5", app)
+        XCTAssertFalse(app.buttons["choice-samsung"].exists)
+        XCTAssertFalse(app.buttons["guide-next"].exists)
+        tap("Identify TV from a photo", app)
+        label("No photo selected", app)
+        XCTAssertFalse(app.staticTexts["Model: Not identified"].exists)
+        screenshot("Simplified photo \(large)", app)
+        app.buttons["Close"].firstMatch.tap()
+        label("Step 2 of 5", app)
+        tap("Choose TV brand", app)
+        XCTAssertTrue(app.textFields["brand-search"].waitForExistence(timeout: 5))
+        app.buttons["choice-samsung"].tap()
+        label("Step 3 of 5", app)
+        XCTAssertFalse(app.staticTexts["Use a home app?"].exists)
+        XCTAssertTrue(app.buttons["setup-from-samsung"].exists)
+        screenshot("Simplified TV plan \(large)", app)
+        tap("Setup help", app)
+        let help = app.scrollViews["setup-help-scroll"]
+        XCTAssertTrue(help.waitForExistence(timeout: 5))
+        tap("Home app (optional)", app, scroll: help)
+        tap("Google Home", app, scroll: help)
+        XCTAssertTrue(help.buttons["Jump to Google Home pictures"].exists)
+        app.buttons["Close"].firstMatch.tap()
+        tap("Show Samsung steps", app)
+        XCTAssertTrue(app.buttons["setup-next"].waitForExistence(timeout: 5))
+        app.buttons["setup-next"].tap(); label("Step 1 of 17", app)
+        screenshot("Simplified TV picture \(large)", app)
+        tap("? Step help", app)
+        XCTAssertTrue(app.buttons["setup-picture-jump"].exists)
+        app.buttons["setup-next"].tap(); label("Step 2 of 17", app)
+        app.buttons["setup-back"].tap(); label("Step 1 of 17", app)
+        app.buttons["setup-close"].tap(); label("Step 3 of 5", app)
+        app.buttons["guide-back"].tap(); label("Step 2 of 5", app)
+        tap("Choose TV brand", app); app.buttons["choice-samsung"].tap()
+        label("Step 3 of 5", app)
+        next(app); label("Step 4 of 5", app)
+        XCTAssertTrue(app.buttons["Phone pictures"].exists)
+        next(app); label("Step 5 of 5", app)
+        tap("Setup help", app)
+        tap("Jump to voice check", app, scroll: app.scrollViews["setup-help-scroll"])
+        label("Microphone off", app)
+        XCTAssertTrue(app.buttons["voice-start-stop"].isEnabled)
+        app.buttons["Close"].firstMatch.tap(); label("Step 5 of 5", app)
+        next(app); label("Connection not verified", app)
+        screenshot("Simplified Home \(large)", app)
+        if app.buttons["page-picker"].exists { app.buttons["page-picker"].tap(); tap("Sound", app) }
+        else { tab("sound", app) }
+        XCTAssertTrue(app.buttons["more-sound-tools"].waitForExistence(timeout: 5))
+        XCTAssertFalse(app.buttons["test-setup-open"].exists)
+        tap("More sound tools", app)
+        XCTAssertTrue(app.buttons["test-setup-open"].exists)
+        screenshot("Simplified sound tools \(large)", app)
+        if app.buttons["page-picker"].exists { app.buttons["page-picker"].tap(); tap("Settings", app) }
+        else { tab("settings", app) }
+        XCTAssertTrue(app.buttons["appearance-picker"].waitForExistence(timeout: 5))
+        XCTAssertFalse(app.buttons["Advanced Settings"].exists)
+        tap("More settings", app)
+        tap("Advanced Settings", app)
+        XCTAssertTrue(app.switches["setting-background"].waitForExistence(timeout: 5))
+        screenshot("Simplified advanced settings \(large)", app)
+        app.buttons["page-back"].tap()
+        XCTAssertTrue(app.buttons["appearance-picker"].waitForExistence(timeout: 5))
+    }
+
     private let setupAnswers = [
         ("playback_phone", "Android 16 test phone"), ("intended_output", "Phone speaker"),
         ("observer_phone", "iPhone iOS 26"), ("recording_app", "Voice Memos mode unknown"),

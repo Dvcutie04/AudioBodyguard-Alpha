@@ -204,6 +204,9 @@ private struct ReadOnlyHomeView: View {
     @State private var moreFeatures = false
     @State private var moreTVBrands = false
     @State private var tutorialHelp = false
+    @State private var brandPickerVisible = false
+    @State private var brandQuery = ""
+    @State private var pendingHelpJump: String?
     @State private var voiceAfterGuide = false
     @State private var pendingSetupGroup: String?
     @State private var pagesVisible = false
@@ -309,10 +312,9 @@ private struct ReadOnlyHomeView: View {
             .sheet(isPresented: $photoCheckVisible, onDismiss: {
                 guard let brand = suggestedTVBrand else { return }
                 suggestedTVBrand = nil
-                guard tutorialStep?.target == "chooseTV", guide.select(brand) else { return }
-                _ = guide.next()
+                _ = guide.acceptPhotoBrand(brand)
             }) {
-                TVPhotoView(theme: theme, onUseBrand: tutorialStep?.target == "chooseTV" ? { brand in
+                TVPhotoView(theme: theme, onUseBrand: ["welcome", "chooseTV"].contains(tutorialStep?.target ?? "") ? { brand in
                     suggestedTVBrand = brand
                 } : nil)
             }
@@ -345,11 +347,30 @@ private struct ReadOnlyHomeView: View {
             }) { request in SetupGuidesView(theme: theme, initialGroup: request.group, deviceGroup: request.deviceGroup, returningToTutorial: tutorialTopicID != nil, onDeviceGroupSelected: { selectedSetupSystem = $0 }, onVoiceCheck: { voiceAfterGuide = true }, onPartOne: { route in
                 if pictureTarget == "connectionPlan" && guide.completePictures(expectedTarget: "connectionPlan", routeID: route) { pictureTarget = "connectionCheck" }
             }, onFinish: { completedPictureRoute = $0 }) }
-            .sheet(isPresented: $navigationVisible) {
-                menuSheet("Jump to a section") {
-                    ForEach(destinations, id: \.1) { title, target in action(title, icon: "arrow.right") { navigationVisible = false; jump(target) } }
+            .sheet(isPresented: $navigationVisible, onDismiss: performHelpJump) {
+                menuSheet("Jump to") {
+                    action("Sound check", icon: "mic") { pendingHelpJump = "sound"; navigationVisible = false }
+                    action("Voice check", icon: "waveform") { pendingHelpJump = "voice"; navigationVisible = false }
+                    action("Setup guide", icon: "tv") { navigationVisible = false; startTutorial("getting_started") }
+                    ForEach(contextDestinations, id: \.1) { title, target in action(title, icon: "arrow.right") { navigationVisible = false; jump(target) } }
                     action("Cancel", icon: "xmark") { navigationVisible = false }
                 }
+            }
+            .sheet(isPresented: $tutorialHelp, onDismiss: performHelpJump) { setupHelpSheet }
+            .sheet(isPresented: $brandPickerVisible) {
+                VStack(alignment: .leading, spacing: 16) {
+                    HStack { Text("Choose TV brand").font(.title2.bold()); Spacer(); Button("Cancel") { brandPickerVisible = false } }
+                    TextField("Search brands", text: $brandQuery).textFieldStyle(.roundedBorder).accessibilityIdentifier("brand-search")
+                    ScrollView {
+                        VStack(spacing: 12) {
+                            ForEach(guide.choices.filter { brandQuery.isEmpty || $0.title.localizedCaseInsensitiveContains(brandQuery) }, id: \.id) { choice in
+                                action(choice.title, icon: choice.icon) {
+                                    if guide.select(choice.id) { guide.next() }; brandPickerVisible = false
+                                }.accessibilityIdentifier("choice-" + choice.id)
+                            }
+                        }
+                    }
+                }.padding(20).background(theme.background).foregroundColor(theme.text).accessibilityIdentifier("brand-picker")
             }
             .sheet(isPresented: $pagesVisible) {
                 menuSheet("Choose a page") {
@@ -360,12 +381,15 @@ private struct ReadOnlyHomeView: View {
             .sheet(isPresented: $helpVisible, onDismiss: {
                 if let group = pendingSetupGroup { pendingSetupGroup = nil; showSetup(group) }
             }) {
-                menuSheet("Choose a tutorial") {
+                menuSheet("? Help & jump to") {
                     Text(currentPage.headline).font(.headline)
                     Text(currentPage.subtitle).foregroundColor(theme.muted)
                     action("Illustrated setup guides", icon: "rectangle.stack") { pendingSetupGroup = ""; helpVisible = false }
                     action("Voice check — step by step", icon: "mic") { pendingSetupGroup = "voice"; helpVisible = false }
-                    ForEach(AQSSTutorialContent.topics, id: \.id) { topic in action(topic.title, icon: "questionmark.circle") { helpVisible = false; startTutorial(topic.id) } }
+                    featureCatalog
+                    DisclosureGroup("More tutorials") {
+                        ForEach(AQSSTutorialContent.topics, id: \.id) { topic in action(topic.title, icon: "questionmark.circle") { helpVisible = false; startTutorial(topic.id) } }
+                    }
                     action("Cancel", icon: "xmark") { helpVisible = false }
                 }
             }
@@ -447,7 +471,7 @@ private struct ReadOnlyHomeView: View {
                     RoseButton(title: "Back to Tutorial", theme: theme) { resumeTutorial() }
                         .accessibilityIdentifier("resume-tutorial")
                 }
-                action(detailSections.contains("coverage") ? "Hide status details" : "Status details", icon: "info.circle") { toggleDetails("coverage") }
+                action(detailSections.contains("coverage") ? "? Hide status help" : "? Status help", icon: "questionmark.circle") { toggleDetails("coverage") }
                 if detailSections.contains("coverage") {
                     VStack(alignment: .leading, spacing: 12) {
                         Text(coverageTitle).font(.headline).foregroundColor(theme.warning)
@@ -470,17 +494,16 @@ private struct ReadOnlyHomeView: View {
 
     private var soundPage: some View {
         VStack(alignment: .leading, spacing: 18) {
-            destinationCard("Output details", subtitle: "Review the session’s reported output types", icon: "speaker.wave.2") {
-                outputDetailsVisible = true
-            }.accessibilityIdentifier("output-details-open")
-            destinationCard("Test setup", subtitle: "Record the two-phone test arrangement", icon: "doc.text") {
-                testSetupDraft.clear(); testSetupVisible = true
-            }.accessibilityIdentifier("test-setup-open")
             destinationCard("Live sound check", subtitle: "Try a 30-second microphone check", icon: "mic") { liveSoundCheckVisible = true }
             destinationCard("Voice check", subtitle: "See microphone activity and recognized words", icon: "waveform") { voiceCheckVisible = true }
+            DisclosureGroup {
+                destinationCard("Output details", subtitle: "Review reported outputs", icon: "speaker.wave.2") { outputDetailsVisible = true }.accessibilityIdentifier("output-details-open")
+                destinationCard("Test setup", subtitle: "Record a two-phone test", icon: "doc.text") { testSetupDraft.clear(); testSetupVisible = true }.accessibilityIdentifier("test-setup-open")
+            } label: { Label("More sound tools", systemImage: "questionmark.circle") }
+                .accessibilityIdentifier("more-sound-tools")
             card(target: "options") {
                 Text("Sound options").font(.title2.bold()).accessibilityAddTraits(.isHeader)
-                action(optionsExpanded ? "Hide options" : "Options", icon: "slider.horizontal.3") { closeTutorial(restore: false); optionsExpanded.toggle() }
+                action(optionsExpanded ? "? Hide sound options" : "? Sound options", icon: "questionmark.circle") { closeTutorial(restore: false); optionsExpanded.toggle() }
                     .accessibilityValue(optionsExpanded ? "Expanded" : "Collapsed")
                 if optionsExpanded {
                     helpButton("Help with options", topic: "sound")
@@ -504,11 +527,12 @@ private struct ReadOnlyHomeView: View {
 
     private var devicesPage: some View {
         VStack(alignment: .leading, spacing: 18) {
-            destinationCard("TV photo setup", subtitle: "Read a model label or Network settings photo", icon: "camera") { photoCheckVisible = true }
-            destinationCard("Illustrated setup guides", subtitle: "TV pairing, Google Home & Alexa · one picture at a time", icon: "rectangle.stack") { showSetup() }
-            Text("No qualified device connected").font(.subheadline).foregroundColor(theme.muted)
-            action(deviceDetails ? "Hide device details" : "More device details", icon: "info.circle") { deviceDetails.toggle() }
+            destinationCard("Set up your TV", subtitle: "One picture at a time", icon: "tv") { startTutorial("getting_started") }
+            Text("Connection not verified").font(.subheadline).foregroundColor(theme.muted)
+            action(deviceDetails ? "? Hide device help" : "? Device help", icon: "questionmark.circle") { deviceDetails.toggle() }
             if deviceDetails {
+            destinationCard("TV photo setup", subtitle: "Read a model label or settings photo", icon: "camera") { photoCheckVisible = true }
+            destinationCard("Illustrated setup guides", subtitle: "Jump to a TV or home app", icon: "rectangle.stack") { showSetup() }
             helpButton("TV & smart-home guide", topic: "getting_started")
             connectionStages(currentTarget: nil)
             card(target: "capability") {
@@ -556,7 +580,9 @@ private struct ReadOnlyHomeView: View {
                     Text("No measurements yet").font(.title3.bold())
                     action(detailSections.contains("trends") ? "Hide measurement details" : "Measurement details", icon: "info.circle") { toggleDetails("trends") }
                     if detailSections.contains("trends") { Text("A qualified observation source is needed before a real trend can appear. Missing measurements cannot establish safe audio.").foregroundColor(theme.muted) }
-                    action("Explore an example", icon: "chart.xyaxis.line", primary: true) { chartValuesVisible = false; showingExample = true }
+                    DisclosureGroup {
+                        action("Explore an example", icon: "chart.xyaxis.line") { chartValuesVisible = false; showingExample = true }
+                    } label: { Label("Insights help", systemImage: "questionmark.circle") }
                 }
             }
             section("Session history", detail: "No observed events", explanation: "A missing history cannot establish continuous coverage. Requests and verified results will need distinct records.", target: "history", icon: "clock")
@@ -572,21 +598,23 @@ private struct ReadOnlyHomeView: View {
                     Spacer()
                     question("Appearance", explanation: "Midnight uses a dark background. Daylight uses a light background. System follows your phone’s appearance. This choice is saved on this phone and works without a TV connection.", target: "appearance")
                 }
-                ForEach(["midnight", "daylight", "system"], id: \.self) { value in
-                    Button { appearance = value } label: {
-                        HStack { Image(systemName: value == "midnight" ? "moon.stars" : value == "daylight" ? "sun.max" : "circle.lefthalf.filled"); Text(value.capitalized); Spacer(); if appearance == value { Image(systemName: "checkmark") } }.frame(maxWidth: .infinity, minHeight: 44)
-                    }.buttonStyle(AppButtonStyle(theme: theme, primary: appearance == value)).accessibilityLabel(value.capitalized).accessibilityValue(appearance == value ? "Selected" : "Not selected")
+                Menu {
+                    ForEach(["midnight", "daylight", "system"], id: \.self) { value in Button(value.capitalized) { appearance = value } }
+                } label: { Label("Appearance · " + appearance.capitalized, systemImage: "circle.lefthalf.filled").frame(maxWidth: .infinity, minHeight: 44) }
+                    .buttonStyle(AppButtonStyle(theme: theme)).accessibilityIdentifier("appearance-picker")
+            }
+            DisclosureGroup {
+                action("Build details", icon: "info.circle") {
+                    let details = installedBuildDetails
+                    settingHelp = SettingExplanation(id: "build", title: "Build details", explanation: details, shareText: details)
                 }
-            }
-            action("Build details", icon: "info.circle") {
-                let details = installedBuildDetails
-                settingHelp = SettingExplanation(id: "build", title: "Build details",
-                    explanation: details + "\n\nInclude the version and build when reporting a problem.", shareText: details)
-            }
-            action("Advanced Settings", icon: "chevron.right") {
-                rememberPage(); closeTutorial(restore: false); advancedExpanded = true
-                navigationTarget = "page-heading"; navigationRequest += 1
-            }
+                action("Advanced Settings", icon: "chevron.right") {
+                    rememberPage(); closeTutorial(restore: false); advancedExpanded = true
+                    navigationTarget = "page-heading"; navigationRequest += 1
+                }
+                action("Private support report", icon: "doc.text") { showSupportReport() }
+            } label: { Label("More settings", systemImage: "questionmark.circle") }
+                .accessibilityIdentifier("more-settings")
             } else {
                 whiteSettingsCard(target: "advanced") {
                     ForEach(AQSSInterfaceContent.settings, id: \.id) { item in
@@ -790,7 +818,7 @@ private struct ReadOnlyHomeView: View {
     private func reveal(_ target: String, area: String? = nil) {
         page = AQSSInterfaceContent.targetPages[target] ?? "home"
         if page == "sound" { optionsExpanded = true }
-        if page == "settings" { advancedExpanded = true }
+        if page == "settings" { advancedExpanded = target != "appearance" }
         if page == "devices" { deviceDetails = true }
         detailSections.insert(target)
         if area == "checklist" { checklistExpanded = true }
@@ -827,78 +855,94 @@ private struct ReadOnlyHomeView: View {
     }
     private func tutorialPanel(topic: AQSSTutorialTopic, step: AQSSTutorialStep) -> some View {
         VStack(spacing: 0) {
-            VStack(alignment: .leading, spacing: 4) {
-                HStack {
-                    Text("Step \(tutorialIndex + 1) of \(topic.steps.count)").font(.subheadline.weight(.semibold)).foregroundColor(theme.muted)
-                    Spacer(minLength: 8)
-                    RoseButton(title: "Exit Home", theme: theme) { exitToHome() }
-                        .accessibilityIdentifier("exit-tutorial")
-                }
-                if topic.id == "getting_started" { Text(AQSSTutorialContent.previewNotice).font(.caption).foregroundColor(theme.muted) }
+            HStack {
+                Text("Step \(guide.stepNumber) of \(guide.stepCount)").font(.subheadline.weight(.semibold)).foregroundColor(theme.muted)
+                Spacer(minLength: 8)
+                RoseButton(title: "Exit Home", theme: theme, compact: textSize.isAccessibilitySize) { exitToHome() }.accessibilityIdentifier("exit-tutorial")
             }.padding(.horizontal, 20).padding(.vertical, 10)
             GuideScrollView(screenKey: tutorialStepKey, identifier: "guide-scroll", onStepReady: { key in
                 if scenePhase == .active { focusedElement = .tutorial(key) }
             }) {
-                VStack(alignment: .leading, spacing: 16) {
-                    HStack(spacing: 18) {
-                        Image(systemName: "iphone")
-                        if step.target != "connectionCheck" { Image(systemName: step.target == "chooseHome" ? "house" : "tv") }
-                        if step.target == "welcome" { Image(systemName: "hifispeaker") }
-                    }.font(.system(size: 32, weight: .light)).foregroundColor(theme.violet).accessibilityHidden(true)
+                VStack(alignment: .leading, spacing: 20) {
+                    GuidePictureCue(screenKey: tutorialStepKey) {
+                        HStack(spacing: 18) {
+                            Image(systemName: step.target == "connectionCheck" ? "iphone" : "tv")
+                            Image(systemName: "arrow.right")
+                            Image(systemName: "iphone")
+                        }.font(.system(size: 32, weight: .light)).foregroundColor(theme.violet)
+                    }.accessibilityHidden(true)
                     Text(step.title).font(.largeTitle.bold()).fixedSize(horizontal: false, vertical: true)
                         .accessibilityAddTraits(.isHeader).accessibilityFocused($focusedElement, equals: .tutorial(tutorialStepKey))
-                    Text(step.explanation).font(.body).fixedSize(horizontal: false, vertical: true)
-                    if topic.id == "getting_started" && step.target == "welcome" { connectionStages(currentTarget: nil) }
-                    else if topic.id == "getting_started", let stage = AQSSTutorialContent.connectionStages.first(where: { $0.targets.contains(step.target) }), !["connectionPlan", "connectionCheck"].contains(step.target) {
-                        Text("Connection \(stage.number) of 2").font(.caption.weight(.semibold)).foregroundColor(theme.accent)
-                    }
-                    if topic.id == "getting_started" && ["chooseTV", "chooseHome"].contains(step.target) {
-                        tutorialExplanation(step)
-                    }
-                    if topic.id == "getting_started" && step.target == "chooseTV" {
-                        action("Identify TV from a photo", icon: "camera") { suggestedTVBrand = nil; photoCheckVisible = true }
-                            .accessibilityIdentifier("identify-tv-photo")
-                    }
-                    ForEach(visibleTutorialChoices(for: step).filter { $0.id != "unsure" }, id: \.id) { choice in
-                        tutorialChoice(choice, target: step.target)
-                    }
-                    if topic.id == "getting_started" && step.target == "chooseTV" {
-                        Button(moreTVBrands ? "Fewer TV brands" : "More TV brands") { moreTVBrands.toggle() }
-                            .buttonStyle(AppButtonStyle(theme: theme))
-                            .accessibilityIdentifier("more-tv-brands")
-                            .accessibilityValue(moreTVBrands ? "Expanded" : "Collapsed")
-                        if let unsure = guide.choices.first(where: { $0.id == "unsure" }) {
-                            tutorialChoice(unsure, target: step.target)
+                    Text(step.explanation).fixedSize(horizontal: false, vertical: true)
+                    if topic.id == "getting_started" {
+                        if step.target == "welcome" { Text("1. Your TV  →  2. Your phone").foregroundColor(theme.accent).font(.headline) }
+                        if step.target == "chooseTV" {
+                            action("Identify TV from a photo", icon: "camera", primary: true) { suggestedTVBrand = nil; photoCheckVisible = true }.accessibilityIdentifier("identify-tv-photo")
+                            action("Choose TV brand", icon: "chevron.down") { brandQuery = ""; brandPickerVisible = true }.accessibilityIdentifier("choose-tv-brand")
                         }
-                    }
-                    if ["connectionPlan", "connectionCheck"].contains(step.target) {
-                        if step.target == "connectionCheck" {
-                            action("Phone pictures", icon: "iphone", primary: true) { showSetup("phone") }
+                        if step.target == "connectionPlan", let selected = guide.selected("chooseTV") {
+                            action(selected.id == "unsure" ? "Help identify my TV" : "Show \(selected.title) steps", icon: "arrow.right", primary: true) { showSetup(selected.id) }.accessibilityIdentifier("setup-from-" + selected.id)
                         }
-                        if step.target == "connectionPlan" { selectedConnectionActions(primaryTV: true) }
-                    }
-                    if topic.id == "getting_started" && step.target == "welcome" {
-                        featureCatalog
-                    } else if !["chooseTV", "chooseHome"].contains(step.target) {
-                        tutorialExplanation(step)
-                    }
+                        if step.target == "connectionCheck" { action("Phone pictures", icon: "arrow.right", primary: true) { showSetup("phone") } }
+                        action("Setup help", icon: "questionmark.circle") { tutorialHelp = true }.accessibilityIdentifier("setup-context-help")
+                    } else { tutorialExplanation(step) }
                 }.frame(maxWidth: 640, alignment: .leading).padding(20).frame(maxWidth: .infinity)
             }
-            VStack(spacing: 8) {
-                if !guide.choices.isEmpty {
-                    Text(guide.selected(step.target).map { "Selected: \($0.title)" } ?? "Choose one option above to continue.")
-                        .font(.subheadline).foregroundColor(theme.muted)
-                }
-                HStack(spacing: 12) {
-                    if tutorialIndex > 0 { Button("Back") { guide.back() }.buttonStyle(AppButtonStyle(theme: theme)) }
-                    action(guide.isLast ? (topic.id == "getting_started" ? "Open full app" : "Done") : (tutorialIndex == 0 ? (topic.id == "getting_started" ? AQSSTutorialContent.startLabel : "Begin") : "Next"), icon: "arrow.right", primary: !["connectionPlan", "connectionCheck"].contains(step.target)) {
-                        guard guide.canContinue else { return }
+            HStack(spacing: 12) {
+                if tutorialIndex > 0 { Button("Back") { guide.back() }.buttonStyle(AppButtonStyle(theme: theme)).accessibilityIdentifier("guide-back") }
+                if guide.canContinue {
+                    action(guide.isLast ? (topic.id == "getting_started" ? "Go to Home" : "Done") : (tutorialIndex == 0 ? (topic.id == "getting_started" ? AQSSTutorialContent.startLabel : "Begin") : "Next"), icon: "arrow.right", primary: !["connectionPlan", "connectionCheck"].contains(step.target)) {
                         if guide.isLast { if topic.id == "getting_started" { beginnerTourFinished = true }; closeTutorial() }
-                        else { _ = guide.next() }
-                    }.disabled(!guide.canContinue).accessibilityIdentifier("guide-next")
+                        else { guide.next() }
+                    }.accessibilityIdentifier("guide-next")
                 }
             }.padding(16).background(theme.surface)
         }
+    }
+    private var contextDestinations: [(String, String)] {
+        switch page {
+        case "sound": return [("Sound options", "options"), ("Captions", "captions"), ("Advanced Settings", "advanced")]
+        case "devices": return [("Readiness checklist", "capability"), ("Connection status", "coverage"), ("Privacy and storage", "privacy")]
+        case "insights": return [("Session history", "history"), ("Connection status", "coverage")]
+        case "settings": return [("Appearance", "appearance"), ("Advanced Settings", "advanced"), ("Privacy and storage", "privacy")]
+        default: return [("Connection status", "coverage"), ("Readiness checklist", "capability")]
+        }
+    }
+    private func queueHelpJump(_ target: String) { pendingHelpJump = target; tutorialHelp = false }
+    private func performHelpJump() {
+        guard let target = pendingHelpJump else { return }; pendingHelpJump = nil
+        switch target {
+        case "photo": suggestedTVBrand = nil; photoCheckVisible = true
+        case "sound": liveSoundCheckVisible = true
+        case "voice": voiceCheckVisible = true
+        case "phone": showSetup("phone")
+        case "google", "alexa": showSetup(target)
+        default: break
+        }
+    }
+    private var setupHelpSheet: some View {
+        ScrollView {
+            VStack(alignment: .leading, spacing: 18) {
+                HStack { Text("? Setup help").font(.title2.bold()); Spacer(); Button("Close") { tutorialHelp = false }.frame(minWidth: 44, minHeight: 44) }
+                Text(tutorialStep?.example.isEmpty == false ? tutorialStep!.example : "Follow the TV pictures, then the phone pictures. Setup guidance does not verify a TV connection.")
+                if ["welcome", "chooseTV"].contains(tutorialStep?.target ?? "") { action("Jump to TV photo", icon: "camera") { queueHelpJump("photo") } }
+                if tutorialStep?.target == "connectionPlan" {
+                    DisclosureGroup("Home app (optional)") {
+                        ForEach(AQSSTutorialContent.choices["chooseHome"] ?? [], id: \.id) { choice in
+                            action(choice.id == "neither" ? "Use TV maker’s app (default)" : choice.title, icon: guide.selected("chooseHome")?.id == choice.id ? "checkmark" : choice.icon) { guide.selectHomeApp(choice.id) }
+                        }
+                    }.accessibilityIdentifier("optional-home-app")
+                    ForEach(["google", "alexa"], id: \.self) { id in
+                        if [id, "both"].contains(guide.selected("chooseHome")?.id ?? "") {
+                            action("Jump to " + (id == "google" ? "Google Home" : "Amazon Alexa") + " pictures", icon: "house") { queueHelpJump(id) }
+                        }
+                    }
+                }
+                if ["connectionPlan", "connectionCheck"].contains(tutorialStep?.target ?? "") { action("Jump to phone Wi-Fi pictures", icon: "wifi") { queueHelpJump("phone") } }
+                action("Jump to sound check", icon: "mic") { queueHelpJump("sound") }
+                action("Jump to voice check", icon: "waveform") { queueHelpJump("voice") }
+            }.padding(20)
+        }.background(theme.background).foregroundColor(theme.text).accessibilityIdentifier("setup-help-scroll")
     }
     private func visibleTutorialChoices(for step: AQSSTutorialStep) -> [AQSSTutorialChoice] {
         guard step.target == "chooseTV", !moreTVBrands else { return guide.choices }

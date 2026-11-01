@@ -116,14 +116,14 @@ class InputAssistanceActivity : Activity() {
     }
     private fun voicePage() {
         label("See what your phone hears", true)
-        action("Help · show voice steps") { openSetup("voice") }
+
         label("Tap Start, then say: ‘Make the TV quieter.’ See the incoming sound bars and recognized words.")
         status = label("Microphone off", true)
         permissionSettingsButton = action("Open app settings") { openVoicePermissionSettings() }.apply { visibility = View.GONE }
         meter = InputMeter(this, skin.violet)
         column.addView(meter, LinearLayout.LayoutParams(-1, skin.dp(120)))
         levelText = label("No microphone samples yet")
-        label("Digital input levels over time, when available on your phone.")
+
         label("Recent recognized words · may change", true)
         details = label("No words recognized yet")
         recent = action("Recent sound checks") {
@@ -131,11 +131,12 @@ class InputAssistanceActivity : Activity() {
                 !running && recognizer == null && microphone.blocked) showRecentSoundChecks(this, skin)
         }.apply { visibility = View.GONE }
         startButton = action("Start voice check", primary = true) { if (running) stopVoice() else startVoice() }
-        val clear = action("Clear words") { stopVoice(); details.text = "No words recognized yet" }
-        column.removeView(startButton); column.removeView(clear)
+        column.removeView(startButton)
         footer.addView(startButton, LinearLayout.LayoutParams(-1, -2))
-        footer.addView(clear, LinearLayout.LayoutParams(-1, -2))
-        label("On-device recognition on supported Android 12+ phones. Words clear and listening stops when you leave. Review recognized words before using them.")
+        action("? Voice help") { skin.menu("Voice help", listOf(
+            "Jump to voice steps" to { openSetup("voice") },
+            "Clear words" to { stopVoice(); details.text = "No words recognized yet" }
+        ), "Digital recognizer levels are not room loudness. Recognition stays on supported phones. Review words before using them. Listening stops when you leave.") }
     }
     private fun startVoice() {
         if (!visible || !hasWindowFocus() || isFinishing) return
@@ -308,13 +309,13 @@ class InputAssistanceActivity : Activity() {
     }
     private fun photoPage() {
         label("Find your TV details", true)
-        label(if (intent.getBooleanExtra("fromTutorial", false)) "Photograph the TV’s model label or About screen. Keep passwords out of the picture." else "Take a clear picture of the model label, or the TV’s Network / IP settings screen. Avoid passwords. Do not move a heavy or wall-mounted TV: use its About screen instead.")
+        label("Photograph the TV’s About screen or model label. Keep passwords out of the picture.")
         action("Take a TV photo", primary = true) { selectPhoto(camera = true) }
         action("Choose a photo") { selectPhoto(camera = false) }
         status = label("No photo selected", true)
-        details = label("Brand: Not identified")
+        details = label("Brand: Not identified").apply { visibility = View.GONE }
         photoExtra = label("Model: Not identified\nTV IP hint: Not identified").apply {
-            if (intent.getBooleanExtra("fromTutorial", false)) visibility = View.GONE
+            visibility = View.GONE
         }
         label("Check the suggested details on your TV. A photo does not connect it. Choosing another picture clears these details.")
         if (intent.getBooleanExtra("fromTutorial", false)) {
@@ -323,18 +324,19 @@ class InputAssistanceActivity : Activity() {
                     setResult(RESULT_OK, Intent().putExtra("suggestedBrand", id)); finish()
                 }
             }.apply { visibility = View.GONE }
-            action("Show photo details") { photoExtra?.visibility = if (photoExtra?.visibility == View.VISIBLE) View.GONE else View.VISIBLE }
-        } else action("Illustrated setup guides") { openSetup(photoBrand?.lowercase() ?: "") }
-        action("Need help?") { instructions?.visibility = if (instructions?.visibility == View.VISIBLE) View.GONE else View.VISIBLE }
-        instructions = label("1. Open Settings on the TV. Look for About, Support or Device information to find its model. Menu names differ.\n\n2. Look for Network, Connection or Network status, then IP settings. Photograph the IP address row — not Gateway or DNS. The back label usually does not show the current IP.\n\n3. Put the phone and TV on the same home Wi-Fi. Avoid a guest network. IP addresses can change and do not prove TV identity.\n\n4. Supported Samsung models use SmartThings and may ask for approval on the TV. For Alexa or Google Home, add/link a supported TV inside that app and follow its approval steps.").apply { visibility = View.GONE }
-        action("Clear photo details") { clearPhoto() }
-        label("Text recognition stays on this phone. New camera photos use a temporary copy. Photos you choose stay in your gallery. Details clear on close.")
+        }
+        action("? Photo help") { skin.menu("Photo help", listOf(
+            "Show photo details" to { photoExtra?.visibility = View.VISIBLE },
+            "Jump to illustrated setup guides" to { openSetup(photoBrand?.lowercase() ?: "") },
+            "Clear photo details" to { clearPhoto() }
+        ), "Use About in your TV’s Settings; do not move a heavy TV. For an IP hint, photograph the Network screen’s IP address row, not Gateway or DNS. Keep TV and phone on the same home Wi-Fi. Text recognition stays on this phone; details clear on close.") }
     }
+
     private fun clearPhoto() {
         waitingForPhotoWork = false
         stopPhotoWatchdog()
         pendingPhoto = null; photoRun.clear(); cameraPhoto?.close(); cameraPhoto = null; photoBrand = null
-        status.text = "No photo selected"; details.text = "Brand: Not identified"
+        status.text = "No photo selected"; details.text = "Brand: Not identified"; details.visibility = View.GONE
         photoExtra?.text = "Model: Not identified\nTV IP hint: Not identified"; useBrand?.visibility = View.GONE
     }
     private fun stopPhotoWatchdog() {
@@ -477,6 +479,7 @@ class InputAssistanceActivity : Activity() {
                 runOnUiThread {
                     if (acceptPhoto(token)) {
                         details.text = "Brand: ${hints.brand ?: "Not identified"}"
+        details.visibility = if (hints.brand == null) View.GONE else View.VISIBLE
                         photoExtra?.text = "Model: ${hints.model ?: "Not identified"}\nTV IP hint: ${hints.address ?: "Not identified"}"
                         photoBrand = hints.brand
                         val choice = TutorialContent.choices["chooseTV"]?.firstOrNull { it.id == hints.brand?.lowercase() }

@@ -243,13 +243,16 @@ class SetupGuideActivity : Activity() {
                 words(content, step.instruction, 16f, bold = true)
                 if (index == 14 && route.id == "samsung_ok") action(content, "TV shows a PIN") { switchSamsungApproval("samsung_pin") }
                 if (index == 14 && route.id == "samsung_pin") action(content, "TV shows OK instead") { switchSamsungApproval("samsung_ok") }
-                pairingHelp(route)
                 if (route.id == "philips_voice_remote" && index == 4) action(content, "Remote already connected") { skipTo(route.id, 4, 9) }
                 if (route.id == "philips_voice_remote" && index == 5) action(content, "Light is not blinking") { skipTo(route.id, 5, 6) }
                 if (route.id == "fire_setup" && index in 5..6) action(content, "Account sign-in finished") { skipTo(route.id, index, 7) }
-                content.addView(if (route.id == "roku_network" || route.id == "roku_model") rokuIllustration(step, index + 1, route.id) else if (route.id == "philips_voice_remote" && index in 1..2) profileIllustration(step, index + 1) else if (step.pictureKind == "remote") remoteIllustration(step, index + 1) else illustration(step, index + 1), LinearLayout.LayoutParams(-1, -2).apply { bottomMargin = dp(18) })
-                action(content, if (detailsExpanded) "Hide help" else "Need help?") { detailsExpanded = !detailsExpanded; render(true) }
+                val picture = if (route.id == "roku_network" || route.id == "roku_model") rokuIllustration(step, index + 1, route.id) else if (route.id == "philips_voice_remote" && index in 1..2) profileIllustration(step, index + 1) else if (step.pictureKind == "remote") remoteIllustration(step, index + 1) else illustration(step, index + 1)
+                if (!preserveScroll) skin.guideCue(picture)
+                content.addView(picture, LinearLayout.LayoutParams(-1, -2).apply { bottomMargin = dp(18) })
+                action(content, if (detailsExpanded) "? Hide step help" else "? Step help") { detailsExpanded = !detailsExpanded; render(true) }
                 if (detailsExpanded) {
+                    pictureJumps(route)
+                    pairingHelp(route)
                     manualHelp(route)
                     if (step.note !in repeatedPictureNotes) words(content, step.note, color = skin.muted)
                     action(content, "My screen looks different") { remember(); mismatch = true; detailsExpanded = false; referencesExpanded = false; render() }
@@ -266,7 +269,7 @@ class SetupGuideActivity : Activity() {
                         compoundDrawablePadding = dp(12); gravity = Gravity.START or Gravity.CENTER_VERTICAL; minHeight = dp(64)
                     }, LinearLayout.LayoutParams(-1, -2).apply { bottomMargin = dp(12) })
                 }
-                action(content, if (detailsExpanded) "Hide help" else "Need help?") { detailsExpanded = !detailsExpanded; render(true) }
+                action(content, if (detailsExpanded) "? Hide step help" else "? Step help") { detailsExpanded = !detailsExpanded; render(true) }
                 if (detailsExpanded) {
                     words(content, "Match the name on your TV’s Home screen. If you’re unsure, use the identification pictures.", color = skin.muted)
                     action(content, "Help identify my TV") { chooseRoute("identify") }
@@ -279,7 +282,7 @@ class SetupGuideActivity : Activity() {
                 selectedGroup.primaryRoutes.forEach { id -> SetupContent.routes.firstOrNull { it.id == id }?.let { guide ->
                     action(content, if (id == "roku_network") "Start TV setup" else guide.title, selectedGroup.primaryRoutes.size == 1) { chooseRoute(id) }
                 } }
-                if (selectedGroup.routes.any { it !in selectedGroup.primaryRoutes }) action(content, if (pickerExpanded) "Hide other options" else "Other setup options") { pickerExpanded = !pickerExpanded; render(true) }
+                if (selectedGroup.routes.any { it !in selectedGroup.primaryRoutes }) action(content, if (pickerExpanded) "Hide other options" else "? Other setup options") { pickerExpanded = !pickerExpanded; render(true) }
                 if (pickerExpanded) selectedGroup.routes.filter { it !in selectedGroup.primaryRoutes }.forEach { id -> SetupContent.routes.firstOrNull { it.id == id }?.let { guide -> action(content, guide.title) { chooseRoute(id) } } }
             }
             else -> {
@@ -322,11 +325,12 @@ class SetupGuideActivity : Activity() {
     private fun intro(route: SetupRoute) {
         words(content, if (route.id.startsWith("phone_")) "Have your phone and home Wi-Fi password ready." else if (route.id == "roku_phone") "Keep your phone and TV on the same Wi-Fi." else if (route.steps.first().surface == "tv") "Have your TV remote ready." else "Have your phone and TV ready.")
         words(content, "${route.steps.size} pictures. One step at a time.", 18f, skin.accent)
-        words(content, route.appliesTo, 13f, skin.muted)
-        pairingHelp(route)
         resumeIndex(route)?.let { saved -> words(content, "Continue at picture ${saved + 1}.", color = skin.accent) }
-        action(content, if (detailsExpanded) "Hide help" else "Need help?") { detailsExpanded = !detailsExpanded; render(true) }
+        action(content, if (detailsExpanded) "? Hide step help" else "? Step help") { detailsExpanded = !detailsExpanded; render(true) }
         if (detailsExpanded) {
+            words(content, route.appliesTo, 16f, skin.muted)
+            pictureJumps(route)
+            pairingHelp(route)
             manualHelp(route)
             if (!route.id.startsWith("phone_")) action(content, "Phone Wi-Fi pictures") { chooseGroup("phone") }
             if ((group?.routes?.size ?: 0) > 1) action(content, "Other setup options") {
@@ -340,6 +344,15 @@ class SetupGuideActivity : Activity() {
             action(content, "My screen looks different") { remember(); mismatch = true; detailsExpanded = false; referencesExpanded = false; render() }
             action(content, if (referencesExpanded) "Hide reference links" else "Reference links") { referencesExpanded = !referencesExpanded; render(true) }
             if (referencesExpanded) sources(route)
+        }
+    }
+    private fun pictureJumps(route: SetupRoute) {
+        action(content, "Jump to a picture") {
+            skin.menu("Jump to a picture", route.steps.mapIndexed { n, step ->
+                "${n + 1}. ${step.title}" to {
+                    remember(); index = n; mismatch = false; detailsExpanded = false; referencesExpanded = false; render()
+                }
+            })
         }
     }
     private fun resultPayload() = Intent().putExtra(SELECTED_SYSTEM, selectedSystem).putExtra(COMPLETED_TV_ROUTE, completedTVRoute)
@@ -358,7 +371,7 @@ class SetupGuideActivity : Activity() {
         action(content, "Choose another model or menu") { remember(); routeId = null; index = -1; mismatch = false; pickerExpanded = true; detailsExpanded = false; render() }
         action(content, "Choose another TV or app") { chooseGroup("") }
         if (route != null) {
-            action(content, if (detailsExpanded) "Hide help" else "Need help?") { detailsExpanded = !detailsExpanded; render(true) }
+            action(content, if (detailsExpanded) "? Hide step help" else "? Step help") { detailsExpanded = !detailsExpanded; render(true) }
             if (detailsExpanded) { words(content, route.appliesTo); sources(route) }
         }
     }
