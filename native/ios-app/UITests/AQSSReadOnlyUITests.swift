@@ -55,6 +55,7 @@ final class AQSSReadOnlyUITests: XCTestCase {
         label("Step 3 of 5", app)
         XCTAssertFalse(app.staticTexts["Use a home app?"].exists)
         XCTAssertTrue(app.buttons["setup-from-samsung"].exists)
+        XCTAssertTrue(app.frame.contains(app.buttons["exit-tutorial"].frame), "Exit must remain fully inside the screen")
         screenshot("Simplified TV plan \(large)", app)
         tap("Setup help", app)
         let help = app.scrollViews["setup-help-scroll"]
@@ -1119,17 +1120,11 @@ final class AQSSReadOnlyUITests: XCTestCase {
                     below = frame.midY >= scroll.frame.intersection(app.frame).midY
                 }
             }
-            // A fast swipe can pass the target completely. Use a short drag
-            // without momentum, and recover in either direction if necessary.
-            let appFrame = app.frame
-            let viewport = scroll.frame.intersection(appFrame).insetBy(dx: 0, dy: 32)
-            XCTAssertFalse(viewport.isNull)
-            // Begin in the content padding, clear of full-width buttons.
-            let x = viewport.minX - appFrame.minX + 8
-            print("AQSS_UI_SCROLL target=\(title) scroll=\(scroll.frame) viewport=\(viewport) forward=\(below)")
-            let start = app.coordinate(withNormalizedOffset: .zero).withOffset(CGVector(dx: x, dy: viewport.minY - appFrame.minY + viewport.height * (below ? 0.75 : 0.35)))
-            let end = app.coordinate(withNormalizedOffset: .zero).withOffset(CGVector(dx: x, dy: viewport.minY - appFrame.minY + viewport.height * (below ? 0.35 : 0.75)))
-            start.press(forDuration: 0.01, thenDragTo: end, withVelocity: .slow, thenHoldForDuration: 0.01)
+            // Use XCTest's native scrolling gesture. A synthesized press/drag
+            // can become a button activation when SwiftUI relayouts a sheet.
+            print("AQSS_UI_SCROLL target=\(title) scroll=\(scroll.frame) forward=\(below)")
+            if below { scroll.swipeUp(velocity: .slow) }
+            else { scroll.swipeDown(velocity: .slow) }
         }
         guard button.exists && button.isHittable && insideViewport(button.frame) else {
             screenshot("Unreachable \(title)", app)
@@ -1199,7 +1194,9 @@ final class AQSSReadOnlyUITests: XCTestCase {
     }
     private func openTutorial(_ title: String, _ app: XCUIApplication) {
         app.buttons["Help & tutorials"].tap()
-        tap("More tutorials", app)
+        let more = app.buttons["more-tutorials"]
+        XCTAssertTrue(more.waitForExistence(timeout: 5))
+        if more.value as? String != "Expanded" { tap("More tutorials", app) }
         tap(title, app, scroll: app.scrollViews["menu-scroll"])
     }
     private func chooseAppearance(_ title: String, _ app: XCUIApplication) {

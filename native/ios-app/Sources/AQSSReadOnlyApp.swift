@@ -91,7 +91,8 @@ struct RoseButton: View {
                     .clipShape(RoundedRectangle(cornerRadius: 6)).accessibilityHidden(true)
                 if !compact && !textSize.isAccessibilitySize { Text(title).fixedSize(horizontal: title == "Help", vertical: true) }
             }.frame(minWidth: 44, minHeight: 44)
-        }.buttonStyle(AppButtonStyle(theme: theme)).accessibilityLabel(title)
+        }.buttonStyle(AppButtonStyle(theme: theme))
+            .fixedSize(horizontal: textSize.isAccessibilitySize, vertical: false).accessibilityLabel(title)
     }
 }
 
