@@ -14,7 +14,8 @@
       "AQSSReadOnlyUITests/testExampleAppearanceAndFutureFeatureDoNotClaimAudio",
       "AQSSReadOnlyUITests/testSimpleDefaultsAndBackRestoreTheActualPreviousPage",
       "AQSSReadOnlyUITests/testSelectingATVAdvancesAndBackKeepsTheScrollAndHomePreference",
-      "AQSSReadOnlyUITests/testLargestTextKeepsExitAndNextReachable"
+      "AQSSReadOnlyUITests/testLargestTextKeepsExitAndNextReachable",
+      "AQSSReadOnlyUITests/testLargeTextSetupHelpScrollsWithoutOpeningAShortcut"
     ],
     "pictures": [
       "AQSSReadOnlyUITests/testRokuPicturesResumeAndFinishWithoutClaimingConnection",

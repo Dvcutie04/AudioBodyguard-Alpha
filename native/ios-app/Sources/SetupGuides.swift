@@ -327,8 +327,9 @@ struct SetupGuidesView: View {
             .buttonStyle(AppButtonStyle(theme: theme)).accessibilityIdentifier("setup-picture-jump")
     }
     private func disclosure(_ title: String, id: String, action: @escaping () -> Void) -> some View {
-        Button(action: action) { Label(detailsExpanded ? "? Hide step help" : title, systemImage: "questionmark.circle").frame(maxWidth: .infinity, minHeight: 44, alignment: .leading) }
-            .buttonStyle(AppButtonStyle(theme: theme)).accessibilityIdentifier(id).accessibilityValue(detailsExpanded ? "Expanded" : "Collapsed")
+        let label = detailsExpanded ? "? Hide step help" : title
+        return Button(action: action) { Label(label.hasPrefix("? ") ? String(label.dropFirst(2)) : label, systemImage: "questionmark.circle").frame(maxWidth: .infinity, minHeight: 44, alignment: .leading) }
+            .buttonStyle(AppButtonStyle(theme: theme)).accessibilityLabel(label).accessibilityIdentifier(id).accessibilityValue(detailsExpanded ? "Expanded" : "Collapsed")
     }
     @ViewBuilder private func sources(_ route: AQSSSetupRoute) -> some View {
         Text("Manufacturer references").font(.headline)

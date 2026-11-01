@@ -804,7 +804,8 @@ private struct ReadOnlyHomeView: View {
         Text(label).font(.caption.weight(.bold)).foregroundColor(color).padding(.horizontal, 10).padding(.vertical, 6).background(color.opacity(0.10)).clipShape(Capsule())
     }
     private func action(_ title: String, icon: String, primary: Bool = false, perform: @escaping () -> Void) -> some View {
-        Button(action: perform) { HStack { Text(title).fixedSize(horizontal: false, vertical: true); Spacer(minLength: 8); Image(systemName: icon).font(.system(size: 20, weight: .semibold)).accessibilityHidden(true) }.frame(maxWidth: .infinity) }.buttonStyle(AppButtonStyle(theme: theme, primary: primary))
+        let label = icon == "questionmark.circle" && title.hasPrefix("? ") ? String(title.dropFirst(2)) : title
+        return Button(action: perform) { HStack { Text(label).fixedSize(horizontal: false, vertical: true); Spacer(minLength: 8); Image(systemName: icon).font(.system(size: 20, weight: .semibold)).accessibilityHidden(true) }.frame(maxWidth: .infinity) }.buttonStyle(AppButtonStyle(theme: theme, primary: primary)).accessibilityLabel(title)
     }
     private func helpButton(_ title: String, topic: String) -> some View { action(title, icon: "questionmark.circle") { startTutorial(topic) } }
     private func section(_ title: String, detail: String, explanation: String, target: String, icon: String) -> some View {
@@ -943,7 +944,7 @@ private struct ReadOnlyHomeView: View {
                         else { guide.next() }
                     }.accessibilityIdentifier("guide-next")
                 }
-            }.padding(16).background(theme.surface)
+            }.frame(maxWidth: .infinity, alignment: .leading).padding(16).background(theme.surface)
         }
     }
     private var contextDestinations: [(String, String)] {

@@ -119,9 +119,12 @@ final class OutputDetailsUITests: XCTestCase {
     private func reach(_ target: XCUIElement, in scroll: XCUIElement, app: XCUIApplication) {
         for _ in 0..<10 {
             let viewport = scroll.frame.intersection(app.frame).insetBy(dx: 0, dy: 15)
-            if target.isHittable && viewport.contains(CGPoint(x: target.frame.midX, y: target.frame.midY)) { return }
-            if target.frame.midY < viewport.midY { scroll.swipeDown(velocity: .slow) }
-            else { scroll.swipeUp(velocity: .slow) }
+            if target.exists {
+                let frame = target.frame
+                if target.isHittable && viewport.contains(CGPoint(x: frame.midX, y: frame.midY)) { return }
+                if frame.height > 0 && frame.midY < viewport.midY { scroll.swipeDown(velocity: .slow); continue }
+            }
+            scroll.swipeUp(velocity: .slow)
         }
         XCTAssertTrue(target.isHittable)
     }
