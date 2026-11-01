@@ -320,6 +320,7 @@ private struct ReadOnlyHomeView: View {
             }
             .sheet(item: $settingHelp, onDismiss: {
                 if let group = pendingSetupGroup { pendingSetupGroup = nil; showSetup(group) }
+                else { performHelpJump() }
             }) { item in
                 VStack(spacing: 0) {
                     HStack(alignment: .top, spacing: 12) {
@@ -331,6 +332,9 @@ private struct ReadOnlyHomeView: View {
                     ScrollView {
                       VStack(alignment: .leading, spacing: 20) {
                         settingExplanationContents(item)
+                        if AQSSInterfaceContent.targetPages[item.id] != nil {
+                            action("Jump to this setting", icon: "arrow.right") { pendingHelpJump = item.id; settingHelp = nil }
+                        }
                         if item.id == "voice" {
                             action("Show voice steps", icon: "mic") { pendingSetupGroup = "voice"; settingHelp = nil }
                         }
@@ -432,7 +436,7 @@ private struct ReadOnlyHomeView: View {
             Spacer(minLength: 0)
             Button { navigationVisible = true } label: { Image(systemName: "square.grid.2x2").frame(width: 24, height: 24).contentShape(Rectangle()) }
                 .accessibilityLabel("Jump to").accessibilityIdentifier("section-navigation")
-            RoseButton(title: "Help", theme: theme) { helpVisible = true }
+            Button { helpVisible = true } label: { Label("Help", systemImage: "questionmark.circle") }
                 .accessibilityLabel("Help & tutorials").accessibilityIdentifier("tutorial-help").accessibilityFocused($focusedElement, equals: .help)
         }.buttonStyle(AppButtonStyle(theme: theme)).padding(.horizontal, 20).padding(.vertical, 4).foregroundColor(theme.accent).background(theme.background)
     }
@@ -917,7 +921,7 @@ private struct ReadOnlyHomeView: View {
         case "voice": voiceCheckVisible = true
         case "phone": showSetup("phone")
         case "google", "alexa": showSetup(target)
-        default: break
+        default: jump(target)
         }
     }
     private var setupHelpSheet: some View {

@@ -127,7 +127,7 @@ class TutorialGuide(
     }
     private fun chooseBrand() = skin.menu("Choose TV brand", guide.choices.map { choice ->
         choice.title to { if (guide.select(choice.id)) { guide.next(); render() } }
-    })
+    }, searchable = true)
     fun jump(target: String) {
         close(false); navigate(target, null)
         scroll.post {

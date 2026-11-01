@@ -580,6 +580,7 @@ class ReadOnlyHomeActivity : Activity() {
                 Toast.makeText(this, "Sharing is unavailable. You can read the details shown here.", Toast.LENGTH_LONG).show()
             }
         }
+        if (InterfaceContent.targetPages.containsKey(target)) action(content, "Jump to this setting") { dialog.dismiss(); jump(target) }
         if (target == "voice") action(content, "Show voice steps") { dialog.dismiss(); openSetup("voice") }
         dialog.show()
     }

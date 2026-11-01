@@ -636,6 +636,8 @@ struct GuidePictureCue<Content: View>: View {
             .task(id: screenKey) {
                 guard !reduceMotion else { offset = 0; return }
                 offset = 6
+                await Task.yield()
+                guard !Task.isCancelled, !reduceMotion else { offset = 0; return }
                 withAnimation(.easeOut(duration: 0.3)) { offset = 0 }
             }
             .onChange(of: reduceMotion) { _ in offset = 0 }
