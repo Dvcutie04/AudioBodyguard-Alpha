@@ -54,7 +54,7 @@ class InterfaceTheme(val activity: Activity, val dark: Boolean) {
     fun menu(title: String, items: List<Pair<String, () -> Unit>>, message: String = "", searchable: Boolean = false) {
         val list = LinearLayout(activity).apply { orientation = LinearLayout.VERTICAL; setPadding(dp(20), dp(10), dp(20), dp(10)) }
         val scroll = ScrollView(activity).apply { addView(list); setBackgroundColor(this@InterfaceTheme.background) }
-        val dialog = AlertDialog.Builder(activity).setTitle(title).setView(scroll).create()
+        val dialog = AlertDialog.Builder(activity).setTitle(title).setView(scroll).setPositiveButton("Cancel", null).create()
         if (message.isNotEmpty()) list.addView(android.widget.TextView(activity).apply {
             text = message; textSize = 18f; setTextColor(this@InterfaceTheme.text); setPadding(0, dp(8), 0, dp(20))
         }, LinearLayout.LayoutParams(-1, -2))
@@ -76,7 +76,6 @@ class InterfaceTheme(val activity: Activity, val dark: Boolean) {
                 text = label; style(this); setOnClickListener { dialog.dismiss(); action() }
             }, LinearLayout.LayoutParams(-1, -2).apply { bottomMargin = dp(10) })
         }
-        list.addView(roseButton(activity, this, "Cancel") { dialog.dismiss() }, LinearLayout.LayoutParams(-1, -2))
         dialog.window?.setSoftInputMode(android.view.WindowManager.LayoutParams.SOFT_INPUT_STATE_ALWAYS_HIDDEN)
         dialog.show()
     }

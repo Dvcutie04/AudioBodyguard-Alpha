@@ -1,0 +1,81 @@
+name: Simple setup verification — iOS
+
+on:
+  push:
+    branches: ["aqss/simple-setup"]
+    paths:
+      - "native/ios/**"
+      - "native/ios-app/**"
+      - "contracts/**"
+      - "tools/generate_tutorial_content.py"
+      - "tools/generate_setup_guides.py"
+      - "tools/export_ios_input_screenshots.py"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ios-simple-${{ github.ref_name }}
+  cancel-in-progress: true
+
+jobs:
+  ios-simple-setup:
+    name: Simple setup on ${{ matrix.device }}
+    strategy:
+      fail-fast: false
+      matrix:
+        device: [iPhone, iPad]
+    runs-on: macos-14
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Test shared guide defaults and restoration
+        run: swift test --package-path native/ios
+      - name: Walk through setup and contextual help at normal and largest text
+        shell: bash
+        run: |
+          set -euo pipefail
+          simulator_udid="$(xcrun simctl list devices available -j | python3 -c 'import json,sys; print(next(d["udid"] for group in json.load(sys.stdin)["devices"].values() for d in group if d["name"].startswith("${{ matrix.device }}") and d.get("isAvailable",True)))')"
+          xcrun simctl boot "$simulator_udid" || true
+          xcrun simctl bootstatus "$simulator_udid" -b
+          xcrun simctl spawn "$simulator_udid" defaults write com.apple.Accessibility ReduceMotionEnabled -bool YES
+          xcodebuild -project native/ios-app/AQSSReadOnly.xcodeproj -scheme AQSSReadOnly \
+            -configuration Release -destination "platform=iOS Simulator,id=$simulator_udid" \
+            -derivedDataPath "$RUNNER_TEMP/simple-derived" -parallel-testing-enabled NO \
+            -resultBundlePath "$RUNNER_TEMP/sound-simplified.xcresult" \
+            -only-testing:AQSSReadOnlyUITests/AQSSReadOnlyUITests/testSimplifiedSetupAndContextualJumps \
+            -only-testing:AQSSReadOnlyUITests/AQSSReadOnlyUITests/testSimplifiedSetupWithLargestTextAndReducedMotion \
+            CODE_SIGNING_ALLOWED=NO test
+      - name: Export native screenshots
+        if: always()
+        run: python3 tools/export_ios_input_screenshots.py "$RUNNER_TEMP" simplified
+      - name: Retain native UI evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: simple-setup-${{ matrix.device }}-ui
+          path: ${{ runner.temp }}/sound-check-screenshots/
+          if-no-files-found: ignore
+          retention-days: 14
+      - name: Retain native test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: simple-setup-${{ matrix.device }}-results
+          path: ${{ runner.temp }}/sound-simplified.xcresult
+          if-no-files-found: ignore
+          retention-days: 14
+      - name: Package iPhone Simulator app
+        if: matrix.device == 'iPhone'
+        run: ditto -c -k --keepParent "$RUNNER_TEMP/simple-derived/Build/Products/Release-iphonesimulator/AQSSReadOnly.app" "$RUNNER_TEMP/AudioBodyguard-Simple-Setup-iOS-Simulator.app.zip"
+      - name: Retain iPhone Simulator app
+        if: matrix.device == 'iPhone'
+        uses: actions/upload-artifact@v4
+        with:
+          name: simple-setup-iOS-Simulator
+          path: ${{ runner.temp }}/AudioBodyguard-Simple-Setup-iOS-Simulator.app.zip
+          if-no-files-found: error
+          retention-days: 14
