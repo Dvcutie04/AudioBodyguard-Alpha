@@ -20,6 +20,14 @@ class GuideProgress {
         if (choices.none { it.id == id }) return false
         selections[current.target] = id; return true
     }
+    /** Accept only a user-confirmed photo suggestion in the TV selection flow. */
+    fun acceptPhotoBrand(brand: String?): Boolean {
+        if (topicId != "getting_started" || step?.target !in listOf("welcome", "chooseTV") ||
+            brand == null || TutorialContent.choices["chooseTV"]?.none { it.id == brand && it.id != "unsure" } != false) return false
+        if (step?.target == "welcome") next()
+        if (!select(brand)) return false
+        return next()
+    }
     fun next(): Boolean {
         if (!canContinue || isLast) return false
         index++; return true
@@ -29,7 +37,7 @@ class GuideProgress {
         if (topicId != "getting_started" || step?.target != expectedTarget ||
             expectedTarget !in listOf("connectionPlan", "connectionCheck") ||
             (routeId !in TutorialContent.pictureContinueRoutes && !(expectedTarget == "connectionPlan" && routeId in listOf("roku_network", "roku_model"))) ||
-            (SetupContent.groups.any { it.phoneRoute == routeId } && expectedTarget != "connectionCheck")) return false
+            (routeId == "roku_phone" && expectedTarget != "connectionCheck")) return false
         return next()
     }
     fun back() { if (index > 0) index-- }

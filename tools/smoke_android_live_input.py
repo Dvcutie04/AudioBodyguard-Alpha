@@ -41,6 +41,7 @@ def main():
     parser.add_argument("--test-setup-only", action="store_true")
     parser.add_argument("--setup-output-report-only", action="store_true")
     parser.add_argument("--tv-guides-only", action="store_true")
+    parser.add_argument("--style-only", action="store_true")
     parser.add_argument("--apk", default="native/android/app/build/outputs/apk/liveInput/app-liveInput.apk")
     parser.add_argument("--package", default="com.aqss.bodyguard.prototype.liveinput")
     parser.add_argument("--probe-apk", default="native/android/uiprobe/build/outputs/apk/debug/uiprobe-debug.apk")
@@ -335,6 +336,50 @@ def main():
     version, build = versions[0].strip(), builds[0]
     (out / "installed-build-identity.json").write_text(
         json.dumps({"application_id": package, "version": version, "build": build}, sort_keys=True))
+    if args.style_only:
+        def reveal(label, name):
+            for attempt in range(10):
+                root, clicked = screen(f"{name}_{attempt}", click=label)
+                if clicked:
+                    return
+                viewport = next((n for n in root.iter("node") if n.get("class") == "android.widget.ScrollView"), None)
+                assert viewport is not None, "Missing scrollable guide viewport"
+                x0, y0, x1, y1 = map(int, re.findall(r"-?\d+", viewport.get("bounds")))
+                x = (x0 + x1) // 2
+                adb("shell", "input", "swipe", str(x), str(int(y0 + (y1-y0)*.8)), str(x), str(int(y0 + (y1-y0)*.2)), "300")
+            raise AssertionError("Unreachable control: " + label)
+        for scale in ("1.0", "1.5"):
+            adb("shell", "settings", "put", "system", "font_scale", scale)
+            adb("shell", "am", "force-stop", package)
+            launch()
+            prefix = "style_" + scale.replace(".", "_")
+            wait_for("Connection not verified", prefix + "_home")
+            reveal("TV & smart-home guide", prefix + "_open")
+            wait_for("Start picture setup", prefix + "_welcome")
+            screenshot(prefix + "_welcome")
+            reveal("Identify TV from a photo", prefix + "_welcome_photo")
+            wait_for_all(("No photo selected", "Choose a photo"), prefix + "_photo")
+            screenshot(prefix + "_photo")
+            adb("shell", "input", "keyevent", "KEYCODE_BACK")
+            wait_for("Step 1 of 6", prefix + "_cancel_restores_welcome")
+            tap("Start picture setup", prefix + "_start")
+            root = wait_for("Which TV do you use?", prefix + "_brands")
+            assert any(n.get("text") == "Next" and n.get("enabled") == "false" for n in root.iter("node"))
+            screenshot(prefix + "_brands")
+            reveal("Identify TV from a photo", prefix + "_brand_photo")
+            wait_for("No photo selected", prefix + "_brand_photo_empty")
+            adb("shell", "input", "keyevent", "KEYCODE_BACK")
+            wait_for("Step 2 of 6", prefix + "_cancel_restores_brands")
+            reveal("Samsung", prefix + "_select")
+            tap("Next", prefix + "_continue")
+            wait_for("Step 3 of 6", prefix + "_home_choice")
+            tap("Back", prefix + "_back")
+            wait_for("Step 2 of 6", prefix + "_back_to_brand")
+            tap("Exit tutorial", prefix + "_exit")
+            wait_for("Connection not verified", prefix + "_unverified")
+        adb("shell", "settings", "put", "system", "font_scale", "1.0")
+        print("ANDROID_STYLE_VERIFIED: both photo entry points, cancellation, selection, back, normal and large text")
+        return
     def check_test_setup():
         answers = (("Playback phone", "Android 16 test phone"), ("Intended output", "Phone speaker"),
                    ("Second phone", "iPhone iOS 26"), ("Recording app and mode", "Voice Memos mode unknown"),
