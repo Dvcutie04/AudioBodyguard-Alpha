@@ -435,10 +435,13 @@ def main():
             appops = adb("shell", "cmd", "appops", "get", package, "RECORD_AUDIO").decode()
             assert "(running)" not in appops, appops
             def page(label, name):
-                root, clicked = screen(name, click=label)
-                if not clicked:
-                    picker = next(n.get("text") for n in root.iter("node") if n.get("text", "").startswith("Pages ·"))
-                    tap(picker, name + "_pages"); tap(label, name + "_pick")
+                if tap(label, name, optional=True):
+                    return
+                # A native transition can briefly publish only a FrameLayout.
+                # Require the compact navigation control before reading its label.
+                root = wait_for("Pages ·", name + "_navigation")
+                picker = next(n.get("text") for n in root.iter("node") if n.get("text", "").startswith("Pages ·"))
+                tap(picker, name + "_pages"); tap(label, name + "_pick")
             page("Sound", prefix + "_sound_page")
             root = wait_for_all(("Live sound check", "Voice check", "? More sound tools"), prefix + "_sound_simple")
             assert not has(root, "Test setup") and not has(root, "Output inventory")
