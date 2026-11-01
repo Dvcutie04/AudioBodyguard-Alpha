@@ -105,6 +105,33 @@ def test_picture_instructions_fit_a_short_reading_step():
             assert len(step['instruction'].split()) <= 30, (route['id'], number)
 
 
+def test_remote_picture_preserves_complete_home_hold_label_inside_button():
+    from tools.export_picture_guide import svg
+
+    route = setup_routes()['fire_setup']
+    picture = ElementTree.fromstring(svg(route['steps'][1], 2, route))
+    # The remote's 184-unit target has 12-unit side insets. The previous
+    # numbered first line measured 198.5 units in its declared 16-unit Arial.
+    labels = [node.text for node in picture.findall('.//text')
+              if node.get('x') == '240' and 150 < float(node.get('y')) < 198]
+    assert ' '.join(labels) == '2 → ' + route['steps'][1]['items'][0]
+    assert all(len(label) <= 17 for label in labels), labels
+
+
+def test_picture_renderer_rejects_a_row_that_would_silently_drop_words():
+    from copy import deepcopy
+    from tools.export_picture_guide import svg
+
+    route = setup_routes()['fire_setup']
+    step = deepcopy(route['steps'][1])
+    step['items'][0] = 'Home ' + 'keep this instruction visible ' * 5
+    try:
+        svg(step, 2, route)
+    except ValueError:
+        return
+    raise AssertionError('A picture must not silently omit the end of a target label')
+
+
 def setup_routes():
     root = Path(__file__).resolve().parents[1]
     return {route['id']: route for route in json.loads((root / 'contracts/setup_guides_v1.json').read_text())['routes']}
@@ -215,8 +242,10 @@ def test_tv_codes_and_results_appear_on_the_tv_in_all_both_device_pictures():
 
 def test_faster_google_setup_states_platform_limits_and_checks_the_tv_result():
     route = setup_routes()['google_fast']
-    assert 'iOS 17' in route['applies_to'] and 'Android 9' in route['applies_to']
-    assert '3.3100002' in route['steps'][1]['note']
+    assert 'phone-camera setup instructions' in route['applies_to']
+    assert 'TV and phone software' in route['applies_to']
+    assert 'current phone requirements' in route['steps'][1]['note']
+    assert 'Google Home or manual setup' in route['steps'][1]['note']
     assert route['steps'][-1]['surface'] == 'tv'
     assert 'Home screen' in route['steps'][-1]['instruction']
 
@@ -225,7 +254,7 @@ def test_google_home_first_setup_uses_the_current_add_path():
     route = setup_routes()['google_setup']
     phone_steps = route['steps'][4:9]
     assert [step['title'] for step in phone_steps] == [
-        'Open Devices', 'Open Add', 'Choose the device setup option', 'Choose your home', 'Scan the actual TV screen'
+        'Open Devices', 'Open Add', 'Choose the device setup option', 'Choose your home', 'Open the phone scanner'
     ]
     assert [step['items'][step['focus']] for step in phone_steps] == [
         'Devices', 'Add', 'Google Nest or partner device', 'Your home', 'Scan code'

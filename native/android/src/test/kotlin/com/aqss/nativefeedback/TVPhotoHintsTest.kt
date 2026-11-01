@@ -2,6 +2,109 @@ package com.aqss.nativefeedback
 import kotlin.test.*
 
 class TVPhotoHintsTest {
+    @Test fun exactRowLimitKeepsTheLastRowAndRejectsTheNextConflict() {
+        val hundred = listOf("VIZIO", "Model: X1") + List(97) { "other row" } + "IP: 10.0.0.2"
+        val text = assertNotNull(boundedTVPhotoText(hundred.asSequence()))
+        assertEquals(hundred.joinToString("\n"), text)
+        val hints = TVPhotoHints(text)
+        assertEquals("VIZIO", hints.brand); assertEquals("X1", hints.model); assertEquals("10.0.0.2", hints.address)
+        for (conflict in listOf("LG", "Model: Y2", "IP: 10.0.0.3")) {
+            assertNull(boundedTVPhotoText((hundred + conflict).asSequence()), conflict)
+        }
+    }
+    @Test fun exactUtf8BudgetIncludesJoinedSeparators() {
+        val prefix = listOf("VIZIO", "Model: X1", "IP: 10.0.0.2")
+        val remaining = 8192 - prefix.joinToString("\n").toByteArray(Charsets.UTF_8).size - 1
+        val padding = "é".repeat(remaining / 2) + if (remaining % 2 == 1) "a" else ""
+        val text = assertNotNull(boundedTVPhotoText((prefix + padding).asSequence()))
+        assertEquals(8192, text.toByteArray(Charsets.UTF_8).size)
+        assertEquals("X1", TVPhotoHints(text).model)
+        assertNull(boundedTVPhotoText((prefix + (padding + "a")).asSequence()))
+        assertNull(TVPhotoHints(text + "a").brand)
+        assertNull(TVPhotoHints(text + "a").model)
+        assertNull(TVPhotoHints(text + "a").address)
+    }
+    @Test fun missingBlankOrMultilineRowsCannotBeSilentlyDropped() {
+        val prefix = listOf<String?>("VIZIO", "Model: X1", "IP: 10.0.0.2")
+        val badRows = listOf(null, "", " ", "\t") +
+            listOf("\n", "\r", "\r\n", "\u000B", "\u000C", "\u0085", "\u2028", "\u2029").map { "other" + it + "Model: Y2" }
+        for (bad in badRows) assertNull(boundedTVPhotoText((prefix + bad).asSequence()))
+    }
+    @Test fun rawBudgetCountsEveryLineBreakAndCrLfOnlyOnce() {
+        val rows = listOf("VIZIO", "Model: X1", "IP: 10.0.0.2") + List(97) { "other row" }
+        for (separator in listOf("\n", "\r", "\r\n", "\u000B", "\u000C", "\u0085", "\u2028", "\u2029")) {
+            val text = rows.joinToString(separator)
+            assertEquals("VIZIO", TVPhotoHints(text).brand)
+            val over = TVPhotoHints(text + separator + "one more row")
+            assertNull(over.brand); assertNull(over.model); assertNull(over.address)
+        }
+        assertEquals("X1", TVPhotoHints(rows.joinToString("\r\n")).model)
+    }
+    @Test fun collectorStopsAtTheFirstRejectionWithoutReadingTheRemainder() {
+        var consumed = 0
+        val tooMany = sequence<String?> {
+            repeat(101) { consumed++; yield("other row") }
+            error("Read past the rejected 101st row")
+        }
+        assertNull(boundedTVPhotoText(tooMany))
+        assertEquals(101, consumed)
+        var earlyConsumed = 0
+        val tooLong = sequence<String?> {
+            earlyConsumed++; yield("a".repeat(8193))
+            error("Read another row after the byte limit failed")
+        }
+        assertNull(boundedTVPhotoText(tooLong))
+        assertEquals(1, earlyConsumed)
+    }
+    @Test fun emptyObservationCollectionInventsNoHints() {
+        val text = assertNotNull(boundedTVPhotoText(emptySequence()))
+        assertEquals("", text)
+        val hints = TVPhotoHints(text)
+        assertNull(hints.brand); assertNull(hints.model); assertNull(hints.address)
+    }
+    @Test fun overOneHundredRowsCannotProducePartialPhotoHints() {
+        val rows = listOf("VIZIO", "Model: X1", "IP: 10.0.0.2") + List(98) { "other row" }
+        val hints = TVPhotoHints(rows.joinToString("\n"))
+        assertNull(hints.brand)
+        assertNull(hints.model)
+        assertNull(hints.address)
+    }
+    @Test fun vizioAboutLabelsIdentifyOnlyTheLabelledModelAndAddress() {
+        val hints = TVPhotoHints("VIZIO\nModel Name: V505M-K09\nIPv4 IP Address: 10.20.30.40\nIPv4 Default Gateway: 10.20.30.1\nDNS: 10.0.0.10")
+        assertEquals("VIZIO", hints.brand)
+        assertEquals("V505M-K09", hints.model)
+        assertEquals("10.20.30.40", hints.address)
+    }
+    @Test fun indentedSplitLabelsAndCrLfKeepTheSameMeaning() {
+        val hints = TVPhotoHints("  Model\tName:\r\n  V505M-K09\r\n\tIPv4  IP\tAddress:\r\n\t172.16.0.2\r\nIPv4 Default Gateway: 172.16.0.1\r\n")
+        assertEquals("V505M-K09", hints.model)
+        assertEquals("172.16.0.2", hints.address)
+        assertEquals("X1", TVPhotoHints("Model Number: X1\r\n").model)
+        assertEquals("10.0.0.2", TVPhotoHints("IPv4 IP Address:10.0.0.2").address)
+    }
+    @Test fun repeatedAliasesMustAgreeBeforeShowingAHint() {
+        val same = TVPhotoHints("Model Name: X1\nModel: X1\nIPv4 IP Address: 10.0.0.2\nIP: 10.0.0.2")
+        assertEquals("X1", same.model); assertEquals("10.0.0.2", same.address)
+        assertNull(TVPhotoHints("Model Name: X1\nModel: Y2").model)
+        assertNull(TVPhotoHints("IPv4 IP Address: 10.0.0.2\nIP: 10.0.0.3").address)
+        assertNull(TVPhotoHints("IPv4 IP Address: 8.8.8.8\nIP: 10.0.0.3").address)
+    }
+    @Test fun anUnreadableLabelledCandidateCannotBeHiddenByAReadableOne() {
+        for (bad in listOf("", "192.168.l.25", "http://10.0.0.2", "10.0.0.2:80", "10..0.2", "8.8.8.8")) {
+            assertNull(TVPhotoHints("IP: $bad\nIP Address: 10.0.0.3").address, bad)
+        }
+        for (bad in listOf("", "NO DIGITS", "https://example.invalid/X1", "X".repeat(40) + "1")) {
+            assertNull(TVPhotoHints("Model: $bad\nModel Code: X1").model, bad)
+        }
+    }
+    @Test fun misleadingLabelsAndOverlongUtf8StayUnknown() {
+        val hints = TVPhotoHints("TV Name: V505M-K09\nProduct model hint: X1\nIPv4 Default Gateway: 10.0.0.1\nDNS IP Address: 10.0.0.10\nIPv6 IP Address: fe80::1\nAddress: 10.0.0.2")
+        assertNull(hints.model); assertNull(hints.address)
+        assertNull(TVPhotoHints("Model Name:\nIPv4 IP Address: 10.0.0.2").model)
+        val oversized = "é".repeat(4096) + "\nVIZIO\nModel Name: X1\nIPv4 IP Address: 10.0.0.2"
+        val bounded = TVPhotoHints(oversized)
+        assertNull(bounded.brand); assertNull(bounded.model); assertNull(bounded.address)
+    }
     @Test fun onlyUnambiguousLabelledHints() {
         val hints = TVPhotoHints("Samsung\nModel Code: QN90C\nIP Address: 192.168.1.25\nSerial: PRIVATE")
         assertEquals("SAMSUNG", hints.brand); assertEquals("QN90C", hints.model); assertEquals("192.168.1.25", hints.address)

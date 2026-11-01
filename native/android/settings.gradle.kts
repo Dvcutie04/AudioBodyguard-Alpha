@@ -16,3 +16,5 @@ dependencyResolutionManagement {
 
 rootProject.name = "AQSSNativeFeedback"
 include(":app")
+include(":uiprobe")
+include(":sharereceiver")

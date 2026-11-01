@@ -1,4 +1,5 @@
 import json
+import re
 from pathlib import Path
 
 from src.edge.tv_selection_preferences import TVSelectionPreferences
@@ -92,8 +93,11 @@ def test_kotlin_conformance_test_reads_shared_fixture():
 def test_ci_compiles_and_runs_both_native_contract_suites():
     workflow=Path(".github/workflows/ci.yml").read_text()
     assert "native-swift:" in workflow
-    assert "runs-on: macos-14" in workflow
-    assert "swift test --package-path native/ios" in workflow
+    swift_job = re.search(r"(?m)^  native-swift:\n((?:    .*\n|\n)+)", workflow)
+    assert swift_job is not None
+    # Require the Mac job and actual native tests, independently of image retirement.
+    assert re.search(r"(?m)^    runs-on: macos-[\w-]+$", swift_job[1])
+    assert "swift test --package-path native/ios" in swift_job[1]
     assert "native-android:" in workflow
     assert "actions/setup-java@v4" in workflow
     assert "distribution: temurin" in workflow

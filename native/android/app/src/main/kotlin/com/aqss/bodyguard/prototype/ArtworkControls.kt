@@ -44,6 +44,7 @@ private class OriginalRoseArtwork(private val artwork: Drawable, private val cor
 }
 
 /** No tutorial or button can set this view's evidence-backed connection input. */
+@android.annotation.SuppressLint("AppCompatCustomView") // Hosted by platform Activity; no AppCompat tint/theme contract.
 internal class ConnectionHeadView(activity: Activity, private val connected: Boolean) : ImageView(activity) {
     private var pulse: ObjectAnimator? = null
     init {

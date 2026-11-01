@@ -2,6 +2,7 @@ package com.aqss.bodyguard.prototype
 
 import android.app.Activity
 import android.app.AlertDialog
+import android.content.ActivityNotFoundException
 import android.content.Intent
 import android.content.res.Configuration
 import android.graphics.Color
@@ -24,12 +25,15 @@ import android.widget.FrameLayout
 import android.widget.LinearLayout
 import android.widget.ScrollView
 import android.widget.TextView
+import android.widget.Toast
 import android.window.OnBackInvokedCallback
 import android.window.OnBackInvokedDispatcher
 import com.aqss.nativefeedback.CapabilityFacts
 import com.aqss.nativefeedback.SessionEvidenceView
 import com.aqss.nativefeedback.SessionState
 import com.aqss.nativefeedback.TutorialContent
+import com.aqss.nativefeedback.SoundCheckRecaps
+import com.aqss.nativefeedback.PrivateSupportReportSnapshot
 import com.aqss.nativefeedback.InterfaceContent
 import com.aqss.nativefeedback.InterfaceSetting
 import com.aqss.nativefeedback.SettingSwitchState
@@ -69,6 +73,7 @@ class ReadOnlyHomeActivity : Activity() {
     private lateinit var brand: TextView
     private val targets = mutableMapOf<String, View>()
     private var backCallback: OnBackInvokedCallback? = null
+    private var dismissStartup: (() -> Unit)? = null
     private var hintView: TextView? = null
     private var hintText = ""
     private var deviceCallback: AudioDeviceCallback? = null
@@ -111,7 +116,7 @@ class ReadOnlyHomeActivity : Activity() {
         brand = TextView(this).apply { text = if (resources.configuration.fontScale >= 1.5f) "AQSS" else "BODYGUARD"; textSize = 12f; setTypeface(null, Typeface.BOLD); setTextColor(skin.accent); letterSpacing = .13f }
         header.addView(brand, LinearLayout.LayoutParams(0, -2, 1f))
         header.addView(button("Jump to") { tutorial.chooseSection() }, LinearLayout.LayoutParams(-2, -2).apply { marginEnd = dp(8) })
-        help = roseButton(this, skin, "Help") { tutorial.chooseTopic() }.apply { contentDescription = "Help & tutorials" }
+        help = button("? Help") { tutorial.chooseTopic() }.apply { contentDescription = "Help & tutorials" }
         header.addView(help)
         root.addView(header)
         val body = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL }
@@ -123,7 +128,8 @@ class ReadOnlyHomeActivity : Activity() {
         tutorial = TutorialGuide(this, scroll, targets, skin,
             currentPage = { page },
             openSetup = { group -> openSetup(group) },
-            openPhoto = { openInputTool("photo", fromTutorial = true) },
+            openPhoto = { openInputTool("photo", fromTutorial = tutorial.isActive) },
+            openTool = { tool -> if (tool == "voice") openInputTool("voice") else startActivity(Intent(this, LiveSoundCheckActivity::class.java).putExtra("dark", skin.dark)) },
             navigate = { target, area ->
                 val destination = InterfaceContent.targetPages[target] ?: "home"
                 if (destination != page || (destination == "settings" && !advancedExpanded && target != "appearance")) rememberPage()
@@ -131,7 +137,7 @@ class ReadOnlyHomeActivity : Activity() {
                 chartValuesVisible = false
                 page = InterfaceContent.targetPages[target] ?: "home"
                 if (page == "sound") optionsExpanded = true
-                if (page == "settings") advancedExpanded = true
+                if (page == "settings") advancedExpanded = target != "appearance"
                 if (page == "devices") deviceDetails = true
                 detailSections.add(target)
                 if (area == "checklist") checklistExpanded = true
@@ -159,28 +165,61 @@ class ReadOnlyHomeActivity : Activity() {
             }
         }
         if (saved == null) {
-            // The system splash is icon-sized on Android 12+. Show the complete supplied
-            // artwork for the first drawn frame, then reveal the already-built page.
+            // The system splash is icon-sized on Android 12+. Keep the owner's full
+            // opening artwork readable; tapping skips it without waiting for a timer.
             val frame = FrameLayout(this)
             val artwork = StartupArtworkView(this).apply {
                 setBackgroundColor(Color.WHITE)
+                contentDescription = getString(R.string.startup_artwork_description)
+                isFocusable = true
+                if (Build.VERSION.SDK_INT >= 30) {
+                    setOnApplyWindowInsetsListener { view, insets ->
+                        val bars = insets.getInsets(WindowInsets.Type.systemBars() or WindowInsets.Type.displayCutout())
+                        view.setPadding(bars.left, bars.top, bars.right, bars.bottom)
+                        insets
+                    }
+                }
             }
+            root.visibility = View.INVISIBLE
             frame.addView(root, FrameLayout.LayoutParams(-1, -1))
             frame.addView(artwork, FrameLayout.LayoutParams(-1, -1))
             setContentView(frame)
             setSystemBars(false, true)
+            val finishStartup = Runnable {
+                dismissStartup = null
+                frame.removeView(artwork)
+                root.visibility = View.VISIBLE
+                setSystemBars(dark)
+            }
+            dismissStartup = {
+                artwork.removeCallbacks(finishStartup)
+                finishStartup.run()
+            }
+            artwork.setOnClickListener { dismissStartup?.invoke() }
             var firstFrameDrawn = false
+            var systemSplashExited = Build.VERSION.SDK_INT < 31
+            var startupTimeoutScheduled = false
+            fun scheduleStartupEnd() {
+                if (!firstFrameDrawn || !systemSplashExited || startupTimeoutScheduled || dismissStartup == null) return
+                startupTimeoutScheduled = true
+                artwork.postOnAnimation {
+                    if (dismissStartup != null && !isFinishing && !isDestroyed) artwork.postDelayed(finishStartup, 1500L)
+                }
+            }
+            if (Build.VERSION.SDK_INT >= 31) {
+                splashScreen.setOnExitAnimationListener { systemSplash ->
+                    systemSplash.remove()
+                    systemSplashExited = true
+                    scheduleStartupEnd()
+                }
+            }
             val listener = object : ViewTreeObserver.OnDrawListener {
                 override fun onDraw() {
                     if (firstFrameDrawn) return
                     firstFrameDrawn = true
                     artwork.postOnAnimation {
                         if (artwork.viewTreeObserver.isAlive) artwork.viewTreeObserver.removeOnDrawListener(this)
-                        if (isFinishing || isDestroyed) return@postOnAnimation
-                        artwork.animate().alpha(0f).setDuration(120L).withEndAction {
-                            frame.removeView(artwork)
-                            setSystemBars(dark)
-                        }.start()
+                        scheduleStartupEnd()
                     }
                 }
             }
@@ -323,7 +362,7 @@ class ReadOnlyHomeActivity : Activity() {
             label(c, if (coverage.state == SessionState.ACTIVE) "Connection active" else "Connection not verified", 18f, bold = true)
             action(c, if (beginnerTourFinished) "Replay connection guide" else "TV & smart-home guide", true) { tutorial.start("getting_started") }
             if (tutorial.hasPausedTutorial) c.addView(roseButton(this, skin, "Back to Tutorial") { tutorial.returnToTutorial() }, LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(8) })
-            action(c, if ("coverage" in detailSections) "Hide status details" else "Status details", expanded = "coverage" in detailSections) { toggleDetails("coverage") }
+            action(c, if ("coverage" in detailSections) "? Hide status help" else "? Status help", expanded = "coverage" in detailSections) { toggleDetails("coverage") }
             if ("coverage" in detailSections) {
                 label(c, "Unknown physical state", 18f, skin.warning, true)
                 label(c, "No output observation", 15f)
@@ -339,7 +378,7 @@ class ReadOnlyHomeActivity : Activity() {
         val currentBrand = tutorial.selectedTV
         val remembered = selectedSetupSystem?.takeIf { currentBrand.isEmpty() || it == currentBrand || it.startsWith(currentBrand + "_") }
         val destination = remembered?.takeIf { group.isNotEmpty() && it.startsWith(group + "_") && com.aqss.nativefeedback.SetupContent.groups.any { item -> item.id == it } } ?: group
-        startActivityForResult(Intent(this, SetupGuideActivity::class.java).putExtra("group", destination).putExtra("deviceGroup", remembered ?: currentBrand).putExtra("returningToTutorial", tutorial.isActive).putExtra("dark", skin.dark), PICTURE_REQUEST)
+        startActivityForResult(Intent(this, SetupGuideActivity::class.java).putExtra("group", if (group == "phone_wifi") "phone" else destination).putExtra("deviceGroup", if (group == "phone_wifi") "" else remembered ?: currentBrand).putExtra("returningToTutorial", tutorial.isActive).putExtra("dark", skin.dark), PICTURE_REQUEST)
     }
     @Deprecated("Existing framework Activity shell; validates local learning results only")
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
@@ -369,10 +408,20 @@ class ReadOnlyHomeActivity : Activity() {
     }
 
     private fun soundPage() {
+        destination("Live sound check", "Try the phone microphone for 30 seconds") {
+            startActivity(Intent(this, LiveSoundCheckActivity::class.java).putExtra("dark", skin.dark))
+        }
         destination("Voice check", "See microphone activity and recognized words") { openInputTool("voice") }
+        action(column, "? More sound tools") {
+            skin.menu("More sound tools", listOf(
+                "Jump to Test setup" to { startActivity(Intent(this, TestSetupActivity::class.java).putExtra("dark", skin.dark)) },
+                "Jump to Output inventory" to { startActivity(Intent(this, OutputInventoryActivity::class.java).putExtra("dark", skin.dark)) },
+                "Jump to recent sound checks" to { showRecentSoundChecks(this, skin) }
+            ))
+        }
         card("options") { c ->
             label(c, "Sound options", 22f, bold = true)
-            action(c, if (optionsExpanded) "Hide options" else "Options", expanded = optionsExpanded) { tutorial.close(false); optionsExpanded = !optionsExpanded; renderPage(true) }
+            action(c, if (optionsExpanded) "? Hide sound options" else "? Sound options", expanded = optionsExpanded) { tutorial.close(false); optionsExpanded = !optionsExpanded; renderPage(true) }
             if (optionsExpanded) {
                 action(c, "Help with options") { tutorial.start("sound") }
             }
@@ -396,11 +445,12 @@ class ReadOnlyHomeActivity : Activity() {
         section("Captions", "Not observed", "No authored caption track has been discovered or selected.", "captions")
     }
     private fun devicesPage() {
-        destination("TV photo setup", "Read a model label or Network settings photo") { openInputTool("photo") }
-        destination("Illustrated setup guides", "TV pairing, Google Home & Alexa · one picture at a time") { openSetup() }
-        label(column, "No qualified device connected", 16f, skin.muted)
-        action(column, if (deviceDetails) "Hide device details" else "More device details", expanded = deviceDetails) { deviceDetails = !deviceDetails; renderPage(true) }
+        destination("Set up your TV", "One picture at a time") { tutorial.start("getting_started") }
+        label(column, "Connection not verified", 16f, skin.muted)
+        action(column, if (deviceDetails) "? Hide device help" else "? Device help", expanded = deviceDetails) { deviceDetails = !deviceDetails; renderPage(true) }
         if (!deviceDetails) return
+        destination("TV photo setup", "Read a model label or settings photo") { openInputTool("photo") }
+        destination("Illustrated setup guides", "Jump to a TV or home app") { openSetup() }
         action(column, "TV & smart-home guide") { tutorial.start("getting_started") }
         column.addView(tutorial.connectionOverview(), LinearLayout.LayoutParams(-1, -2).apply { bottomMargin = dp(18) })
         card("capability") { c ->
@@ -422,6 +472,7 @@ class ReadOnlyHomeActivity : Activity() {
         action(column, "Help with session transfer") { tutorial.start("handoff") }
     }
     private fun insightsPage() {
+        action(column, "Recent sound checks") { showRecentSoundChecks(this, skin) }
         card("trends") { c ->
             label(c, "Audio trends", 22f, bold = true)
             if (showingExample) {
@@ -449,7 +500,7 @@ class ReadOnlyHomeActivity : Activity() {
                 label(c, "No measurements yet", 21f, bold = true)
                 action(c, if ("trends" in detailSections) "Hide measurement details" else "Measurement details", expanded = "trends" in detailSections) { toggleDetails("trends") }
                 if ("trends" in detailSections) label(c, "A qualified observation source is needed before a real trend can appear. Missing measurements cannot establish safe audio.", 16f, skin.muted)
-                action(c, "Explore an example", true) { showingExample = true; renderPage() }
+                action(c, "? Insights help") { skin.menu("Insights help", listOf("Explore an example" to { showingExample = true; renderPage() }), "Real recent checks are shown separately. The example graph uses invented values.") }
             }
         }
         section("Session history", "No observed events", "A missing history cannot establish continuous coverage. Requests and verified results will need distinct records.", "history")
@@ -471,7 +522,7 @@ class ReadOnlyHomeActivity : Activity() {
                 settingsDivider(c)
                 settingInfo(c, "Move this session", "Unavailable", "No authorized endpoint or verified transfer path is connected. Moving a session between iPhone and Android requires qualification in both directions.", "handoffOption")
                 settingsDivider(c)
-                settingInfo(c, "Private support report", "Planned", InterfaceContent.future.single { it.id == "support" }.explanation, "support")
+                settingInfo(c, "Private support report", "Review before sharing", InterfaceContent.future.single { it.id == "support" }.explanation, "support")
             }
             action(column, "Advanced Settings tutorial") { tutorial.start("advanced") }
             return
@@ -481,16 +532,34 @@ class ReadOnlyHomeActivity : Activity() {
             label(heading, "Appearance", 22f, bold = true).layoutParams = LinearLayout.LayoutParams(0, -2, 1f)
             heading.addView(question("Appearance", "Midnight uses a dark background. Daylight uses a light background. System follows your phone’s appearance. This choice is saved on this phone and works without a TV connection.", "appearance"))
             c.addView(heading)
-            for (value in listOf("midnight", "daylight", "system")) {
-                c.addView(button(value.replaceFirstChar { it.uppercase() } + if (appearance == value) "  ✓" else "", primary = appearance == value) {
+            action(c, "Appearance · ${appearance.replaceFirstChar { it.uppercase() }}") {
+                skin.menu("Appearance", listOf("midnight", "daylight", "system").map { value -> value.replaceFirstChar { it.uppercase() } to {
                     val state = Bundle(); savePresentation(state); tutorial.pause(); appearance = value; build(state)
-                }.apply { contentDescription = value.replaceFirstChar { it.uppercase() }; isSelected = appearance == value }, LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(8) })
+                } })
             }
         }
-        action(column, "Advanced Settings") { rememberPage(); tutorial.close(false); advancedExpanded = true; renderPage() }
+        action(column, "? More settings") {
+            skin.menu("More settings", listOf(
+                "Jump to Advanced Settings" to { rememberPage(); tutorial.close(false); advancedExpanded = true; renderPage() },
+                "Build details" to { showBuildDetails() },
+                "Private support report" to { showSupportReport() }
+            ))
+        }
     }
 
-    private fun question(title: String, explanation: String, target: String, light: Boolean = false): Button = button("[?]") {
+    private fun installedBuildDetails() = installedAppBuildDetails(this)
+
+    private fun showBuildDetails() {
+        val details = installedBuildDetails()
+        showInformation("Build details", "$details\n\nInclude the version and build when reporting a problem.", "build", shareText = details)
+    }
+
+    private fun showSupportReport() {
+        val report = PrivateSupportReportSnapshot(installedBuildDetails(), SoundCheckRecaps.process.snapshot())
+        showPrivateSupportReport(this, skin, report)
+    }
+
+    private fun showInformation(title: String, explanation: String, target: String, shareText: String? = null, shareTitle: String = "Share build details") {
         val content = vertical().apply { setPadding(dp(20), dp(14), dp(20), dp(14)); setBackgroundColor(skin.background) }
         val holder = ScrollView(this).apply { addView(content) }
         val dialog = AlertDialog.Builder(this).setView(holder).create()
@@ -499,8 +568,25 @@ class ReadOnlyHomeActivity : Activity() {
         heading.addView(roseButton(this, skin, "Back", compact = true) { dialog.dismiss() })
         content.addView(heading)
         label(content, explanation, 17f)
+        if (shareText != null) action(content, shareTitle) {
+            val send = Intent(Intent.ACTION_SEND).apply {
+                type = "text/plain"
+                putExtra(Intent.EXTRA_TEXT, shareText)
+            }
+            try {
+                startActivity(Intent.createChooser(send, null))
+            } catch (error: RuntimeException) {
+                if (error !is ActivityNotFoundException && error !is SecurityException) throw error
+                Toast.makeText(this, "Sharing is unavailable. You can read the details shown here.", Toast.LENGTH_LONG).show()
+            }
+        }
+        if (InterfaceContent.targetPages.containsKey(target)) action(content, "Jump to this setting") { dialog.dismiss(); jump(target) }
         if (target == "voice") action(content, "Show voice steps") { dialog.dismiss(); openSetup("voice") }
         dialog.show()
+    }
+
+    private fun question(title: String, explanation: String, target: String, light: Boolean = false): Button = button("[?]") {
+        if (target == "support") showSupportReport() else showInformation(title, explanation, target)
     }.apply {
         contentDescription = "About $title"; tag = "help-$target"
         if (light) { setTextColor(Color.BLACK); background = skin.shape(Color.WHITE, 8) }
@@ -553,6 +639,7 @@ class ReadOnlyHomeActivity : Activity() {
         label(words, title, 17f, Color.BLACK, true)
         if (detail.isNotEmpty()) label(words, detail, 15f, Color.DKGRAY)
         row.addView(words, LinearLayout.LayoutParams(0, -2, 1f)); row.addView(question(title, explanation, target, true))
+        if (target == "support") row.setOnClickListener { showSupportReport() }
         parent.addView(row); targets[target] = row
     }
     private fun settingClock() = SystemClock.elapsedRealtime() / 1000.0
@@ -590,8 +677,14 @@ class ReadOnlyHomeActivity : Activity() {
         } else if (!needed) { backCallback?.let { onBackInvokedDispatcher.unregisterOnBackInvokedCallback(it) }; backCallback = null }
     }
     @Deprecated("Legacy Back fallback for Android 8–12")
+    @android.annotation.SuppressLint("GestureBackNavigation") // API 33+ uses syncBackCallback's platform dispatcher.
     override fun onBackPressed() { if (!handleLocalBack()) super.onBackPressed() }
+    override fun onPause() {
+        dismissStartup?.invoke()
+        super.onPause()
+    }
     override fun onDestroy() {
+        dismissStartup?.invoke()
         resetSettingSwitches()
         if (Build.VERSION.SDK_INT >= 33) backCallback?.let { onBackInvokedDispatcher.unregisterOnBackInvokedCallback(it) }
         backCallback = null; super.onDestroy()

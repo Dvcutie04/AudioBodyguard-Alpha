@@ -76,7 +76,9 @@ jobs:
 
   native-swift:
     name: Swift contracts and read-only iOS simulator app
-    runs-on: macos-14
+    runs-on: macos-15
+    env:
+      DEVELOPER_DIR: /Applications/Xcode_26.3.app/Contents/Developer
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4

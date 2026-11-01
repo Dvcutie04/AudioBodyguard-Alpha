@@ -11,8 +11,18 @@ android {
         applicationId = "com.aqss.bodyguard.prototype"
         minSdk = 26
         targetSdk = 36
-        versionCode = 1
-        versionName = "0.1-simulation"
+        versionCode = 46
+        versionName = "0.43-simple-setup"
+    }
+
+    buildTypes {
+        create("liveInput") {
+            initWith(getByName("debug"))
+            applicationIdSuffix = ".liveinput"
+            versionNameSuffix = "-live-input"
+            matchingFallbacks += listOf("debug")
+            resValue("string", "app_name", "Audio Bodyguard Live Test")
+        }
     }
 
     compileOptions {
@@ -27,5 +37,6 @@ android {
 
 dependencies {
     implementation(project(":"))
+    implementation("androidx.core:core:1.13.1")
     implementation("com.google.mlkit:text-recognition:16.0.1")
 }

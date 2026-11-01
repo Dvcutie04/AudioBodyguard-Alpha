@@ -1,0 +1,71 @@
+name: Reviewed output inventory report verification
+
+on:
+  push:
+    branches: ["aqss/output-inventory-report"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: output-report-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  android-output-inventory:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: "8.13"
+      - uses: android-actions/setup-android@v4
+      - name: Record exact verification source
+        run: |
+          python3 - <<'PYTHON'
+          import json, os, pathlib, subprocess
+          source = subprocess.check_output(['git', 'rev-parse', 'HEAD'], text=True).strip()
+          assert source == os.environ['GITHUB_SHA']
+          output = pathlib.Path('artifacts/ui/android-live-input')
+          output.mkdir(parents=True, exist_ok=True)
+          (output / 'source-identity.json').write_text(json.dumps({
+              'source_commit': source,
+              'source_tree': subprocess.check_output(['git', 'rev-parse', 'HEAD^{tree}'], text=True).strip(),
+              'workflow_run_id': os.environ['GITHUB_RUN_ID'],
+              'workflow_attempt': os.environ['GITHUB_RUN_ATTEMPT'],
+              'scope': 'Native report review and sharing; no playback or physical qualification'
+          }, indent=2) + '\n')
+          PYTHON
+      - name: Compile app and callback regression probe
+        run: |
+          sdkmanager "platforms;android-36"
+          gradle -p native/android :app:assembleLiveInput :uiprobe:assembleDebug :sharereceiver:assembleDebug
+      - name: Enable emulator acceleration
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+      - name: Verify reviewed report and exact native sharing
+        uses: reactivecircus/android-emulator-runner@a421e43855164a8197daf9d8d40fe71c6996bb0d
+        with:
+          api-level: 36
+          arch: x86_64
+          profile: pixel_5
+          emulator-options: -no-window -gpu swiftshader -no-snapshot -noaudio -no-boot-anim -delay-adb
+          script: timeout 420 python3 tools/smoke_android_live_input.py --output-report-only
+      - name: Retain native output evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: output-report-ui
+          path: artifacts/ui/android-live-input/
+          if-no-files-found: error
+          retention-days: 14

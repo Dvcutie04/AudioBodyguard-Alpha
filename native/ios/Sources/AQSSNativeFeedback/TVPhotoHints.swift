@@ -1,13 +1,58 @@
 import Foundation
 
+private let photoTextBytes = 8192
+private let photoTextRows = 100
+private func photoLineBreak(_ value: Unicode.Scalar) -> Bool {
+    switch value.value {
+    case 0xA, 0xB, 0xC, 0xD, 0x85, 0x2028, 0x2029: return true
+    default: return false
+    }
+}
+private func photoTextFits(_ text: String) -> Bool {
+    guard text.utf8.prefix(photoTextBytes + 1).count <= photoTextBytes else { return false }
+    var rows = 1
+    var previousCR = false
+    for value in text.unicodeScalars {
+        if photoLineBreak(value) && !(value.value == 0xA && previousCR) {
+            rows += 1
+            if rows > photoTextRows { return false }
+        }
+        previousCR = value.value == 0xD
+    }
+    return true
+}
+
+/// Reject the whole OCR collection rather than hiding a row in a shortened prefix.
+public func boundedTVPhotoText<S: Sequence>(_ rows: S) -> String? where S.Element == String? {
+    var text = ""
+    var count = 0
+    var bytes = 0
+    for candidate in rows {
+        guard count < photoTextRows, let row = candidate else { return nil }
+        let size = row.utf8.prefix(photoTextBytes + 1).count
+        guard size <= photoTextBytes,
+              !row.unicodeScalars.allSatisfy({ CharacterSet.whitespacesAndNewlines.contains($0) }),
+              !row.unicodeScalars.contains(where: photoLineBreak) else { return nil }
+        let separator = count == 0 ? 0 : 1
+        guard size <= photoTextBytes - bytes - separator else { return nil }
+        if count > 0 { text += "\n" }
+        text += row
+        bytes += size + separator
+        count += 1
+    }
+    return text
+}
+
 /// Untrusted presentation hints only. Deliberately has no connection or authority API.
 public struct TVPhotoHints {
     public let brand: String?
     public let model: String?
     public let address: String?
     public init(_ text: String) {
-        guard text.utf8.count <= 8192 else { brand = nil; model = nil; address = nil; return }
-        let upper = text.uppercased().replacingOccurrences(of: "(?m)^(MODEL(?: CODE| NUMBER| NO\\.?)?|IP(?:V4)?(?: ADDRESS)?)[ \\t]*[:=]?[ \\t]*\\r?\\n[ \\t]*", with: "$1: ", options: .regularExpression)
+        guard photoTextFits(text) else { brand = nil; model = nil; address = nil; return }
+        let modelLabel = "MODEL(?:[ \\t]+(?:NAME|CODE|NUMBER|NO\\.?))?"
+        let addressLabel = "(?:IPV4[ \\t]+IP[ \\t]+ADDRESS|IP(?:V4)?(?:[ \\t]+ADDRESS)?)"
+        let upper = text.uppercased().replacingOccurrences(of: "(?m)^[ \\t]*(\(modelLabel)|\(addressLabel))[ \\t]*[:=]?[ \\t]*\\r?\\n[ \\t]*", with: "$1: ", options: .regularExpression)
         func matches(_ pattern: String) -> [String] {
             guard let re = try? NSRegularExpression(pattern: pattern, options: [.anchorsMatchLines]) else { return [] }
             let ns = upper as NSString
@@ -15,10 +60,20 @@ public struct TVPhotoHints {
         }
         let brands = Set(matches("\\b(SAMSUNG|LG|SONY|TCL|HISENSE|VIZIO|PANASONIC|PHILIPS)\\b"))
         brand = brands.count == 1 ? brands.first : nil
-        let models = Set(matches("^[ \\t]*MODEL(?: CODE| NUMBER| NO\\.?)?(?:[ \\t]*[:=][ \\t]*|[ \\t]+)([A-Z0-9][A-Z0-9._-]{1,39})[ \\t]*$"))
-        model = models.count == 1 && models.first!.rangeOfCharacter(from: .decimalDigits) != nil ? models.first : nil
-        let addresses = Set(matches("^[ \\t]*IP(?:V4)?(?: ADDRESS)?(?:[ \\t]*[:=][ \\t]*|[ \\t]+)([0-9.]+)[ \\t]*$"))
-        address = addresses.count == 1 && Self.isPrivateIPv4(addresses.first!) ? addresses.first : nil
+        // Count malformed labelled candidates too; a readable row cannot hide a conflict.
+        func labelled(_ label: String) -> String? {
+            let explicit = matches("^[ \\t]*\(label)[ \\t]*[:=][ \\t]*([^\\r\\n]*)[ \\t]*\\r?$")
+            // A whitespace-only value cannot swallow a differently named row's colon.
+            let spaced = matches("^[ \\t]*\(label)[ \\t]+([^:=\\r\\n]*)[ \\t]*\\r?$")
+            let values = Set((explicit + spaced)
+                .map { $0.trimmingCharacters(in: CharacterSet(charactersIn: " \t")) })
+            return values.count == 1 ? values.first : nil
+        }
+        if let candidate = labelled(modelLabel),
+           candidate.range(of: "^[A-Z0-9][A-Z0-9._-]{1,39}$", options: .regularExpression) != nil,
+           candidate.contains(where: { $0 >= "0" && $0 <= "9" }) { model = candidate }
+        else { model = nil }
+        address = labelled(addressLabel).flatMap { Self.isPrivateIPv4($0) ? $0 : nil }
     }
     public static func isPrivateIPv4(_ value: String) -> Bool {
         let parts = value.split(separator: ".", omittingEmptySubsequences: false)

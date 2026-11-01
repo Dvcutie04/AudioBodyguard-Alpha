@@ -5,6 +5,7 @@ import android.app.AlertDialog
 import android.widget.LinearLayout
 import android.widget.ScrollView
 import android.content.res.ColorStateList
+import android.graphics.Typeface
 import android.graphics.Canvas
 import android.graphics.ColorFilter
 import android.graphics.Paint
@@ -38,27 +39,58 @@ class InterfaceTheme(val activity: Activity, val dark: Boolean) {
         setColor(fill); cornerRadius = dp(radius).toFloat()
         if (border) setStroke(dp(1), outline)
     }
-    fun card() = GradientDrawable(GradientDrawable.Orientation.TL_BR, intArrayOf(raised, surface)).apply {
+    fun card() = GradientDrawable().apply {
+        setColor(surface)
         cornerRadius = dp(22).toFloat(); setStroke(dp(1), outline)
     }
     fun style(button: Button, primary: Boolean = false) {
-        button.isAllCaps = false; button.minHeight = dp(48); button.minimumWidth = 0
-        button.setPadding(dp(12), dp(9), dp(12), dp(9)); button.textSize = 15f
+        button.isAllCaps = false; button.minHeight = dp(52); button.minimumWidth = 0
+        button.setPadding(dp(12), dp(9), dp(12), dp(9)); button.textSize = 18f
+        button.setTypeface(null, Typeface.BOLD)
         button.setTextColor(ColorStateList(arrayOf(intArrayOf(-android.R.attr.state_enabled), intArrayOf()), intArrayOf(muted, if (primary) controlText else text)))
         button.background = RippleDrawable(ColorStateList.valueOf(outline), shape(if (primary) control else raised, 14).apply { setStroke(dp(1), if (primary) controlBorder else outline) }, null)
         button.stateListAnimator = null
     }
-    fun menu(title: String, items: List<Pair<String, () -> Unit>>) {
+    fun menu(title: String, items: List<Pair<String, () -> Unit>>, message: String = "", searchable: Boolean = false) {
         val list = LinearLayout(activity).apply { orientation = LinearLayout.VERTICAL; setPadding(dp(20), dp(10), dp(20), dp(10)) }
         val scroll = ScrollView(activity).apply { addView(list); setBackgroundColor(this@InterfaceTheme.background) }
-        val dialog = AlertDialog.Builder(activity).setTitle(title).setView(scroll).create()
+        val dialog = AlertDialog.Builder(activity).setTitle(title).setView(scroll).setPositiveButton("Cancel", null).create()
+        if (message.isNotEmpty()) list.addView(android.widget.TextView(activity).apply {
+            text = message; textSize = 18f; setTextColor(this@InterfaceTheme.text); setPadding(0, dp(8), 0, dp(20))
+        }, LinearLayout.LayoutParams(-1, -2))
+        val rows = mutableListOf<Button>()
+        if (searchable) {
+            val search = android.widget.EditText(activity).apply { hint = "Search brands"; setTextColor(this@InterfaceTheme.text); setHintTextColor(muted); setSingleLine(true) }
+            list.addView(search, LinearLayout.LayoutParams(-1, -2).apply { bottomMargin = dp(12) })
+            search.addTextChangedListener(object : android.text.TextWatcher {
+                override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
+                override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {
+                    rows.forEach { it.visibility = if (it.text.contains(s ?: "", ignoreCase = true)) View.VISIBLE else View.GONE }
+                }
+                override fun afterTextChanged(s: android.text.Editable?) {}
+            })
+        }
         for ((label, action) in items) {
             list.addView(Button(activity).apply {
+                rows.add(this)
                 text = label; style(this); setOnClickListener { dialog.dismiss(); action() }
             }, LinearLayout.LayoutParams(-1, -2).apply { bottomMargin = dp(10) })
         }
-        list.addView(roseButton(activity, this, "Cancel") { dialog.dismiss() }, LinearLayout.LayoutParams(-1, -2))
+        dialog.window?.setSoftInputMode(android.view.WindowManager.LayoutParams.SOFT_INPUT_STATE_ALWAYS_HIDDEN)
         dialog.show()
+    }
+
+    /** One short cue when a new picture appears; no looping animation or timer. */
+    fun guideCue(view: View) {
+        if (!android.animation.ValueAnimator.areAnimatorsEnabled()) return
+        view.addOnAttachStateChangeListener(object : View.OnAttachStateChangeListener {
+            override fun onViewAttachedToWindow(v: View) {
+                if (!android.animation.ValueAnimator.areAnimatorsEnabled()) return
+                v.translationX = dp(6).toFloat()
+                v.animate().translationX(0f).setDuration(300).start()
+            }
+            override fun onViewDetachedFromWindow(v: View) { v.animate().cancel(); v.translationX = 0f }
+        })
     }
 
 }
@@ -105,18 +137,28 @@ class InterfaceGraphic(activity: Activity, private val skin: InterfaceTheme, pri
 }
 
 /** Small, scalable navigation glyphs; button text supplies their accessible name. */
-class InterfaceSymbol(private val skin: InterfaceTheme, private val kind: String, color: Int) : Drawable() {
+class InterfaceSymbol(private val skin: InterfaceTheme, private val kind: String, color: Int, private val size: Int = 28) : Drawable() {
     private val paint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
         this.color = color; style = Paint.Style.STROKE; strokeWidth = 1.6f
         strokeCap = Paint.Cap.ROUND; strokeJoin = Paint.Join.ROUND
     }
-    override fun getIntrinsicWidth() = skin.dp(23)
-    override fun getIntrinsicHeight() = skin.dp(23)
+    override fun getIntrinsicWidth() = skin.dp(size)
+    override fun getIntrinsicHeight() = skin.dp(size)
     override fun draw(canvas: Canvas) {
         val saved = canvas.save()
         canvas.translate(bounds.left.toFloat(), bounds.top.toFloat())
         canvas.scale(bounds.width() / 24f, bounds.height() / 24f)
         when (kind) {
+            "camera" -> {
+                canvas.drawRoundRect(2f, 6f, 22f, 21f, 2f, 2f, paint)
+                val p = Path().apply { moveTo(7f, 6f); lineTo(9f, 3f); lineTo(15f, 3f); lineTo(17f, 6f) }
+                canvas.drawPath(p, paint); canvas.drawCircle(12f, 13f, 4f, paint)
+            }
+            "arrow.right" -> {
+                canvas.drawLine(3f, 12f, 21f, 12f, paint)
+                val p = Path().apply { moveTo(14f, 5f); lineTo(21f, 12f); lineTo(14f, 19f) }
+                canvas.drawPath(p, paint)
+            }
             "phone", "iphone" -> {
                 canvas.drawRoundRect(6f, 1.5f, 18f, 22.5f, 2.5f, 2.5f, paint)
                 canvas.drawLine(10f, 4.5f, 14f, 4.5f, paint)

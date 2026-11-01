@@ -5,12 +5,12 @@ data class TutorialTopic(val id: String, val title: String, val steps: List<Tuto
 object TutorialContent {
     val topics: List<TutorialTopic> = listOf(
         TutorialTopic("getting_started", "TV & smart-home guide", listOf(
-            TutorialStep("welcome", "overview", "Your TV. Your comfort.", "Follow the pictures for both your TV and phone.", ""),
-            TutorialStep("chooseTV", "connection", "Which TV do you use?", "Choose the brand on your TV or remote.", "Example: if the remote says Samsung, choose Samsung. If you cannot find a name, choose Not sure / no TV."),
+            TutorialStep("welcome", "overview", "Your TV. Your comfort.", "Set up both your TV and phone, one picture at a time.", ""),
+            TutorialStep("chooseTV", "connection", "Which TV do you use?", "Use a photo to find the brand, or choose it yourself.", "Example: if the remote says Samsung, choose Samsung. If you cannot find a name, choose Not sure / no TV."),
             TutorialStep("chooseHome", "connection", "Use a home app?", "Choose the home app you use. Neither is fine.", "Example: if you say “Alexa” to an Echo speaker, choose Amazon Alexa. If you manage devices in the Google Home app, choose Google Home."),
-            TutorialStep("connectionPlan", "connection", "1. Connect to your TV or home device", "Follow the highlighted pictures on your TV or in its official app.", "Example: follow your TV maker’s app steps, then review any approval request on the television."),
-            TutorialStep("connectionCheck", "connection", "2. Connect to your phone", "Open your TV's official phone app and follow the pictures.", "Example: open the official phone app, follow its pairing prompts and review requested permissions."),
-            TutorialStep("guideFinish", "connection", "Your next step is ready", "Explore the controls. Replay the pictures anytime from Help.", "Example: open Insights and select Explore an example to see a sample graph."),
+            TutorialStep("connectionPlan", "connection", "1. Connect to your TV or home device", "Start the pictures for your TV. We’ll keep your place.", "Example: follow your TV maker’s app steps, then review any approval request on the television."),
+            TutorialStep("connectionCheck", "connection", "2. Connect to your phone", "Open the matching app and follow the pictures. Your TV choice is filled in.", "Example: open the official phone app, follow its pairing prompts and review requested permissions."),
+            TutorialStep("guideFinish", "connection", "Picture setup complete", "Help can open a sound check. Your TV connection still needs verification.", "Example: jump to a sound or voice check from ? Setup help. Return here to replay the pictures."),
         )),
         TutorialTopic("home", "Home and coverage", listOf(
             TutorialStep("coverage", "home", "Read the coverage state", "Unknown physical state means the sound coming from the speakers still needs an independent check.", "Example: a phone can show a TV as connected while the room is using a separate soundbar. The app must check the actual sound output."),
@@ -103,7 +103,7 @@ object TutorialContent {
         TutorialFeature("input", "Voice input display and recognized words", "Review the recognized words on your phone.", "preview"),
     )
     val featuredIDs: List<String> = listOf("series_intro", "commercial_volume", "remote")
-    val pictureContinueRoutes: List<String> = listOf("samsung_ok", "samsung_pin", "lg_pair", "google_remote", "google_setup", "tcl_models", "google_fast", "google_samsung", "google_lg", "google_roku", "google_vidaa", "google_vizio", "google_legacy", "samsung_alexa", "lg_alexa", "sony_new", "sony_legacy", "roku_alexa", "vidaa_google", "vidaa_alexa", "vizio_pair", "vizio_account", "vizio_assist", "fire_alexa", "lg_account5", "lg_account6", "google_legacy_add", "fire_setup", "roku_phone", "vizio_google", "vizio_alexa")
+    val pictureContinueRoutes: List<String> = listOf("samsung_ok", "samsung_pin", "lg_pair", "google_remote", "google_setup", "tcl_models", "google_fast", "google_samsung", "google_lg", "google_roku", "google_vidaa", "google_vizio", "google_legacy", "samsung_alexa", "lg_alexa", "sony_new", "sony_legacy", "roku_alexa", "vidaa_google", "vidaa_alexa", "vizio_pair", "vizio_account", "vizio_assist", "fire_alexa", "lg_account5", "lg_account6", "google_legacy_add", "fire_setup", "roku_phone", "vizio_google", "vizio_alexa", "samsung_phone", "lg_phone", "vizio_phone", "google_phone", "google_manual")
     const val previewNotice = "Picture guide"
     const val startLabel = "Start picture setup"
     const val moreFeaturesLabel = "More features"
