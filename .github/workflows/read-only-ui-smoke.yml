@@ -21,7 +21,9 @@ jobs:
       fail-fast: false
       matrix:
         suite: [navigation, pictures, tools]
-    runs-on: macos-14
+    runs-on: macos-15
+    env:
+      DEVELOPER_DIR: /Applications/Xcode_26.3.app/Contents/Developer
     timeout-minutes: 35
     steps:
       - uses: actions/checkout@v4
@@ -61,7 +63,12 @@ jobs:
               args = ["xcrun", "xcresulttool", "get", "--path", result, "--format", "json"]
               if identifier:
                   args += ["--id", identifier]
-              return json.loads(subprocess.check_output(args))
+              call = subprocess.run(args, capture_output=True, text=True)
+              if call.returncode:
+                  call = subprocess.run(args + ["--legacy"], capture_output=True, text=True)
+              if call.returncode:
+                  raise RuntimeError(call.stderr)
+              return json.loads(call.stdout)
           def walk(value):
               if isinstance(value, list):
                   for child in value:
@@ -127,7 +134,9 @@ jobs:
 
   ios-connected-demo:
     name: Verify and package connected appearance for Appetize
-    runs-on: macos-14
+    runs-on: macos-15
+    env:
+      DEVELOPER_DIR: /Applications/Xcode_26.3.app/Contents/Developer
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
@@ -162,7 +171,12 @@ jobs:
               args = ["xcrun", "xcresulttool", "get", "--path", result, "--format", "json"]
               if identifier:
                   args += ["--id", identifier]
-              return json.loads(subprocess.check_output(args))
+              call = subprocess.run(args, capture_output=True, text=True)
+              if call.returncode:
+                  call = subprocess.run(args + ["--legacy"], capture_output=True, text=True)
+              if call.returncode:
+                  raise RuntimeError(call.stderr)
+              return json.loads(call.stdout)
           def walk(value):
               if isinstance(value, list):
                   for child in value:
