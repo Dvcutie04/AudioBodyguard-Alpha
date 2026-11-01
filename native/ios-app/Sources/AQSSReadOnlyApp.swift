@@ -232,6 +232,7 @@ private struct ReadOnlyHomeView: View {
     @State private var pendingHelpJump: String?
     @State private var soundToolsExpanded = false
     @State private var moreSettingsExpanded = false
+    @State private var appearancePickerVisible = false
     @State private var insightsHelpExpanded = false
     @State private var homeAppsExpanded = false
     @State private var tutorialsExpanded = false
@@ -630,10 +631,19 @@ private struct ReadOnlyHomeView: View {
                     Spacer()
                     question("Appearance", explanation: "Midnight uses a dark background. Daylight uses a light background. System follows your phone’s appearance. This choice is saved on this phone and works without a TV connection.", target: "appearance")
                 }
-                Menu {
-                    ForEach(["midnight", "daylight", "system"], id: \.self) { value in Button(value.capitalized) { appearance = value } }
-                } label: { Label("Appearance · " + appearance.capitalized, systemImage: "circle.lefthalf.filled").frame(maxWidth: .infinity, minHeight: 44) }
-                    .buttonStyle(AppButtonStyle(theme: theme)).accessibilityIdentifier("appearance-picker")
+                Button { appearancePickerVisible = true } label: {
+                    HStack {
+                        Text(appearance.capitalized).fixedSize(horizontal: false, vertical: true)
+                        Spacer(minLength: 8)
+                        Image(systemName: "chevron.down").font(.system(size: 20, weight: .semibold)).accessibilityHidden(true)
+                    }.frame(maxWidth: .infinity, minHeight: 44)
+                }.buttonStyle(AppButtonStyle(theme: theme)).accessibilityLabel("Appearance: " + appearance.capitalized)
+                    .accessibilityIdentifier("appearance-picker")
+                    .confirmationDialog("Appearance", isPresented: $appearancePickerVisible, titleVisibility: .visible) {
+                        ForEach(["midnight", "daylight", "system"], id: \.self) { value in Button(value.capitalized) { appearance = value } }
+                        Button("Cancel", role: .cancel) {}
+                    }
+
             }
             QuestionDisclosure(title: "More settings", theme: theme, isExpanded: $moreSettingsExpanded, identifier: "more-settings") {
                 action("Build details", icon: "info.circle") {
@@ -763,8 +773,8 @@ private struct ReadOnlyHomeView: View {
     private var navigationBar: some View {
         Group {
             if textSize.isAccessibilitySize {
-                Button { pagesVisible = true } label: { Label("Pages · \(currentPage.title)", systemImage: currentPage.icon).frame(maxWidth: .infinity, minHeight: 44) }
-                    .buttonStyle(AppButtonStyle(theme: theme)).padding(12).accessibilityIdentifier("page-picker")
+                Button { pagesVisible = true } label: { Label("Pages", systemImage: "square.grid.2x2").frame(maxWidth: .infinity, minHeight: 44) }
+                    .buttonStyle(AppButtonStyle(theme: theme)).padding(12).accessibilityLabel("Choose a page").accessibilityValue(currentPage.title).accessibilityIdentifier("page-picker")
             } else {
                 HStack(spacing: 5) {
                     ForEach(AQSSInterfaceContent.pages, id: \.id) { item in
