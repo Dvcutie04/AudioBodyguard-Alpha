@@ -2,6 +2,10 @@ import XCTest
 import UIKit
 
 final class AQSSReadOnlyUITests: XCTestCase {
+    override func setUpWithError() throws {
+        continueAfterFailure = false
+        XCUIDevice.shared.orientation = .portrait
+    }
     func testSimplifiedSetupAndContextualJumps() { checkSimplifiedSetup(large: false) }
     func testSimplifiedSetupWithLargestTextAndReducedMotion() { checkSimplifiedSetup(large: true) }
     private func checkSimplifiedSetup(large: Bool) {
@@ -627,7 +631,7 @@ final class AQSSReadOnlyUITests: XCTestCase {
         }
         tap("Build details", app)
         label("Version: \(version)\nBuild: \(build)", app)
-        label("Include the version and build when reporting a problem.", app)
+        XCTAssertTrue(app.buttons["share-build-details"].exists)
         XCTAssertFalse(XCUIApplication(bundleIdentifier: "com.apple.springboard").alerts.firstMatch.exists)
         screenshot("Installed version and build from app metadata", app)
         app.buttons["setting-help-close"].tap()
@@ -1070,26 +1074,34 @@ final class AQSSReadOnlyUITests: XCTestCase {
         // identically named button on the page underneath it.
         let scroll = explicitScroll ?? (app.scrollViews["setup-help-scroll"].exists ? app.scrollViews["setup-help-scroll"] : app.scrollViews["photo-review-scroll"].exists ? app.scrollViews["photo-review-scroll"] : app.scrollViews["setup-scroll"].exists ? app.scrollViews["setup-scroll"] : app.scrollViews["setting-help-scroll"].exists ? app.scrollViews["setting-help-scroll"] : app.scrollViews["menu-scroll"].exists ? app.scrollViews["menu-scroll"] : app.scrollViews["guide-scroll"].exists ? app.scrollViews["guide-scroll"] : app.scrollViews["sound-check-scroll"].exists ? app.scrollViews["sound-check-scroll"] : app.scrollViews["home-scroll"])
         let button = scroll.buttons.matching(NSPredicate(format: "label CONTAINS %@", title)).firstMatch
-        guard button.waitForExistence(timeout: 10) else { screenshot("Missing \(title)", app); XCTFail("Missing button: \(title)"); return }
+        // Recent SwiftUI versions can omit offscreen rows from an AX snapshot.
+        // Search the scroll surface before deciding that a control is missing.
+        _ = button.waitForExistence(timeout: 3)
         // isHittable can be true for a sliver of a button whose center lies
         // under the fixed page bar or tutorial footer. Bring the whole control
         // into the content viewport before XCTest taps its center.
-        func insideViewport() -> Bool {
+        func insideViewport(_ frame: CGRect) -> Bool {
             let viewport = scroll.frame.intersection(app.frame).insetBy(dx: 0, dy: 24)
-            let visible = button.frame.intersection(viewport)
-            return !visible.isNull && visible.height >= min(44, button.frame.height)
-                && viewport.contains(CGPoint(x: button.frame.midX, y: button.frame.midY))
+            let visible = frame.intersection(viewport)
+            return !visible.isNull && visible.height >= min(44, frame.height)
+                && viewport.contains(CGPoint(x: frame.midX, y: frame.midY))
         }
+        var below = true
         for _ in 0..<16 {
-            if button.isHittable && insideViewport() { break }
+            if button.exists {
+                let frame = button.frame
+                if frame.width > 0 && frame.height > 0 {
+                    if button.isHittable && insideViewport(frame) { break }
+                    below = frame.midY >= scroll.frame.midY
+                }
+            }
             // A fast swipe can pass the target completely. Use a short drag
             // without momentum, and recover in either direction if necessary.
-            let below = button.frame.midY >= scroll.frame.midY
             let start = scroll.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: below ? 0.75 : 0.35))
             let end = scroll.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: below ? 0.35 : 0.75))
             start.press(forDuration: 0.1, thenDragTo: end, withVelocity: .slow, thenHoldForDuration: 0.1)
         }
-        guard button.isHittable && insideViewport() else {
+        guard button.exists && button.isHittable && insideViewport(button.frame) else {
             screenshot("Unreachable \(title)", app)
             XCTFail("Unreachable button within content viewport: \(title)"); return
         }
