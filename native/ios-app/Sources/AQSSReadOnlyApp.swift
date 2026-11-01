@@ -163,35 +163,76 @@ private struct ReviewedTextSharePresenter: UIViewControllerRepresentable {
     let text: String
     @Binding var isPresented: Bool
 
+    final class AnchorController: UIViewController {
+        var whenReady: (() -> Void)?
+        private var readinessScheduled = false
+        func checkWhenReady() {
+            guard !readinessScheduled else { return }
+            readinessScheduled = true
+            DispatchQueue.main.async { [weak self] in
+                guard let self = self else { return }
+                self.readinessScheduled = false
+                self.whenReady?()
+            }
+        }
+        override func didMove(toParent parent: UIViewController?) { super.didMove(toParent: parent); checkWhenReady() }
+        override func viewDidAppear(_ animated: Bool) { super.viewDidAppear(animated); checkWhenReady() }
+        override func viewDidLayoutSubviews() { super.viewDidLayoutSubviews(); checkWhenReady() }
+    }
+
     final class Coordinator: NSObject, UIPopoverPresentationControllerDelegate {
         var presentation: Binding<Bool>
         var presenting = false
+        var waitingForTransition = false
         init(_ presentation: Binding<Bool>) { self.presentation = presentation }
-        func finished() { presenting = false; presentation.wrappedValue = false }
+        func finished() { presenting = false; waitingForTransition = false; presentation.wrappedValue = false }
         func popoverPresentationControllerDidDismissPopover(_ popoverPresentationController: UIPopoverPresentationController) { finished() }
     }
 
     func makeCoordinator() -> Coordinator { Coordinator($isPresented) }
-    func makeUIViewController(context: Context) -> UIViewController {
-        let controller = UIViewController()
+    func makeUIViewController(context: Context) -> AnchorController {
+        let controller = AnchorController()
         controller.view.backgroundColor = .clear
         return controller
     }
-    func updateUIViewController(_ controller: UIViewController, context: Context) {
+    func updateUIViewController(_ controller: AnchorController, context: Context) {
         let coordinator = context.coordinator
         coordinator.presentation = $isPresented
-        guard isPresented, !coordinator.presenting, controller.view.window != nil,
-              controller.presentedViewController == nil else { return }
-        let activity = UIActivityViewController(activityItems: [text], applicationActivities: nil)
-        if UIDevice.current.userInterfaceIdiom == .pad { activity.modalPresentationStyle = .popover }
-        if let popover = activity.popoverPresentationController {
-            popover.sourceView = controller.view
-            popover.sourceRect = controller.view.bounds
-            popover.delegate = coordinator
+        controller.whenReady = { [weak controller, weak coordinator] in
+            guard let controller = controller, let coordinator = coordinator,
+                  coordinator.presentation.wrappedValue, !coordinator.presenting, !coordinator.waitingForTransition,
+                  controller.parent != nil, controller.view.window != nil, !controller.isBeingDismissed,
+                  controller.presentedViewController == nil else { return }
+            // A Share request can arrive while SwiftUI is attaching this review
+            // or its parent sheet is finishing an animation. Keep the request.
+            if let transition = controller.transitionCoordinator {
+                coordinator.waitingForTransition = true
+                _ = transition.animate(alongsideTransition: nil) { [weak controller, weak coordinator] _ in
+                    coordinator?.waitingForTransition = false
+                    controller?.checkWhenReady()
+                }
+                return
+            }
+            let activity = UIActivityViewController(activityItems: [text], applicationActivities: nil)
+            if UIDevice.current.userInterfaceIdiom == .pad { activity.modalPresentationStyle = .popover }
+            if let popover = activity.popoverPresentationController {
+                popover.sourceView = controller.view
+                popover.sourceRect = controller.view.bounds
+                popover.delegate = coordinator
+            }
+            activity.completionWithItemsHandler = { [weak coordinator] _, _, _, _ in coordinator?.finished() }
+            coordinator.presenting = true
+            controller.present(activity, animated: true)
+            DispatchQueue.main.async { [weak coordinator] in
+                // UIKit can refuse a presentation during a hierarchy change.
+                // Never strand the visible Share button in a disabled state.
+                if activity.presentingViewController == nil && !activity.isBeingPresented { coordinator?.finished() }
+            }
         }
-        activity.completionWithItemsHandler = { [weak coordinator] _, _, _, _ in coordinator?.finished() }
-        coordinator.presenting = true
-        controller.present(activity, animated: true)
+        controller.checkWhenReady()
+    }
+    static func dismantleUIViewController(_ controller: AnchorController, coordinator: Coordinator) {
+        controller.whenReady = nil
     }
 }
 

@@ -33,6 +33,7 @@
       "AQSSReadOnlyUITests/testIllustratedGuideKeepsScrollContainerAndResetsPosition"
     ],
     "tools": [
+      "AQSSReadOnlyUITests/testTestSetupShareStartsWhenReviewAppears",
       "AQSSReadOnlyUITests/testTestSetupWorksheetCancelSharePreservesPreview",
       "AQSSReadOnlyUITests/testTestSetupWorksheetCopySharesExactReviewedText",
       "AQSSReadOnlyUITests/testTestSetupWorksheetRotationClearCloseAndRestart",

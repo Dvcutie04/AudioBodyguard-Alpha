@@ -194,7 +194,11 @@ final class AQSSReadOnlyUITests: XCTestCase {
         let share = app.buttons["test-setup-share"]
         XCTAssertTrue(share.isHittable); share.tap()
         let nativeCopy = app.cells["Copy"].firstMatch
-        XCTAssertTrue(nativeCopy.waitForExistence(timeout: 8))
+        guard nativeCopy.waitForExistence(timeout: 8) else {
+            screenshot("Test setup share did not open", app)
+            XCTFail("Native Copy is missing; Share enabled=\(share.isEnabled): \(app.debugDescription)")
+            throw NSError(domain: "AQSSTestSetup", code: 4)
+        }
         screenshot("Test setup native share UI", app)
         if copy { nativeCopy.tap() }
         else if UIDevice.current.userInterfaceIdiom == .pad {
@@ -233,6 +237,26 @@ final class AQSSReadOnlyUITests: XCTestCase {
 
     func testTestSetupWorksheetCopySharesExactReviewedText() throws {
         let app = launch(); try openTestSetup(app); try inspectTestSetupShare(app, copy: true)
+    }
+
+    func testTestSetupShareStartsWhenReviewAppears() throws {
+        let app = launch(); try openTestSetup(app)
+        for _ in 0..<3 {
+            app.buttons["test-setup-review"].tap()
+            let share = app.buttons["test-setup-share"]
+            XCTAssertTrue(share.waitForExistence(timeout: 5)); share.tap()
+            let copy = app.cells["Copy"].firstMatch
+            guard copy.waitForExistence(timeout: 8) else {
+                screenshot("Share requested as review appeared", app)
+                XCTFail("Share must open from the newly attached review: \(app.debugDescription)"); return
+            }
+            copy.tap()
+            let returned = XCTNSPredicateExpectation(predicate: NSPredicate(format: "enabled == true AND hittable == true"), object: share)
+            XCTAssertEqual(XCTWaiter.wait(for: [returned], timeout: 8), .completed)
+            XCTAssertTrue(app.staticTexts["test-setup-preview"].exists)
+            app.buttons["test-setup-back"].tap()
+        }
+        screenshot("Three immediate report shares return to their caller", app)
     }
 
     func testTestSetupWorksheetRotationClearCloseAndRestart() throws {
@@ -1653,7 +1677,7 @@ final class AQSSReadOnlyUITests: XCTestCase {
         XCTAssertFalse(app.buttons["setup-route-google_samsung"].exists)
         label("first setup with Google Home", app)
         XCTAssertTrue(app.buttons["setup-next"].exists)
-        app.buttons["setup-next"].tap()
+        restartPictureGuide(app)
         for _ in 0..<4 { app.buttons["setup-next"].tap() }
         label("Open Devices", app)
         let progress = app.staticTexts["setup-progress"]
