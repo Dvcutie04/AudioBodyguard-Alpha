@@ -456,14 +456,14 @@ private struct ReadOnlyHomeView: View {
     private var header: some View {
         HStack(spacing: 10) {
             if !pageHistory.isEmpty {
-                Button { backPage() } label: { Image(systemName: "arrow.left").frame(width: 24, height: 24) }.accessibilityLabel("Back").accessibilityIdentifier("page-back")
+                Button { backPage() } label: { Image(systemName: "arrow.left").font(.system(size: 20, weight: .semibold)).frame(width: 24, height: 24) }.accessibilityLabel("Back").accessibilityIdentifier("page-back")
             }
-            Image(systemName: "waveform.path").font(.title2).foregroundColor(theme.accent).accessibilityHidden(true)
+            if !textSize.isAccessibilitySize { Image(systemName: "waveform.path").font(.system(size: 24)).foregroundColor(theme.accent).accessibilityHidden(true) }
             if !textSize.isAccessibilitySize && pageHistory.isEmpty {
                 Text("BODYGUARD").font(.caption.weight(.bold)).tracking(2).lineLimit(1).minimumScaleFactor(0.8)
             }
             Spacer(minLength: 0)
-            Button { navigationVisible = true } label: { Image(systemName: "square.grid.2x2").frame(width: 24, height: 24).contentShape(Rectangle()) }
+            Button { navigationVisible = true } label: { Image(systemName: "square.grid.2x2").font(.system(size: 20, weight: .semibold)).frame(width: 24, height: 24).contentShape(Rectangle()) }
                 .accessibilityLabel("Jump to").accessibilityIdentifier("section-navigation")
             Button { helpVisible = true } label: { Label("Help", systemImage: "questionmark.circle") }
                 .accessibilityLabel("Help & tutorials").accessibilityIdentifier("tutorial-help").accessibilityFocused($focusedElement, equals: .help)
