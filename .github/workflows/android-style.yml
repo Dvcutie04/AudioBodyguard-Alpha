@@ -3,6 +3,13 @@ name: Simple setup verification — Android
 on:
   push:
     branches: ["aqss/simple-setup"]
+    paths:
+      - "native/android/**"
+      - "contracts/**"
+      - "tools/smoke_android_live_input.py"
+      - "tools/record_android_test_apk.py"
+      - "tools/generate_tutorial_content.py"
+      - "tools/generate_setup_guides.py"
   workflow_dispatch:
 
 permissions:

@@ -53,6 +53,29 @@ struct AppButtonStyle: ButtonStyle {
     }
 }
 
+/// A predictable, labeled button for optional content on every text size.
+struct QuestionDisclosure<Content: View>: View {
+    let title: String
+    let theme: AppTheme
+    @Binding var isExpanded: Bool
+    let identifier: String
+    @ViewBuilder let content: () -> Content
+    var body: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Button { isExpanded.toggle() } label: {
+                HStack(spacing: 10) {
+                    Image(systemName: "questionmark.circle").accessibilityHidden(true)
+                    Text(title).fixedSize(horizontal: false, vertical: true)
+                    Spacer(minLength: 8)
+                    Image(systemName: isExpanded ? "chevron.up" : "chevron.down").accessibilityHidden(true)
+                }.frame(maxWidth: .infinity, minHeight: 44, alignment: .leading)
+            }.buttonStyle(AppButtonStyle(theme: theme)).accessibilityLabel(title)
+                .accessibilityValue(isExpanded ? "Expanded" : "Collapsed").accessibilityIdentifier(identifier)
+            if isExpanded { content() }
+        }
+    }
+}
+
 /// The owner's original photograph, including its white background.
 struct RoseButton: View {
     let title: String
@@ -207,6 +230,11 @@ private struct ReadOnlyHomeView: View {
     @State private var brandPickerVisible = false
     @State private var brandQuery = ""
     @State private var pendingHelpJump: String?
+    @State private var soundToolsExpanded = false
+    @State private var moreSettingsExpanded = false
+    @State private var insightsHelpExpanded = false
+    @State private var homeAppsExpanded = false
+    @State private var tutorialsExpanded = false
     @State private var voiceAfterGuide = false
     @State private var pendingSetupGroup: String?
     @State private var pagesVisible = false
@@ -374,7 +402,7 @@ private struct ReadOnlyHomeView: View {
                             }
                         }
                     }
-                }.padding(20).background(theme.background).foregroundColor(theme.text).accessibilityIdentifier("brand-picker")
+                }.padding(20).background(theme.background).foregroundColor(theme.text)
             }
             .sheet(isPresented: $pagesVisible) {
                 menuSheet("Choose a page") {
@@ -391,7 +419,7 @@ private struct ReadOnlyHomeView: View {
                     action("Illustrated setup guides", icon: "rectangle.stack") { pendingSetupGroup = ""; helpVisible = false }
                     action("Voice check — step by step", icon: "mic") { pendingSetupGroup = "voice"; helpVisible = false }
                     featureCatalog
-                    DisclosureGroup("More tutorials") {
+                    QuestionDisclosure(title: "More tutorials", theme: theme, isExpanded: $tutorialsExpanded, identifier: "more-tutorials") {
                         ForEach(AQSSTutorialContent.topics, id: \.id) { topic in action(topic.title, icon: "questionmark.circle") { helpVisible = false; startTutorial(topic.id) } }
                     }
                     action("Cancel", icon: "xmark") { helpVisible = false }
@@ -409,7 +437,8 @@ private struct ReadOnlyHomeView: View {
             else { audioHints.stop(); resetSettingSwitches() }
         }
         .onChange(of: settingsConnectionVerified) { verified in if !verified { resetSettingSwitches() } }
-        .onChange(of: tutorialStepKey) { _ in moreFeatures = false; moreTVBrands = false; tutorialHelp = false }
+        .onChange(of: page) { _ in soundToolsExpanded = false; moreSettingsExpanded = false; insightsHelpExpanded = false }
+        .onChange(of: tutorialStepKey) { _ in moreFeatures = false; moreTVBrands = false; tutorialHelp = false; homeAppsExpanded = false }
         .onChange(of: guide.selections["chooseTV"]) { brand in
             if let brand = brand, let selected = selectedSetupSystem, selected != brand && !selected.hasPrefix(brand + "_") { selectedSetupSystem = nil }
         }
@@ -500,11 +529,10 @@ private struct ReadOnlyHomeView: View {
         VStack(alignment: .leading, spacing: 18) {
             destinationCard("Live sound check", subtitle: "Try a 30-second microphone check", icon: "mic") { liveSoundCheckVisible = true }
             destinationCard("Voice check", subtitle: "See microphone activity and recognized words", icon: "waveform") { voiceCheckVisible = true }
-            DisclosureGroup {
+            QuestionDisclosure(title: "More sound tools", theme: theme, isExpanded: $soundToolsExpanded, identifier: "more-sound-tools") {
                 destinationCard("Output details", subtitle: "Review reported outputs", icon: "speaker.wave.2") { outputDetailsVisible = true }.accessibilityIdentifier("output-details-open")
                 destinationCard("Test setup", subtitle: "Record a two-phone test", icon: "doc.text") { testSetupDraft.clear(); testSetupVisible = true }.accessibilityIdentifier("test-setup-open")
-            } label: { Label("More sound tools", systemImage: "questionmark.circle") }
-                .accessibilityIdentifier("more-sound-tools")
+            }
             card(target: "options") {
                 Text("Sound options").font(.title2.bold()).accessibilityAddTraits(.isHeader)
                 action(optionsExpanded ? "? Hide sound options" : "? Sound options", icon: "questionmark.circle") { closeTutorial(restore: false); optionsExpanded.toggle() }
@@ -584,9 +612,9 @@ private struct ReadOnlyHomeView: View {
                     Text("No measurements yet").font(.title3.bold())
                     action(detailSections.contains("trends") ? "Hide measurement details" : "Measurement details", icon: "info.circle") { toggleDetails("trends") }
                     if detailSections.contains("trends") { Text("A qualified observation source is needed before a real trend can appear. Missing measurements cannot establish safe audio.").foregroundColor(theme.muted) }
-                    DisclosureGroup {
+                    QuestionDisclosure(title: "Insights help", theme: theme, isExpanded: $insightsHelpExpanded, identifier: "insights-help") {
                         action("Explore an example", icon: "chart.xyaxis.line") { chartValuesVisible = false; showingExample = true }
-                    } label: { Label("Insights help", systemImage: "questionmark.circle") }
+                    }
                 }
             }
             section("Session history", detail: "No observed events", explanation: "A missing history cannot establish continuous coverage. Requests and verified results will need distinct records.", target: "history", icon: "clock")
@@ -607,7 +635,7 @@ private struct ReadOnlyHomeView: View {
                 } label: { Label("Appearance · " + appearance.capitalized, systemImage: "circle.lefthalf.filled").frame(maxWidth: .infinity, minHeight: 44) }
                     .buttonStyle(AppButtonStyle(theme: theme)).accessibilityIdentifier("appearance-picker")
             }
-            DisclosureGroup {
+            QuestionDisclosure(title: "More settings", theme: theme, isExpanded: $moreSettingsExpanded, identifier: "more-settings") {
                 action("Build details", icon: "info.circle") {
                     let details = installedBuildDetails
                     settingHelp = SettingExplanation(id: "build", title: "Build details", explanation: details, shareText: details)
@@ -617,8 +645,7 @@ private struct ReadOnlyHomeView: View {
                     navigationTarget = "page-heading"; navigationRequest += 1
                 }
                 action("Private support report", icon: "doc.text") { showSupportReport() }
-            } label: { Label("More settings", systemImage: "questionmark.circle") }
-                .accessibilityIdentifier("more-settings")
+            }
             } else {
                 whiteSettingsCard(target: "advanced") {
                     ForEach(AQSSInterfaceContent.settings, id: \.id) { item in
@@ -931,11 +958,11 @@ private struct ReadOnlyHomeView: View {
                 Text(tutorialStep?.example.isEmpty == false ? tutorialStep!.example : "Follow the TV pictures, then the phone pictures. Setup guidance does not verify a TV connection.")
                 if ["welcome", "chooseTV"].contains(tutorialStep?.target ?? "") { action("Jump to TV photo", icon: "camera") { queueHelpJump("photo") } }
                 if tutorialStep?.target == "connectionPlan" {
-                    DisclosureGroup("Home app (optional)") {
+                    QuestionDisclosure(title: "Home app (optional)", theme: theme, isExpanded: $homeAppsExpanded, identifier: "optional-home-app") {
                         ForEach(AQSSTutorialContent.choices["chooseHome"] ?? [], id: \.id) { choice in
                             action(choice.id == "neither" ? "Use TV maker’s app (default)" : choice.title, icon: guide.selected("chooseHome")?.id == choice.id ? "checkmark" : choice.icon) { guide.selectHomeApp(choice.id) }
                         }
-                    }.accessibilityIdentifier("optional-home-app")
+                    }
                     ForEach(["google", "alexa"], id: \.self) { id in
                         if [id, "both"].contains(guide.selected("chooseHome")?.id ?? "") {
                             action("Jump to " + (id == "google" ? "Google Home" : "Amazon Alexa") + " pictures", icon: "house") { queueHelpJump(id) }

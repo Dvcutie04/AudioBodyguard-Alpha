@@ -8,6 +8,7 @@ final class AQSSReadOnlyUITests: XCTestCase {
         let app = XCUIApplication()
         app.launchArguments = ["-aqssGuideDismissedV1", "NO", "-aqssSetupProgressV1", "{}"]
         if large { app.launchArguments += ["-UIPreferredContentSizeCategoryName", "UICTContentSizeCategoryAccessibilityXXXL"] }
+        continueAfterFailure = false
         app.launch()
         label("Step 1 of 5", app)
         XCTAssertFalse(app.buttons["more-features"].exists)
@@ -24,6 +25,8 @@ final class AQSSReadOnlyUITests: XCTestCase {
         label("Step 2 of 5", app)
         tap("Choose TV brand", app)
         XCTAssertTrue(app.textFields["brand-search"].waitForExistence(timeout: 5))
+        app.textFields["brand-search"].tap(); app.textFields["brand-search"].typeText("Samsung")
+        XCTAssertFalse(app.buttons["choice-lg"].exists)
         app.buttons["choice-samsung"].tap()
         label("Step 3 of 5", app)
         XCTAssertFalse(app.staticTexts["Use a home app?"].exists)

@@ -332,11 +332,11 @@ struct VoiceCheckView: View {
                     Text("Digital input levels over time (dBFS).").font(.caption).foregroundColor(theme.muted)
                     Text("Recent recognized words · may change").font(.headline)
                     Text(voice.transcript.isEmpty ? "No words recognized yet" : voice.transcript).accessibilityIdentifier("voice-transcript")
-                    DisclosureGroup(isExpanded: $voiceHelp) {
+                    QuestionDisclosure(title: "Voice help", theme: theme, isExpanded: $voiceHelp, identifier: "voice-help") {
                         Text("Review recognized words before using them. Noise can change what appears. Recognition stays on this phone. Listening stops when you leave.")
                         Button("Jump to voice steps") { voice.clear(); setupVisible = true }.buttonStyle(AppButtonStyle(theme: theme))
                         Button("Clear words") { voice.clear() }.buttonStyle(AppButtonStyle(theme: theme))
-                    } label: { Label("Voice help", systemImage: "questionmark.circle") }.accessibilityIdentifier("voice-help")
+                    }
                 }.padding()
             }
             HStack {
