@@ -190,14 +190,19 @@ public final class SoundAvailabilityProbe extends CameraCaptureProbe {
             require(rows.equals(get(recaps, "snapshot")), "Recovery presentation changed existing recaps");
             require(((Button) read(activity, "recent")).isEnabled() && ((Button) read(activity, "recent")).getVisibility() == View.VISIBLE, "Cleanup block hid recent reports");
             if (voice) {
-                press("Clear words"); noCapture();
+                pressWindow("? Voice help"); pressWindow("Clear words"); noCapture();
                 require(BLOCKED.equals(status()) && !startButton().isEnabled(), "Clear words overrode cleanup quarantine");
                 require(rows.equals(get(recaps, "snapshot")), "Clear words changed historical meter reports");
             }
             shot(stem() + "-blocked");
 
             phase = "historical support report during quarantine";
-            pressWindow("Recent sound checks"); waitNode("Review support report", false); pressWindow("Review support report");
+            if (voice) {
+                pressWindow("Recent sound checks");
+            } else {
+                pressWindow("[?] What does this show?"); pressWindow("Jump to recent sound checks");
+            }
+            waitNode("Review support report", false); pressWindow("Review support report");
             String frozen = waitNode("Audio Bodyguard\nPlatform: Android\n", true).getText().toString();
             require(frozen.contains("Check 1: No input samples observed\nStopped by you"), "Synthetic historical recap absent from preview");
             require(frozen.contains("not proof of sound safety, protection or TV control"), "Historical report lost uncertainty");

@@ -207,12 +207,11 @@ def main():
 
     def open_recaps(name):
         for attempt in range(5):
-            root, _ = screen(f"{name}-find-{attempt}")
-            if has(root, "Recent sound checks"):
-                tap("Recent sound checks", name)
+            if tap_direct("[?] What does this show?", f"{name}_help_{attempt}", optional=True):
+                tap_direct("Jump to recent sound checks", name)
                 return
-            scroll_meter(f"{name}-scroll-{attempt}", down=True)
-        raise AssertionError("Recent sound checks is not reachable in the meter scroll view")
+            scroll_meter(f"{name}_find_help_{attempt}", down=True)
+        raise AssertionError("Recent sound checks is not reachable through sound-check help")
 
     def close_recaps(name):
         tap("Close", name)
