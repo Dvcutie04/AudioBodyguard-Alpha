@@ -55,8 +55,9 @@ final class AQSSReadOnlyUITests: XCTestCase {
         label("Step 3 of 5", app)
         XCTAssertFalse(app.staticTexts["Use a home app?"].exists)
         XCTAssertTrue(app.buttons["setup-from-samsung"].exists)
-        XCTAssertTrue(app.frame.contains(app.buttons["exit-tutorial"].frame), "Exit must remain fully inside the screen")
         screenshot("Simplified TV plan \(large)", app)
+        let exitFrame = app.buttons["exit-tutorial"].frame
+        XCTAssertTrue(app.frame.contains(exitFrame), "Exit \(exitFrame) must remain inside \(app.frame)")
         tap("Setup help", app)
         let help = app.scrollViews["setup-help-scroll"]
         XCTAssertTrue(help.waitForExistence(timeout: 5))

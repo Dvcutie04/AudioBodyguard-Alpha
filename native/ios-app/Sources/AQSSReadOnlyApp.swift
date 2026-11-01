@@ -76,6 +76,22 @@ struct QuestionDisclosure<Content: View>: View {
     }
 }
 
+/// Keep the cropped photograph's accessibility bounds inside its visible frame.
+/// A SwiftUI scaled-to-fill Image can expose the uncropped bitmap's width.
+private struct RoseThumbnail: UIViewRepresentable {
+    func makeUIView(context: Context) -> UIImageView {
+        let image = UIImageView(image: UIImage(named: "TribalRose"))
+        image.contentMode = .scaleAspectFill
+        image.clipsToBounds = true
+        image.isAccessibilityElement = false
+        image.accessibilityElementsHidden = true
+        image.setContentCompressionResistancePriority(.defaultLow, for: .horizontal)
+        image.setContentCompressionResistancePriority(.defaultLow, for: .vertical)
+        return image
+    }
+    func updateUIView(_ image: UIImageView, context: Context) {}
+}
+
 /// The owner's original photograph, including its white background.
 struct RoseButton: View {
     let title: String
@@ -86,7 +102,7 @@ struct RoseButton: View {
     var body: some View {
         Button(action: action) {
             HStack(spacing: 8) {
-                Image("TribalRose").resizable().scaledToFill()
+                RoseThumbnail()
                     .frame(width: 52, height: 68).clipped()
                     .clipShape(RoundedRectangle(cornerRadius: 6)).accessibilityHidden(true)
                 if !compact && !textSize.isAccessibilitySize { Text(title).fixedSize(horizontal: title == "Help", vertical: true) }
