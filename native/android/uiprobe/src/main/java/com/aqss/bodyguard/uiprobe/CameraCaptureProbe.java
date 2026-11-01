@@ -12,6 +12,7 @@ import android.os.SystemClock;
 import android.provider.MediaStore;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.accessibility.AccessibilityNodeInfo;
 import android.widget.TextView;
 import java.io.FileNotFoundException;
 import java.io.InputStream;
@@ -100,7 +101,8 @@ public class CameraCaptureProbe extends Instrumentation {
             require(!abandoned.exists(), "Abandoned capture was retained");
             require(unrelated.isFile(), "Camera cleanup removed unrelated cache data");
             require(unrelated.delete(), "Cannot remove unrelated test file");
-            waitForText("Brand: VIZIO"); waitForText("Model: V505M-K09"); waitForText("TV IP hint: 10.20.30.40");
+            waitForText("Brand: VIZIO"); photoAction("Show photo details");
+            waitForText("Model: V505M-K09"); waitForText("TV IP hint: 10.20.30.40");
             waitForText("Nothing is connected."); assertRemoved(output);
             recordScreen("camera-full-image");
 
@@ -167,7 +169,38 @@ public class CameraCaptureProbe extends Instrumentation {
         runOnMainSync(() -> require(click(activity.getWindow().getDecorView(), "Take a TV photo"), "Camera button missing"));
     }
     private void assertEmpty() { waitForText("No photo selected"); assertUnknown(); }
-    protected void assertUnknown() { waitForText("Brand: Not identified"); waitForText("Model: Not identified"); waitForText("TV IP hint: Not identified"); }
+    protected void assertUnknown() {
+        photoAction("Show photo details");
+        waitForText("Model: Not identified"); waitForText("TV IP hint: Not identified");
+        StringBuilder text = new StringBuilder();
+        runOnMainSync(() -> read(activity.getWindow().getDecorView(), text));
+        require(!text.toString().contains("Brand:"), "Unknown photo retained a visible brand");
+    }
+    /** Follow the real Photo help dialog; never change app visibility or inject a result. */
+    protected void photoAction(String choice) {
+        runOnMainSync(() -> require(click(activity.getWindow().getDecorView(), "? Photo help"), "Photo help missing"));
+        long deadline = SystemClock.uptimeMillis() + 5000;
+        while (SystemClock.uptimeMillis() < deadline) {
+            AccessibilityNodeInfo root = getUiAutomation(android.app.UiAutomation.FLAG_DONT_SUPPRESS_ACCESSIBILITY_SERVICES).getRootInActiveWindow();
+            if (root != null && clickChoice(root, choice, 0)) { waitForIdleSync(); return; }
+            SystemClock.sleep(100);
+        }
+        throw new AssertionError("Photo help choice missing: " + choice);
+    }
+    private static boolean clickChoice(AccessibilityNodeInfo node, String choice, int depth) {
+        if (depth > 64 || !node.isVisibleToUser()) return false;
+        if (node.getText() != null && choice.contentEquals(node.getText())) {
+            AccessibilityNodeInfo target = node;
+            for (int parent = 0; parent < 4 && target != null; parent++, target = target.getParent()) {
+                if (target.isClickable()) return target.performAction(AccessibilityNodeInfo.ACTION_CLICK);
+            }
+        }
+        for (int index = 0; index < node.getChildCount(); index++) {
+            AccessibilityNodeInfo child = node.getChild(index);
+            if (child != null && clickChoice(child, choice, depth + 1)) return true;
+        }
+        return false;
+    }
     private void assertRemoved(Uri uri) throws Exception {
         require(uri != null, "No output URI captured");
         long deadline = SystemClock.uptimeMillis() + 5000;

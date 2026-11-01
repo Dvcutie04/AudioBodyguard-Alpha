@@ -71,6 +71,8 @@ jobs:
             timeout 300 python3 tools/smoke_android_sound_availability.py --voice
             timeout 300 python3 tools/smoke_android_sound_availability.py
             timeout 300 python3 tools/smoke_android_quiet_output.py
+            # All assertions passed; bound the emulator runner's shutdown wait.
+            pkill -KILL -f "^$ANDROID_HOME/emulator/qemu/[^ ]*/qemu-system-x86_64-headless( |$)" || true
       - name: Verify APK signature, opening poster and exact source identity
         run: python3 tools/record_android_test_apk.py
       - name: Retain live test APK

@@ -55,7 +55,7 @@ public final class PhotoDeadlineProbe extends CameraCaptureProbe {
             selected = FIXTURE;
             choose(); waitForText(busy); assertUnknown();
             require(pickerRequests == 1, "Retry launched another picker while the original read was blocked");
-            runOnMainSync(() -> require(click(activity.getWindow().getDecorView(), "Clear photo details"), "Clear missing"));
+            photoAction("Clear photo details");
             waitForText("No photo selected"); choose(); waitForText(busy); assertUnknown();
             runOnMainSync(() -> require(click(activity.getWindow().getDecorView(), "Take a TV photo"), "Camera missing"));
             require(cameraRequests == 0 && pickerRequests == 1, "Clear or camera request bypassed occupied photo work");
@@ -81,7 +81,7 @@ public final class PhotoDeadlineProbe extends CameraCaptureProbe {
             selected = FIXTURE; choose();
             waitForText("Brand: VIZIO"); waitForText("Model: V505M-K09"); waitForText("TV IP hint: 10.20.30.40");
             waitForText("Nothing is connected."); recordScreen("photo-deadline-retry");
-            runOnMainSync(() -> require(click(activity.getWindow().getDecorView(), "Clear photo details"), "Clear missing"));
+            photoAction("Clear photo details");
             waitForText("No photo selected"); assertUnknown();
             ExecutorService currentWorker = (ExecutorService) field.get(activity);
             currentWorker.submit(() -> {}).get(10, TimeUnit.SECONDS);
@@ -92,7 +92,7 @@ public final class PhotoDeadlineProbe extends CameraCaptureProbe {
                 require(SystemClock.uptimeMillis() < secondWait, "Second provider read never opened");
                 SystemClock.sleep(100);
             }
-            runOnMainSync(() -> require(click(activity.getWindow().getDecorView(), "Clear photo details"), "Clear missing"));
+            photoAction("Clear photo details");
             choose(); waitForText(busy); assertUnknown();
             Activity overlay = startActivitySync(new Intent().setClassName(getTargetContext().getPackageName(),
                     "com.aqss.bodyguard.prototype.SetupGuideActivity").addFlags(Intent.FLAG_ACTIVITY_NEW_TASK));

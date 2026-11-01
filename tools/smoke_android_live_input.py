@@ -137,7 +137,7 @@ def main():
                 time.sleep(1)
         raise AssertionError(f"Missing simultaneous Voice permission labels after bounded scrolling: {texts}")
 
-    def tap(text, name, optional=False):
+    def tap_direct(text, name, optional=False):
         # A successful prior click can still be replacing the active hierarchy.
         # Retry only a rejected action against a newly retrieved root.
         for attempt in range(6):
@@ -148,6 +148,36 @@ def main():
         if optional:
             return False
         raise AssertionError(f"Missing tap target: {text}")
+
+    def tap(text, name, optional=False):
+        # Secondary destinations now live in the same contextual help menus
+        # users open. Exercise those controls before reaching the real screen.
+        routes = {
+            "Build details": ("? More settings", "Build details"),
+            "Advanced Settings": ("? More settings", "Jump to Advanced Settings"),
+            "Test setup. Record the two-phone test arrangement": ("? More sound tools", "Jump to Test setup"),
+            "Output inventory. Check this phone’s available audio outputs": ("? More sound tools", "Jump to Output inventory"),
+            "TV photo setup. Read a model label or Network settings photo": ("? Device help", "TV photo setup. Read a model label or settings photo"),
+            "Clear photo details": ("? Photo help", "Clear photo details"),
+            "Show photo details": ("? Photo help", "Show photo details"),
+        }
+        if text not in routes:
+            return tap_direct(text, name, optional)
+        menu, choice = routes[text]
+        if tap_direct(choice, name + "_choice", optional=True):
+            return True
+        if not tap_direct(menu, name + "_help", optional=optional):
+            return False
+        return tap_direct(choice, name, optional)
+
+    def wait_photo_fields(texts, name, attempts=6):
+        # Unknown brand rows are intentionally hidden; model/IP details require
+        # Photo help. Still reject a stale identified brand after replacement.
+        visible = tuple(text for text in texts if text != "Brand: Not identified")
+        root = wait_for_all(visible, name, attempts)
+        if "Brand: Not identified" in texts:
+            assert not any(n.get("text", "").startswith("Brand:") for n in root.iter("node")), "Unknown photo must not retain a visible brand"
+        return root
 
     def select_share_receiver(name):
         previous = None
@@ -483,8 +513,8 @@ def main():
         def button(root, label):
             return next(n for n in root.iter("node") if n.get("text") == label)
         tap("Sound", "test_setup_sound")
-        root, _ = screen("test_setup_sound_entry")
-        assert any(n.get("content-desc") == "Test setup. Record the two-phone test arrangement" for n in root.iter("node")), "Sound has no Test setup worksheet entry"
+        tap("? More sound tools", "test_setup_sound_help")
+        wait_for("Jump to Test setup", "test_setup_sound_entry")
         tap("Test setup. Record the two-phone test arrangement", "test_setup_open")
         form = wait_for("Review setup report", "test_setup_empty")
         assert button(form, "Clear notes").get("enabled") == "false"
@@ -1181,7 +1211,7 @@ def main():
     screenshot("build_share_receiver_return")
     print("BUILD_DETAILS_SHARE_OBSERVED: native cancel, exact four-field Intent receipt and enabled preview return", flush=True)
     tap("Back", "build_details_close")
-    wait_for_all(("Appearance", "Advanced Settings"), "build_details_return_to_settings")
+    wait_for_all(("Appearance", "? More settings"), "build_details_return_to_settings")
     # Start with a genuinely fresh process: no completed input checks exist.
     tap("Advanced Settings", "support_report_advanced")
     for attempt in range(7):
@@ -1309,7 +1339,10 @@ def main():
     def photo_fixture_case(fixture_name, display_name, case_prefix, expected):
         tap("Devices", f"{case_prefix}_devices_page")
         tap("TV photo setup. Read a model label or Network settings photo", "open_photo_check")
-        wait_for_all(("No photo selected", "Brand: Not identified"), f"{case_prefix}_starts_empty")
+        empty = wait_for("No photo selected", f"{case_prefix}_starts_empty")
+        assert not has(empty, "Brand:") and not has(empty, "Model:") and not has(empty, "TV IP hint:"), "New photo screen must keep optional details hidden"
+        tap("Show photo details", f"{case_prefix}_show_details")
+        wait_photo_fields(("No photo selected", "Brand: Not identified", "Model: Not identified", "TV IP hint: Not identified"), f"{case_prefix}_empty_details")
         fixture = Path("native/ios/Tests/AQSSNativeFeedbackTests/Fixtures") / fixture_name
         inserted = adb("shell", "content", "insert", "--uri", "content://media/external_primary/images/media",
                        "--bind", f"_display_name:s:{display_name}", "--bind", "mime_type:s:image/png",
@@ -1336,7 +1369,7 @@ def main():
             (out / f"{case_prefix}-fixture-published.txt").write_text(published)
             assert f"_id={rows[0]}, _display_name={display_name}, is_pending=0" in published, "Fixture is not published to the picker"
             choose_photo_fixture(display_name, case_prefix)
-            wait_for_all(expected,
+            wait_photo_fields(expected,
                          f"{case_prefix}_native_ocr_result", attempts=30)
             screenshot(f"{case_prefix}_native_ocr_result")
             if case_prefix == "photo":
@@ -1345,27 +1378,21 @@ def main():
                 tap("Choose a photo", "photo_replace_to_cancel")
                 screen("photo_replacement_picker")
                 adb("shell", "input", "keyevent", "KEYCODE_BACK")
-                wait_for_all(("No photo selected", "Brand: Not identified", "Model: Not identified", "TV IP hint: Not identified"),
+                wait_photo_fields(("No photo selected", "Brand: Not identified", "Model: Not identified", "TV IP hint: Not identified"),
                              "photo_replacement_cancel_empty")
                 screenshot("photo_replacement_cancel_empty")
                 choose_photo_fixture(display_name, "photo_reselect")
-                wait_for_all(expected, "photo_reselect_native_ocr_result", attempts=30)
-            for attempt in range(5):
-                current, _ = screen(f"{case_prefix}_clear_find_{attempt}")
-                if has(current, "Clear photo details"):
-                    tap("Clear photo details", f"{case_prefix}_clear"); break
-                scroll_meter(f"{case_prefix}_scroll_{attempt}", down=True)
-            else:
-                raise AssertionError("Clear photo details is unreachable")
+                wait_photo_fields(expected, "photo_reselect_native_ocr_result", attempts=30)
+            tap("Clear photo details", f"{case_prefix}_clear")
             for attempt in range(3):
                 scroll_meter(f"{case_prefix}_after_clear_top_{attempt}", down=False)
-            wait_for_all(("No photo selected", "Brand: Not identified", "Model: Not identified", "TV IP hint: Not identified"),
+            wait_photo_fields(("No photo selected", "Brand: Not identified", "Model: Not identified", "TV IP hint: Not identified"),
                          f"{case_prefix}_clear_empty")
             screenshot(f"{case_prefix}_clear_empty")
             tap("Choose a photo", f"{case_prefix}_choose_to_cancel")
             screen(f"{case_prefix}_picker_before_cancel")
             adb("shell", "input", "keyevent", "KEYCODE_BACK")
-            wait_for_all(("No photo selected", "Brand: Not identified"), f"{case_prefix}_cancel_stays_empty")
+            wait_photo_fields(("No photo selected", "Brand: Not identified", "Model: Not identified", "TV IP hint: Not identified"), f"{case_prefix}_cancel_stays_empty")
             adb("shell", "input", "keyevent", "KEYCODE_BACK")
             wait_for("TV photo setup", f"{case_prefix}_close_returns_devices")
             tap("Home", f"{case_prefix}_back_home")
