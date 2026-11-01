@@ -4,7 +4,8 @@ on:
   push:
     branches: ["aqss/simple-setup"]
     paths:
-      - "native/ios/**"
+      - "native/ios/Sources/**"
+      - "native/ios/Package.swift"
       - "native/ios-app/**"
       - "contracts/**"
       - "tools/generate_tutorial_content.py"

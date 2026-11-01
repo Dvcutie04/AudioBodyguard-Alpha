@@ -31,7 +31,12 @@ for mode in sys.argv[2:]:
                     name = value.get('name', {}).get('_value', 'Screenshot')
                     safe = ''.join(c if c.isalnum() or c in '-_' else '-' for c in name)[:100]
                     path = out / (mode + '-' + str(len(exported)).zfill(3) + '-' + safe + '.png')
-                    subprocess.run(['xcrun', 'xcresulttool', 'export', '--type', 'file', '--path', str(result), '--id', identifier, '--output-path', str(path)], check=True)
+                    command = ['xcrun', 'xcresulttool', 'export', '--type', 'file', '--path', str(result), '--id', identifier, '--output-path', str(path)]
+                    call = subprocess.run(command, capture_output=True, text=True)
+                    if call.returncode:
+                        call = subprocess.run(command + ['--legacy'], capture_output=True, text=True)
+                    if call.returncode:
+                        raise RuntimeError(call.stderr)
             for key, child in value.items():
                 if key in ('testsRef', 'summaryRef') and isinstance(child, dict):
                     identifier = child.get('id', {}).get('_value')

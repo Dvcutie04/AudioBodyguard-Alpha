@@ -81,7 +81,7 @@ final class TVPhotoHintsTests: XCTestCase {
         XCTAssertNil(hints.address)
     }
 #if canImport(Vision)
-    func testNativeVisionRejectsSyntheticTextOverBudget() throws {
+    func testNativeVisionRowsRespectWholeInputLimits() throws {
         guard #available(macOS 12.0, iOS 15.0, *) else { throw XCTSkip("Native Vision text recognition is unavailable on this runtime") }
         let url = try XCTUnwrap(Bundle.module.url(forResource: "tv-photo-text-limit", withExtension: "png", subdirectory: "Fixtures"))
         let request = VNRecognizeTextRequest()
@@ -89,12 +89,26 @@ final class TVPhotoHintsTests: XCTestCase {
         request.usesLanguageCorrection = false
         try VNImageRequestHandler(url: url).perform([request])
         let rows = (request.results ?? []).map { $0.topCandidates(1).first?.string }
-        XCTAssertTrue(rows.allSatisfy { $0 != nil })
-        let observed = rows.compactMap { $0 }.joined(separator: "\n")
+        let values = try rows.map { try XCTUnwrap($0) }
+        XCTAssertFalse(values.isEmpty, "Require actual native OCR observations")
+        guard !values.isEmpty else { return }
+        let observed = values.joined(separator: "\n")
         print("TV_PHOTO_LIMIT_VISION_OBSERVED rows=\(rows.count) utf8_bytes=\(observed.utf8.count)")
-        XCTAssertTrue(rows.count > 100 || observed.utf8.count > 8192, "The synthetic OCR result must actually exceed a collection limit")
-        XCTAssertNil(boundedTVPhotoText(rows))
-        let hints = TVPhotoHints(observed)
+        let invalidRow = values.contains {
+            $0.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || $0.rangeOfCharacter(from: .newlines) != nil
+        }
+        if rows.count > 100 || observed.utf8.count > 8192 || invalidRow {
+            XCTAssertNil(boundedTVPhotoText(rows))
+        } else {
+            XCTAssertEqual(boundedTVPhotoText(rows), observed, "Accepted OCR must preserve every row")
+        }
+        // Vision versions may omit tiny rows. Create a deterministic oversized
+        // collector input from the observed native rows, without treating the
+        // image itself as proof that native OCR exceeded a collection budget.
+        var oversized = rows
+        while oversized.count <= 100 { oversized += rows }
+        XCTAssertNil(boundedTVPhotoText(oversized))
+        let hints = TVPhotoHints(oversized.compactMap { $0 }.joined(separator: "\n"))
         XCTAssertNil(hints.brand); XCTAssertNil(hints.model); XCTAssertNil(hints.address)
     }
     func testNativeVisionReadsSyntheticVizioLabels() throws {
