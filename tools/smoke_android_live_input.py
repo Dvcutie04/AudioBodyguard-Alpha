@@ -385,7 +385,10 @@ def main():
             reveal("? Setup help", prefix + "_home_help")
             wait_for("Jump to Google Home pictures", prefix + "_chosen_home")
             tap("Jump to phone Wi-Fi pictures", prefix + "_wifi_help")
-            wait_for("connect to your home Wi-Fi", prefix + "_wifi_intro")
+            root = wait_for("connect to your home Wi-Fi", prefix + "_wifi_intro")
+            if has(root, "Phone Wi-Fi setup") and has(root, "Google Pixel — connect to your home Wi-Fi"):
+                reveal("Google Pixel — connect to your home Wi-Fi", prefix + "_wifi_virtual_phone_choice")
+            wait_for("Start guide", prefix + "_wifi_ready")
             tap("Start guide", prefix + "_wifi_start")
             for n in range(7):
                 wait_for(f"Step {n + 1} of 7", prefix + f"_wifi_{n}")
