@@ -251,13 +251,7 @@ struct LiveSoundCheckView: View {
                     Button("[?] What does this show?") {
                         check.stop("Microphone stopped while help is open.", reason: .helpOpened); help = true
                     }.buttonStyle(AppButtonStyle(theme: theme)).accessibilityIdentifier("sound-check-help")
-                    Button(showDetails ? "Hide input details" : "Show input details") { showDetails.toggle() }
-                        .buttonStyle(AppButtonStyle(theme: theme))
                     if showDetails { Text(check.details).font(.caption).foregroundColor(theme.muted) }
-                    Button("Recent sound checks") { showRecaps = true }
-                        .buttonStyle(AppButtonStyle(theme: theme))
-                        .disabled(check.running || check.requesting)
-                        .accessibilityIdentifier("sound-check-recaps")
                     Text("Automatic protection is not active.").foregroundColor(theme.warning)
                 }.padding()
             }.accessibilityIdentifier("sound-check-scroll")
@@ -267,7 +261,9 @@ struct LiveSoundCheckView: View {
                 .disabled(check.cleanupFailed).accessibilityIdentifier("sound-check-start-stop").padding()
         }.background(theme.background.ignoresSafeArea()).foregroundColor(theme.text)
             .sheet(isPresented: $showRecaps) { RecentSoundChecksView(theme: theme) }
-            .alert("About the sound check", isPresented: $help) {
+            .alert("? Sound check help", isPresented: $help) {
+                Button(showDetails ? "Hide input details" : "Show input details") { showDetails.toggle() }
+                Button("Jump to recent sound checks") { showRecaps = true }
                 Button("Close", role: .cancel) {}
             } message: {
                 Text("The bars use real microphone samples from this phone. dBFS describes digital input relative to full scale. It is not dBA or a hearing-safety measurement. Phone gain, processing, position and input route change the result.\n\nZero input can mean a quiet signal or blocked input. This check cannot decide whether sound is safe.\n\nListening stops after 30 seconds or when you leave this screen. No audio files are saved or uploaded. Speech recognition, automatic protection and TV controls are not part of this check.")

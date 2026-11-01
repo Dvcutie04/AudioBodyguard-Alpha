@@ -2,6 +2,140 @@ import XCTest
 import UIKit
 
 final class AQSSReadOnlyUITests: XCTestCase {
+    override func setUpWithError() throws {
+        continueAfterFailure = false
+        XCUIDevice.shared.orientation = .portrait
+    }
+    func testSimplifiedSetupAndContextualJumps() { checkSimplifiedSetup(large: false) }
+    func testSimplifiedSetupWithLargestTextAndReducedMotion() { checkSimplifiedSetup(large: true) }
+    func testLargeTextSetupHelpScrollsWithoutOpeningAShortcut() {
+        let app = XCUIApplication()
+        app.launchArguments = ["-aqssGuideDismissedV1", "NO", "-aqssSetupProgressV1", "{}", "-UIPreferredContentSizeCategoryName", "UICTContentSizeCategoryAccessibilityXXXL"]
+        app.launch(); next(app); chooseTV("Samsung", app)
+        tap("Setup help", app)
+        let help = app.scrollViews["setup-help-scroll"]
+        tap("Home app (optional)", app, scroll: help)
+        tap("Google Home", app, scroll: help)
+        for _ in 0..<4 {
+            help.swipeUp(velocity: .slow)
+            guard help.exists else {
+                screenshot("Help scrolling unexpectedly changed the page", app)
+                XCTFail("Scrolling help must preserve its page: \(app.debugDescription)"); return
+            }
+            XCTAssertFalse(app.scrollViews["setup-scroll"].exists)
+        }
+        screenshot("Largest text help scroll keeps shortcuts idle", app)
+    }
+    private func checkSimplifiedSetup(large: Bool) {
+        let app = XCUIApplication()
+        app.launchArguments = ["-aqssGuideDismissedV1", "NO", "-aqssSetupProgressV1", "{}"]
+        if large { app.launchArguments += ["-UIPreferredContentSizeCategoryName", "UICTContentSizeCategoryAccessibilityXXXL"] }
+        continueAfterFailure = false
+        app.launch()
+        label("Step 1 of 5", app)
+        XCTAssertFalse(app.buttons["more-features"].exists)
+        XCTAssertTrue(app.buttons["guide-next"].isHittable)
+        screenshot("Simplified welcome \(large)", app)
+        next(app); label("Step 2 of 5", app)
+        XCTAssertLessThan(app.buttons["guide-back"].frame.minX, app.frame.minX + app.frame.width * 0.25,
+                          "Back must stay at the leading edge when it is the only footer action")
+        XCTAssertFalse(app.buttons["choice-samsung"].exists)
+        XCTAssertFalse(app.buttons["guide-next"].exists)
+        tap("Identify TV from a photo", app)
+        label("No photo selected", app)
+        XCTAssertFalse(app.staticTexts["Model: Not identified"].exists)
+        screenshot("Simplified photo \(large)", app)
+        app.buttons["Close"].firstMatch.tap()
+        label("Step 2 of 5", app)
+        tap("Choose TV brand", app)
+        XCTAssertTrue(app.textFields["brand-search"].waitForExistence(timeout: 5))
+        app.textFields["brand-search"].tap(); app.textFields["brand-search"].typeText("Samsung")
+        XCTAssertFalse(app.buttons["choice-lg"].exists)
+        app.buttons["choice-samsung"].tap()
+        label("Step 3 of 5", app)
+        XCTAssertFalse(app.staticTexts["Use a home app?"].exists)
+        XCTAssertTrue(app.buttons["setup-from-samsung"].exists)
+        screenshot("Simplified TV plan \(large)", app)
+        let exitFrame = app.buttons["exit-tutorial"].frame
+        XCTAssertTrue(app.frame.contains(exitFrame), "Exit \(exitFrame) must remain inside \(app.frame)")
+        tap("Setup help", app)
+        let help = app.scrollViews["setup-help-scroll"]
+        XCTAssertTrue(help.waitForExistence(timeout: 5))
+        tap("Home app (optional)", app, scroll: help)
+        tap("Google Home", app, scroll: help)
+        XCTAssertTrue(help.buttons["Jump to Google Home pictures"].exists)
+        tap("Jump to phone Wi-Fi pictures", app, scroll: help)
+        label("iPhone — connect to your home Wi-Fi", app)
+        app.buttons["setup-next"].tap()
+        for n in 1...6 {
+            label("Step \(n) of 6", app)
+            app.buttons["setup-next"].tap()
+        }
+        label("Step 3 of 5", app)
+        XCTAssertTrue(app.buttons["setup-from-samsung"].exists)
+        tap("Show Samsung steps", app)
+        XCTAssertTrue(app.buttons["setup-next"].waitForExistence(timeout: 5))
+        app.buttons["setup-next"].tap(); label("Step 1 of 17", app)
+        screenshot("Simplified TV picture \(large)", app)
+        tap("? Step help", app)
+        XCTAssertTrue(app.buttons["setup-picture-jump"].exists)
+        app.buttons["setup-next"].tap(); label("Step 2 of 17", app)
+        app.buttons["setup-back"].tap(); label("Step 1 of 17", app)
+        app.buttons["setup-close"].tap(); label("Step 3 of 5", app)
+        app.buttons["guide-back"].tap(); label("Step 2 of 5", app)
+        tap("Choose TV brand", app); app.buttons["choice-samsung"].tap()
+        label("Step 3 of 5", app)
+        next(app); label("Step 4 of 5", app)
+        XCTAssertTrue(app.buttons["Phone pictures"].exists)
+        next(app); label("Step 5 of 5", app)
+        tap("Setup help", app)
+        tap("Jump to voice check", app, scroll: app.scrollViews["setup-help-scroll"])
+        label("Microphone off", app)
+        XCTAssertTrue(app.buttons["voice-start-stop"].isEnabled)
+        app.buttons["Close"].firstMatch.tap(); label("Step 5 of 5", app)
+        tap("Setup help", app)
+        tap("Jump to sound check", app, scroll: app.scrollViews["setup-help-scroll"])
+        label("Microphone off", app)
+        XCTAssertTrue(app.buttons["sound-check-start-stop"].isEnabled)
+        tap("What does this show?", app, scroll: app.scrollViews["sound-check-scroll"])
+        XCTAssertTrue(app.alerts["? Sound check help"].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.alerts.buttons["Jump to recent sound checks"].exists)
+        app.alerts.buttons["Close"].tap()
+        app.buttons["Close"].firstMatch.tap(); label("Step 5 of 5", app)
+        next(app); label("Connection not verified", app)
+        screenshot("Simplified Home \(large)", app)
+        if app.buttons["page-picker"].exists { app.buttons["page-picker"].tap(); tap("Devices", app) }
+        else { tab("devices", app) }
+        XCTAssertFalse(app.buttons["TV photo setup"].exists)
+        tap("Device help", app)
+        tap("TV photo setup", app)
+        label("No photo selected", app)
+        app.buttons["Close"].firstMatch.tap()
+        if app.buttons["page-picker"].exists { app.buttons["page-picker"].tap(); tap("Insights", app) }
+        else { tab("insights", app) }
+        XCTAssertFalse(app.buttons["Explore an example"].exists)
+        tap("Insights help", app)
+        tap("Explore an example", app)
+        label("EXAMPLE · synthetic data", app)
+        if app.buttons["page-picker"].exists { app.buttons["page-picker"].tap(); tap("Sound", app) }
+        else { tab("sound", app) }
+        XCTAssertTrue(app.buttons["more-sound-tools"].waitForExistence(timeout: 5))
+        XCTAssertFalse(app.buttons["test-setup-open"].exists)
+        tap("More sound tools", app)
+        XCTAssertTrue(app.buttons["test-setup-open"].exists)
+        screenshot("Simplified sound tools \(large)", app)
+        if app.buttons["page-picker"].exists { app.buttons["page-picker"].tap(); tap("Settings", app) }
+        else { tab("settings", app) }
+        XCTAssertTrue(app.buttons["appearance-picker"].waitForExistence(timeout: 5))
+        XCTAssertFalse(app.buttons["Advanced Settings"].exists)
+        tap("More settings", app)
+        tap("Advanced Settings", app)
+        XCTAssertTrue(app.switches["setting-background"].waitForExistence(timeout: 5))
+        screenshot("Simplified advanced settings \(large)", app)
+        app.buttons["page-back"].tap()
+        XCTAssertTrue(app.buttons["appearance-picker"].waitForExistence(timeout: 5))
+    }
+
     private let setupAnswers = [
         ("playback_phone", "Android 16 test phone"), ("intended_output", "Phone speaker"),
         ("observer_phone", "iPhone iOS 26"), ("recording_app", "Voice Memos mode unknown"),
@@ -18,13 +152,14 @@ final class AQSSReadOnlyUITests: XCTestCase {
         } else {
             tab("sound", app)
         }
+        if !app.buttons["test-setup-open"].exists { tap("More sound tools", app) }
         let entry = app.buttons["test-setup-open"]
         guard entry.waitForExistence(timeout: 5) else {
             screenshot("Test setup entry missing from Sound", app)
             XCTFail("Sound has no Test setup worksheet entry")
             throw NSError(domain: "AQSSTestSetup", code: 1)
         }
-        entry.tap()
+        tap("Test setup", app)
         XCTAssertTrue(app.buttons["test-setup-review"].waitForExistence(timeout: 5))
     }
 
@@ -59,7 +194,11 @@ final class AQSSReadOnlyUITests: XCTestCase {
         let share = app.buttons["test-setup-share"]
         XCTAssertTrue(share.isHittable); share.tap()
         let nativeCopy = app.cells["Copy"].firstMatch
-        XCTAssertTrue(nativeCopy.waitForExistence(timeout: 8))
+        guard nativeCopy.waitForExistence(timeout: 8) else {
+            screenshot("Test setup share did not open", app)
+            XCTFail("Native Copy is missing; Share enabled=\(share.isEnabled): \(app.debugDescription)")
+            throw NSError(domain: "AQSSTestSetup", code: 4)
+        }
         screenshot("Test setup native share UI", app)
         if copy { nativeCopy.tap() }
         else if UIDevice.current.userInterfaceIdiom == .pad {
@@ -98,6 +237,26 @@ final class AQSSReadOnlyUITests: XCTestCase {
 
     func testTestSetupWorksheetCopySharesExactReviewedText() throws {
         let app = launch(); try openTestSetup(app); try inspectTestSetupShare(app, copy: true)
+    }
+
+    func testTestSetupShareStartsWhenReviewAppears() throws {
+        let app = launch(); try openTestSetup(app)
+        for _ in 0..<3 {
+            app.buttons["test-setup-review"].tap()
+            let share = app.buttons["test-setup-share"]
+            XCTAssertTrue(share.waitForExistence(timeout: 5)); share.tap()
+            let copy = app.cells["Copy"].firstMatch
+            guard copy.waitForExistence(timeout: 8) else {
+                screenshot("Share requested as review appeared", app)
+                XCTFail("Share must open from the newly attached review: \(app.debugDescription)"); return
+            }
+            copy.tap()
+            let returned = XCTNSPredicateExpectation(predicate: NSPredicate(format: "enabled == true AND hittable == true"), object: share)
+            XCTAssertEqual(XCTWaiter.wait(for: [returned], timeout: 8), .completed)
+            XCTAssertTrue(app.staticTexts["test-setup-preview"].exists)
+            app.buttons["test-setup-back"].tap()
+        }
+        screenshot("Three immediate report shares return to their caller", app)
     }
 
     func testTestSetupWorksheetRotationClearCloseAndRestart() throws {
@@ -495,7 +654,7 @@ final class AQSSReadOnlyUITests: XCTestCase {
             app.buttons["page-back"].tap()
         }
         label("Appearance", app)
-        XCTAssertTrue(app.buttons["Advanced Settings"].exists)
+        XCTAssertTrue(app.buttons["more-settings"].exists)
         XCTAssertFalse(app.scrollViews["setting-help-scroll"].exists)
         tab("home", app); label("Connection not verified", app)
     }
@@ -510,6 +669,7 @@ final class AQSSReadOnlyUITests: XCTestCase {
         let app = launch()
         tab("settings", app)
         label("Appearance", app)
+        tap("More settings", app)
         guard app.buttons["Build details"].firstMatch.waitForExistence(timeout: 5) else {
             screenshot("Build details action missing in Settings", app)
             XCTFail("Missing Build details action")
@@ -517,12 +677,12 @@ final class AQSSReadOnlyUITests: XCTestCase {
         }
         tap("Build details", app)
         label("Version: \(version)\nBuild: \(build)", app)
-        label("Include the version and build when reporting a problem.", app)
+        XCTAssertTrue(app.buttons["share-build-details"].exists)
         XCTAssertFalse(XCUIApplication(bundleIdentifier: "com.apple.springboard").alerts.firstMatch.exists)
         screenshot("Installed version and build from app metadata", app)
         app.buttons["setting-help-close"].tap()
         label("Appearance", app)
-        XCTAssertTrue(app.buttons["Advanced Settings"].exists)
+        XCTAssertTrue(app.buttons["more-settings"].exists)
         XCTAssertFalse(app.scrollViews["setting-help-scroll"].exists)
         tab("home", app)
         label("Connection not verified", app)
@@ -605,7 +765,7 @@ final class AQSSReadOnlyUITests: XCTestCase {
         XCTAssertFalse(app.alerts.firstMatch.exists)
         screenshot("Live sound check starts idle", app)
         app.buttons["sound-check-help"].tap()
-        XCTAssertTrue(app.alerts["About the sound check"].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.alerts["? Sound check help"].waitForExistence(timeout: 5))
         app.alerts.buttons["Close"].tap()
         let helpClosed = XCTNSPredicateExpectation(predicate: NSPredicate(format: "exists == false"), object: app.alerts.firstMatch)
         XCTAssertEqual(XCTWaiter.wait(for: [helpClosed], timeout: 5), .completed)
@@ -857,20 +1017,17 @@ final class AQSSReadOnlyUITests: XCTestCase {
 
     func testTVChoiceOffersPhotoAndKeepsOtherBrandsOnDemand() {
         let app = launch(true)
-        next(app); label("Step 2 of 6", app)
+        next(app); label("Step 2 of 5", app)
         XCTAssertTrue(app.buttons["identify-tv-photo"].exists)
         XCTAssertFalse(app.buttons["choice-philips"].exists)
-        tap("Identify TV from a photo", app)
-        label("Find your TV details", app)
-        app.buttons["Close"].tap()
-        XCTAssertEqual(XCTWaiter.wait(for: [XCTNSPredicateExpectation(predicate: NSPredicate(format: "exists == false"), object: app.buttons["Close"])], timeout: 5), .completed)
-        label("Step 2 of 6", app)
-        tap("More TV brands", app)
-        tap("Philips", app)
-        next(app); label("Step 3 of 6", app)
-        app.buttons["Back"].tap(); label("Step 2 of 6", app)
-        XCTAssertEqual(app.buttons["choice-philips"].value as? String, "Selected")
-        screenshot("Optional brands and photo return preserve the TV choice", app)
+        tap("Identify TV from a photo", app); label("Find your TV details", app)
+        app.buttons["Close"].firstMatch.tap(); label("Step 2 of 5", app)
+        chooseTV("Philips", app)
+        XCTAssertTrue(app.buttons["setup-from-philips"].exists)
+        app.buttons["guide-back"].tap(); label("Step 2 of 5", app)
+        chooseTV("Philips", app)
+        XCTAssertTrue(app.buttons["setup-from-philips"].exists)
+        screenshot("Searchable brands and photo cancellation return to TV selection", app)
     }
 
     func testConnectedDemoAppearanceKeepsPhysicalReadinessUnverified() throws {
@@ -881,11 +1038,11 @@ final class AQSSReadOnlyUITests: XCTestCase {
         XCTAssertEqual(app.staticTexts["connection-demo-notice"].label, "Appetize demo")
         XCTAssertEqual(app.images["connection-head"].label, "AI head. Connected appearance demonstration.")
         screenshot("Connected demo colored head and original white rose", app)
-        tap("Status details", app)
+        tap("Status help", app)
         label("Unknown physical state", app); label("No output observation", app)
         label("No physical TV connection or audio protection is verified.", app)
         screenshot("Connected appearance keeps physical status unverified", app)
-        tap("Hide status details", app)
+        tap("Hide status help", app)
         tab("devices", app)
         app.buttons["page-back"].tap()
         XCTAssertEqual(app.staticTexts["connection-status"].label, "Connected")
@@ -897,11 +1054,11 @@ final class AQSSReadOnlyUITests: XCTestCase {
         XCTAssertEqual(XCTWaiter.wait(for: [reset], timeout: 3.5), .completed)
         XCTAssertTrue(["Off", "0"].contains(app.switches["setting-captions"].value as? String ?? ""), "Demo artwork must not authorize a setting")
         tab("home", app)
-        tap("TV & smart-home guide", app); label("Step 1 of 6", app)
-        next(app); label("Step 2 of 6", app)
+        tap("TV & smart-home guide", app); label("Step 1 of 5", app)
+        next(app); label("Step 2 of 5", app)
         exit(app); label("HOME", app)
         XCTAssertEqual(app.staticTexts["connection-status"].label, "Connected")
-        tap("Back to Tutorial", app); label("Step 2 of 6", app)
+        tap("Back to Tutorial", app); label("Step 2 of 5", app)
         screenshot("Connected demo exact tutorial resume", app)
         #else
         throw XCTSkip("Connected appearance is tested only in the separate Simulator demo build.")
@@ -910,28 +1067,32 @@ final class AQSSReadOnlyUITests: XCTestCase {
 
     func testRoseExitResumesTheExactTutorialAndHeadStaysDisconnected() {
         let app = launch(true)
-        next(app); tap("LG", app); next(app); tap("Google Home", app); next(app)
-        label("Step 4 of 6", app)
-        tap("Show Google Home steps", app)
+        next(app); chooseTV("LG", app); chooseHome("Google Home", app)
+        tap("Setup help", app)
+        tap("Jump to Google Home pictures", app, scroll: app.scrollViews["setup-help-scroll"])
         label("LG ThinQ → Google Home", app)
         XCTAssertTrue(app.buttons["setup-next"].exists)
-        XCTAssertFalse(app.buttons["setup-route-google_lg"].exists)
         XCTAssertFalse(app.buttons["setup-route-google_samsung"].exists)
-        XCTAssertFalse(app.buttons["setup-route-google_roku"].exists)
         XCTAssertEqual(app.buttons["setup-close"].label, "Back to Tutorial")
-        app.buttons["setup-close"].tap(); label("Step 4 of 6", app)
+        app.buttons["setup-close"].tap(); label("Step 3 of 5", app)
         exit(app); label("HOME", app); label("Connection not verified", app)
         XCTAssertTrue(app.images["connection-head"].label.contains("Black and white"))
-        tap("Back to Tutorial", app); label("Step 4 of 6", app)
-        app.buttons["Back"].tap(); label("Step 3 of 6", app)
-        XCTAssertEqual(app.buttons["choice-google"].value as? String, "Selected")
-        screenshot("Rose navigation returns to the exact tutorial", app)
+        tap("Back to Tutorial", app); label("Step 3 of 5", app)
+        app.buttons["guide-back"].tap(); label("Step 2 of 5", app)
+        chooseTV("LG", app)
+        tap("Setup help", app)
+        XCTAssertTrue(app.buttons["Jump to Google Home pictures"].waitForExistence(timeout: 5))
+        screenshot("Rose navigation resumes the selected TV and optional home app", app)
     }
 
     private func openSoundRecaps(_ app: XCUIApplication) {
-        tap("Recent sound checks", app)
+        tap("What does this show?", app, scroll: app.scrollViews["sound-check-scroll"])
+        let help = app.alerts["? Sound check help"]
+        XCTAssertTrue(help.waitForExistence(timeout: 5))
+        help.buttons["Jump to recent sound checks"].tap()
         XCTAssertTrue(app.scrollViews["sound-recaps-scroll"].waitForExistence(timeout: 5))
     }
+
     private func closeSoundRecaps(_ app: XCUIApplication) {
         app.buttons["sound-recaps-close"].tap()
         let closed = XCTNSPredicateExpectation(predicate: NSPredicate(format: "exists == false"), object: app.scrollViews["sound-recaps-scroll"])
@@ -946,35 +1107,57 @@ final class AQSSReadOnlyUITests: XCTestCase {
         XCTAssertTrue(app.staticTexts.containing(NSPredicate(format: "label CONTAINS %@", text)).firstMatch.waitForExistence(timeout: timeout), "Missing: \(text)")
     }
     private func tap(_ title: String, _ app: XCUIApplication, scroll explicitScroll: XCUIElement? = nil) {
+        if !app.buttons.matching(NSPredicate(format: "label CONTAINS %@", title)).firstMatch.exists {
+            if ["Advanced Settings", "Build details"].contains(title), app.buttons["more-settings"].exists {
+                tap("More settings", app)
+            } else if ["TV photo setup", "Illustrated setup guides"].contains(title), app.buttons.matching(NSPredicate(format: "label CONTAINS %@", "Device help")).firstMatch.exists {
+                tap("Device help", app)
+            } else if title == "Explore an example", app.buttons["insights-help"].exists {
+                tap("Insights help", app)
+            }
+        }
         // Match within the active surface. A sheet can coexist with an
         // identically named button on the page underneath it.
-        let scroll = explicitScroll ?? (app.scrollViews["setup-scroll"].exists ? app.scrollViews["setup-scroll"] : app.scrollViews["setting-help-scroll"].exists ? app.scrollViews["setting-help-scroll"] : app.scrollViews["menu-scroll"].exists ? app.scrollViews["menu-scroll"] : app.scrollViews["guide-scroll"].exists ? app.scrollViews["guide-scroll"] : app.scrollViews["sound-check-scroll"].exists ? app.scrollViews["sound-check-scroll"] : app.scrollViews["home-scroll"])
+        let scroll = explicitScroll ?? (app.scrollViews["setup-help-scroll"].exists ? app.scrollViews["setup-help-scroll"] : app.scrollViews["photo-review-scroll"].exists ? app.scrollViews["photo-review-scroll"] : app.scrollViews["setup-scroll"].exists ? app.scrollViews["setup-scroll"] : app.scrollViews["setting-help-scroll"].exists ? app.scrollViews["setting-help-scroll"] : app.scrollViews["menu-scroll"].exists ? app.scrollViews["menu-scroll"] : app.scrollViews["guide-scroll"].exists ? app.scrollViews["guide-scroll"] : app.scrollViews["sound-check-scroll"].exists ? app.scrollViews["sound-check-scroll"] : app.scrollViews["home-scroll"])
         let button = scroll.buttons.matching(NSPredicate(format: "label CONTAINS %@", title)).firstMatch
-        guard button.waitForExistence(timeout: 10) else { screenshot("Missing \(title)", app); XCTFail("Missing button: \(title)"); return }
+        // Recent SwiftUI versions can omit offscreen rows from an AX snapshot.
+        // Search the scroll surface before deciding that a control is missing.
+        _ = button.waitForExistence(timeout: 3)
         // isHittable can be true for a sliver of a button whose center lies
         // under the fixed page bar or tutorial footer. Bring the whole control
         // into the content viewport before XCTest taps its center.
-        func insideViewport() -> Bool {
+        func insideViewport(_ frame: CGRect) -> Bool {
             let viewport = scroll.frame.intersection(app.frame).insetBy(dx: 0, dy: 24)
-            let visible = button.frame.intersection(viewport)
-            return !visible.isNull && visible.height >= min(44, button.frame.height)
-                && viewport.contains(CGPoint(x: button.frame.midX, y: button.frame.midY))
+            let visible = frame.intersection(viewport)
+            return !visible.isNull && visible.height >= min(44, frame.height)
+                && viewport.contains(CGPoint(x: frame.midX, y: frame.midY))
         }
+        var below = true
         for _ in 0..<16 {
-            if button.isHittable && insideViewport() { break }
-            // A fast swipe can pass the target completely. Use a short drag
-            // without momentum, and recover in either direction if necessary.
-            let below = button.frame.midY >= scroll.frame.midY
-            let start = scroll.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: below ? 0.75 : 0.35))
-            let end = scroll.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: below ? 0.35 : 0.75))
-            start.press(forDuration: 0.1, thenDragTo: end, withVelocity: .slow, thenHoldForDuration: 0.1)
+            guard scroll.exists else {
+                screenshot("Changed scroll surface while seeking \(title)", app)
+                XCTFail("Scroll surface changed while seeking \(title): \(app.debugDescription)"); return
+            }
+            if button.exists {
+                let frame = button.frame
+                if frame.width > 0 && frame.height > 0 {
+                    if button.isHittable && insideViewport(frame) { break }
+                    below = frame.midY >= scroll.frame.intersection(app.frame).midY
+                }
+            }
+            // Use XCTest's native scrolling gesture. A synthesized press/drag
+            // can become a button activation when SwiftUI relayouts a sheet.
+            print("AQSS_UI_SCROLL target=\(title) scroll=\(scroll.frame) forward=\(below)")
+            if below { scroll.swipeUp(velocity: .slow) }
+            else { scroll.swipeDown(velocity: .slow) }
         }
-        guard button.isHittable && insideViewport() else {
+        guard button.exists && button.isHittable && insideViewport(button.frame) else {
             screenshot("Unreachable \(title)", app)
             XCTFail("Unreachable button within content viewport: \(title)"); return
         }
-        let visible = button.frame.intersection(scroll.frame.intersection(app.frame).insetBy(dx: 0, dy: 24))
-        app.coordinate(withNormalizedOffset: .zero).withOffset(CGVector(dx: visible.midX, dy: visible.midY)).tap()
+        let appFrame = app.frame
+        let visible = button.frame.intersection(scroll.frame.intersection(appFrame).insetBy(dx: 0, dy: 24))
+        app.coordinate(withNormalizedOffset: .zero).withOffset(CGVector(dx: visible.midX - appFrame.minX, dy: visible.midY - appFrame.minY)).tap()
     }
     private func launch(_ firstVisit: Bool = false) -> XCUIApplication {
         let app = XCUIApplication()
@@ -990,7 +1173,65 @@ final class AQSSReadOnlyUITests: XCTestCase {
         XCTAssertFalse(app.scrollViews["home-scroll"].exists)
         XCTAssertTrue(app.buttons["exit-tutorial"].isHittable)
     }
-    private func tab(_ id: String, _ app: XCUIApplication) { app.buttons["tab-\(id)"].tap() }
+    private func tab(_ id: String, _ app: XCUIApplication) {
+        if app.buttons["page-picker"].exists {
+            let titles = ["home": "Home", "sound": "Sound", "devices": "Devices", "insights": "Insights", "settings": "Settings"]
+            app.buttons["page-picker"].tap()
+            tap(titles[id]!, app, scroll: app.scrollViews["menu-scroll"])
+            let dismissed = XCTNSPredicateExpectation(predicate: NSPredicate(format: "exists == false"), object: app.scrollViews["menu-scroll"])
+            XCTAssertEqual(XCTWaiter.wait(for: [dismissed], timeout: 5), .completed)
+        } else { app.buttons["tab-\(id)"].tap() }
+    }
+
+    private func chooseTV(_ title: String, _ app: XCUIApplication) {
+        tap("Choose TV brand", app)
+        let search = app.textFields["brand-search"]
+        XCTAssertTrue(search.waitForExistence(timeout: 5))
+        search.tap(); search.typeText(title)
+        let choice = app.buttons.matching(NSPredicate(format: "label BEGINSWITH[cd] %@", title)).firstMatch
+        XCTAssertTrue(choice.waitForExistence(timeout: 5)); choice.tap()
+        label("Step 3 of 5", app)
+    }
+    private func chooseHome(_ title: String, _ app: XCUIApplication) {
+        tap("Setup help", app)
+        let help = app.scrollViews["setup-help-scroll"]
+        let optional = app.buttons["optional-home-app"]
+        XCTAssertTrue(optional.waitForExistence(timeout: 5))
+        if optional.value as? String != "Expanded" { tap("Home app (optional)", app, scroll: help) }
+        tap(title, app, scroll: help)
+        app.buttons["Close"].firstMatch.tap()
+        let closed = XCTNSPredicateExpectation(predicate: NSPredicate(format: "exists == false"), object: help)
+        XCTAssertEqual(XCTWaiter.wait(for: [closed], timeout: 5), .completed)
+    }
+    private func showStepHelp(_ app: XCUIApplication) {
+        let toggle = ["setup-step-details", "setup-details", "setup-platform-help", "setup-mismatch-details"]
+            .map { app.buttons[$0] }.first { $0.exists }
+        XCTAssertNotNil(toggle)
+        if toggle?.value as? String != "Expanded" { tap("? Step help", app) }
+    }
+    private func hideStepHelp(_ app: XCUIApplication) {
+        let toggle = ["setup-step-details", "setup-details", "setup-platform-help", "setup-mismatch-details"]
+            .map { app.buttons[$0] }.first { $0.exists }
+        if toggle?.value as? String == "Expanded" { tap("? Hide step help", app) }
+    }
+    private func assertNoPhotoBrand(_ app: XCUIApplication) {
+        XCTAssertFalse(app.staticTexts.matching(NSPredicate(format: "label BEGINSWITH %@", "Brand:")).firstMatch.exists)
+    }
+    private func openTutorial(_ title: String, _ app: XCUIApplication) {
+        app.buttons["Help & tutorials"].tap()
+        let more = app.buttons["more-tutorials"]
+        XCTAssertTrue(more.waitForExistence(timeout: 5))
+        if more.value as? String != "Expanded" { tap("More tutorials", app) }
+        tap(title, app, scroll: app.scrollViews["menu-scroll"])
+    }
+    private func chooseAppearance(_ title: String, _ app: XCUIApplication) {
+        tap("Appearance:", app)
+        let option = app.buttons[title].firstMatch
+        XCTAssertTrue(option.waitForExistence(timeout: 5)); option.tap()
+        XCTAssertTrue(app.buttons["appearance-picker"].waitForExistence(timeout: 5))
+        XCTAssertEqual(app.buttons["appearance-picker"].label, "Appearance: " + title)
+    }
+
     private func jump(_ title: String, _ app: XCUIApplication) {
         app.buttons["Jump to"].tap(); tap(title, app)
         // Wait for the native sheet animation before choosing the next scroll
@@ -1015,6 +1256,8 @@ final class AQSSReadOnlyUITests: XCTestCase {
         }
         let app = launch()
         tab("devices", app); tap("TV photo setup", app)
+        tap("Photo help", app, scroll: app.scrollViews["photo-review-scroll"])
+        tap("Show photo details", app, scroll: app.scrollViews["photo-review-scroll"])
         let identified = ["Brand: VIZIO", "Model: V505M-K09", "TV IP hint: 10.20.30.40", "Nothing is connected."]
         func selectFixture(_ key: String = "AQSS_TEST_PHOTO_MODIFIED_AT", expected: [String] = []) throws {
             let modified = try XCTUnwrap(ProcessInfo.processInfo.environment[key].flatMap(TimeInterval.init))
@@ -1057,7 +1300,8 @@ final class AQSSReadOnlyUITests: XCTestCase {
             // Allow that window plus presentation before the first result;
             // every expected value still has to match, without another read.
             for (index, text) in expected.enumerated() {
-                label(text, app, timeout: index == 0 ? 35 : 10)
+                if text == "Brand: Not identified" { assertNoPhotoBrand(app) }
+                else { label(text, app, timeout: index == 0 ? 35 : 10) }
             }
         }
         try selectFixture(expected: identified)
@@ -1065,7 +1309,7 @@ final class AQSSReadOnlyUITests: XCTestCase {
         tap("Choose a photo", app, scroll: app.scrollViews["photo-review-scroll"])
         let cancel = app.buttons["Cancel"].firstMatch
         XCTAssertTrue(cancel.waitForExistence(timeout: 10)); cancel.tap()
-        label("No photo selected", app); label("Brand: Not identified", app)
+        label("No photo selected", app); assertNoPhotoBrand(app)
         label("Model: Not identified", app); label("TV IP hint: Not identified", app)
         screenshot("Replacement cancellation discards the old review", app)
         try selectFixture(expected: identified)
@@ -1083,7 +1327,7 @@ final class AQSSReadOnlyUITests: XCTestCase {
         screenshot("Partial photo details remain available", app)
         try selectFixture(expected: identified)
         tap("Clear photo details", app, scroll: app.scrollViews["photo-review-scroll"])
-        label("No photo selected", app); label("Brand: Not identified", app)
+        label("No photo selected", app); assertNoPhotoBrand(app)
         app.buttons["Close"].firstMatch.tap()
         tab("home", app); label("Connection not verified", app)
     }
@@ -1097,7 +1341,7 @@ final class AQSSReadOnlyUITests: XCTestCase {
         screenshot("Voice check idle", app)
         app.buttons["Close"].firstMatch.tap()
         tab("devices", app); tap("TV photo setup", app)
-        label("No photo selected", app); label("Brand: Not identified", app)
+        label("No photo selected", app); assertNoPhotoBrand(app)
         XCTAssertFalse(app.alerts.firstMatch.exists)
         screenshot("TV photo setup idle", app)
         app.buttons["Close"].firstMatch.tap()
@@ -1107,96 +1351,52 @@ final class AQSSReadOnlyUITests: XCTestCase {
     func testAllFivePagesKeepHelpAndTruthfulEmptyStates() {
         let app = launch()
         XCTAssertTrue(app.buttons["start-beginner-tour"].isHittable)
-        XCTAssertFalse(app.staticTexts.containing(NSPredicate(format: "label CONTAINS %@", "does not monitor or change TV audio")).firstMatch.exists)
-        screenshot("00 Beginner welcome", app)
-        jump("Coverage", app)
-        label("Connection not verified", app); label("No output observation", app)
-        screenshot("01 Midnight Home", app)
+        tap("Status help", app); label("No output observation", app)
         for (id, title) in [("sound", "SOUND"), ("devices", "DEVICES"), ("insights", "INSIGHTS"), ("settings", "SETTINGS")] {
             tab(id, app); label(title, app)
             XCTAssertTrue(app.buttons["Help & tutorials"].isHittable)
             screenshot("Page \(id)", app)
         }
-        XCTAssertFalse(app.staticTexts["Choose an appearance or open Advanced Settings."].exists)
-        app.buttons["Help & tutorials"].tap(); label("Choose an appearance or open Advanced Settings.", app)
-        tap("Cancel", app)
-        jump("Readiness checklist", app); label("Six setup checks unknown", app)
-        jump("Session transfer", app); tap("About Move this session", app); label("No supported endpoint or verified transfer path", app); dismissSettingHelp(app)
+        XCTAssertFalse(app.buttons["Advanced Settings"].exists)
+        tap("More settings", app); tap("Advanced Settings", app)
+        tap("About Move this session", app); label("No authorized endpoint or verified transfer path", app)
+        dismissSettingHelp(app)
+        tab("devices", app); tap("Device help", app)
+        label("Six setup checks unknown", app)
         tab("home", app); label("Connection not verified", app)
     }
 
     func testFirstVisitHasOnePathChoiceGatesTailoredPlanAndReplay() {
         let app = launch(true)
-        label("Step 1 of 6", app); assertOnlyGuide(app)
-        label("Both connections are required", app)
-        label("1. Connect to your TV or home device", app)
-        label("2. Connect to your phone", app)
-        XCTAssertFalse(app.staticTexts.containing(NSPredicate(format: "label CONTAINS %@", "Skip series intros")).firstMatch.exists)
+        label("Step 1 of 5", app); assertOnlyGuide(app)
+        label("1. Your TV", app)
+        XCTAssertFalse(app.buttons["more-features"].exists)
         XCTAssertTrue(app.buttons["guide-next"].isHittable)
-        XCTAssertFalse(app.staticTexts.containing(NSPredicate(format: "label CONTAINS %@", "Voice input display and recognized words")).firstMatch.exists)
-        label("Picture guide", app)
-        XCTAssertFalse(app.staticTexts["What we're building"].exists)
-        XCTAssertFalse(app.staticTexts.containing(NSPredicate(format: "label CONTAINS %@", "Planned controls")).firstMatch.exists)
-        XCTAssertFalse(app.staticTexts.containing(NSPredicate(format: "label CONTAINS %@", "This preview does not")).firstMatch.exists)
-        XCTAssertFalse(app.staticTexts.containing(NSPredicate(format: "label CONTAINS %@", "a film is quiet, then an advert")).firstMatch.exists)
-        XCTAssertFalse(app.buttons["Back"].exists)
+        next(app); label("Step 2 of 5", app)
+        XCTAssertFalse(app.buttons["guide-next"].exists)
         XCTAssertFalse(app.buttons["choice-samsung"].exists)
-        screenshot("Guide 1 Welcome", app)
-        tap("More features", app)
-        label("Planned", app)
-        label("Skip series intros", app)
-        label("Voice input display and recognized words", app)
-        label("Voice activated control", app)
-        XCTAssertFalse(app.staticTexts["Picture guides and photo-assisted setup"].exists)
-        let firstFeature = app.staticTexts.containing(NSPredicate(format: "label CONTAINS %@", "Skip series intros")).firstMatch
-        let scroll = app.scrollViews["guide-scroll"]
-        for _ in 0..<12 {
-            if firstFeature.frame.midY < scroll.frame.midY { break }
-            scroll.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.7)).press(forDuration: 0.1,
-                thenDragTo: scroll.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.4)), withVelocity: .slow, thenHoldForDuration: 0.1)
-        }
-        XCTAssertTrue(firstFeature.isHittable)
-        screenshot("Guide 1 Replacement feature list", app)
-        tap("Fewer features", app)
-        XCTAssertFalse(app.staticTexts.containing(NSPredicate(format: "label CONTAINS %@", "Skip series intros")).firstMatch.exists)
-        XCTAssertTrue(app.buttons["guide-next"].isHittable)
-        next(app); label("Step 2 of 6", app); assertOnlyGuide(app)
-        XCTAssertFalse(app.buttons["guide-next"].isEnabled)
+        chooseTV("Samsung", app)
         XCTAssertFalse(app.buttons["choice-alexa"].exists)
-        tap("Samsung", app); XCTAssertEqual(app.buttons["choice-samsung"].value as? String, "Selected")
-        screenshot("Guide 2 TV selection", app)
-        next(app); label("Step 3 of 6", app)
-        XCTAssertFalse(app.buttons["guide-next"].isEnabled)
-        tap("Amazon Alexa", app); next(app)
-        label("Step 4 of 6", app)
         XCTAssertTrue(app.buttons["setup-from-samsung"].exists)
-        XCTAssertTrue(app.buttons["setup-from-alexa"].exists)
-        screenshot("Guide 4 Tailored connection", app)
-        app.buttons["Back"].tap(); label("Step 3 of 6", app)
-        XCTAssertEqual(app.buttons["choice-alexa"].value as? String, "Selected")
-        next(app); next(app); label("Step 5 of 6", app)
-        label("2. Connect to your phone", app)
-        screenshot("Guide 5 Phone connection", app)
-        label("follow the pictures", app); assertOnlyGuide(app)
+        chooseHome("Amazon Alexa", app)
+        tap("Setup help", app)
+        XCTAssertTrue(app.buttons["Jump to Amazon Alexa pictures"].waitForExistence(timeout: 5))
+        app.buttons["Close"].firstMatch.tap()
+        app.buttons["guide-back"].tap(); label("Step 2 of 5", app)
+        chooseTV("Samsung", app)
+        next(app); label("Step 4 of 5", app)
         XCTAssertTrue(app.buttons["Phone pictures"].exists)
         XCTAssertFalse(app.buttons["setup-from-samsung"].exists)
-        XCTAssertFalse(app.buttons["setup-from-alexa"].exists)
-        tap("Need help?", app)
-        XCTAssertTrue(app.buttons["setup-from-samsung"].exists)
-        XCTAssertTrue(app.buttons["setup-from-alexa"].exists)
-        tap("Hide help", app)
-        XCTAssertFalse(app.buttons["setup-from-samsung"].exists)
-        next(app); label("Step 6 of 6", app)
-        next(app); XCTAssertTrue(app.buttons["tab-home"].isHittable)
-        label("Connection not verified", app)
-        app.buttons["start-beginner-tour"].tap(); label("Step 1 of 6", app)
-        next(app); XCTAssertFalse(app.buttons["guide-next"].isEnabled)
+        next(app); label("Step 5 of 5", app)
+        next(app); label("Connection not verified", app)
+        app.buttons["start-beginner-tour"].tap(); label("Step 1 of 5", app)
+        next(app); XCTAssertFalse(app.buttons["guide-next"].exists)
         exit(app); tab("sound", app)
         XCTAssertFalse(app.staticTexts["Dialogue preset"].exists)
-        tap("Options", app); label("Dialogue preset", app)
+        tap("Sound options", app); label("Dialogue preset", app)
         tab("devices", app)
         XCTAssertFalse(app.staticTexts["Six setup checks unknown"].exists)
-        tap("More device details", app); label("Six setup checks unknown", app)
+        tap("Device help", app); label("Six setup checks unknown", app)
         app.terminate(); app.launchArguments = []; app.launch()
         XCTAssertFalse(app.buttons["exit-tutorial"].exists)
         XCTAssertTrue(app.buttons["tab-home"].isHittable)
@@ -1205,12 +1405,12 @@ final class AQSSReadOnlyUITests: XCTestCase {
     func testOptionsAndAdvancedRemainUnavailable() {
         let app = launch(); tab("sound", app)
         XCTAssertFalse(app.staticTexts["Dialogue preset"].exists)
-        tap("Options", app); tap("About Volume", app)
+        tap("Sound options", app); tap("About Volume", app)
         label("No qualified device volume control", app)
         dismissSettingHelp(app)
         label("Dialogue preset", app); label("Night preset", app)
         label("Custom Equalizer", app); label("Defaults and Undo", app)
-        jump("Advanced Settings", app)
+        tab("settings", app); jump("Advanced Settings", app)
         XCTAssertFalse(app.staticTexts.containing(NSPredicate(format: "label CONTAINS %@", "No independent observation is available")).firstMatch.exists)
         tap("About Physical output", app)
         label("No independent observation is available", app)
@@ -1244,7 +1444,7 @@ final class AQSSReadOnlyUITests: XCTestCase {
         XCTAssertTrue(captions.isHittable)
         XCTAssertFalse(prompt.exists)
         app.buttons["page-back"].tap(); label("SETTINGS", app)
-        XCTAssertTrue(app.buttons["Daylight"].exists)
+        XCTAssertTrue(app.buttons["appearance-picker"].exists)
         XCTAssertFalse(captions.exists)
         app.buttons["page-back"].tap(); label("Connection not verified", app)
     }
@@ -1281,7 +1481,7 @@ final class AQSSReadOnlyUITests: XCTestCase {
         let app = launch(true); exit(app)
         XCTAssertTrue(app.buttons["tab-home"].isHittable)
         tab("settings", app)
-        app.buttons["Help & tutorials"].tap(); tap("Home and coverage", app)
+        openTutorial("Home and coverage", app)
         label("Step 1 of 4", app); assertOnlyGuide(app)
         next(app); label("Step 2 of 4", app)
         next(app); label("Step 3 of 4", app)
@@ -1289,8 +1489,8 @@ final class AQSSReadOnlyUITests: XCTestCase {
         XCUIDevice.shared.press(.home); app.activate(); label("Step 2 of 4", app)
         exit(app); label("HOME", app)
         app.buttons["page-back"].tap(); label("SETTINGS", app)
-        jump("Privacy and storage", app); tap("About Privacy and storage", app); label("No audio files saved by this app", app); dismissSettingHelp(app)
-        app.buttons["Help & tutorials"].tap(); tap("Sound options", app)
+        tab("settings", app); jump("Privacy and storage", app); tap("About Privacy and storage", app); label("No audio files saved by this app", app); dismissSettingHelp(app)
+        openTutorial("Sound options", app)
         next(app); label("Step 2 of 4", app); screenshot("Contextual Sound guide", app)
         exit(app); XCTAssertTrue(app.buttons["Help & tutorials"].isHittable)
     }
@@ -1302,12 +1502,12 @@ final class AQSSReadOnlyUITests: XCTestCase {
         screenshot("Example chart clearly labeled", app)
         tap("Read chart values", app); label("Sample 4: 64 relative units", app)
         tap("Close example", app); label("No measurements yet", app)
-        tab("settings", app); tap("Daylight", app)
-        XCTAssertEqual(app.buttons["Daylight"].value as? String, "Selected")
+        tab("settings", app); chooseAppearance("Daylight", app)
+        XCTAssertEqual(app.buttons["appearance-picker"].label, "Appearance: Daylight")
         XCTAssertFalse(app.staticTexts["Explore the direction. These features are not active."].exists)
         screenshot("Daylight Settings", app)
         tab("home", app); screenshot("Daylight Home", app); label("Connection not verified", app)
-        tab("settings", app); tap("Midnight", app); tap("Advanced Settings", app)
+        tab("settings", app); chooseAppearance("Midnight", app); tap("Advanced Settings", app)
         tap("About Voice requests", app); label("Voice control requires device authority and checked output", app); dismissSettingHelp(app)
         tab("home", app); label("Connection not verified", app)
     }
@@ -1316,7 +1516,7 @@ final class AQSSReadOnlyUITests: XCTestCase {
         let app = launch()
         tab("devices", app); tap("Illustrated setup guides", app)
         tap("TCL", app); tap("Roku TV", app)
-        tap("Need help?", app)
+        showStepHelp(app)
         tap("I’m already in Settings", app); label("Step 3 of 5", app)
         app.buttons["setup-back"].tap()
         XCTAssertFalse(app.staticTexts["setup-progress"].exists)
@@ -1351,7 +1551,7 @@ final class AQSSReadOnlyUITests: XCTestCase {
     func testSimpleDefaultsAndBackRestoreTheActualPreviousPage() {
         let app = launch()
         XCTAssertFalse(app.staticTexts["No output observation"].exists)
-        tap("Status details", app); label("No output observation", app)
+        tap("Status help", app); label("No output observation", app)
         tab("devices", app)
         XCTAssertFalse(app.staticTexts["Six setup checks unknown"].exists)
         tap("Illustrated setup guides", app); tap("TCL", app); tap("Roku TV", app)
@@ -1361,7 +1561,7 @@ final class AQSSReadOnlyUITests: XCTestCase {
         XCTAssertFalse(app.buttons["setup-route-roku_alexa"].exists)
         XCTAssertFalse(app.links.firstMatch.exists)
         screenshot("Roku opens its primary guide directly", app)
-        tap("Need help?", app)
+        showStepHelp(app)
         tap("Other setup options", app)
         tap("Find my exact model", app)
         XCTAssertFalse(app.buttons["setup-references"].exists)
@@ -1371,7 +1571,7 @@ final class AQSSReadOnlyUITests: XCTestCase {
         }
         screenshot("Roku model picture highlights System", app)
         for _ in 1...3 { app.buttons["setup-back"].tap() }
-        tap("Need help?", app)
+        showStepHelp(app)
         XCTAssertTrue(app.buttons["setup-references"].exists)
         XCTAssertFalse(app.links.firstMatch.exists)
         app.buttons["setup-back"].tap()
@@ -1390,7 +1590,7 @@ final class AQSSReadOnlyUITests: XCTestCase {
         let pageLabel = app.staticTexts["SOUND"]
         XCTAssertTrue(pageLabel.waitForExistence(timeout: 5))
         XCTAssertGreaterThanOrEqual(pageLabel.frame.minY, app.scrollViews["home-scroll"].frame.minY + 8)
-        tap("Options", app)
+        tap("Sound options", app)
         tab("settings", app)
         XCTAssertFalse(app.staticTexts["Device and route"].exists)
         app.buttons["page-back"].tap(); label("SOUND", app)
@@ -1420,9 +1620,9 @@ final class AQSSReadOnlyUITests: XCTestCase {
 
     func testRokuPartOneImmediatelyOpensPhonePicturesInFirstVisit() {
         let app = launch(true)
-        next(app); tap("TCL", app); next(app); tap("Neither / not sure", app); next(app)
+        next(app); chooseTV("TCL", app)
         tap("Show TCL steps", app); tap("Roku TV", app)
-        tap("Need help?", app)
+        showStepHelp(app)
         tap("I’m already in Settings", app)
         for _ in 0..<2 { app.buttons["setup-next"].tap() }
         label("Step 5 of 5", app)
@@ -1433,7 +1633,7 @@ final class AQSSReadOnlyUITests: XCTestCase {
         app.buttons["setup-next"].tap(); label("Step 1 of 5", app)
         screenshot("First visit Roku phone guide", app)
         app.buttons["setup-close"].tap()
-        label("Step 5 of 6", app)
+        label("Step 4 of 5", app)
         label("2. Connect to your phone", app)
         XCTAssertFalse(app.buttons["setup-from-tcl"].exists)
         tap("Phone pictures", app)
@@ -1442,44 +1642,46 @@ final class AQSSReadOnlyUITests: XCTestCase {
         app.buttons["setup-next"].tap(); label("Step 1 of 5", app)
         XCTAssertFalse(app.staticTexts["iPhone — connect to your home Wi-Fi"].exists)
         screenshot("Roku phone pictures resume from the main phone action", app)
-        app.buttons["setup-close"].tap(); label("Step 5 of 6", app)
-        tap("Need help?", app); tap("Show TCL steps", app)
+        app.buttons["setup-close"].tap(); label("Step 4 of 5", app)
+        app.buttons["guide-back"].tap(); label("Step 3 of 5", app)
+        tap("Show TCL steps", app)
         XCTAssertTrue(app.buttons["setup-next"].exists)
         XCTAssertFalse(app.buttons["setup-platform-tcl_roku"].exists)
         app.buttons["setup-back"].tap()
-        label("Step 5 of 6", app)
+        label("Step 3 of 5", app)
     }
 
     func testIllustratedGuideFromTCLPlanAndVoiceHelp() {
         let app = launch(true)
-        next(app); tap("TCL", app); next(app); tap("Google Home", app); next(app)
+        next(app); chooseTV("TCL", app); chooseHome("Google Home", app)
         tap("Show TCL steps", app)
-        tap("Need help?", app); label("Match the name on your TV", app)
+        showStepHelp(app); label("Match the name on your TV’s Home screen", app)
         tap("Help identify my TV", app)
         XCTAssertTrue(app.buttons["setup-next"].exists)
         app.buttons["setup-back"].tap()
         XCTAssertTrue(app.buttons["setup-platform-tcl_google"].exists)
-        tap("Hide help", app)
-        tap("Google TV / Android TV", app); tap("Need help?", app); tap("Other setup options", app); tap("TCL QM851G", app)
-        tap("Need help?", app); label("85QM851G", app)
-        app.buttons["setup-next"].tap(); label("Step 1 of 12", app)
+        hideStepHelp(app)
+        tap("Google TV / Android TV", app); showStepHelp(app); tap("Other setup options", app); tap("TCL QM851G", app)
+        showStepHelp(app); label("85QM851G", app)
+        app.buttons["setup-next"].tap(); label("Step 1 of 13", app)
         screenshot("TCL illustrated TV first setup", app)
         app.buttons["setup-next"].tap(); app.buttons["setup-next"].tap()
-        label("Step 3 of 12", app)
+        label("Step 3 of 13", app)
         XCTAssertTrue(app.otherElements["setup-illustration"].exists)
-        tap("Need help?", app); tap("My screen looks different", app)
+        showStepHelp(app); tap("My screen looks different", app)
         label("Find the right screen", app)
-        app.buttons["setup-back"].tap(); label("Step 3 of 12", app)
-        app.buttons["setup-close"].tap(); label("Step 4 of 6", app)
-        tap("Show Google Home steps", app)
+        app.buttons["setup-back"].tap(); label("Step 3 of 13", app)
+        app.buttons["setup-close"].tap(); label("Step 3 of 5", app)
+        tap("Setup help", app)
+        tap("Jump to Google Home pictures", app, scroll: app.scrollViews["setup-help-scroll"])
         XCTAssertFalse(app.buttons["setup-route-google_samsung"].exists)
         label("first setup with Google Home", app)
         XCTAssertTrue(app.buttons["setup-next"].exists)
-        app.buttons["setup-next"].tap()
+        restartPictureGuide(app)
         for _ in 0..<4 { app.buttons["setup-next"].tap() }
         label("Open Devices", app)
         let progress = app.staticTexts["setup-progress"]
-        XCTAssertEqual(progress.label, "Step 5 of 12")
+        XCTAssertEqual(progress.label, "Step 5 of 13")
         XCTAssertGreaterThanOrEqual(progress.frame.minX, app.frame.minX, "Step counter must stay inside the screen")
         XCTAssertLessThanOrEqual(progress.frame.maxX, app.buttons["setup-close"].frame.minX, "Step counter must not overlap Back to Tutorial")
         app.buttons["setup-next"].tap(); label("Open Add", app)
@@ -1506,7 +1708,7 @@ final class AQSSReadOnlyUITests: XCTestCase {
         label("Samsung — connect with SmartThings", app)
         XCTAssertFalse(app.buttons["setup-samsung-pin"].exists)
         if app.buttons["setup-next"].label == "Resume guide" {
-            tap("Need help?", app); tap("Start from the beginning", app)
+            showStepHelp(app); tap("Start from the beginning", app)
         } else { app.buttons["setup-next"].tap() }
         for _ in 0..<14 { app.buttons["setup-next"].tap() }
         label("Approve on the television", app)
@@ -1524,7 +1726,7 @@ final class AQSSReadOnlyUITests: XCTestCase {
         app.buttons["setup-next"].tap(); label("Enter the TV PIN", app)
         app.buttons["setup-next"].tap(); app.buttons["setup-next"].tap()
         label("Check the actual result", app); app.buttons["setup-next"].tap()
-        label("No qualified device connected", app)
+        label("Connection not verified", app)
         tap("Illustrated setup guides", app); tap("Samsung", app)
         label("Samsung — connect with SmartThings", app)
         XCTAssertEqual(app.buttons["setup-next"].label, "Start guide")
@@ -1544,9 +1746,9 @@ final class AQSSReadOnlyUITests: XCTestCase {
         app.buttons["setup-next"].tap(); app.buttons["setup-next"].tap()
         label("Check the actual result", app)
         app.buttons["setup-next"].tap()
-        label("No qualified device connected", app)
+        label("Connection not verified", app)
         tap("Illustrated setup guides", app); tap("Roku-branded TV", app)
-        tap("Need help?", app); tap("Other setup options", app); tap("Roku TV → Alexa", app)
+        showStepHelp(app); tap("Other setup options", app); tap("Roku TV → Alexa", app)
         app.buttons["setup-next"].tap()
         for _ in 0..<6 { app.buttons["setup-next"].tap() }
         label("Review Roku approval", app)
@@ -1557,56 +1759,36 @@ final class AQSSReadOnlyUITests: XCTestCase {
 
     func testFinishedPairingPicturesAdvanceLocallyAndCloseKeepsThePhoneStep() {
         let app = launch(true)
-        next(app); tap("Samsung", app); next(app); tap("Neither", app); next(app)
+        next(app); chooseTV("Samsung", app)
         tap("Show Samsung steps", app); label("Samsung — connect with SmartThings", app)
-        app.buttons["setup-close"].tap(); label("Step 4 of 6", app)
-        tap("Show Samsung steps", app); label("Samsung — connect with SmartThings", app)
-        app.buttons["setup-next"].tap()
+        app.buttons["setup-close"].tap(); label("Step 3 of 5", app)
+        tap("Show Samsung steps", app); restartPictureGuide(app)
         for _ in 0..<16 { app.buttons["setup-next"].tap() }
         label("Check the actual result", app)
-        app.buttons["setup-next"].tap()
-        label("Step 5 of 6", app); label("2. Connect to your phone", app)
-        label("follow the pictures", app)
+        app.buttons["setup-next"].tap(); label("Step 4 of 5", app)
+        XCTAssertTrue(app.buttons["Phone pictures"].exists)
         XCTAssertFalse(app.buttons["setup-from-samsung"].exists)
-        XCTAssertFalse(app.buttons["setup-from-alexa"].exists)
-        XCTAssertFalse(app.staticTexts["Not connected · Audio protection is not active"].exists)
-        tap("Need help?", app); label("official phone app", app)
-        tap("Hide help", app)
-        screenshot("Picture completion continues to phone setup", app)
-        tap("Phone pictures", app)
-        label("2. Check Samsung on your phone", app)
-        XCTAssertTrue(app.buttons["setup-samsung-pairing-help"].exists)
-        tap("Need help?", app); tap("Phone Wi-Fi pictures", app)
+        tap("Setup help", app)
+        tap("Jump to phone Wi-Fi pictures", app, scroll: app.scrollViews["setup-help-scroll"])
         label("iPhone — connect to your home Wi-Fi", app)
-        XCTAssertFalse(app.buttons["setup-route-phone_pixel"].exists)
-        XCTAssertFalse(app.buttons["setup-route-phone_galaxy"].exists)
         app.buttons["setup-next"].tap(); label("Step 1 of 6", app)
-        app.buttons["setup-next"].tap()
-        XCTAssertTrue(app.otherElements["setup-illustration"].label.contains("iPhone • Settings"))
-        screenshot("iPhone Wi-Fi uses the iPhone Settings menu", app)
-        for _ in 0..<4 { app.buttons["setup-next"].tap() }
+        for _ in 0..<5 { app.buttons["setup-next"].tap() }
         label("blue checkmark", app)
-        screenshot("iPhone Wi-Fi final check", app)
-        app.buttons["setup-next"].tap()
-        label("Step 5 of 6", app)
-        tap("Need help?", app)
-        tap("Show Samsung steps", app); label("Samsung — connect with SmartThings", app)
-        app.buttons["setup-close"].tap(); label("Step 5 of 6", app)
-        XCTAssertTrue(app.buttons["setup-from-samsung"].exists)
-        tap("Hide help", app)
-        XCTAssertFalse(app.buttons["setup-from-samsung"].exists)
+        app.buttons["setup-next"].tap(); label("Step 4 of 5", app)
+        app.buttons["guide-back"].tap(); label("Step 3 of 5", app)
+        tap("Show Samsung steps", app); app.buttons["setup-close"].tap()
+        label("Step 3 of 5", app); next(app); label("Step 4 of 5", app)
         tap("Phone pictures", app); label("2. Check Samsung on your phone", app)
-        app.buttons["setup-next"].tap(); label("Step 1 of 5", app)
+        restartPictureGuide(app)
         for _ in 0..<4 { app.buttons["setup-next"].tap() }
         label("Check the phone controls", app)
-        screenshot("Samsung phone part checks existing SmartThings pairing", app)
-        app.buttons["setup-next"].tap(); label("Step 6 of 6", app)
+        app.buttons["setup-next"].tap(); label("Step 5 of 5", app)
         exit(app); label("Connection not verified", app)
     }
 
     private func restartPictureGuide(_ app: XCUIApplication) {
         if app.buttons["setup-next"].label == "Resume guide" {
-            tap("Need help?", app); tap("Start from the beginning", app)
+            showStepHelp(app); tap("Start from the beginning", app)
         } else { app.buttons["setup-next"].tap() }
     }
     private func pictureDescription(_ app: XCUIApplication) -> String {
@@ -1687,7 +1869,7 @@ final class AQSSReadOnlyUITests: XCTestCase {
         app.buttons["setup-close"].tap()
 
         tap("Illustrated setup guides", app); tap("TCL", app); tap("Google TV / Android TV", app)
-        tap("Need help?", app); tap("Other setup options", app)
+        showStepHelp(app); tap("Other setup options", app)
         tap("Google TV — first setup with Google Home", app)
         restartPictureGuide(app)
         for _ in 0..<8 { app.buttons["setup-next"].tap() }
@@ -1696,7 +1878,7 @@ final class AQSSReadOnlyUITests: XCTestCase {
         app.buttons["setup-next"].tap(); label("Step 10 of 13", app)
         XCTAssertTrue(pictureDescription(app).contains("TV screen"))
         screenshot("Google Home scanner points to the television QR code", app)
-        tap("Need help?", app); tap("Use the TV remote instead", app)
+        showStepHelp(app); tap("Use the TV remote instead", app)
         label("Google TV — finish setup with the TV remote", app)
         restartPictureGuide(app); app.buttons["setup-next"].tap()
         label("Step 2 of 7", app); XCTAssertTrue(pictureDescription(app).contains("TV remote"))
@@ -1714,20 +1896,21 @@ final class AQSSReadOnlyUITests: XCTestCase {
         ] {
             let app = launch(true)
             next(app)
-            if brand == "Vizio" { tap("More TV brands", app) }
-            tap(brand, app); next(app); tap("Neither", app); next(app)
+            chooseTV(brand, app)
             tap("Show \(brand) steps", app)
             if !pairingChoice.isEmpty { tap(pairingChoice, app) }
             restartPictureGuide(app)
             for _ in 1..<count { app.buttons["setup-next"].tap() }
-            app.buttons["setup-next"].tap(); label("Step 5 of 6", app)
+            app.buttons["setup-next"].tap(); label("Step 4 of 5", app)
             tap("Phone pictures", app); label(phoneTitle, app)
+            XCTAssertFalse(app.buttons["setup-pairing-help"].exists)
+            showStepHelp(app)
             XCTAssertTrue(app.buttons["setup-pairing-help"].exists)
             screenshot("\(brand) continues to its matching phone app", app)
             restartPictureGuide(app)
             for _ in 0..<4 { app.buttons["setup-next"].tap() }
             XCTAssertEqual(app.buttons["setup-next"].label, "Finish part two")
-            app.buttons["setup-next"].tap(); label("Step 6 of 6", app)
+            app.buttons["setup-next"].tap(); label("Step 5 of 5", app)
             exit(app); label("Connection not verified", app); app.terminate()
         }
     }
@@ -1736,10 +1919,10 @@ final class AQSSReadOnlyUITests: XCTestCase {
         let app = launch()
         tab("devices", app); tap("Illustrated setup guides", app)
         tap("Philips", app); tap("Google TV / Android TV", app)
-        tap("Need help?", app); tap("Other setup options", app)
+        showStepHelp(app); tap("Other setup options", app)
         tap("Philips Google TV — pair the voice remote", app)
         if app.buttons["setup-next"].label == "Resume guide" {
-            tap("Need help?", app); tap("Start from the beginning", app)
+            showStepHelp(app); tap("Start from the beginning", app)
         } else { app.buttons["setup-next"].tap() }
         for _ in 0..<4 { app.buttons["setup-next"].tap() }
         label("Step 5 of 10", app)
@@ -1758,7 +1941,7 @@ final class AQSSReadOnlyUITests: XCTestCase {
 
     func testNewBrandPicturesAreReachable() {
         let app = launch()
-        tab("devices", app); tap("Illustrated setup guides", app); tap("Philips", app); tap("Google TV / Android TV", app); tap("Need help?", app); tap("Other setup options", app)
+        tab("devices", app); tap("Illustrated setup guides", app); tap("Philips", app); tap("Google TV / Android TV", app); showStepHelp(app); tap("Other setup options", app)
         tap("Philips Google TV — pair the voice remote", app)
         app.buttons["setup-next"].tap()
         label("Start with your TV home screen", app)
@@ -1777,7 +1960,7 @@ final class AQSSReadOnlyUITests: XCTestCase {
         let instance = scroll.value as? String
         XCTAssertNotNil(UUID(uuidString: instance ?? ""))
         tap("TCL", app); tap("Roku TV", app)
-        tap("Need help?", app)
+        showStepHelp(app)
         tap("I’m already in Settings", app); label("Step 3 of 5", app)
         XCTAssertEqual(scroll.value as? String, instance)
         scroll.swipeUp()
@@ -1790,43 +1973,40 @@ final class AQSSReadOnlyUITests: XCTestCase {
         XCTAssertLessThan(heading.frame.minY, scroll.frame.minY + 100)
         app.buttons["setup-back"].tap(); label("Step 3 of 5", app)
         XCTAssertEqual(scroll.value as? String, instance)
-        tap("Need help?", app); tap("My screen looks different", app); label("Find the right screen", app)
+        showStepHelp(app); tap("My screen looks different", app); label("Find the right screen", app)
         app.buttons["setup-back"].tap(); label("Step 3 of 5", app)
         XCTAssertEqual(scroll.value as? String, instance)
         screenshot("Stable scrolling container after Next Back and help", app)
     }
 
-    func testSelectingATVDoesNotMoveItsButtonOrReplaceTheScroll() {
+    func testSelectingATVAdvancesAndBackKeepsTheScrollAndHomePreference() {
         let app = XCUIApplication()
         app.launchArguments = ["-aqssGuideDismissedV1", "NO", "--aqss-trace-navigation"]
-        app.launch(); next(app); label("Step 2 of 6", app)
+        app.launch(); next(app); label("Step 2 of 5", app)
         let scroll = app.scrollViews["guide-scroll"]
         let instance = scroll.value as? String
         XCTAssertFalse(instance?.isEmpty ?? true)
-        let button = app.buttons["choice-samsung"]
-        let before = button.frame
-        XCTAssertFalse(app.buttons["guide-next"].isEnabled)
-        tap("Samsung", app)
-        XCTAssertTrue(app.buttons["guide-next"].isEnabled)
-        XCTAssertEqual(button.frame.minY, before.minY, accuracy: 1)
+        XCTAssertFalse(app.buttons["guide-next"].exists)
+        chooseTV("Samsung", app)
         XCTAssertEqual(scroll.value as? String, instance)
-        next(app); label("Step 3 of 6", app)
+        XCTAssertTrue(app.buttons["setup-from-samsung"].exists)
+        chooseHome("Google Home", app)
+        app.buttons["guide-back"].tap(); label("Step 2 of 5", app)
         XCTAssertEqual(scroll.value as? String, instance)
-        XCTAssertFalse(app.buttons["guide-next"].isEnabled)
-        tap("Google Home", app); next(app); label("Step 4 of 6", app)
-        app.buttons["Back"].tap(); label("Step 3 of 6", app)
-        XCTAssertEqual(app.buttons["choice-google"].value as? String, "Selected")
+        chooseTV("Samsung", app)
+        tap("Setup help", app)
+        XCTAssertTrue(app.buttons["Jump to Google Home pictures"].waitForExistence(timeout: 5))
         XCTAssertEqual(scroll.value as? String, instance)
     }
 
     func testLargestTextKeepsExitAndNextReachable() {
         let app = XCUIApplication()
         app.launchArguments = ["-aqssGuideDismissedV1", "NO", "-UIPreferredContentSizeCategoryName", "UICTContentSizeCategoryAccessibilityXXXL"]
-        app.launch(); label("Step 1 of 6", app); assertOnlyGuide(app)
+        app.launch(); label("Step 1 of 5", app); assertOnlyGuide(app)
         XCTAssertTrue(app.buttons["guide-next"].isHittable)
         XCTAssertGreaterThanOrEqual(app.buttons["exit-tutorial"].frame.height, 44)
         screenshot("Largest text single-step guide", app)
-        next(app); tap("Samsung", app)
+        next(app); chooseTV("Samsung", app)
         XCTAssertTrue(app.buttons["guide-next"].isHittable)
         exit(app)
         app.buttons["page-picker"].tap(); tap("Devices", app)
@@ -1835,7 +2015,7 @@ final class AQSSReadOnlyUITests: XCTestCase {
         let helpReady = XCTNSPredicateExpectation(predicate: NSPredicate(format: "hittable == true"), object: app.buttons["Help & tutorials"])
         XCTAssertEqual(XCTWaiter.wait(for: [helpReady], timeout: 5), .completed)
         XCTAssertTrue(app.buttons["Help & tutorials"].isHittable)
-        app.buttons["Help & tutorials"].tap(); tap("Readiness checklist", app)
+        openTutorial("Readiness checklist", app)
         label("Step 1 of 6", app); assertOnlyGuide(app)
         screenshot("Largest text contextual guide", app)
         exit(app); XCTAssertTrue(app.buttons["page-picker"].isHittable)

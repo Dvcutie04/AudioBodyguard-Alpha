@@ -79,22 +79,16 @@ class LiveSoundCheckActivity : Activity() {
                 stopCapture(SoundCheckEnd.HELP_OPENED, "Microphone stopped while help is open.")
                 AlertDialog.Builder(this@LiveSoundCheckActivity).setTitle("About the sound check")
                     .setMessage("The bars use real microphone samples from this phone. dBFS describes digital input relative to the microphone’s maximum sample value. It is not dBA or a hearing-safety measurement. Phone gain, processing, position and input route change the result.\n\nZero input can mean a quiet signal or blocked input. This check cannot decide whether sound is safe.\n\nListening stops after 30 seconds or when you leave this screen. No audio files are saved or uploaded. Automatic audio protection and TV controls are still unavailable.")
+                    .setNeutralButton(if (details.visibility == View.VISIBLE) "Hide input details" else "Show input details") { _, _ -> details.visibility = if (details.visibility == View.VISIBLE) View.GONE else View.VISIBLE }
+                    .setNegativeButton("Jump to recent sound checks") { _, _ -> showRecaps() }
                     .setPositiveButton("Close", null).show()
             }
         })
         details = text("${Build.MANUFACTURER} ${Build.MODEL} · Android ${Build.VERSION.RELEASE}\nInput details appear while the check runs.", 15f).apply { visibility = View.GONE }
-        column.addView(Button(this).apply {
-            this.text = "Show input details"; skin.style(this)
-            setOnClickListener {
-                details.visibility = if (details.visibility == View.GONE) View.VISIBLE else View.GONE
-                this.text = if (details.visibility == View.VISIBLE) "Hide input details" else "Show input details"
-            }
-        })
         recent = Button(this).apply {
             this.text = "Recent sound checks"; skin.style(this)
             setOnClickListener { showRecaps() }
         }
-        column.addView(recent)
         text("Automatic protection is not active.", 16f).setTextColor(skin.warning)
         root.addView(ScrollView(this).apply { addView(column) }, LinearLayout.LayoutParams(-1, 0, 1f))
         start = Button(this).apply {

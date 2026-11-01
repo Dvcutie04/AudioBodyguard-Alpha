@@ -11,8 +11,8 @@ android {
         applicationId = "com.aqss.bodyguard.prototype"
         minSdk = 26
         targetSdk = 36
-        versionCode = 45
-        versionName = "0.42-iphone-style"
+        versionCode = 46
+        versionName = "0.43-simple-setup"
     }
 
     buildTypes {

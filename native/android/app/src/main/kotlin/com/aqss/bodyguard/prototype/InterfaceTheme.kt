@@ -51,17 +51,46 @@ class InterfaceTheme(val activity: Activity, val dark: Boolean) {
         button.background = RippleDrawable(ColorStateList.valueOf(outline), shape(if (primary) control else raised, 14).apply { setStroke(dp(1), if (primary) controlBorder else outline) }, null)
         button.stateListAnimator = null
     }
-    fun menu(title: String, items: List<Pair<String, () -> Unit>>) {
+    fun menu(title: String, items: List<Pair<String, () -> Unit>>, message: String = "", searchable: Boolean = false) {
         val list = LinearLayout(activity).apply { orientation = LinearLayout.VERTICAL; setPadding(dp(20), dp(10), dp(20), dp(10)) }
         val scroll = ScrollView(activity).apply { addView(list); setBackgroundColor(this@InterfaceTheme.background) }
-        val dialog = AlertDialog.Builder(activity).setTitle(title).setView(scroll).create()
+        val dialog = AlertDialog.Builder(activity).setTitle(title).setView(scroll).setPositiveButton("Cancel", null).create()
+        if (message.isNotEmpty()) list.addView(android.widget.TextView(activity).apply {
+            text = message; textSize = 18f; setTextColor(this@InterfaceTheme.text); setPadding(0, dp(8), 0, dp(20))
+        }, LinearLayout.LayoutParams(-1, -2))
+        val rows = mutableListOf<Button>()
+        if (searchable) {
+            val search = android.widget.EditText(activity).apply { hint = "Search brands"; setTextColor(this@InterfaceTheme.text); setHintTextColor(muted); setSingleLine(true) }
+            list.addView(search, LinearLayout.LayoutParams(-1, -2).apply { bottomMargin = dp(12) })
+            search.addTextChangedListener(object : android.text.TextWatcher {
+                override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
+                override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {
+                    rows.forEach { it.visibility = if (it.text.contains(s ?: "", ignoreCase = true)) View.VISIBLE else View.GONE }
+                }
+                override fun afterTextChanged(s: android.text.Editable?) {}
+            })
+        }
         for ((label, action) in items) {
             list.addView(Button(activity).apply {
+                rows.add(this)
                 text = label; style(this); setOnClickListener { dialog.dismiss(); action() }
             }, LinearLayout.LayoutParams(-1, -2).apply { bottomMargin = dp(10) })
         }
-        list.addView(roseButton(activity, this, "Cancel") { dialog.dismiss() }, LinearLayout.LayoutParams(-1, -2))
+        dialog.window?.setSoftInputMode(android.view.WindowManager.LayoutParams.SOFT_INPUT_STATE_ALWAYS_HIDDEN)
         dialog.show()
+    }
+
+    /** One short cue when a new picture appears; no looping animation or timer. */
+    fun guideCue(view: View) {
+        if (!android.animation.ValueAnimator.areAnimatorsEnabled()) return
+        view.addOnAttachStateChangeListener(object : View.OnAttachStateChangeListener {
+            override fun onViewAttachedToWindow(v: View) {
+                if (!android.animation.ValueAnimator.areAnimatorsEnabled()) return
+                v.translationX = dp(6).toFloat()
+                v.animate().translationX(0f).setDuration(300).start()
+            }
+            override fun onViewDetachedFromWindow(v: View) { v.animate().cancel(); v.translationX = 0f }
+        })
     }
 
 }

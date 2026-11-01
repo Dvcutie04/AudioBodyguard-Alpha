@@ -17,13 +17,14 @@ class GuideProgressTest {
                 assertNull(guide.selected("chooseTV"))
             }
             assertTrue(guide.acceptPhotoBrand("samsung"))
-            assertEquals("chooseHome", guide.step?.target)
+            assertEquals("connectionPlan", guide.step?.target)
             assertEquals("samsung", guide.selected("chooseTV")?.id)
             assertFalse(guide.acceptPhotoBrand("lg"))
             assertEquals("samsung", guide.selected("chooseTV")?.id)
             guide.back(); assertEquals("chooseTV", guide.step?.target)
         }
         guide.start("readiness")
+        assertFalse(guide.selectHomeApp("google"))
         assertFalse(guide.acceptPhotoBrand("samsung")); assertEquals(0, guide.index)
     }
 
@@ -34,11 +35,15 @@ class GuideProgressTest {
         assertTrue(guide.next()); assertEquals("chooseTV", guide.step?.target)
         assertFalse(guide.next()); assertFalse(guide.select("alexa")); assertFalse(guide.select("invented"))
         assertTrue(guide.select("samsung")); assertTrue(guide.next())
-        assertEquals("chooseHome", guide.step?.target); assertFalse(guide.next())
-        assertTrue(guide.select("alexa")); assertTrue(guide.next()); assertEquals("connectionPlan", guide.step?.target)
+        assertEquals("connectionPlan", guide.step?.target)
+        assertEquals("neither", guide.selected("chooseHome")?.id)
+        assertEquals(5, guide.stepCount); assertEquals(3, guide.stepNumber)
+        assertTrue(guide.selectHomeApp("alexa")); assertFalse(guide.selectHomeApp("invented"))
         assertEquals("Samsung", guide.selected("chooseTV")?.title)
-        guide.back(); assertEquals("alexa", guide.selected("chooseHome")?.id)
-        assertTrue(guide.select("neither")); assertTrue(guide.next())
+        guide.back(); assertEquals("chooseTV", guide.step?.target)
+        assertEquals("alexa", guide.selected("chooseHome")?.id)
+        assertTrue(guide.select("lg")); assertTrue(guide.next())
+        assertEquals("connectionPlan", guide.step?.target)
         while (guide.next()) { }
         assertTrue(guide.isLast); assertEquals(5, guide.index); assertFalse(guide.next())
         guide.close(); assertNull(guide.topic); assertTrue(guide.snapshot().isEmpty())
@@ -48,7 +53,7 @@ class GuideProgressTest {
         val guide = GuideProgress()
         guide.restore("getting_started", 100, emptyMap()); assertEquals(1, guide.index)
         guide.restore("getting_started", 6, mapOf("chooseTV" to "invalid", "chooseHome" to "alexa")); assertEquals(1, guide.index)
-        guide.restore("getting_started", 6, mapOf("chooseTV" to "unsure")); assertEquals(2, guide.index)
+        guide.restore("getting_started", 6, mapOf("chooseTV" to "unsure")); assertEquals(5, guide.index)
         guide.restore("getting_started", 6, mapOf("chooseTV" to "unsure", "chooseHome" to "neither")); assertEquals(5, guide.index)
         guide.restore("getting_started", -9, emptyMap()); assertEquals(0, guide.index)
     }
@@ -62,6 +67,18 @@ class GuideProgressTest {
             assertTrue(guide.isLast, topic.id)
         }
     }
+    @Test fun phoneCompanionsNeverCompleteTheTvSection() {
+        for (phone in SetupContent.groups.mapNotNull { it.phoneRoute }.toSet()) {
+            val guide = GuideProgress()
+            guide.restore("getting_started", 3, mapOf("chooseTV" to "samsung"))
+            assertFalse(guide.completePictures("connectionPlan", phone), phone)
+            assertEquals("connectionPlan", guide.step?.target)
+            assertTrue(guide.completePictures("connectionPlan", "samsung_ok"))
+            assertTrue(guide.completePictures("connectionCheck", phone), phone)
+            assertTrue(guide.isLast)
+        }
+    }
+
     @Test fun pictureCompletionAdvancesOnlyTheExpectedLocalConnectionSection() {
         val guide = GuideProgress()
         assertFalse(guide.completePictures("connectionPlan", "samsung_ok"))

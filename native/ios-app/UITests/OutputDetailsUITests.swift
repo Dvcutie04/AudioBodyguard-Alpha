@@ -2,6 +2,10 @@ import XCTest
 import UIKit
 
 final class OutputDetailsUITests: XCTestCase {
+    override func setUpWithError() throws {
+        continueAfterFailure = false
+        XCUIDevice.shared.orientation = .portrait
+    }
     private func shot(_ name: String, _ app: XCUIApplication) {
         let image = XCTAttachment(screenshot: app.screenshot()); image.name = name; image.lifetime = .keepAlways; add(image)
     }
@@ -15,11 +19,17 @@ final class OutputDetailsUITests: XCTestCase {
             let closed = XCTNSPredicateExpectation(predicate: NSPredicate(format: "exists == false"), object: menu)
             XCTAssertEqual(XCTWaiter.wait(for: [closed], timeout: 5), .completed)
         } else { app.buttons["tab-sound"].tap() }
+        if !app.buttons["output-details-open"].exists {
+            let more = app.buttons["more-sound-tools"]
+            XCTAssertTrue(more.waitForExistence(timeout: 5))
+            reach(more, in: app.scrollViews["home-scroll"], app: app); more.tap()
+        }
         let entry = app.buttons["output-details-open"]
         guard entry.waitForExistence(timeout: 5) else {
             shot("Output details entry missing", app); XCTFail("Sound has no Output details entry")
             throw NSError(domain: "AQSSOutputDetails", code: 1)
         }
+        reach(entry, in: app.scrollViews["home-scroll"], app: app)
         entry.tap(); XCTAssertTrue(app.buttons["output-details-refresh"].waitForExistence(timeout: 5))
     }
     private func launch() -> XCUIApplication {
@@ -109,9 +119,12 @@ final class OutputDetailsUITests: XCTestCase {
     private func reach(_ target: XCUIElement, in scroll: XCUIElement, app: XCUIApplication) {
         for _ in 0..<10 {
             let viewport = scroll.frame.intersection(app.frame).insetBy(dx: 0, dy: 15)
-            if target.isHittable && viewport.contains(CGPoint(x: target.frame.midX, y: target.frame.midY)) { return }
-            if target.frame.midY < viewport.midY { scroll.swipeDown(velocity: .slow) }
-            else { scroll.swipeUp(velocity: .slow) }
+            if target.exists {
+                let frame = target.frame
+                if target.isHittable && viewport.contains(CGPoint(x: frame.midX, y: frame.midY)) { return }
+                if frame.height > 0 && frame.midY < viewport.midY { scroll.swipeDown(velocity: .slow); continue }
+            }
+            scroll.swipeUp(velocity: .slow)
         }
         XCTAssertTrue(target.isHittable)
     }

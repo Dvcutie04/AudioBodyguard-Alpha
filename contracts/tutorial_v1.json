@@ -156,14 +156,14 @@
           "target": "welcome",
           "area": "overview",
           "title": "Your TV. Your comfort.",
-          "explanation": "Follow the pictures for both your TV and phone.",
+          "explanation": "Set up both your TV and phone, one picture at a time.",
           "example": ""
         },
         {
           "target": "chooseTV",
           "area": "connection",
           "title": "Which TV do you use?",
-          "explanation": "Choose the brand on your TV or remote.",
+          "explanation": "Use a photo to find the brand, or choose it yourself.",
           "example": "Example: if the remote says Samsung, choose Samsung. If you cannot find a name, choose Not sure / no TV."
         },
         {
@@ -177,22 +177,22 @@
           "target": "connectionPlan",
           "area": "connection",
           "title": "1. Connect to your TV or home device",
-          "explanation": "Follow the highlighted pictures on your TV or in its official app.",
+          "explanation": "Start the pictures for your TV. We’ll keep your place.",
           "example": "Example: follow your TV maker’s app steps, then review any approval request on the television."
         },
         {
           "target": "connectionCheck",
           "area": "connection",
           "title": "2. Connect to your phone",
-          "explanation": "Open your TV's official phone app and follow the pictures.",
+          "explanation": "Open the matching app and follow the pictures. Your TV choice is filled in.",
           "example": "Example: open the official phone app, follow its pairing prompts and review requested permissions."
         },
         {
           "target": "guideFinish",
           "area": "connection",
-          "title": "Your next step is ready",
-          "explanation": "Explore the controls. Replay the pictures anytime from Help.",
-          "example": "Example: open Insights and select Explore an example to see a sample graph."
+          "title": "Picture setup complete",
+          "explanation": "Help can open a sound check. Your TV connection still needs verification.",
+          "example": "Example: jump to a sound or voice check from ? Setup help. Return here to replay the pictures."
         }
       ]
     },
