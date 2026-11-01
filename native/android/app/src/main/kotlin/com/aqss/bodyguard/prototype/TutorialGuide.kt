@@ -266,7 +266,6 @@ class TutorialGuide(
         val topic = guide.topic ?: return
         val step = guide.step ?: return
         controls.removeAllViews()
-        if (!guide.canContinue) text(controls, "Identify your TV or choose its brand.", 15f, skin.muted)
         guide.selected(step.target)?.let { text(controls, "Selected: ${it.title}", 15f, skin.muted) }
         val row = LinearLayout(activity)
         if (guide.index > 0) row.addView(button("Back") { guide.back(); render() }, LinearLayout.LayoutParams(-2, -2).apply { marginEnd = dp(12) })
