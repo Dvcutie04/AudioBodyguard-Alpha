@@ -117,7 +117,7 @@ class TutorialGuide(
                 items += "Jump to $title pictures" to { openSetup(id) }
             }
         }
-        if (step.target in listOf("connectionPlan", "connectionCheck")) items += "Jump to phone Wi-Fi pictures" to { openSetup("phone") }
+        if (step.target in listOf("connectionPlan", "connectionCheck")) items += "Jump to phone Wi-Fi pictures" to { openSetup("phone_wifi") }
         items += "Jump to sound check" to { openTool("sound") }
         items += "Jump to voice check" to { openTool("voice") }
         items += "More tutorials" to { chooseTopic() }

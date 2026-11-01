@@ -343,7 +343,10 @@ def main():
                 if clicked:
                     return
                 viewport = next((n for n in root.iter("node") if n.get("class") == "android.widget.ScrollView"), None)
-                assert viewport is not None, "Missing scrollable guide viewport"
+                if viewport is None:
+                    # A single empty FrameLayout can be published during a native transition.
+                    time.sleep(.5)
+                    continue
                 x0, y0, x1, y1 = map(int, re.findall(r"-?\d+", viewport.get("bounds")))
                 x = (x0 + x1) // 2
                 adb("shell", "input", "swipe", str(x), str(int(y0 + (y1-y0)*.8)), str(x), str(int(y0 + (y1-y0)*.2)), "300")
@@ -381,7 +384,13 @@ def main():
             tap("Google Home", prefix + "_google")
             reveal("? Setup help", prefix + "_home_help")
             wait_for("Jump to Google Home pictures", prefix + "_chosen_home")
-            tap("Cancel", prefix + "_help_back")
+            tap("Jump to phone Wi-Fi pictures", prefix + "_wifi_help")
+            wait_for("connect to your home Wi-Fi", prefix + "_wifi_intro")
+            tap("Start guide", prefix + "_wifi_start")
+            for n in range(7):
+                wait_for(f"Step {n + 1} of 7", prefix + f"_wifi_{n}")
+                tap("Next" if n < 6 else "Finish guide", prefix + f"_wifi_next_{n}")
+            wait_for_all(("Step 3 of 5", "Show Samsung steps"), prefix + "_wifi_returns_same_tv_step")
             reveal("Show Samsung steps", prefix + "_pictures")
             wait_for("Start guide", prefix + "_intro")
             tap("Start guide", prefix + "_first_picture")

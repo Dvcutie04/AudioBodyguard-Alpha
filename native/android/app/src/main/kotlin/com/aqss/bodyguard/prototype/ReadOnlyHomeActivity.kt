@@ -378,7 +378,7 @@ class ReadOnlyHomeActivity : Activity() {
         val currentBrand = tutorial.selectedTV
         val remembered = selectedSetupSystem?.takeIf { currentBrand.isEmpty() || it == currentBrand || it.startsWith(currentBrand + "_") }
         val destination = remembered?.takeIf { group.isNotEmpty() && it.startsWith(group + "_") && com.aqss.nativefeedback.SetupContent.groups.any { item -> item.id == it } } ?: group
-        startActivityForResult(Intent(this, SetupGuideActivity::class.java).putExtra("group", destination).putExtra("deviceGroup", remembered ?: currentBrand).putExtra("returningToTutorial", tutorial.isActive).putExtra("dark", skin.dark), PICTURE_REQUEST)
+        startActivityForResult(Intent(this, SetupGuideActivity::class.java).putExtra("group", if (group == "phone_wifi") "phone" else destination).putExtra("deviceGroup", if (group == "phone_wifi") "" else remembered ?: currentBrand).putExtra("returningToTutorial", tutorial.isActive).putExtra("dark", skin.dark), PICTURE_REQUEST)
     }
     @Deprecated("Existing framework Activity shell; validates local learning results only")
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {

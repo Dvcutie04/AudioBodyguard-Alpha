@@ -38,7 +38,15 @@ final class AQSSReadOnlyUITests: XCTestCase {
         tap("Home app (optional)", app, scroll: help)
         tap("Google Home", app, scroll: help)
         XCTAssertTrue(help.buttons["Jump to Google Home pictures"].exists)
-        app.buttons["Close"].firstMatch.tap()
+        tap("Jump to phone Wi-Fi pictures", app, scroll: help)
+        label("iPhone — connect to your home Wi-Fi", app)
+        app.buttons["setup-next"].tap()
+        for n in 1...6 {
+            label("Step \(n) of 6", app)
+            app.buttons["setup-next"].tap()
+        }
+        label("Step 3 of 5", app)
+        XCTAssertTrue(app.buttons["setup-from-samsung"].exists)
         tap("Show Samsung steps", app)
         XCTAssertTrue(app.buttons["setup-next"].waitForExistence(timeout: 5))
         app.buttons["setup-next"].tap(); label("Step 1 of 17", app)

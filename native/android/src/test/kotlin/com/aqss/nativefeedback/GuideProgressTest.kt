@@ -67,6 +67,18 @@ class GuideProgressTest {
             assertTrue(guide.isLast, topic.id)
         }
     }
+    @Test fun phoneCompanionsNeverCompleteTheTvSection() {
+        for (phone in SetupContent.groups.mapNotNull { it.phoneRoute }.toSet()) {
+            val guide = GuideProgress()
+            guide.restore("getting_started", 3, mapOf("chooseTV" to "samsung"))
+            assertFalse(guide.completePictures("connectionPlan", phone), phone)
+            assertEquals("connectionPlan", guide.step?.target)
+            assertTrue(guide.completePictures("connectionPlan", "samsung_ok"))
+            assertTrue(guide.completePictures("connectionCheck", phone), phone)
+            assertTrue(guide.isLast)
+        }
+    }
+
     @Test fun pictureCompletionAdvancesOnlyTheExpectedLocalConnectionSection() {
         val guide = GuideProgress()
         assertFalse(guide.completePictures("connectionPlan", "samsung_ok"))

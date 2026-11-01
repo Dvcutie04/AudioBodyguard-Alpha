@@ -450,7 +450,7 @@ private struct ReadOnlyHomeView: View {
         let remembered = selectedSetupSystem.flatMap { id in
             AQSSSetupContent.groups.contains(where: { $0.id == id }) && !group.isEmpty && id.hasPrefix(group + "_") ? id : nil
         }
-        setupRequest = SetupGuideRequest(group: remembered ?? group, deviceGroup: selectedSetupSystem ?? guide.selected("chooseTV")?.id ?? "")
+        setupRequest = SetupGuideRequest(group: group == "phone_wifi" ? "phone" : remembered ?? group, deviceGroup: group == "phone_wifi" ? "" : selectedSetupSystem ?? guide.selected("chooseTV")?.id ?? "")
     }
 
     private var header: some View {
@@ -946,7 +946,7 @@ private struct ReadOnlyHomeView: View {
         case "photo": suggestedTVBrand = nil; photoCheckVisible = true
         case "sound": liveSoundCheckVisible = true
         case "voice": voiceCheckVisible = true
-        case "phone": showSetup("phone")
+        case "phone": showSetup("phone_wifi")
         case "google", "alexa": showSetup(target)
         default: jump(target)
         }

@@ -48,7 +48,7 @@ class GuideProgress {
         if (topicId != "getting_started" || step?.target != expectedTarget ||
             expectedTarget !in listOf("connectionPlan", "connectionCheck") ||
             (routeId !in TutorialContent.pictureContinueRoutes && !(expectedTarget == "connectionPlan" && routeId in listOf("roku_network", "roku_model"))) ||
-            (routeId == "roku_phone" && expectedTarget != "connectionCheck")) return false
+            (SetupContent.groups.any { it.phoneRoute == routeId } && expectedTarget != "connectionCheck")) return false
         return next()
     }
     fun back() { visibleIndices.lastOrNull { it < index }?.let { index = it } }
