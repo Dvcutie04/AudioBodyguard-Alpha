@@ -11,8 +11,8 @@ android {
         applicationId = "com.aqss.bodyguard.prototype"
         minSdk = 26
         targetSdk = 36
-        versionCode = 44
-        versionName = "0.41-voice-cleanup"
+        versionCode = 45
+        versionName = "0.42-iphone-style"
     }
 
     buildTypes {

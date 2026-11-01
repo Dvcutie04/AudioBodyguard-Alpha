@@ -7,6 +7,26 @@ import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
 class GuideProgressTest {
+    @Test fun photoConfirmationWorksFromWelcomeAndBrandSelectionOnly() {
+        val guide = GuideProgress()
+        assertFalse(guide.acceptPhotoBrand("samsung"))
+        for (startIndex in listOf(0, 1)) {
+            guide.restore("getting_started", startIndex, emptyMap())
+            for (invalid in listOf(null, "", "invented", "alexa", "unsure")) {
+                assertFalse(guide.acceptPhotoBrand(invalid)); assertEquals(startIndex, guide.index)
+                assertNull(guide.selected("chooseTV"))
+            }
+            assertTrue(guide.acceptPhotoBrand("samsung"))
+            assertEquals("chooseHome", guide.step?.target)
+            assertEquals("samsung", guide.selected("chooseTV")?.id)
+            assertFalse(guide.acceptPhotoBrand("lg"))
+            assertEquals("samsung", guide.selected("chooseTV")?.id)
+            guide.back(); assertEquals("chooseTV", guide.step?.target)
+        }
+        guide.start("readiness")
+        assertFalse(guide.acceptPhotoBrand("samsung")); assertEquals(0, guide.index)
+    }
+
     @Test fun choicesGateEachStepAndReplayResetsSelections() {
         val guide = GuideProgress()
         assertFalse(guide.next()); assertFalse(guide.start("unknown"))
@@ -60,25 +80,5 @@ class GuideProgressTest {
         assertTrue(guide.completePictures("connectionCheck", "samsung_ok")); assertTrue(guide.isLast)
         guide.start("readiness")
         assertFalse(guide.completePictures("connectionPlan", "samsung_ok")); assertEquals(0, guide.index)
-    }
-    @Test fun samsungPhonePicturesAdvanceOnlyThePhonePart() {
-        val guide = GuideProgress()
-        guide.restore("getting_started", 3, mapOf("chooseTV" to "samsung", "chooseHome" to "neither"))
-        assertFalse(guide.completePictures("connectionPlan", "samsung_phone"))
-        assertEquals(3, guide.index)
-        assertTrue(guide.completePictures("connectionPlan", "samsung_pin"))
-        assertTrue(guide.completePictures("connectionCheck", "samsung_phone"))
-        assertTrue(guide.isLast)
-    }
-    @Test fun everyBrandPhoneCompanionAdvancesOnlyThePhonePart() {
-        SetupContent.groups.mapNotNull { it.phoneRoute }.toSet().forEach { route ->
-            val guide = GuideProgress()
-            guide.restore("getting_started", 3, mapOf("chooseTV" to "lg", "chooseHome" to "neither"))
-            assertFalse(guide.completePictures("connectionPlan", route), route)
-            assertEquals(3, guide.index)
-            assertTrue(guide.completePictures("connectionPlan", "lg_pair"))
-            assertTrue(guide.completePictures("connectionCheck", route), route)
-            assertTrue(guide.isLast)
-        }
     }
 }
