@@ -804,7 +804,7 @@ private struct ReadOnlyHomeView: View {
         Text(label).font(.caption.weight(.bold)).foregroundColor(color).padding(.horizontal, 10).padding(.vertical, 6).background(color.opacity(0.10)).clipShape(Capsule())
     }
     private func action(_ title: String, icon: String, primary: Bool = false, perform: @escaping () -> Void) -> some View {
-        Button(action: perform) { HStack { Text(title).fixedSize(horizontal: false, vertical: true); Spacer(minLength: 8); Image(systemName: icon).accessibilityHidden(true) }.frame(maxWidth: .infinity) }.buttonStyle(AppButtonStyle(theme: theme, primary: primary))
+        Button(action: perform) { HStack { Text(title).fixedSize(horizontal: false, vertical: true); Spacer(minLength: 8); Image(systemName: icon).font(.system(size: 20, weight: .semibold)).accessibilityHidden(true) }.frame(maxWidth: .infinity) }.buttonStyle(AppButtonStyle(theme: theme, primary: primary))
     }
     private func helpButton(_ title: String, topic: String) -> some View { action(title, icon: "questionmark.circle") { startTutorial(topic) } }
     private func section(_ title: String, detail: String, explanation: String, target: String, icon: String) -> some View {
@@ -930,7 +930,13 @@ private struct ReadOnlyHomeView: View {
                 }.frame(maxWidth: 640, alignment: .leading).padding(20).frame(maxWidth: .infinity)
             }
             HStack(spacing: 12) {
-                if tutorialIndex > 0 { Button("Back") { guide.back() }.buttonStyle(AppButtonStyle(theme: theme)).accessibilityIdentifier("guide-back") }
+                if tutorialIndex > 0 {
+                    Button { guide.back() } label: {
+                        if textSize.isAccessibilitySize {
+                            Image(systemName: "arrow.left").font(.system(size: 28, weight: .semibold)).frame(minWidth: 44, minHeight: 44)
+                        } else { Text("Back") }
+                    }.buttonStyle(AppButtonStyle(theme: theme)).accessibilityLabel("Back").accessibilityIdentifier("guide-back")
+                }
                 if guide.canContinue {
                     action(guide.isLast ? (topic.id == "getting_started" ? "Go to Home" : "Done") : (tutorialIndex == 0 ? (topic.id == "getting_started" ? AQSSTutorialContent.startLabel : "Begin") : "Next"), icon: "arrow.right", primary: !["connectionPlan", "connectionCheck"].contains(step.target)) {
                         if guide.isLast { if topic.id == "getting_started" { beginnerTourFinished = true }; closeTutorial() }
