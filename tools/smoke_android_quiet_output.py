@@ -16,13 +16,27 @@ def adb(*args, timeout=120):
     return subprocess.check_output(["adb", *args], timeout=timeout)
 
 
+def verify_installed_identity(version, build, config):
+    """Reject a stale installed APK against this checkout's direct version values."""
+    names = re.findall(r'^\s*versionName\s*=\s*"([^"\n]+)"\s*$', config, re.MULTILINE)
+    codes = re.findall(r'^\s*versionCode\s*=\s*(\d+)\s*$', config, re.MULTILINE)
+    suffixes = re.findall(r'^\s*versionNameSuffix\s*=\s*"([^"\n]+)"\s*$', config, re.MULTILINE)
+    assert len(names) == len(codes) == len(suffixes) == 1, "Require unambiguous direct Android version configuration"
+    expected = names[0] + suffixes[0]
+    assert version == expected and build == codes[0], (
+        f"Installed live-input build {version} ({build}) differs from source {expected} ({codes[0]})")
+
+
 def main():
     package = "com.aqss.bodyguard.prototype.liveinput"
     out = Path("artifacts/ui/android-live-input")
     out.mkdir(parents=True, exist_ok=True)
     installed = adb("shell", "dumpsys", "package", package).decode()
-    version = re.search(r"^\s*versionName=(.+)$", installed, re.MULTILINE).group(1).strip()
-    build = re.search(r"^\s*versionCode=(\d+)\b", installed, re.MULTILINE).group(1)
+    versions = re.findall(r"^\s*versionName=(.+)$", installed, re.MULTILINE)
+    builds = re.findall(r"^\s*versionCode=(\d+)\b", installed, re.MULTILINE)
+    assert len(versions) == len(builds) == 1, "Require unambiguous installed package metadata"
+    version, build = versions[0].strip(), builds[0]
+    verify_installed_identity(version, build, Path("native/android/app/build.gradle.kts").read_text())
     revision = subprocess.check_output(["git", "rev-parse", "HEAD"], text=True).strip()
     try:
         for label, scale in (("normal", "1.0"), ("large", "1.5")):
@@ -79,7 +93,6 @@ def main():
             assert f"Version: {version}\nBuild: {build}" in report
             assert joined.endswith(report), "Combined report differs from its original quiet snapshot"
             assert "Physical output and protection: Not verified" in report
-            assert version == "0.41-voice-cleanup-live-input" and build == "44"
             (out / f"quiet-output-{label}-report.txt").write_text(report)
             intake = verify_native_setup_intake(out / f"quiet-setup-{label}-report.txt",
                 out / f"quiet-setup-{label}-intake", platform="Android", version=version,
