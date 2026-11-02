@@ -8,6 +8,8 @@ Apply the standing AQSS Research and Synthesis Charter before code. Target both 
 
 Native screenshot review also found that large text replaced the Exit label with artwork alone. At accessibility text sizes, compact Exit/Setup/Close controls now use visible words; the original white-background artwork remains in the normal layout. Setup returns to the setup journey, while Back moves to the previous picture. A native interaction check caught the ambiguity when both controls initially said Back. Full accessibility names and minimum targets are retained.
 
+The largest iPhone text setting exposed another layout cost: the long Illustrated setup header wrapped beside the visible Close label, leaving less than half the screen for choices. Its accessibility-size header now says Setup, with the full accessibility name retained. The native test requires at least half the screen for the choice list. Its scroll helper also requires a usable visible tap area and taps that area's center, avoiding repeated overscroll past tall rows.
+
 ## Evidence matrix
 
 Sources retrieved 1 November 2026 Pacific time. Living documents describe published behavior, not installed-device verification.

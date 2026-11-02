@@ -78,6 +78,9 @@ struct SetupGuidesView: View {
                         Text(textSize.isAccessibilitySize ? "\(index + 1) / \(route.steps.count)" : "Step \(index + 1) of \(route.steps.count)")
                             .fixedSize(horizontal: false, vertical: true).layoutPriority(1)
                             .font(.headline).accessibilityLabel("Step \(index + 1) of \(route.steps.count)").accessibilityIdentifier("setup-progress")
+                    } else if textSize.isAccessibilitySize {
+                        Text("Setup").font(.headline).fixedSize(horizontal: false, vertical: true).layoutPriority(1)
+                            .accessibilityLabel("Illustrated setup")
                     } else { Label("Illustrated setup", systemImage: "rectangle.stack").font(.headline).fixedSize(horizontal: false, vertical: true).layoutPriority(1) }
                     Spacer(minLength: 8)
                     RoseButton(title: returningToTutorial ? "Back to Tutorial" : "Close", theme: theme) { dismiss() }

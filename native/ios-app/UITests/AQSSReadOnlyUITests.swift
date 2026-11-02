@@ -1142,14 +1142,15 @@ final class AQSSReadOnlyUITests: XCTestCase {
         // Recent SwiftUI versions can omit offscreen rows from an AX snapshot.
         // Search the scroll surface before deciding that a control is missing.
         _ = button.waitForExistence(timeout: 3)
-        // isHittable can be true for a sliver of a button whose center lies
-        // under the fixed page bar or tutorial footer. Bring the whole control
-        // into the content viewport before XCTest taps its center.
+        // isHittable alone can describe a sliver under a fixed bar. Require a
+        // usable visible target inside the content viewport, then tap its
+        // intersection center below. Requiring the original row's center can
+        // oscillate past tall accessibility rows even when a safe target exists.
         func insideViewport(_ frame: CGRect) -> Bool {
             let viewport = scroll.frame.intersection(app.frame).insetBy(dx: 0, dy: 24)
             let visible = frame.intersection(viewport)
             return !visible.isNull && visible.height >= min(44, frame.height)
-                && viewport.contains(CGPoint(x: frame.midX, y: frame.midY))
+                && visible.width >= min(44, frame.width)
         }
         var below = true
         for _ in 0..<16 {
@@ -2049,7 +2050,12 @@ final class AQSSReadOnlyUITests: XCTestCase {
         screenshot("Largest text contextual guide", app)
         exit(app); XCTAssertTrue(app.buttons["page-picker"].isHittable)
         app.buttons["page-back"].tap(); label("DEVICES", app)
-        tap("Illustrated setup guides", app); tap("Samsung", app)
+        tap("Illustrated setup guides", app)
+        let choices = app.scrollViews["setup-scroll"]
+        XCTAssertTrue(choices.waitForExistence(timeout: 5))
+        XCTAssertGreaterThan(choices.frame.height, app.frame.height / 2,
+                             "The largest-text header must leave room for the setup choices")
+        tap("Samsung", app)
         label("Samsung — connect with SmartThings", app); app.buttons["setup-next"].tap()
         label("Step 1 of 17", app)
         XCTAssertTrue(app.buttons["setup-close"].isHittable)
