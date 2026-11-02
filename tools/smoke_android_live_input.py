@@ -483,7 +483,7 @@ def main():
             tap("Cancel", prefix + "_sound_help_close")
             page("Devices", prefix + "_devices_page")
             reveal("? Device help", prefix + "_device_help")
-            tap("Illustrated setup guides", prefix + "_guides")
+            reveal("Illustrated setup guides. Jump to a TV or home app", prefix + "_guides")
             reveal("Sony", prefix + "_google_tv")
             wait_for_all(("Google TV / Android TV — pair a phone remote", "Start guide"), prefix + "_google_intro")
             tap("Start guide", prefix + "_google_start")
