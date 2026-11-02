@@ -1110,6 +1110,22 @@ final class AQSSReadOnlyUITests: XCTestCase {
         XCTAssertTrue(app.staticTexts.containing(NSPredicate(format: "label CONTAINS %@", text)).firstMatch.waitForExistence(timeout: timeout), "Missing: \(text)")
     }
     private func tap(_ title: String, _ app: XCUIApplication, scroll explicitScroll: XCUIElement? = nil) {
+        // Connection picture actions are pinned below the guide's scroll view.
+        // Keep testing their real hit targets instead of searching the content
+        // viewport for a control that intentionally lives outside it.
+        let isPictureAction = title == "Phone pictures" || title == "Help identify my TV"
+            || (title.hasPrefix("Show ") && title.hasSuffix(" steps"))
+        if isPictureAction, explicitScroll == nil, app.scrollViews["guide-scroll"].exists,
+           !app.scrollViews["setup-scroll"].exists, !app.scrollViews["setup-help-scroll"].exists {
+            let pinned = app.buttons.matching(NSPredicate(format: "identifier BEGINSWITH %@ AND label CONTAINS %@", "setup-from-", title)).firstMatch
+            let phone = app.buttons.matching(NSPredicate(format: "label == %@", "Phone pictures")).firstMatch
+            let action = title == "Phone pictures" ? phone : pinned
+            if action.exists {
+                XCTAssertTrue(action.isHittable, "Pinned picture action must be reachable: \(title)")
+                XCTAssertTrue(app.frame.contains(action.frame), "Pinned picture action must stay on screen: \(title)")
+                action.tap(); return
+            }
+        }
         if !app.buttons.matching(NSPredicate(format: "label CONTAINS %@", title)).firstMatch.exists {
             if ["Advanced Settings", "Build details"].contains(title), app.buttons["more-settings"].exists {
                 tap("More settings", app)
