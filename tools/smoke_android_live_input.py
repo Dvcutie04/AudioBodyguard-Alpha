@@ -430,7 +430,10 @@ def main():
             reveal("Show Samsung steps", prefix + "_pictures")
             wait_for("Start guide", prefix + "_intro")
             tap("Start guide", prefix + "_first_picture")
-            wait_for("Step 1 of 17", prefix + "_picture")
+            root = wait_for("Step 1 of 17", prefix + "_picture")
+            if scale == "1.5":
+                assert any(n.get("text") == "Setup" for n in root.iter("node")), "Returning to setup must have a distinct visible label"
+                assert sum(n.get("text") == "Back" for n in root.iter("node")) == 1, "Only the previous-picture action should say Back"
             screenshot(prefix + "_picture")
             reveal("? Step help", prefix + "_picture_help")
             reveal("Jump to a picture", prefix + "_picture_jumps")

@@ -103,7 +103,7 @@ struct RoseButton: View {
     var compact = false
     let action: () -> Void
     @Environment(\.dynamicTypeSize) private var textSize
-    private var shortTitle: String { title == "Exit Home" ? "Exit" : title == "Back to Tutorial" ? "Back" : title }
+    private var shortTitle: String { title == "Exit Home" ? "Exit" : title == "Back to Tutorial" ? "Setup" : title }
     var body: some View {
         Button(action: action) {
             HStack(spacing: 8) {

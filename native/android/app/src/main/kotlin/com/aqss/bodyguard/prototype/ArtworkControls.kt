@@ -17,7 +17,7 @@ import android.widget.ImageView
 
 internal fun roseButton(activity: Activity, skin: InterfaceTheme, title: String, compact: Boolean = false, action: () -> Unit): Button = Button(activity).apply {
     val largeText = activity.resources.configuration.fontScale >= 1.5f
-    text = if (largeText) when (title) { "Exit Home" -> "Exit"; "Back to Tutorial" -> "Back"; else -> title } else if (compact) "" else title
+    text = if (largeText) when (title) { "Exit Home" -> "Exit"; "Back to Tutorial" -> "Setup"; else -> title } else if (compact) "" else title
     contentDescription = title
     skin.style(this)
     if (!largeText) {
