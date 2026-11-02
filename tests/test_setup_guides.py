@@ -182,6 +182,21 @@ def test_phone_wifi_guides_keep_the_three_system_menus_separate():
     assert all(step['surface'] == 'phone' for route in (iphone, pixel, galaxy) for step in route)
 
 
+def test_google_tv_nearby_target_is_drawn_at_the_documented_bottom_right():
+    from tools.export_picture_guide import svg
+
+    for identifier, index in [('google_remote', 3), ('google_phone', 2)]:
+        route = setup_routes()[identifier]
+        step = route['steps'][index]
+        number = index + 1
+        assert 'bottom right' in step['instruction']
+        picture = ElementTree.fromstring(svg(step, number, route))
+        target = next(node for node in picture.findall('.//text')
+                      if node.text and node.text.startswith(f'{number} → '))
+        assert float(target.get('x')) > 300
+        assert float(target.get('y')) > 260
+
+
 def test_pin_picture_highlights_input_before_a_separate_confirmation_picture():
     steps = setup_routes()['lg_pair']['steps']
     entry = next(i for i, step in enumerate(steps) if step['title'] == 'Enter the real PIN')

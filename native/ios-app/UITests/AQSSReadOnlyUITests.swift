@@ -54,7 +54,9 @@ final class AQSSReadOnlyUITests: XCTestCase {
         app.buttons["choice-samsung"].tap()
         label("Step 3 of 5", app)
         XCTAssertFalse(app.staticTexts["Use a home app?"].exists)
-        XCTAssertTrue(app.buttons["setup-from-samsung"].exists)
+        XCTAssertTrue(app.buttons["setup-from-samsung"].isHittable)
+        XCTAssertFalse(app.buttons["guide-next"].exists, "The picture action must be the only primary route")
+        XCTAssertEqual(app.staticTexts["guide-device-context"].label, "Samsung  ·  iPhone")
         screenshot("Simplified TV plan \(large)", app)
         let exitFrame = app.buttons["exit-tutorial"].frame
         XCTAssertTrue(app.frame.contains(exitFrame), "Exit \(exitFrame) must remain inside \(app.frame)")
@@ -86,7 +88,8 @@ final class AQSSReadOnlyUITests: XCTestCase {
         tap("Choose TV brand", app); app.buttons["choice-samsung"].tap()
         label("Step 3 of 5", app)
         next(app); label("Step 4 of 5", app)
-        XCTAssertTrue(app.buttons["Phone pictures"].exists)
+        XCTAssertTrue(app.buttons["Phone pictures"].isHittable)
+        XCTAssertFalse(app.buttons["guide-next"].exists)
         next(app); label("Step 5 of 5", app)
         tap("Setup help", app)
         tap("Jump to voice check", app, scroll: app.scrollViews["setup-help-scroll"])
@@ -1107,6 +1110,22 @@ final class AQSSReadOnlyUITests: XCTestCase {
         XCTAssertTrue(app.staticTexts.containing(NSPredicate(format: "label CONTAINS %@", text)).firstMatch.waitForExistence(timeout: timeout), "Missing: \(text)")
     }
     private func tap(_ title: String, _ app: XCUIApplication, scroll explicitScroll: XCUIElement? = nil) {
+        // Connection picture actions are pinned below the guide's scroll view.
+        // Keep testing their real hit targets instead of searching the content
+        // viewport for a control that intentionally lives outside it.
+        let isPictureAction = title == "Phone pictures" || title == "Help identify my TV"
+            || (title.hasPrefix("Show ") && title.hasSuffix(" steps"))
+        if isPictureAction, explicitScroll == nil, app.scrollViews["guide-scroll"].exists,
+           !app.scrollViews["setup-scroll"].exists, !app.scrollViews["setup-help-scroll"].exists {
+            let pinned = app.buttons.matching(NSPredicate(format: "identifier BEGINSWITH %@ AND label CONTAINS %@", "setup-from-", title)).firstMatch
+            let phone = app.buttons.matching(NSPredicate(format: "label == %@", "Phone pictures")).firstMatch
+            let action = title == "Phone pictures" ? phone : pinned
+            if action.exists {
+                XCTAssertTrue(action.isHittable, "Pinned picture action must be reachable: \(title)")
+                XCTAssertTrue(app.frame.contains(action.frame), "Pinned picture action must stay on screen: \(title)")
+                action.tap(); return
+            }
+        }
         if !app.buttons.matching(NSPredicate(format: "label CONTAINS %@", title)).firstMatch.exists {
             if ["Advanced Settings", "Build details"].contains(title), app.buttons["more-settings"].exists {
                 tap("More settings", app)
@@ -1123,14 +1142,15 @@ final class AQSSReadOnlyUITests: XCTestCase {
         // Recent SwiftUI versions can omit offscreen rows from an AX snapshot.
         // Search the scroll surface before deciding that a control is missing.
         _ = button.waitForExistence(timeout: 3)
-        // isHittable can be true for a sliver of a button whose center lies
-        // under the fixed page bar or tutorial footer. Bring the whole control
-        // into the content viewport before XCTest taps its center.
+        // isHittable alone can describe a sliver under a fixed bar. Require a
+        // usable visible target inside the content viewport, then tap its
+        // intersection center below. Requiring the original row's center can
+        // oscillate past tall accessibility rows even when a safe target exists.
         func insideViewport(_ frame: CGRect) -> Bool {
             let viewport = scroll.frame.intersection(app.frame).insetBy(dx: 0, dy: 24)
             let visible = frame.intersection(viewport)
             return !visible.isNull && visible.height >= min(44, frame.height)
-                && viewport.contains(CGPoint(x: frame.midX, y: frame.midY))
+                && visible.width >= min(44, frame.width)
         }
         var below = true
         for _ in 0..<16 {
@@ -1164,7 +1184,12 @@ final class AQSSReadOnlyUITests: XCTestCase {
         app.launchArguments = ["-aqssGuideDismissedV1", firstVisit ? "NO" : "YES"]
         app.launch(); return app
     }
-    private func next(_ app: XCUIApplication) { app.buttons["guide-next"].tap() }
+    private func next(_ app: XCUIApplication) {
+        if app.buttons["guide-next"].exists { app.buttons["guide-next"].tap(); return }
+        // Tests that deliberately omit pictures must take the same explicit Help path as a user.
+        tap("Setup help", app)
+        tap("Continue without pictures", app, scroll: app.scrollViews["setup-help-scroll"])
+    }
     private func exit(_ app: XCUIApplication) { app.buttons["exit-tutorial"].tap() }
     private func assertOnlyGuide(_ app: XCUIApplication) {
         XCTAssertFalse(app.buttons["tab-home"].exists)
@@ -1801,7 +1826,11 @@ final class AQSSReadOnlyUITests: XCTestCase {
         let app = launch()
         tab("devices", app); tap("Illustrated setup guides", app); tap("Sony", app)
         restartPictureGuide(app)
-        for _ in 0..<5 { app.buttons["setup-next"].tap() }
+        for _ in 0..<3 { app.buttons["setup-next"].tap() }
+        label("Step 4 of 9", app)
+        XCTAssertTrue(pictureDescription(app).contains("bottom right"))
+        screenshot("Google TV nearby control at bottom right", app)
+        for _ in 0..<2 { app.buttons["setup-next"].tap() }
         label("Step 6 of 9", app); label("Read your TV code", app)
         XCTAssertTrue(pictureDescription(app).contains("TV screen"))
         screenshot("Google TV code is read on the television", app)
@@ -2007,7 +2036,8 @@ final class AQSSReadOnlyUITests: XCTestCase {
         XCTAssertGreaterThanOrEqual(app.buttons["exit-tutorial"].frame.height, 44)
         screenshot("Largest text single-step guide", app)
         next(app); chooseTV("Samsung", app)
-        XCTAssertTrue(app.buttons["guide-next"].isHittable)
+        XCTAssertTrue(app.buttons["setup-from-samsung"].isHittable)
+        XCTAssertFalse(app.buttons["guide-next"].exists)
         exit(app)
         app.buttons["page-picker"].tap(); tap("Devices", app)
         // A page sheet can still be dismissing after the navigation tap.
@@ -2020,7 +2050,12 @@ final class AQSSReadOnlyUITests: XCTestCase {
         screenshot("Largest text contextual guide", app)
         exit(app); XCTAssertTrue(app.buttons["page-picker"].isHittable)
         app.buttons["page-back"].tap(); label("DEVICES", app)
-        tap("Illustrated setup guides", app); tap("Samsung", app)
+        tap("Illustrated setup guides", app)
+        let choices = app.scrollViews["setup-scroll"]
+        XCTAssertTrue(choices.waitForExistence(timeout: 5))
+        XCTAssertGreaterThan(choices.frame.height, app.frame.height / 2,
+                             "The largest-text header must leave room for the setup choices")
+        tap("Samsung", app)
         label("Samsung — connect with SmartThings", app); app.buttons["setup-next"].tap()
         label("Step 1 of 17", app)
         XCTAssertTrue(app.buttons["setup-close"].isHittable)

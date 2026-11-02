@@ -58,6 +58,13 @@ def svg(step, number, route):
         text(30,110,'For you · Apps');rect(30,142,125,78,'#243958');rect(169,142,125,78,'#243958');rect(307,142,96,78,'#243958')
         if number==3:
             rect(415,88,195,202,'#243958');text(428,121,'Your account',size=16);row(428,150,170,'Settings',True)
+    elif kind == 'phone' and step['screen'] == 'Google TV' and step['items'] == ['TVs nearby']:
+        rect(92,18,456,342,'#536c96');rect(98,24,444,330,'#0c172c')
+        text(116,58,'Google TV',size=22)
+        for x in (116,256,396): rect(x,90,124,86,'#243958')
+        row(310,276,220,'TVs nearby',True)
+        rect(286,344,68,4,'#536c96')
+        text(408,380,'Phone screen',size=12)
     elif kind == 'choice':
         text(28,52,step['screen'],size=25)
         row(28,78,584,'Choose one',True)

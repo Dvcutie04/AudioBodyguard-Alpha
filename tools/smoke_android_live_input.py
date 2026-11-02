@@ -393,6 +393,8 @@ def main():
             reveal("TV & smart-home guide", prefix + "_open")
             root = wait_for("Step 1 of 5", prefix + "_welcome")
             assert not has(root, "More features")
+            if scale == "1.5":
+                assert any(n.get("text") == "Exit" for n in root.iter("node")), "Large text must keep a visible Exit label"
             screenshot(prefix + "_welcome")
             tap("Start picture setup", prefix + "_start")
             root = wait_for_all(("Which TV do you use?", "Choose TV brand"), prefix + "_brands")
@@ -407,6 +409,8 @@ def main():
             tap("Samsung", prefix + "_select")
             root = wait_for_all(("Step 3 of 5", "Show Samsung steps"), prefix + "_plan")
             assert not has(root, "Use a home app?") and not has(root, "Amazon Alexa")
+            assert not has(root, "Next"), "Picture setup must have one primary action"
+            assert has(root, "Samsung  ·  "), "Keep the selected TV and phone visible"
             screenshot(prefix + "_plan")
             reveal("? Setup help", prefix + "_context_help")
             tap("Choose home app (optional)", prefix + "_optional_home")
@@ -426,7 +430,10 @@ def main():
             reveal("Show Samsung steps", prefix + "_pictures")
             wait_for("Start guide", prefix + "_intro")
             tap("Start guide", prefix + "_first_picture")
-            wait_for("Step 1 of 17", prefix + "_picture")
+            root = wait_for("Step 1 of 17", prefix + "_picture")
+            if scale == "1.5":
+                assert any(n.get("text") == "Setup" for n in root.iter("node")), "Returning to setup must have a distinct visible label"
+                assert sum(n.get("text") == "Back" for n in root.iter("node")) == 1, "Only the previous-picture action should say Back"
             screenshot(prefix + "_picture")
             reveal("? Step help", prefix + "_picture_help")
             reveal("Jump to a picture", prefix + "_picture_jumps")
@@ -441,9 +448,11 @@ def main():
             wait_for("Step 2 of 5", prefix + "_brand_return")
             reveal("Choose TV brand", prefix + "_picker_again")
             tap("Samsung", prefix + "_select_again")
-            tap("Next", prefix + "_phone")
+            reveal("? Setup help", prefix + "_skip_tv_help")
+            tap("Continue without pictures", prefix + "_skip_tv")
             wait_for("Step 4 of 5", prefix + "_phone_section")
-            tap("Next", prefix + "_finish")
+            reveal("? Setup help", prefix + "_skip_phone_help")
+            tap("Continue without pictures", prefix + "_skip_phone")
             wait_for("Step 5 of 5", prefix + "_complete")
             reveal("? Setup help", prefix + "_finish_help")
             tap("Jump to voice check", prefix + "_voice_jump")
@@ -477,6 +486,20 @@ def main():
             reveal("? More sound tools", prefix + "_sound_help")
             wait_for("Jump to Test setup", prefix + "_sound_tools")
             tap("Cancel", prefix + "_sound_help_close")
+            page("Devices", prefix + "_devices_page")
+            reveal("? Device help", prefix + "_device_help")
+            reveal("Illustrated setup guides. Jump to a TV or home app", prefix + "_guides")
+            reveal("Sony", prefix + "_google_tv")
+            wait_for_all(("Google TV / Android TV — pair a phone remote", "Start guide"), prefix + "_google_intro")
+            tap("Start guide", prefix + "_google_start")
+            tap("Next", prefix + "_google_store")
+            root = wait_for("Google Play", prefix + "_google_phone_store")
+            assert not has(root, "App Store"), "Android must show its actual store"
+            tap("Next", prefix + "_google_open")
+            tap("Next", prefix + "_google_nearby")
+            wait_for_all(("Step 4 of 9", "bottom right", "TVs nearby"), prefix + "_google_target")
+            screenshot(prefix + "_google_bottom_right")
+            tap("Close", prefix + "_google_close")
             page("Settings", prefix + "_settings_page")
             root = wait_for("? More settings", prefix + "_settings_simple")
             assert not has(root, "Advanced Settings")

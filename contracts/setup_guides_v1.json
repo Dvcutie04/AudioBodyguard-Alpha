@@ -1934,7 +1934,7 @@
         },
         {
           "title": "Find nearby TVs",
-          "instruction": "Tap TVs nearby. Older app versions may show a remote icon.",
+          "instruction": "Near the bottom right, tap TVs nearby.",
           "surface": "phone",
           "screen": "Google TV",
           "items": [
@@ -6641,7 +6641,7 @@
         },
         {
           "title": "Open nearby TVs",
-          "instruction": "In Google TV, tap TVs nearby.",
+          "instruction": "Near the bottom right of Google TV, tap TVs nearby.",
           "surface": "phone",
           "screen": "Google TV",
           "items": [

@@ -103,13 +103,18 @@ struct RoseButton: View {
     var compact = false
     let action: () -> Void
     @Environment(\.dynamicTypeSize) private var textSize
+    private var shortTitle: String { title == "Exit Home" ? "Exit" : title == "Back to Tutorial" ? "Setup" : title }
     var body: some View {
         Button(action: action) {
             HStack(spacing: 8) {
-                RoseThumbnail()
-                    .frame(width: 52, height: 68).clipped()
-                    .clipShape(RoundedRectangle(cornerRadius: 6)).accessibilityHidden(true)
-                if !compact && !textSize.isAccessibilitySize { Text(title).fixedSize(horizontal: title == "Help", vertical: true) }
+                if textSize.isAccessibilitySize {
+                    Text(shortTitle).fixedSize(horizontal: false, vertical: true)
+                } else {
+                    RoseThumbnail()
+                        .frame(width: 52, height: 68).clipped()
+                        .clipShape(RoundedRectangle(cornerRadius: 6)).accessibilityHidden(true)
+                    if !compact { Text(title).fixedSize(horizontal: title == "Help", vertical: true) }
+                }
             }.frame(minWidth: 44, minHeight: 44)
         }.buttonStyle(AppButtonStyle(theme: theme))
             .fixedSize(horizontal: textSize.isAccessibilitySize, vertical: false).accessibilityLabel(title)
@@ -979,15 +984,15 @@ private struct ReadOnlyHomeView: View {
                         .accessibilityAddTraits(.isHeader).accessibilityFocused($focusedElement, equals: .tutorial(tutorialStepKey))
                     Text(step.explanation).fixedSize(horizontal: false, vertical: true)
                     if topic.id == "getting_started" {
+                        if let selected = guide.selected("chooseTV"), step.target != "chooseTV" {
+                            Text("\(selected.title)  ·  iPhone").font(.callout.weight(.semibold)).foregroundColor(theme.accent)
+                                .accessibilityIdentifier("guide-device-context")
+                        }
                         if step.target == "welcome" { Text("1. Your TV  →  2. Your phone").foregroundColor(theme.accent).font(.headline) }
                         if step.target == "chooseTV" {
                             action("Identify TV from a photo", icon: "camera", primary: true) { suggestedTVBrand = nil; photoCheckVisible = true }.accessibilityIdentifier("identify-tv-photo")
                             action("Choose TV brand", icon: "chevron.down") { brandQuery = ""; brandPickerVisible = true }.accessibilityIdentifier("choose-tv-brand")
                         }
-                        if step.target == "connectionPlan", let selected = guide.selected("chooseTV") {
-                            action(selected.id == "unsure" ? "Help identify my TV" : "Show \(selected.title) steps", icon: "arrow.right", primary: true) { showSetup(selected.id) }.accessibilityIdentifier("setup-from-" + selected.id)
-                        }
-                        if step.target == "connectionCheck" { action("Phone pictures", icon: "arrow.right", primary: true) { showSetup("phone") } }
                         action("Setup help", icon: "questionmark.circle") { tutorialHelp = true }.accessibilityIdentifier("setup-context-help")
                     } else { tutorialExplanation(step) }
                 }.frame(maxWidth: 640, alignment: .leading).padding(20).frame(maxWidth: .infinity)
@@ -1000,7 +1005,12 @@ private struct ReadOnlyHomeView: View {
                         } else { Text("Back") }
                     }.buttonStyle(AppButtonStyle(theme: theme)).accessibilityLabel("Back").accessibilityIdentifier("guide-back")
                 }
-                if guide.canContinue {
+                if topic.id == "getting_started", step.target == "connectionPlan", let selected = guide.selected("chooseTV") {
+                    action(selected.id == "unsure" ? "Help identify my TV" : "Show \(selected.title) steps", icon: "arrow.right", primary: true) { showSetup(selected.id) }
+                        .accessibilityIdentifier("setup-from-" + selected.id)
+                } else if topic.id == "getting_started", step.target == "connectionCheck" {
+                    action("Phone pictures", icon: "arrow.right", primary: true) { showSetup("phone") }
+                } else if guide.canContinue {
                     action(guide.isLast ? (topic.id == "getting_started" ? "Go to Home" : "Done") : (tutorialIndex == 0 ? (topic.id == "getting_started" ? AQSSTutorialContent.startLabel : "Begin") : "Next"), icon: "arrow.right", primary: !["connectionPlan", "connectionCheck"].contains(step.target)) {
                         if guide.isLast { if topic.id == "getting_started" { beginnerTourFinished = true }; closeTutorial() }
                         else { guide.next() }
@@ -1035,6 +1045,11 @@ private struct ReadOnlyHomeView: View {
             VStack(alignment: .leading, spacing: 18) {
                 HStack { Text("? Setup help").font(.title2.bold()); Spacer(); Button("Close") { tutorialHelp = false }.frame(minWidth: 44, minHeight: 44) }
                 Text(tutorialStep?.example.isEmpty == false ? tutorialStep!.example : "Follow the TV pictures, then the phone pictures. Setup guidance does not verify a TV connection.")
+                if ["connectionPlan", "connectionCheck"].contains(tutorialStep?.target ?? "") {
+                    action("Continue without pictures", icon: "arrow.right") {
+                        guide.next(); tutorialHelp = false
+                    }.accessibilityIdentifier("guide-skip-pictures")
+                }
                 if ["welcome", "chooseTV"].contains(tutorialStep?.target ?? "") { action("Jump to TV photo", icon: "camera") { queueHelpJump("photo") } }
                 if tutorialStep?.target == "connectionPlan" {
                     QuestionDisclosure(title: "Home app (optional)", theme: theme, isExpanded: $homeAppsExpanded, identifier: "optional-home-app") {
