@@ -6,6 +6,7 @@
     objects = {
 
 /* Begin PBXBuildFile section */
+        B90000000000000000000001 /* SetupPresentation.swift in Sources */ = {isa = PBXBuildFile; fileRef = B90000000000000000000012; };
         B80000000000000000000001 /* OutputDetailsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B80000000000000000000011; };
         B80000000000000000000002 /* OutputDetails model in Sources */ = {isa = PBXBuildFile; fileRef = B80000000000000000000012; };
         B80000000000000000000003 /* OutputDetailsUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B80000000000000000000013; };
@@ -38,6 +39,7 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
+        B90000000000000000000012 /* SetupPresentation.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = SetupPresentation.swift; path = ../ios/Sources/AQSSNativeFeedback/SetupPresentation.swift; sourceTree = SOURCE_ROOT; };
         B80000000000000000000011 /* OutputDetailsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = OutputDetailsView.swift; path = Sources/OutputDetailsView.swift; sourceTree = SOURCE_ROOT; };
         B80000000000000000000012 /* OutputDetails model */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = OutputDetails.swift; path = ../ios/Sources/AQSSNativeFeedback/OutputDetails.swift; sourceTree = SOURCE_ROOT; };
         B80000000000000000000013 /* OutputDetailsUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = OutputDetailsUITests.swift; path = UITests/OutputDetailsUITests.swift; sourceTree = SOURCE_ROOT; };
@@ -68,7 +70,7 @@
 /* End PBXFileReference section */
 
 /* Begin PBXGroup section */
-        A10000000000000000000020 = {isa = PBXGroup; children = (B70000000000000000000012, B70000000000000000000011, B60000000000000000000011, B50000000000000000000011, B40000000000000000000011, B30000000000000000000011, B20000000000000000000012, B20000000000000000000011, F10000000000000000000011 /* PrivacyInfo.xcprivacy */, E10000000000000000000011, D10000000000000000000011, D10000000000000000000012, C10000000000000000000012, C10000000000000000000011, A10000000000000000000021 /* Sources */, A10000000000000000000023 /* UITests */, A10000000000000000000016 /* Assets.xcassets */, A10000000000000000000019 /* LaunchScreen.storyboard */, A10000000000000000000012 /* SessionEvidenceView.swift */, A10000000000000000000017 /* TutorialContent.swift */, A10000000000000000000018 /* InterfaceContent.swift */, A1000000000000000000001A /* GuideProgress.swift */, A10000000000000000000022 /* Products */); sourceTree = "<group>"; };
+        A10000000000000000000020 = {isa = PBXGroup; children = (B90000000000000000000012, B70000000000000000000012, B70000000000000000000011, B60000000000000000000011, B50000000000000000000011, B40000000000000000000011, B30000000000000000000011, B20000000000000000000012, B20000000000000000000011, F10000000000000000000011 /* PrivacyInfo.xcprivacy */, E10000000000000000000011, D10000000000000000000011, D10000000000000000000012, C10000000000000000000012, C10000000000000000000011, A10000000000000000000021 /* Sources */, A10000000000000000000023 /* UITests */, A10000000000000000000016 /* Assets.xcassets */, A10000000000000000000019 /* LaunchScreen.storyboard */, A10000000000000000000012 /* SessionEvidenceView.swift */, A10000000000000000000017 /* TutorialContent.swift */, A10000000000000000000018 /* InterfaceContent.swift */, A1000000000000000000001A /* GuideProgress.swift */, A10000000000000000000022 /* Products */); sourceTree = "<group>"; };
         A10000000000000000000021 /* Sources */ = {isa = PBXGroup; children = (A10000000000000000000011 /* AQSSReadOnlyApp.swift */); path = Sources; sourceTree = "<group>"; };
         A10000000000000000000022 /* Products */ = {isa = PBXGroup; children = (A10000000000000000000013 /* AQSSReadOnly.app */, A10000000000000000000014 /* AQSSReadOnlyUITests.xctest */); name = Products; sourceTree = "<group>"; };
         A10000000000000000000023 /* UITests */ = {isa = PBXGroup; children = (A10000000000000000000015 /* AQSSReadOnlyUITests.swift */); path = UITests; sourceTree = "<group>"; };
@@ -84,7 +86,7 @@
 /* End PBXProject section */
 
 /* Begin PBXSourcesBuildPhase section */
-        A10000000000000000000040 /* Sources */ = {isa = PBXSourcesBuildPhase; buildActionMask = 2147483647; files = (B80000000000000000000001, B80000000000000000000002, B70000000000000000000002, B70000000000000000000001, B60000000000000000000001, B50000000000000000000001, B40000000000000000000001, B30000000000000000000001, B20000000000000000000002, B20000000000000000000001, E10000000000000000000001, D10000000000000000000001, D10000000000000000000002, C10000000000000000000002, C10000000000000000000001, A10000000000000000000008 /* GuideProgress.swift in Sources */, A10000000000000000000006 /* InterfaceContent.swift in Sources */, A10000000000000000000005 /* TutorialContent.swift in Sources */, A10000000000000000000001 /* AQSSReadOnlyApp.swift in Sources */, A10000000000000000000002 /* SessionEvidenceView.swift in Sources */); runOnlyForDeploymentPostprocessing = 0; };
+        A10000000000000000000040 /* Sources */ = {isa = PBXSourcesBuildPhase; buildActionMask = 2147483647; files = (B90000000000000000000001, B80000000000000000000001, B80000000000000000000002, B70000000000000000000002, B70000000000000000000001, B60000000000000000000001, B50000000000000000000001, B40000000000000000000001, B30000000000000000000001, B20000000000000000000002, B20000000000000000000001, E10000000000000000000001, D10000000000000000000001, D10000000000000000000002, C10000000000000000000002, C10000000000000000000001, A10000000000000000000008 /* GuideProgress.swift in Sources */, A10000000000000000000006 /* InterfaceContent.swift in Sources */, A10000000000000000000005 /* TutorialContent.swift in Sources */, A10000000000000000000001 /* AQSSReadOnlyApp.swift in Sources */, A10000000000000000000002 /* SessionEvidenceView.swift in Sources */); runOnlyForDeploymentPostprocessing = 0; };
         A10000000000000000000041 /* Sources */ = {isa = PBXSourcesBuildPhase; buildActionMask = 2147483647; files = (B80000000000000000000003, A10000000000000000000003 /* AQSSReadOnlyUITests.swift in Sources */); runOnlyForDeploymentPostprocessing = 0; };
 /* End PBXSourcesBuildPhase section */
 

@@ -54,7 +54,9 @@ final class AQSSReadOnlyUITests: XCTestCase {
         app.buttons["choice-samsung"].tap()
         label("Step 3 of 5", app)
         XCTAssertFalse(app.staticTexts["Use a home app?"].exists)
-        XCTAssertTrue(app.buttons["setup-from-samsung"].exists)
+        XCTAssertTrue(app.buttons["setup-from-samsung"].isHittable)
+        XCTAssertFalse(app.buttons["guide-next"].exists, "The picture action must be the only primary route")
+        XCTAssertEqual(app.staticTexts["guide-device-context"].label, "Samsung  ·  iPhone")
         screenshot("Simplified TV plan \(large)", app)
         let exitFrame = app.buttons["exit-tutorial"].frame
         XCTAssertTrue(app.frame.contains(exitFrame), "Exit \(exitFrame) must remain inside \(app.frame)")
@@ -86,7 +88,8 @@ final class AQSSReadOnlyUITests: XCTestCase {
         tap("Choose TV brand", app); app.buttons["choice-samsung"].tap()
         label("Step 3 of 5", app)
         next(app); label("Step 4 of 5", app)
-        XCTAssertTrue(app.buttons["Phone pictures"].exists)
+        XCTAssertTrue(app.buttons["Phone pictures"].isHittable)
+        XCTAssertFalse(app.buttons["guide-next"].exists)
         next(app); label("Step 5 of 5", app)
         tap("Setup help", app)
         tap("Jump to voice check", app, scroll: app.scrollViews["setup-help-scroll"])
@@ -1164,7 +1167,12 @@ final class AQSSReadOnlyUITests: XCTestCase {
         app.launchArguments = ["-aqssGuideDismissedV1", firstVisit ? "NO" : "YES"]
         app.launch(); return app
     }
-    private func next(_ app: XCUIApplication) { app.buttons["guide-next"].tap() }
+    private func next(_ app: XCUIApplication) {
+        if app.buttons["guide-next"].exists { app.buttons["guide-next"].tap(); return }
+        // Tests that deliberately omit pictures must take the same explicit Help path as a user.
+        tap("Setup help", app)
+        tap("Continue without pictures", app, scroll: app.scrollViews["setup-help-scroll"])
+    }
     private func exit(_ app: XCUIApplication) { app.buttons["exit-tutorial"].tap() }
     private func assertOnlyGuide(_ app: XCUIApplication) {
         XCTAssertFalse(app.buttons["tab-home"].exists)
@@ -1801,7 +1809,11 @@ final class AQSSReadOnlyUITests: XCTestCase {
         let app = launch()
         tab("devices", app); tap("Illustrated setup guides", app); tap("Sony", app)
         restartPictureGuide(app)
-        for _ in 0..<5 { app.buttons["setup-next"].tap() }
+        for _ in 0..<3 { app.buttons["setup-next"].tap() }
+        label("Step 4 of 9", app)
+        XCTAssertTrue(pictureDescription(app).contains("bottom right"))
+        screenshot("Google TV nearby control at bottom right", app)
+        for _ in 0..<2 { app.buttons["setup-next"].tap() }
         label("Step 6 of 9", app); label("Read your TV code", app)
         XCTAssertTrue(pictureDescription(app).contains("TV screen"))
         screenshot("Google TV code is read on the television", app)
@@ -2007,7 +2019,8 @@ final class AQSSReadOnlyUITests: XCTestCase {
         XCTAssertGreaterThanOrEqual(app.buttons["exit-tutorial"].frame.height, 44)
         screenshot("Largest text single-step guide", app)
         next(app); chooseTV("Samsung", app)
-        XCTAssertTrue(app.buttons["guide-next"].isHittable)
+        XCTAssertTrue(app.buttons["setup-from-samsung"].isHittable)
+        XCTAssertFalse(app.buttons["guide-next"].exists)
         exit(app)
         app.buttons["page-picker"].tap(); tap("Devices", app)
         // A page sheet can still be dismissing after the navigation tap.

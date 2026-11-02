@@ -56,9 +56,7 @@ struct SetupGuidesView: View {
     private var route: AQSSSetupRoute? { AQSSSetupContent.routes.first { $0.id == routeID } }
     private var step: AQSSSetupStep? {
         guard let route = route, route.steps.indices.contains(index) else { return nil }
-        let step = route.steps[index]
-        guard step.screen == "App Store or Google Play" else { return step }
-        return AQSSSetupStep(title: step.title, instruction: step.instruction.replacingOccurrences(of: "App Store or Google Play", with: "App Store"), surface: step.surface, screen: "iPhone • App Store", items: step.items.map { $0 == "Install" ? "Get" : $0 }, focus: step.focus, action: step.action, note: step.note, pictureSurface: step.pictureSurface)
+        return AQSSSetupPresentation.step(route.steps[index], phone: .iphone)
     }
     private var key: String { "\(groupID)-\(routeID ?? "")-\(index)-\(mismatch)" }
     private var title: String { mismatch ? "Find the right screen" : step?.title ?? route?.title ?? (group == nil ? "Choose your TV or app" : group!.title) }
@@ -91,6 +89,10 @@ struct SetupGuidesView: View {
             }.padding(16).background(theme.surface)
             GuideScrollView(screenKey: key, identifier: "setup-scroll", onStepReady: { key in headingFocused = key }) {
                 VStack(alignment: .leading, spacing: 18) {
+                    if let group = group {
+                        Text("\(group.title)  ·  iPhone").font(.caption.weight(.semibold)).foregroundColor(theme.muted)
+                            .fixedSize(horizontal: false, vertical: true).accessibilityIdentifier("setup-device-context")
+                    }
                     Text(title).font(.title.bold()).fixedSize(horizontal: false, vertical: true)
                         .accessibilityAddTraits(.isHeader).accessibilityFocused($headingFocused, equals: key)
                     if mismatch { mismatchContent }
@@ -127,11 +129,11 @@ struct SetupGuidesView: View {
                             }
                             disclosure("? Step help", id: "setup-step-details") { detailsExpanded.toggle() }
                             if detailsExpanded {
+                                control("My screen looks different", icon: "questionmark.circle", id: "setup-mismatch") { remember(); mismatch = true; detailsExpanded = false; referencesExpanded = false }
                                 pictureJumps(route)
                                 pairingHelp(route)
                                 manualHelp(route)
                                 if !Self.repeatedPictureNotes.contains(step.note) { Text(step.note).font(.callout).foregroundColor(theme.muted) }
-                                control("My screen looks different", icon: "questionmark.circle", id: "setup-mismatch") { remember(); mismatch = true; detailsExpanded = false; referencesExpanded = false }
                                 control(referencesExpanded ? "Hide reference links" : "Reference links", icon: "doc.text", id: "setup-step-references") { referencesExpanded.toggle() }
                                 if referencesExpanded { sources(route) }
                             }
@@ -285,6 +287,10 @@ struct SetupGuidesView: View {
             .font(.system(size: 36)).foregroundColor(theme.violet).accessibilityHidden(true)
         Text(route.id.hasPrefix("phone_") ? "Have your phone and home Wi-Fi password ready." : route.id == "roku_phone" ? "Keep your phone and TV on the same Wi-Fi." : route.steps.first?.surface == "tv" ? "Have your TV remote ready." : "Have your phone and TV ready.").font(.body)
         Text("\(route.steps.count) pictures. One step at a time.").foregroundColor(theme.accent)
+        if !route.models.isEmpty {
+            Text("Documented model examples: \(route.models.joined(separator: ", "))")
+                .font(.callout).foregroundColor(theme.muted).accessibilityIdentifier("setup-model-scope")
+        }
         if let saved = resumeIndex(route) { Text("Continue at picture \(saved + 1).").foregroundColor(theme.accent) }
         disclosure("? Step help", id: "setup-details") { detailsExpanded.toggle() }
         if detailsExpanded {
@@ -308,9 +314,7 @@ struct SetupGuidesView: View {
                 if resumeIndex(route) != nil {
                     control("Start from the beginning", icon: "arrow.counterclockwise", id: "setup-restart") { remember(); writeProgress(route.id, nil); index = 0; detailsExpanded = false }
                 }
-                if !route.models.isEmpty {
-                    Text("Documented model examples: \(route.models.joined(separator: ", "))").font(.callout)
-                } else { Text("Menu-family guide · compare with your device.").font(.callout) }
+                if route.models.isEmpty { Text("Menu-family guide · compare with your device.").font(.callout) }
                 Text("Labels, layout and services can differ by country, software and language. Compare each picture with your own screen.").font(.callout)
                 control("My screen looks different", icon: "questionmark.circle", id: "setup-mismatch") { remember(); mismatch = true; detailsExpanded = false; referencesExpanded = false }
                 control(referencesExpanded ? "Hide reference links" : "Reference links", icon: "doc.text", id: "setup-references") { referencesExpanded.toggle() }
@@ -321,7 +325,7 @@ struct SetupGuidesView: View {
     private func pictureJumps(_ route: AQSSSetupRoute) -> some View {
         Menu {
             ForEach(Array(route.steps.enumerated()), id: \.offset) { n, step in
-                Button("\(n + 1). \(step.title)") { remember(); index = n; mismatch = false; detailsExpanded = false; referencesExpanded = false }
+                Button("\(n == index ? "Current: " : "")\(n + 1). \(step.title)") { remember(); index = n; mismatch = false; detailsExpanded = false; referencesExpanded = false }
             }
         } label: { Label("Jump to a picture", systemImage: "arrow.right").frame(maxWidth: .infinity, minHeight: 44, alignment: .leading) }
             .buttonStyle(AppButtonStyle(theme: theme)).accessibilityIdentifier("setup-picture-jump")
@@ -416,6 +420,7 @@ private struct SetupScreenIllustration: View {
     private var choice: Bool { step.pictureKind == "choice" }
     private var screenOnTV: Bool { step.pictureKind == "tv" || (choice && step.surface == "tv") }
     private var screenOnPhone: Bool { step.pictureKind == "phone" || (choice && step.surface == "phone") }
+    private var nearbyTVs: Bool { step.screen == "Google TV" && step.items == ["TVs nearby"] }
     private var glyph: String {
         switch step.action {
         case "home": return "house.fill"
@@ -452,6 +457,11 @@ private struct SetupScreenIllustration: View {
                 }.padding(14).foregroundColor(theme.text)
                 Divider().overlay(theme.outline)
                 VStack(spacing: 9) {
+                    if nearbyTVs {
+                        HStack(spacing: 8) {
+                            ForEach(0..<3) { _ in RoundedRectangle(cornerRadius: 8).fill(theme.raised).frame(height: 64) }
+                        }.padding(.bottom, 40).accessibilityHidden(true)
+                    }
                     if choice { Text("\(number) → Choose one").font(.headline).foregroundColor(theme.violet).frame(maxWidth: .infinity, alignment: .leading) }
                     ForEach(Array(step.items.enumerated()), id: \.offset) { i, item in
                         let selected = !choice && i == step.focus
@@ -463,11 +473,12 @@ private struct SetupScreenIllustration: View {
                             Text(item).font(.subheadline.weight(selected ? .bold : .regular)).fixedSize(horizontal: false, vertical: true)
                             Spacer(minLength: 0)
                             Image(systemName: selected ? "arrow.left" : choice ? "circle" : "chevron.right").font(.caption.bold())
-                        }.padding(12).frame(maxWidth: .infinity, minHeight: 48, alignment: .leading)
+                        }.padding(12).frame(maxWidth: nearbyTVs ? 260 : .infinity, minHeight: 48, alignment: .leading)
                             .foregroundColor(selected ? theme.controlText : theme.text)
                             .background(selected ? theme.control : theme.raised)
                             .clipShape(RoundedRectangle(cornerRadius: 9))
                             .overlay(RoundedRectangle(cornerRadius: 9).stroke(selected ? theme.controlBorder : theme.outline, lineWidth: selected ? 2 : 1))
+                            .frame(maxWidth: .infinity, alignment: nearbyTVs ? .trailing : .leading)
                     }
                 }.padding(12)
                 if screenOnPhone { Capsule().fill(theme.muted).frame(width: 70, height: 4).padding(10) }

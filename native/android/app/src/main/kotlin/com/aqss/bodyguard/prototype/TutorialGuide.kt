@@ -16,6 +16,7 @@ import com.aqss.nativefeedback.TutorialContent
 import com.aqss.nativefeedback.TutorialChoice
 import com.aqss.nativefeedback.TutorialStep
 import com.aqss.nativefeedback.InterfaceContent
+import com.aqss.nativefeedback.SetupPhone
 
 /** A dedicated, one-task screen. Choices are explanations, never device commands. */
 class TutorialGuide(
@@ -103,6 +104,9 @@ class TutorialGuide(
     private fun setupHelp() {
         val step = guide.step ?: return
         val items = mutableListOf<Pair<String, () -> Unit>>()
+        if (step.target in listOf("connectionPlan", "connectionCheck")) {
+            items += "Continue without pictures" to { guide.next(); render() }
+        }
         if (step.target in listOf("welcome", "chooseTV")) items += "Jump to TV photo" to { openPhoto() }
         if (step.target == "connectionPlan") {
             items += "Choose home app (optional)" to {
@@ -176,6 +180,9 @@ class TutorialGuide(
         }
         text(content, step.explanation)
         if (isBeginner) {
+            guide.selected("chooseTV")?.takeIf { step.target != "chooseTV" }?.let {
+                text(content, "${it.title}  ·  ${SetupPhone.androidManufacturer(Build.MANUFACTURER).label}", 17f, skin.accent, true)
+            }
             when (step.target) {
                 "welcome" -> text(content, "1. Your TV  →  2. Your phone", 18f, skin.accent, true)
                 "chooseTV" -> {
@@ -184,10 +191,6 @@ class TutorialGuide(
                     }, LinearLayout.LayoutParams(-1, -2).apply { bottomMargin = dp(16) })
                     content.addView(button("Choose TV brand") { chooseBrand() }, LinearLayout.LayoutParams(-1, -2))
                 }
-                "connectionPlan" -> guide.selected("chooseTV")?.let { selected ->
-                    content.addView(button(if (selected.id == "unsure") "Help identify my TV" else "Show ${selected.title} steps", primary = true) { openSetup(selected.id) }, LinearLayout.LayoutParams(-1, -2))
-                }
-                "connectionCheck" -> content.addView(button("Phone pictures", primary = true) { openSetup("phone") }, LinearLayout.LayoutParams(-1, -2))
             }
             content.addView(button("? Setup help") { setupHelp() }, LinearLayout.LayoutParams(-2, -2).apply { topMargin = dp(20) })
         } else {
@@ -269,7 +272,13 @@ class TutorialGuide(
         guide.selected(step.target)?.let { text(controls, "Selected: ${it.title}", 15f, skin.muted) }
         val row = LinearLayout(activity)
         if (guide.index > 0) row.addView(button("Back") { guide.back(); render() }, LinearLayout.LayoutParams(-2, -2).apply { marginEnd = dp(12) })
-        if (guide.canContinue) {
+        if (isBeginner && step.target == "connectionPlan") {
+            guide.selected("chooseTV")?.let { selected ->
+                row.addView(button(if (selected.id == "unsure") "Help identify my TV" else "Show ${selected.title} steps", primary = true) { openSetup(selected.id) }, LinearLayout.LayoutParams(0, -2, 1f))
+            }
+        } else if (isBeginner && step.target == "connectionCheck") {
+            row.addView(button("Phone pictures", primary = true) { openSetup("phone") }, LinearLayout.LayoutParams(0, -2, 1f))
+        } else if (guide.canContinue) {
             val label = if (guide.isLast) { if (isBeginner) "Go to Home" else "Done" } else if (guide.index == 0) { if (isBeginner) TutorialContent.startLabel else "Begin" } else "Next"
             row.addView(button(label, primary = step.target !in listOf("connectionPlan", "connectionCheck")) {
                 if (guide.isLast) { finished(topic.id); close() } else { guide.next(); render() }
