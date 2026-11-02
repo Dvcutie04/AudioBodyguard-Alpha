@@ -16,13 +16,16 @@ import android.widget.Button
 import android.widget.ImageView
 
 internal fun roseButton(activity: Activity, skin: InterfaceTheme, title: String, compact: Boolean = false, action: () -> Unit): Button = Button(activity).apply {
-    text = if (compact || activity.resources.configuration.fontScale >= 1.5f) "" else title
+    val largeText = activity.resources.configuration.fontScale >= 1.5f
+    text = if (largeText) when (title) { "Exit Home" -> "Exit"; "Back to Tutorial" -> "Back"; else -> title } else if (compact) "" else title
     contentDescription = title
     skin.style(this)
-    val art = OriginalRoseArtwork(activity.resources.getDrawable(R.drawable.tribal_rose, activity.theme).mutate(), skin.dp(6).toFloat())
-    art.setBounds(0, 0, skin.dp(52), skin.dp(68))
-    setCompoundDrawables(art, null, null, null)
-    compoundDrawablePadding = skin.dp(if (compact) 0 else 8)
+    if (!largeText) {
+        val art = OriginalRoseArtwork(activity.resources.getDrawable(R.drawable.tribal_rose, activity.theme).mutate(), skin.dp(6).toFloat())
+        art.setBounds(0, 0, skin.dp(52), skin.dp(68))
+        setCompoundDrawables(art, null, null, null)
+    }
+    compoundDrawablePadding = skin.dp(if (compact || largeText) 0 else 8)
     setOnClickListener { action() }
 }
 

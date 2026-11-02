@@ -6,6 +6,8 @@ The owner reports that options make it easy to get lost and prefers the iPhone's
 
 Apply the standing AQSS Research and Synthesis Charter before code. Target both native platforms: one primary action per connection stage, visible device context, accurate phone labels and store controls, a recoverable mismatch path, and preserved Back/resume behavior. Keep optional skipping available in Help. Do not infer connection, protection, exact TV model, consent or physical output from navigation or OCR.
 
+Native screenshot review also found that large text replaced the Exit label with artwork alone. At accessibility text sizes, compact Exit/Back/Close controls now use visible words; the original white-background artwork remains in the normal layout. Full accessibility names and minimum targets are retained.
+
 ## Evidence matrix
 
 Sources retrieved 1 November 2026 Pacific time. Living documents describe published behavior, not installed-device verification.

@@ -103,13 +103,18 @@ struct RoseButton: View {
     var compact = false
     let action: () -> Void
     @Environment(\.dynamicTypeSize) private var textSize
+    private var shortTitle: String { title == "Exit Home" ? "Exit" : title == "Back to Tutorial" ? "Back" : title }
     var body: some View {
         Button(action: action) {
             HStack(spacing: 8) {
-                RoseThumbnail()
-                    .frame(width: 52, height: 68).clipped()
-                    .clipShape(RoundedRectangle(cornerRadius: 6)).accessibilityHidden(true)
-                if !compact && !textSize.isAccessibilitySize { Text(title).fixedSize(horizontal: title == "Help", vertical: true) }
+                if textSize.isAccessibilitySize {
+                    Text(shortTitle).fixedSize(horizontal: false, vertical: true)
+                } else {
+                    RoseThumbnail()
+                        .frame(width: 52, height: 68).clipped()
+                        .clipShape(RoundedRectangle(cornerRadius: 6)).accessibilityHidden(true)
+                    if !compact { Text(title).fixedSize(horizontal: title == "Help", vertical: true) }
+                }
             }.frame(minWidth: 44, minHeight: 44)
         }.buttonStyle(AppButtonStyle(theme: theme))
             .fixedSize(horizontal: textSize.isAccessibilitySize, vertical: false).accessibilityLabel(title)

@@ -393,6 +393,8 @@ def main():
             reveal("TV & smart-home guide", prefix + "_open")
             root = wait_for("Step 1 of 5", prefix + "_welcome")
             assert not has(root, "More features")
+            if scale == "1.5":
+                assert any(n.get("text") == "Exit" for n in root.iter("node")), "Large text must keep a visible Exit label"
             screenshot(prefix + "_welcome")
             tap("Start picture setup", prefix + "_start")
             root = wait_for_all(("Which TV do you use?", "Choose TV brand"), prefix + "_brands")
