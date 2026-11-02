@@ -26,11 +26,35 @@ final class OutputDetailsTests: XCTestCase {
         let result = try snapshot([])
         XCTAssertTrue(result.text.contains("Reported outputs: 0")); XCTAssertTrue(result.text.contains("No output ports reported"))
         XCTAssertTrue(result.text.contains("Actual playback route: Unknown"))
+        XCTAssertEqual(result.connectionGuide, .unavailable)
+    }
+
+    func testConnectionGuideTurnsRouteTypesIntoTruthfulNextSteps() throws {
+        XCTAssertEqual(try snapshot([.speaker]).connectionGuide, .phone)
+        XCTAssertEqual(try snapshot([.receiver]).connectionGuide, .phone)
+        XCTAssertEqual(try snapshot([.headphones]).connectionGuide, .personalAudio)
+        XCTAssertEqual(try snapshot([.bluetoothA2DP]).connectionGuide, .personalAudio)
+        XCTAssertEqual(try snapshot([.bluetoothHFP]).connectionGuide, .personalAudio)
+        XCTAssertEqual(try snapshot([.bluetoothLE]).connectionGuide, .personalAudio)
+        XCTAssertEqual(try snapshot([.airPlay]).connectionGuide, .homeAudioCandidate)
+        XCTAssertEqual(try snapshot([.hdmi]).connectionGuide, .homeAudioCandidate)
+        XCTAssertEqual(try snapshot([.usb]).connectionGuide, .externalAudio)
+        XCTAssertEqual(try snapshot([.lineOut]).connectionGuide, .externalAudio)
+        XCTAssertEqual(try snapshot([.car]).connectionGuide, .externalAudio)
+        XCTAssertEqual(try snapshot([.other]).connectionGuide, .mixed)
+        XCTAssertEqual(try snapshot([.speaker, .airPlay]).connectionGuide, .mixed)
+
+        let home = try snapshot([.airPlay])
+        XCTAssertTrue(home.text.contains("Connection guide: This phone reports a TV or home-audio route"))
+        XCTAssertTrue(home.text.contains("Connection verification: Not verified"))
+        XCTAssertTrue(home.text.contains("TV command sent: No"))
+        XCTAssertNil(home.connectionGuide.nextStep.range(of: "connected", options: .caseInsensitive))
     }
 
     func testBoundedPrefixDisclosesOmittedPorts() throws {
         let result = try snapshot(Array(repeating: .other, count: 16), total: 21)
         XCTAssertEqual(result.portTypes.count, 16); XCTAssertEqual(result.totalReported, 21)
+        XCTAssertEqual(result.connectionGuide, .mixed)
         XCTAssertTrue(result.text.contains("First 16 retained; 5 additional outputs omitted"))
         XCTAssertFalse(result.text.contains("Output 17:"))
     }

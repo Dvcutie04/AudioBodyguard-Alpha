@@ -22,6 +22,56 @@ public enum IOSOutputKind: CaseIterable, Equatable {
     }
 }
 
+/// A short, truthful next step derived only from the current-route port types.
+/// It never names a device or upgrades metadata into connection verification.
+public enum IOSConnectionGuide: Equatable {
+    case phone, personalAudio, homeAudioCandidate, externalAudio, mixed, unavailable
+
+    public var title: String {
+        switch self {
+        case .phone: return "Audio is still on this phone"
+        case .personalAudio: return "This phone reports a wireless or personal-audio route"
+        case .homeAudioCandidate: return "This phone reports a TV or home-audio route"
+        case .externalAudio: return "This phone reports an external-audio route"
+        case .mixed: return "Several output types need confirmation"
+        case .unavailable: return "No output type was reported"
+        }
+    }
+
+    public var nextStep: String {
+        switch self {
+        case .phone:
+            return "Open Control Center, choose your TV or home-audio output, then refresh."
+        case .personalAudio:
+            return "Confirm the selected name in Control Center. If it is not your TV or home device, choose the correct output."
+        case .homeAudioCandidate:
+            return "Confirm the same selected name in Control Center and on your TV before continuing."
+        case .externalAudio:
+            return "Confirm the cable or accessory leads to the intended TV or home-audio device."
+        case .mixed:
+            return "Open Control Center, confirm the selected output, then refresh this check."
+        case .unavailable:
+            return "Open Control Center, choose an output, then return and refresh."
+        }
+    }
+
+    static func from(portTypes: [IOSOutputKind], totalReported: Int) -> Self {
+        guard totalReported > 0, !portTypes.isEmpty else { return .unavailable }
+        guard totalReported == portTypes.count else { return .mixed }
+        let groups = portTypes.map { kind -> IOSConnectionGuide in
+            switch kind {
+            case .speaker, .receiver: return .phone
+            case .headphones, .bluetoothA2DP, .bluetoothHFP, .bluetoothLE: return .personalAudio
+            case .airPlay, .hdmi: return .homeAudioCandidate
+            case .usb, .lineOut, .car: return .externalAudio
+            case .other: return .mixed
+            }
+        }
+        guard let first = groups.first, groups.dropFirst().allSatisfy({ $0 == first }) else { return .mixed }
+        return first
+    }
+}
+
 public enum OutputDetailsError: Error { case invalidBuild, invalidOSVersion, invalidClock, invalidCounts, oversizedReport }
 
 /// An immutable manual session query, never proof of active playback or hardware format.
@@ -34,13 +84,15 @@ public struct OutputDetailsSnapshot: Equatable {
     public let capturedAtMillis: Int64
     public let portTypes: [IOSOutputKind]
     public let totalReported: Int
+    public let connectionGuide: IOSConnectionGuide
     public let summary: String
     public let text: String
 
     private init(buildDetails: String, capturedAtMillis: Int64, portTypes: [IOSOutputKind],
-                 totalReported: Int, summary: String, text: String) {
+                 totalReported: Int, connectionGuide: IOSConnectionGuide, summary: String, text: String) {
         self.buildDetails = buildDetails; self.capturedAtMillis = capturedAtMillis
         self.portTypes = portTypes; self.totalReported = totalReported
+        self.connectionGuide = connectionGuide
         self.summary = summary; self.text = text
     }
 
@@ -65,9 +117,12 @@ public struct OutputDetailsSnapshot: Equatable {
             .map { "Output \($0.offset + 1): \($0.element.title)" }.joined(separator: "\n")
         let retained = totalReported > maxPorts ? "First 16 retained; \(totalReported - maxPorts) additional outputs omitted" : "All reported outputs retained"
         let summary = "Reported outputs: \(totalReported)\n\(outputs)\n\(retained)"
+        let guide = IOSConnectionGuide.from(portTypes: portTypes, totalReported: totalReported)
         let text = ["Audio Bodyguard iPhone output details (v1)", "Captured at (phone clock, UTC): \(clock)",
                     "", buildDetails, "iOS/iPadOS version: \(osVersion)", "",
                     "Source: iOS audio session current-route output port types", summary,
+                    "Connection guide: \(guide.title)", "Next check: \(guide.nextStep)",
+                    "Connection verification: Not verified", "TV command sent: No",
                     "Port names and identifiers: Not included", "Audio session active: Unknown", "",
                     "This is a session metadata snapshot, not a list of every available device.",
                     "This check does not activate or configure the audio session.",
@@ -77,7 +132,7 @@ public struct OutputDetailsSnapshot: Equatable {
                     "Outputs may have changed since this snapshot.", "", notice].joined(separator: "\n")
         guard text.utf16.count <= maxUTF16Units, text.utf8.count <= maxUTF8Bytes else { throw OutputDetailsError.oversizedReport }
         return Self(buildDetails: buildDetails, capturedAtMillis: capturedAtMillis, portTypes: portTypes,
-                    totalReported: totalReported, summary: summary, text: text)
+                    totalReported: totalReported, connectionGuide: guide, summary: summary, text: text)
     }
 
     private static func validateBuild(_ value: String) throws {

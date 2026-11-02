@@ -638,10 +638,11 @@ def main():
             tap("Output inventory. Check this phone’s available audio outputs", name + "_inventory")
             wait_for("Not read yet. Tap Refresh outputs.", name + "_idle")
             tap("Refresh outputs", name + "_refresh")
-            wait_for("Advertised sample rates:", name + "_read")
+            wait_for("Connection not verified • No TV command sent", name + "_read")
             tap("Review output report", name + "_review")
             root = wait_for("Share output report", name + "_output_preview")
             original = text_copy(root, "Audio Bodyguard output inventory (v1)\n")
+            assert "Advertised sample rates:" in original
             assert has(root, "Add setup notes"), "Reviewed output has no Add setup notes action"
             tap("Add setup notes", name + "_add_notes")
             form = wait_for("Review setup report", name + "_form")
@@ -782,9 +783,10 @@ def main():
         assert button is not None, "Output inventory has no Review output report control"
         assert button.get("enabled") == "false", "Review must be disabled without a successful read"
         tap("Refresh outputs", "output_report_refresh")
-        actual = wait_for("Advertised sample rates:", "output_report_snapshot")
+        actual = wait_for("Connection not verified • No TV command sent", "output_report_snapshot")
         button = review_button(actual)
         assert button is not None and button.get("enabled") == "true"
+        assert not has(actual, "Advertised sample rates:"), "Advanced capabilities must stay behind Review"
         opening_before = frame_snapshot("output-report-open-frames_before")
         tap("Review output report", "output_report_review")
         root = wait_for_all(("Review output report", "Share output report",
@@ -1460,14 +1462,16 @@ def main():
     tap("Sound", "sound_page")
     tap("Output inventory. Check this phone’s available audio outputs", "output_inventory_open")
     inventory_idle = wait_for_all(("Not read yet. Tap Refresh outputs.",
-                                   "Selected playback route: Unknown", "Negotiated format: Unknown"),
+                                   "Check available outputs to get one clear next step.",
+                                   "Connection not verified • No TV command sent"),
                                   "output_inventory_idle")
     assert not has(inventory_idle, "Start sound check")
     tap("Refresh outputs", "output_inventory_refresh")
     inventory = wait_for_all(("available output device", "Snapshot only.",
-                              "Selected playback route: Unknown", "Advertised sample rates:"),
+                              "Connection not verified • No TV command sent"),
                              "output_inventory_read")
     assert not has(inventory, "Output inventory unavailable")
+    assert not has(inventory, "Advertised sample rates:"), "Advanced capabilities must stay behind Review"
     screenshot("output_inventory_read")
     permission = adb("shell", "dumpsys", "package", package).decode()
     assert "android.permission.RECORD_AUDIO: granted=false" in permission, "Inventory must not request microphone access"
@@ -1481,7 +1485,7 @@ def main():
     tap("Output inventory. Check this phone’s available audio outputs", "output_inventory_reopen")
     wait_for("Not read yet. Tap Refresh outputs.", "output_inventory_reopened_empty")
     tap("Back", "output_inventory_close_again")
-    print("OUTPUT_INVENTORY_OBSERVED: explicit metadata refresh, route/format unknown, microphone permission unrequested, background/resume clears snapshot, Back/reopen clears snapshot; no playback or physical qualification", flush=True)
+    print("OUTPUT_INVENTORY_OBSERVED: simple next-step guide keeps selection unverified and sends no command; advanced capabilities remain behind Review; explicit metadata refresh, microphone permission unrequested, background/resume clears snapshot, Back/reopen clears snapshot; no playback or physical qualification", flush=True)
     check_test_setup()
     check_setup_output_report()
     check_output_report()

@@ -18,6 +18,7 @@ import java.lang.reflect.Field;
 public final class OutputInventoryProbe extends CameraCaptureProbe {
     private static final String IDLE = "Not read yet. Tap Refresh outputs.";
     private static final String CHANGED = "Output list needs a fresh check. Tap Refresh outputs.";
+    private static final String GUIDE_IDLE = "Check available outputs to get one clear next step.\n\nConnection not verified • No TV command sent";
     private String phase = "launch";
     private int refreshCount;
 
@@ -30,9 +31,18 @@ public final class OutputInventoryProbe extends CameraCaptureProbe {
                     .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
             activity = startActivitySync(launch);
             waitForIdleSync(); waitForText(IDLE);
+            phase = "open technical help";
+            waitForInventoryFocus();
+            runOnMainSync(() -> require(click(activity.getWindow().getDecorView(), "?"), "Technical help control missing"));
+            waitForText("Android lists available output types here, not the selected playback route");
+            require(((AlertDialog) field("aboutDialog").get(activity)).isShowing(), "Technical help must open a native dialog");
+            runOnMainSync(() -> require(click(activity.getWindow().getDecorView(), "Done"), "Technical help Done control missing"));
+            waitForIdleSync(); waitForInventoryFocus();
             refresh();
             String original = details();
-            require(original.contains("Advertised sample rates:"), "Actual inventory rows missing");
+            require(original.contains("available output device"), "Actual inventory summary missing");
+            require(!original.contains("Advertised sample rates:"), "Advanced capabilities remained on the simple screen");
+            require(guide().contains("Connection not verified • No TV command sent"), "Truthful connection boundary missing");
             recordScreen("output-freshness-read");
 
             Field callbackField;
@@ -78,6 +88,7 @@ public final class OutputInventoryProbe extends CameraCaptureProbe {
             String[] frozen = new String[1];
             runOnMainSync(() -> frozen[0] = preview.getText().toString());
             require(frozen[0].startsWith("Audio Bodyguard output inventory (v1)"), "Report envelope missing");
+            require(frozen[0].contains("Advertised sample rates:"), "Review lost advanced output capabilities");
             phase = "notice during review";
             runOnMainSync(() -> callback.onAudioDevicesRemoved(outputs));
             assertCleared();
@@ -126,7 +137,7 @@ public final class OutputInventoryProbe extends CameraCaptureProbe {
             runOnMainSync(() -> current.onAudioDevicesAdded(outputs));
             require(IDLE.equals(details()), "Callback changed closed inventory details");
 
-            result.putString("output_inventory", "passed: synthetic output add/remove callbacks clear real inventory and disable new Review; an already reviewed historical copy stays immutable; no automatic reread; explicit refresh; input-only/empty ignored; pause unregisters; resume renews; old and closed callbacks ignored; route/format remain unknown. No physical disconnect or route qualification.");
+            result.putString("output_inventory", "passed: simple next-step guide keeps selection unverified and sends no command; advanced capabilities remain in Review; synthetic output add/remove callbacks clear real inventory and disable new Review; an already reviewed historical copy stays immutable; no automatic reread; explicit refresh; input-only/empty ignored; pause unregisters; resume renews; old and closed callbacks ignored. No physical disconnect or route qualification.");
             finish(Activity.RESULT_OK, result);
         } catch (Exception | AssertionError error) {
             result.putString("output_inventory_error", phase + ": " + error);
@@ -158,6 +169,12 @@ public final class OutputInventoryProbe extends CameraCaptureProbe {
         runOnMainSync(() -> value[0] = view.getText().toString());
         return value[0];
     }
+    private String guide() throws Exception {
+        TextView view = (TextView) field("connectionGuide").get(activity);
+        String[] value = new String[1];
+        runOnMainSync(() -> value[0] = view.getText().toString());
+        return value[0];
+    }
     private void refresh() {
         phase = "refresh " + (++refreshCount);
         waitForIdleSync();
@@ -180,6 +197,6 @@ public final class OutputInventoryProbe extends CameraCaptureProbe {
         require(CHANGED.equals(details()), "Old output rows remained after invalidation");
         require(field("reportSnapshot").get(activity) == null, "A withdrawn inventory retained a new-report payload");
         require(!((Button) field("reviewButton").get(activity)).isEnabled(), "Withdrawn inventory left Review enabled");
-        waitForText("Selected playback route: Unknown"); waitForText("Negotiated format: Unknown");
+        require(GUIDE_IDLE.equals(guide()), "Withdrawn inventory retained a connection suggestion");
     }
 }

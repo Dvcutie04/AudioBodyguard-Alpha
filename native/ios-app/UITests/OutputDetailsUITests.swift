@@ -40,6 +40,16 @@ final class OutputDetailsUITests: XCTestCase {
         XCTAssertEqual(app.alerts.count, 0)
         app.buttons["output-details-refresh"].tap()
         XCTAssertTrue(app.buttons["output-details-review"].isEnabled)
+        XCTAssertTrue(app.staticTexts["output-connection-guide-title"].waitForExistence(timeout: 5))
+        XCTAssertEqual(app.staticTexts["output-connection-boundary"].label,
+            "Connection not verified • No TV command sent")
+        XCTAssertTrue(app.buttons["output-connection-explanation"].exists)
+        XCTAssertFalse(app.staticTexts["output-details-summary"].exists)
+        app.buttons["output-connection-explanation"].tap()
+        XCTAssertTrue(app.staticTexts["output-details-summary"].waitForExistence(timeout: 5))
+        XCTAssertEqual(app.buttons["output-connection-explanation"].value as? String, "Expanded")
+        app.buttons["output-connection-explanation"].tap()
+        XCTAssertFalse(app.staticTexts["output-details-summary"].exists)
         app.buttons["output-details-review"].tap()
         let preview = app.staticTexts["output-details-preview"]
         XCTAssertTrue(preview.waitForExistence(timeout: 5))
