@@ -1,10 +1,39 @@
 # AQSS development roadmap
 
-Checkpoint: October 28, 2026. Continue from the restored a-Shell baseline and the existing native endpoint qualification research. iPhone/iOS and Android remain equal product targets.
+Checkpoint: November 2, 2026. Continue from the restored a-Shell baseline and the existing native endpoint qualification research. iPhone/iOS and Android remain equal product targets.
 
 **INFERENCE IS NOT REALITY. AI proposes. Policy authorizes. Physical Commit verifies.**
 
 ## Current checkpoint
+
+November 2 beta critical path: the owner clarified that the beta must eventually
+communicate with a TV and phone. PR #93 implements the simplified device-matched
+setup experience. Its source `9718ad22eef419738cf57c2f4fbf12d72c60dd7f` was
+uploaded as **1.0.0 (10.1)** in run `41378750221`, attempt 1; Apple explicitly
+accepted upload at `2026-11-02T03:37:19.606002Z`. Processing, tester assignment
+and installation are separate observations and remain unverified at this
+checkpoint. The signed provenance does not complete delivery or TV integration.
+PR #94 separately adds truthful next-step guidance for existing output metadata.
+
+The next software increment is the [VIZIO network check](vizio-network-check-2026-11-02.md)
+on both platforms. It starts a bounded Wi-Fi TCP check only after a user enters
+one private address and taps Check. No TV commands, authentication, audio work,
+network scan or connection/protection authority are added. Candidate Android is
+0.44/build 47 and iOS source is 0.44.0/build 1; final software results and package
+identity belong to the increment's published revision. Actual phone/TV results
+remain pending.
+
+| Beta milestone | Current evidence | Required next observation |
+| --- | --- | --- |
+| Setup usability preview | PR #93 source checked and uploaded; #94 follows separately | Exact processed/installed build, beginner trials on both physical phones |
+| Phone-to-TV network access | Native VIZIO-address diagnostic implemented; native CI pending for this increment | User-started check on the actual network/TV; a TCP answer is not TV identity |
+| Authenticated TV integration | Pending; no TV controller is connected | Reviewed identity/certificate/authentication handling and successful physical pairing, including failure/revocation tests |
+| Audio-control/protection beta | N2b–N5 still pending | A supported owned audio path, independent physical measurements, lifecycle/stop/ownership evidence on both platforms |
+
+Prioritize this sequence rather than interpreting more UI changes or green CI
+as a complete working-TV beta. The historical checkpoints below preserve their
+original dates and limits; later upload evidence supersedes only their signing
+preparation status, never their missing physical qualification.
 
 October 28 owner-requested 0.41: [Voice cleanup recovery](voice-cleanup-guidance-2026-10-28.md)
 extends app-owned availability presentation to Voice before speech availability

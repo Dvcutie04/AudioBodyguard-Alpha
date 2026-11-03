@@ -33,6 +33,8 @@
       "AQSSReadOnlyUITests/testIllustratedGuideKeepsScrollContainerAndResetsPosition"
     ],
     "tools": [
+      "AQSSReadOnlyUITests/testTVNetworkRejectsPublicAddressWithoutContact",
+      "AQSSReadOnlyUITests/testTVNetworkVisitClearsDraftOnBackgroundAndBack",
       "AQSSReadOnlyUITests/testTestSetupShareStartsWhenReviewAppears",
       "AQSSReadOnlyUITests/testTestSetupWorksheetCancelSharePreservesPreview",
       "AQSSReadOnlyUITests/testTestSetupWorksheetCopySharesExactReviewedText",

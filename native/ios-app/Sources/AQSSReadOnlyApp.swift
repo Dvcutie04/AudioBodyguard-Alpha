@@ -283,6 +283,7 @@ private struct ReadOnlyHomeView: View {
     @State private var liveSoundCheckVisible = false
     @State private var soundRecapsVisible = false
     @State private var outputDetailsVisible = false
+    @State private var tvNetworkCheckVisible = false
     @State private var testSetupVisible = false
     @StateObject private var testSetupDraft = TestSetupDraft()
     @State private var photoCheckVisible = false
@@ -400,6 +401,7 @@ private struct ReadOnlyHomeView: View {
             .sheet(isPresented: $liveSoundCheckVisible) { LiveSoundCheckView(theme: theme) }
             .sheet(isPresented: $soundRecapsVisible) { RecentSoundChecksView(theme: theme) }
             .sheet(isPresented: $outputDetailsVisible) { OutputDetailsView(theme: theme) }
+            .sheet(isPresented: $tvNetworkCheckVisible) { TVNetworkCheckView(theme: theme) }
             .sheet(isPresented: $testSetupVisible, onDismiss: {
                 if !testSetupVisible { testSetupDraft.clear() }
             }) {
@@ -631,6 +633,8 @@ private struct ReadOnlyHomeView: View {
             Text("Connection not verified").font(.subheadline).foregroundColor(theme.muted)
             action(deviceDetails ? "? Hide device help" : "? Device help", icon: "questionmark.circle") { deviceDetails.toggle() }
             if deviceDetails {
+            destinationCard("VIZIO network check", subtitle: "Check one TV address on home Wi-Fi", icon: "wifi") { tvNetworkCheckVisible = true }
+                .accessibilityIdentifier("tv-network-open")
             destinationCard("TV photo setup", subtitle: "Read a model label or settings photo", icon: "camera") { photoCheckVisible = true }
             destinationCard("Illustrated setup guides", subtitle: "Jump to a TV or home app", icon: "rectangle.stack") { showSetup() }
             helpButton("TV & smart-home guide", topic: "getting_started")

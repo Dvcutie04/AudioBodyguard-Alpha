@@ -11,8 +11,8 @@ android {
         applicationId = "com.aqss.bodyguard.prototype"
         minSdk = 26
         targetSdk = 36
-        versionCode = 46
-        versionName = "0.43-simple-setup"
+        versionCode = 47
+        versionName = "0.44-tv-network-check"
     }
 
     buildTypes {
