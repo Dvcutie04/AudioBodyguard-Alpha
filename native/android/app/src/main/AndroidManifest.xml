@@ -1,5 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
     <uses-permission android:name="android.permission.RECORD_AUDIO" />
     <queries><intent><action android:name="android.speech.RecognitionService" /></intent></queries>
     <application
@@ -12,6 +14,7 @@
         </provider>
         <activity android:name=".LiveSoundCheckActivity" android:exported="false" android:theme="@style/AQSSReadOnlyTheme" />
         <activity android:name=".OutputInventoryActivity" android:exported="false" android:theme="@style/AQSSReadOnlyTheme" />
+        <activity android:name=".TVNetworkCheckActivity" android:exported="false" android:theme="@style/AQSSReadOnlyTheme" />
         <activity android:name=".QuietOutputCheckActivity" android:exported="false" android:theme="@style/AQSSReadOnlyTheme" />
         <activity android:name=".TestSetupActivity" android:exported="false" android:enableOnBackInvokedCallback="true" android:theme="@style/AQSSReadOnlyTheme" />
         <activity android:name=".SetupGuideActivity" android:exported="false" android:enableOnBackInvokedCallback="true" android:theme="@style/AQSSReadOnlyTheme" />

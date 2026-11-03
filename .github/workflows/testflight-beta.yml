@@ -1,4 +1,4 @@
-name: Audio Bodyguard internal TestFlight preparation
+name: Audio Bodyguard TestFlight preparation
 
 on:
   push:
@@ -12,7 +12,13 @@ on:
       version:
         description: App version matching App Store Connect
         type: string
-        default: "0.1.0"
+        default: "1.0.0"
+        required: true
+      testing_audience:
+        description: Internal team only, or external eligibility for friends (Apple review still required; no invitations)
+        type: choice
+        options: [internal, external]
+        default: internal
         required: true
       upload:
         description: Sign and upload after all checks pass (requires Apple setup)
@@ -42,7 +48,8 @@ jobs:
         name: Validate the selected reviewed source
         env:
           SELECTED_REVISION: ${{ inputs.source_revision || github.sha }}
-          RELEASE_VERSION: ${{ inputs.version || '0.1.0' }}
+          RELEASE_VERSION: ${{ inputs.version || '1.0.0' }}
+          TESTFLIGHT_AUDIENCE: ${{ inputs.testing_audience || 'internal' }}
         run: |
           python3 - <<'PY'
           import os, re, subprocess
@@ -53,6 +60,12 @@ jobs:
               raise SystemExit('Select an exact source commit SHA')
           if not re.fullmatch(r'[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}', os.environ['RELEASE_VERSION']):
               raise SystemExit('App version must have three numeric components')
+          if os.environ['TESTFLIGHT_AUDIENCE'] not in ('internal', 'external'):
+              raise SystemExit('Select internal or external TestFlight eligibility')
+          try:
+              from tools.testflight_package import make_export_options
+          except ImportError:
+              raise SystemExit('The selected source predates this workflow export contract; select the reviewed friend-beta source') from None
           def git(*args):
               return subprocess.check_output(['git', *args], text=True).strip()
           if git('rev-parse', 'HEAD') != revision:
@@ -119,6 +132,7 @@ jobs:
     env:
       DEVELOPER_DIR: /Applications/Xcode_26.3.app/Contents/Developer
       RELEASE_VERSION: ${{ inputs.version }}
+      TESTFLIGHT_AUDIENCE: ${{ inputs.testing_audience || 'internal' }}
       SOURCE_REVISION: ${{ needs.identify-source.outputs.revision }}
       SOURCE_TREE: ${{ needs.identify-source.outputs.tree }}
       IOS_BUNDLE_ID: ${{ vars.IOS_BUNDLE_ID }}
@@ -202,9 +216,8 @@ jobs:
             SWIFT_ACTIVE_COMPILATION_CONDITIONS= archive
           python3 - <<'PY'
           import os, pathlib, plistlib
-          options = {'method': 'app-store-connect', 'destination': 'export',
-                     'signingStyle': 'automatic', 'teamID': os.environ['APPLE_TEAM_ID'],
-                     'manageAppVersionAndBuildNumber': False, 'testFlightInternalTestingOnly': True}
+          from tools.testflight_package import make_export_options
+          options = make_export_options(os.environ['APPLE_TEAM_ID'], os.environ['TESTFLIGHT_AUDIENCE'])
           (pathlib.Path(os.environ['TASK_DIR'])/'ExportOptions.plist').write_bytes(plistlib.dumps(options))
           PY
           xcodebuild -exportArchive -archivePath "$TASK_DIR/AQSSReadOnly.xcarchive" \
@@ -222,6 +235,7 @@ jobs:
           codesign --verify --deep --strict "$APP"
           security cms -D -i "$APP/embedded.mobileprovision" > "$TASK_DIR/profile.plist"
           python3 tools/testflight_package.py --ipa "$IPA" --profile "$TASK_DIR/profile.plist" \
+            --export-options "$TASK_DIR/ExportOptions.plist" --testing-audience "$TESTFLIGHT_AUDIENCE" \
             --bundle-id "$IOS_BUNDLE_ID" --team-id "$APPLE_TEAM_ID" --version "$RELEASE_VERSION" \
             --build-number "$BUILD_NUMBER" --revision "$SOURCE_REVISION" --tree-sha "$SOURCE_TREE" \
             --workflow-run-id "$GITHUB_RUN_ID" --workflow-attempt "$GITHUB_RUN_ATTEMPT" \

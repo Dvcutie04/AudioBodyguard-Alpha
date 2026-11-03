@@ -1,9 +1,14 @@
 import plistlib
 import zipfile
+import json
+import hashlib
+from pathlib import Path
+import subprocess
+import sys
 
 import pytest
 
-from tools.testflight_package import ORIENTATIONS, inspect_package
+from tools.testflight_package import ORIENTATIONS, inspect_package, make_export_options
 
 
 TEAM = 'ABCDEFGHIJ'
@@ -83,6 +88,67 @@ def test_metadata_report_never_claims_signing_delivery_or_physical_qualification
     assert report['delivery_status'] == 'NOT_UPLOADED'
     assert report['physical_protection_qualified'] is False
     assert len(report['submitted_ipa_sha256']) == 64
+    assert report['internal_only_export_configured'] is None
+    assert report['external_review_status'] == 'NOT_SUBMITTED_BY_THIS_WORKFLOW'
+
+
+def test_internal_eligibility_remains_the_default():
+    assert make_export_options(TEAM)['testFlightInternalTestingOnly'] is True
+
+
+@pytest.mark.parametrize('audience,internal_only', [('internal', True), ('external', False)])
+def test_requested_eligibility_is_bound_to_actual_export_options(tmp_path, audience, internal_only):
+    options = make_export_options(TEAM, audience)
+    assert options['testFlightInternalTestingOnly'] is internal_only
+    report = inspect_package(package_fixture(tmp_path), bundle_id=BUNDLE, version='0.1.0',
+                             build_number='1.1', team_id=TEAM, provisioning_profile=profile_fixture(),
+                             testing_audience=audience, export_options=options)
+    assert report['testflight_audience_requested'] == audience
+    assert report['internal_only_export_configured'] is internal_only
+    assert report['delivery_status'] == 'NOT_UPLOADED'
+    assert report['external_review_status'] == 'NOT_SUBMITTED_BY_THIS_WORKFLOW'
+    assert report['tester_assignment_status'] == 'NOT_CHECKED'
+    assert report['physical_protection_qualified'] is False
+
+
+@pytest.mark.parametrize('audience', ['friends', 'INTERNAL', '', None])
+def test_ambiguous_eligibility_is_rejected(audience):
+    with pytest.raises(ValueError):
+        make_export_options(TEAM, audience)
+
+
+@pytest.mark.parametrize('changed', [
+    {'testFlightInternalTestingOnly': True}, {'testFlightInternalTestingOnly': 0},
+    {'teamID': 'DIFFERTEAM'}, {'destination': 'upload'}, {'manageAppVersionAndBuildNumber': True},
+])
+def test_export_mismatch_is_rejected_before_apple(tmp_path, changed):
+    options = make_export_options(TEAM, 'external'); options.update(changed)
+    with pytest.raises(ValueError, match='Export options'):
+        inspect_package(package_fixture(tmp_path), bundle_id=BUNDLE, version='0.1.0', build_number='1.1',
+                        team_id=TEAM, provisioning_profile=profile_fixture(), testing_audience='external',
+                        export_options=options)
+
+
+@pytest.mark.parametrize('configured,accepted', [('external', True), ('internal', False)])
+def test_cli_binds_external_request_to_the_actual_export_plist(tmp_path, configured, accepted):
+    package = package_fixture(tmp_path)
+    profile = tmp_path/'profile.plist'; profile.write_bytes(plistlib.dumps(profile_fixture()))
+    options = tmp_path/'export.plist'; options.write_bytes(plistlib.dumps(make_export_options(TEAM, configured)))
+    output = tmp_path/'provenance.json'
+    call = subprocess.run([sys.executable, str(Path(__file__).resolve().parents[1]/'tools/testflight_package.py'),
+        '--ipa', str(package), '--profile', str(profile), '--export-options', str(options),
+        '--testing-audience', 'external', '--bundle-id', BUNDLE, '--version', '0.1.0', '--build-number', '1.1',
+        '--team-id', TEAM, '--revision', 'a'*40, '--tree-sha', 'b'*40, '--workflow-run-id', '123',
+        '--workflow-attempt', '1', '--output', str(output)], capture_output=True, text=True)
+    assert (call.returncode == 0) is accepted
+    assert output.exists() is accepted
+    if accepted:
+        report = json.loads(output.read_text())
+        assert report['export_options_sha256'] == hashlib.sha256(options.read_bytes()).hexdigest()
+        assert report['internal_only_export_configured'] is False
+        assert report['source_revision'] == 'a'*40
+        assert report['delivery_status'] == 'NOT_UPLOADED'
+        assert report['external_review_status'] == 'NOT_SUBMITTED_BY_THIS_WORKFLOW'
 
 
 @pytest.mark.parametrize('changes', [

@@ -7,7 +7,7 @@ class OutputDeviceInventoryTest {
         rates: List<Int> = listOf(48000),
         channels: List<Int> = listOf(1, 2),
         encodings: List<String> = listOf("PCM 16-bit"),
-    ) = OutputDeviceAdvertisement("Built-in speaker", rates, channels, encodings)
+    ) = OutputDeviceAdvertisement("Built-in speaker", rates, channels, encodings, OutputDeviceRole.PHONE)
 
     @Test fun emptyInventoryReportsOnlyTheAbsenceOfAdvertisements() {
         val inventory = OutputDeviceInventory.from(emptyList())
@@ -15,6 +15,30 @@ class OutputDeviceInventoryTest {
         assertTrue(inventory.devices.isEmpty())
         assertFalse(inventory.truncated)
         assertEquals("No available output devices were reported.", inventory.summaryText)
+        assertEquals(OutputConnectionGuide.NONE, inventory.connectionGuide)
+    }
+
+    @Test fun connectionGuideNamesTheNextCheckWithoutClaimingSelection() {
+        fun device(kind: String, role: OutputDeviceRole) = OutputDeviceAdvertisement(
+            kind, listOf(48000), listOf(2), listOf("PCM 16-bit"), role,
+        )
+        assertEquals(OutputConnectionGuide.PHONE,
+            OutputDeviceInventory.from(listOf(speaker())).connectionGuide)
+        assertEquals(OutputConnectionGuide.WIRELESS,
+            OutputDeviceInventory.from(listOf(speaker(), device("Bluetooth media output", OutputDeviceRole.WIRELESS))).connectionGuide)
+        assertEquals(OutputConnectionGuide.TV_OR_HOME,
+            OutputDeviceInventory.from(listOf(speaker(), device("HDMI", OutputDeviceRole.TV_OR_HOME))).connectionGuide)
+        assertEquals(OutputConnectionGuide.WIRED_OR_USB,
+            OutputDeviceInventory.from(listOf(speaker(), device("USB audio device", OutputDeviceRole.WIRED_OR_USB))).connectionGuide)
+        assertEquals(OutputConnectionGuide.MIXED,
+            OutputDeviceInventory.from(listOf(speaker(), device("Other", OutputDeviceRole.UNKNOWN))).connectionGuide)
+
+        val guide = OutputDeviceInventory.from(
+            listOf(device("HDMI", OutputDeviceRole.TV_OR_HOME)),
+        ).connectionGuide
+        assertFalse(guide.title.contains("connected", ignoreCase = true))
+        assertFalse(guide.title.contains("selected", ignoreCase = true))
+        assertFalse(guide.nextStep.contains("verified", ignoreCase = true))
     }
 
     @Test fun emptyCapabilitiesKeepAndroidArbitrarySupportMeaning() {
@@ -39,6 +63,7 @@ class OutputDeviceInventoryTest {
         assertEquals(23, inventory.totalDeviceCount)
         assertEquals(16, inventory.devices.size)
         assertTrue(inventory.truncated)
+        assertEquals(OutputConnectionGuide.MIXED, inventory.connectionGuide)
         assertEquals("23 available output devices reported; showing first 16.", inventory.summaryText)
         assertFailsWith<IllegalArgumentException> {
             OutputDeviceInventory.from(listOf(speaker()), totalDeviceCount = 0)

@@ -488,6 +488,20 @@ def main():
             tap("Cancel", prefix + "_sound_help_close")
             page("Devices", prefix + "_devices_page")
             reveal("? Device help", prefix + "_device_help")
+            reveal("VIZIO network check. Check one TV address on home Wi-Fi", prefix + "_network_open")
+            wait_for("TV IP address", prefix + "_network_idle")
+            tap("TV IP address", prefix + "_network_address")
+            adb("shell", "input", "text", "8.8.8.8")
+            reveal("Check this address", prefix + "_network_rejected")
+            wait_for_all(("Enter the private IPv4 address", "TV identity, pairing and audio protection are not verified."), prefix + "_network_boundary")
+            screenshot(prefix + "_network_public_address_rejected")
+            reveal("Review test result", prefix + "_network_review")
+            root = wait_for_all(("Audio Bodyguard connection trial (v1)", "Outcome: ADDRESS_REJECTED", "No native check started"), prefix + "_network_review_private")
+            assert not any("8.8.8.8" in n.get("text", "") for n in root.iter("node")), "Entered address leaked into the reviewed result"
+            screenshot(prefix + "_network_review_private")
+            tap("Back", prefix + "_network_review_back")
+            wait_for("Ready to check the address you enter.", prefix + "_network_review_cleared")
+            tap("Back", prefix + "_network_back")
             reveal("Illustrated setup guides. Jump to a TV or home app", prefix + "_guides")
             reveal("Sony", prefix + "_google_tv")
             wait_for_all(("Google TV / Android TV — pair a phone remote", "Start guide"), prefix + "_google_intro")
@@ -638,10 +652,11 @@ def main():
             tap("Output inventory. Check this phone’s available audio outputs", name + "_inventory")
             wait_for("Not read yet. Tap Refresh outputs.", name + "_idle")
             tap("Refresh outputs", name + "_refresh")
-            wait_for("Advertised sample rates:", name + "_read")
+            wait_for("Connection not verified • No TV command sent", name + "_read")
             tap("Review output report", name + "_review")
             root = wait_for("Share output report", name + "_output_preview")
             original = text_copy(root, "Audio Bodyguard output inventory (v1)\n")
+            assert "Advertised sample rates:" in original
             assert has(root, "Add setup notes"), "Reviewed output has no Add setup notes action"
             tap("Add setup notes", name + "_add_notes")
             form = wait_for("Review setup report", name + "_form")
@@ -782,9 +797,10 @@ def main():
         assert button is not None, "Output inventory has no Review output report control"
         assert button.get("enabled") == "false", "Review must be disabled without a successful read"
         tap("Refresh outputs", "output_report_refresh")
-        actual = wait_for("Advertised sample rates:", "output_report_snapshot")
+        actual = wait_for("Connection not verified • No TV command sent", "output_report_snapshot")
         button = review_button(actual)
         assert button is not None and button.get("enabled") == "true"
+        assert not has(actual, "Advertised sample rates:"), "Advanced capabilities must stay behind Review"
         opening_before = frame_snapshot("output-report-open-frames_before")
         tap("Review output report", "output_report_review")
         root = wait_for_all(("Review output report", "Share output report",
@@ -1460,14 +1476,16 @@ def main():
     tap("Sound", "sound_page")
     tap("Output inventory. Check this phone’s available audio outputs", "output_inventory_open")
     inventory_idle = wait_for_all(("Not read yet. Tap Refresh outputs.",
-                                   "Selected playback route: Unknown", "Negotiated format: Unknown"),
+                                   "Check available outputs to get one clear next step.",
+                                   "Connection not verified • No TV command sent"),
                                   "output_inventory_idle")
     assert not has(inventory_idle, "Start sound check")
     tap("Refresh outputs", "output_inventory_refresh")
     inventory = wait_for_all(("available output device", "Snapshot only.",
-                              "Selected playback route: Unknown", "Advertised sample rates:"),
+                              "Connection not verified • No TV command sent"),
                              "output_inventory_read")
     assert not has(inventory, "Output inventory unavailable")
+    assert not has(inventory, "Advertised sample rates:"), "Advanced capabilities must stay behind Review"
     screenshot("output_inventory_read")
     permission = adb("shell", "dumpsys", "package", package).decode()
     assert "android.permission.RECORD_AUDIO: granted=false" in permission, "Inventory must not request microphone access"
@@ -1481,7 +1499,7 @@ def main():
     tap("Output inventory. Check this phone’s available audio outputs", "output_inventory_reopen")
     wait_for("Not read yet. Tap Refresh outputs.", "output_inventory_reopened_empty")
     tap("Back", "output_inventory_close_again")
-    print("OUTPUT_INVENTORY_OBSERVED: explicit metadata refresh, route/format unknown, microphone permission unrequested, background/resume clears snapshot, Back/reopen clears snapshot; no playback or physical qualification", flush=True)
+    print("OUTPUT_INVENTORY_OBSERVED: simple next-step guide keeps selection unverified and sends no command; advanced capabilities remain behind Review; explicit metadata refresh, microphone permission unrequested, background/resume clears snapshot, Back/reopen clears snapshot; no playback or physical qualification", flush=True)
     check_test_setup()
     check_setup_output_report()
     check_output_report()

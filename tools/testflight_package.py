@@ -14,6 +14,17 @@ ORIENTATIONS = {
 }
 
 
+def make_export_options(team_id, testing_audience='internal'):
+    if not isinstance(team_id, str) or not re.fullmatch(r'[A-Z0-9]{10}', team_id):
+        raise ValueError('Invalid Apple team identifier')
+    if testing_audience not in ('internal', 'external'):
+        raise ValueError('Select internal or external TestFlight eligibility')
+    return {'method': 'app-store-connect', 'destination': 'export',
+            'signingStyle': 'automatic', 'teamID': team_id,
+            'manageAppVersionAndBuildNumber': False,
+            'testFlightInternalTestingOnly': testing_audience == 'internal'}
+
+
 def validate_orientations(info):
     families = info.get('UIDeviceFamily')
     if not isinstance(families, list) or not families or not set(families) <= {1, 2}:
@@ -29,11 +40,19 @@ def validate_orientations(info):
             raise ValueError('iPad multitasking requires all four interface orientations')
 
 
-def inspect_package(path, *, bundle_id, version, build_number, team_id, provisioning_profile):
+def inspect_package(path, *, bundle_id, version, build_number, team_id, provisioning_profile,
+                    testing_audience='internal', export_options=None):
     if not re.fullmatch(r'[A-Z0-9]{10}', team_id):
         raise ValueError('Invalid Apple team identifier')
     if bundle_id.endswith('.demo'):
         raise ValueError('A demonstration bundle cannot be a beta package')
+    expected_export = make_export_options(team_id, testing_audience)
+    if export_options is not None:
+        if not isinstance(export_options, dict) or any(
+            type(export_options.get(key)) is not type(value) or export_options.get(key) != value
+            for key, value in expected_export.items()
+        ):
+            raise ValueError('Export options do not match the selected TestFlight eligibility')
     with zipfile.ZipFile(path) as package:
         names = package.namelist()
         apps = [name for name in names if re.fullmatch(r'Payload/[^/]+\.app/Info\.plist', name)]
@@ -79,21 +98,30 @@ def inspect_package(path, *, bundle_id, version, build_number, team_id, provisio
         'bundle_id': bundle_id, 'app_version': version, 'build_number': build_number,
         'submitted_ipa_sha256': digest.hexdigest(),
         'privacy_manifest_sha256': hashlib.sha256(privacy_bytes).hexdigest(),
+        'testflight_audience_requested': testing_audience,
+        'internal_only_export_configured': None if export_options is None else export_options['testFlightInternalTestingOnly'],
+        'external_review_status': 'NOT_SUBMITTED_BY_THIS_WORKFLOW',
+        'tester_assignment_status': 'NOT_CHECKED',
     }
 
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    for name in ['ipa', 'profile', 'bundle-id', 'version', 'build-number', 'team-id', 'revision', 'tree-sha', 'workflow-run-id', 'workflow-attempt', 'output']:
+    for name in ['ipa', 'profile', 'export-options', 'bundle-id', 'version', 'build-number', 'team-id', 'revision', 'tree-sha', 'workflow-run-id', 'workflow-attempt', 'output']:
         parser.add_argument('--'+name, required=True)
+    parser.add_argument('--testing-audience', choices=['internal', 'external'], default='internal')
     args = parser.parse_args()
     if not re.fullmatch(r'[0-9a-f]{40}', args.revision) or not re.fullmatch(r'[0-9a-f]{40}', args.tree_sha):
         raise SystemExit('An exact source commit and tree SHA are required')
+    export_bytes = Path(args.export_options).read_bytes()
     report = inspect_package(args.ipa, bundle_id=args.bundle_id, version=args.version,
                              build_number=args.build_number, team_id=args.team_id,
-                             provisioning_profile=plistlib.loads(Path(args.profile).read_bytes()))
+                             provisioning_profile=plistlib.loads(Path(args.profile).read_bytes()),
+                             testing_audience=args.testing_audience,
+                             export_options=plistlib.loads(export_bytes))
     report.update(source_revision=args.revision, source_tree_sha=args.tree_sha,
-                  workflow_run_id=args.workflow_run_id, workflow_attempt=args.workflow_attempt)
+                  workflow_run_id=args.workflow_run_id, workflow_attempt=args.workflow_attempt,
+                  export_options_sha256=hashlib.sha256(export_bytes).hexdigest())
     Path(args.output).write_text(json.dumps(report, indent=2, sort_keys=True)+'\n', encoding='utf-8')
 
 

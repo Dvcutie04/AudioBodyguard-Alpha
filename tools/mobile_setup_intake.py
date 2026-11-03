@@ -88,7 +88,8 @@ def _identity(platform, version, build):
     _require(platform in ("Android", "iPhone/iPad"), "invalid_platform")
     _require(isinstance(version, str) and 1 <= _units(version) <= 96 and
              version.strip() == version and not any(_unsafe(c) for c in version), "invalid_version")
-    _require(isinstance(build, str) and re.fullmatch(r"[0-9]{1,19}|Unavailable", build) is not None, "invalid_build")
+    pattern = r"[0-9]{1,19}(?:\.[0-9]{1,19}){0,2}|Unavailable" if platform == "iPhone/iPad" else r"[0-9]{1,19}|Unavailable"
+    _require(isinstance(build, str) and re.fullmatch(pattern, build) is not None, "invalid_build")
     return f"Audio Bodyguard\nPlatform: {platform}\nVersion: {version}\nBuild: {build}"
 
 

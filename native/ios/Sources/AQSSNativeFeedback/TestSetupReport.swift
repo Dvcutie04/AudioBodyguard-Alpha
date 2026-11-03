@@ -56,7 +56,7 @@ public struct TestSetupReportSnapshot {
         let build = String(lines[3].dropFirst("Build: ".count))
         guard (1...96).contains(version.utf16.count), !version.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty,
               try normalized(version) == version else { throw TestSetupReportError.invalidBuild }
-        guard build == "Unavailable" || ((1...19).contains(build.utf8.count) && build.utf8.allSatisfy { (48...57).contains($0) }) else {
+        guard IOSInstalledBuildLabel.isValid(build) else {
             throw TestSetupReportError.invalidBuild
         }
         guard (0...253_402_300_799_999).contains(reviewedAtMillis) else { throw TestSetupReportError.invalidClock }

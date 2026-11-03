@@ -48,6 +48,29 @@ final class CombinedSetupOutputReportTests: XCTestCase {
         XCTAssertThrowsError(try report(old)) { XCTAssertEqual($0 as? TestSetupReportError, .invalidOutput) }
     }
 
+    func testTestFlightBuildLabelsArePreservedInPlainOutputAndCombinedReports() throws {
+        for label in ["10.1", "10.2", "10.14.1", "0", "01.02.003"] {
+            let details = build.replacingOccurrences(of: "Build: 1", with: "Build: " + label)
+            let source = try output(details: details)
+            let plain = try report(nil, details: details)
+            let combined = try report(source, details: details)
+            XCTAssertTrue(source.text.contains("Build: " + label + "\n"))
+            XCTAssertTrue(plain.text.contains("Build: " + label + "\n"))
+            XCTAssertTrue(combined.text.hasSuffix(source.text))
+        }
+        let first = build.replacingOccurrences(of: "Build: 1", with: "Build: 10.1")
+        let retry = build.replacingOccurrences(of: "Build: 1", with: "Build: 10.2")
+        XCTAssertThrowsError(try report(output(details: first), details: retry))
+    }
+
+    func testMalformedBuildLabelsCannotEnterEitherReport() throws {
+        for label in ["1.", ".1", "1..2", "1.2.3.4", "1e2", "1.2b3", "1.2\n", "١.٢", "1." + String(repeating: "2", count: 20)] {
+            let details = build.replacingOccurrences(of: "Build: 1", with: "Build: " + label)
+            XCTAssertThrowsError(try output(details: details))
+            XCTAssertThrowsError(try report(nil, details: details))
+        }
+    }
+
     func testCanonicalUnicodeEqualityCannotHideDifferentBuildBytes() throws {
         let composed = build.replacingOccurrences(of: "0.38.0", with: "Caf\u{00e9}")
         let decomposed = build.replacingOccurrences(of: "0.38.0", with: "Cafe\u{0301}")

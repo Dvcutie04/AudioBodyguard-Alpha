@@ -43,6 +43,7 @@ struct OutputDetailsView: View {
     @State private var setupVisible = false
     @StateObject private var setupDraft = TestSetupDraft()
     @State private var status = "Ready to read output details"
+    @State private var explanationVisible = false
 
     var body: some View {
         VStack(spacing: 0) {
@@ -88,22 +89,43 @@ struct OutputDetailsView: View {
             } else {
                 ScrollView {
                     VStack(alignment: .leading, spacing: 16) {
-                        Text("Read the output port types iOS reports for this app’s audio session.")
+                        Text("Check where this phone may send audio.")
                             .fixedSize(horizontal: false, vertical: true)
-                        Text("This plays no sound and uses no microphone. It does not switch outputs or show every available device.")
+                        Text("No sound, microphone, or TV command is used.")
                             .font(.subheadline).fixedSize(horizontal: false, vertical: true)
                         Text(status).font(.headline).fixedSize(horizontal: false, vertical: true)
                             .accessibilityIdentifier("output-details-status")
                         if let result = snapshot {
-                            Text(result.summary).fixedSize(horizontal: false, vertical: true)
-                                .accessibilityIdentifier("output-details-summary")
+                            VStack(alignment: .leading, spacing: 10) {
+                                Label(result.connectionGuide.title, systemImage: "arrow.right.circle.fill")
+                                    .font(.headline).fixedSize(horizontal: false, vertical: true)
+                                    .accessibilityIdentifier("output-connection-guide-title")
+                                Text(result.connectionGuide.nextStep)
+                                    .fixedSize(horizontal: false, vertical: true)
+                                    .accessibilityIdentifier("output-connection-guide-next")
+                                Text("Connection not verified • No TV command sent")
+                                    .font(.subheadline.weight(.semibold)).foregroundColor(theme.warning)
+                                    .fixedSize(horizontal: false, vertical: true)
+                                    .accessibilityIdentifier("output-connection-boundary")
+                            }
+                            .padding(16).background(theme.raised)
+                            .clipShape(RoundedRectangle(cornerRadius: 16))
+                            .overlay(RoundedRectangle(cornerRadius: 16).stroke(theme.outline, lineWidth: 1))
+                            .accessibilityElement(children: .contain)
+                            .accessibilityIdentifier("output-connection-guide")
+                            QuestionDisclosure(title: "Why isn’t this verified?", theme: theme,
+                                isExpanded: $explanationVisible, identifier: "output-connection-explanation") {
+                                VStack(alignment: .leading, spacing: 10) {
+                                    Text("iPhone reports route types, not a checked TV identity or a physical playback result.")
+                                    Text(result.summary).font(.subheadline).fixedSize(horizontal: false, vertical: true)
+                                        .accessibilityIdentifier("output-details-summary")
+                                    Text("Actual playback route: Unknown\nNegotiated format: Unknown")
+                                        .font(.subheadline).fixedSize(horizontal: false, vertical: true)
+                                    Text("Details clear after an output-change notice, when you leave the app, or when you close this screen.")
+                                        .font(.subheadline).fixedSize(horizontal: false, vertical: true)
+                                }
+                            }
                         }
-                        Text("Actual playback route: Unknown\nNegotiated format: Unknown")
-                            .fixedSize(horizontal: false, vertical: true)
-                        Text("Details clear after an output-change notice, when you leave the app, or when you close this screen. Tap Refresh details for a new snapshot.")
-                            .font(.subheadline).fixedSize(horizontal: false, vertical: true)
-                        Text(OutputDetailsSnapshot.notice).foregroundColor(theme.warning)
-                            .fixedSize(horizontal: false, vertical: true)
                     }.frame(maxWidth: .infinity, alignment: .leading)
                 }.accessibilityIdentifier("output-details-scroll")
                 Button { reviewing = snapshot != nil } label: {
@@ -124,7 +146,10 @@ struct OutputDetailsView: View {
         setupDraft.clear(); setupDraft.outputDetails = report; setupVisible = true
     }
 
-    private func clear() { snapshot = nil; reviewing = false; status = "Ready to read output details" }
+    private func clear() {
+        snapshot = nil; reviewing = false; explanationVisible = false
+        status = "Ready to read output details"
+    }
     private func changed() {
         clear(); status = "Output details may have changed. Tap Refresh details."
     }
@@ -136,7 +161,7 @@ struct OutputDetailsView: View {
                 "Stop the sound or voice check before refreshing these details."
             return
         }
-        do { snapshot = try SessionOutputReader.capture(); status = "Details captured. Review the snapshot before sharing." }
+        do { snapshot = try SessionOutputReader.capture(); status = "Check complete. Follow the next step below." }
         catch { status = "Output details are unavailable. Check this phone’s date, then try Refresh details." }
     }
 }

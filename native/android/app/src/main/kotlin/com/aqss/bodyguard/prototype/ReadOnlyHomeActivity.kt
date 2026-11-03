@@ -449,6 +449,11 @@ class ReadOnlyHomeActivity : Activity() {
         label(column, "Connection not verified", 16f, skin.muted)
         action(column, if (deviceDetails) "? Hide device help" else "? Device help", expanded = deviceDetails) { deviceDetails = !deviceDetails; renderPage(true) }
         if (!deviceDetails) return
+        label(column, "Testing with friends", 20f, bold = true)
+        label(column, com.aqss.nativefeedback.TVTrialReport.BETA_SCOPE, 16f, skin.muted)
+        destination("VIZIO network check", "Check one TV address on home Wi-Fi") {
+            startActivity(Intent(this, TVNetworkCheckActivity::class.java).putExtra("dark", skin.dark))
+        }
         destination("TV photo setup", "Read a model label or settings photo") { openInputTool("photo") }
         destination("Illustrated setup guides", "Jump to a TV or home app") { openSetup() }
         action(column, "TV & smart-home guide") { tutorial.start("getting_started") }

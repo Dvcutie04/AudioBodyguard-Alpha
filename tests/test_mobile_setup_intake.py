@@ -126,6 +126,33 @@ def test_attachment_and_notes_clock_are_retained_separately_without_time_arithme
     assert "latency" not in summary["report"]
 
 
+@pytest.mark.parametrize("build", ["10.1", "10.2", "10.14.1", "0", "01.02.003"])
+@pytest.mark.parametrize("attachment", [None, "session"])
+def test_ios_testflight_build_labels_survive_intake_exactly(build, attachment):
+    raw, options = _report("iPhone/iPad", attachment)
+    raw = raw.replace(b"Build: 1\n", f"Build: {build}\n".encode())
+    options["expected_build"] = build
+    summary, inventory = prepare_intake(raw, **options)
+    assert summary["source_sha256"] == hashlib.sha256(raw).hexdigest()
+    assert summary["report"]["build"] == build
+    assert inventory["qualified"] is False
+
+
+@pytest.mark.parametrize("build", ["1.", ".1", "1..2", "1.2.3.4", "1e2", "1.2b3", "1.2\n", "١.٢", "1." + "2" * 20])
+def test_ios_malformed_or_oversized_build_labels_are_rejected(build):
+    raw, options = _report("iPhone/iPad")
+    options["expected_build"] = build
+    with pytest.raises(ValueError, match="invalid_build"):
+        prepare_intake(raw, **options)
+
+
+def test_android_build_code_does_not_accept_ios_dotted_labels():
+    raw, options = _report()
+    options["expected_build"] = "10.1"
+    with pytest.raises(ValueError, match="invalid_build"):
+        prepare_intake(raw, **options)
+
+
 @pytest.mark.parametrize("field,replacement", [
     ("expected_platform", "iPhone/iPad"), ("expected_version", "0.36-quiet-output-live-input"),
     ("expected_build", "39"), ("source_revision", "main"), ("source_revision", "A" * 40),

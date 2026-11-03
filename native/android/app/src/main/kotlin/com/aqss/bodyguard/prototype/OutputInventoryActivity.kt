@@ -20,6 +20,7 @@ import android.widget.TextView
 import android.widget.Toast
 import com.aqss.nativefeedback.OutputDeviceAdvertisement
 import com.aqss.nativefeedback.OutputDeviceInventory
+import com.aqss.nativefeedback.OutputDeviceRole
 import com.aqss.nativefeedback.OutputInventoryReportSnapshot
 import java.lang.ref.WeakReference
 
@@ -27,6 +28,7 @@ import java.lang.ref.WeakReference
 class OutputInventoryActivity : Activity() {
     private lateinit var skin: InterfaceTheme
     private lateinit var results: TextView
+    private lateinit var connectionGuide: TextView
     private lateinit var reviewButton: Button
     private var visible = false
     private var hasSnapshot = false
@@ -34,6 +36,7 @@ class OutputInventoryActivity : Activity() {
     private var reportDialog: AlertDialog? = null
     private var reportShareButton: Button? = null
     private var reportNotesButton: Button? = null
+    private var aboutDialog: AlertDialog? = null
     private var deviceCallback: AudioDeviceCallback? = null
     private var callbackManager: AudioManager? = null
 
@@ -62,6 +65,10 @@ class OutputInventoryActivity : Activity() {
             text = "Output inventory"; textSize = 24f; setTextColor(skin.text)
         }, LinearLayout.LayoutParams(0, -2, 1f))
         header.addView(Button(this).apply {
+            text = "?"; contentDescription = "What this check can tell you"
+            skin.style(this); setOnClickListener { showAbout() }
+        })
+        header.addView(Button(this).apply {
             text = "Back"; skin.style(this); setOnClickListener { finish() }
         })
         root.addView(header)
@@ -70,12 +77,11 @@ class OutputInventoryActivity : Activity() {
             text = value; textSize = size; setTextColor(skin.text)
             setPadding(0, skin.dp(10), 0, skin.dp(10)); column.addView(this)
         }
-        words("Check the audio outputs Android currently lists for this phone.")
-        words("${OutputInventoryReportSnapshot.phoneText(Build.MANUFACTURER)} ${OutputInventoryReportSnapshot.phoneText(Build.MODEL)}\nAndroid ${OutputInventoryReportSnapshot.phoneText(Build.VERSION.RELEASE)} · API ${Build.VERSION.SDK_INT}", 15f)
-        words("Selected playback route: Unknown\nNegotiated format: Unknown", 18f)
-        words("Available outputs can change. Listed capabilities do not identify an active route or prove a working connection.", 15f)
+        words("Find a TV or home-audio option without playing sound.")
+        words("No sound, microphone, or TV command is used.", 15f)
+        connectionGuide = words(GUIDE_IDLE, 18f).apply { tag = "output-connection-guide" }
         results = words(IDLE, 16f)
-        words("This screen plays no sound and uses no microphone. The live list clears when you leave. You can review a snapshot before sharing it.", 15f)
+        words("Tap ? for technical limits. Review keeps the detailed snapshot separate from this simple list.", 15f)
         root.addView(ScrollView(this).apply { addView(column) }, LinearLayout.LayoutParams(-1, 0, 1f))
         reviewButton = Button(this).apply {
             text = "Review output report"; skin.style(this); isEnabled = false
@@ -119,6 +125,7 @@ class OutputInventoryActivity : Activity() {
 
     override fun onDestroy() {
         visible = false
+        aboutDialog?.dismiss(); aboutDialog = null
         reportDialog?.dismiss()
         unregisterNotices()
         super.onDestroy()
@@ -157,6 +164,7 @@ class OutputInventoryActivity : Activity() {
 
     private fun clearSnapshot(message: String) {
         hasSnapshot = false; reportSnapshot = null; results.text = message
+        connectionGuide.text = GUIDE_IDLE
         reviewButton.isEnabled = false
     }
 
@@ -178,9 +186,11 @@ class OutputInventoryActivity : Activity() {
                             override fun get(index: Int): String = encodingName(values[index])
                         }
                     },
+                    role = outputRole(device.type),
                 )
             }
             val inventory = OutputDeviceInventory.from(rows, devices.size)
+            connectionGuide.text = "${inventory.connectionGuide.title}\n${inventory.connectionGuide.nextStep}\n\nConnection not verified • No TV command sent"
             reportSnapshot = try {
                 OutputInventoryReportSnapshot.capture(installedAppBuildDetails(this),
                     Build.MANUFACTURER, Build.MODEL, Build.VERSION.RELEASE, Build.VERSION.SDK_INT,
@@ -190,17 +200,28 @@ class OutputInventoryActivity : Activity() {
                 append(inventory.summaryText)
                 inventory.devices.forEachIndexed { index, device ->
                     append("\n\n${index + 1}. ${device.kind}")
-                    append("\nAdvertised sample rates: ${device.sampleRatesText}")
-                    append("\nAdvertised channel counts: ${device.channelCountsText}")
-                    append("\nAdvertised encodings: ${device.encodingsText}")
                 }
                 if (deviceCallback == null) append("\n\nAutomatic change notices unavailable.")
                 if (reportSnapshot == null) append("\n\nReport unavailable for this snapshot.")
-                append("\n\nSnapshot only. Tap Refresh outputs to read again.")
+                append("\n\nDetailed capabilities are available in Review output report.")
+                append("\nSnapshot only. Tap Refresh outputs to read again.")
             }.also { hasSnapshot = true; reviewButton.isEnabled = reportSnapshot != null }
         } catch (_: RuntimeException) {
+            connectionGuide.text = "Connection could not be checked.\nNo TV command was sent."
             "Output inventory unavailable. Tap Refresh outputs to try again.\nNo output route has been verified."
         }
+    }
+
+    private fun showAbout() {
+        if (!visible || !hasWindowFocus() || isFinishing || isDestroyed || aboutDialog?.isShowing == true) return
+        aboutDialog = AlertDialog.Builder(this)
+            .setTitle("What this check can tell you")
+            .setMessage("Android lists available output types here, not the selected playback route or a checked TV identity. Confirm the selected name in Android’s media output control and on the TV. This check sends no command.")
+            .setPositiveButton("Done", null)
+            .create().also { dialog ->
+                dialog.setOnDismissListener { if (aboutDialog === dialog) aboutDialog = null }
+                dialog.show()
+            }
     }
 
     /** A historical copy remains immutable through notices and native sharing.
@@ -282,21 +303,55 @@ class OutputInventoryActivity : Activity() {
 
     private fun outputKind(type: Int): String = when (type) {
         AudioDeviceInfo.TYPE_BUILTIN_SPEAKER -> "Built-in speaker"
+        AudioDeviceInfo.TYPE_BUILTIN_SPEAKER_SAFE -> "Built-in safety speaker"
         AudioDeviceInfo.TYPE_BUILTIN_EARPIECE -> "Earpiece"
         AudioDeviceInfo.TYPE_WIRED_HEADSET -> "Wired headset"
         AudioDeviceInfo.TYPE_WIRED_HEADPHONES -> "Wired headphones"
         AudioDeviceInfo.TYPE_BLUETOOTH_A2DP -> "Bluetooth media output"
         AudioDeviceInfo.TYPE_BLUETOOTH_SCO -> "Bluetooth call output"
+        AudioDeviceInfo.TYPE_BLE_HEADSET -> "Bluetooth LE headset"
+        AudioDeviceInfo.TYPE_BLE_SPEAKER -> "Bluetooth LE speaker"
+        AudioDeviceInfo.TYPE_BLE_BROADCAST -> "Bluetooth LE broadcast output"
+        AudioDeviceInfo.TYPE_HEARING_AID -> "Hearing aid"
         AudioDeviceInfo.TYPE_HDMI -> "HDMI"
         AudioDeviceInfo.TYPE_HDMI_ARC -> "HDMI ARC"
+        AudioDeviceInfo.TYPE_HDMI_EARC -> "HDMI eARC"
         AudioDeviceInfo.TYPE_USB_DEVICE -> "USB audio device"
         AudioDeviceInfo.TYPE_USB_ACCESSORY -> "USB accessory"
         AudioDeviceInfo.TYPE_USB_HEADSET -> "USB headset"
         AudioDeviceInfo.TYPE_LINE_ANALOG -> "Analog line output"
         AudioDeviceInfo.TYPE_LINE_DIGITAL -> "Digital line output"
+        AudioDeviceInfo.TYPE_AUX_LINE -> "Auxiliary line output"
         AudioDeviceInfo.TYPE_DOCK -> "Dock output"
+        AudioDeviceInfo.TYPE_DOCK_ANALOG -> "Analog dock output"
         AudioDeviceInfo.TYPE_UNKNOWN -> "Unknown output type"
         else -> "Other output type ($type)"
+    }
+
+    private fun outputRole(type: Int): OutputDeviceRole = when (type) {
+        AudioDeviceInfo.TYPE_BUILTIN_SPEAKER,
+        AudioDeviceInfo.TYPE_BUILTIN_SPEAKER_SAFE,
+        AudioDeviceInfo.TYPE_BUILTIN_EARPIECE -> OutputDeviceRole.PHONE
+        AudioDeviceInfo.TYPE_WIRED_HEADSET,
+        AudioDeviceInfo.TYPE_WIRED_HEADPHONES,
+        AudioDeviceInfo.TYPE_USB_DEVICE,
+        AudioDeviceInfo.TYPE_USB_ACCESSORY,
+        AudioDeviceInfo.TYPE_USB_HEADSET,
+        AudioDeviceInfo.TYPE_LINE_ANALOG,
+        AudioDeviceInfo.TYPE_LINE_DIGITAL,
+        AudioDeviceInfo.TYPE_AUX_LINE,
+        AudioDeviceInfo.TYPE_DOCK,
+        AudioDeviceInfo.TYPE_DOCK_ANALOG -> OutputDeviceRole.WIRED_OR_USB
+        AudioDeviceInfo.TYPE_BLUETOOTH_A2DP,
+        AudioDeviceInfo.TYPE_BLUETOOTH_SCO,
+        AudioDeviceInfo.TYPE_BLE_HEADSET,
+        AudioDeviceInfo.TYPE_BLE_SPEAKER,
+        AudioDeviceInfo.TYPE_BLE_BROADCAST,
+        AudioDeviceInfo.TYPE_HEARING_AID -> OutputDeviceRole.WIRELESS
+        AudioDeviceInfo.TYPE_HDMI,
+        AudioDeviceInfo.TYPE_HDMI_ARC,
+        AudioDeviceInfo.TYPE_HDMI_EARC -> OutputDeviceRole.TV_OR_HOME
+        else -> OutputDeviceRole.UNKNOWN
     }
 
     private fun encodingName(value: Int): String = when (value) {
@@ -308,5 +363,6 @@ class OutputInventoryActivity : Activity() {
 
     companion object {
         private const val IDLE = "Not read yet. Tap Refresh outputs."
+        private const val GUIDE_IDLE = "Check available outputs to get one clear next step.\n\nConnection not verified • No TV command sent"
     }
 }
