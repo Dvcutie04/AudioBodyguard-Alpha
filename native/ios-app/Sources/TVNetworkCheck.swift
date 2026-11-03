@@ -57,22 +57,26 @@ final class TVNetworkCheck: ObservableObject {
         nextPort = false; pendingMessage = "The check ended without a verified result."
         message = "Checking the address you entered…"
         current.stateUpdateHandler = { [weak self, weak current] state in
-            guard let self = self, let current = current, self.connection === current else { return }
-            switch state {
-            case .ready:
-                guard !self.stopping else { return }
-                self.closeAttempt("A network service answered. TV pairing is still needed.", fallback: false)
-            case .failed, .waiting:
-                guard !self.stopping else { return }
-                self.closeAttempt("Could not reach the service. Check home Wi-Fi and TV power, then try again.", fallback: true)
-            case .cancelled:
-                self.timeout?.cancel(); self.timeout = nil
-                current.stateUpdateHandler = nil
-                self.connection = nil
-                if self.nextPort && !self.stopped && self.portIndex + 1 < AQSSLocalTVTarget.ports.count {
-                    self.portIndex += 1; self.stopping = false; self.attempt()
-                } else { self.finish(self.pendingMessage) }
-            default: break
+            // Network's callback is Sendable even when its queue is .main.
+            // Enter the main actor explicitly before touching the run owner.
+            DispatchQueue.main.async { [weak self, weak current] in
+                guard let self = self, let current = current, self.connection === current else { return }
+                switch state {
+                case .ready:
+                    guard !self.stopping else { return }
+                    self.closeAttempt("A network service answered. TV pairing is still needed.", fallback: false)
+                case .failed, .waiting:
+                    guard !self.stopping else { return }
+                    self.closeAttempt("Could not reach the service. Check home Wi-Fi and TV power, then try again.", fallback: true)
+                case .cancelled:
+                    self.timeout?.cancel(); self.timeout = nil
+                    current.stateUpdateHandler = nil
+                    self.connection = nil
+                    if self.nextPort && !self.stopped && self.portIndex + 1 < AQSSLocalTVTarget.ports.count {
+                        self.portIndex += 1; self.stopping = false; self.attempt()
+                    } else { self.finish(self.pendingMessage) }
+                default: break
+                }
             }
         }
         let deadline = DispatchWorkItem { [weak self, weak current] in

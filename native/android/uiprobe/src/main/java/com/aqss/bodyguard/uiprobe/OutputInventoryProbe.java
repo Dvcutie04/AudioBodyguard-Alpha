@@ -34,9 +34,17 @@ public final class OutputInventoryProbe extends CameraCaptureProbe {
             phase = "open technical help";
             waitForInventoryFocus();
             runOnMainSync(() -> require(click(activity.getWindow().getDecorView(), "?"), "Technical help control missing"));
-            waitForText("Android lists available output types here, not the selected playback route");
-            require(((AlertDialog) field("aboutDialog").get(activity)).isShowing(), "Technical help must open a native dialog");
-            runOnMainSync(() -> require(click(activity.getWindow().getDecorView(), "Done"), "Technical help Done control missing"));
+            waitForIdleSync();
+            AlertDialog about = (AlertDialog) field("aboutDialog").get(activity);
+            require(about != null && about.isShowing() && about.getWindow() != null,
+                    "Technical help must open a native dialog");
+            runOnMainSync(() -> {
+                TextView message = about.findViewById(android.R.id.message);
+                require(message != null && message.getText().toString().contains(
+                        "Android lists available output types here, not the selected playback route"),
+                        "Native technical help lost its output-scope explanation");
+                require(click(about.getWindow().getDecorView(), "Done"), "Technical help Done control missing");
+            });
             waitForIdleSync(); waitForInventoryFocus();
             refresh();
             String original = details();
