@@ -38,9 +38,21 @@ Latency: at most two four-second connection attempts on a worker/async native
 queue, never on the UI thread. Cancellation completion can still be delayed by
 the OS; pending cleanup is not treated as returned. Battery: no warm connection,
 periodic timer or automatic retry after a run. Storage: no persistence, host logs,
-analytics, shared report or new identifier; the input and visible result clear
-on exit/background. The Android INTERNET permission broadens manifest network
-capability and must remain part of dependency/privacy review before distribution.
+analytics, shared report or new identifier in this check; the input and visible
+result clear on exit/background. INTERNET and ACCESS_NETWORK_STATE are now
+explicit in the app's source manifest. The previous PR #94 APK already contained
+both permissions after dependency merging: artifact `13193667773`, ZIP SHA-256
+`61a0483bf7759a06af30e37e02b7c6fcd5a8c2201f2fcc84724834aa01c2515c`.
+This is not the first network capability in the installed Android package.
+
+The existing bundled Google text-recognition dependency is separate from this
+TCP probe. [Google's ML Kit privacy statement](https://developers.google.com/ml-kit/terms#privacy)
+describes on-device image/text processing and possible service contact and usage
+metrics; its [Android disclosure guide](https://developers.google.com/ml-kit/android-data-disclosure)
+describes technical data and installation identifiers. These are vendor
+statements, not a traffic measurement of our pinned SDK. Do not describe the
+whole app as having zero outbound traffic from the probe's no-payload behavior.
+SDK disclosures and actual packaged permissions remain part of beta review.
 
 ## Interaction
 
@@ -49,6 +61,8 @@ address, then choose Check this address. Stop and Back remain explicit. Brief
 result wording and the unverified identity/pairing/protection boundary remain
 visible; details and an app-settings shortcut live in Help. No permission or
 network request occurs simply by opening the screen or editing the address.
+The Android screen uses the selected theme and insets for system bars, cutouts
+and the keyboard; the single Check action uses the existing primary-button style.
 
 Only canonical RFC1918 IPv4 literals are admitted. This intentionally narrow
 first version also rejects host octets 0 and 255; it is not a subnet detector

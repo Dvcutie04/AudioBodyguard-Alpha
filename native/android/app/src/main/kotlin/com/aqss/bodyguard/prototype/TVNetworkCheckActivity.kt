@@ -6,12 +6,14 @@ import android.content.Intent
 import android.net.ConnectivityManager
 import android.net.NetworkCapabilities
 import android.net.Uri
+import android.os.Build
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
 import android.provider.Settings
 import android.text.InputType
 import android.view.Gravity
+import android.view.WindowInsets
 import android.view.WindowManager
 import android.view.inputmethod.InputMethodManager
 import android.widget.Button
@@ -44,9 +46,11 @@ class TVNetworkCheckActivity : Activity() {
     private var help: AlertDialog? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
+        val dark = intent.getBooleanExtra("dark", true)
+        setTheme(if (dark) R.style.AQSSMidnightTheme else R.style.AQSSReadOnlyTheme)
         super.onCreate(savedInstanceState)
         window.setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE)
-        skin = InterfaceTheme(this, intent.getBooleanExtra("dark", true))
+        skin = InterfaceTheme(this, dark)
         val root = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL; setPadding(skin.dp(20), skin.dp(20), skin.dp(20), skin.dp(20))
             setBackgroundColor(skin.background)
@@ -66,14 +70,25 @@ class TVNetworkCheckActivity : Activity() {
         content.addView(words("Check contacts only this address on Wi-Fi. It sends no TV command.", 15f))
         result = words(IDLE).apply { tag = "tv-network-result" }; content.addView(result)
         content.addView(words(LocalTVTarget.BOUNDARY, 15f))
-        start = button("Check this address") {
+        start = button("Check this address", primary = true) {
             getSystemService(InputMethodManager::class.java)?.hideSoftInputFromWindow(address.windowToken, 0)
             if (token == null) begin() else stop()
         }
         content.addView(start)
         content.addView(button("? Help with this check") { showHelp() })
         root.addView(ScrollView(this).apply { addView(content) }, LinearLayout.LayoutParams(-1, 0, 1f))
+        if (Build.VERSION.SDK_INT >= 30) {
+            window.setDecorFitsSystemWindows(false)
+            root.setOnApplyWindowInsetsListener { view, insets ->
+                val bars = insets.getInsets(WindowInsets.Type.systemBars() or WindowInsets.Type.displayCutout())
+                val keyboard = insets.getInsets(WindowInsets.Type.ime())
+                view.setPadding(skin.dp(20) + bars.left, skin.dp(12) + bars.top,
+                    skin.dp(20) + bars.right, skin.dp(12) + maxOf(bars.bottom, keyboard.bottom))
+                insets
+            }
+        }
         setContentView(root)
+        root.requestApplyInsets()
     }
 
     override fun onResume() { super.onResume(); visible = true }
@@ -136,8 +151,8 @@ class TVNetworkCheckActivity : Activity() {
         text = value; textSize = size; setTextColor(skin.text)
         setPadding(0, skin.dp(10), 0, skin.dp(10))
     }
-    private fun button(title: String, action: () -> Unit) = Button(this).apply {
-        text = title; skin.style(this); setOnClickListener { action() }
+    private fun button(title: String, primary: Boolean = false, action: () -> Unit) = Button(this).apply {
+        text = title; skin.style(this, primary); setOnClickListener { action() }
     }
     private fun showHelp() {
         help = AlertDialog.Builder(this).setTitle("Help with this check")
