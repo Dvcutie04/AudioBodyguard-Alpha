@@ -9,7 +9,7 @@ final class AQSSReadOnlyUITests: XCTestCase {
     func testSimplifiedSetupAndContextualJumps() { checkSimplifiedSetup(large: false) }
     func testTVNetworkRejectsPublicAddressWithoutContact() {
         let app = launch()
-        jump("Devices", app); tap("? Device help", app); tap("VIZIO network check", app)
+        tab("devices", app); tap("? Device help", app); tap("VIZIO network check", app)
         let field = app.textFields["tv-network-address"]
         XCTAssertTrue(field.waitForExistence(timeout: 5))
         XCTAssertFalse(app.buttons["tv-network-start-stop"].isEnabled)
@@ -24,7 +24,7 @@ final class AQSSReadOnlyUITests: XCTestCase {
     }
     func testTVNetworkVisitClearsDraftOnBackgroundAndBack() {
         let app = launch()
-        jump("Devices", app); tap("? Device help", app); tap("VIZIO network check", app)
+        tab("devices", app); tap("? Device help", app); tap("VIZIO network check", app)
         let field = app.textFields["tv-network-address"]
         XCTAssertTrue(field.waitForExistence(timeout: 5))
         field.tap(); field.typeText("192.168.1.105")
@@ -39,7 +39,7 @@ final class AQSSReadOnlyUITests: XCTestCase {
 
     func testTVNetworkRejectedResultCanBeReviewedPrivately() {
         let app = launch()
-        jump("Devices", app); tap("? Device help", app); tap("VIZIO network check", app)
+        tab("devices", app); tap("? Device help", app); tap("VIZIO network check", app)
         let field = app.textFields["tv-network-address"]
         XCTAssertTrue(field.waitForExistence(timeout: 5))
         XCTAssertFalse(app.buttons["tv-network-review"].exists)
