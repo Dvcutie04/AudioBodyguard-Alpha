@@ -633,6 +633,8 @@ private struct ReadOnlyHomeView: View {
             Text("Connection not verified").font(.subheadline).foregroundColor(theme.muted)
             action(deviceDetails ? "? Hide device help" : "? Device help", icon: "questionmark.circle") { deviceDetails.toggle() }
             if deviceDetails {
+            Text("Testing with friends").font(.headline)
+            Text(TVTrialReport.betaScope).font(.subheadline).foregroundColor(theme.muted)
             destinationCard("VIZIO network check", subtitle: "Check one TV address on home Wi-Fi", icon: "wifi") { tvNetworkCheckVisible = true }
                 .accessibilityIdentifier("tv-network-open")
             destinationCard("TV photo setup", subtitle: "Read a model label or settings photo", icon: "camera") { photoCheckVisible = true }

@@ -495,6 +495,12 @@ def main():
             reveal("Check this address", prefix + "_network_rejected")
             wait_for_all(("Enter the private IPv4 address", "TV identity, pairing and audio protection are not verified."), prefix + "_network_boundary")
             screenshot(prefix + "_network_public_address_rejected")
+            reveal("Review test result", prefix + "_network_review")
+            root = wait_for_all(("Audio Bodyguard connection trial (v1)", "Outcome: ADDRESS_REJECTED", "No native check started"), prefix + "_network_review_private")
+            assert not any("8.8.8.8" in n.get("text", "") for n in root.iter("node")), "Entered address leaked into the reviewed result"
+            screenshot(prefix + "_network_review_private")
+            tap("Back", prefix + "_network_review_back")
+            wait_for("Ready to check the address you enter.", prefix + "_network_review_cleared")
             tap("Back", prefix + "_network_back")
             reveal("Illustrated setup guides. Jump to a TV or home app", prefix + "_guides")
             reveal("Sony", prefix + "_google_tv")

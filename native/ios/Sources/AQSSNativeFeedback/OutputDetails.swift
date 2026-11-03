@@ -1,5 +1,18 @@
 import Foundation
 
+/// Preserve the installed CFBundleVersion label, including TestFlight attempts.
+/// Bounded report metadata only; this does not validate an App Store submission.
+public enum IOSInstalledBuildLabel {
+    public static func isValid(_ value: String) -> Bool {
+        if value == "Unavailable" { return true }
+        guard value.utf8.count <= 59 else { return false }
+        let parts = value.split(separator: ".", omittingEmptySubsequences: false)
+        return (1...3).contains(parts.count) && parts.allSatisfy {
+            (1...19).contains($0.utf8.count) && $0.utf8.allSatisfy { (48...57).contains($0) }
+        }
+    }
+}
+
 /// Closed vocabulary: never a port name, address or persistent identifier.
 public enum IOSOutputKind: CaseIterable, Equatable {
     case speaker, receiver, headphones, bluetoothA2DP, bluetoothHFP, bluetoothLE
@@ -147,7 +160,7 @@ public struct OutputDetailsSnapshot: Equatable {
                   case .control, .format, .lineSeparator, .paragraphSeparator: return false
                   default: return true
                   }
-              }), build == "Unavailable" || ((1...19).contains(build.utf8.count) && build.utf8.allSatisfy({ (48...57).contains($0) }))
+              }), IOSInstalledBuildLabel.isValid(build)
         else { throw OutputDetailsError.invalidBuild }
     }
 }

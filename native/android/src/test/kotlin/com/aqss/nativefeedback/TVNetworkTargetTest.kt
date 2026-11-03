@@ -29,4 +29,29 @@ class TVNetworkTargetTest {
         assertEquals(4000, LocalTVTarget.TIMEOUT_MILLIS)
         assertEquals("TV identity, pairing and audio protection are not verified.", LocalTVTarget.BOUNDARY)
     }
+
+    @Test fun everyTrialOutcomeIsHistoricalPrivateAndNeverPairingEvidence() {
+        val build = "Audio Bodyguard\nPlatform: Android\nVersion: 0.45-friend-trial\nBuild: 48"
+        for (outcome in TVTrialOutcome.entries) {
+            val report = TVTrialReport.capture(build, outcome, 0)
+            assertTrue(report.text.contains("Outcome: ${outcome.name}"))
+            assertTrue(report.text.contains("1970-01-01T00:00:00.000Z"))
+            assertTrue(report.text.contains("TV identity: Not verified\nTV pairing: Not verified\nAudio protection: Not verified"))
+            assertTrue(report.text.contains(build))
+            assertFalse(report.text.contains("192.168.1.105"))
+            assertTrue(report.text.toByteArray(Charsets.UTF_8).size < 4096)
+        }
+    }
+
+    @Test fun trialReviewRetainsOneImmutableOutcomeAndExactBuild() {
+        val build = "Audio Bodyguard\nPlatform: Android\nVersion: 0.45-friend-trial\nBuild: 48"
+        val first = TVTrialReport.capture(build, TVTrialOutcome.SERVICE_ANSWERED_UNVERIFIED, 0)
+        TVTrialReport.capture(build, TVTrialOutcome.NO_SERVICE_RESPONSE, 1000)
+        assertTrue(first.text.contains("Outcome: SERVICE_ANSWERED_UNVERIFIED"))
+        assertFalse(first.text.contains("NO_SERVICE_RESPONSE"))
+        assertFailsWith<IllegalArgumentException> { TVTrialReport.capture(build + "\nTV IP: secret", TVTrialOutcome.CHECK_STOPPED, 0) }
+        assertFailsWith<IllegalArgumentException> { TVTrialReport.capture(build, TVTrialOutcome.CHECK_STOPPED, -1) }
+        assertFailsWith<IllegalArgumentException> { TVTrialReport.capture(build, TVTrialOutcome.CHECK_STOPPED, 253_402_300_800_000) }
+        assertFailsWith<IllegalArgumentException> { TVTrialReport.capture(build.replace("Build: 48", "Build: 10.1"), TVTrialOutcome.CHECK_STOPPED, 0) }
+    }
 }

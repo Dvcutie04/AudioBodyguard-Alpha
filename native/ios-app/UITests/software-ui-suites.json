@@ -35,6 +35,7 @@
     "tools": [
       "AQSSReadOnlyUITests/testTVNetworkRejectsPublicAddressWithoutContact",
       "AQSSReadOnlyUITests/testTVNetworkVisitClearsDraftOnBackgroundAndBack",
+      "AQSSReadOnlyUITests/testTVNetworkRejectedResultCanBeReviewedPrivately",
       "AQSSReadOnlyUITests/testTestSetupShareStartsWhenReviewAppears",
       "AQSSReadOnlyUITests/testTestSetupWorksheetCancelSharePreservesPreview",
       "AQSSReadOnlyUITests/testTestSetupWorksheetCopySharesExactReviewedText",

@@ -36,6 +36,28 @@ final class AQSSReadOnlyUITests: XCTestCase {
         XCTAssertEqual(app.textFields["tv-network-address"].value as? String, "TV IP address")
         app.buttons["tv-network-back"].tap()
     }
+
+    func testTVNetworkRejectedResultCanBeReviewedPrivately() {
+        let app = launch()
+        jump("Devices", app); tap("? Device help", app); tap("VIZIO network check", app)
+        let field = app.textFields["tv-network-address"]
+        XCTAssertTrue(field.waitForExistence(timeout: 5))
+        XCTAssertFalse(app.buttons["tv-network-review"].exists)
+        field.tap(); field.typeText("8.8.8.8")
+        tap("Check this address", app, scroll: app.scrollViews["tv-network-scroll"])
+        tap("Review test result", app, scroll: app.scrollViews["tv-network-scroll"])
+        let preview = app.staticTexts["tv-network-report-preview"]
+        XCTAssertTrue(preview.waitForExistence(timeout: 5))
+        XCTAssertTrue(preview.label.contains("Outcome: ADDRESS_REJECTED"))
+        XCTAssertTrue(preview.label.contains("No native check started"))
+        XCTAssertFalse(preview.label.contains("8.8.8.8"))
+        XCTAssertTrue(app.buttons["tv-network-report-share"].isEnabled)
+        app.buttons["tv-network-report-back"].tap()
+        XCTAssertEqual(field.value as? String, "TV IP address")
+        XCTAssertFalse(app.buttons["tv-network-review"].exists)
+        XCTAssertEqual(app.staticTexts["tv-network-result"].label, "Ready to check the address you enter.")
+        app.buttons["tv-network-back"].tap()
+    }
     func testSimplifiedSetupWithLargestTextAndReducedMotion() { checkSimplifiedSetup(large: true) }
     func testLargeTextSetupHelpScrollsWithoutOpeningAShortcut() {
         let app = XCUIApplication()

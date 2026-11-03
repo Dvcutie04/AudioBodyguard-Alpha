@@ -6,6 +6,16 @@ Checkpoint: November 2, 2026. Continue from the restored a-Shell baseline and th
 
 ## Current checkpoint
 
+Friends' beta continuation: the owner authorized completing software work
+without their TV, so friends can try their own Wi-Fi/TV setups. The
+[friend-beta preparation](friends-beta-readiness-2026-11-02.md) adds explicitly
+reviewed connection results on both phones, repairs dotted TestFlight build
+labels in iPhone reports/intake, and prepares an external-eligibility export
+option. Android source is 0.45/build 48; iPhone source is 0.45.0/build 1.1. Final
+checks and installer/release identities belong to the exact published revision.
+No invitations, account changes, compliance answers or Apple review submissions
+are performed. Real TV pairing/control and N2b–N5 remain open.
+
 November 2 beta critical path: the owner clarified that the beta must eventually
 communicate with a TV and phone. PR #93 implements the simplified device-matched
 setup experience. Its source `9718ad22eef419738cf57c2f4fbf12d72c60dd7f` was
