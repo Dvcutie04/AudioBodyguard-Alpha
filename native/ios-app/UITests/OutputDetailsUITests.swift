@@ -68,21 +68,10 @@ final class OutputDetailsUITests: XCTestCase {
         let attachment = XCTAttachment(string: text); attachment.name = "Output details reviewed text"; attachment.lifetime = .keepAlways; add(attachment)
         shot("Output details immutable review", app)
         let button = app.buttons["output-details-share"]; XCTAssertTrue(button.isHittable); button.tap()
-        let nativeCopy = app.cells["Copy"].firstMatch; XCTAssertTrue(nativeCopy.waitForExistence(timeout: 8))
+        let nativeCopy = try requireReviewedNativeCopy(app)
         shot("Output details native share", app)
         if copy { nativeCopy.tap() }
-        else if UIDevice.current.userInterfaceIdiom == .pad {
-            let heading = app.staticTexts["output-details-heading"]
-            let point = heading.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5))
-            let popover = app.popovers.firstMatch
-            guard heading.exists, popover.exists, app.frame.contains(point.screenPoint), !popover.frame.contains(point.screenPoint) else {
-                XCTFail("No observed heading point outside the share popover"); throw NSError(domain: "AQSSOutputDetails", code: 2)
-            }
-            point.tap()
-        } else {
-            let close = app.navigationBars["UIActivityContentView"].buttons["Close"].firstMatch
-            XCTAssertTrue(close.waitForExistence(timeout: 5)); close.tap()
-        }
+        else { try cancelReviewedNativeShare(app) }
         let returned = XCTNSPredicateExpectation(predicate: NSPredicate(format: "enabled == true AND hittable == true"), object: button)
         XCTAssertEqual(XCTWaiter.wait(for: [returned], timeout: 8), .completed)
         XCTAssertEqual(app.staticTexts["output-details-preview"].label, text); XCTAssertFalse(nativeCopy.exists)
@@ -127,17 +116,28 @@ final class OutputDetailsUITests: XCTestCase {
         return source
     }
     private func reach(_ target: XCUIElement, in scroll: XCUIElement, app: XCUIApplication) {
-        for _ in 0..<10 {
-            let viewport = scroll.frame.intersection(app.frame).insetBy(dx: 0, dy: 15)
-            if target.exists {
-                let frame = target.frame
-                if target.isHittable && viewport.contains(CGPoint(x: frame.midX, y: frame.midY)) { return }
-                if frame.height > 0 && frame.midY < viewport.midY { scroll.swipeDown(velocity: .slow); continue }
+        for _ in 0..<20 {
+            let viewport = scroll.frame.intersection(app.frame).insetBy(dx: 15, dy: 15)
+            guard viewport.width > 0, viewport.height > 40 else {
+                XCTFail("No visible scroll viewport for \(target.identifier)"); return
             }
-            scroll.swipeUp(velocity: .slow)
+            let frame = target.exists ? target.frame : .zero
+            if target.exists && target.isHittable && viewport.contains(CGPoint(x: frame.midX, y: frame.midY)) { return }
+            // Full-height swipes overshoot fields in the short iPad sheet and
+            // can oscillate forever. Drag only a bounded part of its viewport.
+            let downward = frame.height > 0 && frame.midY < viewport.midY
+            let distance = min(viewport.height * 0.25, 100)
+            let startY = viewport.midY + (downward ? -distance / 2 : distance / 2)
+            let endY = viewport.midY + (downward ? distance / 2 : -distance / 2)
+            let origin = app.coordinate(withNormalizedOffset: .zero)
+            let start = origin.withOffset(CGVector(dx: viewport.midX - app.frame.minX, dy: startY - app.frame.minY))
+            let end = origin.withOffset(CGVector(dx: viewport.midX - app.frame.minX, dy: endY - app.frame.minY))
+            start.press(forDuration: 0.05, thenDragTo: end)
         }
-        XCTAssertTrue(target.isHittable)
+        shot("Scroll target unreachable: \(target.identifier)", app)
+        XCTFail("Could not reach \(target.identifier) inside its scroll viewport: \(app.debugDescription)")
     }
+
     private func fillCombined(_ app: XCUIApplication) {
         let scroll = app.scrollViews["test-setup-form"]
         for (key, value) in [("playback_phone", "Android test phone"), ("intended_output", "Phone speaker"), ("constraints", "No calibration")] {
@@ -157,20 +157,9 @@ final class OutputDetailsUITests: XCTestCase {
         }
         shot("Combined setup preserves original capture and optional notes", app)
         let button = app.buttons["test-setup-share"]; XCTAssertTrue(button.isHittable); button.tap()
-        let nativeCopy = app.cells["Copy"].firstMatch; XCTAssertTrue(nativeCopy.waitForExistence(timeout: 8))
+        let nativeCopy = try requireReviewedNativeCopy(app)
         if copy { nativeCopy.tap() }
-        else if UIDevice.current.userInterfaceIdiom == .pad {
-            let heading = app.staticTexts["test-setup-heading"]
-            let point = heading.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5))
-            let popover = app.popovers.firstMatch
-            guard heading.exists, popover.exists, app.frame.contains(point.screenPoint), !popover.frame.contains(point.screenPoint) else {
-                XCTFail("No observed heading point outside the combined share popover"); throw NSError(domain: "AQSSOutputDetails", code: 4)
-            }
-            point.tap()
-        } else {
-            let close = app.navigationBars["UIActivityContentView"].buttons["Close"].firstMatch
-            XCTAssertTrue(close.waitForExistence(timeout: 5)); close.tap()
-        }
+        else { try cancelReviewedNativeShare(app) }
         let returned = XCTNSPredicateExpectation(predicate: NSPredicate(format: "enabled == true AND hittable == true"), object: button)
         XCTAssertEqual(XCTWaiter.wait(for: [returned], timeout: 8), .completed); XCTAssertEqual(preview.label, text)
         app.buttons["test-setup-back"].tap(); app.buttons["test-setup-back"].tap()
@@ -215,3 +204,4 @@ final class OutputDetailsUITests: XCTestCase {
         XCTAssertEqual(app.alerts.count, 0)
     }
 }
+

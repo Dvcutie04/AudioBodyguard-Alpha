@@ -63,3 +63,33 @@ verify this repair. All signing, Apple validation/upload and cleanup gates stay
 required. External review, tester assignment and installation remain separate.
 This trial does not qualify TV identity, pairing/control or protected audio;
 N2b–N5 remain open.
+
+## Follow-up verification repair (November 4)
+
+Worksheet run `41746484592` passed the iPhone native Copy UI case, but the
+independent host comparison stopped before reading the clipboard: Xcode 26.3
+requires `--legacy` when exporting the attachment object. All three reviewed
+clipboard checkers now explicitly select that export mode. They still compare
+the actual Simulator clipboard bytes to the actual reviewed XCTest attachment,
+retain unique-attachment checks, and reject mismatches or failed exports.
+
+Five local standard-library regression tests (13 scenarios) cover exact payloads,
+changed clipboard bytes, ambiguous reviewed attachments, failed export, and a
+changed included original snapshot. The original code failed the export-flag
+regressions before the fix. These mock host commands and do not constitute a
+native app or clipboard pass. Full Python CI and fresh iPhone/iPad native
+verification remain required on the published commit.
+
+The iPad Cancel failure also assumed the review heading was outside the native
+popover; the retained screenshot shows it covered. Cancel now chooses an
+observed app point outside the popover and still requires the same reviewed
+snapshot and Share control to return. The combined-report form test alternated
+full-height swipes past its field; bounded viewport drags retain the reachability
+assertion without overshooting the short iPad sheet.
+
+The largest-text iPad and combined-report iPhone failures show an empty native
+ShareSheet remote container, not an offscreen Copy action. Their eight-second
+failure boundary remains intact, with explicit screenshot and hierarchy
+attachments added. No app presenter change, simulated Copy, retry-to-pass,
+release dispatch, or delivery is established by this follow-up. Fresh native
+results must determine whether the empty native activity remains a blocker.
