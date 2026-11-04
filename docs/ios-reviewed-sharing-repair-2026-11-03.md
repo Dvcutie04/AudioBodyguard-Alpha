@@ -117,3 +117,74 @@ support this restriction. The upstream report concerns iOS 26 while the failed
 Simulator reports iOS 18.5; this does not establish the empty-container cause
 or resolution. Fresh native verification, including real Copy and Cancel,
 remains required. No retries-to-pass, gate removal, or new release is included.
+
+
+## Wrapped-button hit area (November 4)
+
+Current-source native run `41758028231`, tools job `126338660746`, passed
+all 20 `AQSSReadOnlyUITests` and failed one of six output-detail cases. The
+failure was the second, largest-text worksheet entry in
+`testCombinedSetupClearRemoveLifecycleAndLargestText`, not native Copy.
+The retained XCResult hierarchy shows the reviewed output screen still open.
+Its recorded synthesized tap was `(201.17, 307.67)` inside the visible
+`Add setup notes` button rectangle `(19.5, 236.5, 363.33, 142.33)`. The
+retained screen recording shows that point between the two wrapped text lines.
+The custom button style painted a rounded background without declaring a
+content shape for the padded label.
+
+The style now explicitly gives the complete rounded button a hit-test shape,
+including padding and inter-line space. Apple documents
+[`contentShape`](https://developer.apple.com/documentation/swiftui/view/contentshape(_:eofill:))
+as the shape used for hit testing. The native worksheet test still taps the
+centre once and requires the same worksheet and original output details within
+the existing five-second bound; it now retains the entry screenshot and, on
+failure, the resulting screenshot/hierarchy. No repeated tap or longer timeout
+is introduced. This is a source-supported hit-area repair; a fresh native run
+must establish whether it resolves the observed missed action.
+
+The separate iPhone output-details job `126338660586` in run `41758028165`
+failed `testOutputDetailsCancelPreservesReviewedSnapshot`: its screenshot
+still shows a dimmed review with no usable native share controls, and its
+hierarchy contains an empty `ShareSheet.RemoteContainerView`. Its underlying
+cause is not established. The iPad job passed five Cancel/lifecycle cases and
+both exact native clipboard receipts on this tree, which does not validate the
+failed iPhone case. No retry of either sharing or worksheet failure is justified
+as transient by that evidence. The connected-appearance job `126338660623`
+separately recorded an explicit simulator accessibility IPC timeout. All
+current-source gates, including native sharing on both devices, remain required
+before merge or a new signed release. This follow-up does not establish a new
+installable build.
+
+## Isolated navigation repair and sharing diagnostics (November 4)
+
+This successor preserves PR #100 head 84915744964aaafcc35cf30713d9c14944e55f82
+and PR #101 head 07bca9d3f926316524658fd43a7720d9f74c35be on their existing
+branches. It includes both hit-area changes and PR #101's explicit centre-tap
+diagnostics. Existing candidates and workflows are not cancelled or rewritten.
+
+At PR #100's exact merge snapshot 7fd678e7150fed5a55717da24238898098fcc638,
+core passed 2,198 Python tests plus 38 subtests, 133 Swift tests, Android and C11.
+Unsigned archive, 26 tools, 13 pictures, connected demo, iPhone worksheet and
+both output-details devices passed. Output receipts matched 1,048/1,927 bytes;
+iPhone worksheet matched 768 bytes. These results do not validate this new tree.
+
+Navigation job 126354251547 failed 1 of 15 cases: simplified largest-text
+navigation chose Insights and immediately captured the dismissing menu-scroll
+inside the generic tap helper. The trace checks that menu at 03:45:49.322, then
+fails its existence guard at 03:45:52.561, while the hierarchy shows home-scroll
+and Insights help. Four inline page switches now use the existing tab helper,
+which already asserts menu dismissal within five seconds. Content, reachability,
+scroll-surface and timing assertions remain unchanged.
+
+iPad worksheet job 126354252108 failed on its FIRST Share tap, before Cancel.
+Tap was 03:40:57.83, native activity/remote scene appearance 03:41:03.002,
+Copy deadline 03:41:06.87, and remote ShareUI content appearance 03:41:17.148
+during teardown. The screenshot and hierarchy show an empty native popover.
+This proves delayed content, not an established transient fault or source root
+cause. No retry, timeout increase, prewarming or automatic reopen is justified.
+Diagnostic-only simulator tracing records bounded presentation lifecycle events,
+not report payloads or personal data, when explicitly enabled by UI tests.
+
+All current-tree gates remain required. This is a diagnostic candidate for
+unresolved sharing, not proof of a repaired sharing service or a delivered build.
+No merge, release dispatch, review submission, invitation or email is performed.

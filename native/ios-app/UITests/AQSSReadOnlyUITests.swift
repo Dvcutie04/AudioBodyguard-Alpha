@@ -158,28 +158,24 @@ final class AQSSReadOnlyUITests: XCTestCase {
         app.buttons["Close"].firstMatch.tap(); label("Step 5 of 5", app)
         next(app); label("Connection not verified", app)
         screenshot("Simplified Home \(large)", app)
-        if app.buttons["page-picker"].exists { app.buttons["page-picker"].tap(); tap("Devices", app) }
-        else { tab("devices", app) }
+        tab("devices", app)
         XCTAssertFalse(app.buttons["TV photo setup"].exists)
         tap("Device help", app)
         tap("TV photo setup", app)
         label("No photo selected", app)
         app.buttons["Close"].firstMatch.tap()
-        if app.buttons["page-picker"].exists { app.buttons["page-picker"].tap(); tap("Insights", app) }
-        else { tab("insights", app) }
+        tab("insights", app)
         XCTAssertFalse(app.buttons["Explore an example"].exists)
         tap("Insights help", app)
         tap("Explore an example", app)
         label("EXAMPLE · synthetic data", app)
-        if app.buttons["page-picker"].exists { app.buttons["page-picker"].tap(); tap("Sound", app) }
-        else { tab("sound", app) }
+        tab("sound", app)
         XCTAssertTrue(app.buttons["more-sound-tools"].waitForExistence(timeout: 5))
         XCTAssertFalse(app.buttons["test-setup-open"].exists)
         tap("More sound tools", app)
         XCTAssertTrue(app.buttons["test-setup-open"].exists)
         screenshot("Simplified sound tools \(large)", app)
-        if app.buttons["page-picker"].exists { app.buttons["page-picker"].tap(); tap("Settings", app) }
-        else { tab("settings", app) }
+        tab("settings", app)
         XCTAssertTrue(app.buttons["appearance-picker"].waitForExistence(timeout: 5))
         XCTAssertFalse(app.buttons["Advanced Settings"].exists)
         tap("More settings", app)
@@ -1243,7 +1239,7 @@ final class AQSSReadOnlyUITests: XCTestCase {
     }
     private func launch(_ firstVisit: Bool = false, largeText: Bool = false) -> XCUIApplication {
         let app = XCUIApplication()
-        app.launchArguments = ["-aqssGuideDismissedV1", firstVisit ? "NO" : "YES"]
+        app.launchArguments = ["-aqssGuideDismissedV1", firstVisit ? "NO" : "YES", "--aqss-trace-sharing"]
         if largeText { app.launchArguments += ["-UIPreferredContentSizeCategoryName", "UICTContentSizeCategoryAccessibilityXXXL"] }
         app.launch(); return app
     }

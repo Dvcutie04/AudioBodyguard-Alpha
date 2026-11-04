@@ -45,6 +45,9 @@ struct AppButtonStyle: ButtonStyle {
         configuration.label.font(.body.weight(.semibold))
             .padding(.horizontal, 14).padding(.vertical, 8)
             .frame(minHeight: 44)
+            // Padding and the gap between wrapped lines belong to the button,
+            // too. The painted background alone does not define its hit area.
+            .contentShape(RoundedRectangle(cornerRadius: 14))
             .foregroundColor(primary ? theme.controlText : theme.text)
             .background(primary ? theme.control : theme.raised)
             .clipShape(RoundedRectangle(cornerRadius: 14))
@@ -170,6 +173,7 @@ private struct ReviewedTextSharePresenter: UIViewControllerRepresentable {
 
     final class AnchorController: UIViewController {
         var whenReady: (() -> Void)?
+        var traceLifecycle: ((String, UIViewController) -> Void)?
         private(set) var appeared = false
         private var readinessScheduled = false
         func checkWhenReady() {
@@ -181,11 +185,17 @@ private struct ReviewedTextSharePresenter: UIViewControllerRepresentable {
                 self.whenReady?()
             }
         }
-        override func didMove(toParent parent: UIViewController?) { super.didMove(toParent: parent); checkWhenReady() }
+        override func didMove(toParent parent: UIViewController?) {
+            super.didMove(toParent: parent)
+            traceLifecycle?(parent == nil ? "anchor-detached" : "anchor-attached", self)
+            checkWhenReady()
+        }
         override func viewDidAppear(_ animated: Bool) {
-            super.viewDidAppear(animated); appeared = true; checkWhenReady()
+            super.viewDidAppear(animated); appeared = true
+            traceLifecycle?("anchor-appeared", self); checkWhenReady()
         }
         override func viewWillDisappear(_ animated: Bool) {
+            traceLifecycle?("anchor-will-disappear", self)
             appeared = false; super.viewWillDisappear(animated)
         }
         override func viewDidLayoutSubviews() { super.viewDidLayoutSubviews(); checkWhenReady() }
@@ -196,15 +206,31 @@ private struct ReviewedTextSharePresenter: UIViewControllerRepresentable {
         var activity: UIActivityViewController?
         var waitingForTransition = false
         var retired = false
+        private var traceCount = 0
+        private var lastTraceEvent: String?
         init(_ presentation: Binding<Bool>) { self.presentation = presentation }
+        // Explicitly opted-in Simulator diagnostics only. Never record the
+        // reviewed text, activity destinations, errors or object addresses.
+        func trace(_ event: String, _ controller: UIViewController) {
+            #if targetEnvironment(simulator)
+            guard ProcessInfo.processInfo.arguments.contains("--aqss-trace-sharing"),
+                  traceCount < 64, lastTraceEvent != event else { return }
+            traceCount += 1; lastTraceEvent = event
+            NSLog("AQSS_SHARE_TRACE uptime=%.3f event=%@ controller=%@",
+                  ProcessInfo.processInfo.systemUptime, event,
+                  String(String(describing: type(of: controller)).prefix(160)))
+            #endif
+        }
         func finished(_ completed: UIActivityViewController) {
             // A late callback from a retired or earlier presentation must not
             // enable a newer Share request.
             guard !retired, activity === completed else { return }
+            trace("ownership-finished", completed)
             activity = nil; waitingForTransition = false
             presentation.wrappedValue = false
         }
         func presentationControllerDidDismiss(_ presentationController: UIPresentationController) {
+            trace("native-dismissed", presentationController.presentedViewController)
             if let completed = presentationController.presentedViewController as? UIActivityViewController {
                 finished(completed)
             }
@@ -217,6 +243,9 @@ private struct ReviewedTextSharePresenter: UIViewControllerRepresentable {
     func makeCoordinator() -> Coordinator { Coordinator($isPresented) }
     func makeUIViewController(context: Context) -> AnchorController {
         let controller = AnchorController()
+        controller.traceLifecycle = { [weak coordinator = context.coordinator] event, controller in
+            coordinator?.trace(event, controller)
+        }
         controller.view.backgroundColor = .clear
         controller.view.accessibilityElementsHidden = true
         return controller
@@ -230,15 +259,20 @@ private struct ReviewedTextSharePresenter: UIViewControllerRepresentable {
                   coordinator.activity == nil, !coordinator.waitingForTransition, controller.appeared,
                   controller.parent != nil, controller.view.window != nil, !controller.isBeingDismissed,
                   controller.presentedViewController == nil else { return }
+            coordinator.trace("anchor-ready", controller)
             // Present from the attached sheet's actual containing controller,
             // rather than asking UIKit to forward from a button-sized child.
             var presenter: UIViewController = controller
             while let parent = presenter.parent { presenter = parent }
             guard presenter.viewIfLoaded?.window === controller.view.window,
-                  !presenter.isBeingDismissed, presenter.presentedViewController == nil else { return }
+                  !presenter.isBeingDismissed, presenter.presentedViewController == nil else {
+                coordinator.trace("presenter-not-ready", presenter); return
+            }
             if let transition = presenter.transitionCoordinator {
+                coordinator.trace("awaiting-existing-transition", presenter)
                 coordinator.waitingForTransition = true
                 _ = transition.animate(alongsideTransition: nil) { [weak controller, weak coordinator] _ in
+                    if let controller = controller { coordinator?.trace("existing-transition-completed", controller) }
                     coordinator?.waitingForTransition = false
                     controller?.checkWhenReady()
                 }
@@ -253,18 +287,24 @@ private struct ReviewedTextSharePresenter: UIViewControllerRepresentable {
             }
             activity.completionWithItemsHandler = { [weak activity, weak coordinator] _, _, _, _ in
                 guard let activity = activity else { return }
+                coordinator?.trace("native-completion", activity)
                 coordinator?.finished(activity)
             }
             // Retain one immutable activity until UIKit reports completion or
             // dismissal. A next-run-loop hierarchy check is not completion.
             coordinator.activity = activity
             activity.presentationController?.delegate = coordinator
-            presenter.present(activity, animated: true)
+            coordinator.trace("presentation-requested", presenter)
+            presenter.present(activity, animated: true) { [weak activity, weak coordinator] in
+                if let activity = activity { coordinator?.trace("presentation-completed", activity) }
+            }
         }
         controller.checkWhenReady()
     }
     static func dismantleUIViewController(_ controller: AnchorController, coordinator: Coordinator) {
+        coordinator.trace("anchor-dismantled", controller)
         controller.whenReady = nil
+        controller.traceLifecycle = nil
         coordinator.retired = true
         coordinator.activity?.completionWithItemsHandler = nil
         coordinator.activity?.dismiss(animated: false)
@@ -1301,3 +1341,4 @@ private final class ForegroundAudioHints: ObservableObject {
 
     deinit { tokens.forEach { NotificationCenter.default.removeObserver($0) } }
 }
+
