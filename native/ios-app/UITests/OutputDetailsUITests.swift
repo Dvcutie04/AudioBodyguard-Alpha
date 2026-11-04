@@ -33,7 +33,7 @@ final class OutputDetailsUITests: XCTestCase {
         entry.tap(); XCTAssertTrue(app.buttons["output-details-refresh"].waitForExistence(timeout: 5))
     }
     private func launch() -> XCUIApplication {
-        let app = XCUIApplication(); app.launchArguments = ["-aqssGuideDismissedV1", "YES", "--aqss-trace-sharing"]; app.launch(); return app
+        let app = XCUIApplication(); app.launchArguments = ["-aqssGuideDismissedV1", "YES"]; app.launch(); return app
     }
     private func review(_ app: XCUIApplication) -> String {
         XCTAssertFalse(app.buttons["output-details-review"].isEnabled)
