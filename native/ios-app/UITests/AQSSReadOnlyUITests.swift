@@ -1712,8 +1712,15 @@ final class AQSSReadOnlyUITests: XCTestCase {
         tap("Show TCL steps", app); tap("Roku TV", app)
         showStepHelp(app)
         tap("I’m already in Settings", app)
-        for _ in 0..<2 { app.buttons["setup-next"].tap() }
-        label("Step 5 of 5", app)
+        let progress = app.staticTexts["setup-progress"]
+        for step in 3...5 {
+            // Observe each rendered step before advancing. The app deliberately
+            // rejects repeated taps captured by the previous step's footer.
+            let rendered = XCTNSPredicateExpectation(
+                predicate: NSPredicate(format: "label == %@", "Step \(step) of 5"), object: progress)
+            XCTAssertEqual(XCTWaiter.wait(for: [rendered], timeout: 10), .completed)
+            if step < 5 { app.buttons["setup-next"].tap() }
+        }
         XCTAssertEqual(app.buttons["setup-next"].label, "Finish part one")
         app.buttons["setup-next"].tap()
         label("2. Connect to your phone (Roku)", app)
