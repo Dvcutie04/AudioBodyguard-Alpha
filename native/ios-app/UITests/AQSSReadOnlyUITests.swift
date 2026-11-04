@@ -158,28 +158,24 @@ final class AQSSReadOnlyUITests: XCTestCase {
         app.buttons["Close"].firstMatch.tap(); label("Step 5 of 5", app)
         next(app); label("Connection not verified", app)
         screenshot("Simplified Home \(large)", app)
-        if app.buttons["page-picker"].exists { app.buttons["page-picker"].tap(); tap("Devices", app) }
-        else { tab("devices", app) }
+        tab("devices", app)
         XCTAssertFalse(app.buttons["TV photo setup"].exists)
         tap("Device help", app)
         tap("TV photo setup", app)
         label("No photo selected", app)
         app.buttons["Close"].firstMatch.tap()
-        if app.buttons["page-picker"].exists { app.buttons["page-picker"].tap(); tap("Insights", app) }
-        else { tab("insights", app) }
+        tab("insights", app)
         XCTAssertFalse(app.buttons["Explore an example"].exists)
         tap("Insights help", app)
         tap("Explore an example", app)
         label("EXAMPLE · synthetic data", app)
-        if app.buttons["page-picker"].exists { app.buttons["page-picker"].tap(); tap("Sound", app) }
-        else { tab("sound", app) }
+        tab("sound", app)
         XCTAssertTrue(app.buttons["more-sound-tools"].waitForExistence(timeout: 5))
         XCTAssertFalse(app.buttons["test-setup-open"].exists)
         tap("More sound tools", app)
         XCTAssertTrue(app.buttons["test-setup-open"].exists)
         screenshot("Simplified sound tools \(large)", app)
-        if app.buttons["page-picker"].exists { app.buttons["page-picker"].tap(); tap("Settings", app) }
-        else { tab("settings", app) }
+        tab("settings", app)
         XCTAssertTrue(app.buttons["appearance-picker"].waitForExistence(timeout: 5))
         XCTAssertFalse(app.buttons["Advanced Settings"].exists)
         tap("More settings", app)
@@ -254,20 +250,9 @@ final class AQSSReadOnlyUITests: XCTestCase {
             throw NSError(domain: "AQSSTestSetup", code: 4)
         }
         screenshot("Test setup native share UI", app)
+        XCTAssertFalse(share.isEnabled, "Keep one Share request owned until native dismissal")
         if copy { nativeCopy.tap() }
-        else if UIDevice.current.userInterfaceIdiom == .pad {
-            let heading = app.staticTexts["test-setup-heading"]
-            let point = heading.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5))
-            let popover = app.popovers.firstMatch
-            guard heading.exists, popover.exists, app.frame.contains(point.screenPoint), !popover.frame.contains(point.screenPoint) else {
-                XCTFail("Require an observed heading point outside the native share popover")
-                throw NSError(domain: "AQSSTestSetup", code: 2)
-            }
-            point.tap()
-        } else {
-            let close = app.navigationBars["UIActivityContentView"].buttons["Close"].firstMatch
-            XCTAssertTrue(close.waitForExistence(timeout: 5)); close.tap()
-        }
+        else { try cancelReviewedNativeShare(app) }
         let returned = XCTNSPredicateExpectation(predicate: NSPredicate(format: "enabled == true AND hittable == true"), object: share)
         XCTAssertEqual(XCTWaiter.wait(for: [returned], timeout: 8), .completed)
         XCTAssertFalse(nativeCopy.exists); XCTAssertEqual(preview.label, reviewed)
@@ -304,6 +289,7 @@ final class AQSSReadOnlyUITests: XCTestCase {
                 screenshot("Share requested as review appeared", app)
                 XCTFail("Share must open from the newly attached review: \(app.debugDescription)"); return
             }
+            XCTAssertFalse(share.isEnabled, "A visible native share must keep its request owned")
             copy.tap()
             let returned = XCTNSPredicateExpectation(predicate: NSPredicate(format: "enabled == true AND hittable == true"), object: share)
             XCTAssertEqual(XCTWaiter.wait(for: [returned], timeout: 8), .completed)
@@ -311,6 +297,27 @@ final class AQSSReadOnlyUITests: XCTestCase {
             app.buttons["test-setup-back"].tap()
         }
         screenshot("Three immediate report shares return to their caller", app)
+    }
+
+    func testTestSetupShareCancelAndReopenAtLargestText() throws {
+        let app = launch(largeText: true)
+        try openTestSetup(app)
+        app.buttons["test-setup-review"].tap()
+        let preview = app.staticTexts["test-setup-preview"]
+        XCTAssertTrue(preview.waitForExistence(timeout: 5))
+        let reviewed = preview.label
+        let share = app.buttons["test-setup-share"]
+        for _ in 0..<3 {
+            XCTAssertTrue(share.isEnabled); XCTAssertTrue(share.isHittable); share.tap()
+            let copy = try requireReviewedNativeCopy(app)
+            XCTAssertFalse(share.isEnabled)
+            try cancelReviewedNativeShare(app)
+            let returned = XCTNSPredicateExpectation(predicate: NSPredicate(format: "enabled == true AND hittable == true"), object: share)
+            XCTAssertEqual(XCTWaiter.wait(for: [returned], timeout: 8), .completed)
+            XCTAssertFalse(copy.exists); XCTAssertEqual(preview.label, reviewed)
+        }
+        screenshot("Largest text repeated native Cancel preserves the reviewed report", app)
+        XCTAssertEqual(app.alerts.count, 0)
     }
 
     func testTestSetupWorksheetRotationClearCloseAndRestart() throws {
@@ -1230,9 +1237,10 @@ final class AQSSReadOnlyUITests: XCTestCase {
         let visible = button.frame.intersection(scroll.frame.intersection(appFrame).insetBy(dx: 0, dy: 24))
         app.coordinate(withNormalizedOffset: .zero).withOffset(CGVector(dx: visible.midX - appFrame.minX, dy: visible.midY - appFrame.minY)).tap()
     }
-    private func launch(_ firstVisit: Bool = false) -> XCUIApplication {
+    private func launch(_ firstVisit: Bool = false, largeText: Bool = false) -> XCUIApplication {
         let app = XCUIApplication()
         app.launchArguments = ["-aqssGuideDismissedV1", firstVisit ? "NO" : "YES"]
+        if largeText { app.launchArguments += ["-UIPreferredContentSizeCategoryName", "UICTContentSizeCategoryAccessibilityXXXL"] }
         app.launch(); return app
     }
     private func next(_ app: XCUIApplication) {
@@ -1700,8 +1708,15 @@ final class AQSSReadOnlyUITests: XCTestCase {
         tap("Show TCL steps", app); tap("Roku TV", app)
         showStepHelp(app)
         tap("I’m already in Settings", app)
-        for _ in 0..<2 { app.buttons["setup-next"].tap() }
-        label("Step 5 of 5", app)
+        let progress = app.staticTexts["setup-progress"]
+        for step in 3...5 {
+            // Observe each rendered step before advancing. The app deliberately
+            // rejects repeated taps captured by the previous step's footer.
+            let rendered = XCTNSPredicateExpectation(
+                predicate: NSPredicate(format: "label == %@", "Step \(step) of 5"), object: progress)
+            XCTAssertEqual(XCTWaiter.wait(for: [rendered], timeout: 10), .completed)
+            if step < 5 { app.buttons["setup-next"].tap() }
+        }
         XCTAssertEqual(app.buttons["setup-next"].label, "Finish part one")
         app.buttons["setup-next"].tap()
         label("2. Connect to your phone (Roku)", app)
@@ -2114,5 +2129,55 @@ final class AQSSReadOnlyUITests: XCTestCase {
         XCTAssertGreaterThanOrEqual(app.buttons["setup-next"].frame.height, 44)
         screenshot("Largest text illustrated setup", app)
         app.buttons["setup-close"].tap()
+    }
+}
+
+
+// Shared native-share assertions. Never substitute an app Copy action or
+// dismiss/reopen a failed activity: these tests must observe the real system UI.
+extension XCTestCase {
+    func requireReviewedNativeCopy(_ app: XCUIApplication) throws -> XCUIElement {
+        let copy = app.cells["Copy"].firstMatch
+        guard copy.waitForExistence(timeout: 8) else {
+            let image = XCTAttachment(screenshot: app.screenshot())
+            image.name = "Native share missing Copy"; image.lifetime = .keepAlways; add(image)
+            let hierarchy = XCTAttachment(string: app.debugDescription)
+            hierarchy.name = "Native share missing Copy hierarchy"; hierarchy.lifetime = .keepAlways; add(hierarchy)
+            XCTFail("Native Copy is missing: \(app.debugDescription)")
+            throw NSError(domain: "AQSSNativeShare", code: 1)
+        }
+        return copy
+    }
+
+    func cancelReviewedNativeShare(_ app: XCUIApplication) throws {
+        if UIDevice.current.userInterfaceIdiom == .pad {
+            let popover = app.popovers.firstMatch
+            guard popover.waitForExistence(timeout: 5) else {
+                XCTFail("Native share popover missing before Cancel")
+                throw NSError(domain: "AQSSNativeShare", code: 2)
+            }
+            // The native popover can cover the review heading. Choose from
+            // observed app geometry instead of assuming that heading is clear.
+            let bounds = app.frame.insetBy(dx: 24, dy: 60)
+            let candidates = [CGPoint(x: bounds.minX, y: bounds.midY),
+                              CGPoint(x: bounds.maxX, y: bounds.midY),
+                              CGPoint(x: bounds.midX, y: bounds.minY),
+                              CGPoint(x: bounds.midX, y: bounds.maxY)]
+            guard let point = candidates.first(where: {
+                bounds.contains($0) && !popover.frame.insetBy(dx: -12, dy: -12).contains($0)
+            }) else {
+                XCTFail("No observed point outside native share popover: \(app.debugDescription)")
+                throw NSError(domain: "AQSSNativeShare", code: 3)
+            }
+            app.coordinate(withNormalizedOffset: .zero)
+                .withOffset(CGVector(dx: point.x - app.frame.minX, dy: point.y - app.frame.minY)).tap()
+        } else {
+            let close = app.navigationBars["UIActivityContentView"].buttons["Close"].firstMatch
+            guard close.waitForExistence(timeout: 5) else {
+                XCTFail("Native share Close missing: \(app.debugDescription)")
+                throw NSError(domain: "AQSSNativeShare", code: 4)
+            }
+            close.tap()
+        }
     }
 }

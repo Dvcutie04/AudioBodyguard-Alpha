@@ -48,7 +48,7 @@ def main():
     walk(get())
     assert len(payloads) == 1, "Require one actual reviewed text attachment from the Copy test"
     expected_file = args.output / "reviewed.txt"
-    subprocess.run(["xcrun", "xcresulttool", "export", "--type", "file", "--path", str(args.result),
+    subprocess.run(["xcrun", "xcresulttool", "export", "--legacy", "--type", "file", "--path", str(args.result),
                     "--id", payloads.pop(), "--output-path", str(expected_file)], check=True)
     expected = expected_file.read_bytes()
     observed = subprocess.check_output(["xcrun", "simctl", "pbpaste", args.simulator], timeout=20)

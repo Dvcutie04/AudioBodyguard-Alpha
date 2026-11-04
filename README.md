@@ -6,6 +6,12 @@ Audio Bodyguard Alpha is the development repository for AQSS-36-OMEGA. It contai
 
 The alpha includes simulations, mocks, and synthetic conformance tests. Passing software tests do not establish physical output containment, acoustic safety, or production readiness. The endpoint handoff barrier and production execution guard intentionally remain closed.
 
+The [reviewed-sharing repair](docs/ios-reviewed-sharing-repair-2026-11-03.md)
+addresses the iPhone release's failed native sharing gate, retaining one
+explicit presentation through UIKit completion and adding repeated large-text
+Cancel checks. Fresh iPhone/iPad native sharing and all release gates are required
+before a new TestFlight upload; this source change alone establishes no delivery.
+
 The [2026-10-11 pre-beta audit](docs/pre-beta-audit-2026-10-11.md) records local
 repairs and **1,867 passing Python tests plus 19 subtests**. Fresh native CI,
 a signed TestFlight build and actual phone trials remain required before beta

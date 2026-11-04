@@ -3,6 +3,13 @@ name: Two-phone test setup worksheet verification
 on:
   push:
     branches: ["aqss/test-setup-worksheet"]
+  pull_request:
+    branches: ["main"]
+    paths:
+      - "native/ios-app/**"
+      - "native/ios/**"
+      - "tools/check_ios*clipboard.py"
+      - ".github/workflows/test-setup-ui.yml"
   workflow_dispatch:
 
 permissions:
@@ -168,8 +175,18 @@ jobs:
             -destination "platform=iOS Simulator,id=$AQSS_SIMULATOR" -parallel-testing-enabled NO \
             -resultBundlePath "$RUNNER_TEMP/sound-test-setup-cancel.xcresult" \
             -only-testing:AQSSReadOnlyUITests/AQSSReadOnlyUITests/testTestSetupWorksheetCancelSharePreservesPreview \
+            -only-testing:AQSSReadOnlyUITests/AQSSReadOnlyUITests/testTestSetupShareCancelAndReopenAtLargestText \
             -only-testing:AQSSReadOnlyUITests/AQSSReadOnlyUITests/testTestSetupWorksheetRotationClearCloseAndRestart
           python3 tools/check_ios_build_share_clipboard.py cancel "$AQSS_SIMULATOR" --output "$RUNNER_TEMP/setup-clipboard"
+      - name: Verify immediate repeated native Copy from newly attached reviews
+        shell: bash
+        run: |
+          set -euo pipefail
+          xcodebuild test-without-building \
+            -xctestrun "$RUNNER_TEMP/test-setup-build/Build/Products/test-setup.xctestrun" \
+            -destination "platform=iOS Simulator,id=$AQSS_SIMULATOR" -parallel-testing-enabled NO \
+            -resultBundlePath "$RUNNER_TEMP/sound-test-setup-immediate.xcresult" \
+            -only-testing:AQSSReadOnlyUITests/AQSSReadOnlyUITests/testTestSetupShareStartsWhenReviewAppears
       - name: Verify exact native Copy of the actual reviewed text
         shell: bash
         run: |
@@ -188,7 +205,7 @@ jobs:
         run: python3 tools/check_ios_build_share_clipboard.py clear "$AQSS_SIMULATOR" --output "$RUNNER_TEMP/setup-clipboard"
       - name: Export native worksheet screenshots
         if: always()
-        run: python3 tools/export_ios_input_screenshots.py "$RUNNER_TEMP" test-setup-cancel test-setup-copy
+        run: python3 tools/export_ios_input_screenshots.py "$RUNNER_TEMP" test-setup-cancel test-setup-immediate test-setup-copy
       - name: Retain worksheet receipts and screenshots
         if: always()
         uses: actions/upload-artifact@v4

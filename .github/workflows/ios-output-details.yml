@@ -3,6 +3,13 @@ name: iPhone and iPad output details verification
 on:
   push:
     branches: ["aqss/ios-output-details", "aqss/ios-setup-output-report", "aqss/quiet-report-cleanup"]
+  pull_request:
+    branches: ["main"]
+    paths:
+      - "native/ios-app/**"
+      - "native/ios/**"
+      - "tools/check_ios*clipboard.py"
+      - ".github/workflows/ios-output-details.yml"
   workflow_dispatch:
 
 permissions:

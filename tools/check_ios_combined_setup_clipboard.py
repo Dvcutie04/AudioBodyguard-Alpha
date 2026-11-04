@@ -55,10 +55,10 @@ def main():
     walk(get())
     assert all(len(v) == 1 for v in payloads.values()), "Require one combined preview and one original output attachment"
     expected_file = args.output / "reviewed.txt"
-    subprocess.run(["xcrun", "xcresulttool", "export", "--type", "file", "--path", str(args.result),
+    subprocess.run(["xcrun", "xcresulttool", "export", "--legacy", "--type", "file", "--path", str(args.result),
                     "--id", payloads["combined"].pop(), "--output-path", str(expected_file)], check=True)
     original_file = args.output / "original-output.txt"
-    subprocess.run(["xcrun", "xcresulttool", "export", "--type", "file", "--path", str(args.result),
+    subprocess.run(["xcrun", "xcresulttool", "export", "--legacy", "--type", "file", "--path", str(args.result),
                     "--id", payloads["output"].pop(), "--output-path", str(original_file)], check=True)
     expected = expected_file.read_bytes()
     original = original_file.read_bytes()
