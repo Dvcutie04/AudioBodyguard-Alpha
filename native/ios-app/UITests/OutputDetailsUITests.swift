@@ -111,7 +111,18 @@ final class OutputDetailsUITests: XCTestCase {
             XCTFail("Reviewed output details have no Add setup notes control")
             throw NSError(domain: "AQSSOutputDetails", code: 3)
         }
-        add.tap(); XCTAssertTrue(app.buttons["test-setup-review"].waitForExistence(timeout: 5))
+        XCTAssertTrue(add.isHittable)
+        // Exercise the centre of the visible control, including the gap
+        // between its two lines at the largest accessibility text size.
+        shot("Add setup notes before centre tap", app)
+        add.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5)).tap()
+        guard app.buttons["test-setup-review"].waitForExistence(timeout: 5) else {
+            shot("Add setup notes did not open worksheet", app)
+            let hierarchy = XCTAttachment(string: app.debugDescription)
+            hierarchy.name = "Worksheet entry missing hierarchy"; hierarchy.lifetime = .keepAlways; self.add(hierarchy)
+            XCTFail("Add setup notes did not open its worksheet: \(app.debugDescription)")
+            throw NSError(domain: "AQSSOutputDetails", code: 5)
+        }
         XCTAssertTrue(app.buttons["test-setup-remove-output"].exists)
         return source
     }

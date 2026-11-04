@@ -93,3 +93,39 @@ failure boundary remains intact, with explicit screenshot and hierarchy
 attachments added. No app presenter change, simulated Copy, retry-to-pass,
 release dispatch, or delivery is established by this follow-up. Fresh native
 results must determine whether the empty native activity remains a blocker.
+
+## Wrapped-button hit area (November 4)
+
+Current-source native run `41758028231`, tools job `126338660746`, passed
+all 20 `AQSSReadOnlyUITests` and failed one of six output-detail cases. The
+failure was the second, largest-text worksheet entry in
+`testCombinedSetupClearRemoveLifecycleAndLargestText`, not native Copy.
+The retained XCResult hierarchy shows the reviewed output screen still open.
+Its recorded synthesized tap was `(201.17, 307.67)` inside the visible
+`Add setup notes` button rectangle `(19.5, 236.5, 363.33, 142.33)`. The
+retained screen recording shows that point between the two wrapped text lines.
+The custom button style painted a rounded background without declaring a
+content shape for the padded label.
+
+The style now explicitly gives the complete rounded button a hit-test shape,
+including padding and inter-line space. Apple documents
+[`contentShape`](https://developer.apple.com/documentation/swiftui/view/contentshape(_:eofill:))
+as the shape used for hit testing. The native worksheet test still taps the
+centre once and requires the same worksheet and original output details within
+the existing five-second bound; it now retains the entry screenshot and, on
+failure, the resulting screenshot/hierarchy. No repeated tap or longer timeout
+is introduced. This is a source-supported hit-area repair; a fresh native run
+must establish whether it resolves the observed missed action.
+
+The separate iPhone output-details job `126338660586` in run `41758028165`
+failed `testOutputDetailsCancelPreservesReviewedSnapshot`: its screenshot
+still shows a dimmed review with no usable native share controls, and its
+hierarchy contains an empty `ShareSheet.RemoteContainerView`. Its underlying
+cause is not established. The iPad job passed five Cancel/lifecycle cases and
+both exact native clipboard receipts on this tree, which does not validate the
+failed iPhone case. No retry of either sharing or worksheet failure is justified
+as transient by that evidence. The connected-appearance job `126338660623`
+separately recorded an explicit simulator accessibility IPC timeout. All
+current-source gates, including native sharing on both devices, remain required
+before merge or a new signed release. This follow-up does not establish a new
+installable build.

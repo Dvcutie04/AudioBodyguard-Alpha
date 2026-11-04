@@ -45,6 +45,9 @@ struct AppButtonStyle: ButtonStyle {
         configuration.label.font(.body.weight(.semibold))
             .padding(.horizontal, 14).padding(.vertical, 8)
             .frame(minHeight: 44)
+            // Padding and the gap between wrapped lines belong to the button,
+            // too. The painted background alone does not define its hit area.
+            .contentShape(RoundedRectangle(cornerRadius: 14))
             .foregroundColor(primary ? theme.controlText : theme.text)
             .background(primary ? theme.control : theme.raised)
             .clipShape(RoundedRectangle(cornerRadius: 14))
