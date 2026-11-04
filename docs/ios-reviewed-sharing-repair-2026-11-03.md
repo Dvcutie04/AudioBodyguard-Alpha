@@ -188,3 +188,29 @@ not report payloads or personal data, when explicitly enabled by UI tests.
 All current-tree gates remain required. This is a diagnostic candidate for
 unresolved sharing, not proof of a repaired sharing service or a delivered build.
 No merge, release dispatch, review submission, invitation or email is performed.
+
+## Normal-mode release verification (November 4)
+
+The owner asked to investigate the delayed release again. The newer combined
+PR #102 candidate, head `40c87969d99c6269c41e371ed5d23b63998df18e`, tree
+`adda67757bb0a0e1695b8b37f1e61aefdf6e41e7`, contains the iPad-only popover
+configuration, both visible hit-area fixes, retained native ownership and
+navigation synchronization. Its native tools job `126377795605` executed
+26 cases with no failures on merge snapshot
+`28f8a0be5bc9ede156852d18b9c721e98007624f`. Both worksheet jobs also passed
+native Copy with independent exact 768-byte clipboard receipts. Those runs
+explicitly enabled Simulator presentation tracing, so their timing is not
+accepted as normal-mode release evidence.
+
+The release candidate now removes only the automatic tracing argument from
+the two UI-test launch helpers. The Simulator-only, opt-in diagnostic utility
+remains available for an explicitly requested investigation; it is not enabled
+by the ordinary test suites and is excluded on physical devices. The shipping
+presenter and all test cases, native Copy/Cancel actions, eight-second bounds,
+payload comparisons, privacy, ownership and lifecycle assertions are unchanged.
+No failed workflow is retried or cancelled by this change. A fresh source tree
+must pass all core, archive, 54-case native, iPhone/iPad worksheet and output
+sharing gates without tracing before normal-rule merge and a signed release.
+The signed release must then pass its own prerequisites. No passing diagnostic
+run, export configuration or accepted upload proves Apple processing, external
+review, tester assignment, installation or physical TV/audio qualification.
