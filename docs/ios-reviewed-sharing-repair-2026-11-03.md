@@ -1,0 +1,65 @@
+# iPhone and iPad reviewed sharing repair
+
+The owner requested repair and a new installable friends-trial iPhone build.
+Release run `41635108415` used source
+`682081b4635ebcbb49ca5cc43ea5b47230e9316f`, tree
+`0e6009f78d59e3df2f257961049efcf0d38b34ff`. Its tools gate failed once in
+each of two attempts; signed upload was skipped in both. These are native UI
+failures before upload, with no new Apple processing evidence.
+
+- Attempt 1, job `125928586324`: `testTestSetupShareStartsWhenReviewAppears`
+  failed at line 305 waiting for the system Copy cell.
+- Attempt 2, job `125983549420`: `testTestSetupWorksheetCopySharesExactReviewedText`
+  failed at line 253 waiting for the same cell. 24 of 25 tools cases passed.
+
+Both failure hierarchies contain `ActivityListView` and
+`ShareSheet.RemoteContainerView` with empty children. The attempt-2 screenshot
+shows a dimmed report with no usable native share controls. This establishes
+that a native presentation began, not why the remote sharing UI stayed empty.
+The source also enabled Share again after one main-queue turn if the activity
+had not yet acquired a presenting controller. That inference can precede actual
+presentation completion; the failed Copy test recorded Share as enabled while
+the native activity container existed.
+
+## Research and design
+
+The standing research charter prioritizes latency, battery, bounded resources
+and platform rules without weakening privacy or evidence. Primary Apple sources
+were refreshed before implementation:
+
+- [Native activities](https://developer.apple.com/documentation/uikit/uiactivityviewcontroller):
+  configure the explicit items and present modally on iPhone, in a popover on iPad.
+- [Controller presentation](https://developer.apple.com/documentation/uikit/uiviewcontroller/present(_:animated:completion:)):
+  UIKit can forward a child presentation to a containing controller; its
+  completion occurs after the presented controller appears.
+- [Activity completion](https://developer.apple.com/documentation/uikit/uiactivityviewcontroller/completionwithitemshandler-swift.typealias):
+  native completion or cancellation is the result boundary, not one main-loop turn.
+- [SwiftUI controller bridge](https://developer.apple.com/documentation/swiftui/uiviewcontrollerrepresentable):
+  SwiftUI owns the embedded view's layout and calls teardown before removal.
+
+The repair waits for the local anchor to appear in its window and presents from
+its attached containing controller after any parent transition. One retained
+activity owns the immutable reviewed String until UIKit completes or dismisses
+it. Identity checks reject stale completion; teardown retires the callback and
+dismisses only that activity. The iPad popover still anchors to the visible
+Share control. The transparent anchor is hidden from accessibility so there
+is one labeled Share button. No sleep, polling, automatic Copy/send, network
+work, added library or new report retention is introduced. This is a targeted
+presentation-lifetime repair; native validation must establish its outcome.
+
+## Required validation
+
+Preserve all existing Copy, Cancel, exact clipboard comparison, review privacy,
+Back, lifecycle, rotation and large-text assertions. Add three native Cancel
+and reopen cycles at largest text and require Share to remain disabled while
+its native activity is owned. The ordinary release suite includes this new
+case. Fresh PR jobs also run the existing worksheet and output-detail checks
+on both iPhone and iPad, with independent host comparisons of the real native
+Copy bytes against the actual reviewed snapshots and compiled build metadata.
+
+Final pass counts, screenshots, source/tree and signed distribution evidence
+belong to the published PR and release run. Earlier tree successes cannot
+verify this repair. All signing, Apple validation/upload and cleanup gates stay
+required. External review, tester assignment and installation remain separate.
+This trial does not qualify TV identity, pairing/control or protected audio;
+N2b–N5 remain open.

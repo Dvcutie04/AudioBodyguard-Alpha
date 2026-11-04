@@ -254,6 +254,7 @@ final class AQSSReadOnlyUITests: XCTestCase {
             throw NSError(domain: "AQSSTestSetup", code: 4)
         }
         screenshot("Test setup native share UI", app)
+        XCTAssertFalse(share.isEnabled, "Keep one Share request owned until native dismissal")
         if copy { nativeCopy.tap() }
         else if UIDevice.current.userInterfaceIdiom == .pad {
             let heading = app.staticTexts["test-setup-heading"]
@@ -304,6 +305,7 @@ final class AQSSReadOnlyUITests: XCTestCase {
                 screenshot("Share requested as review appeared", app)
                 XCTFail("Share must open from the newly attached review: \(app.debugDescription)"); return
             }
+            XCTAssertFalse(share.isEnabled, "A visible native share must keep its request owned")
             copy.tap()
             let returned = XCTNSPredicateExpectation(predicate: NSPredicate(format: "enabled == true AND hittable == true"), object: share)
             XCTAssertEqual(XCTWaiter.wait(for: [returned], timeout: 8), .completed)
@@ -311,6 +313,38 @@ final class AQSSReadOnlyUITests: XCTestCase {
             app.buttons["test-setup-back"].tap()
         }
         screenshot("Three immediate report shares return to their caller", app)
+    }
+
+    func testTestSetupShareCancelAndReopenAtLargestText() throws {
+        let app = launch(largeText: true)
+        try openTestSetup(app)
+        app.buttons["test-setup-review"].tap()
+        let preview = app.staticTexts["test-setup-preview"]
+        XCTAssertTrue(preview.waitForExistence(timeout: 5))
+        let reviewed = preview.label
+        let share = app.buttons["test-setup-share"]
+        for _ in 0..<3 {
+            XCTAssertTrue(share.isEnabled); XCTAssertTrue(share.isHittable); share.tap()
+            let copy = app.cells["Copy"].firstMatch
+            XCTAssertTrue(copy.waitForExistence(timeout: 8))
+            XCTAssertFalse(share.isEnabled)
+            if UIDevice.current.userInterfaceIdiom == .pad {
+                let heading = app.staticTexts["test-setup-heading"]
+                let point = heading.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5))
+                let popover = app.popovers.firstMatch
+                XCTAssertTrue(popover.exists)
+                XCTAssertFalse(popover.frame.contains(point.screenPoint))
+                point.tap()
+            } else {
+                let close = app.navigationBars["UIActivityContentView"].buttons["Close"].firstMatch
+                XCTAssertTrue(close.waitForExistence(timeout: 5)); close.tap()
+            }
+            let returned = XCTNSPredicateExpectation(predicate: NSPredicate(format: "enabled == true AND hittable == true"), object: share)
+            XCTAssertEqual(XCTWaiter.wait(for: [returned], timeout: 8), .completed)
+            XCTAssertFalse(copy.exists); XCTAssertEqual(preview.label, reviewed)
+        }
+        screenshot("Largest text repeated native Cancel preserves the reviewed report", app)
+        XCTAssertEqual(app.alerts.count, 0)
     }
 
     func testTestSetupWorksheetRotationClearCloseAndRestart() throws {
@@ -1230,9 +1264,10 @@ final class AQSSReadOnlyUITests: XCTestCase {
         let visible = button.frame.intersection(scroll.frame.intersection(appFrame).insetBy(dx: 0, dy: 24))
         app.coordinate(withNormalizedOffset: .zero).withOffset(CGVector(dx: visible.midX - appFrame.minX, dy: visible.midY - appFrame.minY)).tap()
     }
-    private func launch(_ firstVisit: Bool = false) -> XCUIApplication {
+    private func launch(_ firstVisit: Bool = false, largeText: Bool = false) -> XCUIApplication {
         let app = XCUIApplication()
         app.launchArguments = ["-aqssGuideDismissedV1", firstVisit ? "NO" : "YES"]
+        if largeText { app.launchArguments += ["-UIPreferredContentSizeCategoryName", "UICTContentSizeCategoryAccessibilityXXXL"] }
         app.launch(); return app
     }
     private func next(_ app: XCUIApplication) {

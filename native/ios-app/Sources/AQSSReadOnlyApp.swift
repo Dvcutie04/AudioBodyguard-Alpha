@@ -170,6 +170,7 @@ private struct ReviewedTextSharePresenter: UIViewControllerRepresentable {
 
     final class AnchorController: UIViewController {
         var whenReady: (() -> Void)?
+        private(set) var appeared = false
         private var readinessScheduled = false
         func checkWhenReady() {
             guard !readinessScheduled else { return }
@@ -181,23 +182,43 @@ private struct ReviewedTextSharePresenter: UIViewControllerRepresentable {
             }
         }
         override func didMove(toParent parent: UIViewController?) { super.didMove(toParent: parent); checkWhenReady() }
-        override func viewDidAppear(_ animated: Bool) { super.viewDidAppear(animated); checkWhenReady() }
+        override func viewDidAppear(_ animated: Bool) {
+            super.viewDidAppear(animated); appeared = true; checkWhenReady()
+        }
+        override func viewWillDisappear(_ animated: Bool) {
+            appeared = false; super.viewWillDisappear(animated)
+        }
         override func viewDidLayoutSubviews() { super.viewDidLayoutSubviews(); checkWhenReady() }
     }
 
     final class Coordinator: NSObject, UIPopoverPresentationControllerDelegate {
         var presentation: Binding<Bool>
-        var presenting = false
+        var activity: UIActivityViewController?
         var waitingForTransition = false
+        var retired = false
         init(_ presentation: Binding<Bool>) { self.presentation = presentation }
-        func finished() { presenting = false; waitingForTransition = false; presentation.wrappedValue = false }
-        func popoverPresentationControllerDidDismissPopover(_ popoverPresentationController: UIPopoverPresentationController) { finished() }
+        func finished(_ completed: UIActivityViewController) {
+            // A late callback from a retired or earlier presentation must not
+            // enable a newer Share request.
+            guard !retired, activity === completed else { return }
+            activity = nil; waitingForTransition = false
+            presentation.wrappedValue = false
+        }
+        func presentationControllerDidDismiss(_ presentationController: UIPresentationController) {
+            if let completed = presentationController.presentedViewController as? UIActivityViewController {
+                finished(completed)
+            }
+        }
+        func popoverPresentationControllerDidDismissPopover(_ popoverPresentationController: UIPopoverPresentationController) {
+            presentationControllerDidDismiss(popoverPresentationController)
+        }
     }
 
     func makeCoordinator() -> Coordinator { Coordinator($isPresented) }
     func makeUIViewController(context: Context) -> AnchorController {
         let controller = AnchorController()
         controller.view.backgroundColor = .clear
+        controller.view.accessibilityElementsHidden = true
         return controller
     }
     func updateUIViewController(_ controller: AnchorController, context: Context) {
@@ -205,12 +226,17 @@ private struct ReviewedTextSharePresenter: UIViewControllerRepresentable {
         coordinator.presentation = $isPresented
         controller.whenReady = { [weak controller, weak coordinator] in
             guard let controller = controller, let coordinator = coordinator,
-                  coordinator.presentation.wrappedValue, !coordinator.presenting, !coordinator.waitingForTransition,
+                  !coordinator.retired, coordinator.presentation.wrappedValue,
+                  coordinator.activity == nil, !coordinator.waitingForTransition, controller.appeared,
                   controller.parent != nil, controller.view.window != nil, !controller.isBeingDismissed,
                   controller.presentedViewController == nil else { return }
-            // A Share request can arrive while SwiftUI is attaching this review
-            // or its parent sheet is finishing an animation. Keep the request.
-            if let transition = controller.transitionCoordinator {
+            // Present from the attached sheet's actual containing controller,
+            // rather than asking UIKit to forward from a button-sized child.
+            var presenter: UIViewController = controller
+            while let parent = presenter.parent { presenter = parent }
+            guard presenter.viewIfLoaded?.window === controller.view.window,
+                  !presenter.isBeingDismissed, presenter.presentedViewController == nil else { return }
+            if let transition = presenter.transitionCoordinator {
                 coordinator.waitingForTransition = true
                 _ = transition.animate(alongsideTransition: nil) { [weak controller, weak coordinator] _ in
                     coordinator?.waitingForTransition = false
@@ -219,25 +245,30 @@ private struct ReviewedTextSharePresenter: UIViewControllerRepresentable {
                 return
             }
             let activity = UIActivityViewController(activityItems: [text], applicationActivities: nil)
-            if UIDevice.current.userInterfaceIdiom == .pad { activity.modalPresentationStyle = .popover }
+            activity.modalPresentationStyle = UIDevice.current.userInterfaceIdiom == .pad ? .popover : .pageSheet
             if let popover = activity.popoverPresentationController {
                 popover.sourceView = controller.view
                 popover.sourceRect = controller.view.bounds
                 popover.delegate = coordinator
             }
-            activity.completionWithItemsHandler = { [weak coordinator] _, _, _, _ in coordinator?.finished() }
-            coordinator.presenting = true
-            controller.present(activity, animated: true)
-            DispatchQueue.main.async { [weak coordinator] in
-                // UIKit can refuse a presentation during a hierarchy change.
-                // Never strand the visible Share button in a disabled state.
-                if activity.presentingViewController == nil && !activity.isBeingPresented { coordinator?.finished() }
+            activity.completionWithItemsHandler = { [weak activity, weak coordinator] _, _, _, _ in
+                guard let activity = activity else { return }
+                coordinator?.finished(activity)
             }
+            // Retain one immutable activity until UIKit reports completion or
+            // dismissal. A next-run-loop hierarchy check is not completion.
+            coordinator.activity = activity
+            activity.presentationController?.delegate = coordinator
+            presenter.present(activity, animated: true)
         }
         controller.checkWhenReady()
     }
     static func dismantleUIViewController(_ controller: AnchorController, coordinator: Coordinator) {
         controller.whenReady = nil
+        coordinator.retired = true
+        coordinator.activity?.completionWithItemsHandler = nil
+        coordinator.activity?.dismiss(animated: false)
+        coordinator.activity = nil
     }
 }
 

@@ -37,6 +37,7 @@
       "AQSSReadOnlyUITests/testTVNetworkVisitClearsDraftOnBackgroundAndBack",
       "AQSSReadOnlyUITests/testTVNetworkRejectedResultCanBeReviewedPrivately",
       "AQSSReadOnlyUITests/testTestSetupShareStartsWhenReviewAppears",
+      "AQSSReadOnlyUITests/testTestSetupShareCancelAndReopenAtLargestText",
       "AQSSReadOnlyUITests/testTestSetupWorksheetCancelSharePreservesPreview",
       "AQSSReadOnlyUITests/testTestSetupWorksheetCopySharesExactReviewedText",
       "AQSSReadOnlyUITests/testTestSetupWorksheetRotationClearCloseAndRestart",
