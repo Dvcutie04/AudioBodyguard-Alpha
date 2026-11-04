@@ -93,3 +93,27 @@ failure boundary remains intact, with explicit screenshot and hierarchy
 attachments added. No app presenter change, simulated Copy, retry-to-pass,
 release dispatch, or delivery is established by this follow-up. Fresh native
 results must determine whether the empty native activity remains a blocker.
+
+## Native follow-up on source ef001ffc
+
+Run `41758028231` passed navigation and all 13 picture cases after the Roku
+step-synchronization correction. Worksheet run `41758028342` passed iPhone and
+iPad native sharing with independent exact clipboard checks. Output run
+`41758028165` passed iPad but iPhone again displayed an empty native share
+container. It remains a real failed gate; earlier successes do not waive it.
+The separate connected-appearance test hit an Apple accessibility IPC timeout.
+
+The tools failure at largest text retained the intact output review after a
+single Add setup notes tap. The archived geometry put that tap inside the
+visible two-line label's inter-line space. The label now defines its full
+expanded rectangle as the hit region, following [SwiftUI contentShape](https://developer.apple.com/documentation/swiftui/view/contentshape(_:eofill:)).
+The same single-tap test and all snapshot/lifecycle checks remain unchanged.
+
+The presenter now configures a popover's source view, rect, and delegate only
+on iPad, retaining modal presentation and the general dismissal delegate on
+iPhone. [UIKit's documented idiom split](https://developer.apple.com/documentation/uikit/uiactivityviewcontroller)
+and [an upstream reviewed correction](https://github.com/fluttercommunity/plus_plugins/pull/3965)
+support this restriction. The upstream report concerns iOS 26 while the failed
+Simulator reports iOS 18.5; this does not establish the empty-container cause
+or resolution. Fresh native verification, including real Copy and Cancel,
+remains required. No retries-to-pass, gate removal, or new release is included.

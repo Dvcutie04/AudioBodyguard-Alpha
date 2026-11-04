@@ -75,6 +75,7 @@ struct OutputDetailsView: View {
                     VStack(alignment: .leading, spacing: 16) {
                         Button { beginSetup(report) } label: {
                             Text("Add setup notes").frame(maxWidth: .infinity, minHeight: 44)
+                                .contentShape(Rectangle())
                         }.buttonStyle(AppButtonStyle(theme: theme)).accessibilityIdentifier("output-details-add-notes")
                         Text(report.text).font(.body).fixedSize(horizontal: false, vertical: true)
                             .frame(maxWidth: .infinity, alignment: .leading).textSelection(.enabled)

@@ -246,7 +246,7 @@ private struct ReviewedTextSharePresenter: UIViewControllerRepresentable {
             }
             let activity = UIActivityViewController(activityItems: [text], applicationActivities: nil)
             activity.modalPresentationStyle = UIDevice.current.userInterfaceIdiom == .pad ? .popover : .pageSheet
-            if let popover = activity.popoverPresentationController {
+            if UIDevice.current.userInterfaceIdiom == .pad, let popover = activity.popoverPresentationController {
                 popover.sourceView = controller.view
                 popover.sourceRect = controller.view.bounds
                 popover.delegate = coordinator
