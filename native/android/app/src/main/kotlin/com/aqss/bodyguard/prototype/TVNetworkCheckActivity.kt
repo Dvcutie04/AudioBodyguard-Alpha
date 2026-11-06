@@ -27,7 +27,10 @@ import android.widget.LinearLayout
 import android.widget.ScrollView
 import android.widget.TextView
 import android.widget.Toast
+import android.window.OnBackInvokedCallback
+import android.window.OnBackInvokedDispatcher
 import com.aqss.nativefeedback.LocalTVTarget
+import com.aqss.nativefeedback.SetupContent
 import com.aqss.nativefeedback.TVNetworkOutcome
 import com.aqss.nativefeedback.TVNetworkResult
 import com.aqss.nativefeedback.TVNetworkRunner
@@ -46,10 +49,24 @@ private object TVNetworkChecks { val runner = TVNetworkRunner() }
 /** An explicitly started TCP reachability check, not a TV pairing or controller. */
 class TVNetworkCheckActivity : Activity() {
     private lateinit var skin: InterfaceTheme
+    private lateinit var root: LinearLayout
+    private lateinit var heading: TextView
+    private lateinit var form: ScrollView
     private lateinit var address: EditText
     private lateinit var result: TextView
     private lateinit var start: Button
     private lateinit var review: Button
+    private lateinit var guideButton: Button
+    private var backCallback: OnBackInvokedCallback? = null
+    private val picturesOnly get() = intent.getBooleanExtra(ADDRESS_PICTURES_ONLY, false)
+    private val addressGuide by lazy { SetupContent.routes.single { it.id == "vizio_v505m_k09_address" } }
+    private val guideSteps by lazy {
+        if (picturesOnly) addressGuide.steps.filter { it.surface == "tv" } else addressGuide.steps
+    }
+    private val stepPictures by lazy { SetupStepPictures(this, skin) }
+    private var guidePanel: LinearLayout? = null
+    private var guideIndex = -1
+    private var guideMismatch = false
     private var lastOutcome: TVTrialOutcome? = null
     private var reportDialog: AlertDialog? = null
     private var reportShare: Button? = null
@@ -64,14 +81,15 @@ class TVNetworkCheckActivity : Activity() {
         super.onCreate(savedInstanceState)
         window.setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE)
         skin = InterfaceTheme(this, dark)
-        val root = LinearLayout(this).apply {
+        root = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL; setPadding(skin.dp(20), skin.dp(20), skin.dp(20), skin.dp(20))
             setBackgroundColor(skin.background)
             isFocusableInTouchMode = true
         }
         val header = LinearLayout(this).apply { gravity = Gravity.CENTER_VERTICAL }
-        header.addView(words("VIZIO network check", 24f), LinearLayout.LayoutParams(0, -2, 1f))
-        header.addView(button("Back") { finish() }); root.addView(header)
+        heading = words("VIZIO network check", 24f)
+        header.addView(heading, LinearLayout.LayoutParams(0, -2, 1f))
+        header.addView(button("Back") { back() }); root.addView(header)
         val content = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL }
         content.addView(words("Phone → Wi-Fi → TV", 20f))
         content.addView(words("Enter the IP address shown in your VIZIO TV’s network settings."))
@@ -81,6 +99,8 @@ class TVNetworkCheckActivity : Activity() {
             isSaveEnabled = false
         }
         content.addView(address)
+        guideButton = button(addressGuide.title) { openAddressGuide() }
+        content.addView(guideButton)
         content.addView(words("Check contacts only this address on Wi-Fi. It sends no TV command.", 15f))
         result = words(IDLE).apply { tag = "tv-network-result" }; content.addView(result)
         content.addView(words(LocalTVTarget.BOUNDARY, 15f))
@@ -99,7 +119,8 @@ class TVNetworkCheckActivity : Activity() {
             }
             override fun afterTextChanged(s: Editable?) {}
         })
-        root.addView(ScrollView(this).apply { addView(content) }, LinearLayout.LayoutParams(-1, 0, 1f))
+        form = ScrollView(this).apply { addView(content) }
+        root.addView(form, LinearLayout.LayoutParams(-1, 0, 1f))
         if (Build.VERSION.SDK_INT >= 30) {
             window.setDecorFitsSystemWindows(false)
             root.setOnApplyWindowInsetsListener { view, insets ->
@@ -110,12 +131,94 @@ class TVNetworkCheckActivity : Activity() {
                 insets
             }
         }
+        if (Build.VERSION.SDK_INT >= 33) {
+            val callback = OnBackInvokedCallback { back() }
+            onBackInvokedDispatcher.registerOnBackInvokedCallback(OnBackInvokedDispatcher.PRIORITY_DEFAULT, callback)
+            backCallback = callback
+        }
         setContentView(root)
+        if (picturesOnly) openAddressGuide()
         root.requestApplyInsets()
     }
 
+    private fun openAddressGuide() {
+        if ((!visible && !picturesOnly) || token != null || guidePanel != null) return
+        if (!picturesOnly) {
+            getSystemService(InputMethodManager::class.java)?.hideSoftInputFromWindow(address.windowToken, 0)
+            address.clearFocus()
+        }
+        guideIndex = -1
+        guideMismatch = false
+        val panel = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL }
+        guidePanel = panel
+        form.visibility = View.GONE
+        root.addView(panel, LinearLayout.LayoutParams(-1, 0, 1f))
+        renderAddressGuide()
+    }
+
+    private fun renderAddressGuide() {
+        val panel = guidePanel ?: return
+        val step = guideSteps.getOrNull(guideIndex)
+        heading.text = if (step != null && !guideMismatch) "Step ${guideIndex + 1} of ${guideSteps.size}" else "TV address help"
+        val content = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL }
+        content.addView(words("VIZIO ${addressGuide.models.joinToString()} · Android", 15f))
+        content.addView(words(if (guideMismatch) "Find the right screen" else step?.title ?: addressGuide.title, 24f).apply {
+            if (Build.VERSION.SDK_INT >= 28) isAccessibilityHeading = true
+            accessibilityLiveRegion = View.ACCESSIBILITY_LIVE_REGION_POLITE
+        })
+        if (guideMismatch) {
+            content.addView(words("Look up the network information for your exact TV model in VIZIO Support."))
+        } else {
+            if (step == null) {
+                content.addView(words(addressGuide.appliesTo))
+            } else {
+                content.addView(words(step.instruction))
+                content.addView(stepPictures.picture(step, guideIndex + 1).also(skin::guideCue))
+            }
+            content.addView(button("My screen looks different") {
+                guideMismatch = true
+                renderAddressGuide()
+            })
+        }
+        panel.removeAllViews()
+        panel.addView(ScrollView(this).apply { addView(content) }, LinearLayout.LayoutParams(-1, 0, 1f))
+        val returnsToCaller = guideMismatch || guideIndex == guideSteps.lastIndex
+        val action = when {
+            returnsToCaller -> if (picturesOnly) "Back to photo setup" else "Back to address field"
+            guideIndex < 0 -> "My TV matches"
+            else -> "Next"
+        }
+        panel.addView(button(action, primary = true) {
+            if (returnsToCaller) closeAddressGuide()
+            else { guideIndex += 1; renderAddressGuide() }
+        }, LinearLayout.LayoutParams(-1, -2))
+    }
+
+    private fun closeAddressGuide() {
+        val panel = guidePanel ?: return
+        if (picturesOnly) { finish(); return }
+        root.removeView(panel)
+        guidePanel = null
+        heading.text = "VIZIO network check"
+        form.visibility = View.VISIBLE
+    }
+
+    private fun back() {
+        when {
+            guidePanel == null -> finish()
+            guideMismatch -> { guideMismatch = false; renderAddressGuide() }
+            guideIndex >= 0 -> { guideIndex -= 1; renderAddressGuide() }
+            else -> closeAddressGuide()
+        }
+    }
+
+    @Deprecated("Compatibility for Android 12 and earlier")
+    @android.annotation.SuppressLint("GestureBackNavigation") // API 33+ uses the platform callback.
+    override fun onBackPressed() { back() }
+
     override fun onResume() {
         super.onResume(); visible = true
+        if (picturesOnly) return
         intent.getStringExtra(PHOTO_DRAFT_TICKET)?.let { ticket ->
             intent.removeExtra(PHOTO_DRAFT_TICKET)
             takePhotoDraft(ticket)?.let { address.setText(it.address) }
@@ -124,17 +227,19 @@ class TVNetworkCheckActivity : Activity() {
     }
     override fun onPause() {
         visible = false; stop(); token = null; address.text.clear(); result.text = IDLE
-        address.isEnabled = true; start.text = "Check this address"; start.isEnabled = true
+        address.isEnabled = true; guideButton.isEnabled = true; start.text = "Check this address"; start.isEnabled = true
         help?.dismiss(); help = null
         super.onPause()
     }
     override fun onDestroy() {
+        if (Build.VERSION.SDK_INT >= 33) backCallback?.let { onBackInvokedDispatcher.unregisterOnBackInvokedCallback(it) }
         reportDialog?.dismiss(); reportDialog = null; reportShare = null
         help?.dismiss(); help = null
         super.onDestroy()
     }
 
     private fun begin() {
+        if (picturesOnly) return
         setOutcome(null)
         val target = LocalTVTarget.parse(address.text.toString())
         if (target == null) { result.text = LocalTVTarget.INVALID_ADDRESS; setOutcome(TVTrialOutcome.ADDRESS_REJECTED); return }
@@ -162,7 +267,7 @@ class TVNetworkCheckActivity : Activity() {
             result.text = "A previous network check is still closing or needs an app restart. Try again after it finishes."
             setOutcome(TVTrialOutcome.CHECK_UNAVAILABLE); return
         }
-        token = id; cancelRequested = false; address.isEnabled = false; start.text = "Stop check"
+        token = id; cancelRequested = false; address.isEnabled = false; guideButton.isEnabled = false; start.text = "Stop check"
         result.text = "Checking the address you entered…"
     }
 
@@ -174,7 +279,7 @@ class TVNetworkCheckActivity : Activity() {
 
     private fun completed(id: Long, value: TVNetworkResult) {
         if (!visible || token != id || isFinishing || isDestroyed) return
-        token = null; address.isEnabled = true; start.text = "Check this address"; start.isEnabled = true
+        token = null; address.isEnabled = true; guideButton.isEnabled = true; start.text = "Check this address"; start.isEnabled = true
         val outcome = if (cancelRequested && value.outcome != TVNetworkOutcome.CLEANUP_UNRESOLVED)
             TVNetworkOutcome.STOPPED else value.outcome
         setOutcome(when (outcome) {
@@ -267,11 +372,17 @@ class TVNetworkCheckActivity : Activity() {
 
     companion object {
         private const val IDLE = "Ready to check the address you enter."
+        private const val ADDRESS_PICTURES_ONLY = "addressPicturesOnly"
         private const val PHOTO_DRAFT_TICKET = "vizioPhotoDraftTicket"
         private const val PHOTO_DRAFT_MILLIS = 10_000L
         private data class PhotoDraft(val ticket: String, val target: LocalTVTarget, val expiresAt: Long)
         // Only the opaque ticket travels through the Activity intent.
         private var photoDraft: PhotoDraft? = null
+
+        internal fun showAddressPictures(activity: Activity, dark: Boolean) {
+            activity.startActivity(Intent(activity, TVNetworkCheckActivity::class.java)
+                .putExtra("dark", dark).putExtra(ADDRESS_PICTURES_ONLY, true))
+        }
 
         internal fun openPhotoDraft(activity: Activity, target: LocalTVTarget, dark: Boolean): Boolean {
             val ticket = UUID.randomUUID().toString()

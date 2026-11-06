@@ -491,6 +491,26 @@ def main():
             wait_for("TV IP address", prefix + "_network_idle")
             tap("TV IP address", prefix + "_network_address")
             adb("shell", "input", "text", "8.8.8.8")
+            reveal("Find my TV’s IP address", prefix + "_address_guide_open")
+            wait_for_all(("VIZIO V505M-K09 · Android", "My TV matches"), prefix + "_address_guide_model")
+            reveal("My screen looks different", prefix + "_address_guide_mismatch")
+            wait_for("Find the right screen", prefix + "_address_guide_recovery")
+            tap("Back", prefix + "_address_guide_model_back")
+            tap("My TV matches", prefix + "_address_guide_start")
+            targets = ("Menu (gear)", "Network", "Network Information", "IP Address", "TV IP address")
+            for step, target in enumerate(targets, 1):
+                name = prefix + f"_address_guide_picture_{step}"
+                root = wait_for(f"Step {step} of {len(targets)}", name)
+                assert any(f"Highlighted: {target}." in node.get("content-desc", "") for node in root.iter("node")), target
+                if step == 2:
+                    adb("shell", "input", "keyevent", "KEYCODE_BACK")
+                    wait_for("Step 1 of 5", name + "_back")
+                    tap("Next", name + "_again")
+                    wait_for("Step 2 of 5", name + "_restored")
+                if step in (3, 5):
+                    screenshot(name)
+                tap("Back to address field" if step == len(targets) else "Next", name + "_next")
+            wait_for_all(("8.8.8.8", "Ready to check the address you enter."), prefix + "_address_guide_return")
             reveal("Check this address", prefix + "_network_rejected")
             wait_for_all(("Enter the private IPv4 address", "TV identity, pairing and audio protection are not verified."), prefix + "_network_boundary")
             screenshot(prefix + "_network_public_address_rejected")
@@ -1378,6 +1398,24 @@ def main():
         tap("TV photo setup. Read a model label or Network settings photo", "open_photo_check")
         empty = wait_for("No photo selected", f"{case_prefix}_starts_empty")
         assert not has(empty, "Brand:") and not has(empty, "Model:") and not has(empty, "TV IP hint:"), "New photo screen must keep optional details hidden"
+        if case_prefix == "photo":
+            tap("? Photo help", "photo_open_guide_help")
+            tap("VIZIO V505M-K09 address pictures", "photo_open_model_guide")
+            intro = wait_for_all(("VIZIO V505M-K09 · Android", "My TV matches"), "photo_confirm_guide_model")
+            assert not has(intro, "Check this address"), "Photo help must open the pictures only"
+            tap("My TV matches", "photo_start_model_guide")
+            for step, target in enumerate(("Menu (gear)", "Network", "Network Information", "IP Address"), start=1):
+                page = wait_for(f"Step {step} of 4", f"photo_model_guide_step_{step}")
+                assert any(f"Highlighted: {target}." in n.get("content-desc", "") for n in page.iter("node"))
+                if step == 2:
+                    adb("shell", "input", "keyevent", "KEYCODE_BACK")
+                    wait_for("Step 1 of 4", "photo_guide_system_back")
+                    tap("Next", "photo_guide_next_again")
+                    wait_for("Step 2 of 4", "photo_guide_step_restored")
+                if step == 4:
+                    screenshot("photo_guide_ip_address")
+                tap("Back to photo setup" if step == 4 else "Next", f"photo_guide_advance_{step}")
+            wait_for_all(("TV photo setup", "No photo selected"), "photo_guide_returns_to_photo")
         tap("Show photo details", f"{case_prefix}_show_details")
         wait_photo_fields(("No photo selected", "Brand: Not identified", "Model: Not identified", "TV IP hint: Not identified"), f"{case_prefix}_empty_details")
         fixture = Path("native/ios/Tests/AQSSNativeFeedbackTests/Fixtures") / fixture_name

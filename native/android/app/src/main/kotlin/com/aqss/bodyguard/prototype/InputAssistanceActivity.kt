@@ -312,13 +312,14 @@ class InputAssistanceActivity : Activity() {
         }
     }
     private fun photoPage() {
+        val fromTutorial = intent.getBooleanExtra("fromTutorial", false)
         label("Find your TV details", true)
         label("Photograph your TV’s model label, About screen, or IP address row. Keep passwords out of the picture.")
         action("Take a TV photo", primary = true) { selectPhoto(camera = true) }
         action("Choose a photo") { selectPhoto(camera = false) }
         status = label("No photo selected", true)
         details = label("Brand: Not identified").apply { visibility = View.GONE }
-        if (intent.getBooleanExtra("fromTutorial", false)) {
+        if (fromTutorial) {
             useBrand = action("Use brand and continue", primary = true) {
                 photoBrand?.lowercase()?.let { id ->
                     setResult(RESULT_OK, Intent().putExtra("suggestedBrand", id)); finish()
@@ -339,11 +340,17 @@ class InputAssistanceActivity : Activity() {
             visibility = View.GONE
         }
         label("Check the suggested details on your TV. A photo does not connect it. Choosing another picture clears these details.")
-        action("? Photo help") { skin.menu("Photo help", listOf(
-            "Show photo details" to { photoExtra?.visibility = View.VISIBLE },
-            "Jump to illustrated setup guides" to { openSetup(photoBrand?.lowercase() ?: "") },
-            "Clear photo details" to { clearPhoto() }
-        ), "Use About in your TV’s Settings; do not move a heavy TV. For an IP hint, photograph the Network screen’s IP address row, not Gateway or DNS. Keep TV and phone on the same home Wi-Fi. Text recognition stays on this phone; details clear on close.") }
+        action("? Photo help") {
+            val options = buildList<Pair<String, () -> Unit>> {
+                if (!fromTutorial) add("VIZIO V505M-K09 address pictures" to {
+                    TVNetworkCheckActivity.showAddressPictures(this@InputAssistanceActivity, skin.dark)
+                })
+                add("Show photo details" to { photoExtra?.visibility = View.VISIBLE })
+                add("Jump to illustrated setup guides" to { openSetup(photoBrand?.lowercase() ?: "") })
+                add("Clear photo details" to { clearPhoto() })
+            }
+            skin.menu("Photo help", options, "Use About in your TV’s Settings; do not move a heavy TV. For an IP hint, photograph the Network screen’s IP address row, not Gateway or DNS. Keep TV and phone on the same home Wi-Fi. Text recognition stays on this phone; details clear on close.")
+        }
     }
 
     private fun showPhotoTarget(target: LocalTVTarget?) {

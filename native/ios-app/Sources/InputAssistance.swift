@@ -506,6 +506,7 @@ struct TVPhotoView: View {
     @State private var instructions = false
     @State private var detailsExpanded = false
     @State private var setupRequest: SetupGuideRequest?
+    @State private var showsVizioAddressPictures = false
     @State private var networkCheckVisible = false
     @State private var checkDraft: AQSSLocalTVTarget?
     @State private var cameraNotice = ""
@@ -548,6 +549,10 @@ struct TVPhotoView: View {
                     Text("Check the suggested details on your TV. A photo does not connect it. Choosing another picture clears these details.").font(.caption).foregroundColor(theme.muted)
                     Button(instructions ? "? Hide photo help" : "? Photo help") { instructions.toggle() }.buttonStyle(AppButtonStyle(theme: theme)).accessibilityIdentifier("photo-help")
                     if instructions {
+                        if onUseBrand == nil && TVAddressGuide.vizioRoute != nil {
+                            Button("VIZIO V505M-K09 address pictures") { showsVizioAddressPictures = true }
+                                .buttonStyle(AppButtonStyle(theme: theme))
+                        }
                         Text("1. On your TV, open Settings. Look for About, Support or Device information to find the model. Menu names differ by TV.")
                         Text("2. Look for Network, Connection or Network status, then IP settings. Photograph the row labeled IP address — not Gateway or DNS. A label on the back usually does not show the current IP address.")
                         Text("3. Put your phone and TV on the same home Wi-Fi. Avoid a guest network. An IP address can change and does not prove which TV owns it.")
@@ -563,6 +568,13 @@ struct TVPhotoView: View {
             }.accessibilityIdentifier("photo-review-scroll")
         }.background(theme.background.ignoresSafeArea()).foregroundColor(theme.text)
             .sheet(item: $setupRequest) { request in SetupGuidesView(theme: theme, initialGroup: request.group) }
+            .sheet(isPresented: $showsVizioAddressPictures) {
+                if let route = TVAddressGuide.vizioRoute {
+                    TVAddressGuide(theme: theme, route: route, fromPhotoSetup: true) {
+                        showsVizioAddressPictures = false
+                    }
+                }
+            }
             .sheet(isPresented: $networkCheckVisible, onDismiss: { checkDraft = nil }) {
                 TVNetworkCheckView(theme: theme, takePhotoTarget: {
                     defer { checkDraft = nil }

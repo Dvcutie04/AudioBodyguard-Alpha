@@ -416,7 +416,7 @@ private final class SetupProgressStore: ObservableObject {
 
 /// A scalable screen mock-up with a device frame, numbered target and action pictogram.
 /// Text also has an accessible description; color is never the only instruction.
-private struct SetupScreenIllustration: View {
+struct SetupScreenIllustration: View {
     let step: AQSSSetupStep
     let number: Int
     let theme: AppTheme
@@ -508,7 +508,7 @@ private struct SetupScreenIllustration: View {
     }
 }
 
-private struct RemoteButtonsIllustration: View {
+struct RemoteButtonsIllustration: View {
     let step: AQSSSetupStep
     let number: Int
     let theme: AppTheme

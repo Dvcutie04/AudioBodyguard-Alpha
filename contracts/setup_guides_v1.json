@@ -99,6 +99,11 @@
       "url": "https://www.vizio.com/en/mobile"
     },
     {
+      "id": "vizio_v505m_k09_manual",
+      "title": "VIZIO V-Series manual: remote, TV menu, and network information",
+      "url": "https://www.vizio.com/content/dam/asset-portal/us/en/2022/tv/documentation/v-series/V-Series_UM_EN.pdf#page=22"
+    },
+    {
       "id": "vizio_account",
       "title": "VIZIO: TV account linking and six-digit code",
       "url": "https://www.vizio.com/en/vizio-account/link-your-tv"
@@ -4374,6 +4379,86 @@
           "focus": 0,
           "action": "check",
           "note": "Finishing this guide does not connect Audio Bodyguard or activate protection."
+        }
+      ]
+    },
+    {
+      "id": "vizio_v505m_k09_address",
+      "title": "Find my TV’s IP address",
+      "applies_to": "Use these pictures if your TV model is V505M-K09. They follow the VIZIO manual.",
+      "models": [
+        "V505M-K09"
+      ],
+      "sources": [
+        "vizio_v505m_k09_manual"
+      ],
+      "steps": [
+        {
+          "title": "Open the TV menu",
+          "instruction": "Press the Menu (gear) button on your TV remote.",
+          "surface": "tv",
+          "screen": "VIZIO V505M-K09 remote",
+          "items": [
+            "Menu (gear)"
+          ],
+          "focus": 0,
+          "action": "settings",
+          "note": "Use the remote that came with your TV.",
+          "picture_surface": "remote"
+        },
+        {
+          "title": "Open Network",
+          "instruction": "Choose Network on your TV.",
+          "surface": "tv",
+          "screen": "TV Settings",
+          "items": [
+            "Picture",
+            "Audio",
+            "Network",
+            "TV Channels"
+          ],
+          "focus": 2,
+          "action": "select",
+          "note": "Use the arrows and OK on your TV remote."
+        },
+        {
+          "title": "Open Network Information",
+          "instruction": "Choose Network Information.",
+          "surface": "tv",
+          "screen": "Network",
+          "items": [
+            "Test Connection",
+            "Hidden Networks",
+            "Manual Setup",
+            "Network Information"
+          ],
+          "focus": 3,
+          "action": "select",
+          "note": "Network Information is the menu for viewing network details."
+        },
+        {
+          "title": "Find the TV’s IP address",
+          "instruction": "Look for IP Address in the TV’s network information.",
+          "surface": "tv",
+          "screen": "Address label to look for",
+          "items": [
+            "IP Address"
+          ],
+          "focus": 0,
+          "action": "check",
+          "note": "Use the value on your own TV. The layout may vary with your TV’s software."
+        },
+        {
+          "title": "Enter the address on your phone",
+          "instruction": "Enter the number from your TV in TV IP address.",
+          "surface": "phone",
+          "screen": "VIZIO network check",
+          "items": [
+            "TV IP address"
+          ],
+          "focus": 0,
+          "action": "type",
+          "note": "Type the address exactly as your TV shows it, including the dots."
         }
       ]
     },

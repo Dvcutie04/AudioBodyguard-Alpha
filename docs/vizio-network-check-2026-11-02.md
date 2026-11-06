@@ -1,5 +1,23 @@
 # VIZIO network check and beta critical path
 
+## 0.46 connection trial
+
+1. Open **Devices**, then **Device help**, then **TV photo setup**.
+2. Open **Photo help**.
+3. Choose **VIZIO V505M-K09 address pictures** if the model matches.
+4. Follow the four TV pictures to the IP Address row.
+5. Tap **Back to photo setup**.
+6. Photograph the IP Address row or choose an existing photo of it.
+7. Compare the address shown in the app with the TV screen.
+8. Tap **Use address in VIZIO check**.
+9. Tap **Check this address** when the phone and TV are on home Wi-Fi.
+
+For the software check, confirm the model and picture order, then use a
+synthetic photo to verify the editable address, idle check and Back return.
+For the physical trial, record the phone OS and TV firmware, compare the
+pictures to the real menus, and record the service reachability result.
+Pairing and identity require their own physical evidence.
+
 ## Decision and scope
 
 The owner wants a working TV/phone beta rather than more setup screens. Their
@@ -67,8 +85,10 @@ and the keyboard; the single Check action uses the existing primary-button style
 Only canonical RFC1918 IPv4 literals are admitted. This intentionally narrow
 first version also rejects host octets 0 and 255; it is not a subnet detector
 and can exclude valid hosts on unusual subnet layouts. IPv6, public addresses,
-hostnames, URL syntax, ports, alternate numeric syntax and OCR automation are
-not accepted. A different TV brand receives no implied support from this entry.
+hostnames, URL syntax, ports and alternate numeric syntax are not accepted.
+The 0.46 photo route uses the same address validation before offering the
+reviewed value to the check. A different TV brand receives no implied support
+from this entry.
 
 ## Verification and next gates
 
