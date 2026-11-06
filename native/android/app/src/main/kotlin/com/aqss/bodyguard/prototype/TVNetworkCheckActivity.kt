@@ -11,6 +11,7 @@ import android.os.Build
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
+import android.os.SystemClock
 import android.provider.Settings
 import android.text.InputType
 import android.text.Editable
@@ -38,6 +39,7 @@ import java.net.InetAddress
 import java.net.InetSocketAddress
 import java.net.Proxy
 import java.net.Socket
+import java.util.UUID
 
 private object TVNetworkChecks { val runner = TVNetworkRunner() }
 
@@ -114,6 +116,10 @@ class TVNetworkCheckActivity : Activity() {
 
     override fun onResume() {
         super.onResume(); visible = true
+        intent.getStringExtra(PHOTO_DRAFT_TICKET)?.let { ticket ->
+            intent.removeExtra(PHOTO_DRAFT_TICKET)
+            takePhotoDraft(ticket)?.let { address.setText(it.address) }
+        }
         if (reportDialog?.isShowing == true) reportShare?.isEnabled = true
     }
     override fun onPause() {
@@ -259,5 +265,39 @@ class TVNetworkCheckActivity : Activity() {
             }.create().also { it.show() }
     }
 
-    companion object { private const val IDLE = "Ready to check the address you enter." }
+    companion object {
+        private const val IDLE = "Ready to check the address you enter."
+        private const val PHOTO_DRAFT_TICKET = "vizioPhotoDraftTicket"
+        private const val PHOTO_DRAFT_MILLIS = 10_000L
+        private data class PhotoDraft(val ticket: String, val target: LocalTVTarget, val expiresAt: Long)
+        // Only the opaque ticket travels through the Activity intent.
+        private var photoDraft: PhotoDraft? = null
+
+        internal fun openPhotoDraft(activity: Activity, target: LocalTVTarget, dark: Boolean): Boolean {
+            val ticket = UUID.randomUUID().toString()
+            photoDraft = PhotoDraft(ticket, target, SystemClock.elapsedRealtime() + PHOTO_DRAFT_MILLIS)
+            Handler(Looper.getMainLooper()).postDelayed({ discardPhotoDraft(ticket) }, PHOTO_DRAFT_MILLIS)
+            val intent = Intent(activity, TVNetworkCheckActivity::class.java)
+                .putExtra("dark", dark).putExtra(PHOTO_DRAFT_TICKET, ticket)
+            try {
+                activity.startActivity(intent)
+            } catch (error: RuntimeException) {
+                discardPhotoDraft(ticket)
+                if (error !is ActivityNotFoundException && error !is SecurityException) throw error
+                Toast.makeText(activity, "Could not open the VIZIO network check.", Toast.LENGTH_SHORT).show()
+                return false
+            }
+            return true
+        }
+
+        private fun takePhotoDraft(ticket: String): LocalTVTarget? {
+            val draft = photoDraft?.takeIf { it.ticket == ticket } ?: return null
+            photoDraft = null
+            return draft.target.takeIf { SystemClock.elapsedRealtime() < draft.expiresAt }
+        }
+
+        private fun discardPhotoDraft(ticket: String) {
+            if (photoDraft?.ticket == ticket) photoDraft = null
+        }
+    }
 }

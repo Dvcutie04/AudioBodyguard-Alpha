@@ -506,6 +506,8 @@ struct TVPhotoView: View {
     @State private var instructions = false
     @State private var detailsExpanded = false
     @State private var setupRequest: SetupGuideRequest?
+    @State private var networkCheckVisible = false
+    @State private var checkDraft: AQSSLocalTVTarget?
     @State private var cameraNotice = ""
     private var suggestedChoice: AQSSTutorialChoice? {
         guard let brand = photo.hints.brand?.lowercased() else { return nil }
@@ -518,7 +520,7 @@ struct TVPhotoView: View {
                 VStack(alignment: .leading, spacing: 18) {
                     Image(systemName: "tv").font(.system(size: 42)).foregroundColor(theme.violet).accessibilityHidden(true)
                     Text("Find your TV details").font(.title.bold())
-                    Text("Photograph the TV’s About screen or model label. Keep passwords out of the picture.")
+                    Text("Photograph your TV’s model label, About screen, or IP address row. Keep passwords out of the picture.")
                     Button("Take a TV photo") { choosePhoto(camera: true) }.buttonStyle(AppButtonStyle(theme: theme, primary: true))
                     Button("Choose a photo") { choosePhoto(camera: false) }.buttonStyle(AppButtonStyle(theme: theme))
                     if !cameraNotice.isEmpty { Text(cameraNotice).foregroundColor(theme.warning) }
@@ -528,6 +530,16 @@ struct TVPhotoView: View {
                         Button("Use \(choice.title) and continue") { onUseBrand(choice.id); photo.clear(); dismiss() }
                             .buttonStyle(AppButtonStyle(theme: theme, primary: true))
                             .accessibilityIdentifier("photo-use-brand")
+                    }
+                    if onUseBrand == nil, let target = photo.hints.vizioCheckTarget {
+                        Text("Address read from photo: \(target.address)").monospacedDigit()
+                        Text("Compare this address with your VIZIO TV’s network screen.")
+                        Button("Use address in VIZIO check") {
+                            guard phase == .active, !networkCheckVisible else { return }
+                            checkDraft = target
+                            networkCheckVisible = true
+                        }.buttonStyle(AppButtonStyle(theme: theme, primary: true))
+                            .accessibilityIdentifier("photo-use-vizio-address")
                     }
                     if detailsExpanded {
                         Text("Model: \(photo.hints.model ?? "Not identified")")
@@ -551,6 +563,12 @@ struct TVPhotoView: View {
             }.accessibilityIdentifier("photo-review-scroll")
         }.background(theme.background.ignoresSafeArea()).foregroundColor(theme.text)
             .sheet(item: $setupRequest) { request in SetupGuidesView(theme: theme, initialGroup: request.group) }
+            .sheet(isPresented: $networkCheckVisible, onDismiss: { checkDraft = nil }) {
+                TVNetworkCheckView(theme: theme, takePhotoTarget: {
+                    defer { checkDraft = nil }
+                    return checkDraft
+                })
+            }
             .sheet(item: $pickerRequest) { request in
                 Group {
                     if request.camera { LocalCameraPicker { finishPhoto($0, request: request) } }
@@ -561,7 +579,7 @@ struct TVPhotoView: View {
             .onDisappear { photo.stopObservingWork(); photo.clear() }
             .onChange(of: phase) { value in
                 if value == .active { photo.checkDeadline(); photo.observeWork() }
-                else { photo.stopObservingWork() }
+                else { checkDraft = nil; photo.stopObservingWork() }
             }
     }
     private func choosePhoto(camera: Bool) {

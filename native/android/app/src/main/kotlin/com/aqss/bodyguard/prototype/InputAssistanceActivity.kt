@@ -11,6 +11,7 @@ import android.provider.Settings
 import android.speech.*
 import android.view.View
 import android.widget.*
+import com.aqss.nativefeedback.LocalTVTarget
 import com.aqss.nativefeedback.TVPhotoHints
 import com.aqss.nativefeedback.PhotoReviewRun
 import com.aqss.nativefeedback.PhotoWorkSlot
@@ -67,6 +68,9 @@ class InputAssistanceActivity : Activity() {
     private var photoBrand: String? = null
     private var useBrand: Button? = null
     private var photoExtra: TextView? = null
+    private var photoTarget: LocalTVTarget? = null
+    private var photoAddressReview: TextView? = null
+    private var usePhotoAddress: Button? = null
     private val voiceWatchdog = object : Runnable {
         override fun run() {
             if (!validVoice(generation)) return
@@ -309,27 +313,49 @@ class InputAssistanceActivity : Activity() {
     }
     private fun photoPage() {
         label("Find your TV details", true)
-        label("Photograph the TV’s About screen or model label. Keep passwords out of the picture.")
+        label("Photograph your TV’s model label, About screen, or IP address row. Keep passwords out of the picture.")
         action("Take a TV photo", primary = true) { selectPhoto(camera = true) }
         action("Choose a photo") { selectPhoto(camera = false) }
         status = label("No photo selected", true)
         details = label("Brand: Not identified").apply { visibility = View.GONE }
-        photoExtra = label("Model: Not identified\nTV IP hint: Not identified").apply {
-            visibility = View.GONE
-        }
-        label("Check the suggested details on your TV. A photo does not connect it. Choosing another picture clears these details.")
         if (intent.getBooleanExtra("fromTutorial", false)) {
             useBrand = action("Use brand and continue", primary = true) {
                 photoBrand?.lowercase()?.let { id ->
                     setResult(RESULT_OK, Intent().putExtra("suggestedBrand", id)); finish()
                 }
             }.apply { visibility = View.GONE }
+        } else {
+            photoAddressReview = label("").apply { visibility = View.GONE }
+            usePhotoAddress = action("Use address in VIZIO check", primary = true) {
+                val target = photoTarget ?: return@action
+                if (!visible) return@action
+                usePhotoAddress?.isEnabled = false
+                if (!TVNetworkCheckActivity.openPhotoDraft(this, target, skin.dark)) {
+                    usePhotoAddress?.isEnabled = true
+                }
+            }.apply { visibility = View.GONE }
         }
+        photoExtra = label("Model: Not identified\nTV IP hint: Not identified").apply {
+            visibility = View.GONE
+        }
+        label("Check the suggested details on your TV. A photo does not connect it. Choosing another picture clears these details.")
         action("? Photo help") { skin.menu("Photo help", listOf(
             "Show photo details" to { photoExtra?.visibility = View.VISIBLE },
             "Jump to illustrated setup guides" to { openSetup(photoBrand?.lowercase() ?: "") },
             "Clear photo details" to { clearPhoto() }
         ), "Use About in your TV’s Settings; do not move a heavy TV. For an IP hint, photograph the Network screen’s IP address row, not Gateway or DNS. Keep TV and phone on the same home Wi-Fi. Text recognition stays on this phone; details clear on close.") }
+    }
+
+    private fun showPhotoTarget(target: LocalTVTarget?) {
+        photoTarget = target
+        val reviewVisibility = if (target == null) View.GONE else View.VISIBLE
+        photoAddressReview?.apply {
+            text = target?.let {
+                "Address read from photo: ${it.address}\nCompare this address with your VIZIO TV’s network screen."
+            }.orEmpty()
+            visibility = reviewVisibility
+        }
+        usePhotoAddress?.visibility = reviewVisibility
     }
 
     private fun clearPhoto() {
@@ -338,6 +364,7 @@ class InputAssistanceActivity : Activity() {
         pendingPhoto = null; photoRun.clear(); cameraPhoto?.close(); cameraPhoto = null; photoBrand = null
         status.text = "No photo selected"; details.text = "Brand: Not identified"; details.visibility = View.GONE
         photoExtra?.text = "Model: Not identified\nTV IP hint: Not identified"; useBrand?.visibility = View.GONE
+        showPhotoTarget(null)
     }
     private fun stopPhotoWatchdog() {
         photoWatchdog?.let { handler.removeCallbacks(it) }
@@ -348,6 +375,7 @@ class InputAssistanceActivity : Activity() {
         stopPhotoWatchdog(); cameraPhoto?.close(); cameraPhoto = null; photoBrand = null
         details.text = "Brand: Not identified"
         photoExtra?.text = "Model: Not identified\nTV IP hint: Not identified"; useBrand?.visibility = View.GONE
+        showPhotoTarget(null)
         status.text = if (reason == PhotoReviewRun.EndReason.timeLimit)
             "Photo review timed out. Choose the picture again."
         else "Photo review ended. Choose the picture again."
@@ -479,9 +507,10 @@ class InputAssistanceActivity : Activity() {
                 runOnUiThread {
                     if (acceptPhoto(token)) {
                         details.text = "Brand: ${hints.brand ?: "Not identified"}"
-        details.visibility = if (hints.brand == null) View.GONE else View.VISIBLE
+                        details.visibility = if (hints.brand == null) View.GONE else View.VISIBLE
                         photoExtra?.text = "Model: ${hints.model ?: "Not identified"}\nTV IP hint: ${hints.address ?: "Not identified"}"
                         photoBrand = hints.brand
+                        if (usePhotoAddress != null) showPhotoTarget(hints.vizioCheckTarget)
                         val choice = TutorialContent.choices["chooseTV"]?.firstOrNull { it.id == hints.brand?.lowercase() }
                         useBrand?.apply { this.text = "Use ${choice?.title ?: "brand"} and continue"; visibility = if (choice == null) View.GONE else View.VISIBLE }
                         status.text = when {
@@ -521,6 +550,7 @@ class InputAssistanceActivity : Activity() {
     }
     override fun onResume() {
         super.onResume(); visible = true
+        usePhotoAddress?.isEnabled = true
         readingPhoto?.let { if (!photoRun.isReading(it)) showPhotoEnd(it) }
         if (isVoice) refreshVoicePermissionGuidance() else observePhotoWork()
     }
