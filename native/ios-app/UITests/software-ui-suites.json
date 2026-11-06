@@ -18,6 +18,7 @@
       "AQSSReadOnlyUITests/testLargeTextSetupHelpScrollsWithoutOpeningAShortcut"
     ],
     "pictures": [
+      "AQSSReadOnlyUITests/testTVAddressPicturesKeepTheCheckDraftAndStepOrder",
       "AQSSReadOnlyUITests/testRokuPicturesResumeAndFinishWithoutClaimingConnection",
       "AQSSReadOnlyUITests/testNewVizioTVShowsAccountThenPhonePicturesInOrder",
       "AQSSReadOnlyUITests/testRokuPartOneImmediatelyOpensPhonePicturesInFirstVisit",
