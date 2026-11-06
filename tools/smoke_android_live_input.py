@@ -158,7 +158,6 @@ def main():
             "Test setup. Record the two-phone test arrangement": ("? More sound tools", "Jump to Test setup"),
             "Output inventory. Check this phone’s available audio outputs": ("? More sound tools", "Jump to Output inventory"),
             "TV photo setup. Read a model label or Network settings photo": ("? Device help", "TV photo setup. Read a model label or settings photo"),
-            "Clear photo details": ("? Photo help", "Clear photo details"),
             "Show photo details": ("? Photo help", "Show photo details"),
         }
         if text not in routes:
@@ -1434,6 +1433,13 @@ def main():
                 screenshot("photo_replacement_cancel_empty")
                 choose_photo_fixture(display_name, "photo_reselect")
                 wait_photo_fields(expected, "photo_reselect_native_ocr_result", attempts=30)
+            for attempt in range(4):
+                _, opened = screen(f"{case_prefix}_clear_help_{attempt}", click="? Photo help")
+                if opened:
+                    break
+                scroll_meter(f"{case_prefix}_find_photo_help_{attempt}", down=True)
+            else:
+                raise AssertionError("Photo help is unreachable in the photo review")
             tap("Clear photo details", f"{case_prefix}_clear")
             for attempt in range(3):
                 scroll_meter(f"{case_prefix}_after_clear_top_{attempt}", down=False)
