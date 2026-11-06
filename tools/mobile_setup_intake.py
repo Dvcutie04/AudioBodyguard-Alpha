@@ -84,7 +84,7 @@ def _unsafe(char):
     return unicodedata.category(char) in ("Cc", "Cf", "Cs", "Zl", "Zp")
 
 
-def _identity(platform, version, build):
+def format_build_details(platform, version, build):
     _require(platform in ("Android", "iPhone/iPad"), "invalid_platform")
     _require(isinstance(version, str) and 1 <= _units(version) <= 96 and
              version.strip() == version and not any(_unsafe(c) for c in version), "invalid_version")
@@ -93,7 +93,7 @@ def _identity(platform, version, build):
     return f"Audio Bodyguard\nPlatform: {platform}\nVersion: {version}\nBuild: {build}"
 
 
-def _clock(line, prefix, *, optional_milliseconds=False):
+def parse_phone_clock(line, prefix, *, optional_milliseconds=False):
     _require(line.startswith(prefix), "missing_phone_clock")
     value = line[len(prefix):]
     fraction = r"(?:\.[0-9]{3})?" if optional_milliseconds else r"\.[0-9]{3}"
@@ -134,7 +134,7 @@ def _attachment(text, platform, worksheet, envelope):
         headers = {value["header"] for value in _ATTACHMENTS.values()}
         headers.update(("Audio Bodyguard test setup (v1)", "Audio Bodyguard test setup (v2)"))
         _require(sum(line in headers for line in lines) == 1, "multiple_report_envelopes")
-        captured = _clock(lines[1], spec["clock"], optional_milliseconds=spec["optional_milliseconds"])
+        captured = parse_phone_clock(lines[1], spec["clock"], optional_milliseconds=spec["optional_milliseconds"])
         _require("\n".join(lines[3:7]) == envelope, "attachment_build_mismatch")
         _require(source.endswith(spec["tail"]), "invalid_attachment_uncertainty")
         return {"kind": kind, "captured_at_phone_clock": captured,
@@ -149,7 +149,7 @@ def prepare_intake(raw, *, expected_platform, expected_version, expected_build, 
     _require(isinstance(raw, bytes) and 0 < len(raw) <= MAX_SOURCE_BYTES, "invalid_source_size")
     _require(isinstance(source_revision, str) and re.fullmatch(r"[0-9a-f]{40}", source_revision) is not None,
              "invalid_declared_source_revision")
-    expected = _identity(expected_platform, expected_version, expected_build)
+    expected = format_build_details(expected_platform, expected_version, expected_build)
     try:
         original = raw.decode("utf-8")
     except UnicodeDecodeError:
@@ -161,7 +161,7 @@ def prepare_intake(raw, *, expected_platform, expected_version, expected_build, 
     _require(len(lines) >= 26 and lines[0] in (
         "Audio Bodyguard test setup (v1)", "Audio Bodyguard test setup (v2)"), "unsupported_worksheet")
     worksheet = int(lines[0][-2])
-    reviewed = _clock(lines[1], "Notes reviewed at (phone clock, UTC): ")
+    reviewed = parse_phone_clock(lines[1], "Notes reviewed at (phone clock, UTC): ")
     _require(lines[2] == lines[7] == "" and "\n".join(lines[3:7]) == expected, "worksheet_build_mismatch")
     _require(lines[8] == "Your notes (not verified)", "invalid_notes_heading")
     notes = {key: _note(lines[9 + index], title) for index, (key, title) in enumerate(_FIELDS)}

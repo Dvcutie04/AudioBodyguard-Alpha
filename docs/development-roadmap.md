@@ -6,6 +6,21 @@ Checkpoint: November 2, 2026. Continue from the restored a-Shell baseline and th
 
 ## Current checkpoint
 
+The [offline TV identity review](vizio-network-check-2026-11-02.md#offline-identity-review)
+starts the next VIZIO phase with a certificate comparison fixture. It ties the
+comparison to one exact reviewed reply report and requires a separately supplied
+reference. Missing evidence and a changed certificate produce separate blocked results.
+An equal digest preserves unverified identity and pairing. Physical reachability
+and a supported source of device identity are required for live enrollment.
+
+November 6 connection-trial intake: the
+[private report checker](vizio-network-check-2026-11-02.md#private-connection-trial-intake)
+accepts reviewed v1 results from Android and iPhone/iPad. It checks the expected
+installed app labels, retains the exact report digest and separates each outcome
+so the owner can record the next observation. The next live gate is still a
+result from the intended phone and TV on their actual Wi-Fi. TV identity,
+authenticated pairing and N2b–N5 require separate evidence.
+
 Friends' beta continuation: the owner authorized completing software work
 without their TV, so friends can try their own Wi-Fi/TV setups. The
 [friend-beta preparation](friends-beta-readiness-2026-11-02.md) adds explicitly

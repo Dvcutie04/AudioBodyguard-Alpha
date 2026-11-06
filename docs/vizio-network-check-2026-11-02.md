@@ -87,3 +87,75 @@ actual pairing, permissions, revoked access, disconnects, app exit and restart.
 Any later audio-control or protection trial additionally needs the N2b–N5
 output, ownership and independent-observation evidence. These are separate
 gates; neither this software nor TestFlight processing completes them.
+
+## Private connection-trial intake
+
+After a manual check on Android or iPhone/iPad, choose **Review test result**.
+Use **Share test result** or the selectable preview to keep a private plain-text
+copy. On iPhone, if the share panel does not show Copy, return to the review,
+touch and hold the report body, and use the system text selection menu. If
+selection handles appear, select the full report before copying. The worksheet
+review also supports this separate copy path. Native sharing has its own
+release checks. [Apple text selection guidance](https://developer.apple.com/documentation/swiftui/view/textselection(_:))
+
+On the engineering computer, run the intake with the expected installed
+app labels from the install record or phone's build details. For example, with
+the iPhone labels `1.0.0` and `14.1`:
+
+```sh
+python3 tools/vizio_trial_intake.py /path/to/private/connection-trial.txt \
+  --expected-platform 'iPhone/iPad' --expected-version 1.0.0 --expected-build 14.1
+```
+
+Use `Android` for an Android report and supply that installation's version and
+build. Keep the report outside the repository in a stable private directory.
+Use UTF-8 with consistent LF or CRLF endings. The intake checks the complete
+v1 format and rejects altered outcome text, extra fields and build mismatches.
+It prints JSON with the original file's byte count and SHA-256, phone-clock
+review time, declared outcome and a next observation. It makes no network
+requests or changes to the report. If an app label is `Unavailable`, the report
+alone cannot attribute the outcome to a specific installation.
+
+The digest identifies the exact text reviewed on the engineering computer.
+The sender, installed source and physical observation still need independent
+verification. A reported reply can guide an identity and authentication review
+after the owner confirms the physical setup. A report with no reply preserves
+the unknown cause. A report of unresolved cleanup preserves the instruction to
+keep new checks blocked while the app reports that condition.
+
+## Offline identity review
+
+Use the report digest retained from intake as `--report-sha256`. The next
+review checks that exact report and build for a reported TCP reply. If an
+independently authenticated source supplies the intended peer's certificate
+reference, compare its SHA-256 with a separately observed, single DER X.509
+certificate. Keep both inputs in a stable private directory outside Git.
+
+```sh
+python3 tools/vizio_identity_review.py /path/to/private/connection-trial.txt \
+  --expected-platform 'iPhone/iPad' --expected-version 1.0.0 --expected-build 14.1 \
+  --report-sha256 "$reviewed_report_sha256" \
+  --reference-certificate-sha256 "$independent_certificate_sha256" \
+  --observed-certificate /path/to/private/observed-leaf.der
+```
+
+Either certificate argument can be omitted to record the missing evidence.
+Omit the reference if the only fingerprint came from the same presented
+certificate or unauthenticated service. A matching digest identifies equal DER
+bytes. The source of the reference, peer possession of the key, certificate
+validity, revocation and the actual TV still need separate review. A changed
+certificate requires a new independently supported reference and review.
+
+| Result | Exit | Meaning |
+| --- | --- | --- |
+| `NO_REPORTED_SERVICE_REPLY` | 1 | The report declares an outcome other than a TCP reply |
+| `INDEPENDENT_REFERENCE_REQUIRED` | 1 | An independent certificate reference is missing |
+| `CERTIFICATE_OBSERVATION_REQUIRED` | 1 | A separate DER certificate observation is missing |
+| `CERTIFICATE_REFERENCE_MISMATCH` | 1 | The observed bytes differ from the reference |
+| `CERTIFICATE_BYTES_MATCH_UNVERIFIED` | 0 | The digests match and both TV identity and pairing authority are false |
+| `INVALID_VIZIO_IDENTITY_REVIEW` | 2 | The inputs are malformed, exceed their bounds, or differ from the reviewed report |
+
+The tool only reads local evidence and prints the comparison state and report
+digest. Its fixtures use synthetic certificates. A real enrollment design
+still depends on a supported identity source and observations from the intended
+phone and TV.
