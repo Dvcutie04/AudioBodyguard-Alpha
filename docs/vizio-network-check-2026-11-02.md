@@ -87,3 +87,32 @@ actual pairing, permissions, revoked access, disconnects, app exit and restart.
 Any later audio-control or protection trial additionally needs the N2b–N5
 output, ownership and independent-observation evidence. These are separate
 gates; neither this software nor TestFlight processing completes them.
+
+## Private connection-trial intake
+
+After a manual check on Android or iPhone/iPad, choose **Review test result**.
+Use **Share test result** or the selectable preview to keep a private plain-text
+copy. On the engineering computer, run the intake with the expected installed
+app labels from the install record or phone's build details. For example, with
+the iPhone labels `1.0.0` and `14.1`:
+
+```sh
+python3 tools/vizio_trial_intake.py /path/to/private/connection-trial.txt \
+  --expected-platform 'iPhone/iPad' --expected-version 1.0.0 --expected-build 14.1
+```
+
+Use `Android` for an Android report and supply that installation's version and
+build. Keep the report outside the repository in a stable private directory.
+Use UTF-8 with consistent LF or CRLF endings. The intake checks the complete
+v1 format and rejects altered outcome text, extra fields and build mismatches.
+It prints JSON with the original file's byte count and SHA-256, phone-clock
+review time, declared outcome and a next observation. It makes no network
+requests or changes to the report. If an app label is `Unavailable`, the report
+alone cannot attribute the outcome to a specific installation.
+
+The digest identifies the exact text reviewed on the engineering computer.
+The sender, installed source and physical observation still need independent
+verification. A reported reply can guide an identity and authentication review
+after the owner confirms the physical setup. A report with no reply preserves
+the unknown cause. A report of unresolved cleanup preserves the instruction to
+keep new checks blocked while the app reports that condition.
