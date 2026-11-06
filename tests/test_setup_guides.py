@@ -238,6 +238,24 @@ def test_new_vizio_account_and_phone_pairing_follow_distinct_official_codes():
     assert 'google_link' not in routes['vizio_alexa']['sources']
 
 
+def test_vizio_address_help_scopes_the_manual_menu_and_phone_handoff_to_v505m_k09():
+    from tools.export_picture_guide import svg
+
+    route = setup_routes()['vizio_v505m_k09_address']
+    assert route['models'] == ['V505M-K09']
+    assert route['sources'] == ['vizio_v505m_k09_manual']
+    steps = route['steps']
+    assert [step['items'][step['focus']] for step in steps] == [
+        'Menu (gear)', 'Network', 'Network Information', 'IP Address', 'TV IP address'
+    ]
+    assert [step['surface'] for step in steps] == ['tv', 'tv', 'tv', 'tv', 'phone']
+    assert steps[0]['picture_surface'] == 'remote'
+    assert steps[-2]['screen'] == 'Address label to look for'
+    assert steps[-1]['screen'] == 'VIZIO network check'
+    assert 'arrows + OK' not in svg(steps[0], 1, route)
+    assert 'arrows + OK' not in svg(steps[3], 4, route)
+
+
 def test_tv_codes_and_results_appear_on_the_tv_in_all_both_device_pictures():
     from tools.export_picture_guide import TV_SCREEN_PICTURES, svg
 

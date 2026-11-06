@@ -115,17 +115,25 @@ final class TVNetworkCheck: ObservableObject {
 }
 
 struct TVNetworkCheckView: View {
+    private static let addressGuide = AQSSSetupContent.routes.first { $0.id == "vizio_v505m_k09_address" }
     let theme: AppTheme
     @Environment(\.dismiss) private var dismiss
     @Environment(\.scenePhase) private var scenePhase
     @StateObject private var check = TVNetworkCheck()
     @State private var help = false
+    @State private var showsAddressGuide = false
     @State private var reviewedReport: TVTrialReport?
     @State private var reportError: String?
 
     var body: some View {
-        Group {
-            if let report = reviewedReport { reviewContent(report) } else { checkContent }
+        VStack(spacing: 0) {
+            if showsAddressGuide, let route = Self.addressGuide {
+                TVAddressGuide(theme: theme, route: route) { showsAddressGuide = false }
+            } else if let report = reviewedReport {
+                reviewContent(report)
+            } else {
+                checkContent
+            }
         }
         .onChange(of: scenePhase) { phase in if phase != .active { check.stop(clear: true) } }
         .onDisappear { check.stop(clear: true) }
@@ -147,6 +155,13 @@ struct TVNetworkCheckView: View {
                         .keyboardType(.numbersAndPunctuation).autocapitalization(.none).disableAutocorrection(true)
                         .padding(12).background(theme.raised).cornerRadius(12)
                         .disabled(check.busy).accessibilityLabel("TV IP address").accessibilityIdentifier("tv-network-address")
+                    if let route = Self.addressGuide {
+                        Button(route.title) {
+                            UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
+                            showsAddressGuide = true
+                        }.buttonStyle(AppButtonStyle(theme: theme))
+                            .disabled(check.busy).accessibilityIdentifier("tv-address-guide-open")
+                    }
                     Text("Check contacts only this address on Wi-Fi. It sends no TV command.").font(.subheadline)
                     Text(check.message).font(.headline).fixedSize(horizontal: false, vertical: true)
                         .accessibilityIdentifier("tv-network-result")
@@ -208,5 +223,69 @@ struct TVNetworkCheckView: View {
             Text(TVTrialReport.notice).font(.subheadline).fixedSize(horizontal: false, vertical: true)
             ReviewedTextShareButton(text: report.text, theme: theme, title: "Share test result", identifier: "tv-network-report-share")
         }.padding(20).foregroundColor(theme.text).background(theme.background.ignoresSafeArea())
+    }
+}
+
+/// In-screen help keeps the check's address draft in memory for the current visit.
+private struct TVAddressGuide: View {
+    let theme: AppTheme
+    let route: AQSSSetupRoute
+    let onReturn: () -> Void
+    @State private var index = -1
+    @State private var mismatch = false
+    @AccessibilityFocusState private var focusedHeading: String?
+
+    private var step: AQSSSetupStep? { route.steps.indices.contains(index) ? route.steps[index] : nil }
+    private var screenKey: String { "\(index)-\(mismatch)" }
+    private var returnsToAddress: Bool { mismatch || index == route.steps.count - 1 }
+
+    var body: some View {
+        VStack(spacing: 0) {
+            HStack {
+                Text(index >= 0 && !mismatch ? "Step \(index + 1) of \(route.steps.count)" : "TV address help")
+                    .font(.headline).fixedSize(horizontal: false, vertical: true).layoutPriority(1)
+                Spacer(minLength: 8)
+                Button("Back", action: back).buttonStyle(AppButtonStyle(theme: theme))
+                    .accessibilityIdentifier("tv-address-guide-back")
+            }.padding(16).background(theme.surface)
+            GuideScrollView(screenKey: screenKey, identifier: "tv-address-guide-scroll", onStepReady: { focusedHeading = $0 }) {
+                VStack(alignment: .leading, spacing: 18) {
+                    Text("VIZIO \(route.models.joined(separator: ", ")) · iPhone").font(.subheadline.weight(.semibold))
+                        .foregroundColor(theme.muted).accessibilityIdentifier("tv-address-guide-model")
+                    Text(mismatch ? "Find the right screen" : step?.title ?? route.title)
+                        .font(.title.bold()).fixedSize(horizontal: false, vertical: true)
+                        .accessibilityAddTraits(.isHeader).accessibilityFocused($focusedHeading, equals: screenKey)
+                    if mismatch {
+                        Text("Look up the network information for your exact TV model in VIZIO Support.")
+                    } else {
+                        if let step = step {
+                            Text(step.instruction).font(.body.weight(.medium)).fixedSize(horizontal: false, vertical: true)
+                            GuidePictureCue(screenKey: screenKey) {
+                                if step.pictureKind == "remote" {
+                                    RemoteButtonsIllustration(step: step, number: index + 1, theme: theme)
+                                } else {
+                                    SetupScreenIllustration(step: step, number: index + 1, theme: theme)
+                                }
+                            }
+                        } else {
+                            Text(route.appliesTo)
+                        }
+                        Button("My screen looks different") { mismatch = true }
+                            .buttonStyle(AppButtonStyle(theme: theme)).accessibilityIdentifier("tv-address-guide-mismatch")
+                    }
+                }.frame(maxWidth: 620, alignment: .leading).padding(20).frame(maxWidth: .infinity)
+            }
+            Button(returnsToAddress ? "Back to address field" : index < 0 ? "My TV matches" : "Next") {
+                if returnsToAddress { onReturn() } else { index += 1 }
+            }.buttonStyle(AppButtonStyle(theme: theme, primary: true))
+                .accessibilityIdentifier("tv-address-guide-next")
+                .padding(16).frame(maxWidth: .infinity).background(theme.surface)
+        }.background(theme.background.ignoresSafeArea()).foregroundColor(theme.text)
+    }
+
+    private func back() {
+        if mismatch { mismatch = false }
+        else if index >= 0 { index -= 1 }
+        else { onReturn() }
     }
 }
