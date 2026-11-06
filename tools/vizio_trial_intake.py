@@ -111,6 +111,17 @@ def inspect_report(raw, *, expected_platform, expected_version, expected_build):
     }
 
 
+def read_private_file(path, max_bytes):
+    """Read a bounded ordinary file in a stable private directory."""
+    if not stat.S_ISREG(path.lstat().st_mode):
+        raise ValueError("file_not_regular")
+    with path.open("rb") as stream:
+        raw = stream.read(max_bytes + 1)
+    if len(raw) > max_bytes:
+        raise ValueError("file_too_large")
+    return raw
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("report", type=Path, help="Private UTF-8 connection-trial report file")
@@ -120,10 +131,7 @@ def main():
     args = parser.parse_args()
 
     try:
-        if not stat.S_ISREG(args.report.lstat().st_mode):
-            raise ValueError("report_not_regular")
-        with args.report.open("rb") as stream:
-            raw = stream.read(MAX_REPORT_BYTES + 1)
+        raw = read_private_file(args.report, MAX_REPORT_BYTES)
         summary = inspect_report(raw, expected_platform=args.expected_platform,
                                  expected_version=args.expected_version, expected_build=args.expected_build)
     except (OSError, ValueError):
