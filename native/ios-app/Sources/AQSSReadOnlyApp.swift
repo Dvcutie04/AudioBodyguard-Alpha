@@ -279,11 +279,16 @@ private struct ReviewedTextSharePresenter: UIViewControllerRepresentable {
                 return
             }
             let activity = UIActivityViewController(activityItems: [text], applicationActivities: nil)
-            activity.modalPresentationStyle = UIDevice.current.userInterfaceIdiom == .pad ? .popover : .pageSheet
-            if UIDevice.current.userInterfaceIdiom == .pad, let popover = activity.popoverPresentationController {
-                popover.sourceView = controller.view
-                popover.sourceRect = controller.view.bounds
-                popover.delegate = coordinator
+            // Let the native activity choose its iPhone presentation rather
+            // than replacing it with a general-purpose page sheet. Only iPad
+            // requires an explicit popover anchored to the visible Share button.
+            if UIDevice.current.userInterfaceIdiom == .pad {
+                activity.modalPresentationStyle = .popover
+                if let popover = activity.popoverPresentationController {
+                    popover.sourceView = controller.view
+                    popover.sourceRect = controller.view.bounds
+                    popover.delegate = coordinator
+                }
             }
             activity.completionWithItemsHandler = { [weak activity, weak coordinator] _, _, _, _ in
                 guard let activity = activity else { return }

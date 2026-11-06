@@ -214,3 +214,44 @@ sharing gates without tracing before normal-rule merge and a signed release.
 The signed release must then pass its own prerequisites. No passing diagnostic
 run, export configuration or accepted upload proves Apple processing, external
 review, tester assignment, installation or physical TV/audio qualification.
+
+## Native presentation candidate (November 6)
+
+PR #105 head `809e516d6deb6e914d0b63a5e6a54199331bfff2` retained two distinct
+first-request failures on iPhone, with later native Cancel cases passing:
+
+- [Worksheet job 127658719363](https://github.com/Dvcutie04/AudioBodyguard-Alpha/actions/runs/42146371284/job/127658719363)
+  expired its eight-second Copy wait at 01:56:57 UTC. The subsequent retained
+  screenshot and hierarchy contain Copy. That later observation does not make
+  the timed assertion pass.
+- [Output job 127667619940](https://github.com/Dvcutie04/AudioBodyguard-Alpha/actions/runs/42146371277/job/127667619940)
+  failed the combined-report Cancel case. Its screenshot shows the dimmed,
+  immutable preview and disabled Share button; its hierarchy contains an empty
+  `ShareSheet.RemoteContainerView`. The separate output Cancel case passed.
+
+The candidate removes only the forced `.pageSheet` style on iPhone and lets
+`UIActivityViewController` select its native modal presentation. The iPad
+popover, visible button anchor and delegates remain explicit. Apple documents
+[modal iPhone and popover iPad presentation](https://developer.apple.com/documentation/uikit/uiactivityviewcontroller)
+and notes that reading
+[`presentationController`](https://developer.apple.com/documentation/uikit/uiviewcontroller/presentationcontroller)
+before presentation creates it using the current modal style. The old code
+overrode that style before setting the dismissal delegate. Removing that
+specialization is a narrow candidate, not proof of the remote-service cause.
+
+Activity creation still occurs only after an explicit tap and receives exactly
+the reviewed String. Attachment/transition checks, retained ownership,
+completion and teardown remain unchanged. No prewarming, sleep, retry,
+automatic Copy, extra report retention or diagnostic launch flag is added.
+All existing native tests and timing bounds are unchanged, including first
+request, three Cancel/reopen cycles at largest text, three immediate shares,
+independent clipboard bytes, privacy and lifecycle checks. Fresh untraced
+iPhone and iPad runs must establish the outcome; Linux checks cannot do so.
+This candidate does not merge, sign, upload or release a build.
+
+Local checks on Python 3.13.5 passed the full 2,198 tests and 38 subtests,
+generated contracts/content/guides, offline picture assets and diff checks.
+The normal C11 lab passed all 45 cases. Its sanitizer attempt stopped because
+LeakSanitizer cannot run under this host's ptrace environment; no sanitizer
+pass is claimed. Swift, UIKit and Xcode cannot run on this Linux worker and
+remain hosted gates for the published source.
