@@ -279,11 +279,16 @@ private struct ReviewedTextSharePresenter: UIViewControllerRepresentable {
                 return
             }
             let activity = UIActivityViewController(activityItems: [text], applicationActivities: nil)
-            activity.modalPresentationStyle = UIDevice.current.userInterfaceIdiom == .pad ? .popover : .pageSheet
-            if UIDevice.current.userInterfaceIdiom == .pad, let popover = activity.popoverPresentationController {
-                popover.sourceView = controller.view
-                popover.sourceRect = controller.view.bounds
-                popover.delegate = coordinator
+            // Let the native activity choose its iPhone presentation rather
+            // than replacing it with a general-purpose page sheet. Only iPad
+            // requires an explicit popover anchored to the visible Share button.
+            if UIDevice.current.userInterfaceIdiom == .pad {
+                activity.modalPresentationStyle = .popover
+                if let popover = activity.popoverPresentationController {
+                    popover.sourceView = controller.view
+                    popover.sourceRect = controller.view.bounds
+                    popover.delegate = coordinator
+                }
             }
             activity.completionWithItemsHandler = { [weak activity, weak coordinator] _, _, _, _ in
                 guard let activity = activity else { return }
@@ -1040,7 +1045,8 @@ private struct ReadOnlyHomeView: View {
         } else { startTutorial("getting_started") }
     }
     private func tutorialPanel(topic: AQSSTutorialTopic, step: AQSSTutorialStep) -> some View {
-        VStack(spacing: 0) {
+        let offersVizioCheck = topic.id == "getting_started" && guide.isLast && guide.selected("chooseTV")?.id == "vizio"
+        return VStack(spacing: 0) {
             HStack {
                 Text("Step \(guide.stepNumber) of \(guide.stepCount)").font(.subheadline.weight(.semibold)).foregroundColor(theme.muted)
                 Spacer(minLength: 8)
@@ -1070,6 +1076,10 @@ private struct ReadOnlyHomeView: View {
                             action("Identify TV from a photo", icon: "camera", primary: true) { suggestedTVBrand = nil; photoCheckVisible = true }.accessibilityIdentifier("identify-tv-photo")
                             action("Choose TV brand", icon: "chevron.down") { brandQuery = ""; brandPickerVisible = true }.accessibilityIdentifier("choose-tv-brand")
                         }
+                        if offersVizioCheck {
+                            action("Check VIZIO on Wi-Fi", icon: "wifi", primary: true) { tvNetworkCheckVisible = true }
+                                .accessibilityIdentifier("guide-vizio-network-check")
+                        }
                         action("Setup help", icon: "questionmark.circle") { tutorialHelp = true }.accessibilityIdentifier("setup-context-help")
                     } else { tutorialExplanation(step) }
                 }.frame(maxWidth: 640, alignment: .leading).padding(20).frame(maxWidth: .infinity)
@@ -1088,7 +1098,7 @@ private struct ReadOnlyHomeView: View {
                 } else if topic.id == "getting_started", step.target == "connectionCheck" {
                     action("Phone pictures", icon: "arrow.right", primary: true) { showSetup("phone") }
                 } else if guide.canContinue {
-                    action(guide.isLast ? (topic.id == "getting_started" ? "Go to Home" : "Done") : (tutorialIndex == 0 ? (topic.id == "getting_started" ? AQSSTutorialContent.startLabel : "Begin") : "Next"), icon: "arrow.right", primary: !["connectionPlan", "connectionCheck"].contains(step.target)) {
+                    action(guide.isLast ? (topic.id == "getting_started" ? "Go to Home" : "Done") : (tutorialIndex == 0 ? (topic.id == "getting_started" ? AQSSTutorialContent.startLabel : "Begin") : "Next"), icon: "arrow.right", primary: !offersVizioCheck && !["connectionPlan", "connectionCheck"].contains(step.target)) {
                         if guide.isLast { if topic.id == "getting_started" { beginnerTourFinished = true }; closeTutorial() }
                         else { guide.next() }
                     }.accessibilityIdentifier("guide-next")

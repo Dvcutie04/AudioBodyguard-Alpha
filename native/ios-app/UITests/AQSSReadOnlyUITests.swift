@@ -23,16 +23,24 @@ final class AQSSReadOnlyUITests: XCTestCase {
         label("Connection not verified", app)
     }
     func testTVNetworkVisitClearsDraftOnBackgroundAndBack() {
-        let app = launch()
-        tab("devices", app); tap("? Device help", app); tap("VIZIO network check", app)
+        let app = launch(true)
+        next(app); chooseTV("Vizio", app)
+        XCTAssertFalse(app.buttons["guide-vizio-network-check"].exists)
+        next(app); label("Step 4 of 5", app)
+        next(app); label("Step 5 of 5", app)
+        tap("Check VIZIO on Wi-Fi", app, scroll: app.scrollViews["guide-scroll"])
         let field = app.textFields["tv-network-address"]
         XCTAssertTrue(field.waitForExistence(timeout: 5))
+        XCTAssertFalse(app.buttons["tv-network-start-stop"].isEnabled)
         field.tap(); field.typeText("192.168.1.105")
         // No Start: this UI test makes no network attempt on the CI host.
         XCUIDevice.shared.press(.home); app.activate()
         XCTAssertEqual(field.value as? String, "TV IP address")
         XCTAssertEqual(app.staticTexts["tv-network-result"].label, "Ready to check the address you enter.")
-        app.buttons["tv-network-back"].tap(); tap("VIZIO network check", app)
+        app.buttons["tv-network-back"].tap()
+        label("Step 5 of 5", app)
+        XCTAssertEqual(app.staticTexts["guide-device-context"].label, "Vizio  ·  iPhone")
+        tap("Check VIZIO on Wi-Fi", app, scroll: app.scrollViews["guide-scroll"])
         XCTAssertEqual(app.textFields["tv-network-address"].value as? String, "TV IP address")
         app.buttons["tv-network-back"].tap()
     }
@@ -142,6 +150,7 @@ final class AQSSReadOnlyUITests: XCTestCase {
         XCTAssertTrue(app.buttons["Phone pictures"].isHittable)
         XCTAssertFalse(app.buttons["guide-next"].exists)
         next(app); label("Step 5 of 5", app)
+        XCTAssertFalse(app.buttons["guide-vizio-network-check"].exists)
         tap("Setup help", app)
         tap("Jump to voice check", app, scroll: app.scrollViews["setup-help-scroll"])
         label("Microphone off", app)
@@ -1279,9 +1288,18 @@ final class AQSSReadOnlyUITests: XCTestCase {
     private func chooseHome(_ title: String, _ app: XCUIApplication) {
         tap("Setup help", app)
         let help = app.scrollViews["setup-help-scroll"]
-        let optional = app.buttons["optional-home-app"]
-        XCTAssertTrue(optional.waitForExistence(timeout: 5))
-        if optional.value as? String != "Expanded" { tap("Home app (optional)", app, scroll: help) }
+        let optional = help.buttons["optional-home-app"]
+        guard optional.waitForExistence(timeout: 5) else {
+            XCTFail("Setup help must offer the optional home app disclosure")
+            return
+        }
+        if optional.value as? String != "Expanded" { optional.tap() }
+        let expanded = XCTNSPredicateExpectation(predicate: NSPredicate(format: "value == %@", "Expanded"), object: optional)
+        guard XCTWaiter.wait(for: [expanded], timeout: 5) == .completed else {
+            screenshot("Optional home app did not expand", app)
+            XCTFail("Optional home app must expand after one tap: \(app.debugDescription)")
+            return
+        }
         tap(title, app, scroll: help)
         app.buttons["Close"].firstMatch.tap()
         let closed = XCTNSPredicateExpectation(predicate: NSPredicate(format: "exists == false"), object: help)

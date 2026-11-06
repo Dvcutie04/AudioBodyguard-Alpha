@@ -130,6 +130,7 @@ class ReadOnlyHomeActivity : Activity() {
             openSetup = { group -> openSetup(group) },
             openPhoto = { openInputTool("photo", fromTutorial = tutorial.isActive) },
             openTool = { tool -> if (tool == "voice") openInputTool("voice") else startActivity(Intent(this, LiveSoundCheckActivity::class.java).putExtra("dark", skin.dark)) },
+            openTVNetworkCheck = ::openTVNetworkCheck,
             navigate = { target, area ->
                 val destination = InterfaceContent.targetPages[target] ?: "home"
                 if (destination != page || (destination == "settings" && !advancedExpanded && target != "appearance")) rememberPage()
@@ -444,6 +445,9 @@ class ReadOnlyHomeActivity : Activity() {
         }
         section("Captions", "Not observed", "No authored caption track has been discovered or selected.", "captions")
     }
+    private fun openTVNetworkCheck() {
+        startActivity(Intent(this, TVNetworkCheckActivity::class.java).putExtra("dark", skin.dark))
+    }
     private fun devicesPage() {
         destination("Set up your TV", "One picture at a time") { tutorial.start("getting_started") }
         label(column, "Connection not verified", 16f, skin.muted)
@@ -451,9 +455,7 @@ class ReadOnlyHomeActivity : Activity() {
         if (!deviceDetails) return
         label(column, "Testing with friends", 20f, bold = true)
         label(column, com.aqss.nativefeedback.TVTrialReport.BETA_SCOPE, 16f, skin.muted)
-        destination("VIZIO network check", "Check one TV address on home Wi-Fi") {
-            startActivity(Intent(this, TVNetworkCheckActivity::class.java).putExtra("dark", skin.dark))
-        }
+        destination("VIZIO network check", "Check one TV address on home Wi-Fi", ::openTVNetworkCheck)
         destination("TV photo setup", "Read a model label or settings photo") { openInputTool("photo") }
         destination("Illustrated setup guides", "Jump to a TV or home app") { openSetup() }
         action(column, "TV & smart-home guide") { tutorial.start("getting_started") }
