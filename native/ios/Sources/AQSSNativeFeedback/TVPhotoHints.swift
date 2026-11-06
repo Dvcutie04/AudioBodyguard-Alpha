@@ -48,8 +48,9 @@ public struct TVPhotoHints {
     public let brand: String?
     public let model: String?
     public let address: String?
+    public let vizioCheckTarget: AQSSLocalTVTarget?
     public init(_ text: String) {
-        guard photoTextFits(text) else { brand = nil; model = nil; address = nil; return }
+        guard photoTextFits(text) else { brand = nil; model = nil; address = nil; vizioCheckTarget = nil; return }
         let modelLabel = "MODEL(?:[ \\t]+(?:NAME|CODE|NUMBER|NO\\.?))?"
         let addressLabel = "(?:IPV4[ \\t]+IP[ \\t]+ADDRESS|IP(?:V4)?(?:[ \\t]+ADDRESS)?)"
         let upper = text.uppercased().replacingOccurrences(of: "(?m)^[ \\t]*(\(modelLabel)|\(addressLabel))[ \\t]*[:=]?[ \\t]*\\r?\\n[ \\t]*", with: "$1: ", options: .regularExpression)
@@ -73,7 +74,11 @@ public struct TVPhotoHints {
            candidate.range(of: "^[A-Z0-9][A-Z0-9._-]{1,39}$", options: .regularExpression) != nil,
            candidate.contains(where: { $0 >= "0" && $0 <= "9" }) { model = candidate }
         else { model = nil }
-        address = labelled(addressLabel).flatMap { Self.isPrivateIPv4($0) ? $0 : nil }
+        let privateAddress = labelled(addressLabel).flatMap { Self.isPrivateIPv4($0) ? $0 : nil }
+        address = privateAddress
+        vizioCheckTarget = brands.isEmpty || brands == ["VIZIO"]
+            ? privateAddress.flatMap { AQSSLocalTVTarget($0) }
+            : nil
     }
     public static func isPrivateIPv4(_ value: String) -> Bool {
         let parts = value.split(separator: ".", omittingEmptySubsequences: false)

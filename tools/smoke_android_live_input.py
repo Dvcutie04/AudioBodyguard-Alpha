@@ -1411,13 +1411,26 @@ def main():
                          f"{case_prefix}_native_ocr_result", attempts=30)
             screenshot(f"{case_prefix}_native_ocr_result")
             if case_prefix == "photo":
+                wait_for("Address read from photo: 10.20.30.40", "photo_address_review")
+                tap("Use address in VIZIO check", "photo_address_confirm")
+                check = wait_for_all(("VIZIO network check", "Ready to check the address you enter."), "photo_address_idle_check")
+                field = next(n for n in check.iter("node") if n.get("class") == "android.widget.EditText")
+                assert field.get("text") == "10.20.30.40" and field.get("enabled") == "true"
+                assert not has(check, "Review test result"), "Filling the address must not start the check"
+                screenshot("photo_address_idle_check")
+                adb("shell", "input", "keyevent", "KEYCODE_HOME"); launch()
+                check = wait_for_all(("TV IP address", "Ready to check the address you enter."), "photo_address_check_cleared")
+                assert not has(check, "10.20.30.40"), "The handoff must not replay after backgrounding"
+                tap("Back", "photo_address_back")
+                wait_for("Address read from photo: 10.20.30.40", "photo_address_back_to_review")
                 # A newly opened selection replaces the old review even if cancelled.
                 # Use the real picker, then prove the old VIZIO/model/IP do not return.
                 tap("Choose a photo", "photo_replace_to_cancel")
                 screen("photo_replacement_picker")
                 adb("shell", "input", "keyevent", "KEYCODE_BACK")
-                wait_photo_fields(("No photo selected", "Brand: Not identified", "Model: Not identified", "TV IP hint: Not identified"),
-                             "photo_replacement_cancel_empty")
+                empty = wait_photo_fields(("No photo selected", "Brand: Not identified", "Model: Not identified", "TV IP hint: Not identified"),
+                                          "photo_replacement_cancel_empty")
+                assert not has(empty, "Use address in VIZIO check"), "Cancelled replacement must clear the old address action"
                 screenshot("photo_replacement_cancel_empty")
                 choose_photo_fixture(display_name, "photo_reselect")
                 wait_photo_fields(expected, "photo_reselect_native_ocr_result", attempts=30)

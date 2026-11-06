@@ -116,6 +116,7 @@ final class TVNetworkCheck: ObservableObject {
 
 struct TVNetworkCheckView: View {
     let theme: AppTheme
+    var takePhotoTarget: (() -> AQSSLocalTVTarget?)? = nil
     @Environment(\.dismiss) private var dismiss
     @Environment(\.scenePhase) private var scenePhase
     @StateObject private var check = TVNetworkCheck()
@@ -126,6 +127,9 @@ struct TVNetworkCheckView: View {
     var body: some View {
         Group {
             if let report = reviewedReport { reviewContent(report) } else { checkContent }
+        }
+        .onAppear {
+            if let target = takePhotoTarget?(), scenePhase == .active { check.address = target.address }
         }
         .onChange(of: scenePhase) { phase in if phase != .active { check.stop(clear: true) } }
         .onDisappear { check.stop(clear: true) }

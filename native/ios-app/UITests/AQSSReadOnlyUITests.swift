@@ -1390,11 +1390,27 @@ final class AQSSReadOnlyUITests: XCTestCase {
         }
         try selectFixture(expected: identified)
         screenshot("Native photo review before replacement", app)
+        label("Address read from photo: 10.20.30.40", app)
+        XCTAssertFalse(app.textFields["tv-network-address"].exists)
+        tap("Use address in VIZIO check", app, scroll: app.scrollViews["photo-review-scroll"])
+        let address = app.textFields["tv-network-address"]
+        XCTAssertTrue(address.waitForExistence(timeout: 5))
+        XCTAssertEqual(address.value as? String, "10.20.30.40")
+        label("Ready to check the address you enter.", app)
+        XCTAssertTrue(app.buttons["tv-network-start-stop"].isEnabled)
+        XCTAssertFalse(app.buttons["tv-network-review"].exists)
+        XCTAssertFalse(app.alerts.firstMatch.exists)
+        screenshot("Photo address fills an idle VIZIO check", app)
+        XCUIDevice.shared.press(.home); app.activate()
+        XCTAssertEqual(address.value as? String, "TV IP address")
+        app.buttons["tv-network-back"].tap()
+        label("Address read from photo: 10.20.30.40", app)
         tap("Choose a photo", app, scroll: app.scrollViews["photo-review-scroll"])
         let cancel = app.buttons["Cancel"].firstMatch
         XCTAssertTrue(cancel.waitForExistence(timeout: 10)); cancel.tap()
         label("No photo selected", app); assertNoPhotoBrand(app)
         label("Model: Not identified", app); label("TV IP hint: Not identified", app)
+        XCTAssertFalse(app.buttons["photo-use-vizio-address"].exists)
         screenshot("Replacement cancellation discards the old review", app)
         try selectFixture(expected: identified)
         for name in ["EMPTY", "UNRELATED"] {
@@ -1413,6 +1429,9 @@ final class AQSSReadOnlyUITests: XCTestCase {
         tap("Clear photo details", app, scroll: app.scrollViews["photo-review-scroll"])
         label("No photo selected", app); assertNoPhotoBrand(app)
         app.buttons["Close"].firstMatch.tap()
+        tap("VIZIO network check", app)
+        XCTAssertEqual(app.textFields["tv-network-address"].value as? String, "TV IP address")
+        app.buttons["tv-network-back"].tap()
         tab("home", app); label("Connection not verified", app)
     }
 
