@@ -6,6 +6,11 @@ Checkpoint: November 2, 2026. Continue from the restored a-Shell baseline and th
 
 ## Current checkpoint
 
+The [0.46 connection trial](vizio-network-check-2026-11-02.md#046-connection-trial)
+brings the V505M-K09 address pictures and reviewed photo entry into one Android
+and iPhone build. Use the trial to record the next observation on the actual
+phone, TV and home Wi-Fi.
+
 The [offline TV identity review](vizio-network-check-2026-11-02.md#offline-identity-review)
 starts the next VIZIO phase with a certificate comparison fixture. It ties the
 comparison to one exact reviewed reply report and requires a separately supplied

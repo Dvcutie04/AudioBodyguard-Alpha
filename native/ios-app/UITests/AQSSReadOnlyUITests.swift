@@ -58,6 +58,66 @@ final class AQSSReadOnlyUITests: XCTestCase {
         XCTAssertEqual(app.staticTexts["tv-network-result"].label, "Ready to check the address you enter.")
         app.buttons["tv-network-back"].tap()
     }
+    func testTVAddressPicturesKeepTheCheckDraftAndStepOrder() {
+        let app = launch()
+        tab("devices", app); tap("? Device help", app); tap("VIZIO network check", app)
+        let field = app.textFields["tv-network-address"]
+        XCTAssertTrue(field.waitForExistence(timeout: 5))
+        field.tap(); field.typeText("192.168.0.42")
+        tap("Find my TV’s IP address", app, scroll: app.scrollViews["tv-network-scroll"])
+        label("VIZIO V505M-K09 · iPhone", app)
+        XCTAssertFalse(app.otherElements["setup-illustration"].exists)
+        let next = app.buttons["tv-address-guide-next"]
+        let back = app.buttons["tv-address-guide-back"]
+        app.buttons["tv-address-guide-mismatch"].tap()
+        label("Find the right screen", app)
+        back.tap()
+        XCTAssertEqual(next.label, "My TV matches")
+        next.tap()
+        let targets = ["Menu (gear)", "Network", "Network Information", "IP Address", "TV IP address"]
+        for (index, target) in targets.enumerated() {
+            label("Step \(index + 1) of \(targets.count)", app)
+            XCTAssertTrue(pictureDescription(app).contains("Highlighted: \(target)."))
+            if index == 1 {
+                back.tap(); label("Step 1 of 5", app)
+                XCTAssertTrue(pictureDescription(app).contains("Highlighted: Menu (gear)."))
+                next.tap(); label("Step 2 of 5", app)
+            }
+            if index == 2 { screenshot("V505M-K09 Network Information picture", app) }
+            if index == targets.count - 1 {
+                XCTAssertTrue(pictureDescription(app).contains("Phone screen: VIZIO network check"))
+                XCTAssertEqual(next.label, "Back to address field")
+                screenshot("VIZIO address entry on iPhone", app)
+            }
+            next.tap()
+        }
+        XCTAssertTrue(field.waitForExistence(timeout: 5))
+        XCTAssertEqual(field.value as? String, "192.168.0.42")
+        label("Ready to check the address you enter.", app)
+        XCTAssertFalse(app.buttons["tv-network-review"].exists)
+        app.buttons["tv-network-back"].tap()
+
+        tap("TV photo setup", app)
+        let photoScroll = app.scrollViews["photo-review-scroll"]
+        tap("Photo help", app, scroll: photoScroll)
+        tap("VIZIO V505M-K09 address pictures", app, scroll: photoScroll)
+        label("VIZIO V505M-K09 · iPhone", app)
+        XCTAssertFalse(field.exists)
+        XCTAssertEqual(next.label, "My TV matches")
+        next.tap()
+        for (index, target) in targets.dropLast().enumerated() {
+            label("Step \(index + 1) of 4", app)
+            XCTAssertTrue(pictureDescription(app).contains("Highlighted: \(target)."))
+            if index == 3 {
+                XCTAssertEqual(next.label, "Back to photo setup")
+                screenshot("V505M-K09 address picture from Photo help", app)
+            }
+            next.tap()
+        }
+        XCTAssertTrue(photoScroll.waitForExistence(timeout: 5))
+        label("No photo selected", app)
+        XCTAssertFalse(field.exists)
+    }
     func testSimplifiedSetupWithLargestTextAndReducedMotion() { checkSimplifiedSetup(large: true) }
     func testLargeTextSetupHelpScrollsWithoutOpeningAShortcut() {
         let app = XCUIApplication()
@@ -1390,11 +1450,27 @@ final class AQSSReadOnlyUITests: XCTestCase {
         }
         try selectFixture(expected: identified)
         screenshot("Native photo review before replacement", app)
+        label("Address read from photo: 10.20.30.40", app)
+        XCTAssertFalse(app.textFields["tv-network-address"].exists)
+        tap("Use address in VIZIO check", app, scroll: app.scrollViews["photo-review-scroll"])
+        let address = app.textFields["tv-network-address"]
+        XCTAssertTrue(address.waitForExistence(timeout: 5))
+        XCTAssertEqual(address.value as? String, "10.20.30.40")
+        label("Ready to check the address you enter.", app)
+        XCTAssertTrue(app.buttons["tv-network-start-stop"].isEnabled)
+        XCTAssertFalse(app.buttons["tv-network-review"].exists)
+        XCTAssertFalse(app.alerts.firstMatch.exists)
+        screenshot("Photo address fills an idle VIZIO check", app)
+        XCUIDevice.shared.press(.home); app.activate()
+        XCTAssertEqual(address.value as? String, "TV IP address")
+        app.buttons["tv-network-back"].tap()
+        label("Address read from photo: 10.20.30.40", app)
         tap("Choose a photo", app, scroll: app.scrollViews["photo-review-scroll"])
         let cancel = app.buttons["Cancel"].firstMatch
         XCTAssertTrue(cancel.waitForExistence(timeout: 10)); cancel.tap()
         label("No photo selected", app); assertNoPhotoBrand(app)
         label("Model: Not identified", app); label("TV IP hint: Not identified", app)
+        XCTAssertFalse(app.buttons["photo-use-vizio-address"].exists)
         screenshot("Replacement cancellation discards the old review", app)
         try selectFixture(expected: identified)
         for name in ["EMPTY", "UNRELATED"] {
@@ -1413,6 +1489,9 @@ final class AQSSReadOnlyUITests: XCTestCase {
         tap("Clear photo details", app, scroll: app.scrollViews["photo-review-scroll"])
         label("No photo selected", app); assertNoPhotoBrand(app)
         app.buttons["Close"].firstMatch.tap()
+        tap("VIZIO network check", app)
+        XCTAssertEqual(app.textFields["tv-network-address"].value as? String, "TV IP address")
+        app.buttons["tv-network-back"].tap()
         tab("home", app); label("Connection not verified", app)
     }
 
