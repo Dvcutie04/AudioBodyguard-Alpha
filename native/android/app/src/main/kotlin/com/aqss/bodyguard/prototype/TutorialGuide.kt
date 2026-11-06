@@ -28,6 +28,7 @@ class TutorialGuide(
     private val openSetup: (String) -> Unit,
     private val openPhoto: () -> Unit,
     private val openTool: (String) -> Unit,
+    private val openTVNetworkCheck: () -> Unit,
     private val navigate: (String, String?) -> Unit,
     private val restorePage: (String) -> Unit,
     private val focusHelp: () -> Unit,
@@ -52,6 +53,7 @@ class TutorialGuide(
     val isActive get() = guide.topicId != null
     val isBeginner get() = guide.topicId == "getting_started"
     val pictureTarget get() = guide.step?.target?.takeIf { isBeginner && it in listOf("connectionPlan", "connectionCheck") }
+    private val offersVizioCheck get() = isBeginner && guide.isLast && selectedTV == "vizio"
     fun useSuggestedTV(brand: String?): Boolean {
         if (!guide.acceptPhotoBrand(brand)) return false
         render(); return true
@@ -192,6 +194,10 @@ class TutorialGuide(
                     content.addView(button("Choose TV brand") { chooseBrand() }, LinearLayout.LayoutParams(-1, -2))
                 }
             }
+            if (offersVizioCheck) {
+                content.addView(button("Check VIZIO on Wi-Fi", primary = true, action = openTVNetworkCheck),
+                    LinearLayout.LayoutParams(-1, -2))
+            }
             content.addView(button("? Setup help") { setupHelp() }, LinearLayout.LayoutParams(-2, -2).apply { topMargin = dp(20) })
         } else {
             appendHelp(step)
@@ -280,11 +286,12 @@ class TutorialGuide(
             row.addView(button("Phone pictures", primary = true) { openSetup("phone") }, LinearLayout.LayoutParams(0, -2, 1f))
         } else if (guide.canContinue) {
             val label = if (guide.isLast) { if (isBeginner) "Go to Home" else "Done" } else if (guide.index == 0) { if (isBeginner) TutorialContent.startLabel else "Begin" } else "Next"
-            row.addView(button(label, primary = step.target !in listOf("connectionPlan", "connectionCheck")) {
+            val primary = !offersVizioCheck && step.target !in listOf("connectionPlan", "connectionCheck")
+            row.addView(button(label, primary = primary) {
                 if (guide.isLast) { finished(topic.id); close() } else { guide.next(); render() }
             }.apply {
                 compoundDrawablePadding = dp(12)
-                setCompoundDrawablesWithIntrinsicBounds(null, null, InterfaceSymbol(skin, "arrow.right", if (step.target !in listOf("connectionPlan", "connectionCheck")) skin.controlText else skin.text), null)
+                setCompoundDrawablesWithIntrinsicBounds(null, null, InterfaceSymbol(skin, "arrow.right", if (primary) skin.controlText else skin.text), null)
             }, LinearLayout.LayoutParams(0, -2, 1f))
         }
         controls.addView(row)
