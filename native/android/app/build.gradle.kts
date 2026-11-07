@@ -11,8 +11,8 @@ android {
         applicationId = "com.aqss.bodyguard.prototype"
         minSdk = 26
         targetSdk = 36
-        versionCode = 48
-        versionName = "0.45-friend-trial"
+        versionCode = 51
+        versionName = "0.49-vizio-trial"
     }
 
     buildTypes {

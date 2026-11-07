@@ -152,66 +152,177 @@ struct ReviewedTextShareButton: View {
     let theme: AppTheme
     let title: String
     let identifier: String
-    @State private var sharing = false
+    @State private var request: ReviewedTextShareRequest?
+    @State private var unavailable = false
 
     var body: some View {
-        Button { sharing = true } label: {
-            Label(title, systemImage: "square.and.arrow.up")
-                .frame(maxWidth: .infinity, minHeight: 44)
+        VStack(alignment: .leading, spacing: 6) {
+            Button {
+                guard request == nil else { return }
+                unavailable = false
+                request = ReviewedTextShareRequest(text: text)
+            } label: {
+                Label(title, systemImage: "square.and.arrow.up")
+                    .frame(maxWidth: .infinity, minHeight: 44)
+            }
+            .buttonStyle(AppButtonStyle(theme: theme))
+            .disabled(request != nil)
+            .background(ReviewedTextSharePresenter(request: $request, unavailable: $unavailable).allowsHitTesting(false))
+            .accessibilityIdentifier(identifier)
+            if unavailable {
+                Text("Sharing couldn’t open. Try again.")
+                    .font(.caption).foregroundColor(theme.warning)
+                    .accessibilityIdentifier(identifier + "-unavailable")
+            }
         }
-        .buttonStyle(AppButtonStyle(theme: theme))
-        .disabled(sharing)
-        .background(ReviewedTextSharePresenter(text: text, isPresented: $sharing).allowsHitTesting(false))
-        .accessibilityIdentifier(identifier)
     }
 }
 
-/// The system receives only the visible text snapshot, after an explicit tap.
-private struct ReviewedTextSharePresenter: UIViewControllerRepresentable {
+private struct ReviewedTextShareRequest {
+    let id = UUID()
     let text: String
-    @Binding var isPresented: Bool
+}
 
-    final class AnchorController: UIViewController {
-        var whenReady: (() -> Void)?
-        var traceLifecycle: ((String, UIViewController) -> Void)?
-        private(set) var appeared = false
-        private var readinessScheduled = false
-        func checkWhenReady() {
-            guard !readinessScheduled else { return }
-            readinessScheduled = true
-            DispatchQueue.main.async { [weak self] in
-                guard let self = self else { return }
-                self.readinessScheduled = false
-                self.whenReady?()
-            }
-        }
-        override func didMove(toParent parent: UIViewController?) {
-            super.didMove(toParent: parent)
-            traceLifecycle?(parent == nil ? "anchor-detached" : "anchor-attached", self)
-            checkWhenReady()
-        }
-        override func viewDidAppear(_ animated: Bool) {
-            super.viewDidAppear(animated); appeared = true
-            traceLifecycle?("anchor-appeared", self); checkWhenReady()
-        }
-        override func viewWillDisappear(_ animated: Bool) {
-            traceLifecycle?("anchor-will-disappear", self)
-            appeared = false; super.viewWillDisappear(animated)
-        }
-        override func viewDidLayoutSubviews() { super.viewDidLayoutSubviews(); checkWhenReady() }
-    }
+/// One explicitly requested, frozen text payload from the currently attached review.
+private struct ReviewedTextSharePresenter: UIViewControllerRepresentable {
+    @Binding var request: ReviewedTextShareRequest?
+    @Binding var unavailable: Bool
 
     final class Coordinator: NSObject, UIPopoverPresentationControllerDelegate {
-        var presentation: Binding<Bool>
-        var activity: UIActivityViewController?
-        var waitingForTransition = false
-        var retired = false
+        var request: Binding<ReviewedTextShareRequest?>
+        var unavailable: Binding<Bool>
+        private var owner: UUID?
+        private var activity: UIActivityViewController?
+        private var readinessCheck: DispatchWorkItem?
+        private var attachmentCheck: DispatchWorkItem?
+        private var retired = false
         private var traceCount = 0
         private var lastTraceEvent: String?
-        init(_ presentation: Binding<Bool>) { self.presentation = presentation }
-        // Explicitly opted-in Simulator diagnostics only. Never record the
-        // reviewed text, activity destinations, errors or object addresses.
-        func trace(_ event: String, _ controller: UIViewController) {
+
+        init(request: Binding<ReviewedTextShareRequest?>, unavailable: Binding<Bool>) {
+            self.request = request
+            self.unavailable = unavailable
+        }
+
+        func beginIfRequested(from anchor: UIViewController) {
+            guard !retired, owner == nil, let pending = request.wrappedValue else { return }
+            owner = pending.id
+            waitForPresenter(pending, anchor: anchor, deadline: .now() + .seconds(3), delay: .milliseconds(0))
+        }
+
+        private func owns(_ id: UUID) -> Bool {
+            !retired && owner == id && request.wrappedValue?.id == id
+        }
+
+        private func waitForPresenter(_ pending: ReviewedTextShareRequest, anchor: UIViewController,
+                                      deadline: DispatchTime, delay: DispatchTimeInterval) {
+            let work = DispatchWorkItem { [weak self, weak anchor] in
+                guard let self = self, self.owns(pending.id) else { return }
+                self.readinessCheck = nil
+                guard let anchor = anchor else { self.complete(pending.id, failed: true); return }
+                if DispatchTime.now() >= deadline || anchor.viewIfLoaded?.window?.windowScene?.activationState == .background {
+                    self.trace("presenter-unavailable", anchor)
+                    self.complete(pending.id, failed: true)
+                } else if let presenter = self.readyPresenter(for: anchor) {
+                    self.present(pending, from: presenter, anchor: anchor)
+                } else {
+                    self.waitForPresenter(pending, anchor: anchor, deadline: deadline, delay: .milliseconds(80))
+                }
+            }
+            readinessCheck = work
+            DispatchQueue.main.asyncAfter(deadline: .now() + delay, execute: work)
+        }
+
+        private func readyPresenter(for anchor: UIViewController) -> UIViewController? {
+            // The review can insert this child after its parent has appeared.
+            // Check its window and the actual containing controller.
+            guard anchor.parent != nil, let view = anchor.viewIfLoaded, let window = view.window,
+                  window.windowScene?.activationState == .foregroundActive else { return nil }
+            if UIDevice.current.userInterfaceIdiom == .pad && view.bounds.isEmpty { return nil }
+            var presenter = anchor
+            while let parent = presenter.parent { presenter = parent }
+            guard presenter.viewIfLoaded?.window === window, !presenter.isBeingPresented,
+                  !presenter.isBeingDismissed, presenter.presentedViewController == nil,
+                  presenter.transitionCoordinator == nil else { return nil }
+            return presenter
+        }
+
+        private func present(_ pending: ReviewedTextShareRequest, from presenter: UIViewController,
+                             anchor: UIViewController) {
+            let controller = UIActivityViewController(activityItems: [pending.text], applicationActivities: nil)
+            controller.modalPresentationStyle = UIDevice.current.userInterfaceIdiom == .pad ? .popover : .pageSheet
+            if let popover = controller.popoverPresentationController {
+                popover.sourceView = anchor.view
+                popover.sourceRect = anchor.view.bounds
+                popover.delegate = self
+            }
+            controller.completionWithItemsHandler = { [weak self, weak controller] _, _, _, _ in
+                DispatchQueue.main.async {
+                    guard let controller = controller else { return }
+                    self?.finished(controller)
+                }
+            }
+            activity = controller
+            controller.presentationController?.delegate = self
+
+            // Release a declined launch only after UIKit has had time to attach.
+            let check = DispatchWorkItem { [weak self, weak presenter, weak controller] in
+                guard let self = self, let controller = controller, self.owns(pending.id),
+                      self.activity === controller else { return }
+                self.attachmentCheck = nil
+                guard presenter?.presentedViewController !== controller, controller.presentingViewController == nil,
+                      controller.viewIfLoaded?.window == nil, controller.presentationController?.containerView?.window == nil,
+                      !controller.isBeingPresented, controller.transitionCoordinator == nil else { return }
+                self.trace("presentation-declined", controller)
+                controller.completionWithItemsHandler = nil
+                self.complete(pending.id, failed: true)
+            }
+            attachmentCheck = check
+            DispatchQueue.main.asyncAfter(deadline: .now() + .seconds(8), execute: check)
+            trace("presentation-requested", presenter)
+            presenter.present(controller, animated: true) { [weak self, weak controller] in
+                guard let self = self, let controller = controller, self.activity === controller else { return }
+                self.attachmentCheck?.cancel(); self.attachmentCheck = nil
+                self.trace("presentation-completed", controller)
+            }
+        }
+
+        private func complete(_ id: UUID, failed: Bool = false) {
+            guard owns(id) else { return }
+            readinessCheck?.cancel(); readinessCheck = nil
+            attachmentCheck?.cancel(); attachmentCheck = nil
+            activity = nil; owner = nil
+            request.wrappedValue = nil
+            unavailable.wrappedValue = failed
+        }
+
+        private func finished(_ completed: UIActivityViewController) {
+            guard activity === completed, let id = owner else { return }
+            trace("ownership-finished", completed)
+            complete(id)
+        }
+
+        func presentationControllerDidDismiss(_ presentationController: UIPresentationController) {
+            if let completed = presentationController.presentedViewController as? UIActivityViewController {
+                finished(completed)
+            }
+        }
+
+        func popoverPresentationControllerDidDismissPopover(_ popoverPresentationController: UIPopoverPresentationController) {
+            presentationControllerDidDismiss(popoverPresentationController)
+        }
+
+        func retire() {
+            retired = true
+            readinessCheck?.cancel(); readinessCheck = nil
+            attachmentCheck?.cancel(); attachmentCheck = nil
+            activity?.completionWithItemsHandler = nil
+            activity?.dismiss(animated: false)
+            activity = nil; owner = nil
+        }
+
+        // Opt-in Simulator diagnostics contain only controller and event names.
+        private func trace(_ event: String, _ controller: UIViewController) {
             #if targetEnvironment(simulator)
             guard ProcessInfo.processInfo.arguments.contains("--aqss-trace-sharing"),
                   traceCount < 64, lastTraceEvent != event else { return }
@@ -221,94 +332,25 @@ private struct ReviewedTextSharePresenter: UIViewControllerRepresentable {
                   String(String(describing: type(of: controller)).prefix(160)))
             #endif
         }
-        func finished(_ completed: UIActivityViewController) {
-            // A late callback from a retired or earlier presentation must not
-            // enable a newer Share request.
-            guard !retired, activity === completed else { return }
-            trace("ownership-finished", completed)
-            activity = nil; waitingForTransition = false
-            presentation.wrappedValue = false
-        }
-        func presentationControllerDidDismiss(_ presentationController: UIPresentationController) {
-            trace("native-dismissed", presentationController.presentedViewController)
-            if let completed = presentationController.presentedViewController as? UIActivityViewController {
-                finished(completed)
-            }
-        }
-        func popoverPresentationControllerDidDismissPopover(_ popoverPresentationController: UIPopoverPresentationController) {
-            presentationControllerDidDismiss(popoverPresentationController)
-        }
     }
 
-    func makeCoordinator() -> Coordinator { Coordinator($isPresented) }
-    func makeUIViewController(context: Context) -> AnchorController {
-        let controller = AnchorController()
-        controller.traceLifecycle = { [weak coordinator = context.coordinator] event, controller in
-            coordinator?.trace(event, controller)
-        }
-        controller.view.backgroundColor = .clear
-        controller.view.accessibilityElementsHidden = true
-        return controller
+    func makeCoordinator() -> Coordinator { Coordinator(request: $request, unavailable: $unavailable) }
+
+    func makeUIViewController(context: Context) -> UIViewController {
+        let anchor = UIViewController()
+        anchor.view.backgroundColor = .clear
+        anchor.view.accessibilityElementsHidden = true
+        return anchor
     }
-    func updateUIViewController(_ controller: AnchorController, context: Context) {
-        let coordinator = context.coordinator
-        coordinator.presentation = $isPresented
-        controller.whenReady = { [weak controller, weak coordinator] in
-            guard let controller = controller, let coordinator = coordinator,
-                  !coordinator.retired, coordinator.presentation.wrappedValue,
-                  coordinator.activity == nil, !coordinator.waitingForTransition, controller.appeared,
-                  controller.parent != nil, controller.view.window != nil, !controller.isBeingDismissed,
-                  controller.presentedViewController == nil else { return }
-            coordinator.trace("anchor-ready", controller)
-            // Present from the attached sheet's actual containing controller,
-            // rather than asking UIKit to forward from a button-sized child.
-            var presenter: UIViewController = controller
-            while let parent = presenter.parent { presenter = parent }
-            guard presenter.viewIfLoaded?.window === controller.view.window,
-                  !presenter.isBeingDismissed, presenter.presentedViewController == nil else {
-                coordinator.trace("presenter-not-ready", presenter); return
-            }
-            if let transition = presenter.transitionCoordinator {
-                coordinator.trace("awaiting-existing-transition", presenter)
-                coordinator.waitingForTransition = true
-                _ = transition.animate(alongsideTransition: nil) { [weak controller, weak coordinator] _ in
-                    if let controller = controller { coordinator?.trace("existing-transition-completed", controller) }
-                    coordinator?.waitingForTransition = false
-                    controller?.checkWhenReady()
-                }
-                return
-            }
-            let activity = UIActivityViewController(activityItems: [text], applicationActivities: nil)
-            activity.modalPresentationStyle = UIDevice.current.userInterfaceIdiom == .pad ? .popover : .pageSheet
-            if UIDevice.current.userInterfaceIdiom == .pad, let popover = activity.popoverPresentationController {
-                popover.sourceView = controller.view
-                popover.sourceRect = controller.view.bounds
-                popover.delegate = coordinator
-            }
-            activity.completionWithItemsHandler = { [weak activity, weak coordinator] _, _, _, _ in
-                guard let activity = activity else { return }
-                coordinator?.trace("native-completion", activity)
-                coordinator?.finished(activity)
-            }
-            // Retain one immutable activity until UIKit reports completion or
-            // dismissal. A next-run-loop hierarchy check is not completion.
-            coordinator.activity = activity
-            activity.presentationController?.delegate = coordinator
-            coordinator.trace("presentation-requested", presenter)
-            presenter.present(activity, animated: true) { [weak activity, weak coordinator] in
-                if let activity = activity { coordinator?.trace("presentation-completed", activity) }
-            }
-        }
-        controller.checkWhenReady()
+
+    func updateUIViewController(_ anchor: UIViewController, context: Context) {
+        context.coordinator.request = $request
+        context.coordinator.unavailable = $unavailable
+        context.coordinator.beginIfRequested(from: anchor)
     }
-    static func dismantleUIViewController(_ controller: AnchorController, coordinator: Coordinator) {
-        coordinator.trace("anchor-dismantled", controller)
-        controller.whenReady = nil
-        controller.traceLifecycle = nil
-        coordinator.retired = true
-        coordinator.activity?.completionWithItemsHandler = nil
-        coordinator.activity?.dismiss(animated: false)
-        coordinator.activity = nil
+
+    static func dismantleUIViewController(_ anchor: UIViewController, coordinator: Coordinator) {
+        coordinator.retire()
     }
 }
 
@@ -382,6 +424,7 @@ private struct ReadOnlyHomeView: View {
     @State private var advancedExpanded = false
     @State private var settingSwitches = AQSSSettingSwitchState()
     @State private var settingResetTask: Task<Void, Never>?
+    @State private var disconnectedSetting: String?
     private struct SettingExplanation: Identifiable {
         let id, title, explanation: String
         var shareText: String? = nil
@@ -418,6 +461,8 @@ private struct ReadOnlyHomeView: View {
 
     private var theme: AppTheme { AppTheme(dark: appearance == "daylight" ? false : appearance == "system" ? systemScheme == .dark : true) }
     private var currentPage: AQSSInterfacePage { AQSSInterfaceContent.pages.first { $0.id == page }! }
+    private var isShowingAdvancedSettings: Bool { page == "settings" && advancedExpanded }
+    private var pageScreenID: String { isShowingAdvancedSettings ? "settings-advanced" : page }
     private var tutorialTopic: AQSSTutorialTopic? { AQSSTutorialContent.topics.first { $0.id == tutorialTopicID } }
     private var tutorialStep: AQSSTutorialStep? {
         guard let topic = tutorialTopic, topic.steps.indices.contains(tutorialIndex) else { return nil }
@@ -448,10 +493,10 @@ private struct ReadOnlyHomeView: View {
                     header
                     ScrollView {
                         VStack(alignment: .leading, spacing: 22) {
-                            pageHeading.id("page-heading")
+                            pageHeading.padding(.top, 20).id("page-heading")
                             pageContent
-                        }.frame(maxWidth: 680, alignment: .leading).padding(20).frame(maxWidth: .infinity)
-                    }.clipped().id(page == "settings" && advancedExpanded ? "settings-advanced" : page).accessibilityIdentifier("home-scroll")
+                        }.frame(maxWidth: 680, alignment: .leading).padding([.horizontal, .bottom], 20).frame(maxWidth: .infinity)
+                    }.clipped().id(pageScreenID).accessibilityIdentifier("home-scroll")
                     navigationBar
                 }
             }
@@ -460,10 +505,8 @@ private struct ReadOnlyHomeView: View {
             .onChange(of: navigationRequest) { request in
                 DispatchQueue.main.async {
                     guard request == navigationRequest, scenePhase == .active else { return }
-                    // A new page's ScrollView identity already starts at the top.
-                    // Scrolling its heading again can remove the content padding.
+                    proxy.scrollTo(navigationTarget, anchor: .top)
                     if navigationTarget != "page-heading" {
-                        proxy.scrollTo(navigationTarget, anchor: .top)
                         focusedElement = .destination(navigationTarget)
                     }
                 }
@@ -577,7 +620,13 @@ private struct ReadOnlyHomeView: View {
             if phase == .active { audioHints.start() }
             else { audioHints.stop(); resetSettingSwitches() }
         }
-        .onChange(of: settingsConnectionVerified) { verified in if !verified { resetSettingSwitches() } }
+        .onChange(of: settingsConnectionVerified) { verified in
+            disconnectedSetting = nil
+            if !verified { resetSettingSwitches() }
+        }
+        .onChange(of: isShowingAdvancedSettings) { showing in
+            if !showing { disconnectedSetting = nil }
+        }
         .onChange(of: page) { _ in soundToolsExpanded = false; moreSettingsExpanded = false; insightsHelpExpanded = false }
         .onChange(of: tutorialStepKey) { _ in moreFeatures = false; moreTVBrands = false; tutorialHelp = false; homeAppsExpanded = false }
         .onChange(of: guide.selections["chooseTV"]) { brand in
@@ -597,7 +646,10 @@ private struct ReadOnlyHomeView: View {
     private var header: some View {
         HStack(spacing: 10) {
             if !pageHistory.isEmpty {
-                Button { backPage() } label: { Image(systemName: "arrow.left").font(.system(size: 20, weight: .semibold)).frame(width: 24, height: 24) }.accessibilityLabel("Back").accessibilityIdentifier("page-back")
+                Button { backPage() } label: {
+                    Image(systemName: "arrow.left").font(.system(size: 20, weight: .semibold))
+                        .frame(width: 24, height: 24).contentShape(Rectangle())
+                }.accessibilityLabel("Back").accessibilityIdentifier("page-back")
             }
             if !textSize.isAccessibilitySize { Image(systemName: "waveform.path").font(.system(size: 24)).foregroundColor(theme.accent).accessibilityHidden(true) }
             if !textSize.isAccessibilitySize && pageHistory.isEmpty {
@@ -612,9 +664,9 @@ private struct ReadOnlyHomeView: View {
     }
 
     private var pageHeading: some View {
-        Text(page == "settings" && advancedExpanded ? "Advanced Settings" : currentPage.title.uppercased()).font(.title.bold())
+        Text(isShowingAdvancedSettings ? "Advanced Settings" : currentPage.title.uppercased()).font(.title.bold())
             .fixedSize(horizontal: false, vertical: true).accessibilityAddTraits(.isHeader)
-            .accessibilityIdentifier("page-\(page)")
+            .accessibilityIdentifier("page-\(pageScreenID)")
     }
 
     @ViewBuilder private var pageContent: some View {
@@ -876,11 +928,16 @@ private struct ReadOnlyHomeView: View {
             if settingSwitches.isAttempting(item.id) {
                 Text("Not connected.").font(.subheadline.weight(.semibold)).padding(.bottom, 12)
                     .accessibilityIdentifier("not-connected-" + item.id)
+            } else if disconnectedSetting == item.id {
+                Text("Connect your device to turn this on.").font(.subheadline).padding(.bottom, 12)
+                    .fixedSize(horizontal: false, vertical: true)
+                    .accessibilityIdentifier("setting-off-reason-" + item.id)
             }
         }.modifier(SectionAnchor(target: item.id))
     }
     private func settingToggle(_ item: AQSSInterfaceSetting) -> some View {
         Toggle(item.title, isOn: Binding(get: { settingSwitches.isOn(item.id) }, set: { _ in
+            disconnectedSetting = settingsConnectionVerified ? nil : item.id
             settingSwitches.press(item.id, connectionVerified: settingsConnectionVerified, now: ProcessInfo.processInfo.systemUptime)
             scheduleSettingReset()
         })).labelsHidden().toggleStyle(SwitchToggleStyle(tint: Color(red: 100 / 255.0, green: 218 / 255.0, blue: 232 / 255.0)))
@@ -912,7 +969,11 @@ private struct ReadOnlyHomeView: View {
             scheduleSettingReset()
         }
     }
-    private func resetSettingSwitches() { settingResetTask?.cancel(); settingResetTask = nil; settingSwitches.connectionLost() }
+    private func resetSettingSwitches() {
+        settingResetTask?.cancel(); settingResetTask = nil
+        settingSwitches.connectionLost()
+        disconnectedSetting = nil
+    }
 
     private var navigationBar: some View {
         Group {
@@ -1011,7 +1072,7 @@ private struct ReadOnlyHomeView: View {
     }
     private func jump(_ target: String) {
         let destination = AQSSInterfaceContent.targetPages[target] ?? "home"
-        if destination != page || (destination == "settings" && !advancedExpanded && target != "appearance") { rememberPage() }
+        if destination != page || (destination == "settings" && advancedExpanded != (target != "appearance")) { rememberPage() }
         closeTutorial(restore: false); showingExample = false; reveal(target)
         navigationTarget = target; navigationRequest += 1
     }

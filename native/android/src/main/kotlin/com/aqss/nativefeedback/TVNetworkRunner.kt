@@ -11,10 +11,14 @@ data class TVNetworkResult(val outcome: TVNetworkOutcome, val port: Int? = null)
 
 /** One bounded worker; cancellation cannot release an entered call or replay it. */
 class TVNetworkRunner {
-    private class Run(val id: Long) {
+    private enum class CancellationClose { NOT_REQUESTED, PENDING, RETURNED }
+    private class Run(val id: Long, val completed: (Long, TVNetworkResult) -> Unit) {
         var cancelled = false
         var cleanupFailed = false
         var socket: TVProbeSocket? = null
+        var cancellationClose = CancellationClose.NOT_REQUESTED
+        var returnedResult: TVNetworkResult? = null
+        var published = false
     }
     private val lock = Any()
     private var active: Run? = null
@@ -24,7 +28,7 @@ class TVNetworkRunner {
               completed: (Long, TVNetworkResult) -> Unit): Long? {
         val run = synchronized(lock) {
             if (active != null || nextId == Long.MAX_VALUE) return null
-            Run(++nextId).also { active = it }
+            Run(++nextId, completed).also { active = it }
         }
         val worker = Thread({
             var result = TVNetworkResult(TVNetworkOutcome.NOT_REACHED)
@@ -53,14 +57,8 @@ class TVNetworkRunner {
                 if (synchronized(lock) { run.cancelled || run.cleanupFailed } ||
                     result.outcome == TVNetworkOutcome.REACHABLE) break
             }
-            val finalResult = synchronized(lock) {
-                when {
-                    run.cleanupFailed -> TVNetworkResult(TVNetworkOutcome.CLEANUP_UNRESOLVED)
-                    run.cancelled -> TVNetworkResult(TVNetworkOutcome.STOPPED)
-                    else -> result
-                }.also { if (!run.cleanupFailed && active === run) active = null }
-            }
-            completed(run.id, finalResult)
+            synchronized(lock) { run.returnedResult = result }
+            finishIfReturned(run)
         }, "aqss-tv-network-check").apply { isDaemon = true }
         try { worker.start() } catch (_: RuntimeException) {
             synchronized(lock) { if (active === run) active = null }
@@ -70,13 +68,44 @@ class TVNetworkRunner {
     }
 
     fun cancel(id: Long) {
-        val run = synchronized(lock) {
-            active?.takeIf { it.id == id }?.also { it.cancelled = true }
+        val close = synchronized(lock) {
+            val run = active?.takeIf { it.id == id && !it.published } ?: return@synchronized null
+            run.cancelled = true
+            val socket = run.socket ?: return@synchronized null
+            if (run.cancellationClose != CancellationClose.NOT_REQUESTED) return@synchronized null
+            run.cancellationClose = CancellationClose.PENDING
+            run to socket
         } ?: return
-        val socket = synchronized(lock) { run.socket }
-        try { socket?.close() } catch (_: Exception) {
-            synchronized(lock) { run.cleanupFailed = true }
+        val (run, socket) = close
+        try {
+            Thread({
+                try { socket.close() } catch (_: Exception) {
+                    synchronized(lock) { run.cleanupFailed = true }
+                } finally {
+                    synchronized(lock) { run.cancellationClose = CancellationClose.RETURNED }
+                    finishIfReturned(run)
+                }
+            }, "aqss-tv-network-close").apply { isDaemon = true; start() }
+        } catch (_: RuntimeException) {
+            // No close entered. The original worker still owns connection and cleanup.
+            synchronized(lock) { run.cancellationClose = CancellationClose.RETURNED }
+            finishIfReturned(run)
         }
-        // Only the worker's actual return and cleanup may release the occupied slot.
+    }
+
+    private fun finishIfReturned(run: Run) {
+        val result = synchronized(lock) {
+            if (active !== run || run.published || run.cancellationClose == CancellationClose.PENDING) {
+                return@synchronized null
+            }
+            val returned = run.returnedResult ?: return@synchronized null
+            run.published = true
+            when {
+                run.cleanupFailed -> TVNetworkResult(TVNetworkOutcome.CLEANUP_UNRESOLVED)
+                run.cancelled -> TVNetworkResult(TVNetworkOutcome.STOPPED)
+                else -> returned
+            }.also { if (!run.cleanupFailed) active = null }
+        }
+        if (result != null) run.completed(run.id, result)
     }
 }

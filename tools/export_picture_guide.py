@@ -90,7 +90,11 @@ def svg(step, number, route):
         elif kind == 'both' and len(step['items']) <= 2:
             rect(80,236,210,100,'#243958');rect(173,336,24,10,'#536c96')
             rect(420,214,82,132,'#243958');text(114,276,'TV',size=21);text(430,276,'Phone',size=14)
-    text(28,398,('TV remote: arrows + OK' if step['surface']=='tv' else 'TV + phone' if step['surface']=='both' else 'On your phone')+' · '+step['action'],color='#60d8e5',size=19)
+    if route['id'] == 'vizio_v505m_k09_address':
+        caption = {'remote': 'On your TV remote', 'tv': 'On your TV', 'phone': 'On your phone'}.get(kind, 'Follow the highlighted step')
+    else:
+        caption = ('TV remote: arrows + OK' if step['surface']=='tv' else 'TV + phone' if step['surface']=='both' else 'On your phone')+' · '+step['action']
+    text(28,398,caption,color='#60d8e5',size=19)
     pieces.append('</svg>');return ''.join(pieces)
 
 def render(data):

@@ -8,7 +8,7 @@
       "AQSSReadOnlyUITests/testAllFivePagesKeepHelpAndTruthfulEmptyStates",
       "AQSSReadOnlyUITests/testFirstVisitHasOnePathChoiceGatesTailoredPlanAndReplay",
       "AQSSReadOnlyUITests/testOptionsAndAdvancedRemainUnavailable",
-      "AQSSReadOnlyUITests/testAdvancedSwitchAttemptResetsAfterTwoSecondsAndHelpReturnsToCaller",
+      "AQSSReadOnlyUITests/testAdvancedSwitchExplainsWhyItStaysOffAndHelpReturnsToCaller",
       "AQSSReadOnlyUITests/testAdvancedSwitchResetSurvivesNavigationBackgroundAndLargestText",
       "AQSSReadOnlyUITests/testExitAtWelcomeAndContextualGuideRestoreFullApp",
       "AQSSReadOnlyUITests/testExampleAppearanceAndFutureFeatureDoNotClaimAudio",
@@ -18,6 +18,7 @@
       "AQSSReadOnlyUITests/testLargeTextSetupHelpScrollsWithoutOpeningAShortcut"
     ],
     "pictures": [
+      "AQSSReadOnlyUITests/testTVAddressPicturesKeepTheCheckDraftAndStepOrder",
       "AQSSReadOnlyUITests/testRokuPicturesResumeAndFinishWithoutClaimingConnection",
       "AQSSReadOnlyUITests/testNewVizioTVShowsAccountThenPhonePicturesInOrder",
       "AQSSReadOnlyUITests/testRokuPartOneImmediatelyOpensPhonePicturesInFirstVisit",
