@@ -38,6 +38,12 @@ certificate validation and shows the SHA-256 fingerprint for independent
 comparison. A matching reference still requires a supported identity source.
 Loopback fixtures check the read and failure paths before the real-phone trial.
 
+The iPhone and iPad 0.50.0/build 5 candidate adds the same explicit certificate
+read after a TCP reply. It binds to the reply's address, port, Wi-Fi interface
+and local IP. It rejects TLS and displays the fingerprint after connection
+cleanup. An address edit, a new check or leaving the foreground clears the
+fingerprint. The v1 report still records the TCP outcome alone.
+
 On the physical V505M-K09 trial, record the phone OS and TV firmware, compare the
 Wi-Fi pictures and address steps to the actual menus, then check the displayed
 private address on home Wi-Fi. Record the observed outcome and review the

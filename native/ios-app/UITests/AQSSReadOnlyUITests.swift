@@ -13,12 +13,14 @@ final class AQSSReadOnlyUITests: XCTestCase {
         let field = app.textFields["tv-network-address"]
         XCTAssertTrue(field.waitForExistence(timeout: 5))
         XCTAssertFalse(app.buttons["tv-network-start-stop"].isEnabled)
+        XCTAssertFalse(app.buttons["tv-network-certificate-read"].exists)
         field.tap(); field.typeText("8.8.8.8")
         tap("Check this address", app, scroll: app.scrollViews["tv-network-scroll"])
         label("Enter the private IPv4 address shown in your TV’s network settings.", app)
         XCTAssertEqual(app.staticTexts["tv-network-boundary"].label,
                        "TV identity, pairing and audio protection are not verified.")
         XCTAssertEqual(app.alerts.count, 0, "Rejected input must not request local-network access")
+        XCTAssertFalse(app.buttons["tv-network-certificate-read"].exists)
         let form = app.scrollViews["tv-network-scroll"]
         XCTAssertFalse(app.buttons["tv-network-wifi-guide-open"].exists)
         tap("Help with this check", app, scroll: form)

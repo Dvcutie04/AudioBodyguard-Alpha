@@ -2,14 +2,40 @@ import SwiftUI
 import Network
 import UIKit
 
-/// One foreground TCP handshake at a time. No bytes, TLS exceptions, TV commands,
-/// discovery, credentials or automatic restarts. Retain ownership until cancelled.
+/// One foreground diagnostic at a time. A certificate read always rejects TLS.
+/// Retain ownership until the connection reports cancellation.
 @MainActor
 final class TVNetworkCheck: ObservableObject {
+    private struct ReachedService {
+        let target: AQSSLocalTVTarget
+        let port: NWEndpoint.Port
+        let interface: NWInterface
+        let localHost: NWEndpoint.Host
+
+        init?(target: AQSSLocalTVTarget, port: NWEndpoint.Port, path: NWPath?) {
+            guard let path = path, path.status == .satisfied, path.usesInterfaceType(.wifi),
+                  case .hostPort(let host, _)? = path.localEndpoint else { return nil }
+            let wifi = path.availableInterfaces.filter { $0.type == .wifi }
+            guard wifi.count == 1, let interface = wifi.first else { return nil }
+            self.target = target
+            self.port = port
+            self.interface = interface
+            localHost = host
+        }
+
+        func makeCertificateConnection(options: NWProtocolTLS.Options) -> NWConnection {
+            let parameters = NWParameters(tls: options)
+            parameters.requiredInterface = interface
+            parameters.requiredLocalEndpoint = .hostPort(host: localHost, port: .any)
+            return NWConnection(host: NWEndpoint.Host(target.address), port: port, using: parameters)
+        }
+    }
+
     private static var owner: TVNetworkCheck?
     @Published var address = "" {
         didSet {
             if !busy && address != oldValue {
+                clearCertificate()
                 lastOutcome = nil
                 message = "Ready to check the address you enter."
             }
@@ -19,6 +45,10 @@ final class TVNetworkCheck: ObservableObject {
     @Published private(set) var stopping = false
     @Published private(set) var message = "Ready to check the address you enter."
     @Published private(set) var lastOutcome: TVTrialOutcome?
+    @Published private(set) var fingerprint: String?
+    private var reachedService: ReachedService?
+    private var certificateObserver: AQSSPeerCertificateObserver?
+    private var pendingFingerprint: String?
     private var target: AQSSLocalTVTarget?
     private var connection: NWConnection?
     private var timeout: DispatchWorkItem?
@@ -27,10 +57,16 @@ final class TVNetworkCheck: ObservableObject {
     private var showResult = true
     private var nextPort = false
     private var pendingMessage = ""
-    private var pendingOutcome: TVTrialOutcome = .noResponse
+    private var pendingOutcome: TVTrialOutcome?
+
+    var canReadCertificate: Bool {
+        guard !busy, lastOutcome == .serviceAnswered, let service = reachedService else { return false }
+        return AQSSLocalTVTarget(address) == service.target
+    }
 
     func start() {
         guard !busy else { return }
+        clearCertificate()
         lastOutcome = nil
         guard let target = AQSSLocalTVTarget(address) else {
             message = AQSSLocalTVTarget.invalidAddress; lastOutcome = .addressRejected; return
@@ -44,12 +80,37 @@ final class TVNetworkCheck: ObservableObject {
         attempt()
     }
 
+    func readCertificate() {
+        guard canReadCertificate, let service = reachedService else { return }
+        guard Self.owner == nil else {
+            message = "A previous network check is still closing. Try again after it finishes."; return
+        }
+        Self.owner = self
+        let observer = AQSSPeerCertificateObserver()
+        certificateObserver = observer
+        fingerprint = nil; pendingFingerprint = nil
+        stopped = false; showResult = true; busy = true; stopping = false; nextPort = false
+        pendingMessage = "No service certificate was read."; pendingOutcome = nil
+        message = "Reading the certificate from the service that answered…"
+        begin(service.makeCertificateConnection(options: observer.makeTLSOptions()))
+    }
+
     func stop(clear: Bool = false) {
-        if clear { address = ""; message = "Ready to check the address you enter."; lastOutcome = nil; showResult = false }
+        if clear {
+            clearCertificate()
+            address = ""; message = "Ready to check the address you enter."; lastOutcome = nil; showResult = false
+        }
         guard busy else { return }
         stopped = true; stopping = true; nextPort = false
-        pendingMessage = "Check stopped. Start again only when you are ready."
-        pendingOutcome = .stopped
+        pendingFingerprint = nil
+        if certificateObserver != nil {
+            pendingMessage = "Certificate read stopped."
+            pendingOutcome = nil
+        } else {
+            reachedService = nil
+            pendingMessage = "Check stopped. Start again only when you are ready."
+            pendingOutcome = .stopped
+        }
         timeout?.cancel(); timeout = nil
         if !clear { message = "Stopping the network check…" }
         connection?.cancel()
@@ -59,26 +120,27 @@ final class TVNetworkCheck: ObservableObject {
         guard !stopped, let target = target, portIndex < AQSSLocalTVTarget.ports.count else {
             finish("Check stopped.", outcome: .stopped); return
         }
-        let port = AQSSLocalTVTarget.ports[portIndex]
+        let port = NWEndpoint.Port(rawValue: AQSSLocalTVTarget.ports[portIndex])!
         let parameters = NWParameters.tcp
         parameters.requiredInterfaceType = .wifi
-        let current = NWConnection(host: NWEndpoint.Host(target.address),
-            port: NWEndpoint.Port(rawValue: port)!, using: parameters)
-        connection = current
         nextPort = false; pendingMessage = "The check ended without a verified result."; pendingOutcome = .noResponse
         message = "Checking the address you entered…"
+        begin(NWConnection(host: NWEndpoint.Host(target.address), port: port, using: parameters))
+    }
+
+    private func begin(_ current: NWConnection) {
+        connection = current
+        let expires = DispatchTime.now() + .seconds(AQSSLocalTVTarget.timeoutSeconds)
         current.stateUpdateHandler = { [weak self, weak current] state in
             // Network's callback is Sendable even when its queue is .main.
             // Enter the main actor explicitly before touching the run owner.
             DispatchQueue.main.async { [weak self, weak current] in
                 guard let self = self, let current = current, self.connection === current else { return }
                 switch state {
-                case .ready:
+                case .ready, .failed, .waiting:
                     guard !self.stopping else { return }
-                    self.closeAttempt("A network service answered. TV pairing is still needed.", outcome: .serviceAnswered, fallback: false)
-                case .failed, .waiting:
-                    guard !self.stopping else { return }
-                    self.closeAttempt("No service answered. The reason is unknown.", outcome: .noResponse, fallback: true)
+                    guard DispatchTime.now() < expires else { self.expireAttempt(); return }
+                    self.handleResult(state, from: current)
                 case .cancelled:
                     self.timeout?.cancel(); self.timeout = nil
                     current.stateUpdateHandler = nil
@@ -92,25 +154,57 @@ final class TVNetworkCheck: ObservableObject {
         }
         let deadline = DispatchWorkItem { [weak self, weak current] in
             guard let self = self, let current = current, self.connection === current, !self.stopping else { return }
-            self.closeAttempt("No service answered. The reason is unknown.", outcome: .noResponse, fallback: true)
+            self.expireAttempt()
         }
         timeout = deadline
         current.start(queue: .main)
-        DispatchQueue.main.asyncAfter(deadline: .now() + .seconds(AQSSLocalTVTarget.timeoutSeconds), execute: deadline)
+        DispatchQueue.main.asyncAfter(deadline: expires, execute: deadline)
     }
 
-    private func closeAttempt(_ result: String, outcome: TVTrialOutcome, fallback: Bool) {
+    private func handleResult(_ state: NWConnection.State, from current: NWConnection) {
+        if let observer = certificateObserver {
+            if case .failed = state { pendingFingerprint = observer.fingerprint }
+            let result = pendingFingerprint == nil ? "No service certificate was read."
+                : "Certificate read. Compare the fingerprint with a trusted source."
+            closeAttempt(result, outcome: nil, fallback: false)
+        } else if case .ready = state, let target = target,
+                  case .hostPort(_, let port) = current.endpoint {
+            reachedService = ReachedService(target: target, port: port, path: current.currentPath)
+            closeAttempt("A network service answered. TV pairing is still needed.", outcome: .serviceAnswered, fallback: false)
+        } else {
+            closeAttempt("No service answered. The reason is unknown.", outcome: .noResponse, fallback: true)
+        }
+    }
+
+    private func expireAttempt() {
+        if certificateObserver != nil {
+            closeAttempt("Certificate read timed out. Try again when you are ready.", outcome: nil, fallback: false)
+        } else {
+            closeAttempt("No service answered. The reason is unknown.", outcome: .noResponse, fallback: true)
+        }
+    }
+
+    private func closeAttempt(_ result: String, outcome: TVTrialOutcome?, fallback: Bool) {
         stopping = true; nextPort = fallback && !stopped; pendingMessage = result
         pendingOutcome = outcome
         timeout?.cancel(); timeout = nil
         connection?.cancel()
     }
 
-    private func finish(_ result: String, outcome: TVTrialOutcome) {
+    private func finish(_ result: String, outcome: TVTrialOutcome?) {
         timeout?.cancel(); timeout = nil; target = nil
-        if showResult { message = result; lastOutcome = outcome }
+        if showResult {
+            message = result
+            if let outcome = outcome { lastOutcome = outcome }
+            fingerprint = pendingFingerprint
+        }
+        certificateObserver = nil; pendingFingerprint = nil
         busy = false; stopping = false
         if Self.owner === self { Self.owner = nil }
+    }
+
+    private func clearCertificate() {
+        reachedService = nil; pendingFingerprint = nil; fingerprint = nil
     }
 }
 
@@ -170,19 +264,35 @@ struct TVNetworkCheckView: View {
                     Text(AQSSLocalTVTarget.boundary).font(.subheadline).foregroundColor(theme.muted)
                         .accessibilityIdentifier("tv-network-boundary")
                     Button(check.busy ? "Stop check" : "Check this address") {
+                        guard scenePhase == .active else { return }
                         reportError = nil
                         UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
                         if check.busy { check.stop() } else { check.start() }
                     }.buttonStyle(AppButtonStyle(theme: theme, primary: followUp == nil))
                         .disabled(check.stopping || (!check.busy && check.address.isEmpty))
                         .accessibilityIdentifier("tv-network-start-stop")
+                    if check.canReadCertificate {
+                        Button("Read service certificate") {
+                            guard scenePhase == .active else { return }
+                            reportError = nil
+                            check.readCertificate()
+                        }.buttonStyle(AppButtonStyle(theme: theme, primary: check.fingerprint == nil))
+                            .accessibilityIdentifier("tv-network-certificate-read")
+                    }
+                    if let fingerprint = check.fingerprint {
+                        Text("SHA-256 fingerprint\n\(fingerprint)")
+                            .font(.system(.footnote, design: .monospaced)).textSelection(.enabled)
+                            .fixedSize(horizontal: false, vertical: true)
+                            .accessibilityIdentifier("tv-network-certificate-fingerprint")
+                    }
                     if followUp == .phoneWiFi {
                         Text("Check that your phone and TV use the same home Wi-Fi.").fixedSize(horizontal: false, vertical: true)
                         phoneWiFiButton(primary: true)
                     }
                     if check.lastOutcome != nil && !check.busy {
                         Button("Review test result", action: reviewResult)
-                            .buttonStyle(AppButtonStyle(theme: theme, primary: followUp == .review))
+                            .buttonStyle(AppButtonStyle(theme: theme,
+                                primary: followUp == .review && (!check.canReadCertificate || check.fingerprint != nil)))
                             .accessibilityIdentifier("tv-network-review")
                     }
                     if let error = reportError { Text(error).font(.subheadline) }
@@ -190,6 +300,7 @@ struct TVNetworkCheckView: View {
                         Text("Use the same home Wi-Fi for phone and TV. Guest Wi-Fi or device isolation can prevent contact. This check cannot diagnose your router’s policy.")
                         if followUp != .phoneWiFi { phoneWiFiButton(primary: false) }
                         Text("This first check tries TCP ports 7345 and 9000, for up to four seconds each, on one private IPv4 address. These are SmartCast research candidates, not a guarantee for every VIZIO model. An answer proves only service reachability at that moment.")
+                        Text("After a reply, Read service certificate checks that service again on Wi-Fi and shows a fingerprint for comparison. TV identity still needs independent verification.")
                         Text("Allow Local Network access if iPhone asks. After changing permission, tap Check again. Leaving this screen or the foreground clears the address and result and stops the check.")
                         Text("Review test result removes the address and opens a historical copy. You can then choose Share. The report contains the app build and a fixed result description, without TV addresses, Wi-Fi names, passwords, photos or audio. Nothing is sent automatically.")
                         Button("Open this app’s settings") {

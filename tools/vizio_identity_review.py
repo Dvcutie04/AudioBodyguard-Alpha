@@ -91,7 +91,7 @@ def main():
     parser.add_argument("--reference-certificate-sha256", help="Independently obtained DER certificate SHA-256")
     observation = parser.add_mutually_exclusive_group()
     observation.add_argument("--observed-certificate", type=Path, help="Private single DER X.509 certificate")
-    observation.add_argument("--observed-certificate-sha256", help="Fingerprint displayed by the Android certificate check")
+    observation.add_argument("--observed-certificate-sha256", help="Fingerprint displayed by the app’s certificate check")
     args = parser.parse_args()
 
     try:

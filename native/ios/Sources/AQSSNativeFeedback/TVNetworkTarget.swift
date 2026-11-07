@@ -1,4 +1,40 @@
 import Foundation
+#if canImport(Network) && canImport(Security) && canImport(CryptoKit)
+import CryptoKit
+import Network
+import Security
+
+/// Observe one leaf certificate and always reject the handshake.
+@available(macOS 12.0, *)
+final class AQSSPeerCertificateObserver: @unchecked Sendable {
+    private let lock = NSLock()
+    private var digest: String?
+
+    var fingerprint: String? {
+        lock.lock()
+        defer { lock.unlock() }
+        return digest
+    }
+
+    func makeTLSOptions() -> NWProtocolTLS.Options {
+        let options = NWProtocolTLS.Options()
+        sec_protocol_options_set_verify_block(options.securityProtocolOptions, { [self] _, trust, complete in
+            defer { complete(false) }
+            let peerTrust = sec_trust_copy_ref(trust).takeRetainedValue()
+            guard SecTrustSetNetworkFetchAllowed(peerTrust, false) == errSecSuccess,
+                  let chain = SecTrustCopyCertificateChain(peerTrust) as? [SecCertificate],
+                  let leaf = chain.first else { return }
+            let der = SecCertificateCopyData(leaf) as Data
+            guard !der.isEmpty, der.count <= 16 * 1024 else { return }
+            let fingerprint = SHA256.hash(data: der).map { String(format: "%02x", $0) }.joined()
+            lock.lock()
+            if digest == nil { digest = fingerprint }
+            lock.unlock()
+        }, DispatchQueue.global(qos: .userInitiated))
+        return options
+    }
+}
+#endif
 
 /// A single explicitly entered private IPv4 host. This is not a TV identity.
 public struct AQSSLocalTVTarget: Equatable, Sendable {
