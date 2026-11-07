@@ -1,3 +1,4 @@
+import Dispatch
 import XCTest
 #if os(macOS)
 import Network
@@ -62,6 +63,55 @@ final class TVNetworkTargetTests: XCTestCase {
         XCTAssertThrowsError(try TVTrialReport.capture(buildDetails: build + "\nTV IP: secret", outcome: .stopped, reviewedAtMillis: 0))
         XCTAssertThrowsError(try TVTrialReport.capture(buildDetails: build, outcome: .stopped, reviewedAtMillis: -1))
         XCTAssertThrowsError(try TVTrialReport.capture(buildDetails: build, outcome: .stopped, reviewedAtMillis: 253_402_300_800_000))
+    }
+
+    func testCertificateReadReleasesOneTimelyFingerprintOnCancellation() {
+        let start = DispatchTime(uptimeNanoseconds: 1_000_000_000)
+        let fingerprint = String(repeating: "a", count: 64)
+        var read = AQSSCertificateRead(startedAt: start)
+        XCTAssertTrue(read.resolve(fingerprint, at: start))
+        XCTAssertFalse(read.resolve(nil, at: start + .seconds(1)))
+        XCTAssertEqual(read.finishCancellation()?.fingerprint, fingerprint)
+        XCTAssertNil(read.finishCancellation())
+    }
+
+    func testCertificateReadStopDropsEarlyAndLateObservations() {
+        let start = DispatchTime(uptimeNanoseconds: 1_000_000_000)
+        let fingerprint = String(repeating: "a", count: 64)
+        for stoppedAfterObservation in [false, true] {
+            var read = AQSSCertificateRead(startedAt: start)
+            if stoppedAfterObservation { XCTAssertTrue(read.resolve(fingerprint, at: start)) }
+            read.stop(clear: false)
+            XCTAssertFalse(read.resolve(fingerprint, at: start + .seconds(1)))
+            XCTAssertEqual(read.finishCancellation(), .stopped)
+        }
+    }
+
+    func testCertificateReadDeadlineRefusesAtOrAfterFourSeconds() {
+        let start = DispatchTime(uptimeNanoseconds: 1_000_000_000)
+        let fingerprint = String(repeating: "a", count: 64)
+        let deadline = start + .seconds(4)
+        var stalledRead = AQSSCertificateRead(startedAt: start)
+        XCTAssertEqual(stalledRead.expires, deadline)
+        XCTAssertTrue(stalledRead.resolve(nil, at: deadline))
+        XCTAssertFalse(stalledRead.resolve(fingerprint, at: deadline))
+        XCTAssertEqual(stalledRead.finishCancellation(), .timedOut)
+
+        for seconds in [4, 5] {
+            var read = AQSSCertificateRead(startedAt: start)
+            XCTAssertTrue(read.resolve(fingerprint, at: start + .seconds(seconds)))
+            XCTAssertEqual(read.finishCancellation(), .timedOut)
+        }
+    }
+
+    func testCertificateReadForegroundClearDropsQueuedResultAndCallback() {
+        let start = DispatchTime(uptimeNanoseconds: 1_000_000_000)
+        let fingerprint = String(repeating: "a", count: 64)
+        var read = AQSSCertificateRead(startedAt: start)
+        XCTAssertTrue(read.resolve(fingerprint, at: start))
+        read.stop(clear: true)
+        XCTAssertFalse(read.resolve(fingerprint, at: start + .seconds(1)))
+        XCTAssertNil(read.finishCancellation())
     }
 
 #if os(macOS)

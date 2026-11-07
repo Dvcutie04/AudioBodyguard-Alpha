@@ -1,3 +1,4 @@
+import Dispatch
 import Foundation
 #if canImport(Network) && canImport(Security) && canImport(CryptoKit)
 import CryptoKit
@@ -42,6 +43,66 @@ final class AQSSPeerCertificateObserver: @unchecked Sendable {
     }
 }
 #endif
+
+/// A read can stage one result. Cancellation releases it to the foreground UI.
+struct AQSSCertificateRead {
+    enum Result: Equatable {
+        case observed(String)
+        case noCertificate
+        case timedOut
+        case stopped
+
+        var message: String {
+            switch self {
+            case .observed: return "Certificate read. Compare the fingerprint with a trusted source."
+            case .noCertificate: return "No service certificate was read."
+            case .timedOut: return "Certificate read timed out. Try again when you are ready."
+            case .stopped: return "Certificate read stopped."
+            }
+        }
+
+        var fingerprint: String? {
+            if case .observed(let fingerprint) = self { return fingerprint }
+            return nil
+        }
+    }
+
+    private enum State {
+        case reading
+        case closing(Result)
+        case closed
+    }
+
+    let expires: DispatchTime
+    private var state = State.reading
+
+    init(startedAt: DispatchTime) {
+        expires = startedAt + .seconds(AQSSLocalTVTarget.timeoutSeconds)
+    }
+
+    mutating func resolve(_ observation: String?, at instant: DispatchTime) -> Bool {
+        guard case .reading = state else { return false }
+        if instant >= expires {
+            state = .closing(.timedOut)
+        } else if let observation = observation {
+            state = .closing(.observed(observation))
+        } else {
+            state = .closing(.noCertificate)
+        }
+        return true
+    }
+
+    mutating func stop(clear: Bool) {
+        if case .closed = state { return }
+        state = clear ? .closed : .closing(.stopped)
+    }
+
+    mutating func finishCancellation() -> Result? {
+        defer { state = .closed }
+        if case .closing(let result) = state { return result }
+        return nil
+    }
+}
 
 /// A single explicitly entered private IPv4 host. This is not a TV identity.
 public struct AQSSLocalTVTarget: Equatable, Sendable {

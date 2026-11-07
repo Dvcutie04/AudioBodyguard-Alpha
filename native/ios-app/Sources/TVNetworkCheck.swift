@@ -48,7 +48,7 @@ final class TVNetworkCheck: ObservableObject {
     @Published private(set) var fingerprint: String?
     private var reachedService: ReachedService?
     private var certificateObserver: AQSSPeerCertificateObserver?
-    private var pendingFingerprint: String?
+    private var certificateRead: AQSSCertificateRead?
     private var target: AQSSLocalTVTarget?
     private var connection: NWConnection?
     private var timeout: DispatchWorkItem?
@@ -88,20 +88,20 @@ final class TVNetworkCheck: ObservableObject {
         Self.owner = self
         let observer = AQSSPeerCertificateObserver()
         certificateObserver = observer
-        fingerprint = nil; pendingFingerprint = nil
+        let read = AQSSCertificateRead(startedAt: .now())
+        certificateRead = read
+        fingerprint = nil
         stopped = false; showResult = true; busy = true; stopping = false; nextPort = false
-        pendingMessage = "No service certificate was read."; pendingOutcome = nil
+        pendingMessage = AQSSCertificateRead.Result.noCertificate.message; pendingOutcome = nil
         message = "Reading the certificate from the service that answered…"
-        let expires = DispatchTime.now() + .seconds(AQSSLocalTVTarget.timeoutSeconds)
         let options = observer.makeTLSOptions { [weak self, weak observer] in
             DispatchQueue.main.async { [weak self, weak observer] in
                 guard let self = self, let observer = observer, self.certificateObserver === observer,
                       !self.stopping else { return }
-                guard DispatchTime.now() < expires else { self.expireAttempt(); return }
                 self.closeCertificateAttempt(observer.fingerprint)
             }
         }
-        begin(service.makeCertificateConnection(options: options), expires: expires)
+        begin(service.makeCertificateConnection(options: options), expires: read.expires)
     }
 
     func stop(clear: Bool = false) {
@@ -110,19 +110,16 @@ final class TVNetworkCheck: ObservableObject {
             address = ""; message = "Ready to check the address you enter."; lastOutcome = nil; showResult = false
         }
         guard busy else { return }
-        stopped = true; stopping = true; nextPort = false
-        pendingFingerprint = nil
-        if certificateObserver != nil {
-            pendingMessage = "Certificate read stopped."
-            pendingOutcome = nil
+        stopped = true; nextPort = false
+        if certificateRead != nil {
+            certificateRead?.stop(clear: clear)
         } else {
             reachedService = nil
             pendingMessage = "Check stopped. Start again only when you are ready."
             pendingOutcome = .stopped
         }
-        timeout?.cancel(); timeout = nil
+        cancelConnection()
         if !clear { message = "Stopping the network check…" }
-        connection?.cancel()
     }
 
     private func attempt() {
@@ -183,42 +180,46 @@ final class TVNetworkCheck: ObservableObject {
         }
     }
 
-    private func closeCertificateAttempt(_ observed: String?) {
-        pendingFingerprint = observed
-        let result = observed == nil ? "No service certificate was read."
-            : "Certificate read. Compare the fingerprint with a trusted source."
-        closeAttempt(result, outcome: nil, fallback: false)
+    private func closeCertificateAttempt(_ observed: String?, at instant: DispatchTime = .now()) {
+        guard certificateRead?.resolve(observed, at: instant) == true else { return }
+        cancelConnection()
     }
 
     private func expireAttempt() {
-        if certificateObserver != nil {
-            closeAttempt("Certificate read timed out. Try again when you are ready.", outcome: nil, fallback: false)
+        if let expires = certificateRead?.expires {
+            closeCertificateAttempt(nil, at: expires)
         } else {
             closeAttempt("No service answered. The reason is unknown.", outcome: .noResponse, fallback: true)
         }
     }
 
     private func closeAttempt(_ result: String, outcome: TVTrialOutcome?, fallback: Bool) {
-        stopping = true; nextPort = fallback && !stopped; pendingMessage = result
+        nextPort = fallback && !stopped; pendingMessage = result
         pendingOutcome = outcome
+        cancelConnection()
+    }
+
+    private func cancelConnection() {
+        stopping = true
         timeout?.cancel(); timeout = nil
         connection?.cancel()
     }
 
     private func finish(_ result: String, outcome: TVTrialOutcome?) {
         timeout?.cancel(); timeout = nil; target = nil
+        let certificateResult = certificateRead?.finishCancellation()
         if showResult {
-            message = result
+            message = certificateResult?.message ?? result
             if let outcome = outcome { lastOutcome = outcome }
-            fingerprint = pendingFingerprint
+            fingerprint = certificateResult?.fingerprint
         }
-        certificateObserver = nil; pendingFingerprint = nil
+        certificateObserver = nil; certificateRead = nil
         busy = false; stopping = false
         if Self.owner === self { Self.owner = nil }
     }
 
     private func clearCertificate() {
-        reachedService = nil; pendingFingerprint = nil; fingerprint = nil
+        reachedService = nil; fingerprint = nil
     }
 }
 
