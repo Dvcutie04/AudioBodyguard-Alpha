@@ -85,6 +85,12 @@ def _visible_share_target(root):
     return targets[0] if len(targets) == 1 else None
 
 
+def _support_report_anchor(root):
+    anchors = [node.get("bounds") for node in root.iter("node")
+               if node.get("content-desc") == "About Private support report"]
+    return anchors[0] if len(anchors) == 1 else None
+
+
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--samsung-setup-only", action="store_true")
@@ -1375,14 +1381,27 @@ def main():
     print("BUILD_DETAILS_SHARE_OBSERVED: native cancel, exact four-field Intent receipt and enabled preview return", flush=True)
     tap("Back", "build_details_close")
     wait_for_all(("Appearance", "? More settings"), "build_details_return_to_settings")
+
+    def open_support_report(name):
+        tap("Advanced Settings", name + "_advanced")
+        for attempt in range(7):
+            root, _ = screen(f"{name}_find_{attempt}")
+            bounds = _support_report_anchor(root)
+            if bounds:
+                tap("About Private support report", name + "_open")
+                return bounds
+            scroll_meter(f"{name}_scroll_{attempt}", down=True)
+        raise AssertionError("Private support report was not visible in Advanced Settings")
+
+    def close_support_report(name, caller_bounds):
+        tap("Back", name + "_back")
+        # The title can be above the viewport. Require the same visible report
+        # control in the restored settings scroll position.
+        returned = wait_for_all(("Jump to", "Private support report"), name + "_caller")
+        assert _support_report_anchor(returned) == caller_bounds, "Back must preserve the report's settings position"
+
     # Start with a genuinely fresh process: no completed input checks exist.
-    tap("Advanced Settings", "support_report_advanced")
-    for attempt in range(7):
-        report_root, _ = screen(f"support_report_find_{attempt}")
-        if any(n.get("content-desc") == "About Private support report" for n in report_root.iter("node")):
-            break
-        scroll_meter(f"support_report_scroll_{attempt}", down=True)
-    tap("About Private support report", "support_report_open")
+    caller_bounds = open_support_report("support_report")
     expected_report = expected_share + "\n\nRecent sound checks (this app session)\nNo completed sound checks in this app session.\n\nInput observations only; not proof of sound safety, protection or TV control."
     wait_for(expected_report, "support_report_default_includes_checks")
     tap("Include recent sound checks", "support_report_exclude_choice_required")
@@ -1418,8 +1437,7 @@ def main():
     report_appops = adb("shell", "cmd", "appops", "get", package, "RECORD_AUDIO").decode()
     (out / "support-report-appops.txt").write_text(report_appops)
     assert "(running)" not in report_appops, report_appops
-    tap("Back", "support_report_close")
-    wait_for("Advanced Settings", "support_report_back_to_caller")
+    close_support_report("support_report", caller_bounds)
     adb("shell", "input", "keyevent", "KEYCODE_BACK")
     wait_for("Appearance", "support_report_back_to_settings")
     print("SUPPORT_REPORT_SHARE_OBSERVED: empty allowlisted preview, native Cancel, exact Intent receipt and return to Advanced Settings", flush=True)
@@ -1428,13 +1446,7 @@ def main():
     def review_report(name, recap, share=False, exclude=False):
         expected = expected_share + "\n\nRecent sound checks (this app session)\n" + recap + "\n\nInput observations only; not proof of sound safety, protection or TV control."
         tap("Settings", name + "_settings")
-        tap("Advanced Settings", name + "_advanced")
-        for attempt in range(7):
-            root, _ = screen(f"{name}_find_{attempt}")
-            if any(n.get("content-desc") == "About Private support report" for n in root.iter("node")):
-                break
-            scroll_meter(f"{name}_scroll_{attempt}", down=True)
-        tap("About Private support report", name + "_open")
+        caller_bounds = open_support_report(name)
         wait_for(expected, name + "_preview")
         if exclude:
             tap("Include recent sound checks", name + "_exclude_checks")
@@ -1469,8 +1481,7 @@ def main():
         ops = adb("shell", "cmd", "appops", "get", package, "RECORD_AUDIO").decode()
         (out / (name + "_appops.txt")).write_text(ops)
         assert "(running)" not in ops, ops
-        tap("Back", name + "_back")
-        wait_for("Advanced Settings", name + "_caller")
+        close_support_report(name, caller_bounds)
         adb("shell", "input", "keyevent", "KEYCODE_BACK")
         wait_for("Appearance", name + "_ordinary_settings")
         tap("Sound", name + "_return_sound")
