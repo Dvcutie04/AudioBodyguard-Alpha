@@ -26,6 +26,7 @@ object SetupContent {
         SetupSource("roku_google", "Roku TV: Google Home linking, OS 9.1+", "https://support.roku.com/en-gb/article/control-your-streaming-devices-with-google"),
         SetupSource("vidaa", "Hisense 43A6GV: VIDAA account and voice services", "https://assets.hisense-usa.com/assets/ProductDownloads/472/049fe3952c/43A6GV-user-manual.pdf"),
         SetupSource("vizio_pair", "VIZIO: mobile pairing and voice assistants", "https://www.vizio.com/en/mobile"),
+        SetupSource("vizio_v505m_k09_manual", "VIZIO V-Series manual: remote, TV menu, and network information", "https://www.vizio.com/content/dam/asset-portal/us/en/2022/tv/documentation/v-series/V-Series_UM_EN.pdf#page=22"),
         SetupSource("vizio_account", "VIZIO: TV account linking and six-digit code", "https://www.vizio.com/en/vizio-account/link-your-tv"),
         SetupSource("vizio_new_account", "VIZIO: newer TV My Hub and Walmart account QR setup", "https://www.vizio.com/en/overview-account"),
         SetupSource("vizio_alexa", "VIZIO: Amazon Alexa support on VIZIO OS", "https://www.vizio.com/en/alexa"),
@@ -399,6 +400,13 @@ object SetupContent {
             SetupStep("Enable the TV skill", "Select the official VIDAA Voice skill and choose Enable.", "phone", "VIDAA Voice", listOf("Enable"), 0, "tap", "Use your real device. This picture is an illustration.", "phone"),
             SetupStep("Link the same VIDAA account", "Follow the official approval flow for the VIDAA account signed in on this TV.", "phone", "VIDAA approval", listOf("VIDAA account", "Review permissions"), 1, "check", "Use your real device. This picture is an illustration.", "phone"),
             SetupStep("Check the actual result", "Look in Amazon Alexa for your TV. If it is missing, use “My screen looks different”.", "phone", "Amazon Alexa", listOf("Your TV appears", "TV missing? Get help"), 0, "check", "Finishing this guide does not connect Audio Bodyguard or activate protection.", "phone"),
+        ), 1, null),
+        SetupRoute("vizio_v505m_k09_address", "Find my TV’s IP address", "Use these pictures if your TV model is V505M-K09. They follow the VIZIO manual.", listOf("V505M-K09"), listOf("vizio_v505m_k09_manual"), listOf(
+            SetupStep("Open the TV menu", "Press the Menu (gear) button on your TV remote.", "tv", "VIZIO V505M-K09 remote", listOf("Menu (gear)"), 0, "settings", "Use the remote that came with your TV.", "remote"),
+            SetupStep("Open Network", "Choose Network on your TV.", "tv", "TV Settings", listOf("Picture", "Audio", "Network", "TV Channels"), 2, "select", "Use the arrows and OK on your TV remote.", "tv"),
+            SetupStep("Open Network Information", "Choose Network Information.", "tv", "Network", listOf("Test Connection", "Hidden Networks", "Manual Setup", "Network Information"), 3, "select", "Network Information is the menu for viewing network details.", "tv"),
+            SetupStep("Find the TV’s IP address", "Look for IP Address in the TV’s network information.", "tv", "Address label to look for", listOf("IP Address"), 0, "check", "Use the value on your own TV. The layout may vary with your TV’s software.", "tv"),
+            SetupStep("Enter the address on your phone", "Enter the number from your TV in TV IP address.", "phone", "VIZIO network check", listOf("TV IP address"), 0, "type", "Type the address exactly as your TV shows it, including the dots.", "phone"),
         ), 1, null),
         SetupRoute("vizio_pair", "Vizio — pair the phone (4-digit code)", "For TVs supported by VIZIO Mobile. Follow the account name your app requests. A four-digit phone pairing code differs from the six-digit legacy account-link code.", listOf(), listOf("vizio_pair"), listOf(
             SetupStep("Use the same home network", "Turn on the TV. Connect your phone to the same home Wi-Fi.", "both", "Wi-Fi", listOf("Phone + TV → same Wi-Fi"), 0, "check", "A network name or IP address alone does not identify or authorize a TV.", "both"),

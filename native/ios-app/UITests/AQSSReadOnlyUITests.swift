@@ -19,6 +19,32 @@ final class AQSSReadOnlyUITests: XCTestCase {
         XCTAssertEqual(app.staticTexts["tv-network-boundary"].label,
                        "TV identity, pairing and audio protection are not verified.")
         XCTAssertEqual(app.alerts.count, 0, "Rejected input must not request local-network access")
+        let form = app.scrollViews["tv-network-scroll"]
+        XCTAssertFalse(app.buttons["tv-network-wifi-guide-open"].exists)
+        tap("Help with this check", app, scroll: form)
+        tap("Check phone Wi-Fi", app, scroll: form)
+        label("iPhone — connect to your home Wi-Fi", app)
+        let next = app.buttons["tv-wifi-guide-next"]
+        let back = app.buttons["tv-wifi-guide-back"]
+        XCTAssertEqual(next.label, "Start Wi-Fi steps")
+        next.tap()
+        let targets = ["Settings", "Wi-Fi", "Wi-Fi switch", "Your TV’s home network", "Join", "✓ Your home network"]
+        for index in 1...6 {
+            label("Step \(index) of 6", app)
+            XCTAssertTrue(pictureDescription(app).contains("Highlighted: \(targets[index - 1])."))
+            if index == 2 {
+                back.tap(); label("Open iPhone Settings", app)
+                next.tap(); label("Open Wi-Fi", app)
+                screenshot("VIZIO check phone Wi-Fi picture on iPhone", app)
+            }
+            if index == 6 { XCTAssertEqual(next.label, "Back to network check") }
+            next.tap()
+        }
+        XCTAssertTrue(field.waitForExistence(timeout: 5))
+        XCTAssertEqual(field.value as? String, "8.8.8.8")
+        label("Enter the private IPv4 address shown in your TV’s network settings.", app)
+        XCTAssertEqual(app.buttons["tv-network-start-stop"].label, "Check this address")
+        XCTAssertEqual(app.alerts.count, 0)
         app.buttons["tv-network-back"].tap()
         label("Connection not verified", app)
     }
@@ -37,7 +63,7 @@ final class AQSSReadOnlyUITests: XCTestCase {
         app.buttons["tv-network-back"].tap()
     }
 
-    func testTVNetworkRejectedResultCanBeReviewedPrivately() {
+    func testTVNetworkRejectedResultCanBeReviewedPrivately() throws {
         let app = launch()
         tab("devices", app); tap("? Device help", app); tap("VIZIO network check", app)
         let field = app.textFields["tv-network-address"]
@@ -51,12 +77,84 @@ final class AQSSReadOnlyUITests: XCTestCase {
         XCTAssertTrue(preview.label.contains("Outcome: ADDRESS_REJECTED"))
         XCTAssertTrue(preview.label.contains("No native check started"))
         XCTAssertFalse(preview.label.contains("8.8.8.8"))
-        XCTAssertTrue(app.buttons["tv-network-report-share"].isEnabled)
+        let reviewed = preview.label
+        let share = app.buttons["tv-network-report-share"]
+        for copy in [false, true] {
+            XCTAssertTrue(share.isEnabled)
+            share.tap()
+            let nativeCopy = try requireReviewedNativeCopy(app)
+            XCTAssertFalse(share.isEnabled, "Keep the request owned while the native sheet is open")
+            if copy { nativeCopy.tap() } else { try cancelReviewedNativeShare(app) }
+            let returned = XCTNSPredicateExpectation(predicate: NSPredicate(format: "enabled == true AND hittable == true"), object: share)
+            XCTAssertEqual(XCTWaiter.wait(for: [returned], timeout: 8), .completed)
+            XCTAssertFalse(nativeCopy.exists)
+            XCTAssertEqual(preview.label, reviewed)
+        }
         app.buttons["tv-network-report-back"].tap()
         XCTAssertEqual(field.value as? String, "TV IP address")
         XCTAssertFalse(app.buttons["tv-network-review"].exists)
         XCTAssertEqual(app.staticTexts["tv-network-result"].label, "Ready to check the address you enter.")
         app.buttons["tv-network-back"].tap()
+    }
+    func testTVAddressPicturesKeepTheCheckDraftAndStepOrder() {
+        let app = launch()
+        tab("devices", app); tap("? Device help", app); tap("VIZIO network check", app)
+        let field = app.textFields["tv-network-address"]
+        XCTAssertTrue(field.waitForExistence(timeout: 5))
+        field.tap(); field.typeText("192.168.0.42")
+        tap("Find my TV’s IP address", app, scroll: app.scrollViews["tv-network-scroll"])
+        label("VIZIO V505M-K09 · iPhone", app)
+        XCTAssertFalse(app.otherElements["setup-illustration"].exists)
+        let next = app.buttons["tv-address-guide-next"]
+        let back = app.buttons["tv-address-guide-back"]
+        app.buttons["tv-address-guide-mismatch"].tap()
+        label("Find the right screen", app)
+        back.tap()
+        XCTAssertEqual(next.label, "My TV matches")
+        next.tap()
+        let targets = ["Menu (gear)", "Network", "Network Information", "IP Address", "TV IP address"]
+        for (index, target) in targets.enumerated() {
+            label("Step \(index + 1) of \(targets.count)", app)
+            XCTAssertTrue(pictureDescription(app).contains("Highlighted: \(target)."))
+            if index == 1 {
+                back.tap(); label("Step 1 of 5", app)
+                XCTAssertTrue(pictureDescription(app).contains("Highlighted: Menu (gear)."))
+                next.tap(); label("Step 2 of 5", app)
+            }
+            if index == 2 { screenshot("V505M-K09 Network Information picture", app) }
+            if index == targets.count - 1 {
+                XCTAssertTrue(pictureDescription(app).contains("Phone screen: VIZIO network check"))
+                XCTAssertEqual(next.label, "Back to address field")
+                screenshot("VIZIO address entry on iPhone", app)
+            }
+            next.tap()
+        }
+        XCTAssertTrue(field.waitForExistence(timeout: 5))
+        XCTAssertEqual(field.value as? String, "192.168.0.42")
+        label("Ready to check the address you enter.", app)
+        XCTAssertFalse(app.buttons["tv-network-review"].exists)
+        app.buttons["tv-network-back"].tap()
+
+        tap("TV photo setup", app)
+        let photoScroll = app.scrollViews["photo-review-scroll"]
+        tap("Photo help", app, scroll: photoScroll)
+        tap("VIZIO V505M-K09 address pictures", app, scroll: photoScroll)
+        label("VIZIO V505M-K09 · iPhone", app)
+        XCTAssertFalse(field.exists)
+        XCTAssertEqual(next.label, "My TV matches")
+        next.tap()
+        for (index, target) in targets.dropLast().enumerated() {
+            label("Step \(index + 1) of 4", app)
+            XCTAssertTrue(pictureDescription(app).contains("Highlighted: \(target)."))
+            if index == 3 {
+                XCTAssertEqual(next.label, "Back to photo setup")
+                screenshot("V505M-K09 address picture from Photo help", app)
+            }
+            next.tap()
+        }
+        XCTAssertTrue(photoScroll.waitForExistence(timeout: 5))
+        label("No photo selected", app)
+        XCTAssertFalse(field.exists)
     }
     func testSimplifiedSetupWithLargestTextAndReducedMotion() { checkSimplifiedSetup(large: true) }
     func testLargeTextSetupHelpScrollsWithoutOpeningAShortcut() {
@@ -182,8 +280,17 @@ final class AQSSReadOnlyUITests: XCTestCase {
         tap("Advanced Settings", app)
         XCTAssertTrue(app.switches["setting-background"].waitForExistence(timeout: 5))
         screenshot("Simplified advanced settings \(large)", app)
-        app.buttons["page-back"].tap()
-        XCTAssertTrue(app.buttons["appearance-picker"].waitForExistence(timeout: 5))
+        let back = app.buttons["page-back"]
+        XCTAssertTrue(back.isHittable)
+        XCTAssertGreaterThanOrEqual(back.frame.height, 44)
+        back.tap()
+        let settings = app.staticTexts["page-settings"]
+        XCTAssertTrue(settings.waitForExistence(timeout: 5), "Back must return directly to Settings: \(app.debugDescription)")
+        XCTAssertEqual(settings.label, "SETTINGS")
+        XCTAssertTrue(app.buttons["appearance-picker"].isHittable)
+        XCTAssertEqual(app.buttons["more-settings"].value as? String, "Expanded")
+        XCTAssertFalse(app.staticTexts["page-settings-advanced"].exists)
+        screenshot("Back returns to Settings with Appearance in view \(large)", app)
     }
 
     private let setupAnswers = [
@@ -243,12 +350,7 @@ final class AQSSReadOnlyUITests: XCTestCase {
         screenshot("Test setup reviewed before sharing", app)
         let share = app.buttons["test-setup-share"]
         XCTAssertTrue(share.isHittable); share.tap()
-        let nativeCopy = app.cells["Copy"].firstMatch
-        guard nativeCopy.waitForExistence(timeout: 8) else {
-            screenshot("Test setup share did not open", app)
-            XCTFail("Native Copy is missing; Share enabled=\(share.isEnabled): \(app.debugDescription)")
-            throw NSError(domain: "AQSSTestSetup", code: 4)
-        }
+        let nativeCopy = try requireReviewedNativeCopy(app)
         screenshot("Test setup native share UI", app)
         XCTAssertFalse(share.isEnabled, "Keep one Share request owned until native dismissal")
         if copy { nativeCopy.tap() }
@@ -284,11 +386,7 @@ final class AQSSReadOnlyUITests: XCTestCase {
             app.buttons["test-setup-review"].tap()
             let share = app.buttons["test-setup-share"]
             XCTAssertTrue(share.waitForExistence(timeout: 5)); share.tap()
-            let copy = app.cells["Copy"].firstMatch
-            guard copy.waitForExistence(timeout: 8) else {
-                screenshot("Share requested as review appeared", app)
-                XCTFail("Share must open from the newly attached review: \(app.debugDescription)"); return
-            }
+            let copy = try requireReviewedNativeCopy(app)
             XCTAssertFalse(share.isEnabled, "A visible native share must keep its request owned")
             copy.tap()
             let returned = XCTNSPredicateExpectation(predicate: NSPredicate(format: "enabled == true AND hittable == true"), object: share)
@@ -310,7 +408,7 @@ final class AQSSReadOnlyUITests: XCTestCase {
         for _ in 0..<3 {
             XCTAssertTrue(share.isEnabled); XCTAssertTrue(share.isHittable); share.tap()
             let copy = try requireReviewedNativeCopy(app)
-            XCTAssertFalse(share.isEnabled)
+            XCTAssertFalse(share.isEnabled, "Native Copy is visible. Retry notice visible: \(app.staticTexts["test-setup-share-unavailable"].exists)")
             try cancelReviewedNativeShare(app)
             let returned = XCTNSPredicateExpectation(predicate: NSPredicate(format: "enabled == true AND hittable == true"), object: share)
             XCTAssertEqual(XCTWaiter.wait(for: [returned], timeout: 8), .completed)
@@ -400,8 +498,7 @@ final class AQSSReadOnlyUITests: XCTestCase {
         screenshot("Recap report preview contains only reviewed fields", app)
         if copy {
             tap("Share support report", app, scroll: app.scrollViews["recap-report-scroll"])
-            let nativeCopy = app.cells["Copy"].firstMatch
-            XCTAssertTrue(nativeCopy.waitForExistence(timeout: 8)); nativeCopy.tap()
+            try requireReviewedNativeCopy(app).tap()
             let share = app.buttons["share-support-report"]
             let returned = XCTNSPredicateExpectation(predicate: NSPredicate(format: "enabled == true AND hittable == true"), object: share)
             XCTAssertEqual(XCTWaiter.wait(for: [returned], timeout: 8), .completed)
@@ -549,8 +646,8 @@ final class AQSSReadOnlyUITests: XCTestCase {
             screenshot("Completed sound check excluded from build-only report", app)
         }
         tap("Share support report", app)
-        let copy = app.cells["Copy"].firstMatch
-        XCTAssertTrue(copy.waitForExistence(timeout: 8)); copy.tap()
+        let copy = try requireReviewedNativeCopy(app)
+        copy.tap()
         let share = app.buttons["share-support-report"]
         let returned = XCTNSPredicateExpectation(predicate: NSPredicate(format: "enabled == true AND hittable == true"), object: share)
         XCTAssertEqual(XCTWaiter.wait(for: [returned], timeout: 8), .completed)
@@ -642,15 +739,10 @@ final class AQSSReadOnlyUITests: XCTestCase {
             screenshot("Build-only report selected before explicit Share", app)
         }
         label(expected, app)
-        let copy = app.cells["Copy"].firstMatch
-        XCTAssertFalse(copy.exists, "Build details must preview without opening the share sheet")
+        XCTAssertFalse(app.cells["Copy"].firstMatch.exists, "Build details must preview without opening the share sheet")
         screenshot("Build details preview before explicit Share", app)
         if supportReport { tap("Share support report", app) } else { share.tap() }
-        guard copy.waitForExistence(timeout: 8) else {
-            screenshot("Native share sheet unavailable", app)
-            XCTFail("Require the native share sheet's Copy action: \(app.debugDescription)")
-            throw NSError(domain: "AQSSBuildShare", code: 3)
-        }
+        let copy = try requireReviewedNativeCopy(app)
         screenshot("Native build details share sheet", app)
         if UIDevice.current.userInterfaceIdiom == .pad {
             // Tap an observed point inside this app but outside its share popover.
@@ -692,8 +784,7 @@ final class AQSSReadOnlyUITests: XCTestCase {
         print("AQSS_BUILD_SHARE_UI: native cancel returned to the preview")
         if copyDetails {
             if supportReport { tap("Share support report", app) } else { share.tap() }
-            XCTAssertTrue(copy.waitForExistence(timeout: 8))
-            copy.tap()
+            try requireReviewedNativeCopy(app).tap()
             print("AQSS_BUILD_SHARE_UI: native Copy selected")
             let returned = XCTNSPredicateExpectation(
                 predicate: NSPredicate(format: "enabled == true AND hittable == true"), object: share)
@@ -1109,10 +1200,8 @@ final class AQSSReadOnlyUITests: XCTestCase {
         XCTAssertEqual(app.staticTexts["connection-status"].label, "Connected")
         tab("settings", app); tap("Advanced Settings", app)
         app.switches["setting-captions"].tap()
-        let attempt = app.staticTexts["not-connected-captions"]
-        XCTAssertTrue(attempt.waitForExistence(timeout: 1))
-        let reset = XCTNSPredicateExpectation(predicate: NSPredicate(format: "exists == false"), object: attempt)
-        XCTAssertEqual(XCTWaiter.wait(for: [reset], timeout: 3.5), .completed)
+        XCTAssertTrue(app.staticTexts["setting-off-reason-captions"].waitForExistence(timeout: 5))
+        XCTAssertFalse(app.staticTexts["not-connected-captions"].exists)
         XCTAssertTrue(["Off", "0"].contains(app.switches["setting-captions"].value as? String ?? ""), "Demo artwork must not authorize a setting")
         tab("home", app)
         tap("TV & smart-home guide", app); label("Step 1 of 5", app)
@@ -1390,11 +1479,27 @@ final class AQSSReadOnlyUITests: XCTestCase {
         }
         try selectFixture(expected: identified)
         screenshot("Native photo review before replacement", app)
+        label("Address read from photo: 10.20.30.40", app)
+        XCTAssertFalse(app.textFields["tv-network-address"].exists)
+        tap("Use address in VIZIO check", app, scroll: app.scrollViews["photo-review-scroll"])
+        let address = app.textFields["tv-network-address"]
+        XCTAssertTrue(address.waitForExistence(timeout: 5))
+        XCTAssertEqual(address.value as? String, "10.20.30.40")
+        label("Ready to check the address you enter.", app)
+        XCTAssertTrue(app.buttons["tv-network-start-stop"].isEnabled)
+        XCTAssertFalse(app.buttons["tv-network-review"].exists)
+        XCTAssertFalse(app.alerts.firstMatch.exists)
+        screenshot("Photo address fills an idle VIZIO check", app)
+        XCUIDevice.shared.press(.home); app.activate()
+        XCTAssertEqual(address.value as? String, "TV IP address")
+        app.buttons["tv-network-back"].tap()
+        label("Address read from photo: 10.20.30.40", app)
         tap("Choose a photo", app, scroll: app.scrollViews["photo-review-scroll"])
         let cancel = app.buttons["Cancel"].firstMatch
         XCTAssertTrue(cancel.waitForExistence(timeout: 10)); cancel.tap()
         label("No photo selected", app); assertNoPhotoBrand(app)
         label("Model: Not identified", app); label("TV IP hint: Not identified", app)
+        XCTAssertFalse(app.buttons["photo-use-vizio-address"].exists)
         screenshot("Replacement cancellation discards the old review", app)
         try selectFixture(expected: identified)
         for name in ["EMPTY", "UNRELATED"] {
@@ -1413,6 +1518,9 @@ final class AQSSReadOnlyUITests: XCTestCase {
         tap("Clear photo details", app, scroll: app.scrollViews["photo-review-scroll"])
         label("No photo selected", app); assertNoPhotoBrand(app)
         app.buttons["Close"].firstMatch.tap()
+        tap("VIZIO network check", app)
+        XCTAssertEqual(app.textFields["tv-network-address"].value as? String, "TV IP address")
+        app.buttons["tv-network-back"].tap()
         tab("home", app); label("Connection not verified", app)
     }
 
@@ -1507,29 +1615,37 @@ final class AQSSReadOnlyUITests: XCTestCase {
         dismissSettingHelp(app)
     }
 
-    func testAdvancedSwitchAttemptResetsAfterTwoSecondsAndHelpReturnsToCaller() {
+    func testAdvancedSwitchExplainsWhyItStaysOffAndHelpReturnsToCaller() {
         let app = launch(); tab("settings", app)
         XCTAssertFalse(app.switches["setting-captions"].exists)
         tap("Advanced Settings", app)
         let captions = app.switches["setting-captions"]
         XCTAssertTrue(captions.isHittable)
+        let reason = app.staticTexts["setting-off-reason-captions"]
+        XCTAssertFalse(reason.exists)
         XCTAssertFalse(app.staticTexts.containing(NSPredicate(format: "label CONTAINS %@", "Show a supported caption track")).firstMatch.exists)
         screenshot("Advanced Settings concise white switch rows", app)
         captions.tap()
-        let prompt = app.staticTexts["not-connected-captions"]
-        XCTAssertTrue(prompt.waitForExistence(timeout: 1))
-        screenshot("Cyan disconnected attempt with two-second prompt", app)
-        let reset = XCTNSPredicateExpectation(predicate: NSPredicate(format: "exists == false"), object: prompt)
-        XCTAssertEqual(XCTWaiter.wait(for: [reset], timeout: 3.5), .completed)
+        // SettingSwitchStateTests check the exact two-second expiry independently.
+        XCTAssertTrue(reason.waitForExistence(timeout: 5))
+        XCTAssertEqual(reason.label, "Connect your device to turn this on.")
+        XCTAssertFalse(app.staticTexts["not-connected-captions"].exists)
         XCTAssertTrue(["Off", "0"].contains(captions.value as? String ?? ""), "Attempt must end off")
+        screenshot("Disconnected setting stays off and explains the next action", app)
         tap("About Captions", app); label("verified connection", app)
         screenshot("Caption explanation hidden behind question button", app)
         dismissSettingHelp(app)
         XCTAssertTrue(captions.isHittable)
-        XCTAssertFalse(prompt.exists)
+        XCTAssertTrue(reason.isHittable)
         app.buttons["page-back"].tap(); label("SETTINGS", app)
-        XCTAssertTrue(app.buttons["appearance-picker"].exists)
+        XCTAssertTrue(app.buttons["appearance-picker"].isHittable)
         XCTAssertFalse(captions.exists)
+        tap("Advanced Settings", app)
+        XCTAssertFalse(reason.exists)
+        jump("Appearance", app); label("SETTINGS", app)
+        app.buttons["page-back"].tap(); label("Advanced Settings", app)
+        XCTAssertTrue(captions.isHittable)
+        app.buttons["page-back"].tap(); label("SETTINGS", app)
         app.buttons["page-back"].tap(); label("Connection not verified", app)
     }
 
@@ -1541,10 +1657,13 @@ final class AQSSReadOnlyUITests: XCTestCase {
         let prompt = app.staticTexts["not-connected-captions"]
         let reset = XCTNSPredicateExpectation(predicate: NSPredicate(format: "exists == false"), object: prompt)
         XCTAssertEqual(XCTWaiter.wait(for: [reset], timeout: 3.5), .completed)
+        let reason = app.staticTexts["setting-off-reason-captions"]
+        XCTAssertFalse(reason.exists)
         XCTAssertTrue(["Off", "0"].contains(app.switches["setting-captions"].value as? String ?? ""))
         app.switches["setting-captions"].tap()
         XCUIDevice.shared.press(.home); app.activate()
         XCTAssertFalse(prompt.exists)
+        XCTAssertFalse(reason.exists)
         XCTAssertTrue(["Off", "0"].contains(app.switches["setting-captions"].value as? String ?? ""))
         app.terminate()
         app.launchArguments = ["-aqssGuideDismissedV1", "YES", "-UIPreferredContentSizeCategoryName", "UICTContentSizeCategoryAccessibilityXXXL"]
@@ -2138,12 +2257,14 @@ final class AQSSReadOnlyUITests: XCTestCase {
 extension XCTestCase {
     func requireReviewedNativeCopy(_ app: XCUIApplication) throws -> XCUIElement {
         let copy = app.cells["Copy"].firstMatch
-        guard copy.waitForExistence(timeout: 8) else {
+        // The system can attach its activity container before it loads the Copy action.
+        guard copy.waitForExistence(timeout: 20) else {
             let image = XCTAttachment(screenshot: app.screenshot())
             image.name = "Native share missing Copy"; image.lifetime = .keepAlways; add(image)
-            let hierarchy = XCTAttachment(string: app.debugDescription)
+            let description = app.debugDescription
+            let hierarchy = XCTAttachment(string: description)
             hierarchy.name = "Native share missing Copy hierarchy"; hierarchy.lifetime = .keepAlways; add(hierarchy)
-            XCTFail("Native Copy is missing: \(app.debugDescription)")
+            XCTFail("Native share did not provide Copy within 20 seconds: \(description)")
             throw NSError(domain: "AQSSNativeShare", code: 1)
         }
         return copy

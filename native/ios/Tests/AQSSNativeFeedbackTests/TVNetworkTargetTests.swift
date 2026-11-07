@@ -39,6 +39,16 @@ final class TVNetworkTargetTests: XCTestCase {
         }
     }
 
+    func testTrialFollowUpKeepsReachabilitySeparateFromReviewAndPairing() {
+        XCTAssertEqual(TVTrialOutcome.addressRejected.followUp, .addressPictures)
+        XCTAssertEqual(TVTrialOutcome.wifiRequired.followUp, .phoneWiFi)
+        XCTAssertEqual(TVTrialOutcome.noResponse.followUp, .phoneWiFi)
+        XCTAssertEqual(TVTrialOutcome.serviceAnswered.followUp, .review)
+        for outcome in [TVTrialOutcome.unavailable, .stopped, .cleanupUnresolved] {
+            XCTAssertNil(outcome.followUp)
+        }
+    }
+
     func testTrialReviewRetainsOneImmutableOutcomeAndExactBuild() throws {
         let build = "Audio Bodyguard\nPlatform: iPhone/iPad\nVersion: 1.0.0\nBuild: 10.1"
         let first = try TVTrialReport.capture(buildDetails: build, outcome: .serviceAnswered, reviewedAtMillis: 0)
