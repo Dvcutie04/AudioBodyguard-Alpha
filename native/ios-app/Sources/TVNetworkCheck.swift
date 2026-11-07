@@ -92,7 +92,16 @@ final class TVNetworkCheck: ObservableObject {
         stopped = false; showResult = true; busy = true; stopping = false; nextPort = false
         pendingMessage = "No service certificate was read."; pendingOutcome = nil
         message = "Reading the certificate from the service that answered…"
-        begin(service.makeCertificateConnection(options: observer.makeTLSOptions()))
+        let expires = DispatchTime.now() + .seconds(AQSSLocalTVTarget.timeoutSeconds)
+        let options = observer.makeTLSOptions { [weak self, weak observer] in
+            DispatchQueue.main.async { [weak self, weak observer] in
+                guard let self = self, let observer = observer, self.certificateObserver === observer,
+                      !self.stopping else { return }
+                guard DispatchTime.now() < expires else { self.expireAttempt(); return }
+                self.closeCertificateAttempt(observer.fingerprint)
+            }
+        }
+        begin(service.makeCertificateConnection(options: options), expires: expires)
     }
 
     func stop(clear: Bool = false) {
@@ -128,9 +137,9 @@ final class TVNetworkCheck: ObservableObject {
         begin(NWConnection(host: NWEndpoint.Host(target.address), port: port, using: parameters))
     }
 
-    private func begin(_ current: NWConnection) {
+    private func begin(_ current: NWConnection,
+                       expires: DispatchTime = .now() + .seconds(AQSSLocalTVTarget.timeoutSeconds)) {
         connection = current
-        let expires = DispatchTime.now() + .seconds(AQSSLocalTVTarget.timeoutSeconds)
         current.stateUpdateHandler = { [weak self, weak current] state in
             // Network's callback is Sendable even when its queue is .main.
             // Enter the main actor explicitly before touching the run owner.
@@ -163,10 +172,8 @@ final class TVNetworkCheck: ObservableObject {
 
     private func handleResult(_ state: NWConnection.State, from current: NWConnection) {
         if let observer = certificateObserver {
-            if case .failed = state { pendingFingerprint = observer.fingerprint }
-            let result = pendingFingerprint == nil ? "No service certificate was read."
-                : "Certificate read. Compare the fingerprint with a trusted source."
-            closeAttempt(result, outcome: nil, fallback: false)
+            if case .ready = state { closeCertificateAttempt(nil) }
+            else { closeCertificateAttempt(observer.fingerprint) }
         } else if case .ready = state, let target = target,
                   case .hostPort(_, let port) = current.endpoint {
             reachedService = ReachedService(target: target, port: port, path: current.currentPath)
@@ -174,6 +181,13 @@ final class TVNetworkCheck: ObservableObject {
         } else {
             closeAttempt("No service answered. The reason is unknown.", outcome: .noResponse, fallback: true)
         }
+    }
+
+    private func closeCertificateAttempt(_ observed: String?) {
+        pendingFingerprint = observed
+        let result = observed == nil ? "No service certificate was read."
+            : "Certificate read. Compare the fingerprint with a trusted source."
+        closeAttempt(result, outcome: nil, fallback: false)
     }
 
     private func expireAttempt() {

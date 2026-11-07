@@ -16,10 +16,14 @@ final class AQSSPeerCertificateObserver: @unchecked Sendable {
         return digest
     }
 
-    func makeTLSOptions() -> NWProtocolTLS.Options {
+    func makeTLSOptions(onObservation: @escaping @Sendable () -> Void) -> NWProtocolTLS.Options {
         let options = NWProtocolTLS.Options()
         sec_protocol_options_set_verify_block(options.securityProtocolOptions, { [self] _, trust, complete in
-            defer { complete(false) }
+            var didObserve = false
+            defer {
+                complete(false)
+                if didObserve { onObservation() }
+            }
             let peerTrust = sec_trust_copy_ref(trust).takeRetainedValue()
             guard SecTrustSetNetworkFetchAllowed(peerTrust, false) == errSecSuccess,
                   let chain = SecTrustCopyCertificateChain(peerTrust) as? [SecCertificate],
@@ -28,7 +32,10 @@ final class AQSSPeerCertificateObserver: @unchecked Sendable {
             guard !der.isEmpty, der.count <= 16 * 1024 else { return }
             let fingerprint = SHA256.hash(data: der).map { String(format: "%02x", $0) }.joined()
             lock.lock()
-            if digest == nil { digest = fingerprint }
+            if digest == nil {
+                digest = fingerprint
+                didObserve = true
+            }
             lock.unlock()
         }, DispatchQueue.global(qos: .userInitiated))
         return options

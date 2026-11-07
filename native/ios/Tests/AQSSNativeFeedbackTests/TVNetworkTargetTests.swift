@@ -115,16 +115,20 @@ final class TVNetworkTargetTests: XCTestCase {
 
         let observer = AQSSPeerCertificateObserver()
         XCTAssertNil(observer.fingerprint)
+        let leafObserved = expectation(description: "Client observed the peer certificate and refused TLS")
+        let options = observer.makeTLSOptions { leafObserved.fulfill() }
         let client = NWConnection(host: loopback, port: try XCTUnwrap(listener.port),
-                                  using: NWParameters(tls: observer.makeTLSOptions()))
+                                  using: NWParameters(tls: options))
         defer { client.cancel() }
-        let clientRejected = expectation(description: "Client rejected TLS")
+        let clientClosed = expectation(description: "Client connection was cancelled")
         client.stateUpdateHandler = { state in
-            if case .failed = state { clientRejected.fulfill() }
+            if case .cancelled = state { clientClosed.fulfill() }
             if case .ready = state { XCTFail("Observation let the client finish the handshake") }
         }
         client.start(queue: .main)
-        wait(for: [clientRejected, serverRejected], timeout: 8)
+        wait(for: [leafObserved, serverRejected], timeout: 8)
+        client.cancel()
+        wait(for: [clientClosed], timeout: 5)
         XCTAssertEqual(observer.fingerprint, "eb7b8b2d7b964b9513c28b8d64e4722047ee0eb83bc85644796587590be6e904")
     }
 #endif
