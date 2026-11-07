@@ -30,11 +30,24 @@ public struct AQSSLocalTVTarget: Equatable, Sendable {
     }
 }
 
+public enum TVTrialFollowUp: Equatable, Sendable {
+    case addressPictures, phoneWiFi, review
+}
+
 public enum TVTrialOutcome: String, CaseIterable, Sendable {
     case addressRejected = "ADDRESS_REJECTED", wifiRequired = "WIFI_REQUIRED"
     case unavailable = "CHECK_UNAVAILABLE", serviceAnswered = "SERVICE_ANSWERED_UNVERIFIED"
     case noResponse = "NO_SERVICE_RESPONSE", stopped = "CHECK_STOPPED"
     case cleanupUnresolved = "CLEANUP_UNRESOLVED"
+
+    public var followUp: TVTrialFollowUp? {
+        switch self {
+        case .addressRejected: return .addressPictures
+        case .wifiRequired, .noResponse: return .phoneWiFi
+        case .serviceAnswered: return .review
+        case .unavailable, .stopped, .cleanupUnresolved: return nil
+        }
+    }
 }
 
 /// One explicitly reviewed, historical description. No host, free-text notes,

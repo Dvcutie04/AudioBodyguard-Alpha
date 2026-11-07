@@ -6,6 +6,31 @@ Checkpoint: November 2, 2026. Continue from the restored a-Shell baseline and th
 
 ## Current checkpoint
 
+The [0.46 connection trial](vizio-network-check-2026-11-02.md#046-connection-trial)
+brings the V505M-K09 address pictures and reviewed photo entry into one Android
+and iPhone build. Use the trial to record the next observation on the actual
+phone, TV and home Wi-Fi.
+
+The iPhone 0.47 candidate updates the native Share handoff for reviewed
+reports. A tap captures the displayed text and waits briefly for the review
+to be ready. Cancel or Copy returns to the same preview. If Share cannot
+open, the button becomes available again for another tap.
+
+The 0.48 connection trial candidate puts the next action beside common VIZIO results.
+A rejected address highlights the V505M-K09 address pictures. No reply or a
+missing Wi-Fi path offers phone Wi-Fi help. A service reply highlights private
+report review. Wi-Fi help shows the existing iPhone, Pixel or Galaxy pictures
+for that phone, with text steps where a matching picture guide is unavailable.
+Back within the app keeps the address and result for that visit. Leaving the
+foreground still clears them. Start another check with a new tap.
+Candidate source labels are Android 0.48/build 50 and iPhone 0.48.0/build 4.
+
+On the physical V505M-K09 trial, record the phone OS and TV firmware, compare the
+Wi-Fi pictures and address steps to the actual menus, then check the displayed
+private address on home Wi-Fi. Record the observed outcome and review the
+private report. A reply measures reachability only. Identity and pairing have
+separate evidence gates.
+
 The [offline TV identity review](vizio-network-check-2026-11-02.md#offline-identity-review)
 starts the next VIZIO phase with a certificate comparison fixture. It ties the
 comparison to one exact reviewed reply report and requires a separately supplied

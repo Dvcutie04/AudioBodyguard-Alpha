@@ -7,6 +7,11 @@ import json
 import plistlib
 import subprocess
 
+if __package__:
+    from .check_ios_build_share_clipboard import simctl_clipboard
+else:
+    from check_ios_build_share_clipboard import simctl_clipboard
+
 
 def main():
     parser = argparse.ArgumentParser()
@@ -51,7 +56,7 @@ def main():
     subprocess.run(["xcrun", "xcresulttool", "export", "--legacy", "--type", "file", "--path", str(args.result),
                     "--id", payloads.pop(), "--output-path", str(expected_file)], check=True)
     expected = expected_file.read_bytes()
-    observed = subprocess.check_output(["xcrun", "simctl", "pbpaste", args.simulator], timeout=20)
+    observed = simctl_clipboard(args.simulator)
     assert observed == expected, "Native clipboard differs from the exact reviewed text"
     text = expected.decode("utf-8")
     info = plistlib.loads(args.app_info.read_bytes())

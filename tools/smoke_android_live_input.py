@@ -158,7 +158,6 @@ def main():
             "Test setup. Record the two-phone test arrangement": ("? More sound tools", "Jump to Test setup"),
             "Output inventory. Check this phone’s available audio outputs": ("? More sound tools", "Jump to Output inventory"),
             "TV photo setup. Read a model label or Network settings photo": ("? Device help", "TV photo setup. Read a model label or settings photo"),
-            "Clear photo details": ("? Photo help", "Clear photo details"),
             "Show photo details": ("? Photo help", "Show photo details"),
         }
         if text not in routes:
@@ -492,9 +491,66 @@ def main():
             wait_for("TV IP address", prefix + "_network_idle")
             tap("TV IP address", prefix + "_network_address")
             adb("shell", "input", "text", "8.8.8.8")
+            reveal("Find my TV’s IP address", prefix + "_address_guide_open")
+            wait_for_all(("VIZIO V505M-K09 · Android", "My TV matches"), prefix + "_address_guide_model")
+            reveal("My screen looks different", prefix + "_address_guide_mismatch")
+            wait_for("Find the right screen", prefix + "_address_guide_recovery")
+            tap("Back", prefix + "_address_guide_model_back")
+            tap("My TV matches", prefix + "_address_guide_start")
+            targets = ("Menu (gear)", "Network", "Network Information", "IP Address", "TV IP address")
+            for step, target in enumerate(targets, 1):
+                name = prefix + f"_address_guide_picture_{step}"
+                root = wait_for(f"Step {step} of {len(targets)}", name)
+                assert any(f"Highlighted: {target}." in node.get("content-desc", "") for node in root.iter("node")), target
+                if step == 2:
+                    adb("shell", "input", "keyevent", "KEYCODE_BACK")
+                    wait_for("Step 1 of 5", name + "_back")
+                    tap("Next", name + "_again")
+                    wait_for("Step 2 of 5", name + "_restored")
+                if step in (3, 5):
+                    screenshot(name)
+                tap("Back to address field" if step == len(targets) else "Next", name + "_next")
+            wait_for_all(("8.8.8.8", "Ready to check the address you enter."), prefix + "_address_guide_return")
             reveal("Check this address", prefix + "_network_rejected")
             wait_for_all(("Enter the private IPv4 address", "TV identity, pairing and audio protection are not verified."), prefix + "_network_boundary")
             screenshot(prefix + "_network_public_address_rejected")
+            reveal("? Help with this check", prefix + "_network_help")
+            tap("Check phone Wi-Fi", prefix + "_wifi_guide_open")
+            maker = adb("shell", "getprop", "ro.product.manufacturer").decode().strip().casefold()
+            route = {
+                "google": ("Google Pixel", "Open Pixel Settings", "Network & internet"),
+                "samsung": ("Samsung Galaxy", "Open Galaxy Settings", "Connections"),
+            }.get(maker)
+            if route:
+                phone, settings_title, second_target = route
+                wait_for(f"{phone} — connect to your home Wi-Fi", prefix + "_wifi_guide_intro")
+                tap("Start Wi-Fi steps", prefix + "_wifi_guide_start")
+                wait_for_all(("Step 1 of 7", settings_title), prefix + "_wifi_guide_settings")
+                tap("Next", prefix + "_wifi_guide_second")
+                root = wait_for("Step 2 of 7", prefix + "_wifi_guide_picture")
+                assert any(f"Highlighted: {second_target}." in n.get("content-desc", "") for n in root.iter("node")), second_target
+                screenshot(prefix + "_wifi_guide_picture")
+                adb("shell", "input", "keyevent", "KEYCODE_BACK")
+                wait_for_all(("Step 1 of 7", settings_title), prefix + "_wifi_guide_back_one")
+                tap("Next", prefix + "_wifi_guide_resume")
+                for step in range(2, 8):
+                    name = prefix + f"_wifi_guide_{step}"
+                    wait_for(f"Step {step} of 7", name)
+                    tap("Back to network check" if step == 7 else "Next", name + "_next")
+            else:
+                root = wait_for_all(("1. Open Settings.", "2. Search for Wi-Fi."), prefix + "_wifi_guide_unmatched")
+                assert not has(root, "Google Pixel") and not has(root, "Samsung Galaxy")
+                tap("Back to network check", prefix + "_wifi_guide_return")
+            root = wait_for("VIZIO network check", prefix + "_wifi_guide_caller")
+            for attempt in range(6):
+                if has(root, "8.8.8.8"):
+                    break
+                scroll = next(n for n in root.iter("node") if n.get("class") == "android.widget.ScrollView")
+                x0, y0, x1, y1 = map(int, re.findall(r"-?\d+", scroll.get("bounds")))
+                x = str((x0 + x1) // 2)
+                adb("shell", "input", "swipe", x, str(y0 + (y1-y0)//5), x, str(y1 - (y1-y0)//5), "300")
+                root, _ = screen(prefix + f"_wifi_guide_preserved_{attempt}")
+            assert has(root, "8.8.8.8"), "Wi-Fi help must preserve the address in the same visit"
             reveal("Review test result", prefix + "_network_review")
             root = wait_for_all(("Audio Bodyguard connection trial (v1)", "Outcome: ADDRESS_REJECTED", "No native check started"), prefix + "_network_review_private")
             assert not any("8.8.8.8" in n.get("text", "") for n in root.iter("node")), "Entered address leaked into the reviewed result"
@@ -1379,6 +1435,24 @@ def main():
         tap("TV photo setup. Read a model label or Network settings photo", "open_photo_check")
         empty = wait_for("No photo selected", f"{case_prefix}_starts_empty")
         assert not has(empty, "Brand:") and not has(empty, "Model:") and not has(empty, "TV IP hint:"), "New photo screen must keep optional details hidden"
+        if case_prefix == "photo":
+            tap("? Photo help", "photo_open_guide_help")
+            tap("VIZIO V505M-K09 address pictures", "photo_open_model_guide")
+            intro = wait_for_all(("VIZIO V505M-K09 · Android", "My TV matches"), "photo_confirm_guide_model")
+            assert not has(intro, "Check this address"), "Photo help must open the pictures only"
+            tap("My TV matches", "photo_start_model_guide")
+            for step, target in enumerate(("Menu (gear)", "Network", "Network Information", "IP Address"), start=1):
+                page = wait_for(f"Step {step} of 4", f"photo_model_guide_step_{step}")
+                assert any(f"Highlighted: {target}." in n.get("content-desc", "") for n in page.iter("node"))
+                if step == 2:
+                    adb("shell", "input", "keyevent", "KEYCODE_BACK")
+                    wait_for("Step 1 of 4", "photo_guide_system_back")
+                    tap("Next", "photo_guide_next_again")
+                    wait_for("Step 2 of 4", "photo_guide_step_restored")
+                if step == 4:
+                    screenshot("photo_guide_ip_address")
+                tap("Back to photo setup" if step == 4 else "Next", f"photo_guide_advance_{step}")
+            wait_for_all(("TV photo setup", "No photo selected"), "photo_guide_returns_to_photo")
         tap("Show photo details", f"{case_prefix}_show_details")
         wait_photo_fields(("No photo selected", "Brand: Not identified", "Model: Not identified", "TV IP hint: Not identified"), f"{case_prefix}_empty_details")
         fixture = Path("native/ios/Tests/AQSSNativeFeedbackTests/Fixtures") / fixture_name
@@ -1411,16 +1485,36 @@ def main():
                          f"{case_prefix}_native_ocr_result", attempts=30)
             screenshot(f"{case_prefix}_native_ocr_result")
             if case_prefix == "photo":
+                wait_for("Address read from photo: 10.20.30.40", "photo_address_review")
+                tap("Use address in VIZIO check", "photo_address_confirm")
+                check = wait_for_all(("VIZIO network check", "Ready to check the address you enter."), "photo_address_idle_check")
+                field = next(n for n in check.iter("node") if n.get("class") == "android.widget.EditText")
+                assert field.get("text") == "10.20.30.40" and field.get("enabled") == "true"
+                assert not has(check, "Review test result"), "Filling the address must not start the check"
+                screenshot("photo_address_idle_check")
+                adb("shell", "input", "keyevent", "KEYCODE_HOME"); launch()
+                check = wait_for_all(("TV IP address", "Ready to check the address you enter."), "photo_address_check_cleared")
+                assert not has(check, "10.20.30.40"), "The handoff must not replay after backgrounding"
+                tap("Back", "photo_address_back")
+                wait_for("Address read from photo: 10.20.30.40", "photo_address_back_to_review")
                 # A newly opened selection replaces the old review even if cancelled.
                 # Use the real picker, then prove the old VIZIO/model/IP do not return.
                 tap("Choose a photo", "photo_replace_to_cancel")
                 screen("photo_replacement_picker")
                 adb("shell", "input", "keyevent", "KEYCODE_BACK")
-                wait_photo_fields(("No photo selected", "Brand: Not identified", "Model: Not identified", "TV IP hint: Not identified"),
-                             "photo_replacement_cancel_empty")
+                empty = wait_photo_fields(("No photo selected", "Brand: Not identified", "Model: Not identified", "TV IP hint: Not identified"),
+                                          "photo_replacement_cancel_empty")
+                assert not has(empty, "Use address in VIZIO check"), "Cancelled replacement must clear the old address action"
                 screenshot("photo_replacement_cancel_empty")
                 choose_photo_fixture(display_name, "photo_reselect")
                 wait_photo_fields(expected, "photo_reselect_native_ocr_result", attempts=30)
+            for attempt in range(4):
+                _, opened = screen(f"{case_prefix}_clear_help_{attempt}", click="? Photo help")
+                if opened:
+                    break
+                scroll_meter(f"{case_prefix}_find_photo_help_{attempt}", down=True)
+            else:
+                raise AssertionError("Photo help is unreachable in the photo review")
             tap("Clear photo details", f"{case_prefix}_clear")
             for attempt in range(3):
                 scroll_meter(f"{case_prefix}_after_clear_top_{attempt}", down=False)

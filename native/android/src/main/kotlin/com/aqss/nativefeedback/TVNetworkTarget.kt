@@ -33,9 +33,19 @@ class LocalTVTarget private constructor(val address: String, private val values:
     }
 }
 
+enum class TVTrialFollowUp { ADDRESS_PICTURES, PHONE_WIFI, REVIEW }
+
 enum class TVTrialOutcome {
     ADDRESS_REJECTED, WIFI_REQUIRED, CHECK_UNAVAILABLE, SERVICE_ANSWERED_UNVERIFIED,
-    NO_SERVICE_RESPONSE, CHECK_STOPPED, CLEANUP_UNRESOLVED
+    NO_SERVICE_RESPONSE, CHECK_STOPPED, CLEANUP_UNRESOLVED;
+
+    val followUp: TVTrialFollowUp?
+        get() = when (this) {
+            ADDRESS_REJECTED -> TVTrialFollowUp.ADDRESS_PICTURES
+            WIFI_REQUIRED, NO_SERVICE_RESPONSE -> TVTrialFollowUp.PHONE_WIFI
+            SERVICE_ANSWERED_UNVERIFIED -> TVTrialFollowUp.REVIEW
+            CHECK_UNAVAILABLE, CHECK_STOPPED, CLEANUP_UNRESOLVED -> null
+        }
 }
 
 /** Historical description only; no host, user notes, device ID or authority. */

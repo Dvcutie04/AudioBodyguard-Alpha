@@ -8,8 +8,10 @@ import plistlib
 import subprocess
 
 if __package__:
+    from .check_ios_build_share_clipboard import simctl_clipboard
     from .verify_native_setup_intake import verify_native_setup_intake
 else:
+    from check_ios_build_share_clipboard import simctl_clipboard
     from verify_native_setup_intake import verify_native_setup_intake
 
 
@@ -63,7 +65,7 @@ def main():
     expected = expected_file.read_bytes()
     original = original_file.read_bytes()
     assert expected.endswith(original), "Combined report did not retain the exact original snapshot"
-    observed = subprocess.check_output(["xcrun", "simctl", "pbpaste", args.simulator], timeout=20)
+    observed = simctl_clipboard(args.simulator)
     assert observed == expected, "Native clipboard differs from the exact reviewed text"
     text = expected.decode("utf-8")
     info = plistlib.loads(args.app_info.read_bytes())

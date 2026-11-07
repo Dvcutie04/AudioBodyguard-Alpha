@@ -78,7 +78,7 @@ final class TVNetworkCheck: ObservableObject {
                     self.closeAttempt("A network service answered. TV pairing is still needed.", outcome: .serviceAnswered, fallback: false)
                 case .failed, .waiting:
                     guard !self.stopping else { return }
-                    self.closeAttempt("Could not reach the service. Check home Wi-Fi and TV power, then try again.", outcome: .noResponse, fallback: true)
+                    self.closeAttempt("No service answered. The reason is unknown.", outcome: .noResponse, fallback: true)
                 case .cancelled:
                     self.timeout?.cancel(); self.timeout = nil
                     current.stateUpdateHandler = nil
@@ -92,7 +92,7 @@ final class TVNetworkCheck: ObservableObject {
         }
         let deadline = DispatchWorkItem { [weak self, weak current] in
             guard let self = self, let current = current, self.connection === current, !self.stopping else { return }
-            self.closeAttempt("Could not reach the service. Check home Wi-Fi and TV power, then try again.", outcome: .noResponse, fallback: true)
+            self.closeAttempt("No service answered. The reason is unknown.", outcome: .noResponse, fallback: true)
         }
         timeout = deadline
         current.start(queue: .main)
@@ -116,23 +116,35 @@ final class TVNetworkCheck: ObservableObject {
 
 struct TVNetworkCheckView: View {
     let theme: AppTheme
+    var takePhotoTarget: (() -> AQSSLocalTVTarget?)? = nil
     @Environment(\.dismiss) private var dismiss
     @Environment(\.scenePhase) private var scenePhase
     @StateObject private var check = TVNetworkCheck()
     @State private var help = false
+    @State private var guideContext: TVCheckPictureGuide.Context?
     @State private var reviewedReport: TVTrialReport?
     @State private var reportError: String?
 
     var body: some View {
-        Group {
-            if let report = reviewedReport { reviewContent(report) } else { checkContent }
+        VStack(spacing: 0) {
+            if let guideContext = guideContext {
+                TVCheckPictureGuide(theme: theme, context: guideContext) { self.guideContext = nil }
+            } else if let report = reviewedReport {
+                reviewContent(report)
+            } else {
+                checkContent
+            }
+        }
+        .onAppear {
+            if let target = takePhotoTarget?(), scenePhase == .active { check.address = target.address }
         }
         .onChange(of: scenePhase) { phase in if phase != .active { check.stop(clear: true) } }
         .onDisappear { check.stop(clear: true) }
     }
 
     private var checkContent: some View {
-        VStack(spacing: 0) {
+        let followUp = check.lastOutcome?.followUp
+        return VStack(spacing: 0) {
             HStack {
                 Text("VIZIO network check").font(.title2.bold()).fixedSize(horizontal: false, vertical: true)
                 Spacer()
@@ -147,6 +159,11 @@ struct TVNetworkCheckView: View {
                         .keyboardType(.numbersAndPunctuation).autocapitalization(.none).disableAutocorrection(true)
                         .padding(12).background(theme.raised).cornerRadius(12)
                         .disabled(check.busy).accessibilityLabel("TV IP address").accessibilityIdentifier("tv-network-address")
+                    if let route = TVCheckPictureGuide.Context.addressField.route {
+                        Button(route.title) { openGuide(.addressField) }
+                            .buttonStyle(AppButtonStyle(theme: theme, primary: followUp == .addressPictures))
+                            .disabled(check.busy).accessibilityIdentifier("tv-address-guide-open")
+                    }
                     Text("Check contacts only this address on Wi-Fi. It sends no TV command.").font(.subheadline)
                     Text(check.message).font(.headline).fixedSize(horizontal: false, vertical: true)
                         .accessibilityIdentifier("tv-network-result")
@@ -156,16 +173,22 @@ struct TVNetworkCheckView: View {
                         reportError = nil
                         UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
                         if check.busy { check.stop() } else { check.start() }
-                    }.buttonStyle(AppButtonStyle(theme: theme, primary: true))
+                    }.buttonStyle(AppButtonStyle(theme: theme, primary: followUp == nil))
                         .disabled(check.stopping || (!check.busy && check.address.isEmpty))
                         .accessibilityIdentifier("tv-network-start-stop")
+                    if followUp == .phoneWiFi {
+                        Text("Check that your phone and TV use the same home Wi-Fi.").fixedSize(horizontal: false, vertical: true)
+                        phoneWiFiButton(primary: true)
+                    }
                     if check.lastOutcome != nil && !check.busy {
                         Button("Review test result", action: reviewResult)
-                            .buttonStyle(AppButtonStyle(theme: theme)).accessibilityIdentifier("tv-network-review")
+                            .buttonStyle(AppButtonStyle(theme: theme, primary: followUp == .review))
+                            .accessibilityIdentifier("tv-network-review")
                     }
                     if let error = reportError { Text(error).font(.subheadline) }
                     QuestionDisclosure(title: "Help with this check", theme: theme, isExpanded: $help, identifier: "tv-network-help") {
                         Text("Use the same home Wi-Fi for phone and TV. Guest Wi-Fi or device isolation can prevent contact. This check cannot diagnose your router’s policy.")
+                        if followUp != .phoneWiFi { phoneWiFiButton(primary: false) }
                         Text("This first check tries TCP ports 7345 and 9000, for up to four seconds each, on one private IPv4 address. These are SmartCast research candidates, not a guarantee for every VIZIO model. An answer proves only service reachability at that moment.")
                         Text("Allow Local Network access if iPhone asks. After changing permission, tap Check again. Leaving this screen or the foreground clears the address and result and stops the check.")
                         Text("Review test result removes the address and opens a historical copy. You can then choose Share. The report contains the app build and a fixed result description, without TV addresses, Wi-Fi names, passwords, photos or audio. Nothing is sent automatically.")
@@ -177,6 +200,18 @@ struct TVNetworkCheckView: View {
                 }.padding().frame(maxWidth: 680, alignment: .leading).frame(maxWidth: .infinity)
             }.accessibilityIdentifier("tv-network-scroll")
         }.background(theme.background.ignoresSafeArea()).foregroundColor(theme.text)
+    }
+
+    private func openGuide(_ context: TVCheckPictureGuide.Context) {
+        guard !check.busy else { return }
+        UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
+        guideContext = context
+    }
+
+    private func phoneWiFiButton(primary: Bool) -> some View {
+        Button("Check phone Wi-Fi") { openGuide(.phoneWiFi) }
+            .buttonStyle(AppButtonStyle(theme: theme, primary: primary))
+            .disabled(check.busy).accessibilityIdentifier("tv-network-wifi-guide-open")
     }
 
     private func reviewResult() {
@@ -208,5 +243,105 @@ struct TVNetworkCheckView: View {
             Text(TVTrialReport.notice).font(.subheadline).fixedSize(horizontal: false, vertical: true)
             ReviewedTextShareButton(text: report.text, theme: theme, title: "Share test result", identifier: "tv-network-report-share")
         }.padding(20).foregroundColor(theme.text).background(theme.background.ignoresSafeArea())
+    }
+}
+
+/// Local guide that returns to its caller with the current form still in memory.
+struct TVCheckPictureGuide: View {
+    enum Context: Equatable {
+        case addressField, photoSetup, phoneWiFi
+
+        @MainActor var route: AQSSSetupRoute? {
+            let id: String
+            if self == .phoneWiFi {
+                guard UIDevice.current.userInterfaceIdiom == .phone else { return nil }
+                id = "phone_iphone"
+            } else { id = "vizio_v505m_k09_address" }
+            return AQSSSetupContent.routes.first { $0.id == id }
+        }
+    }
+
+    let theme: AppTheme
+    let context: Context
+    let onReturn: () -> Void
+    @State private var index = -1
+    @State private var mismatch = false
+    @AccessibilityFocusState private var focusedHeading: String?
+
+    private var route: AQSSSetupRoute? { context.route }
+    private var isWiFi: Bool { context == .phoneWiFi }
+    private var steps: [AQSSSetupStep] {
+        let all = route?.steps ?? []
+        return context == .photoSetup ? all.filter { $0.surface == "tv" } : all
+    }
+    private var step: AQSSSetupStep? { steps.indices.contains(index) ? steps[index] : nil }
+    private var screenKey: String { "\(index)-\(mismatch)" }
+    private var returnsToCaller: Bool { mismatch || index == steps.count - 1 }
+    private var helpTitle: String { isWiFi ? "Phone Wi-Fi help" : "TV address help" }
+    private var prefix: String { isWiFi ? "tv-wifi-guide" : "tv-address-guide" }
+    private var returnTitle: String {
+        switch context {
+        case .addressField: return "Back to address field"
+        case .photoSetup: return "Back to photo setup"
+        case .phoneWiFi: return "Back to network check"
+        }
+    }
+
+    var body: some View {
+        VStack(spacing: 0) {
+            HStack {
+                Text(index >= 0 && !mismatch ? "Step \(index + 1) of \(steps.count)" : helpTitle)
+                    .font(.headline).fixedSize(horizontal: false, vertical: true).layoutPriority(1)
+                Spacer(minLength: 8)
+                Button("Back", action: back).buttonStyle(AppButtonStyle(theme: theme))
+                    .accessibilityIdentifier(prefix + "-back")
+            }.padding(16).background(theme.surface)
+            GuideScrollView(screenKey: screenKey, identifier: prefix + "-scroll", onStepReady: { focusedHeading = $0 }) {
+                VStack(alignment: .leading, spacing: 18) {
+                    if !isWiFi, let route = route {
+                        Text("VIZIO \(route.models.joined(separator: ", ")) · iPhone").font(.subheadline.weight(.semibold))
+                            .foregroundColor(theme.muted).accessibilityIdentifier(prefix + "-model")
+                    }
+                    Text(mismatch ? "Find the right screen" : step?.title ?? route?.title ?? "Connect to your home Wi-Fi")
+                        .font(.title.bold()).fixedSize(horizontal: false, vertical: true)
+                        .accessibilityAddTraits(.isHeader).accessibilityFocused($focusedHeading, equals: screenKey)
+                    if mismatch {
+                        Text(isWiFi ? "Search for Wi-Fi in Settings." : "Look up the network information for your exact TV model in VIZIO Support.")
+                    } else {
+                        if let step = step {
+                            Text(step.instruction).font(.body.weight(.medium)).fixedSize(horizontal: false, vertical: true)
+                            GuidePictureCue(screenKey: screenKey) {
+                                if step.pictureKind == "remote" {
+                                    RemoteButtonsIllustration(step: step, number: index + 1, theme: theme)
+                                } else {
+                                    SetupScreenIllustration(step: step, number: index + 1, theme: theme)
+                                }
+                            }
+                        } else if let route = route {
+                            Text(route.appliesTo)
+                        } else {
+                            Text("1. Open Settings.")
+                            Text("2. Tap Wi-Fi.")
+                            Text("3. Choose the home network your TV uses.")
+                        }
+                        if route != nil {
+                            Button("My screen looks different") { mismatch = true }
+                                .buttonStyle(AppButtonStyle(theme: theme)).accessibilityIdentifier(prefix + "-mismatch")
+                        }
+                    }
+                }.frame(maxWidth: 620, alignment: .leading).padding(20).frame(maxWidth: .infinity)
+            }
+            Button(returnsToCaller ? returnTitle : index < 0 ? (isWiFi ? "Start Wi-Fi steps" : "My TV matches") : "Next") {
+                if returnsToCaller { onReturn() } else { index += 1 }
+            }.buttonStyle(AppButtonStyle(theme: theme, primary: true))
+                .accessibilityIdentifier(prefix + "-next")
+                .padding(16).frame(maxWidth: .infinity).background(theme.surface)
+        }.background(theme.background.ignoresSafeArea()).foregroundColor(theme.text)
+    }
+
+    private func back() {
+        if mismatch { mismatch = false }
+        else if index >= 0 { index -= 1 }
+        else { onReturn() }
     }
 }
