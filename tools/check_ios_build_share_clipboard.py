@@ -5,8 +5,25 @@ import argparse
 import json
 import plistlib
 import subprocess
+import sys
 
 FIXTURE = b"AQSS isolated build-share cancel fixture"
+
+
+def simctl_clipboard(simulator, *, data=None):
+    """Retry a timed-out read or identical write on the same isolated device."""
+    operation = "pbpaste" if data is None else "pbcopy"
+    command = ["xcrun", "simctl", operation, simulator]
+    attempts = 3
+    for attempt in range(1, attempts + 1):
+        try:
+            return subprocess.run(command, input=data, capture_output=True, timeout=20, check=True).stdout
+        except subprocess.TimeoutExpired:
+            if attempt == attempts:
+                raise
+            print(f"Simulator {operation} timed out on {simulator} (attempt {attempt}/{attempts}); retrying",
+                  file=sys.stderr)
+
 
 def main():
     parser = argparse.ArgumentParser()
@@ -19,22 +36,13 @@ def main():
     args = parser.parse_args()
     args.output.mkdir(parents=True, exist_ok=True)
 
-    def simctl(*command, data=None):
-        call = subprocess.run(["xcrun", "simctl", *command], input=data,
-                              capture_output=True, timeout=20, check=True)
-        return call.stdout
-
     if args.mode == "prepare":
-        # The installed Xcode's own help is the primary subcommand contract.
-        for command in ("pbcopy", "pbpaste"):
-            help_call = subprocess.run(["xcrun", "simctl", "help", command],
-                                       capture_output=True, timeout=20, check=True)
-            (args.output / (command + "-help.txt")).write_bytes(help_call.stdout + help_call.stderr)
-        simctl("pbcopy", args.simulator, data=FIXTURE)
-        assert simctl("pbpaste", args.simulator) == FIXTURE, "Require a working, isolated clipboard fixture"
+        # Require the actual copy and paste round trip on this isolated device.
+        simctl_clipboard(args.simulator, data=FIXTURE)
+        assert simctl_clipboard(args.simulator) == FIXTURE, "Require a working, isolated clipboard fixture"
         print("BUILD_SHARE_CLIPBOARD_PREPARED")
     elif args.mode == "cancel":
-        observed = simctl("pbpaste", args.simulator)
+        observed = simctl_clipboard(args.simulator)
         assert observed == FIXTURE, repr(observed)
         result = {"cancel_preserved": True, "fixture": FIXTURE.decode("utf-8")}
         (args.output / "build-share-cancel-clipboard.json").write_text(json.dumps(result, sort_keys=True), encoding="utf-8")
@@ -48,13 +56,13 @@ def main():
         if args.support_report:
             recap = "Check 1: Input samples observed\nStopped by you" if args.completed_check else "No completed sound checks in this app session."
             expected += ("\n\nRecent sound checks (this app session)\n" + recap + "\n\nInput observations only; not proof of sound safety, protection or TV control.").encode("utf-8")
-        observed = simctl("pbpaste", args.simulator)
+        observed = simctl_clipboard(args.simulator)
         assert observed == expected, {"observed": repr(observed), "expected": repr(expected)}
         result = {"text": observed.decode("utf-8"), "platform": "iPhone/iPad", "version": version, "build": build}
         (args.output / "build-share-copy-clipboard.json").write_text(json.dumps(result, sort_keys=True), encoding="utf-8")
         print("BUILD_SHARE_COPY_CLIPBOARD_EXACT " + json.dumps(result, sort_keys=True))
     else:
-        simctl("pbcopy", args.simulator, data=b"")
+        simctl_clipboard(args.simulator, data=b"")
         print("BUILD_SHARE_CLIPBOARD_FIXTURE_CLEARED")
 
 if __name__ == "__main__":

@@ -8,7 +8,37 @@ import plistlib
 import subprocess
 import tempfile
 import unittest
-from unittest.mock import patch
+from unittest.mock import call, patch
+
+from tools.check_ios_build_share_clipboard import simctl_clipboard
+
+
+class TestSimulatorClipboard(unittest.TestCase):
+    def test_timeout_retries_same_write_and_read(self):
+        for data, operation, observed in ((b"fixture", "pbcopy", b""), (None, "pbpaste", b"reviewed")):
+            with self.subTest(operation=operation):
+                command = ["xcrun", "simctl", operation, "isolated-simulator"]
+                with patch.object(subprocess, "run", side_effect=[
+                    subprocess.TimeoutExpired(command, 20), subprocess.CompletedProcess(command, 0, observed),
+                ]) as run, contextlib.redirect_stderr(io.StringIO()) as diagnostics:
+                    self.assertEqual(simctl_clipboard("isolated-simulator", data=data), observed)
+                attempt = call(command, input=data, capture_output=True, timeout=20, check=True)
+                self.assertEqual(run.call_args_list, [attempt, attempt])
+                self.assertIn(operation + " timed out", diagnostics.getvalue())
+
+    def test_persistent_timeout_fails_after_three_attempts(self):
+        command = ["xcrun", "simctl", "pbpaste", "isolated-simulator"]
+        with patch.object(subprocess, "run", side_effect=subprocess.TimeoutExpired(command, 20)) as run:
+            with contextlib.redirect_stderr(io.StringIO()), self.assertRaises(subprocess.TimeoutExpired):
+                simctl_clipboard("isolated-simulator")
+        self.assertEqual(run.call_count, 3)
+
+    def test_command_error_fails_without_retry(self):
+        command = ["xcrun", "simctl", "pbcopy", "isolated-simulator"]
+        with patch.object(subprocess, "run", side_effect=subprocess.CalledProcessError(1, command)) as run:
+            with self.assertRaises(subprocess.CalledProcessError):
+                simctl_clipboard("isolated-simulator", data=b"")
+        run.assert_called_once()
 
 
 class TestReviewedClipboard(unittest.TestCase):
@@ -30,6 +60,8 @@ class TestReviewedClipboard(unittest.TestCase):
         exports = []
 
         def run(command, **kwargs):
+            if command[:3] == ['xcrun', 'simctl', 'pbpaste']:
+                return subprocess.CompletedProcess(command, 0, payload + (b'changed' if mismatch else b''))
             if command[:3] == ['xcrun', 'xcresulttool', 'get']:
                 return subprocess.CompletedProcess(command, 0, json.dumps(attachments))
             self.assertEqual(command[:3], ['xcrun', 'xcresulttool', 'export'])
@@ -43,8 +75,6 @@ class TestReviewedClipboard(unittest.TestCase):
             return subprocess.CompletedProcess(command, 0)
 
         def output(command, **kwargs):
-            if command[:3] == ['xcrun', 'simctl', 'pbpaste']:
-                return payload + (b'changed' if mismatch else b'')
             self.assertEqual(command, ['git', 'rev-parse', 'HEAD'])
             return 'a' * 40
 

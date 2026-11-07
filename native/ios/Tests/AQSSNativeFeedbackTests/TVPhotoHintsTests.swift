@@ -5,6 +5,17 @@ import Vision
 #endif
 
 final class TVPhotoHintsTests: XCTestCase {
+    func testVizioCheckTargetRequiresAnUnambiguousPrivateHost() {
+        let addressRow = "IPv4 IP Address: 10.20.30.40"
+        XCTAssertEqual(TVPhotoHints("VIZIO\n\(addressRow)").vizioCheckTarget?.address, "10.20.30.40")
+        XCTAssertEqual(TVPhotoHints(addressRow).vizioCheckTarget?.address, "10.20.30.40")
+        for text in ["SAMSUNG\n\(addressRow)", "VIZIO\nSAMSUNG\n\(addressRow)",
+                     "\(addressRow)\nIP: 10.20.30.41", "IP: 10.20.30.0", "IP: 10.20.30.255",
+                     "IP: 8.8.8.8", "IPv4 Default Gateway: 10.20.30.40"] {
+            XCTAssertNil(TVPhotoHints(text).vizioCheckTarget, text)
+        }
+    }
+
     func testExactRowLimitKeepsTheLastRowAndRejectsTheNextConflict() throws {
         let hundred: [String?] = ["VIZIO", "Model: X1"] + Array(repeating: "other row", count: 97) + ["IP: 10.0.0.2"]
         let text = try XCTUnwrap(boundedTVPhotoText(hundred))
