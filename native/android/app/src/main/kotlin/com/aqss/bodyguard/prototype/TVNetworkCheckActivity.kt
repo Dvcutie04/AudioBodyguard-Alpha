@@ -5,6 +5,7 @@ import android.app.AlertDialog
 import android.content.Intent
 import android.content.ActivityNotFoundException
 import android.net.ConnectivityManager
+import android.net.Network
 import android.net.NetworkCapabilities
 import android.net.Uri
 import android.os.Build
@@ -48,7 +49,7 @@ import java.util.UUID
 
 private object TVNetworkChecks { val runner = TVNetworkRunner() }
 
-/** An explicitly started TCP reachability check, not a TV pairing or controller. */
+/** User-started reachability and certificate observations for one Wi-Fi address. */
 class TVNetworkCheckActivity : Activity() {
     private lateinit var skin: InterfaceTheme
     private lateinit var root: LinearLayout
@@ -58,6 +59,8 @@ class TVNetworkCheckActivity : Activity() {
     private lateinit var result: TextView
     private lateinit var start: Button
     private lateinit var review: Button
+    private lateinit var certificate: Button
+    private lateinit var fingerprint: TextView
     private lateinit var guideButton: Button
     private lateinit var wifiHint: TextView
     private lateinit var wifiButton: Button
@@ -77,6 +80,8 @@ class TVNetworkCheckActivity : Activity() {
     private var guideIndex = -1
     private var guideMismatch = false
     private var lastOutcome: TVTrialOutcome? = null
+    private data class ReachedPeer(val target: LocalTVTarget, val port: Int, val wifi: Network)
+    private var reachedPeer: ReachedPeer? = null
     private var reportDialog: AlertDialog? = null
     private var reportShare: Button? = null
     private var token: Long? = null
@@ -125,6 +130,10 @@ class TVNetworkCheckActivity : Activity() {
         content.addView(wifiButton)
         review = button("Review test result") { reviewResult() }.apply { visibility = View.GONE }
         content.addView(review)
+        certificate = button("Read service certificate") { beginCertificate() }.apply { visibility = View.GONE }
+        content.addView(certificate)
+        fingerprint = words("", 15f).apply { setTextIsSelectable(true); visibility = View.GONE }
+        content.addView(fingerprint)
         content.addView(button("? Help with this check") { showHelp() })
         address.addTextChangedListener(object : TextWatcher {
             override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
@@ -260,7 +269,8 @@ class TVNetworkCheckActivity : Activity() {
     }
     override fun onPause() {
         visible = false; stop(); token = null; address.text.clear(); result.text = IDLE
-        address.isEnabled = true; guideButton.isEnabled = true; start.text = "Check this address"; start.isEnabled = true
+        setOutcome(null)
+        setCheckRunning(false)
         help?.dismiss(); help = null
         super.onPause()
     }
@@ -276,11 +286,8 @@ class TVNetworkCheckActivity : Activity() {
         setOutcome(null)
         val target = LocalTVTarget.parse(address.text.toString())
         if (target == null) { result.text = LocalTVTarget.INVALID_ADDRESS; setOutcome(TVTrialOutcome.ADDRESS_REJECTED); return }
-        val manager = applicationContext.getSystemService(ConnectivityManager::class.java)
-        val network = manager?.activeNetwork
-        val capabilities = network?.let { manager.getNetworkCapabilities(it) }
-        if (network == null || capabilities == null || !capabilities.hasTransport(NetworkCapabilities.TRANSPORT_WIFI) ||
-            !capabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_NOT_VPN)) {
+        val network = activeWifi()
+        if (network == null) {
             result.text = "This check needs a suitable Wi-Fi connection. A VPN or another route may prevent it."
             setOutcome(TVTrialOutcome.WIFI_REQUIRED); return
         }
@@ -295,13 +302,54 @@ class TVNetworkCheckActivity : Activity() {
                 }
                 override fun close() { socket.close() }
             }
-        }) { finished, value -> main.post { owner.get()?.completed(finished, value) } }
+        }) { finished, value -> main.post { owner.get()?.completed(finished, value, target, network) } }
         if (id == null) {
             result.text = "A previous network check is still closing or needs an app restart. Try again after it finishes."
             setOutcome(TVTrialOutcome.CHECK_UNAVAILABLE); return
         }
-        token = id; cancelRequested = false; address.isEnabled = false; guideButton.isEnabled = false; start.text = "Stop check"
+        token = id; cancelRequested = false; setCheckRunning(true)
         result.text = "Checking the address you entered…"
+    }
+
+    private fun activeWifi(): Network? {
+        val manager = applicationContext.getSystemService(ConnectivityManager::class.java) ?: return null
+        val network = manager.activeNetwork ?: return null
+        val capabilities = manager.getNetworkCapabilities(network) ?: return null
+        return network.takeIf {
+            capabilities.hasTransport(NetworkCapabilities.TRANSPORT_WIFI) &&
+                capabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_NOT_VPN)
+        }
+    }
+
+    private fun beginCertificate() {
+        val peer = reachedPeer ?: return
+        if (!visible || token != null || isFinishing || isDestroyed || !hasWindowFocus()) return
+        if (activeWifi() != peer.wifi || LocalTVTarget.parse(address.text.toString())?.address != peer.target.address) {
+            setReachedPeer(null)
+            result.text = "Check this address again on the current Wi-Fi."
+            return
+        }
+        fingerprint.text = ""; fingerprint.visibility = View.GONE
+        val owner = WeakReference(this)
+        val main = Handler(Looper.getMainLooper())
+        val id = TVNetworkChecks.runner.readCertificate(peer.target, peer.port, { peer.wifi.bindSocket(it) }) { finished, value ->
+            main.post { owner.get()?.certificateCompleted(finished, value) }
+        }
+        if (id == null) {
+            result.text = "A previous network check is still closing or needs an app restart. Try again after it finishes."
+            return
+        }
+        token = id; cancelRequested = false; setCheckRunning(true)
+        result.text = "Reading the service certificate…"
+    }
+
+    private fun setCheckRunning(running: Boolean) {
+        address.isEnabled = !running
+        guideButton.isEnabled = !running
+        certificate.isEnabled = !running
+        review.isEnabled = !running
+        start.text = if (running) "Stop check" else "Check this address"
+        start.isEnabled = true
     }
 
     private fun stop() {
@@ -310,9 +358,9 @@ class TVNetworkCheckActivity : Activity() {
         if (token != null) { start.isEnabled = false; result.text = "Stopping the network check…" }
     }
 
-    private fun completed(id: Long, value: TVNetworkResult) {
+    private fun completed(id: Long, value: TVNetworkResult, target: LocalTVTarget, wifi: Network) {
         if (!visible || token != id || isFinishing || isDestroyed) return
-        token = null; address.isEnabled = true; guideButton.isEnabled = true; start.text = "Check this address"; start.isEnabled = true
+        token = null; setCheckRunning(false)
         val outcome = if (cancelRequested && value.outcome != TVNetworkOutcome.CLEANUP_UNRESOLVED)
             TVNetworkOutcome.STOPPED else value.outcome
         setOutcome(when (outcome) {
@@ -325,11 +373,46 @@ class TVNetworkCheckActivity : Activity() {
             TVNetworkOutcome.REACHABLE -> "A network service answered. TV pairing is still needed."
             TVNetworkOutcome.NOT_REACHED -> "No service answered. The reason is unknown."
             TVNetworkOutcome.STOPPED -> "Check stopped. Start again only when you are ready."
-            TVNetworkOutcome.CLEANUP_UNRESOLVED -> "Network cleanup is unresolved. Close and restart the app before checking again."
+            TVNetworkOutcome.CLEANUP_UNRESOLVED -> CLEANUP_RESULT
+        }
+        if (outcome == TVNetworkOutcome.REACHABLE) {
+            setReachedPeer(value.port?.let { ReachedPeer(target, it, wifi) })
         }
     }
 
+    private fun certificateCompleted(id: Long, value: TVNetworkResult) {
+        if (!visible || token != id || isFinishing || isDestroyed) return
+        token = null; setCheckRunning(false)
+        val digest = value.certificateSha256
+        when {
+            value.outcome == TVNetworkOutcome.CLEANUP_UNRESOLVED -> {
+                setOutcome(TVTrialOutcome.CLEANUP_UNRESOLVED)
+                result.text = CLEANUP_RESULT
+            }
+            cancelRequested -> result.text = "Certificate reading stopped."
+            activeWifi() != reachedPeer?.wifi -> {
+                setReachedPeer(null)
+                result.text = "Check this address again on the current Wi-Fi."
+            }
+            value.outcome == TVNetworkOutcome.STOPPED ->
+                result.text = "The certificate could not be read within the time limit."
+            digest != null -> {
+                result.text = "Certificate fingerprint read. TV identity is still unverified."
+                fingerprint.text = "SHA-256\n$digest"
+                fingerprint.visibility = View.VISIBLE
+            }
+            else -> result.text = "Could not read the service certificate."
+        }
+    }
+
+    private fun setReachedPeer(peer: ReachedPeer?) {
+        reachedPeer = peer
+        certificate.visibility = if (peer == null) View.GONE else View.VISIBLE
+        fingerprint.text = ""; fingerprint.visibility = View.GONE
+    }
+
     private fun setOutcome(value: TVTrialOutcome?) {
+        if (value != TVTrialOutcome.SERVICE_ANSWERED_UNVERIFIED) setReachedPeer(null)
         if (lastOutcome == value) return
         lastOutcome = value
         val followUp = value?.followUp
@@ -404,7 +487,7 @@ class TVNetworkCheckActivity : Activity() {
     }
     private fun showHelp() {
         val builder = AlertDialog.Builder(this).setTitle("Help with this check")
-            .setMessage("Use the same home Wi-Fi for phone and TV. Guest Wi-Fi or device isolation can prevent contact; this check cannot diagnose your router’s policy.\n\nThis tries TCP ports 7345 and 9000 for up to four seconds each, on one private IPv4 address. These are SmartCast research candidates, not a guarantee for every VIZIO model. An answer proves only service reachability at that moment.\n\nThe address and result clear when you leave the foreground. No command, audio, scan or DNS lookup is performed. Permission restrictions can also cause a failed check.\n\nReview test result removes the address and opens a historical copy. You can then choose Share. It contains the app build and a fixed result description, without TV addresses, Wi-Fi names, passwords, photos or audio. Nothing is sent automatically.")
+            .setMessage("Use the same home Wi-Fi for phone and TV. Guest Wi-Fi or device isolation can prevent contact; this check cannot diagnose your router’s policy.\n\nThis tries TCP ports 7345 and 9000 for up to four seconds each, on one private IPv4 address. These are SmartCast research candidates, not a guarantee for every VIZIO model. An answer proves only service reachability at that moment.\n\nAfter a reply, Read service certificate checks that same service and displays a fingerprint for comparison. TV identity still needs independent verification.\n\nThe address and result clear when you leave the foreground. No command, audio, scan or DNS lookup is performed. Permission restrictions can also cause a failed check.\n\nReview test result removes the address and opens a historical copy. You can then choose Share. It contains the app build and a fixed result description, without TV addresses, Wi-Fi names, passwords, photos or audio. Nothing is sent automatically.")
             .setPositiveButton("Done", null)
             .setNeutralButton("Open app settings") { _, _ ->
                 startActivity(Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, Uri.parse("package:$packageName")))
@@ -417,6 +500,7 @@ class TVNetworkCheckActivity : Activity() {
 
     companion object {
         private const val IDLE = "Ready to check the address you enter."
+        private const val CLEANUP_RESULT = "Network cleanup is unresolved. Close and restart the app before checking again."
         private const val ADDRESS_PICTURES_ONLY = "addressPicturesOnly"
         private const val PHOTO_DRAFT_TICKET = "vizioPhotoDraftTicket"
         private const val PHOTO_DRAFT_MILLIS = 10_000L

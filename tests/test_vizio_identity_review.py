@@ -62,6 +62,24 @@ def test_a_tcp_reply_and_observed_certificate_cannot_create_a_reference(certific
     assert review(reached(), reference_certificate_sha256=sha256(original))["status"] == "CERTIFICATE_OBSERVATION_REQUIRED"
 
 
+def test_android_fingerprint_can_be_compared_but_cannot_supply_its_own_reference(certificates):
+    original, changed = map(sha256, certificates)
+    report = reached(ANDROID)
+    assert review(report, ANDROID, observed_certificate_sha256=original)["status"] == "INDEPENDENT_REFERENCE_REQUIRED"
+    assert review(report, ANDROID, reference_certificate_sha256=original,
+                  observed_certificate_sha256=original)["status"] == "CERTIFICATE_FINGERPRINTS_MATCH_UNVERIFIED"
+    assert review(report, ANDROID, reference_certificate_sha256=original,
+                  observed_certificate_sha256=changed)["status"] == "CERTIFICATE_REFERENCE_MISMATCH"
+    assert review(report_bytes(ANDROID), ANDROID, reference_certificate_sha256=original,
+                  observed_certificate_sha256=original)["status"] == "NO_REPORTED_SERVICE_REPLY"
+
+
+def test_der_and_fingerprint_cannot_both_describe_one_observation(certificates):
+    original = certificates[0]
+    with pytest.raises(ValueError, match="^ambiguous_certificate_observation$"):
+        review(reached(), observed_certificate_der=original, observed_certificate_sha256=sha256(original))
+
+
 def test_nonresponse_blocks_even_with_a_matching_certificate(certificates):
     original, _ = certificates
     summary = review(report_bytes(IPHONE), reference_certificate_sha256=sha256(original),
@@ -84,7 +102,8 @@ def test_different_or_reformatted_report_cannot_reuse_the_review_digest():
         review_identity(original, **{**IPHONE, "expected_build": "14.2"}, expected_report_sha256=sha256(original))
 
 
-@pytest.mark.parametrize("field", ["expected_report_sha256", "reference_certificate_sha256"])
+@pytest.mark.parametrize("field", ["expected_report_sha256", "reference_certificate_sha256",
+                                   "observed_certificate_sha256"])
 @pytest.mark.parametrize("digest", ["f" * 63, "G" * 64, "a" * 64 + "\n"])
 def test_invalid_digest_labels_are_rejected(field, digest):
     with pytest.raises(ValueError, match="invalid_.*sha256"):

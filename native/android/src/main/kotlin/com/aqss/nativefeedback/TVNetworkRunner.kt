@@ -1,38 +1,67 @@
 package com.aqss.nativefeedback
 
-/** Narrow native boundary: no payload, discovery, DNS, authentication or control. */
+import java.net.Socket
+import java.util.concurrent.ScheduledFuture
+import java.util.concurrent.ScheduledThreadPoolExecutor
+import java.util.concurrent.TimeUnit
+import java.util.concurrent.atomic.AtomicReference
+
+/** Narrow native boundary for reachability and untrusted certificate observation. */
 interface TVProbeSocket {
     fun connect(target: LocalTVTarget, port: Int, timeoutMillis: Int)
     fun close()
 }
 
 enum class TVNetworkOutcome { REACHABLE, NOT_REACHED, STOPPED, CLEANUP_UNRESOLVED }
-data class TVNetworkResult(val outcome: TVNetworkOutcome, val port: Int? = null)
+data class TVNetworkResult(val outcome: TVNetworkOutcome, val port: Int? = null,
+                           val certificateSha256: String? = null)
 
 /** One bounded worker; cancellation cannot release an entered call or replay it. */
 class TVNetworkRunner {
     private enum class CancellationClose { NOT_REQUESTED, PENDING, RETURNED }
-    private class Run(val id: Long, val completed: (Long, TVNetworkResult) -> Unit) {
+    private class Run(val id: Long, val deadline: Long?, completed: (Long, TVNetworkResult) -> Unit) {
+        var completion: ((Long, TVNetworkResult) -> Unit)? = completed
         var cancelled = false
         var cleanupFailed = false
         var socket: TVProbeSocket? = null
         var cancellationClose = CancellationClose.NOT_REQUESTED
         var returnedResult: TVNetworkResult? = null
-        var published = false
+        var timeout: ScheduledFuture<*>? = null
     }
     private val lock = Any()
     private var active: Run? = null
     private var nextId = 0L
+    private val deadlines by lazy {
+        ScheduledThreadPoolExecutor(1) { task ->
+            Thread(task, "aqss-tv-network-deadline").apply { isDaemon = true }
+        }.apply { removeOnCancelPolicy = true }
+    }
 
     fun start(target: LocalTVTarget, factory: () -> TVProbeSocket,
-              completed: (Long, TVNetworkResult) -> Unit): Long? {
+              completed: (Long, TVNetworkResult) -> Unit): Long? =
+        start(target, LocalTVTarget.PORTS, null, factory, completed)
+
+    fun readCertificate(target: LocalTVTarget, reachedPort: Int, bindSocket: (Socket) -> Unit,
+                        completed: (Long, TVNetworkResult) -> Unit): Long? {
+        if (reachedPort !in LocalTVTarget.PORTS) return null
+        val fingerprint = AtomicReference<String>()
+        return start(target, listOf(reachedPort), LocalTVTarget.TIMEOUT_MILLIS,
+            { TVCertificateSocket(bindSocket, fingerprint) }) { id, result ->
+            val observed = fingerprint.getAndSet(null)
+            completed(id, result.copy(certificateSha256 = observed.takeIf { result.outcome == TVNetworkOutcome.REACHABLE }))
+        }
+    }
+
+    private fun start(target: LocalTVTarget, ports: List<Int>, timeoutMillis: Int?,
+                      factory: () -> TVProbeSocket, completed: (Long, TVNetworkResult) -> Unit): Long? {
         val run = synchronized(lock) {
             if (active != null || nextId == Long.MAX_VALUE) return null
-            Run(++nextId, completed).also { active = it }
+            val deadline = timeoutMillis?.let { System.nanoTime() + TimeUnit.MILLISECONDS.toNanos(it.toLong()) }
+            Run(++nextId, deadline, completed).also { active = it }
         }
         val worker = Thread({
             var result = TVNetworkResult(TVNetworkOutcome.NOT_REACHED)
-            for (port in LocalTVTarget.PORTS) {
+            for (port in ports) {
                 if (synchronized(lock) { run.cancelled }) break
                 var socket: TVProbeSocket? = null
                 try {
@@ -60,8 +89,19 @@ class TVNetworkRunner {
             synchronized(lock) { run.returnedResult = result }
             finishIfReturned(run)
         }, "aqss-tv-network-check").apply { isDaemon = true }
-        try { worker.start() } catch (_: RuntimeException) {
-            synchronized(lock) { if (active === run) active = null }
+        try {
+            synchronized(lock) {
+                if (run.deadline != null) {
+                    val remaining = (run.deadline - System.nanoTime()).coerceAtLeast(0)
+                    run.timeout = deadlines.schedule({ cancel(run.id) }, remaining, TimeUnit.NANOSECONDS)
+                }
+                worker.start()
+            }
+        } catch (_: RuntimeException) {
+            synchronized(lock) {
+                run.timeout?.cancel(false)
+                if (active === run) active = null
+            }
             return null
         }
         return run.id
@@ -69,7 +109,7 @@ class TVNetworkRunner {
 
     fun cancel(id: Long) {
         val close = synchronized(lock) {
-            val run = active?.takeIf { it.id == id && !it.published } ?: return@synchronized null
+            val run = active?.takeIf { it.id == id && it.completion != null } ?: return@synchronized null
             run.cancelled = true
             val socket = run.socket ?: return@synchronized null
             if (run.cancellationClose != CancellationClose.NOT_REQUESTED) return@synchronized null
@@ -94,18 +134,23 @@ class TVNetworkRunner {
     }
 
     private fun finishIfReturned(run: Run) {
-        val result = synchronized(lock) {
-            if (active !== run || run.published || run.cancellationClose == CancellationClose.PENDING) {
+        val completion = synchronized(lock) {
+            if (active !== run || run.cancellationClose == CancellationClose.PENDING) {
                 return@synchronized null
             }
             val returned = run.returnedResult ?: return@synchronized null
-            run.published = true
-            when {
+            val callback = run.completion ?: return@synchronized null
+            run.completion = null
+            run.timeout?.cancel(false)
+            val deadlinePassed = run.deadline?.let { System.nanoTime() - it >= 0 } == true
+            val result = when {
                 run.cleanupFailed -> TVNetworkResult(TVNetworkOutcome.CLEANUP_UNRESOLVED)
-                run.cancelled -> TVNetworkResult(TVNetworkOutcome.STOPPED)
+                run.cancelled || deadlinePassed -> TVNetworkResult(TVNetworkOutcome.STOPPED)
                 else -> returned
-            }.also { if (!run.cleanupFailed) active = null }
+            }
+            if (!run.cleanupFailed) active = null
+            callback to result
         }
-        if (result != null) run.completed(run.id, result)
+        completion?.let { (callback, result) -> callback(run.id, result) }
     }
 }

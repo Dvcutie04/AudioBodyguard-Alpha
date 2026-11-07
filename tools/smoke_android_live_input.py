@@ -3,14 +3,66 @@
 from pathlib import Path
 import argparse
 import base64
+from contextlib import contextmanager
+import hashlib
 import json
 import os
 import re
 import shlex
+import socket
+import ssl
 import subprocess
+import tempfile
+import threading
 import time
 import xml.etree.ElementTree as ET
 from android_frame_evidence import compare_frames
+
+
+@contextmanager
+def _loopback_tv_service():
+    fixture = Path(__file__).resolve().parents[1] / "native/android/src/test/resources/tv-loopback-fixture.p12.fixture"
+    with tempfile.TemporaryDirectory() as temporary:
+        bundle = Path(temporary) / "fixture.pem"
+        subprocess.run(["openssl", "pkcs12", "-in", str(fixture), "-passin", "pass:fixture-only",
+                        "-noenc", "-out", str(bundle)], check=True, timeout=15, capture_output=True)
+        context = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
+        context.load_cert_chain(bundle)
+        certificate = re.search(r"-----BEGIN CERTIFICATE-----.*?-----END CERTIFICATE-----",
+                                bundle.read_text(), re.DOTALL)
+        assert certificate is not None
+        expected = hashlib.sha256(ssl.PEM_cert_to_DER_cert(certificate.group())).hexdigest()
+        with socket.socket() as unused_port, socket.socket() as server:
+            unused_port.bind(("127.0.0.1", 7345))
+            server.bind(("127.0.0.1", 9000))
+            server.listen(2)
+            server.settimeout(0.2)
+            done = threading.Event()
+            handshakes = []
+
+            def serve():
+                while not done.is_set():
+                    try:
+                        peer, _ = server.accept()
+                    except TimeoutError:
+                        continue
+                    with peer:
+                        peer.settimeout(4)
+                        try:
+                            with context.wrap_socket(peer, server_side=True):
+                                handshakes.append("accepted")
+                        except OSError:
+                            handshakes.append("ended")
+
+            worker = threading.Thread(target=serve, name="tv-loopback-fixture", daemon=True)
+            worker.start()
+            try:
+                yield expected
+            finally:
+                done.set()
+                worker.join(timeout=5)
+            assert not worker.is_alive()
+            assert handshakes == ["ended", "ended"], handshakes
 
 
 def _visible_share_target(root):
@@ -42,11 +94,14 @@ def main():
     parser.add_argument("--setup-output-report-only", action="store_true")
     parser.add_argument("--tv-guides-only", action="store_true")
     parser.add_argument("--style-only", action="store_true")
+    parser.add_argument("--tv-certificate-fixture", action="store_true")
     parser.add_argument("--apk", default="native/android/app/build/outputs/apk/liveInput/app-liveInput.apk")
     parser.add_argument("--package", default="com.aqss.bodyguard.prototype.liveinput")
     parser.add_argument("--probe-apk", default="native/android/uiprobe/build/outputs/apk/debug/uiprobe-debug.apk")
     parser.add_argument("--share-receiver-apk", default="native/android/sharereceiver/build/outputs/apk/debug/sharereceiver-debug.apk")
     args = parser.parse_args()
+    if args.tv_certificate_fixture and not args.style_only:
+        parser.error("--tv-certificate-fixture requires --style-only")
     out = Path("artifacts/ui/android-live-input")
     out.mkdir(parents=True, exist_ok=True)
     package = args.package
@@ -488,7 +543,8 @@ def main():
             page("Devices", prefix + "_devices_page")
             reveal("? Device help", prefix + "_device_help")
             reveal("VIZIO network check. Check one TV address on home Wi-Fi", prefix + "_network_open")
-            wait_for("TV IP address", prefix + "_network_idle")
+            root = wait_for("TV IP address", prefix + "_network_idle")
+            assert not has(root, "Read service certificate")
             tap("TV IP address", prefix + "_network_address")
             adb("shell", "input", "text", "8.8.8.8")
             reveal("Find my TV’s IP address", prefix + "_address_guide_open")
@@ -512,7 +568,8 @@ def main():
                 tap("Back to address field" if step == len(targets) else "Next", name + "_next")
             wait_for_all(("8.8.8.8", "Ready to check the address you enter."), prefix + "_address_guide_return")
             reveal("Check this address", prefix + "_network_rejected")
-            wait_for_all(("Enter the private IPv4 address", "TV identity, pairing and audio protection are not verified."), prefix + "_network_boundary")
+            root = wait_for_all(("Enter the private IPv4 address", "TV identity, pairing and audio protection are not verified."), prefix + "_network_boundary")
+            assert not has(root, "Read service certificate")
             screenshot(prefix + "_network_public_address_rejected")
             reveal("? Help with this check", prefix + "_network_help")
             tap("Check phone Wi-Fi", prefix + "_wifi_guide_open")
@@ -557,6 +614,18 @@ def main():
             screenshot(prefix + "_network_review_private")
             tap("Back", prefix + "_network_review_back")
             wait_for("Ready to check the address you enter.", prefix + "_network_review_cleared")
+            if args.tv_certificate_fixture and scale == "1.0":
+                # Android Emulator's host loopback alias reaches only this owned test service.
+                with _loopback_tv_service() as expected:
+                    tap("TV IP address", prefix + "_certificate_address")
+                    adb("shell", "input", "text", "10.0.2.2")
+                    reveal("Check this address", prefix + "_certificate_check")
+                    wait_for("A network service answered", prefix + "_certificate_reply")
+                    reveal("Read service certificate", prefix + "_certificate_read")
+                    wait_for_all(("Certificate fingerprint read. TV identity is still unverified.", expected),
+                                 prefix + "_certificate_observed")
+                    screenshot(prefix + "_certificate_observed")
+                print("ANDROID_TV_CERTIFICATE_VERIFIED: exact loopback leaf fingerprint, TLS ended before acceptance")
             tap("Back", prefix + "_network_back")
             reveal("Illustrated setup guides. Jump to a TV or home app", prefix + "_guides")
             reveal("Sony", prefix + "_google_tv")

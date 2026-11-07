@@ -32,6 +32,12 @@ produces the cleanup warning and keeps another check blocked. Repeated Stop
 requests share one cancellation close. Blocking-socket fixtures check these
 orders before the real-phone trial.
 
+The Android 0.50/build 52 candidate can read a certificate fingerprint after
+a reply on the same address, port and Wi-Fi. The separate check ends TLS at
+certificate validation and shows the SHA-256 fingerprint for independent
+comparison. A matching reference still requires a supported identity source.
+Loopback fixtures check the read and failure paths before the real-phone trial.
+
 On the physical V505M-K09 trial, record the phone OS and TV firmware, compare the
 Wi-Fi pictures and address steps to the actual menus, then check the displayed
 private address on home Wi-Fi. Record the observed outcome and review the
