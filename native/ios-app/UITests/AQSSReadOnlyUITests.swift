@@ -37,7 +37,7 @@ final class AQSSReadOnlyUITests: XCTestCase {
         app.buttons["tv-network-back"].tap()
     }
 
-    func testTVNetworkRejectedResultCanBeReviewedPrivately() {
+    func testTVNetworkRejectedResultCanBeReviewedPrivately() throws {
         let app = launch()
         tab("devices", app); tap("? Device help", app); tap("VIZIO network check", app)
         let field = app.textFields["tv-network-address"]
@@ -51,7 +51,19 @@ final class AQSSReadOnlyUITests: XCTestCase {
         XCTAssertTrue(preview.label.contains("Outcome: ADDRESS_REJECTED"))
         XCTAssertTrue(preview.label.contains("No native check started"))
         XCTAssertFalse(preview.label.contains("8.8.8.8"))
-        XCTAssertTrue(app.buttons["tv-network-report-share"].isEnabled)
+        let reviewed = preview.label
+        let share = app.buttons["tv-network-report-share"]
+        for copy in [false, true] {
+            XCTAssertTrue(share.isEnabled)
+            share.tap()
+            let nativeCopy = try requireReviewedNativeCopy(app)
+            XCTAssertFalse(share.isEnabled, "Keep the request owned while the native sheet is open")
+            if copy { nativeCopy.tap() } else { try cancelReviewedNativeShare(app) }
+            let returned = XCTNSPredicateExpectation(predicate: NSPredicate(format: "enabled == true AND hittable == true"), object: share)
+            XCTAssertEqual(XCTWaiter.wait(for: [returned], timeout: 8), .completed)
+            XCTAssertFalse(nativeCopy.exists)
+            XCTAssertEqual(preview.label, reviewed)
+        }
         app.buttons["tv-network-report-back"].tap()
         XCTAssertEqual(field.value as? String, "TV IP address")
         XCTAssertFalse(app.buttons["tv-network-review"].exists)

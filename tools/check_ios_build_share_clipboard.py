@@ -25,11 +25,7 @@ def main():
         return call.stdout
 
     if args.mode == "prepare":
-        # The installed Xcode's own help is the primary subcommand contract.
-        for command in ("pbcopy", "pbpaste"):
-            help_call = subprocess.run(["xcrun", "simctl", "help", command],
-                                       capture_output=True, timeout=20, check=True)
-            (args.output / (command + "-help.txt")).write_bytes(help_call.stdout + help_call.stderr)
+        # Require the actual copy and paste round trip on this isolated device.
         simctl("pbcopy", args.simulator, data=FIXTURE)
         assert simctl("pbpaste", args.simulator) == FIXTURE, "Require a working, isolated clipboard fixture"
         print("BUILD_SHARE_CLIPBOARD_PREPARED")
