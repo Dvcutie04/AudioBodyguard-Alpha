@@ -44,6 +44,7 @@ class TVPhotoHints(text: String) {
     val brand: String?
     val model: String?
     val address: String?
+    val vizioCheckTarget: LocalTVTarget?
     init {
         val modelLabel = "MODEL(?:[ \\t]+(?:NAME|CODE|NUMBER|NO\\.?))?"
         val addressLabel = "(?:IPV4[ \\t]+IP[ \\t]+ADDRESS|IP(?:V4)?(?:[ \\t]+ADDRESS)?)"
@@ -59,9 +60,11 @@ class TVPhotoHints(text: String) {
             val spaced = matches("^[ \\t]*$label[ \\t]+([^:=\\r\\n]*)[ \\t]*\\r?$")
             return (explicit + spaced).map { it.trim(' ', '\t') }.toSet().singleOrNull()
         }
-        brand = matches("\\b(SAMSUNG|LG|SONY|TCL|HISENSE|VIZIO|PANASONIC|PHILIPS)\\b").singleOrNull()
+        val brands = matches("\\b(SAMSUNG|LG|SONY|TCL|HISENSE|VIZIO|PANASONIC|PHILIPS)\\b")
+        brand = brands.singleOrNull()
         model = labelled(modelLabel)?.takeIf { Regex("[A-Z0-9][A-Z0-9._-]{1,39}").matches(it) && it.any { c -> c in '0'..'9' } }
         address = labelled(addressLabel)?.takeIf(::isPrivateIPv4)
+        vizioCheckTarget = if (brands.isEmpty() || brand == "VIZIO") address?.let { LocalTVTarget.parse(it) } else null
     }
     companion object {
         fun isPrivateIPv4(value: String): Boolean {

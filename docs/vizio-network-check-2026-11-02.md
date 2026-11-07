@@ -1,5 +1,23 @@
 # VIZIO network check and beta critical path
 
+## 0.46 connection trial
+
+1. Open **Devices**, then **Device help**, then **TV photo setup**.
+2. Open **Photo help**.
+3. Choose **VIZIO V505M-K09 address pictures** if the model matches.
+4. Follow the four TV pictures to the IP Address row.
+5. Tap **Back to photo setup**.
+6. Photograph the IP Address row or choose an existing photo of it.
+7. Compare the address shown in the app with the TV screen.
+8. Tap **Use address in VIZIO check**.
+9. Tap **Check this address** when the phone and TV are on home Wi-Fi.
+
+For the software check, confirm the model and picture order, then use a
+synthetic photo to verify the editable address, idle check and Back return.
+For the physical trial, record the phone OS and TV firmware, compare the
+pictures to the real menus, and record the service reachability result.
+Pairing and identity require their own physical evidence.
+
 ## Decision and scope
 
 The owner wants a working TV/phone beta rather than more setup screens. Their
@@ -67,8 +85,10 @@ and the keyboard; the single Check action uses the existing primary-button style
 Only canonical RFC1918 IPv4 literals are admitted. This intentionally narrow
 first version also rejects host octets 0 and 255; it is not a subnet detector
 and can exclude valid hosts on unusual subnet layouts. IPv6, public addresses,
-hostnames, URL syntax, ports, alternate numeric syntax and OCR automation are
-not accepted. A different TV brand receives no implied support from this entry.
+hostnames, URL syntax, ports and alternate numeric syntax are not accepted.
+The 0.46 photo route uses the same address validation before offering the
+reviewed value to the check. A different TV brand receives no implied support
+from this entry.
 
 ## Verification and next gates
 
@@ -146,6 +166,14 @@ bytes. The source of the reference, peer possession of the key, certificate
 validity, revocation and the actual TV still need separate review. A changed
 certificate requires a new independently supported reference and review.
 
+Android 0.50 offers **Read service certificate** after a reply. It reads the
+leaf fingerprint on the same address, port and Wi-Fi and ends TLS at the
+certificate validation callback. Stop and the four-second deadline keep the
+same socket ownership rules. The screen displays the fingerprint for manual
+copy and clears it on a new check, address edit or background. For a copied
+fingerprint, use `--observed-certificate-sha256` in place of
+`--observed-certificate` and retain the corresponding reviewed trial report.
+
 | Result | Exit | Meaning |
 | --- | --- | --- |
 | `NO_REPORTED_SERVICE_REPLY` | 1 | The report declares an outcome other than a TCP reply |
@@ -153,6 +181,7 @@ certificate requires a new independently supported reference and review.
 | `CERTIFICATE_OBSERVATION_REQUIRED` | 1 | A separate DER certificate observation is missing |
 | `CERTIFICATE_REFERENCE_MISMATCH` | 1 | The observed bytes differ from the reference |
 | `CERTIFICATE_BYTES_MATCH_UNVERIFIED` | 0 | The digests match and both TV identity and pairing authority are false |
+| `CERTIFICATE_FINGERPRINTS_MATCH_UNVERIFIED` | 0 | The supplied fingerprint matches the separate reference and both authority fields are false |
 | `INVALID_VIZIO_IDENTITY_REVIEW` | 2 | The inputs are malformed, exceed their bounds, or differ from the reviewed report |
 
 The tool only reads local evidence and prints the comparison state and report
