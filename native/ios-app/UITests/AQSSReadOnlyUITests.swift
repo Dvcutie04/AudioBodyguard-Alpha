@@ -100,12 +100,16 @@ final class AQSSReadOnlyUITests: XCTestCase {
     }
     func testTVAddressPicturesKeepTheCheckDraftAndStepOrder() {
         let app = launch()
+        let isPad = UIDevice.current.userInterfaceIdiom == .pad
+        let device = isPad ? "iPad" : "iPhone"
+        let tvTargets = ["Menu (gear)", "Network", "Network Information", "IP Address"]
+        let addressTargets = isPad ? tvTargets : tvTargets + ["TV IP address"]
         tab("devices", app); tap("? Device help", app); tap("VIZIO network check", app)
         let field = app.textFields["tv-network-address"]
         XCTAssertTrue(field.waitForExistence(timeout: 5))
         field.tap(); field.typeText("192.168.0.42")
         tap("Find my TV’s IP address", app, scroll: app.scrollViews["tv-network-scroll"])
-        label("VIZIO V505M-K09 · iPhone", app)
+        label("VIZIO V505M-K09 · \(device)", app)
         XCTAssertFalse(app.otherElements["setup-illustration"].exists)
         let next = app.buttons["tv-address-guide-next"]
         let back = app.buttons["tv-address-guide-back"]
@@ -114,20 +118,21 @@ final class AQSSReadOnlyUITests: XCTestCase {
         back.tap()
         XCTAssertEqual(next.label, "My TV matches")
         next.tap()
-        let targets = ["Menu (gear)", "Network", "Network Information", "IP Address", "TV IP address"]
-        for (index, target) in targets.enumerated() {
-            label("Step \(index + 1) of \(targets.count)", app)
-            XCTAssertTrue(pictureDescription(app).contains("Highlighted: \(target)."))
+        for (index, target) in addressTargets.enumerated() {
+            label("Step \(index + 1) of \(addressTargets.count)", app)
+            let description = pictureDescription(app)
+            XCTAssertTrue(description.contains("Highlighted: \(target)."))
+            if isPad { XCTAssertFalse(description.contains("Phone screen:")) }
             if index == 1 {
-                back.tap(); label("Step 1 of 5", app)
+                back.tap(); label("Step 1 of \(addressTargets.count)", app)
                 XCTAssertTrue(pictureDescription(app).contains("Highlighted: Menu (gear)."))
-                next.tap(); label("Step 2 of 5", app)
+                next.tap(); label("Step 2 of \(addressTargets.count)", app)
             }
             if index == 2 { screenshot("V505M-K09 Network Information picture", app) }
-            if index == targets.count - 1 {
-                XCTAssertTrue(pictureDescription(app).contains("Phone screen: VIZIO network check"))
+            if index == addressTargets.count - 1 {
+                if !isPad { XCTAssertTrue(description.contains("Phone screen: VIZIO network check")) }
                 XCTAssertEqual(next.label, "Back to address field")
-                screenshot("VIZIO address entry on iPhone", app)
+                screenshot("VIZIO address guide final step on \(device)", app)
             }
             next.tap()
         }
@@ -141,14 +146,14 @@ final class AQSSReadOnlyUITests: XCTestCase {
         let photoScroll = app.scrollViews["photo-review-scroll"]
         tap("Photo help", app, scroll: photoScroll)
         tap("VIZIO V505M-K09 address pictures", app, scroll: photoScroll)
-        label("VIZIO V505M-K09 · iPhone", app)
+        label("VIZIO V505M-K09 · \(device)", app)
         XCTAssertFalse(field.exists)
         XCTAssertEqual(next.label, "My TV matches")
         next.tap()
-        for (index, target) in targets.dropLast().enumerated() {
-            label("Step \(index + 1) of 4", app)
+        for (index, target) in tvTargets.enumerated() {
+            label("Step \(index + 1) of \(tvTargets.count)", app)
             XCTAssertTrue(pictureDescription(app).contains("Highlighted: \(target)."))
-            if index == 3 {
+            if index == tvTargets.count - 1 {
                 XCTAssertEqual(next.label, "Back to photo setup")
                 screenshot("V505M-K09 address picture from Photo help", app)
             }

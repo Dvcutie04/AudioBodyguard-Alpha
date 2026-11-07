@@ -396,9 +396,14 @@ struct TVCheckPictureGuide: View {
 
     private var route: AQSSSetupRoute? { context.route }
     private var isWiFi: Bool { context == .phoneWiFi }
+    private var isPad: Bool { UIDevice.current.userInterfaceIdiom == .pad }
     private var steps: [AQSSSetupStep] {
         let all = route?.steps ?? []
-        return context == .photoSetup ? all.filter { $0.surface == "tv" } : all
+        if context == .photoSetup || (context == .addressField && isPad) {
+            // On iPad the last TV picture returns directly to the address field.
+            return all.filter { $0.surface == "tv" }
+        }
+        return all
     }
     private var step: AQSSSetupStep? { steps.indices.contains(index) ? steps[index] : nil }
     private var screenKey: String { "\(index)-\(mismatch)" }
@@ -425,7 +430,8 @@ struct TVCheckPictureGuide: View {
             GuideScrollView(screenKey: screenKey, identifier: prefix + "-scroll", onStepReady: { focusedHeading = $0 }) {
                 VStack(alignment: .leading, spacing: 18) {
                     if !isWiFi, let route = route {
-                        Text("VIZIO \(route.models.joined(separator: ", ")) · iPhone").font(.subheadline.weight(.semibold))
+                        let device = isPad ? "iPad" : "iPhone"
+                        Text("VIZIO \(route.models.joined(separator: ", ")) · \(device)").font(.subheadline.weight(.semibold))
                             .foregroundColor(theme.muted).accessibilityIdentifier(prefix + "-model")
                     }
                     Text(mismatch ? "Find the right screen" : step?.title ?? route?.title ?? "Connect to your home Wi-Fi")
