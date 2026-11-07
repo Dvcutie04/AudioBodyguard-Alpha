@@ -514,6 +514,43 @@ def main():
             reveal("Check this address", prefix + "_network_rejected")
             wait_for_all(("Enter the private IPv4 address", "TV identity, pairing and audio protection are not verified."), prefix + "_network_boundary")
             screenshot(prefix + "_network_public_address_rejected")
+            reveal("? Help with this check", prefix + "_network_help")
+            tap("Check phone Wi-Fi", prefix + "_wifi_guide_open")
+            maker = adb("shell", "getprop", "ro.product.manufacturer").decode().strip().casefold()
+            route = {
+                "google": ("Google Pixel", "Open Pixel Settings", "Network & internet"),
+                "samsung": ("Samsung Galaxy", "Open Galaxy Settings", "Connections"),
+            }.get(maker)
+            if route:
+                phone, settings_title, second_target = route
+                wait_for(f"{phone} — connect to your home Wi-Fi", prefix + "_wifi_guide_intro")
+                tap("Start Wi-Fi steps", prefix + "_wifi_guide_start")
+                wait_for_all(("Step 1 of 7", settings_title), prefix + "_wifi_guide_settings")
+                tap("Next", prefix + "_wifi_guide_second")
+                root = wait_for("Step 2 of 7", prefix + "_wifi_guide_picture")
+                assert any(f"Highlighted: {second_target}." in n.get("content-desc", "") for n in root.iter("node")), second_target
+                screenshot(prefix + "_wifi_guide_picture")
+                adb("shell", "input", "keyevent", "KEYCODE_BACK")
+                wait_for_all(("Step 1 of 7", settings_title), prefix + "_wifi_guide_back_one")
+                tap("Next", prefix + "_wifi_guide_resume")
+                for step in range(2, 8):
+                    name = prefix + f"_wifi_guide_{step}"
+                    wait_for(f"Step {step} of 7", name)
+                    tap("Back to network check" if step == 7 else "Next", name + "_next")
+            else:
+                root = wait_for_all(("1. Open Settings.", "2. Search for Wi-Fi."), prefix + "_wifi_guide_unmatched")
+                assert not has(root, "Google Pixel") and not has(root, "Samsung Galaxy")
+                tap("Back to network check", prefix + "_wifi_guide_return")
+            root = wait_for("VIZIO network check", prefix + "_wifi_guide_caller")
+            for attempt in range(6):
+                if has(root, "8.8.8.8"):
+                    break
+                scroll = next(n for n in root.iter("node") if n.get("class") == "android.widget.ScrollView")
+                x0, y0, x1, y1 = map(int, re.findall(r"-?\d+", scroll.get("bounds")))
+                x = str((x0 + x1) // 2)
+                adb("shell", "input", "swipe", x, str(y0 + (y1-y0)//5), x, str(y1 - (y1-y0)//5), "300")
+                root, _ = screen(prefix + f"_wifi_guide_preserved_{attempt}")
+            assert has(root, "8.8.8.8"), "Wi-Fi help must preserve the address in the same visit"
             reveal("Review test result", prefix + "_network_review")
             root = wait_for_all(("Audio Bodyguard connection trial (v1)", "Outcome: ADDRESS_REJECTED", "No native check started"), prefix + "_network_review_private")
             assert not any("8.8.8.8" in n.get("text", "") for n in root.iter("node")), "Entered address leaked into the reviewed result"

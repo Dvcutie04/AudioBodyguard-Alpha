@@ -549,7 +549,7 @@ struct TVPhotoView: View {
                     Text("Check the suggested details on your TV. A photo does not connect it. Choosing another picture clears these details.").font(.caption).foregroundColor(theme.muted)
                     Button(instructions ? "? Hide photo help" : "? Photo help") { instructions.toggle() }.buttonStyle(AppButtonStyle(theme: theme)).accessibilityIdentifier("photo-help")
                     if instructions {
-                        if onUseBrand == nil && TVAddressGuide.vizioRoute != nil {
+                        if onUseBrand == nil && TVCheckPictureGuide.Context.photoSetup.route != nil {
                             Button("VIZIO V505M-K09 address pictures") { showsVizioAddressPictures = true }
                                 .buttonStyle(AppButtonStyle(theme: theme))
                         }
@@ -569,8 +569,8 @@ struct TVPhotoView: View {
         }.background(theme.background.ignoresSafeArea()).foregroundColor(theme.text)
             .sheet(item: $setupRequest) { request in SetupGuidesView(theme: theme, initialGroup: request.group) }
             .sheet(isPresented: $showsVizioAddressPictures) {
-                if let route = TVAddressGuide.vizioRoute {
-                    TVAddressGuide(theme: theme, route: route, fromPhotoSetup: true) {
+                if TVCheckPictureGuide.Context.photoSetup.route != nil {
+                    TVCheckPictureGuide(theme: theme, context: .photoSetup) {
                         showsVizioAddressPictures = false
                     }
                 }

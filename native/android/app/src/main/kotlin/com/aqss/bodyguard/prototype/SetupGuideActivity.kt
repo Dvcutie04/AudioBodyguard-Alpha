@@ -75,10 +75,9 @@ class SetupGuideActivity : Activity() {
     }
     private val route get() = SetupContent.routes.firstOrNull { it.id == routeId }
     private val phone get() = SetupPhone.androidManufacturer(Build.MANUFACTURER)
-    private val phoneRoute get() = when (Build.MANUFACTURER.lowercase()) { "samsung" -> "phone_galaxy"; "google" -> "phone_pixel"; else -> null }
     private fun startingRoute(): String? = when {
         groupId == "voice" -> "voice"
-        groupId == "phone" -> phoneRoute
+        groupId == "phone" -> phone.wifiRoute
         groupId == "samsung" -> samsungStartingRoute()
         platforms.isNotEmpty() -> null
         else -> group?.primaryRoutes?.singleOrNull()

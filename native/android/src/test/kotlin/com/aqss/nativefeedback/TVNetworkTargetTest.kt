@@ -43,6 +43,16 @@ class TVNetworkTargetTest {
         }
     }
 
+    @Test fun trialFollowUpKeepsReachabilitySeparateFromReviewAndPairing() {
+        assertEquals(TVTrialFollowUp.ADDRESS_PICTURES, TVTrialOutcome.ADDRESS_REJECTED.followUp)
+        assertEquals(TVTrialFollowUp.PHONE_WIFI, TVTrialOutcome.WIFI_REQUIRED.followUp)
+        assertEquals(TVTrialFollowUp.PHONE_WIFI, TVTrialOutcome.NO_SERVICE_RESPONSE.followUp)
+        assertEquals(TVTrialFollowUp.REVIEW, TVTrialOutcome.SERVICE_ANSWERED_UNVERIFIED.followUp)
+        for (outcome in listOf(TVTrialOutcome.CHECK_UNAVAILABLE, TVTrialOutcome.CHECK_STOPPED, TVTrialOutcome.CLEANUP_UNRESOLVED)) {
+            assertNull(outcome.followUp)
+        }
+    }
+
     @Test fun trialReviewRetainsOneImmutableOutcomeAndExactBuild() {
         val build = "Audio Bodyguard\nPlatform: Android\nVersion: 0.45-friend-trial\nBuild: 48"
         val first = TVTrialReport.capture(build, TVTrialOutcome.SERVICE_ANSWERED_UNVERIFIED, 0)

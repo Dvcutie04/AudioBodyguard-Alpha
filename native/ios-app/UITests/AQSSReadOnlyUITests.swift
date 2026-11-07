@@ -19,6 +19,32 @@ final class AQSSReadOnlyUITests: XCTestCase {
         XCTAssertEqual(app.staticTexts["tv-network-boundary"].label,
                        "TV identity, pairing and audio protection are not verified.")
         XCTAssertEqual(app.alerts.count, 0, "Rejected input must not request local-network access")
+        let form = app.scrollViews["tv-network-scroll"]
+        XCTAssertFalse(app.buttons["tv-network-wifi-guide-open"].exists)
+        tap("Help with this check", app, scroll: form)
+        tap("Check phone Wi-Fi", app, scroll: form)
+        label("iPhone — connect to your home Wi-Fi", app)
+        let next = app.buttons["tv-wifi-guide-next"]
+        let back = app.buttons["tv-wifi-guide-back"]
+        XCTAssertEqual(next.label, "Start Wi-Fi steps")
+        next.tap()
+        let targets = ["Settings", "Wi-Fi", "Wi-Fi switch", "Your TV’s home network", "Join", "✓ Your home network"]
+        for index in 1...6 {
+            label("Step \(index) of 6", app)
+            XCTAssertTrue(pictureDescription(app).contains("Highlighted: \(targets[index - 1])."))
+            if index == 2 {
+                back.tap(); label("Open iPhone Settings", app)
+                next.tap(); label("Open Wi-Fi", app)
+                screenshot("VIZIO check phone Wi-Fi picture on iPhone", app)
+            }
+            if index == 6 { XCTAssertEqual(next.label, "Back to network check") }
+            next.tap()
+        }
+        XCTAssertTrue(field.waitForExistence(timeout: 5))
+        XCTAssertEqual(field.value as? String, "8.8.8.8")
+        label("Enter the private IPv4 address shown in your TV’s network settings.", app)
+        XCTAssertEqual(app.buttons["tv-network-start-stop"].label, "Check this address")
+        XCTAssertEqual(app.alerts.count, 0)
         app.buttons["tv-network-back"].tap()
         label("Connection not verified", app)
     }
