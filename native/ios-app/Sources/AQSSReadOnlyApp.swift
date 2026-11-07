@@ -424,6 +424,7 @@ private struct ReadOnlyHomeView: View {
     @State private var advancedExpanded = false
     @State private var settingSwitches = AQSSSettingSwitchState()
     @State private var settingResetTask: Task<Void, Never>?
+    @State private var disconnectedSetting: String?
     private struct SettingExplanation: Identifiable {
         let id, title, explanation: String
         var shareText: String? = nil
@@ -460,6 +461,8 @@ private struct ReadOnlyHomeView: View {
 
     private var theme: AppTheme { AppTheme(dark: appearance == "daylight" ? false : appearance == "system" ? systemScheme == .dark : true) }
     private var currentPage: AQSSInterfacePage { AQSSInterfaceContent.pages.first { $0.id == page }! }
+    private var isShowingAdvancedSettings: Bool { page == "settings" && advancedExpanded }
+    private var pageScreenID: String { isShowingAdvancedSettings ? "settings-advanced" : page }
     private var tutorialTopic: AQSSTutorialTopic? { AQSSTutorialContent.topics.first { $0.id == tutorialTopicID } }
     private var tutorialStep: AQSSTutorialStep? {
         guard let topic = tutorialTopic, topic.steps.indices.contains(tutorialIndex) else { return nil }
@@ -490,10 +493,10 @@ private struct ReadOnlyHomeView: View {
                     header
                     ScrollView {
                         VStack(alignment: .leading, spacing: 22) {
-                            pageHeading.id("page-heading")
+                            pageHeading.padding(.top, 20).id("page-heading")
                             pageContent
-                        }.frame(maxWidth: 680, alignment: .leading).padding(20).frame(maxWidth: .infinity)
-                    }.clipped().id(page == "settings" && advancedExpanded ? "settings-advanced" : page).accessibilityIdentifier("home-scroll")
+                        }.frame(maxWidth: 680, alignment: .leading).padding([.horizontal, .bottom], 20).frame(maxWidth: .infinity)
+                    }.clipped().id(pageScreenID).accessibilityIdentifier("home-scroll")
                     navigationBar
                 }
             }
@@ -502,10 +505,8 @@ private struct ReadOnlyHomeView: View {
             .onChange(of: navigationRequest) { request in
                 DispatchQueue.main.async {
                     guard request == navigationRequest, scenePhase == .active else { return }
-                    // A new page's ScrollView identity already starts at the top.
-                    // Scrolling its heading again can remove the content padding.
+                    proxy.scrollTo(navigationTarget, anchor: .top)
                     if navigationTarget != "page-heading" {
-                        proxy.scrollTo(navigationTarget, anchor: .top)
                         focusedElement = .destination(navigationTarget)
                     }
                 }
@@ -619,7 +620,13 @@ private struct ReadOnlyHomeView: View {
             if phase == .active { audioHints.start() }
             else { audioHints.stop(); resetSettingSwitches() }
         }
-        .onChange(of: settingsConnectionVerified) { verified in if !verified { resetSettingSwitches() } }
+        .onChange(of: settingsConnectionVerified) { verified in
+            disconnectedSetting = nil
+            if !verified { resetSettingSwitches() }
+        }
+        .onChange(of: isShowingAdvancedSettings) { showing in
+            if !showing { disconnectedSetting = nil }
+        }
         .onChange(of: page) { _ in soundToolsExpanded = false; moreSettingsExpanded = false; insightsHelpExpanded = false }
         .onChange(of: tutorialStepKey) { _ in moreFeatures = false; moreTVBrands = false; tutorialHelp = false; homeAppsExpanded = false }
         .onChange(of: guide.selections["chooseTV"]) { brand in
@@ -639,7 +646,10 @@ private struct ReadOnlyHomeView: View {
     private var header: some View {
         HStack(spacing: 10) {
             if !pageHistory.isEmpty {
-                Button { backPage() } label: { Image(systemName: "arrow.left").font(.system(size: 20, weight: .semibold)).frame(width: 24, height: 24) }.accessibilityLabel("Back").accessibilityIdentifier("page-back")
+                Button { backPage() } label: {
+                    Image(systemName: "arrow.left").font(.system(size: 20, weight: .semibold))
+                        .frame(width: 24, height: 24).contentShape(Rectangle())
+                }.accessibilityLabel("Back").accessibilityIdentifier("page-back")
             }
             if !textSize.isAccessibilitySize { Image(systemName: "waveform.path").font(.system(size: 24)).foregroundColor(theme.accent).accessibilityHidden(true) }
             if !textSize.isAccessibilitySize && pageHistory.isEmpty {
@@ -654,9 +664,9 @@ private struct ReadOnlyHomeView: View {
     }
 
     private var pageHeading: some View {
-        Text(page == "settings" && advancedExpanded ? "Advanced Settings" : currentPage.title.uppercased()).font(.title.bold())
+        Text(isShowingAdvancedSettings ? "Advanced Settings" : currentPage.title.uppercased()).font(.title.bold())
             .fixedSize(horizontal: false, vertical: true).accessibilityAddTraits(.isHeader)
-            .accessibilityIdentifier("page-\(page)")
+            .accessibilityIdentifier("page-\(pageScreenID)")
     }
 
     @ViewBuilder private var pageContent: some View {
@@ -918,11 +928,16 @@ private struct ReadOnlyHomeView: View {
             if settingSwitches.isAttempting(item.id) {
                 Text("Not connected.").font(.subheadline.weight(.semibold)).padding(.bottom, 12)
                     .accessibilityIdentifier("not-connected-" + item.id)
+            } else if disconnectedSetting == item.id {
+                Text("Connect your device to turn this on.").font(.subheadline).padding(.bottom, 12)
+                    .fixedSize(horizontal: false, vertical: true)
+                    .accessibilityIdentifier("setting-off-reason-" + item.id)
             }
         }.modifier(SectionAnchor(target: item.id))
     }
     private func settingToggle(_ item: AQSSInterfaceSetting) -> some View {
         Toggle(item.title, isOn: Binding(get: { settingSwitches.isOn(item.id) }, set: { _ in
+            disconnectedSetting = settingsConnectionVerified ? nil : item.id
             settingSwitches.press(item.id, connectionVerified: settingsConnectionVerified, now: ProcessInfo.processInfo.systemUptime)
             scheduleSettingReset()
         })).labelsHidden().toggleStyle(SwitchToggleStyle(tint: Color(red: 100 / 255.0, green: 218 / 255.0, blue: 232 / 255.0)))
@@ -954,7 +969,11 @@ private struct ReadOnlyHomeView: View {
             scheduleSettingReset()
         }
     }
-    private func resetSettingSwitches() { settingResetTask?.cancel(); settingResetTask = nil; settingSwitches.connectionLost() }
+    private func resetSettingSwitches() {
+        settingResetTask?.cancel(); settingResetTask = nil
+        settingSwitches.connectionLost()
+        disconnectedSetting = nil
+    }
 
     private var navigationBar: some View {
         Group {
@@ -1053,7 +1072,7 @@ private struct ReadOnlyHomeView: View {
     }
     private func jump(_ target: String) {
         let destination = AQSSInterfaceContent.targetPages[target] ?? "home"
-        if destination != page || (destination == "settings" && !advancedExpanded && target != "appearance") { rememberPage() }
+        if destination != page || (destination == "settings" && advancedExpanded != (target != "appearance")) { rememberPage() }
         closeTutorial(restore: false); showingExample = false; reveal(target)
         navigationTarget = target; navigationRequest += 1
     }

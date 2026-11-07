@@ -8,7 +8,7 @@
       "AQSSReadOnlyUITests/testAllFivePagesKeepHelpAndTruthfulEmptyStates",
       "AQSSReadOnlyUITests/testFirstVisitHasOnePathChoiceGatesTailoredPlanAndReplay",
       "AQSSReadOnlyUITests/testOptionsAndAdvancedRemainUnavailable",
-      "AQSSReadOnlyUITests/testAdvancedSwitchAttemptResetsAfterTwoSecondsAndHelpReturnsToCaller",
+      "AQSSReadOnlyUITests/testAdvancedSwitchExplainsWhyItStaysOffAndHelpReturnsToCaller",
       "AQSSReadOnlyUITests/testAdvancedSwitchResetSurvivesNavigationBackgroundAndLargestText",
       "AQSSReadOnlyUITests/testExitAtWelcomeAndContextualGuideRestoreFullApp",
       "AQSSReadOnlyUITests/testExampleAppearanceAndFutureFeatureDoNotClaimAudio",
