@@ -264,26 +264,27 @@ private struct ReviewedTextSharePresenter: UIViewControllerRepresentable {
             }
             activity = controller
             controller.presentationController?.delegate = self
-            trace("presentation-requested", presenter)
-            presenter.present(controller, animated: true) { [weak self, weak controller] in
-                guard let controller = controller else { return }
-                self?.trace("presentation-completed", controller)
-            }
 
-            // UIKit can decline a launch. Only release an unattached request;
-            // an accepted presentation stays owned through native dismissal.
-            let check = DispatchWorkItem { [weak self, weak controller] in
+            // Release a declined launch only after UIKit has had time to attach.
+            let check = DispatchWorkItem { [weak self, weak presenter, weak controller] in
                 guard let self = self, let controller = controller, self.owns(pending.id),
                       self.activity === controller else { return }
                 self.attachmentCheck = nil
-                guard controller.presentingViewController == nil, controller.viewIfLoaded?.window == nil,
-                      !controller.isBeingPresented else { return }
+                guard presenter?.presentedViewController !== controller, controller.presentingViewController == nil,
+                      controller.viewIfLoaded?.window == nil, controller.presentationController?.containerView?.window == nil,
+                      !controller.isBeingPresented, controller.transitionCoordinator == nil else { return }
                 self.trace("presentation-declined", controller)
                 controller.completionWithItemsHandler = nil
                 self.complete(pending.id, failed: true)
             }
             attachmentCheck = check
-            DispatchQueue.main.asyncAfter(deadline: .now() + .seconds(1), execute: check)
+            DispatchQueue.main.asyncAfter(deadline: .now() + .seconds(8), execute: check)
+            trace("presentation-requested", presenter)
+            presenter.present(controller, animated: true) { [weak self, weak controller] in
+                guard let self = self, let controller = controller, self.activity === controller else { return }
+                self.attachmentCheck?.cancel(); self.attachmentCheck = nil
+                self.trace("presentation-completed", controller)
+            }
         }
 
         private func complete(_ id: UUID, failed: Bool = false) {

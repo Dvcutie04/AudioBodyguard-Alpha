@@ -382,7 +382,7 @@ final class AQSSReadOnlyUITests: XCTestCase {
         for _ in 0..<3 {
             XCTAssertTrue(share.isEnabled); XCTAssertTrue(share.isHittable); share.tap()
             let copy = try requireReviewedNativeCopy(app)
-            XCTAssertFalse(share.isEnabled)
+            XCTAssertFalse(share.isEnabled, "Native Copy is visible. Retry notice visible: \(app.staticTexts["test-setup-share-unavailable"].exists)")
             try cancelReviewedNativeShare(app)
             let returned = XCTNSPredicateExpectation(predicate: NSPredicate(format: "enabled == true AND hittable == true"), object: share)
             XCTAssertEqual(XCTWaiter.wait(for: [returned], timeout: 8), .completed)
