@@ -33,6 +33,25 @@ class TestSimulatorClipboard(unittest.TestCase):
                 simctl_clipboard("isolated-simulator")
         self.assertEqual(run.call_count, 3)
 
+    def test_simctl_darwin_timeout_retries_same_operation(self):
+        for data, operation, observed in ((b"fixture", "pbcopy", b""), (None, "pbpaste", b"reviewed")):
+            with self.subTest(operation=operation):
+                command = ["xcrun", "simctl", operation, "isolated-simulator"]
+                with patch.object(subprocess, "run", side_effect=[
+                    subprocess.CalledProcessError(60, command), subprocess.CompletedProcess(command, 0, observed),
+                ]) as run, contextlib.redirect_stderr(io.StringIO()) as diagnostics:
+                    self.assertEqual(simctl_clipboard("isolated-simulator", data=data), observed)
+                attempt = call(command, input=data, capture_output=True, timeout=20, check=True)
+                self.assertEqual(run.call_args_list, [attempt, attempt])
+                self.assertIn(operation + " timed out", diagnostics.getvalue())
+
+    def test_persistent_simctl_darwin_timeout_fails_after_three_attempts(self):
+        command = ["xcrun", "simctl", "pbcopy", "isolated-simulator"]
+        with patch.object(subprocess, "run", side_effect=subprocess.CalledProcessError(60, command)) as run:
+            with contextlib.redirect_stderr(io.StringIO()), self.assertRaises(subprocess.CalledProcessError):
+                simctl_clipboard("isolated-simulator", data=b"fixture")
+        self.assertEqual(run.call_count, 3)
+
     def test_command_error_fails_without_retry(self):
         command = ["xcrun", "simctl", "pbcopy", "isolated-simulator"]
         with patch.object(subprocess, "run", side_effect=subprocess.CalledProcessError(1, command)) as run:
