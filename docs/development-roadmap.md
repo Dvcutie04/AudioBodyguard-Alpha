@@ -25,6 +25,13 @@ Back within the app keeps the address and result for that visit. Leaving the
 foreground still clears them. Start another check with a new tap.
 Candidate source labels are Android 0.48/build 50 and iPhone 0.48.0/build 4.
 
+The Android 0.49/build 51 candidate moves network-check cancellation cleanup
+off the UI thread. Stop keeps the current check occupied until the connection
+worker and the cancellation close have both returned. A late close failure
+produces the cleanup warning and keeps another check blocked. Repeated Stop
+requests share one cancellation close. Blocking-socket fixtures check these
+orders before the real-phone trial.
+
 On the physical V505M-K09 trial, record the phone OS and TV firmware, compare the
 Wi-Fi pictures and address steps to the actual menus, then check the displayed
 private address on home Wi-Fi. Record the observed outcome and review the
