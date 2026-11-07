@@ -1,0 +1,14 @@
+name: iPhone certificate lifecycle UI checkpoint
+
+on:
+  push:
+    branches: ["codex/ios-vizio-lifecycle-hosted-verification"]
+
+permissions:
+  contents: read
+
+jobs:
+  native-ui:
+    uses: ./.github/workflows/read-only-ui-smoke.yml
+    with:
+      source_revision: 1850de928a2df4af00896f13a8074c5ca8e6e97e
