@@ -5209,7 +5209,7 @@
       "steps": [
         {
           "title": "Open Sound",
-          "instruction": "From the full app, choose Sound on the bottom bar. You can read this walkthrough first, then use Open Voice check at the end.",
+          "instruction": "Tap Sound in the bottom bar.",
           "surface": "phone",
           "screen": "Audio Bodyguard",
           "items": [
@@ -5219,11 +5219,11 @@
           ],
           "focus": 1,
           "action": "tap",
-          "note": "Use your real device. This picture is an illustration."
+          "note": "You can read these pictures first and open Voice check at the end. Use your real phone; this picture is an illustration."
         },
         {
           "title": "Open Voice check",
-          "instruction": "Choose Voice check. It starts with the microphone off.",
+          "instruction": "Tap Voice check.",
           "surface": "phone",
           "screen": "Sound",
           "items": [
@@ -5231,7 +5231,7 @@
           ],
           "focus": 0,
           "action": "tap",
-          "note": "Use your real device. This picture is an illustration."
+          "note": "Voice check starts with the microphone off. This picture is an illustration, not a live phone screen."
         },
         {
           "title": "Start deliberately",
@@ -5244,11 +5244,11 @@
           ],
           "focus": 1,
           "action": "tap",
-          "note": "Use your real device. This picture is an illustration."
+          "note": "Capture begins only after your explicit action and the phone permissions you allow. This picture is an illustration."
         },
         {
           "title": "Review phone permissions",
-          "instruction": "Allow microphone access if you agree. iPhone also requests speech access. If denied, follow the phone’s Settings instructions.",
+          "instruction": "Choose whether to allow microphone access.",
           "surface": "phone",
           "screen": "Phone permission",
           "items": [
@@ -5257,11 +5257,11 @@
           ],
           "focus": 1,
           "action": "check",
-          "note": "Some browser simulators cannot provide microphone or speech recognition."
+          "note": "Allow only if you agree. iPhone may also request speech recognition access. If you deny access, you can change it later in phone Settings. Some simulators cannot provide microphone or speech recognition."
         },
         {
           "title": "Speak and watch the meter",
-          "instruction": "Say a short phrase. The purple bars should react only when actual input samples arrive.",
+          "instruction": "Say a short phrase.",
           "surface": "phone",
           "screen": "Voice check",
           "items": [
@@ -5270,11 +5270,11 @@
           ],
           "focus": 0,
           "action": "speak",
-          "note": "Moving bars show input activity, not certainty about every sound or syllable."
+          "note": "The purple bars react only when actual microphone samples arrive. They do not measure every word or syllable or verify a TV connection."
         },
         {
           "title": "Review the recognized words",
-          "instruction": "Check the recent words. They may change or be incorrect. No command is sent to the TV.",
+          "instruction": "Read the recent recognized words.",
           "surface": "phone",
           "screen": "Voice check",
           "items": [
@@ -5282,11 +5282,11 @@
           ],
           "focus": 0,
           "action": "check",
-          "note": "Use your real device. This picture is an illustration."
+          "note": "Recognized words may change or be incorrect. No command is sent to the TV from Voice check. This picture is an illustration."
         },
         {
           "title": "Stop or clear",
-          "instruction": "Tap Stop listening to stop capture. Clear words also removes the text. Closing or leaving the app stops listening.",
+          "instruction": "Tap Stop listening.",
           "surface": "phone",
           "screen": "Voice check",
           "items": [
@@ -5295,11 +5295,11 @@
           ],
           "focus": 0,
           "action": "stop",
-          "note": "Use your real device. This picture is an illustration."
+          "note": "Clear words is a separate action to erase recognized text. Leaving or closing the app also stops capture. This picture is an illustration."
         },
         {
           "title": "If nothing appears",
-          "instruction": "Read the status. Check permission or local-recognizer availability; use the TV remote if recognition is unavailable.",
+          "instruction": "Read the voice status.",
           "surface": "phone",
           "screen": "Voice status",
           "items": [
@@ -5307,11 +5307,11 @@
           ],
           "focus": 0,
           "action": "check",
-          "note": "Capture also stops at 30 seconds. There is no cloud fallback."
+          "note": "If nothing appears, check microphone permission or local recognizer availability. Use the TV remote when recognition is unavailable. Capture stops after 30 seconds; there is no cloud fallback."
         },
         {
           "title": "Choose the next task",
-          "instruction": "Choose Open Voice check below to try it. For TV/account setup, use Illustrated setup guides on the Devices page.",
+          "instruction": "Tap Open Voice check to try it.",
           "surface": "phone",
           "screen": "Next task",
           "items": [
@@ -5320,7 +5320,7 @@
           ],
           "focus": 0,
           "action": "tap",
-          "note": "TV control by Audio Bodyguard still requires a qualified integration."
+          "note": "For TV or account setup, open Devices and Illustrated setup guides. Voice recognition is not authenticated TV control or activated protection; a qualified integration is required."
         }
       ]
     },

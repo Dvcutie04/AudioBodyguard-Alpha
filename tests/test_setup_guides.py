@@ -379,3 +379,42 @@ def test_philips_voice_remote_keeps_one_visible_action_and_conditional_recovery(
         assert 'Audio Bodyguard' in step['note']
     assert 'different remote' in route['steps'][6]['note']
     assert 'only TV remote pairing' in route['steps'][9]['note']
+
+def test_voice_check_shows_one_action_per_picture_with_optional_safety_context():
+    """Voice-check pictures are short and do not imply TV commands or permission."""
+    steps = setup_routes()['voice']['steps']
+    visible_actions = [
+            "Tap Sound in the bottom bar.",
+            "Tap Voice check.",
+            "Tap Start voice check.",
+            "Choose whether to allow microphone access.",
+            "Say a short phrase.",
+            "Read the recent recognized words.",
+            "Tap Stop listening.",
+            "Read the voice status.",
+            "Tap Open Voice check to try it."
+    ]
+    targets = [
+            "Sound",
+            "Voice check",
+            "Start voice check",
+            "Allow / Don’t allow",
+            "Input-level bars",
+            "Recent recognized words",
+            "Stop listening",
+            "Permission / recognizer status",
+            "Open Voice check"
+    ]
+    assert len(steps) == len(visible_actions) == len(targets) == 9
+    for number, (step, action, target) in enumerate(zip(steps, visible_actions, targets), 1):
+        assert step['instruction'] == action, number
+        assert len(action.split()) <= 10, number
+        assert step['items'][step['focus']] == target, number
+        assert step['note'], number
+    assert 'microphone off' in steps[1]['note']
+    assert 'iPhone' in steps[3]['note'] and 'speech recognition' in steps[3]['note']
+    assert 'No command is sent to the TV' in steps[5]['note']
+    assert 'Leaving or closing the app also stops capture' in steps[6]['note']
+    assert '30 seconds' in steps[7]['note'] and 'no cloud fallback' in steps[7]['note']
+    assert 'not authenticated TV control' in steps[8]['note']
+
