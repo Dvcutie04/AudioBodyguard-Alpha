@@ -279,6 +279,10 @@ def test_faster_google_setup_states_platform_limits_and_checks_the_tv_result():
     assert 'TV and phone software' in route['applies_to']
     assert 'current phone requirements' in route['steps'][1]['note']
     assert 'Google Home or manual setup' in route['steps'][1]['note']
+    # Visible directions must state Google's faster-setup OS requirements and fallback.
+    visible = route['steps'][1]['instruction']
+    assert 'Android 9+' in visible and 'iOS 17+' in visible
+    assert 'TV remote setup' in visible
     assert route['steps'][-1]['surface'] == 'tv'
     assert 'Home screen' in route['steps'][-1]['instruction']
 

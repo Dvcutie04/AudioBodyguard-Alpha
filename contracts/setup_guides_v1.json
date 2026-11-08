@@ -2406,7 +2406,7 @@
         },
         {
           "title": "Check which setup screen you have",
-          "instruction": "Continue only if the TV tells you to scan with your phone camera.",
+          "instruction": "Scan only if your TV offers this and your phone has Android 9+ or iOS 17+. Otherwise, use TV remote setup.",
           "surface": "tv",
           "screen": "Set up with your phone",
           "items": [
