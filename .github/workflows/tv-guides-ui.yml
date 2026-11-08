@@ -122,6 +122,7 @@ jobs:
             -only-testing:AQSSReadOnlyUITests/AQSSReadOnlyUITests/testLGVizioAndGoogleTVContinueIntoTheirOwnPhoneAppPictures \
             -only-testing:AQSSReadOnlyUITests/AQSSReadOnlyUITests/testPhilipsAlreadyConnectedSkipsPairingAndBackRestoresTheChoice \
             -only-testing:AQSSReadOnlyUITests/AQSSReadOnlyUITests/testNewBrandPicturesAreReachable \
+            -only-testing:AQSSReadOnlyUITests/AQSSReadOnlyUITests/testSonyLegacyAndHisenseVIDAAKeepTheirOwnPicturesAndBack \
             -only-testing:AQSSReadOnlyUITests/AQSSReadOnlyUITests/testNewVizioTVShowsAccountThenPhonePicturesInOrder \
             -only-testing:AQSSReadOnlyUITests/AQSSReadOnlyUITests/testLargestTextKeepsExitAndNextReachable \
             -only-testing:AQSSReadOnlyUITests/AQSSReadOnlyUITests/testTVNetworkRejectsPublicAddressWithoutContact \

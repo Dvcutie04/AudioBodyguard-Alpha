@@ -2206,6 +2206,46 @@ final class AQSSReadOnlyUITests: XCTestCase {
         screenshot("Philips reset only when pairing light fails", app)
     }
 
+    // Separate TV-platform routes must retain their own illustrated menu
+    // names and immediate Back behavior; no physical pairing is performed.
+    func testSonyLegacyAndHisenseVIDAAKeepTheirOwnPicturesAndBack() {
+        let app = launch()
+        tab("devices", app)
+        tap("Illustrated setup guides", app)
+        findSetupBrand("Sony", app)
+        tap("Other setup options", app)
+        tap("Sony — TV Control Setup with Amazon Alexa", app)
+        restartPictureGuide(app)
+        label("Step 1 of 11", app)
+        XCTAssertTrue(pictureDescription(app).contains("TV screen"))
+        app.buttons["setup-next"].tap()
+        label("Step 2 of 11", app)
+        label("Find the legacy app", app)
+        XCTAssertTrue(pictureDescription(app).contains("TV Control Setup with Amazon Alexa"))
+        screenshot("Sony legacy Alexa app is TV-specific", app)
+        app.buttons["setup-next"].tap()
+        label("Step 3 of 11", app)
+        app.buttons["setup-back"].tap()
+        label("Step 2 of 11", app)
+        closeSetupAndReturnToDevices(app)
+
+        tap("Illustrated setup guides", app)
+        findSetupBrand("Hisense", app)
+        tap("VIDAA", app)
+        restartPictureGuide(app)
+        label("Step 1 of 16", app)
+        XCTAssertTrue(pictureDescription(app).contains("VIDAA Account"))
+        app.buttons["setup-next"].tap()
+        label("Step 2 of 16", app)
+        XCTAssertTrue(pictureDescription(app).contains("TV screen"))
+        screenshot("Hisense VIDAA account differs from Roku and Google TV", app)
+        app.buttons["setup-back"].tap()
+        label("Step 1 of 16", app)
+        closeSetupAndReturnToDevices(app)
+        tab("home", app)
+        label("Connection not verified", app)
+    }
+
     func testNewBrandPicturesAreReachable() {
         let app = launch()
         tab("devices", app); tap("Illustrated setup guides", app); tap("Philips", app); tap("Google TV / Android TV", app); showStepHelp(app); tap("Other setup options", app)
