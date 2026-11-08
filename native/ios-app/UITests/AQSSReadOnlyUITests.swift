@@ -2213,6 +2213,11 @@ final class AQSSReadOnlyUITests: XCTestCase {
         tab("devices", app)
         tap("Illustrated setup guides", app)
         findSetupBrand("Sony", app)
+        // Sony opens its primary Google-TV route automatically. The legacy
+        // Alexa choice must be reached through the actual optional help path,
+        // not by assuming the route-picker is the first screen.
+        label("9 pictures. One step at a time.", app)
+        showStepHelp(app)
         tap("Other setup options", app)
         tap("Sony — TV Control Setup with Amazon Alexa", app)
         restartPictureGuide(app)
