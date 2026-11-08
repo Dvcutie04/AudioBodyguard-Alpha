@@ -1087,7 +1087,7 @@ def main():
         guide_tap("Illustrated setup guides. Jump to a TV or home app", "tv_guides_open")
         guide_tap("Philips", "tv_guides_philips")
         guide_tap("Google TV / Android TV", "tv_guides_philips_platform")
-        guide_tap("Need help?", "tv_guides_philips_help")
+        guide_tap("? Step help", "tv_guides_philips_help")
         guide_tap("Other setup options", "tv_guides_philips_options")
         guide_tap("Philips Google TV — pair the voice remote", "tv_guides_philips_remote")
         tap("Start guide", "tv_guides_philips_start")
@@ -1120,7 +1120,7 @@ def main():
         def start_picture(name, phone=False):
             root, _ = screen(name + "_intro")
             if has(root, "Resume guide"):
-                guide_tap("Need help?", name + "_restart_help")
+                guide_tap("? Step help", name + "_restart_help")
                 guide_tap("Start from the beginning", name + "_restart")
             else:
                 tap("Start part two" if phone else "Start guide", name + "_start")
@@ -1165,7 +1165,7 @@ def main():
         tap("Close", "tv_guides_lg_close")
 
         open_brand("LG", "tv_guides_lg_phone")
-        guide_tap("Need help?", "tv_guides_lg_phone_help")
+        guide_tap("? Step help", "tv_guides_lg_phone_help")
         guide_tap("Other setup options", "tv_guides_lg_phone_options")
         guide_tap("2. Check LG ThinQ on your phone", "tv_guides_lg_phone_select")
         wait_for("Open pairing pictures", "tv_guides_lg_phone_pairing_help")
@@ -1177,6 +1177,7 @@ def main():
         wait_for("No qualified device connected", "tv_guides_lg_phone_no_connection")
 
         open_brand("Vizio", "tv_guides_vizio")
+        guide_tap("? Step help", "tv_guides_vizio_help")
         guide_tap("Other setup options", "tv_guides_vizio_options")
         guide_tap("Vizio — link the TV account (6-digit code)", "tv_guides_vizio_account")
         start_picture("tv_guides_vizio")
@@ -1222,7 +1223,7 @@ def main():
         tap("Close", "tv_guides_fire_close")
 
         open_brand("TCL", "tv_guides_google_manual", "Google TV / Android TV")
-        guide_tap("Need help?", "tv_guides_google_setup_help")
+        guide_tap("? Step help", "tv_guides_google_setup_help")
         guide_tap("Other setup options", "tv_guides_google_setup_options")
         guide_tap("Google TV — first setup with Google Home", "tv_guides_google_setup")
         start_picture("tv_guides_google_qr")
@@ -1232,7 +1233,7 @@ def main():
         tap("Next", "tv_guides_google_qr_point")
         wait_for_all(("Step 10 of 13", "Scan the TV setup code", "Your TV + your phone"), "tv_guides_google_qr_tv")
         screenshot("tv_guides_google_qr_tv")
-        guide_tap("Need help?", "tv_guides_google_manual_help")
+        guide_tap("? Step help", "tv_guides_google_manual_help")
         guide_tap("Use the TV remote instead", "tv_guides_google_manual_select")
         wait_for("Google TV — finish setup with the TV remote", "tv_guides_google_manual_intro")
         start_picture("tv_guides_google_manual")
