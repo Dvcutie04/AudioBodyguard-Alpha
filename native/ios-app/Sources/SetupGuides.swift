@@ -269,7 +269,10 @@ struct SetupGuidesView: View {
     private func chooseGroup(_ id: String, recording: Bool = true) {
         if recording { remember() }
         groupID = AQSSSetupContent.groups.contains { $0.id == id } ? id : ""
-        routeID = groupID == "voice" ? "voice" : groupID == "phone" ? "phone_iphone" : nil
+        // A direct Phone Wi-Fi guide must follow this device, not always iPhone.
+        // The shared catalog contains distinct, illustrated iPad and iPhone routes.
+        routeID = groupID == "voice" ? "voice" : groupID == "phone"
+            ? (UIDevice.current.userInterfaceIdiom == .pad ? "phone_ipad" : "phone_iphone") : nil
         index = groupID == "voice" ? 0 : -1
         mismatch = false
         detailsExpanded = false
