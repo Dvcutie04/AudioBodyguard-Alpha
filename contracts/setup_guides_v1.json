@@ -5824,7 +5824,7 @@
         },
         {
           "title": "Check whether the remote is already paired",
-          "instruction": "Look for Philips TV Voice RC_8. If it already says Connected, go to the final check. Otherwise select + Pair accessory.",
+          "instruction": "If not connected, select + Pair accessory.",
           "surface": "tv",
           "screen": "Remotes & Accessories",
           "items": [
@@ -5833,11 +5833,11 @@
           ],
           "focus": 0,
           "action": "select",
-          "note": "Use the numbered highlight on your real device. This illustration does not confirm a connection to Audio Bodyguard."
+          "note": "If Philips TV Voice RC_8 already says Connected, skip to the final status check. For the documented Philips Google TV models only. Use the real screen; this picture does not confirm Audio Bodyguard pairing."
         },
         {
           "title": "Put the remote in pairing mode",
-          "instruction": "Hold the Google Voice button and VOL − together for 3–5 seconds. Look for the remote light blinking.",
+          "instruction": "Hold Google Voice + VOL − for 3–5 seconds.",
           "surface": "tv",
           "screen": "Philips remote",
           "items": [
@@ -5846,12 +5846,12 @@
           ],
           "focus": 0,
           "action": "hold",
-          "note": "Hold both named buttons together for 3–5 seconds on the documented Philips remote. Do not use this combination for a different remote.",
+          "note": "The remote light should blink after you hold both buttons together. Use this combination only on the documented Philips remote, never another remote. Pairing the remote does not confirm Audio Bodyguard connection.",
           "picture_surface": "remote"
         },
         {
           "title": "If the light does not blink",
-          "instruction": "Only if pairing mode failed: hold OPTIONS and VOL − for 3–5 seconds. Release when the light flashes. If it already blinked, continue.",
+          "instruction": "If no light blinks, hold OPTIONS + VOL − for 3–5 seconds.",
           "surface": "tv",
           "screen": "Remote troubleshooting",
           "items": [
@@ -5860,12 +5860,12 @@
           ],
           "focus": 0,
           "action": "hold",
-          "note": "Hold both named buttons together for 3–5 seconds on the documented Philips remote. Do not use this combination for a different remote.",
+          "note": "Reset only if the Google Voice + VOL − hold did not make the documented Philips remote blink. Release when the light flashes. If it already blinked, skip this reset. Never use this combination on a different remote. This does not confirm Audio Bodyguard pairing.",
           "picture_surface": "remote"
         },
         {
           "title": "Find the remote on the TV",
-          "instruction": "If you used the troubleshooting step, press Back and reopen Pair accessory. Look at the top-right area for your Philips remote.",
+          "instruction": "Find Philips TV Voice RC_8 on the TV.",
           "surface": "tv",
           "screen": "Pair accessory",
           "items": [
@@ -5873,7 +5873,7 @@
           ],
           "focus": 0,
           "action": "select",
-          "note": "Use the numbered highlight on your real device. This illustration does not confirm a connection to Audio Bodyguard."
+          "note": "If you reset the remote, press Back and reopen + Pair accessory first. Philips says the remote should appear near the top right. Use your real screen; the illustration does not confirm Audio Bodyguard pairing."
         },
         {
           "title": "Approve the remote",
@@ -5890,7 +5890,7 @@
         },
         {
           "title": "Check the real status",
-          "instruction": "Look under Accessories for the Philips remote and the status Connected. If it is missing, choose My screen looks different.",
+          "instruction": "Check that Philips TV Voice RC_8 says Connected.",
           "surface": "tv",
           "screen": "Remotes & Accessories",
           "items": [
@@ -5898,7 +5898,7 @@
           ],
           "focus": 0,
           "action": "check",
-          "note": "Use the numbered highlight on your real device. This illustration does not confirm a connection to Audio Bodyguard."
+          "note": "Check the Accessories section on the actual TV. If the remote is absent, select My screen looks different. Connected here confirms only TV remote pairing, not an Audio Bodyguard connection or protection."
         }
       ]
     },

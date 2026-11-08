@@ -358,3 +358,24 @@ def test_fire_tv_first_setup_keeps_one_action_visible_with_optional_recovery():
     assert steps[4]['items'][steps[4]['focus']] == 'Phone QR setup'
     assert 'official Amazon page' in steps[5]['note']
     assert 'never in Audio Bodyguard' in steps[5]['note']
+
+def test_philips_voice_remote_keeps_one_visible_action_and_conditional_recovery():
+    """Do not make the optional Philips remote reset look like a required pairing step."""
+    route = setup_routes()['philips_voice_remote']
+    assert route['sources'] == ['philips_remote']
+    expected = {
+        4: ('If not connected, select + Pair accessory.', '+ Pair accessory', 'already says Connected'),
+        5: ('Hold Google Voice + VOL − for 3–5 seconds.', 'Google Voice + VOL −', 'light should blink'),
+        6: ('If no light blinks, hold OPTIONS + VOL − for 3–5 seconds.', 'OPTIONS + VOL −', 'skip this reset'),
+        7: ('Find Philips TV Voice RC_8 on the TV.', 'Philips TV Voice RC_8', 'reopen + Pair accessory'),
+        9: ('Check that Philips TV Voice RC_8 says Connected.', 'Philips TV Voice RC_8 — Connected', 'My screen looks different'),
+    }
+    for index, (instruction, focus, recovery) in expected.items():
+        step = route['steps'][index]
+        assert step['instruction'] == instruction
+        assert len(instruction.split()) <= 14
+        assert step['items'][step['focus']] == focus
+        assert recovery in step['note']
+        assert 'Audio Bodyguard' in step['note']
+    assert 'different remote' in route['steps'][6]['note']
+    assert 'only TV remote pairing' in route['steps'][9]['note']
