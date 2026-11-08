@@ -4,7 +4,7 @@
 
 ## Catalog inventory and proof levels
 
-`contracts/setup_guides_v1.json` defines **29 groups**, **52 distinct routes**, **441 distinct illustrated steps**, and **39 cited source entries**. The generated guide catalog renders local annotated **illustrations**, not live device or manufacturer screenshots. A structural read of all 441 steps found **441/441** with a nonempty item list, an in-bounds numbered focus, recognized `tv`/`phone`/`both`/`remote`/`choice` surface, and a route source present in the source catalog. This is a **static consistency check**, not a claim that each illustration matches every model and firmware.
+`contracts/setup_guides_v1.json` defines **29 groups**, **53 distinct routes**, **447 distinct illustrated steps**, and **40 cited source entries**. The generated guide catalog renders local annotated **illustrations**, not live device or manufacturer screenshots. A structural read of all 447 steps found **447/447** with a nonempty item list, an in-bounds numbered focus, recognized `tv`/`phone`/`both`/`remote`/`choice` surface, and a route source present in the source catalog. This is a **static consistency check**, not a claim that each illustration matches every model and firmware.
 
 The 29 group choices (including subplatforms and non-TV choices) are:
 
@@ -20,10 +20,10 @@ The 29 group choices (including subplatforms and non-TV choices) are:
 | Sharp TVs | 6 | Roku-family catalog only; no claim for every Sharp OS |
 | Roku-branded TV | 6 | Roku-family catalog only; no claim for every OS version |
 | Insignia TVs | 8 | Roku / Fire separated; firmware comparison pending |
-| Platform selectors: TCL, Hisense, Philips, Insignia | 10 group variants | Catalog subdivisions, not additional independently validated hardware |
+| Platform selectors: TCL, Hisense, Philips, Insignia | 11 group variants | Catalog subdivisions, not additional independently validated hardware |
 | Other / unsure | 8 / 1 | Identification and fallback, not a model-matched picture claim |
 | Google Home / Alexa / both / neither | 14 / 10 / 23 / 6 | Companion-app alternatives, not a verified TV connection |
-| Phone Wi-Fi | 3 | iPhone 6 steps; Pixel 7; Galaxy 7. **iPad has no own catalog route.** |
+| Phone Wi-Fi | 4 | iPhone 6; iPad 6; Pixel 7; Galaxy 7. iPad route requires native visual verification. |
 | Voice check | 1 | Illustrative instructions only |
 
 **Completeness boundary:** no evidence establishes all worldwide TV brands/models, every OS variant, or each phone manufacturer's settings. Manufacturer labels such as Motorola, OnePlus, or other Android vendors must use an explicit generic-settings fallback unless independently researched. A group count must not be interpreted as a number of physical devices tested.
@@ -43,3 +43,9 @@ The 29 group choices (including subplatforms and non-TV choices) are:
 - Use the catalog's 29 group matrix to choose a few high-risk native routes per pass, including TCL's three OS families, Hisense's four, LG, Samsung, Sony, Philips, Sharp, Insignia and Roku. Record screenshot evidence and wrong-menu recovery, not just smoke-check counts.
 - Prioritize reproducible defects, including native Share blank-container evidence if it recurs. Preserve exact clipboard bytes and cancellation ownership.
 - No live device enrollment, physical TV pairing, protection qualification, signing-secret modification or distribution is in scope.
+
+## November 8 follow-up: distinct iPad route, pending native screenshots
+
+Added official-source `phone_ipad` with six iPad-named illustrations and focus targets, generated identically into Swift and Kotlin. iPad selects this route in both the network-check Wi-Fi helper and main phone guide; iPhone, Pixel and Galaxy are unchanged. Swift uses an iPad glyph and tablet-width illustration with `Tablet screen: iPad` accessibility language. These are **local diagrams, not Apple screenshots**. Existing guide-controller navigation preserves the caller and entered address; focused native iPhone and iPad checks are still needed before approving visual accuracy.
+
+Checked Apple documentation: [iPad Settings Wi-Fi](https://support.apple.com/guide/ipad/ipad2db29c3a/ipados) and [iPhone/iPad Wi-Fi](https://support.apple.com/en-us/111107) (September 2026). A Wi-Fi checkmark does not prove TV connection, pairing or protection. Original baseline finding above refers to #119 before this added route. Source checks and native screenshot reviews must be attributed to this exact future commit.

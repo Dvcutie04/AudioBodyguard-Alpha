@@ -43,7 +43,8 @@ struct SetupGuidesView: View {
     private var group: AQSSSetupGroup? {
         guard let original = AQSSSetupContent.groups.first(where: { $0.id == groupID }) else { return nil }
         if groupID == "phone" {
-            return AQSSSetupGroup(id: original.id, title: original.title, routes: ["phone_iphone"], primaryRoutes: ["phone_iphone"])
+            let route = UIDevice.current.userInterfaceIdiom == .pad ? "phone_ipad" : "phone_iphone"
+            return AQSSSetupGroup(id: original.id, title: original.title, routes: [route], primaryRoutes: [route])
         }
         guard ["google", "alexa", "both"].contains(groupID),
               let tv = AQSSSetupContent.groups.first(where: { $0.id == deviceGroup }) else { return original }
@@ -424,6 +425,7 @@ struct SetupScreenIllustration: View {
     private var screenOnTV: Bool { step.pictureKind == "tv" || (choice && step.surface == "tv") }
     private var screenOnPhone: Bool { step.pictureKind == "phone" || (choice && step.surface == "phone") }
     private var nearbyTVs: Bool { step.screen == "Google TV" && step.items == ["TVs nearby"] }
+    private var tabletScreen: Bool { screenOnPhone && step.screen.hasPrefix("iPad •") }
     private var glyph: String {
         switch step.action {
         case "home": return "house.fill"
@@ -440,7 +442,7 @@ struct SetupScreenIllustration: View {
     }
     var body: some View {
         VStack(spacing: 10) {
-            HStack { Text("Illustration").font(.caption2.weight(.semibold)); Spacer(); Image(systemName: step.surface == "phone" ? "iphone" : "tv") }.foregroundColor(theme.muted)
+            HStack { Text("Illustration").font(.caption2.weight(.semibold)); Spacer(); Image(systemName: tabletScreen ? "ipad" : step.surface == "phone" ? "iphone" : "tv") }.foregroundColor(theme.muted)
             if step.surface == "both" {
                 HStack(spacing: 16) {
                     Image(systemName: "tv").font(.system(size: 34))
@@ -485,9 +487,9 @@ struct SetupScreenIllustration: View {
                     }
                 }.padding(12)
                 if screenOnPhone { Capsule().fill(theme.muted).frame(width: 70, height: 4).padding(10) }
-            }.background(theme.surface).clipShape(RoundedRectangle(cornerRadius: screenOnTV ? 12 : 26))
-                .overlay(RoundedRectangle(cornerRadius: screenOnTV ? 12 : 26).stroke(theme.outline, lineWidth: 3))
-                .padding(.horizontal, step.surface == "phone" ? 12 : 0)
+            }.background(theme.surface).clipShape(RoundedRectangle(cornerRadius: screenOnTV ? 12 : tabletScreen ? 18 : 26))
+                .overlay(RoundedRectangle(cornerRadius: screenOnTV ? 12 : tabletScreen ? 18 : 26).stroke(theme.outline, lineWidth: 3))
+                .padding(.horizontal, step.surface == "phone" ? (tabletScreen ? 4 : 12) : 0)
             if screenOnTV {
                 VStack(spacing: 0) { Rectangle().fill(theme.outline).frame(width: 14, height: 12); Capsule().fill(theme.outline).frame(width: 90, height: 4) }
             }
@@ -503,7 +505,7 @@ struct SetupScreenIllustration: View {
             }.foregroundColor(theme.violet).padding(.top, 4)
         }.padding(14).background(theme.raised.opacity(0.7)).clipShape(RoundedRectangle(cornerRadius: 22))
             .accessibilityElement(children: .ignore)
-            .accessibilityLabel("Illustration \(number). \(screenOnTV ? "TV screen" : screenOnPhone ? "Phone screen" : "TV and phone"): \(step.screen). \(choice ? "Choose one; neither is selected" : "Highlighted"): \(step.focusLabel). Action: \(step.action). \(step.instruction)")
+            .accessibilityLabel("Illustration \(number). \(screenOnTV ? "TV screen" : screenOnPhone ? (tabletScreen ? "Tablet screen" : "Phone screen") : "TV and phone"): \(step.screen). \(choice ? "Choose one; neither is selected" : "Highlighted"): \(step.focusLabel). Action: \(step.action). \(step.instruction)")
             .accessibilityIdentifier("setup-illustration")
     }
 }

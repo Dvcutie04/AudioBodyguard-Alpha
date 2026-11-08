@@ -301,7 +301,7 @@ struct TVNetworkCheckView: View {
                             .accessibilityIdentifier("tv-network-certificate-fingerprint")
                     }
                     if followUp == .phoneWiFi {
-                        Text("Check that your phone and TV use the same home Wi-Fi.").fixedSize(horizontal: false, vertical: true)
+                        Text("Check that this device and your TV use the same home Wi-Fi.").fixedSize(horizontal: false, vertical: true)
                         phoneWiFiButton(primary: true)
                     }
                     if check.lastOutcome != nil && !check.busy {
@@ -335,7 +335,7 @@ struct TVNetworkCheckView: View {
     }
 
     private func phoneWiFiButton(primary: Bool) -> some View {
-        Button("Check phone Wi-Fi") { openGuide(.phoneWiFi) }
+        Button(UIDevice.current.userInterfaceIdiom == .pad ? "Check iPad Wi-Fi" : "Check phone Wi-Fi") { openGuide(.phoneWiFi) }
             .buttonStyle(AppButtonStyle(theme: theme, primary: primary))
             .disabled(check.busy).accessibilityIdentifier("tv-network-wifi-guide-open")
     }
@@ -380,8 +380,7 @@ struct TVCheckPictureGuide: View {
         @MainActor var route: AQSSSetupRoute? {
             let id: String
             if self == .phoneWiFi {
-                guard UIDevice.current.userInterfaceIdiom == .phone else { return nil }
-                id = "phone_iphone"
+                id = UIDevice.current.userInterfaceIdiom == .pad ? "phone_ipad" : "phone_iphone"
             } else { id = "vizio_v505m_k09_address" }
             return AQSSSetupContent.routes.first { $0.id == id }
         }
@@ -408,7 +407,7 @@ struct TVCheckPictureGuide: View {
     private var step: AQSSSetupStep? { steps.indices.contains(index) ? steps[index] : nil }
     private var screenKey: String { "\(index)-\(mismatch)" }
     private var returnsToCaller: Bool { mismatch || index == steps.count - 1 }
-    private var helpTitle: String { isWiFi ? "Phone Wi-Fi help" : "TV address help" }
+    private var helpTitle: String { isWiFi ? "Wi-Fi help" : "TV address help" }
     private var prefix: String { isWiFi ? "tv-wifi-guide" : "tv-address-guide" }
     private var returnTitle: String {
         switch context {

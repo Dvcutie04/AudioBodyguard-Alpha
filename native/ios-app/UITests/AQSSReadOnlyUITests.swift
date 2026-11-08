@@ -24,8 +24,9 @@ final class AQSSReadOnlyUITests: XCTestCase {
         let form = app.scrollViews["tv-network-scroll"]
         XCTAssertFalse(app.buttons["tv-network-wifi-guide-open"].exists)
         tap("Help with this check", app, scroll: form)
-        tap("Check phone Wi-Fi", app, scroll: form)
-        label("iPhone — connect to your home Wi-Fi", app)
+        let device = UIDevice.current.userInterfaceIdiom == .pad ? "iPad" : "iPhone"
+        tap(device == "iPad" ? "Check iPad Wi-Fi" : "Check phone Wi-Fi", app, scroll: form)
+        label("\(device) — connect to your home Wi-Fi", app)
         let next = app.buttons["tv-wifi-guide-next"]
         let back = app.buttons["tv-wifi-guide-back"]
         XCTAssertEqual(next.label, "Start Wi-Fi steps")
@@ -33,11 +34,13 @@ final class AQSSReadOnlyUITests: XCTestCase {
         let targets = ["Settings", "Wi-Fi", "Wi-Fi switch", "Your TV’s home network", "Join", "✓ Your home network"]
         for index in 1...6 {
             label("Step \(index) of 6", app)
-            XCTAssertTrue(pictureDescription(app).contains("Highlighted: \(targets[index - 1])."))
+            let description = pictureDescription(app)
+            XCTAssertTrue(description.contains("Highlighted: \(targets[index - 1])."))
+            XCTAssertTrue(description.contains(device == "iPad" ? "Tablet screen: iPad" : "Phone screen: iPhone"))
             if index == 2 {
-                back.tap(); label("Open iPhone Settings", app)
+                back.tap(); label("Open \(device) Settings", app)
                 next.tap(); label("Open Wi-Fi", app)
-                screenshot("VIZIO check phone Wi-Fi picture on iPhone", app)
+                screenshot("VIZIO check Wi-Fi picture on \(device)", app)
             }
             if index == 6 { XCTAssertEqual(next.label, "Back to network check") }
             next.tap()

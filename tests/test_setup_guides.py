@@ -311,3 +311,16 @@ def test_legacy_sony_remote_start_precedes_the_google_account_selection():
     start = next(i for i, step in enumerate(steps) if step['screen'] == 'Remote start')
     account = next(i for i, step in enumerate(steps) if step['title'] == 'Choose the TV Google account')
     assert start < account
+
+
+def test_ipad_wifi_guide_has_distinct_apple_source_and_six_numbered_targets():
+    routes = setup_routes()
+    ipad = routes['phone_ipad']
+    iphone = routes['phone_iphone']
+    assert ipad['sources'] == ['ipad_wifi'] and ipad['id'] != iphone['id']
+    assert len(ipad['steps']) == len(iphone['steps']) == 6
+    assert all(step['surface'] == 'phone' and step['screen'].startswith('iPad •') for step in ipad['steps'])
+    assert [step['items'][step['focus']] for step in ipad['steps']] == [
+        'Settings', 'Wi-Fi', 'Wi-Fi switch', 'Your TV’s home network', 'Join', '✓ Your home network'
+    ]
+    assert 'TV identity' in ipad['steps'][-1]['note']

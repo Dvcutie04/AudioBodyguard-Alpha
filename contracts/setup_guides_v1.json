@@ -174,6 +174,11 @@
       "url": "https://support.apple.com/en-us/111107"
     },
     {
+      "id": "ipad_wifi",
+      "title": "Apple: Connect iPad to Wi-Fi in Settings",
+      "url": "https://support.apple.com/guide/ipad/ipad2db29c3a/ipados"
+    },
+    {
       "id": "pixel_wifi",
       "title": "Google: Pixel Wi-Fi settings",
       "url": "https://support.google.com/pixelphone/answer/2819519?hl=en"
@@ -582,6 +587,7 @@
       "title": "Phone Wi-Fi setup",
       "routes": [
         "phone_iphone",
+        "phone_ipad",
         "phone_pixel",
         "phone_galaxy"
       ],
@@ -6171,6 +6177,91 @@
           "focus": 0,
           "action": "check",
           "note": "This checks phone Wi-Fi only. It does not establish an Audio Bodyguard device connection."
+        }
+      ]
+    },
+    {
+      "id": "phone_ipad",
+      "title": "iPad — connect to your home Wi-Fi",
+      "applies_to": "On your iPad, use Settings → Wi-Fi to join the same home network as the TV. iPadOS screens may differ by version.",
+      "models": [],
+      "sources": [
+        "ipad_wifi"
+      ],
+      "steps": [
+        {
+          "title": "Open iPad Settings",
+          "instruction": "Open Settings on your iPad.",
+          "surface": "phone",
+          "screen": "iPad • Home",
+          "items": [
+            "Settings"
+          ],
+          "focus": 0,
+          "action": "tap",
+          "note": "This is an illustrated iPad menu, not a screenshot. If your iPadOS labels differ, check the linked Apple guide."
+        },
+        {
+          "title": "Open Wi-Fi",
+          "instruction": "In iPad Settings, tap Wi-Fi.",
+          "surface": "phone",
+          "screen": "iPad • Settings",
+          "items": [
+            "Wi-Fi",
+            "Bluetooth"
+          ],
+          "focus": 0,
+          "action": "tap",
+          "note": "This is an illustrated iPad menu, not a screenshot. If your iPadOS labels differ, check the linked Apple guide."
+        },
+        {
+          "title": "Turn on Wi-Fi",
+          "instruction": "If Wi-Fi is off, turn it on.",
+          "surface": "phone",
+          "screen": "iPad • Wi-Fi",
+          "items": [
+            "Wi-Fi switch"
+          ],
+          "focus": 0,
+          "action": "tap",
+          "note": "This is an illustrated iPad menu, not a screenshot. If your iPadOS labels differ, check the linked Apple guide."
+        },
+        {
+          "title": "Choose the TV’s network",
+          "instruction": "Select the same home Wi-Fi network used by your TV.",
+          "surface": "phone",
+          "screen": "iPad • Wi-Fi",
+          "items": [
+            "Your TV’s home network"
+          ],
+          "focus": 0,
+          "action": "tap",
+          "note": "This is an illustrated iPad menu, not a screenshot. If your iPadOS labels differ, check the linked Apple guide."
+        },
+        {
+          "title": "Enter the Wi-Fi password",
+          "instruction": "If prompted, enter your Wi-Fi password and tap Join.",
+          "surface": "phone",
+          "screen": "iPad • Wi-Fi password",
+          "items": [
+            "Password",
+            "Join"
+          ],
+          "focus": 1,
+          "action": "type",
+          "note": "This is an illustrated iPad menu, not a screenshot. If your iPadOS labels differ, check the linked Apple guide."
+        },
+        {
+          "title": "Check the iPad connection",
+          "instruction": "Look for a blue checkmark beside your home network and the Wi-Fi icon.",
+          "surface": "phone",
+          "screen": "iPad • Wi-Fi",
+          "items": [
+            "✓ Your home network"
+          ],
+          "focus": 0,
+          "action": "check",
+          "note": "A Wi-Fi checkmark verifies only the iPad network, not TV identity, pairing or audio protection."
         }
       ]
     },
