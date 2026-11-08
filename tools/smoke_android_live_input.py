@@ -1083,7 +1083,8 @@ def main():
             raise AssertionError(f"TV guide target unavailable: {label}")
 
         tap("Devices", "tv_guides_devices")
-        guide_tap("Illustrated setup guides. TV pairing, Google Home & Alexa · one picture at a time", "tv_guides_open")
+        tap("? Device help", "tv_guides_expand_device_help")
+        guide_tap("Illustrated setup guides. Jump to a TV or home app", "tv_guides_open")
         guide_tap("Philips", "tv_guides_philips")
         guide_tap("Google TV / Android TV", "tv_guides_philips_platform")
         guide_tap("Need help?", "tv_guides_philips_help")
@@ -1111,7 +1112,7 @@ def main():
         tap("Close", "tv_guides_philips_close")
 
         def open_brand(brand, name, platform=None):
-            guide_tap("Illustrated setup guides. TV pairing, Google Home & Alexa · one picture at a time", name + "_guides")
+            guide_tap("Illustrated setup guides. Jump to a TV or home app", name + "_guides")
             guide_tap(brand, name + "_brand")
             if platform:
                 guide_tap(platform, name + "_platform")

@@ -30,6 +30,7 @@ struct SetupGuidesView: View {
     @State private var initialized = false
     @State private var detailsExpanded = false
     @State private var pickerExpanded = false
+    @State private var brandQuery = ""
     @State private var referencesExpanded = false
     private struct Location {
         let group: String
@@ -60,6 +61,7 @@ struct SetupGuidesView: View {
         return AQSSSetupPresentation.step(route.steps[index], phone: .iphone)
     }
     private var key: String { "\(groupID)-\(routeID ?? "")-\(index)-\(mismatch)" }
+    private var phoneLabel: String { UIDevice.current.userInterfaceIdiom == .pad ? "iPad" : "iPhone" }
     private var title: String { mismatch ? "Find the right screen" : step?.title ?? route?.title ?? (group == nil ? "Choose your TV or app" : group!.title) }
     private var platforms: [(String, String)] {
         switch groupID {
@@ -94,7 +96,7 @@ struct SetupGuidesView: View {
             GuideScrollView(screenKey: key, identifier: "setup-scroll", onStepReady: { key in headingFocused = key }) {
                 VStack(alignment: .leading, spacing: 18) {
                     if let group = group {
-                        Text("\(group.title)  ·  iPhone").font(.caption.weight(.semibold)).foregroundColor(theme.muted)
+                        Text("\(group.title)  ·  \(phoneLabel)").font(.caption.weight(.semibold)).foregroundColor(theme.muted)
                             .fixedSize(horizontal: false, vertical: true).accessibilityIdentifier("setup-device-context")
                     }
                     Text(title).font(.title.bold()).fixedSize(horizontal: false, vertical: true)
@@ -173,7 +175,15 @@ struct SetupGuidesView: View {
                         }
                     } else {
                         Text("Choose a name to start the pictures.").foregroundColor(theme.muted)
-                        ForEach(AQSSSetupContent.groups.filter { !["both", "neither"].contains($0.id) && !$0.id.contains("_") }, id: \.id) { item in
+                        TextField("Search TV and app brands", text: $brandQuery)
+                            .textFieldStyle(.roundedBorder)
+                            .textInputAutocapitalization(.never)
+                            .autocorrectionDisabled()
+                            .accessibilityIdentifier("setup-brand-search")
+                        ForEach(AQSSSetupContent.groups.filter {
+                            !["both", "neither"].contains($0.id) && !$0.id.contains("_")
+                                && (brandQuery.isEmpty || $0.title.localizedCaseInsensitiveContains(brandQuery))
+                        }, id: \.id) { item in
                             control(item.title, icon: item.id == "voice" ? "mic" : ["google", "alexa"].contains(item.id) ? "house" : "tv", id: "setup-group-\(item.id)") { chooseGroup(item.id) }
                         }
                     }

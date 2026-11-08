@@ -35,7 +35,7 @@ def test_phone_part_checks_the_existing_brand_app_with_separate_wifi_help():
         assert groups[group_id].get("phone_route") == route_id
         assert route_id in groups[group_id]["routes"]
         assert all(step["surface"] == "phone" for step in all_routes[route_id]["steps"])
-    assert set(groups["phone"]["routes"]) == {"phone_iphone", "phone_pixel", "phone_galaxy"}
+    assert set(groups["phone"]["routes"]) == {"phone_iphone", "phone_ipad", "phone_pixel", "phone_galaxy"}
 
 
 def test_optional_lg_link_does_not_highlight_a_default_account_approval():

@@ -1366,6 +1366,17 @@ final class AQSSReadOnlyUITests: XCTestCase {
         } else { app.buttons["tab-\(id)"].tap() }
     }
 
+    private func findSetupBrand(_ brand: String, _ app: XCUIApplication) {
+        let search = app.textFields["setup-brand-search"]
+        XCTAssertTrue(search.waitForExistence(timeout: 5), "Setup brand search must be visible")
+        search.tap()
+        search.typeText(brand)
+        let choice = app.scrollViews["setup-scroll"].buttons
+            .matching(NSPredicate(format: "label CONTAINS[cd] %@", brand)).firstMatch
+        XCTAssertTrue(choice.waitForExistence(timeout: 5), "Filtered setup brand must appear: \(brand)")
+        XCTAssertTrue(choice.isHittable, "Filtered setup brand must be reachable: \(brand)")
+        choice.tap()
+    }
     private func chooseTV(_ title: String, _ app: XCUIApplication) {
         tap("Choose TV brand", app)
         let search = app.textFields["brand-search"]
@@ -1818,7 +1829,7 @@ final class AQSSReadOnlyUITests: XCTestCase {
 
     func testNewVizioTVShowsAccountThenPhonePicturesInOrder() {
         let app = launch()
-        tab("devices", app); tap("Illustrated setup guides", app); tap("Vizio", app)
+        tab("devices", app); tap("Illustrated setup guides", app); findSetupBrand("Vizio", app)
         tap("VIZIO newer TV", app)
         label("VIZIO newer TV — My Hub account, then phone", app)
         for number in 1...14 {
@@ -2048,7 +2059,7 @@ final class AQSSReadOnlyUITests: XCTestCase {
         app.buttons["setup-back"].tap(); label("Step 10 of 13", app)
         app.buttons["setup-close"].tap()
 
-        tap("Illustrated setup guides", app); tap("Vizio", app); tap("Other setup options", app)
+        tap("Illustrated setup guides", app); findSetupBrand("Vizio", app); tap("Other setup options", app)
         tap("Vizio — link the TV account", app); restartPictureGuide(app)
         for number in 2...11 {
             app.buttons["setup-next"].tap(); label("Step \(number) of 11", app)
@@ -2248,8 +2259,11 @@ final class AQSSReadOnlyUITests: XCTestCase {
         tap("Illustrated setup guides", app)
         let choices = app.scrollViews["setup-scroll"]
         XCTAssertTrue(choices.waitForExistence(timeout: 5))
-        XCTAssertGreaterThan(choices.frame.height, app.frame.height / 2,
-                             "The largest-text header must leave room for the setup choices")
+        // Regular-width iPad sheets can be shorter than half the display.
+        // The choices must still provide a usable scroll region and brand search.
+        XCTAssertGreaterThan(choices.frame.height, app.frame.height / 4,
+                             "The largest-text sheet must retain usable setup choices")
+        XCTAssertTrue(app.textFields["setup-brand-search"].isHittable)
         tap("Samsung", app)
         label("Samsung — connect with SmartThings", app); app.buttons["setup-next"].tap()
         label("Step 1 of 17", app)
