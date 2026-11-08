@@ -2,7 +2,7 @@ name: TV brand picture guide verification
 
 on:
   push:
-    branches: ["aqss/tv-guide-clarity-0323"]
+    branches: ["aqss/tv-guide-clarity-0323", "aqss/overnight-cyan-guide-audit"]
   workflow_dispatch:
 
 permissions:
@@ -120,6 +120,8 @@ jobs:
             -only-testing:AQSSReadOnlyUITests/AQSSReadOnlyUITests/testNewBrandPicturesAreReachable \
             -only-testing:AQSSReadOnlyUITests/AQSSReadOnlyUITests/testNewVizioTVShowsAccountThenPhonePicturesInOrder \
             -only-testing:AQSSReadOnlyUITests/AQSSReadOnlyUITests/testLargestTextKeepsExitAndNextReachable \
+            -only-testing:AQSSReadOnlyUITests/AQSSReadOnlyUITests/testTVNetworkRejectsPublicAddressWithoutContact \
+            -only-testing:AQSSReadOnlyUITests/AQSSReadOnlyUITests/testTVAddressPicturesKeepTheCheckDraftAndStepOrder \
             CODE_SIGNING_ALLOWED=NO test
       - name: Export native TV guide screenshots
         if: always()
