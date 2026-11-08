@@ -1118,12 +1118,26 @@ def main():
                 guide_tap(platform, name + "_platform")
 
         def start_picture(name, phone=False):
-            root, _ = screen(name + "_intro")
+            # A new Activity may expose a partial or empty accessibility tree
+            # immediately after the platform picker. Shared Roku-family routes
+            # can also legitimately retain progress from another TV brand.
+            # Settle on the actual intro action before choosing Start or Resume.
+            # Never replace resume with a blind tap or accept the wrong route.
+            intro_actions = ("Resume guide", "Start part two" if phone else "Start guide")
+            for attempt in range(8):
+                root, _ = screen(f"{name}_intro_{attempt}")
+                if any(has(root, label) for label in intro_actions):
+                    break
+                time.sleep(0.5)
+            else:
+                screenshot(name + "_missing_intro")
+                raise AssertionError(f"TV guide intro not ready: {name}")
             if has(root, "Resume guide"):
                 guide_tap("? Step help", name + "_restart_help")
                 guide_tap("Start from the beginning", name + "_restart")
             else:
                 tap("Start part two" if phone else "Start guide", name + "_start")
+            wait_for("Step 1 of", name + "_first_picture")
 
         open_brand("Sony", "tv_guides_google")
         start_picture("tv_guides_google")
