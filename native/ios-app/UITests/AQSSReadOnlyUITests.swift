@@ -52,6 +52,21 @@ final class AQSSReadOnlyUITests: XCTestCase {
         XCTAssertEqual(app.alerts.count, 0)
         app.buttons["tv-network-back"].tap()
         label("Connection not verified", app)
+
+        // Opening the shared Phone guide on iPad must not show iPhone pictures.
+        // The network-check help above uses its own view; exercise the other
+        // public entry path to catch mismatched route selection at the source.
+        tab("devices", app)
+        tap("Illustrated setup guides", app)
+        findSetupBrand("Phone Wi-Fi setup", app)
+        label("\(device) — connect to your home Wi-Fi", app)
+        app.buttons["setup-next"].tap()
+        label("Step 1 of 6", app)
+        let sharedPicture = pictureDescription(app)
+        XCTAssertTrue(sharedPicture.contains(device))
+        XCTAssertTrue(sharedPicture.contains("Highlighted: Settings"))
+        screenshot("Shared Phone Wi-Fi pictures match \(device)", app)
+        app.buttons["setup-close"].tap()
     }
     func testTVNetworkVisitClearsDraftOnBackgroundAndBack() {
         let app = launch()
