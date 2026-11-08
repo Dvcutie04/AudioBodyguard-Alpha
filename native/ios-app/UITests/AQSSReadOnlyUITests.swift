@@ -1352,6 +1352,22 @@ final class AQSSReadOnlyUITests: XCTestCase {
         let visible = button.frame.intersection(scroll.frame.intersection(appFrame).insetBy(dx: 0, dy: 24))
         app.coordinate(withNormalizedOffset: .zero).withOffset(CGVector(dx: visible.midX - appFrame.minX, dy: visible.midY - appFrame.minY)).tap()
     }
+    private func closeSetupAndReturnToDevices(_ app: XCUIApplication) {
+        // Closing an illustrated guide dismisses its sheet asynchronously.
+        // Reusing the old setup-scroll while it is disappearing can select
+        // a stale viewport, rather than the visible Devices scroll surface.
+        let guideScroll = app.scrollViews["setup-scroll"]
+        XCTAssertTrue(guideScroll.exists, "A picture guide must be open before Close")
+        app.buttons["setup-close"].tap()
+        let dismissed = XCTNSPredicateExpectation(
+            predicate: NSPredicate(format: "exists == false"), object: guideScroll)
+        XCTAssertEqual(XCTWaiter.wait(for: [dismissed], timeout: 8), .completed,
+                       "Close must dismiss the picture guide before the next brand is chosen")
+        XCTAssertTrue(app.scrollViews["home-scroll"].waitForExistence(timeout: 8),
+                      "Close must return to the Devices page")
+        XCTAssertTrue(app.buttons["tab-devices"].isHittable,
+                      "Devices navigation must remain reachable after Close")
+    }
     private func launch(_ firstVisit: Bool = false, largeText: Bool = false) -> XCUIApplication {
         let app = XCUIApplication()
         app.launchArguments = ["-aqssGuideDismissedV1", firstVisit ? "NO" : "YES"]
@@ -2101,11 +2117,11 @@ final class AQSSReadOnlyUITests: XCTestCase {
             label("Step 3 of 5", app)
             XCTAssertTrue(pictureDescription(app).contains(highlight))
             screenshot("\(brand) \(platform) uses \(highlight)", app)
-            app.buttons["setup-close"].tap()
+            closeSetupAndReturnToDevices(app)
         }
         tap("Illustrated setup guides", app); findSetupBrand("Hisense", app); tap("VIDAA", app)
         label("43A6GV / VIDAA U5", app); screenshot("Hisense asks for the matching VIDAA menu", app)
-        app.buttons["setup-close"].tap()
+        closeSetupAndReturnToDevices(app)
 
         tap("Illustrated setup guides", app); findSetupBrand("Insignia", app); tap("Fire TV", app)
         restartPictureGuide(app)
@@ -2117,7 +2133,7 @@ final class AQSSReadOnlyUITests: XCTestCase {
         tap("Account sign-in finished", app); label("Step 8 of 8", app)
         app.buttons["setup-back"].tap(); label("Step 6 of 8", app)
         screenshot("Fire TV account completion can skip manual code entry", app)
-        app.buttons["setup-close"].tap()
+        closeSetupAndReturnToDevices(app)
 
         tap("Illustrated setup guides", app); tap("TCL", app); tap("Google TV / Android TV", app)
         showStepHelp(app); tap("Other setup options", app)
@@ -2135,7 +2151,7 @@ final class AQSSReadOnlyUITests: XCTestCase {
         label("Step 2 of 7", app); XCTAssertTrue(pictureDescription(app).contains("TV remote"))
         screenshot("Google TV manual setup uses the physical Down button", app)
         app.buttons["setup-back"].tap(); label("Step 1 of 7", app)
-        app.buttons["setup-close"].tap(); tab("home", app); label("Connection not verified", app)
+        closeSetupAndReturnToDevices(app); tab("home", app); label("Connection not verified", app)
     }
 
     func testLGVizioAndGoogleTVContinueIntoTheirOwnPhoneAppPictures() {
