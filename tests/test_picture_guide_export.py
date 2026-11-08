@@ -1,3 +1,4 @@
+import json
 """The offline guide must match the catalog and check without rewriting files."""
 import os
 from pathlib import Path
@@ -48,3 +49,16 @@ def test_missing_offline_guide_fails_check_without_creating_file(tmp_path, monke
     with pytest.raises(SystemExit, match="Regenerate"):
         export_picture_guide.build(check=True)
     assert not (tmp_path / "docs/picture-guide.html").exists()
+
+
+def test_ipad_offline_wifi_pictures_show_tablet_frame_and_apple_source():
+    catalog = json.loads((ROOT / "contracts/setup_guides_v1.json").read_text())
+    route = next(route for route in catalog["routes"] if route["id"] == "phone_ipad")
+    sources = {source["id"]: source["url"] for source in catalog["sources"]}
+    assert sources[route["sources"][0]].startswith("https://support.apple.com/guide/ipad/")
+    for index, step in enumerate(route["steps"], 1):
+        diagram = export_picture_guide.svg(step, index, route)
+        assert 'Tablet screen' in diagram
+        assert '<rect x="50" y="18" width="540" height="342"' in diagram
+        assert f'{index} → {step["items"][step["focus"]]}' in diagram
+        assert 'On your iPad' in diagram
