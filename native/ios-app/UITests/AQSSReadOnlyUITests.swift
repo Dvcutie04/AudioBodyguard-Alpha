@@ -2087,11 +2087,11 @@ final class AQSSReadOnlyUITests: XCTestCase {
             screenshot("\(brand) \(platform) uses \(highlight)", app)
             app.buttons["setup-close"].tap()
         }
-        tap("Illustrated setup guides", app); tap("Hisense", app); tap("VIDAA", app)
+        tap("Illustrated setup guides", app); findSetupBrand("Hisense", app); tap("VIDAA", app)
         label("43A6GV / VIDAA U5", app); screenshot("Hisense asks for the matching VIDAA menu", app)
         app.buttons["setup-close"].tap()
 
-        tap("Illustrated setup guides", app); tap("Insignia", app); tap("Fire TV", app)
+        tap("Illustrated setup guides", app); findSetupBrand("Insignia", app); tap("Fire TV", app)
         restartPictureGuide(app)
         for _ in 0..<4 { app.buttons["setup-next"].tap() }
         XCTAssertTrue(pictureDescription(app).contains("neither is selected"))
