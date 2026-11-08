@@ -62,6 +62,9 @@ struct SetupGuidesView: View {
     }
     private var key: String { "\(groupID)-\(routeID ?? "")-\(index)-\(mismatch)" }
     private var phoneLabel: String { UIDevice.current.userInterfaceIdiom == .pad ? "iPad" : "iPhone" }
+    private var phoneSurfaceText: String { phoneLabel == "iPad" ? "On your iPad" : "On your phone" }
+    private var bothSurfaceText: String { phoneLabel == "iPad" ? "Your TV + your iPad" : "Your TV + your phone" }
+    private var phoneSurfaceIcon: String { phoneLabel == "iPad" ? "ipad" : "iphone" }
     private var title: String { mismatch ? "Find the right screen" : step?.title ?? route?.title ?? (group == nil ? "Choose your TV or app" : group!.title) }
     private var platforms: [(String, String)] {
         switch groupID {
@@ -104,7 +107,8 @@ struct SetupGuidesView: View {
                     if mismatch { mismatchContent }
                     else if let route = route {
                         if let step = step {
-                            Label(step.pictureKind == "remote" ? "On your TV remote" : step.surface == "tv" ? "On your TV · use the remote" : step.surface == "both" ? "Your TV + your phone" : "On your phone", systemImage: step.pictureKind == "remote" ? "appletvremote.gen1" : step.surface == "phone" ? "iphone" : "tv")
+                            Label(step.pictureKind == "remote" ? "On your TV remote" : step.surface == "tv" ? "On your TV · use the remote" : step.surface == "both" ? bothSurfaceText : phoneSurfaceText,
+                                  systemImage: step.pictureKind == "remote" ? "appletvremote.gen1" : step.surface == "phone" ? phoneSurfaceIcon : "tv")
                                 .font(.subheadline.weight(.semibold)).foregroundColor(theme.accent)
                             Text(step.instruction).font(.body.weight(.medium)).fixedSize(horizontal: false, vertical: true)
                             if index == 14 && route.id == "samsung_ok" {

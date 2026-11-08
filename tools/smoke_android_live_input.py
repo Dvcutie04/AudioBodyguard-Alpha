@@ -1180,7 +1180,7 @@ def main():
         wait_for_all(("Check the phone controls", "Finish part two"), "tv_guides_lg_phone_final")
         screenshot("tv_guides_lg_phone_final")
         tap("Finish part two", "tv_guides_lg_phone_finish")
-        wait_for("No qualified device connected", "tv_guides_lg_phone_no_connection")
+        wait_for_all(("DEVICES", "Connection not verified"), "tv_guides_lg_phone_no_connection")
 
         # Vizio exposes two primary routes; its brand screen has a visible
         # `? Other setup options` disclosure, not a route-intro step-help button.

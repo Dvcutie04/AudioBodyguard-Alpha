@@ -324,3 +324,10 @@ def test_ipad_wifi_guide_has_distinct_apple_source_and_six_numbered_targets():
         'Settings', 'Wi-Fi', 'Wi-Fi switch', 'Your TV’s home network', 'Join', '✓ Your home network'
     ]
     assert 'TV identity' in ipad['steps'][-1]['note']
+
+def test_native_android_phone_picker_never_offers_ios_only_picture_routes():
+    # Catalog supports all four platforms; the Android UI must scope its picker.
+    source = (Path(__file__).resolve().parents[1] / "native/android/app/src/main/kotlin/com/aqss/bodyguard/prototype/SetupGuideActivity.kt").read_text()
+    assert 'val androidRoutes = setOf("phone_pixel", "phone_galaxy")' in source
+    assert "routes = original.routes.filter { it in androidRoutes }" in source
+    assert "primaryRoutes = original.primaryRoutes.filter { it in androidRoutes }" in source

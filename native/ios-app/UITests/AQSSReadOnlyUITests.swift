@@ -62,6 +62,7 @@ final class AQSSReadOnlyUITests: XCTestCase {
         label("\(device) — connect to your home Wi-Fi", app)
         app.buttons["setup-next"].tap()
         label("Step 1 of 6", app)
+        label(device == "iPad" ? "On your iPad" : "On your phone", app)
         let sharedPicture = pictureDescription(app)
         XCTAssertTrue(sharedPicture.contains(device))
         XCTAssertTrue(sharedPicture.contains("Highlighted: Settings"))
