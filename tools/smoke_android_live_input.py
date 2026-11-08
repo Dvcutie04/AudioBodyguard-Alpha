@@ -1176,9 +1176,10 @@ def main():
         tap("Finish part two", "tv_guides_lg_phone_finish")
         wait_for("No qualified device connected", "tv_guides_lg_phone_no_connection")
 
+        # Vizio exposes two primary routes; its brand screen has a visible
+        # `? Other setup options` disclosure, not a route-intro step-help button.
         open_brand("Vizio", "tv_guides_vizio")
-        guide_tap("? Step help", "tv_guides_vizio_help")
-        guide_tap("Other setup options", "tv_guides_vizio_options")
+        guide_tap("? Other setup options", "tv_guides_vizio_options")
         guide_tap("Vizio — link the TV account (6-digit code)", "tv_guides_vizio_account")
         start_picture("tv_guides_vizio")
         for number in range(2, 12):
