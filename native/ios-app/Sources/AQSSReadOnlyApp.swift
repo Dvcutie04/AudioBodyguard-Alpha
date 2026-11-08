@@ -48,11 +48,15 @@ struct AppButtonStyle: ButtonStyle {
             // Padding and the gap between wrapped lines belong to the button,
             // too. The painted background alone does not define its hit area.
             .contentShape(RoundedRectangle(cornerRadius: 14))
-            .foregroundColor(primary ? theme.controlText : theme.text)
-            .background(primary ? theme.control : theme.raised)
+            .foregroundColor(!isEnabled ? theme.muted : primary ? theme.controlText : theme.text)
+            .background(isEnabled && primary ? theme.control : theme.raised)
             .clipShape(RoundedRectangle(cornerRadius: 14))
-            .overlay(RoundedRectangle(cornerRadius: 14).stroke(primary ? theme.controlBorder : theme.outline, lineWidth: 1))
-            .opacity(!isEnabled ? 0.45 : configuration.isPressed ? 0.75 : 1)
+            // Every active app-owned control has a cyan cue. Disabled controls stay neutral.
+            .overlay(RoundedRectangle(cornerRadius: 14).stroke(
+                !isEnabled ? theme.outline : primary ? theme.controlBorder : theme.accent,
+                lineWidth: isEnabled && !primary ? 2 : 1
+            ))
+            .opacity(isEnabled && configuration.isPressed ? 0.75 : 1)
     }
 }
 
