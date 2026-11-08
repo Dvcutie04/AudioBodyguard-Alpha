@@ -14,6 +14,7 @@ import android.graphics.PixelFormat
 import android.graphics.drawable.Drawable
 import android.graphics.drawable.GradientDrawable
 import android.graphics.drawable.RippleDrawable
+import android.graphics.drawable.StateListDrawable
 import android.view.View
 import android.widget.Button
 import com.aqss.nativefeedback.InterfaceContent
@@ -48,7 +49,14 @@ class InterfaceTheme(val activity: Activity, val dark: Boolean) {
         button.setPadding(dp(12), dp(9), dp(12), dp(9)); button.textSize = 18f
         button.setTypeface(null, Typeface.BOLD)
         button.setTextColor(ColorStateList(arrayOf(intArrayOf(-android.R.attr.state_enabled), intArrayOf()), intArrayOf(muted, if (primary) controlText else text)))
-        button.background = RippleDrawable(ColorStateList.valueOf(outline), shape(if (primary) control else raised, 14).apply { setStroke(dp(1), if (primary) controlBorder else outline) }, null)
+        // Cyan identifies enabled app controls; a disabled button retains neutral edges.
+        val shapeStates = StateListDrawable().apply {
+            addState(intArrayOf(-android.R.attr.state_enabled), shape(raised, 14).apply { setStroke(dp(1), outline) })
+            addState(intArrayOf(), shape(if (primary) control else raised, 14).apply {
+                setStroke(dp(if (primary) 1 else 2), if (primary) controlBorder else accent)
+            })
+        }
+        button.background = RippleDrawable(ColorStateList.valueOf(accent), shapeStates, null)
         button.stateListAnimator = null
     }
     fun menu(title: String, items: List<Pair<String, () -> Unit>>, message: String = "", searchable: Boolean = false) {
