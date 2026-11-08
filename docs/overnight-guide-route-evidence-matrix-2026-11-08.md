@@ -49,7 +49,7 @@ Top-level TV brands include Samsung, LG, Sony, TCL, Hisense, VIZIO, Philips, Sha
 
 Every entry below has **S** status; no entry has **H** status. “Catalog checked; physical pending” deliberately avoids inflating native sampled coverage into a per-route claim.
 
-| Route ID | User-facing purpose | Pictures | Official source IDs in the catalog | Evidence level |
+| Route ID | User-facing purpose | Pictures | Catalog source IDs (manufacturer or internal) | Evidence level |
 |---|---|---:|---|---|
 | `samsung_model_new` | Samsung — find model (2022 and newer) | 5 | `samsung_model` | Catalog checked; physical pending |
 | `samsung_model_old` | Samsung — find model (2021 and older) | 5 | `samsung_model` | Catalog checked; physical pending |
