@@ -5925,7 +5925,7 @@
         },
         {
           "title": "Pair the remote if needed",
-          "instruction": "If the remote did not pair automatically, hold Home for about 10 seconds until the TV shows Press Play/Pause to start.",
+          "instruction": "If unpaired, hold Home for about 10 seconds.",
           "surface": "tv",
           "screen": "Remote pairing",
           "items": [
@@ -5933,7 +5933,7 @@
           ],
           "focus": 0,
           "action": "hold",
-          "note": "Use the numbered highlight on your real device. This illustration does not confirm a connection to Audio Bodyguard.",
+          "note": "If the remote already paired, continue. Otherwise, wait for Press Play/Pause to start on the TV after holding Home. This illustration does not confirm a connection to Audio Bodyguard.",
           "picture_surface": "remote"
         },
         {
@@ -5976,7 +5976,7 @@
         },
         {
           "title": "Read the account approval screen",
-          "instruction": "For Amazon account sign-in, use the QR code on your TV or visit the exact address shown on its screen, such as amazon.com/code.",
+          "instruction": "Scan the QR code shown on your TV.",
           "surface": "both",
           "screen": "Amazon account setup",
           "items": [
@@ -5984,7 +5984,7 @@
           ],
           "focus": 0,
           "action": "scan",
-          "note": "Use the numbered highlight on your real device. This illustration does not confirm a connection to Audio Bodyguard.",
+          "note": "If you cannot scan, type the exact address shown on your TV into your phone browser (for example amazon.com/code). Enter Amazon credentials only on the official Amazon page, never in Audio Bodyguard. This illustration does not confirm a connection to Audio Bodyguard.",
           "picture_surface": "tv"
         },
         {

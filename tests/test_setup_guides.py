@@ -342,8 +342,10 @@ def test_fire_tv_first_setup_keeps_one_action_visible_with_optional_recovery():
     steps = setup_routes()['fire_setup']['steps']
     expected = {
         0: ('Once the TV is safely installed, press Power.', 'Alexa linking guide'),
+        1: ('If unpaired, hold Home for about 10 seconds.', 'Press Play/Pause to start'),
         3: ('Review the TV voice option if it appears.', 'does not activate listening'),
         4: ('Choose Phone QR setup if it appears.', 'Remote Wi-Fi setup'),
+        5: ('Scan the QR code shown on your TV.', 'exact address shown on your TV'),
         7: ('Follow the remaining TV prompts until Home appears.', 'My screen looks different'),
     }
     for index, (main_action, recovery) in expected.items():
@@ -354,3 +356,5 @@ def test_fire_tv_first_setup_keeps_one_action_visible_with_optional_recovery():
         assert 'does not confirm a connection' in step['note'], index
     assert 'Enter passwords only during official TV setup.' in steps[4]['note']
     assert steps[4]['items'][steps[4]['focus']] == 'Phone QR setup'
+    assert 'official Amazon page' in steps[5]['note']
+    assert 'never in Audio Bodyguard' in steps[5]['note']
