@@ -65,6 +65,17 @@ class InterfaceContentTests(unittest.TestCase):
         self.assertIn("if (primary) controlBorder else accent", android)
         self.assertIn("RippleDrawable(ColorStateList.valueOf(accent), shapeStates, null)", android)
 
+    def test_fresh_install_defaults_to_daylight_without_overriding_saved_preferences(self):
+        # Static guard for first-launch presentation; native light-appearance screenshots
+        # remain a separate verification gate. Existing saved choices are untouched.
+        ios = (ROOT / "native/ios-app/Sources/AQSSReadOnlyApp.swift").read_text()
+        android = (ROOT / "native/android/app/src/main/kotlin/com/aqss/bodyguard/prototype/ReadOnlyHomeActivity.kt").read_text()
+        self.assertIn('@AppStorage("aqssAppearance") private var appearance = "daylight"', ios)
+        self.assertIn('appearance == "daylight" ? .light : .dark', ios)
+        self.assertIn('getString("appearance", "daylight") ?: "daylight"', android)
+        self.assertIn('putString("appearance", value).apply()', android)
+        self.assertIn('"daylight" -> false', android)
+
     def test_presentation_contract_rejects_actuation_fields(self):
         for change in ("mode", "feature"):
             with self.subTest(change=change):

@@ -393,7 +393,7 @@ private struct ReadOnlyHomeView: View {
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Environment(\.dynamicTypeSize) private var textSize
     @Environment(\.colorScheme) private var systemScheme
-    @AppStorage("aqssAppearance") private var appearance = "midnight"
+    @AppStorage("aqssAppearance") private var appearance = "daylight"
     @StateObject private var audioHints = ForegroundAudioHints()
     @State private var page = "home"
     @State private var voiceCheckVisible = false
