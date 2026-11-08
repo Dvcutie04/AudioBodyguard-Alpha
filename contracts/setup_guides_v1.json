@@ -5913,7 +5913,7 @@
       "steps": [
         {
           "title": "Start your Fire TV",
-          "instruction": "With the TV safely installed, put batteries in its remote and press Power. If you already see the normal Home screen, use the Alexa linking guide instead.",
+          "instruction": "Once the TV is safely installed, press Power.",
           "surface": "tv",
           "screen": "Fire TV first setup",
           "items": [
@@ -5921,7 +5921,7 @@
           ],
           "focus": 0,
           "action": "check",
-          "note": "Use the numbered highlight on your real device. This illustration does not confirm a connection to Audio Bodyguard."
+          "note": "Make sure the remote has batteries. If you already see Home, follow the Alexa linking guide instead. This illustration does not confirm a connection to Audio Bodyguard."
         },
         {
           "title": "Pair the remote if needed",
@@ -5950,7 +5950,7 @@
         },
         {
           "title": "Review the voice option",
-          "instruction": "If the Voice Commands When TV Screen is Off option appears, read the TV explanation and choose the preference you want. This guide does not enable listening.",
+          "instruction": "Review the TV voice option if it appears.",
           "surface": "tv",
           "screen": "Voice options",
           "items": [
@@ -5958,11 +5958,11 @@
           ],
           "focus": 0,
           "action": "check",
-          "note": "Use the numbered highlight on your real device. This illustration does not confirm a connection to Audio Bodyguard."
+          "note": "Choose the setting you want. If the option is missing, continue. This guide does not activate listening. This illustration does not confirm a connection to Audio Bodyguard."
         },
         {
           "title": "Choose Wi-Fi setup",
-          "instruction": "Follow the TV option for your home Wi-Fi. Use its QR code with your phone, or use the remote to choose the network. Enter passwords only in the official setup.",
+          "instruction": "Choose Phone QR setup if it appears.",
           "surface": "both",
           "screen": "Network setup",
           "items": [
@@ -5971,7 +5971,7 @@
           ],
           "focus": 0,
           "action": "check",
-          "note": "Use the numbered highlight on your real device. This illustration does not confirm a connection to Audio Bodyguard.",
+          "note": "Otherwise use Remote Wi-Fi setup to select your home network. Enter passwords only during official TV setup. This illustration does not confirm a connection to Audio Bodyguard.",
           "picture_surface": "choice"
         },
         {
@@ -6001,7 +6001,7 @@
         },
         {
           "title": "Check setup on your TV",
-          "instruction": "Return to the TV and follow its remaining prompts until its Home screen appears. If approval did not finish, use My screen looks different.",
+          "instruction": "Follow the remaining TV prompts until Home appears.",
           "surface": "tv",
           "screen": "Fire TV Home",
           "items": [
@@ -6009,7 +6009,7 @@
           ],
           "focus": 0,
           "action": "check",
-          "note": "Use the numbered highlight on your real device. This illustration does not confirm a connection to Audio Bodyguard."
+          "note": "If approval did not finish, use My screen looks different. This illustration does not confirm a connection to Audio Bodyguard."
         }
       ]
     },
