@@ -1168,7 +1168,13 @@ def main():
         guide_tap("? Step help", "tv_guides_lg_phone_help")
         guide_tap("Other setup options", "tv_guides_lg_phone_options")
         guide_tap("2. Check LG ThinQ on your phone", "tv_guides_lg_phone_select")
-        wait_for("Open pairing pictures", "tv_guides_lg_phone_pairing_help")
+        # Pairing is an optional action behind Step help, not a primary intro
+        # button. Exercise the real help disclosure and one-step Back history.
+        guide_tap("? Step help", "tv_guides_lg_phone_pairing_disclosure")
+        guide_tap("Open pairing pictures", "tv_guides_lg_phone_pairing_jump")
+        wait_for("LG — pair with ThinQ", "tv_guides_lg_pairing_intro")
+        tap("Back", "tv_guides_lg_pairing_back_to_phone")
+        wait_for("2. Check LG ThinQ on your phone", "tv_guides_lg_phone_restored")
         start_picture("tv_guides_lg_phone", phone=True)
         for number in range(4): tap("Next", f"tv_guides_lg_phone_{number}")
         wait_for_all(("Check the phone controls", "Finish part two"), "tv_guides_lg_phone_final")
