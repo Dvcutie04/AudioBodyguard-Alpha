@@ -63,6 +63,7 @@ final class AQSSReadOnlyUITests: XCTestCase {
         tap("Illustrated setup guides", app)
         findSetupBrand("Phone Wi-Fi setup", app)
         label("\(device) — connect to your home Wi-Fi", app)
+        label("Have your \(device) and home Wi-Fi password ready.", app)
         app.buttons["setup-next"].tap()
         label("Step 1 of 6", app)
         label(device == "iPad" ? "On your iPad" : "On your phone", app)
@@ -2129,7 +2130,11 @@ final class AQSSReadOnlyUITests: XCTestCase {
         let app = launch()
         tab("devices", app); tap("Illustrated setup guides", app); tap("Sony", app)
         restartPictureGuide(app)
-        for _ in 0..<3 { app.buttons["setup-next"].tap() }
+        let isPad = UIDevice.current.userInterfaceIdiom == .pad
+        let deviceScreen = isPad ? "Tablet screen" : "Phone screen"
+        app.buttons["setup-next"].tap(); label("Step 2 of 9", app)
+        XCTAssertTrue(pictureDescription(app).contains(isPad ? "iPad • App Store" : "iPhone • App Store"))
+        for _ in 0..<2 { app.buttons["setup-next"].tap() }
         label("Step 4 of 9", app)
         XCTAssertTrue(pictureDescription(app).contains("bottom right"))
         screenshot("Google TV nearby control at bottom right", app)
@@ -2138,7 +2143,7 @@ final class AQSSReadOnlyUITests: XCTestCase {
         XCTAssertTrue(pictureDescription(app).contains("TV screen"))
         screenshot("Google TV code is read on the television", app)
         app.buttons["setup-next"].tap(); label("Step 7 of 9", app)
-        XCTAssertTrue(pictureDescription(app).contains("Phone screen"))
+        XCTAssertTrue(pictureDescription(app).contains(deviceScreen))
         screenshot("Google TV code is entered on the phone", app)
         app.buttons["setup-back"].tap(); label("Step 6 of 9", app)
         app.buttons["setup-close"].tap()
@@ -2162,7 +2167,7 @@ final class AQSSReadOnlyUITests: XCTestCase {
             app.buttons["setup-next"].tap(); label("Step \(number) of 11", app)
             if [5, 6, 7, 8, 9, 10].contains(number) { screenshot("VIZIO legacy account picture \(number)", app) }
             if number == 9 { XCTAssertTrue(pictureDescription(app).contains("TV screen")) }
-            if number == 10 { XCTAssertTrue(pictureDescription(app).contains("Phone screen")) }
+            if number == 10 { XCTAssertTrue(pictureDescription(app).contains(deviceScreen)) }
         }
         app.buttons["setup-close"].tap(); tab("home", app); label("Connection not verified", app)
     }
@@ -2205,7 +2210,7 @@ final class AQSSReadOnlyUITests: XCTestCase {
         tap("Google TV — first setup with Google Home", app)
         restartPictureGuide(app)
         for _ in 0..<8 { app.buttons["setup-next"].tap() }
-        label("Step 9 of 13", app); XCTAssertTrue(pictureDescription(app).contains("Phone screen"))
+        label("Step 9 of 13", app); XCTAssertTrue(pictureDescription(app).contains(UIDevice.current.userInterfaceIdiom == .pad ? "Tablet screen" : "Phone screen"))
         screenshot("Google Home opens the scanner on the phone", app)
         app.buttons["setup-next"].tap(); label("Step 10 of 13", app)
         XCTAssertTrue(pictureDescription(app).contains("TV screen"))

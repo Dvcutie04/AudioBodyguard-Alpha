@@ -2,10 +2,11 @@ import Foundation
 
 /// Presentation only. A phone label does not identify, pair or authorize a TV.
 public enum AQSSSetupPhone: String, CaseIterable, Sendable {
-    case iphone, pixel, galaxy, android
+    case iphone, ipad, pixel, galaxy, android
     public var label: String {
         switch self {
         case .iphone: return "iPhone"
+        case .ipad: return "iPad"
         case .pixel: return "Google Pixel"
         case .galaxy: return "Samsung Galaxy"
         case .android: return "Android"
@@ -24,14 +25,15 @@ public enum AQSSSetupPresentation {
     /// Keep documented shared app labels. Specialize only actual phone surfaces.
     public static func step(_ original: AQSSSetupStep, phone: AQSSSetupPhone) -> AQSSSetupStep {
         guard original.surface == "phone" else { return original }
-        let store = phone == .iphone ? "App Store" : "Google Play"
+        let appleDevice = phone == .iphone || phone == .ipad
+        let store = appleDevice ? "App Store" : "Google Play"
         var screen = original.screen
         var instruction = original.instruction
         var items = original.items
         if screen == "App Store or Google Play" {
             screen = "\(phone.label) • \(store)"
             instruction = instruction.replacingOccurrences(of: "App Store or Google Play", with: store)
-            if phone == .iphone { items = items.map { $0 == "Install" ? "Get" : $0 } }
+            if appleDevice { items = items.map { $0 == "Install" ? "Get" : $0 } }
         } else if screen == "Phone apps" { screen = "\(phone.label) • Apps" }
         else if screen == "Phone • Wi-Fi" { screen = "\(phone.label) • Wi-Fi" }
         return AQSSSetupStep(title: original.title, instruction: instruction, surface: original.surface,
