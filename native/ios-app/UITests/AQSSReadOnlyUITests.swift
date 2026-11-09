@@ -117,6 +117,65 @@ final class AQSSReadOnlyUITests: XCTestCase {
         XCTAssertEqual(app.staticTexts["tv-network-result"].label, "Ready to check the address you enter.")
         app.buttons["tv-network-back"].tap()
     }
+    // A rejected public-address fixture must not perform any network check.
+    private func rejectedVizioReport(_ app: XCUIApplication) -> (XCUIElement, XCUIElement) {
+        tab("devices", app); tap("? Device help", app); tap("VIZIO network check", app)
+        let field = app.textFields["tv-network-address"]
+        XCTAssertTrue(field.waitForExistence(timeout: 5))
+        field.tap(); field.typeText("8.8.8.8")
+        tap("Check this address", app, scroll: app.scrollViews["tv-network-scroll"])
+        XCTAssertEqual(app.alerts.count, 0, "Rejected input must not request local-network access")
+        XCTAssertFalse(app.buttons["tv-network-certificate-read"].exists)
+        tap("Review test result", app, scroll: app.scrollViews["tv-network-scroll"])
+        let preview = app.staticTexts["tv-network-report-preview"]
+        XCTAssertTrue(preview.waitForExistence(timeout: 5))
+        XCTAssertTrue(preview.label.contains("Outcome: ADDRESS_REJECTED"))
+        XCTAssertTrue(preview.label.contains("No native check started"))
+        XCTAssertFalse(preview.label.contains("8.8.8.8"))
+        return (preview, app.buttons["tv-network-report-share"])
+    }
+
+    func testTVNetworkRejectedReportCancelPreservesClipboard() throws {
+        let app = launch()
+        let (preview, share) = rejectedVizioReport(app)
+        let frozen = preview.label
+        XCTAssertTrue(share.isEnabled); share.tap()
+        let nativeCopy = try requireReviewedNativeCopy(app)
+        XCTAssertFalse(share.isEnabled, "Keep the native sheet owned until dismissal")
+        try cancelReviewedNativeShare(app)
+        let returned = XCTNSPredicateExpectation(
+            predicate: NSPredicate(format: "enabled == true AND hittable == true"), object: share)
+        XCTAssertEqual(XCTWaiter.wait(for: [returned], timeout: 8), .completed)
+        XCTAssertFalse(nativeCopy.exists); XCTAssertEqual(preview.label, frozen)
+        screenshot("VIZIO native Cancel retains report review", app)
+        app.buttons["tv-network-report-back"].tap()
+        XCTAssertEqual(app.textFields["tv-network-address"].value as? String, "TV IP address")
+        app.buttons["tv-network-back"].tap()
+        label("Connection not verified", app)
+    }
+
+    func testTVNetworkRejectedReportCopyMatchesActualReviewedText() throws {
+        let app = launch()
+        let (preview, share) = rejectedVizioReport(app)
+        let frozen = preview.label
+        let attachment = XCTAttachment(string: frozen)
+        attachment.name = "VIZIO rejected network reviewed text"
+        attachment.lifetime = .keepAlways; add(attachment)
+        XCTAssertTrue(share.isEnabled); share.tap()
+        let nativeCopy = try requireReviewedNativeCopy(app)
+        XCTAssertFalse(share.isEnabled, "Keep the native sheet owned until dismissal")
+        nativeCopy.tap()
+        let returned = XCTNSPredicateExpectation(
+            predicate: NSPredicate(format: "enabled == true AND hittable == true"), object: share)
+        XCTAssertEqual(XCTWaiter.wait(for: [returned], timeout: 8), .completed)
+        XCTAssertFalse(nativeCopy.exists); XCTAssertEqual(preview.label, frozen)
+        screenshot("VIZIO native Copy returns to exact review", app)
+        app.buttons["tv-network-report-back"].tap()
+        XCTAssertEqual(app.textFields["tv-network-address"].value as? String, "TV IP address")
+        app.buttons["tv-network-back"].tap()
+        label("Connection not verified", app)
+    }
+
     func testTVAddressPicturesKeepTheCheckDraftAndStepOrder() {
         let app = launch()
         let isPad = UIDevice.current.userInterfaceIdiom == .pad
