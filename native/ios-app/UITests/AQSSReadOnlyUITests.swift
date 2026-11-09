@@ -33,6 +33,12 @@ final class AQSSReadOnlyUITests: XCTestCase {
         XCTAssertTrue(next.isHittable)
         XCTAssertGreaterThanOrEqual(next.frame.width, app.scrollViews["tv-wifi-guide-scroll"].frame.width * 0.75,
                                     "Wi-Fi guide's Next needs a wide touch target on \(device)")
+        if device == "iPad" {
+            let scroll = app.scrollViews["tv-wifi-guide-scroll"]
+            XCTAssertGreaterThan(scroll.frame.width, app.frame.width * 0.55,
+                                 "iPad Wi-Fi pictures must have page-sized width, not a narrow form sheet")
+            XCTAssertTrue(back.isHittable)
+        }
         next.tap()
         let targets = ["Settings", "Wi-Fi", "Wi-Fi switch", "Your TV’s home network", "Join", "✓ Your home network"]
         for index in 1...6 {
@@ -44,6 +50,18 @@ final class AQSSReadOnlyUITests: XCTestCase {
                 back.tap(); label("Open \(device) Settings", app)
                 next.tap(); label("Open Wi-Fi", app)
                 screenshot("VIZIO check Wi-Fi picture on \(device)", app)
+                if device == "iPad" {
+                    XCUIDevice.shared.orientation = .landscapeLeft
+                    let ready = XCTNSPredicateExpectation(predicate: NSPredicate(format: "hittable == true"), object: next)
+                    XCTAssertEqual(XCTWaiter.wait(for: [ready], timeout: 8), .completed)
+                    XCTAssertTrue(back.isHittable, "Back must remain usable after tablet rotation")
+                    label("Step 2 of 6", app)
+                    screenshot("iPad VIZIO Wi-Fi guide in landscape", app)
+                    XCUIDevice.shared.orientation = .portrait
+                    let portraitReady = XCTNSPredicateExpectation(predicate: NSPredicate(format: "hittable == true"), object: next)
+                    XCTAssertEqual(XCTWaiter.wait(for: [portraitReady], timeout: 8), .completed)
+                    label("Step 2 of 6", app)
+                }
             }
             if index == 6 { XCTAssertEqual(next.label, "Back to network check") }
             next.tap()
@@ -2410,6 +2428,10 @@ final class AQSSReadOnlyUITests: XCTestCase {
         // The choices must still provide a usable scroll region and brand search.
         XCTAssertGreaterThan(choices.frame.height, app.frame.height / 4,
                              "The largest-text sheet must retain usable setup choices")
+        if UIDevice.current.userInterfaceIdiom == .pad {
+            XCTAssertGreaterThan(choices.frame.height, app.frame.height * 0.52,
+                                 "At largest text, the iPad picture guide must use its available page height")
+        }
         XCTAssertTrue(app.textFields["setup-brand-search"].isHittable)
         tap("Samsung", app)
         label("Samsung — connect with SmartThings", app); app.buttons["setup-next"].tap()

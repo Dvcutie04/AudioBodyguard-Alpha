@@ -235,6 +235,17 @@ struct TVNetworkCheckView: View {
     @State private var reportError: String?
 
     var body: some View {
+        // iPadOS 18+ otherwise presents this multi-step network check and its
+        // in-place picture helpers in a compact form sheet. Request page size
+        // from the hosting window; preserve iPhone and older-iOS behavior.
+        if #available(iOS 18.0, *), UIDevice.current.userInterfaceIdiom == .pad {
+            checkPresentation.presentationSizing(.page)
+        } else {
+            checkPresentation
+        }
+    }
+
+    private var checkPresentation: some View {
         VStack(spacing: 0) {
             if let guideContext = guideContext {
                 TVCheckPictureGuide(theme: theme, context: guideContext) { self.guideContext = nil }
