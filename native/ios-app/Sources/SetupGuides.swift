@@ -77,6 +77,18 @@ struct SetupGuidesView: View {
     }
 
     var body: some View {
+        // iPadOS 18 changed automatic sheets to compact form sizing. This
+        // illustrated guide needs page-sized space, especially at large text.
+        // The system adapts it to the hosting window; iPhone and older iOS
+        // retain their existing presentation. State remains owned by this view.
+        if #available(iOS 18.0, *), UIDevice.current.userInterfaceIdiom == .pad {
+            guideContent.presentationSizing(.page)
+        } else {
+            guideContent
+        }
+    }
+
+    private var guideContent: some View {
         VStack(spacing: 0) {
             VStack(spacing: 10) {
                 HStack {
