@@ -137,3 +137,19 @@ def test_android_brand_smoke_waits_for_stable_intro_and_restores_shared_route_pr
     assert 'Start from the beginning' in section
     assert 'tap("Start part two" if phone else "Start guide"' in section
     assert 'wait_for("Step 1 of"' in section
+
+
+def test_android_smoke_recovers_an_offscreen_brand_above_a_restored_scroll_position():
+    # In the exact-source Android failure, the reopened chooser's hierarchy
+    # showed its lower entries (Another brand, Philips, Insignia, Phone Wi-Fi)
+    # while LG was above the viewport. Eight downward swipes could not reach
+    # it. Keep the real brand tap and failure-on-missing-target assertions.
+    source = (ROOT / "tools/smoke_android_live_input.py").read_text()
+    section = source.split("        def guide_tap(label, name):", 1)[1].split(
+        '        tap("Devices", "tv_guides_devices")', 1
+    )[0]
+    assert "for down in (True, False):" in section
+    assert 'direction = "down" if down else "up"' in section
+    assert 'screen(f"{name}-{direction}-{attempt}", click=label)' in section
+    assert 'scroll_meter(f"{name}-scroll-{direction}-{attempt}", down=down)' in section
+    assert 'raise AssertionError(f"TV guide target unavailable: {label}")' in section

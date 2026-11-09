@@ -1075,11 +1075,17 @@ def main():
         return
     if args.tv_guides_only:
         def guide_tap(label, name):
-            for attempt in range(8):
-                root, clicked = screen(f"{name}-{attempt}", click=label)
-                if clicked:
-                    return
-                scroll_meter(f"{name}-scroll-{attempt}", down=True)
+            # Reopening a brand chooser can retain a previous lower scroll
+            # offset. A valid brand may be above the viewport, so scan both
+            # directions rather than repeatedly scrolling away from it.
+            # Every successful path still requires a real observed tap.
+            for down in (True, False):
+                direction = "down" if down else "up"
+                for attempt in range(8):
+                    root, clicked = screen(f"{name}-{direction}-{attempt}", click=label)
+                    if clicked:
+                        return
+                    scroll_meter(f"{name}-scroll-{direction}-{attempt}", down=down)
             raise AssertionError(f"TV guide target unavailable: {label}")
 
         tap("Devices", "tv_guides_devices")
