@@ -30,6 +30,9 @@ final class AQSSReadOnlyUITests: XCTestCase {
         let next = app.buttons["tv-wifi-guide-next"]
         let back = app.buttons["tv-wifi-guide-back"]
         XCTAssertEqual(next.label, "Start Wi-Fi steps")
+        XCTAssertTrue(next.isHittable)
+        XCTAssertGreaterThanOrEqual(next.frame.width, app.scrollViews["tv-wifi-guide-scroll"].frame.width * 0.75,
+                                    "Wi-Fi guide's Next needs a wide touch target on \(device)")
         next.tap()
         let targets = ["Settings", "Wi-Fi", "Wi-Fi switch", "Your TV’s home network", "Join", "✓ Your home network"]
         for index in 1...6 {
@@ -191,6 +194,9 @@ final class AQSSReadOnlyUITests: XCTestCase {
         XCTAssertFalse(app.otherElements["setup-illustration"].exists)
         let next = app.buttons["tv-address-guide-next"]
         let back = app.buttons["tv-address-guide-back"]
+        XCTAssertTrue(next.isHittable)
+        XCTAssertGreaterThanOrEqual(next.frame.width, app.scrollViews["tv-address-guide-scroll"].frame.width * 0.75,
+                                    "TV address guide's Next needs a wide touch target on \(device)")
         app.buttons["tv-address-guide-mismatch"].tap()
         label("Find the right screen", app)
         back.tap()

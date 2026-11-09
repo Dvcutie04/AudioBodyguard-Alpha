@@ -462,8 +462,13 @@ struct TVCheckPictureGuide: View {
                     }
                 }.frame(maxWidth: 620, alignment: .leading).padding(20).frame(maxWidth: .infinity)
             }
-            Button(returnsToCaller ? returnTitle : index < 0 ? (isWiFi ? "Start Wi-Fi steps" : "My TV matches") : "Next") {
+            Button {
                 if returnsToCaller { onReturn() } else { index += 1 }
+            } label: {
+                Text(returnsToCaller ? returnTitle : index < 0 ? (isWiFi ? "Start Wi-Fi steps" : "My TV matches") : "Next")
+                    // Keep the painted cyan control and its hit target wide in the
+                    // compact iPad sheet and at accessibility text sizes.
+                    .frame(maxWidth: .infinity, minHeight: 52)
             }.buttonStyle(AppButtonStyle(theme: theme, primary: true))
                 .accessibilityIdentifier(prefix + "-next")
                 .padding(16).frame(maxWidth: .infinity).background(theme.surface)
