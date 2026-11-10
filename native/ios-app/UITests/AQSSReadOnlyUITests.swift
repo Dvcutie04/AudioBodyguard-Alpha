@@ -1470,6 +1470,8 @@ final class AQSSReadOnlyUITests: XCTestCase {
     private func launch(_ firstVisit: Bool = false, largeText: Bool = false) -> XCUIApplication {
         let app = XCUIApplication()
         app.launchArguments = ["-aqssGuideDismissedV1", firstVisit ? "NO" : "YES"]
+        // Simulator-only, bounded, payload-free native Share lifecycle diagnostics.
+        app.launchArguments += ["--aqss-trace-sharing"]
         if largeText { app.launchArguments += ["-UIPreferredContentSizeCategoryName", "UICTContentSizeCategoryAccessibilityXXXL"] }
         app.launch(); return app
     }

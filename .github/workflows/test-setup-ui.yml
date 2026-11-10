@@ -203,6 +203,22 @@ jobs:
       - name: Clear isolated clipboard fixture
         if: always()
         run: python3 tools/check_ios_build_share_clipboard.py clear "$AQSS_SIMULATOR" --output "$RUNNER_TEMP/setup-clipboard"
+      - name: Retain opt-in simulator Share lifecycle events
+        if: always()
+        shell: bash
+        run: |
+          set -u
+          mkdir -p "$RUNNER_TEMP/sound-check-screenshots"
+          trace="$RUNNER_TEMP/sound-check-screenshots/native-share-lifecycle.log"
+          if [ -n "${AQSS_SIMULATOR:-}" ]; then
+            xcrun simctl spawn "$AQSS_SIMULATOR" log show --last 40m --style compact \
+              --predicate 'eventMessage CONTAINS "AQSS_SHARE_TRACE"' > "$trace" 2>&1 || true
+            if ! grep -q 'AQSS_SHARE_TRACE.*event=' "$trace"; then
+              printf '%s\n' 'No AQSS_SHARE_TRACE events found; this is not proof of a successful native Share presentation.' >> "$trace"
+            fi
+          else
+            printf '%s\n' 'Simulator not initialized; Share lifecycle trace unavailable.' > "$trace"
+          fi
       - name: Export native worksheet screenshots
         if: always()
         run: python3 tools/export_ios_input_screenshots.py "$RUNNER_TEMP" test-setup-cancel test-setup-immediate test-setup-copy
