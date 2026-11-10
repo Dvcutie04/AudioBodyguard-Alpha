@@ -33,6 +33,8 @@ def test_exact_final_phrases(phrase, kind):
     "Audio Bodyguard skip next", "Audio Bodyguard skip intro? yes",
     "Audio Bodyguard skip intro " * 10, "Audio Bodyguard skip recap\x00",
     "Audio Bodyguard skip rеcap",  # visually similar non-ASCII character
+    "\u00a0Audio Bodyguard skip intro",  # Unicode trim must not bypass native ASCII policy
+    "Audio Bodyguard skip recap\u00a0",
 ])
 def test_no_ambiguous_negated_or_broad_commands(phrase):
     assert parse_skip_command(phrase, final=True) is None
@@ -161,6 +163,27 @@ def test_one_failing_owned_button_callback_is_never_retried():
                         press_owned_button=fails) is SkipDecision.UNAVAILABLE
     assert calls == [SkipAction.SKIP_RECAP]
 
+
+
+@pytest.mark.parametrize("permission,foreground", [(False, True), (True, False)])
+def test_permission_or_foreground_loss_closes_pending_run(permission, foreground):
+    state, gate, calls = player(), OwnedVoiceSkipGate(), []
+    assert gate.start("listen-1", state)
+    proposal = gate.propose("Audio Bodyguard skip intro", final=True,
+                            run_id="listen-1", observed=state)
+    press = lambda action: calls.append(action) or True
+    assert gate.request(proposal, run_id="listen-1", observed=state,
+                        permission=permission, foreground=foreground,
+                        press_owned_button=press) is SkipDecision.UNAVAILABLE
+    # Recovered permission/focus cannot replay a final transcript from the lost run.
+    assert gate.request(proposal, run_id="listen-1", observed=state,
+                        permission=True, foreground=True,
+                        press_owned_button=press) is SkipDecision.UNAVAILABLE
+    assert gate.propose("Audio Bodyguard skip recap", final=True,
+                        run_id="listen-1", observed=state) is None
+    assert not gate.start("listen-1", state)
+    assert gate.start("listen-2", state)
+    assert calls == []
 
 def test_requested_is_not_physical_verification():
     current, gate = player(), OwnedVoiceSkipGate()

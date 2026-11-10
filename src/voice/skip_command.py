@@ -29,7 +29,7 @@ class SkipDecision(str, Enum):
 
 def parse_skip_command(text: str, *, final: bool) -> SkipAction | None:
     """Only the two complete English phrases; no fuzzy or partial matching."""
-    if type(text) is not str or type(final) is not bool or not final or not (1 <= len(text) <= MAX_TRANSCRIPT_LENGTH):
+    if type(text) is not str or type(final) is not bool or not final or not (1 <= len(text) <= MAX_TRANSCRIPT_LENGTH) or not text.isascii():
         return None
     match = _PHRASE.fullmatch(text.strip().lower())
     if match is None:
@@ -134,8 +134,12 @@ class OwnedVoiceSkipGate:
             proposal is not self._proposal or not isinstance(proposal, SkipProposal) or
             proposal.grammar_version != GRAMMAR_VERSION or
             observed != self._player or observed != proposal.player_state or
-            not observed.offers(proposal.action) or permission is not True or
-            foreground is not True or not callable(press_owned_button)):
+            not observed.offers(proposal.action) or not callable(press_owned_button)):
+            return SkipDecision.UNAVAILABLE
+        # Once permission or foreground ownership is lost, a stale final result
+        # must never revive within the same listening run.
+        if permission is not True or foreground is not True:
+            self.stop()
             return SkipDecision.UNAVAILABLE
         # Consumed before the callback: an exception or reentrant callback can
         # never turn the same recognized utterance into a second press.

@@ -16,7 +16,8 @@ final class OwnedVoiceSkipGateTests: XCTestCase {
             XCTAssertNil(OwnedVoiceSkipGate.parse("Audio Bodyguard skip recap", final: false))
             for text in ["skip intro", "Audio Bodyguard don't skip intro", "Audio Bodyguard skip next",
                          "Audio Bodyguard skip intro please", "Audio Bodyguard skip intro and recap",
-                         "Audio Bodyguard skip intro \u{0000}"] {
+                         "Audio Bodyguard skip intro \u{0000}",
+                         "\u{00A0}Audio Bodyguard skip intro", "Audio Bodyguard skip recap\u{00A0}"] {
                 XCTAssertNil(OwnedVoiceSkipGate.parse(text, final: true))
             }
         }
@@ -81,6 +82,30 @@ final class OwnedVoiceSkipGateTests: XCTestCase {
             XCTAssertEqual(gate.request(proposal, runID: "listen-1", observed: state,
                                         permitted: true, foreground: true, pressOwnedButton: action), .unavailable)
             XCTAssertEqual(calls, 1)
+        }
+    }
+
+    func testLostPermissionOrForegroundInvalidatesPendingFinalResult() async {
+        await MainActor.run {
+            for (permitted, foreground) in [(false, true), (true, false)] {
+                let gate = OwnedVoiceSkipGate(), state = sample()
+                var calls = 0
+                XCTAssertTrue(gate.start(runID: "listen-1", player: state))
+                let proposal = gate.propose("Audio Bodyguard skip intro", final: true,
+                                            runID: "listen-1", observed: state)
+                let action: (OwnedSkipAction) -> Bool = { _ in calls += 1; return true }
+                XCTAssertEqual(gate.request(proposal, runID: "listen-1", observed: state,
+                                            permitted: permitted, foreground: foreground,
+                                            pressOwnedButton: action), .unavailable)
+                XCTAssertEqual(gate.request(proposal, runID: "listen-1", observed: state,
+                                            permitted: true, foreground: true,
+                                            pressOwnedButton: action), .unavailable)
+                XCTAssertNil(gate.propose("Audio Bodyguard skip recap", final: true,
+                                          runID: "listen-1", observed: state))
+                XCTAssertFalse(gate.start(runID: "listen-1", player: state))
+                XCTAssertTrue(gate.start(runID: "listen-2", player: state))
+                XCTAssertEqual(calls, 0)
+            }
         }
     }
 }

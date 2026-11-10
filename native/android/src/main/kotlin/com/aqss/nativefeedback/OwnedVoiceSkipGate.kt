@@ -67,9 +67,11 @@ class OwnedVoiceSkipGate {
     fun request(proposal: OwnedSkipProposal?, runId: String, observed: OwnedSkipSnapshot,
                 permitted: Boolean, foreground: Boolean,
                 pressOwnedButton: (OwnedSkipAction) -> Boolean): OwnedSkipDecision {
-        if (proposal == null || this.runId != runId || used || !permitted || !foreground ||
+        if (proposal == null || this.runId != runId || used ||
             proposal.runId != runId || proposal !== pending || selected != observed ||
             proposal.snapshot != observed || !observed.offers(proposal.action)) return OwnedSkipDecision.UNAVAILABLE
+        // Once session permission or foreground ownership is lost, require fresh Start.
+        if (!permitted || !foreground) { stop(); return OwnedSkipDecision.UNAVAILABLE }
         used = true; pending = null
         return try {
             if (pressOwnedButton(proposal.action)) OwnedSkipDecision.REQUESTED else OwnedSkipDecision.CALL_FAILED

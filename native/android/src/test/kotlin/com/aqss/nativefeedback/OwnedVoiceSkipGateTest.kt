@@ -12,7 +12,8 @@ class OwnedVoiceSkipGateTest {
         assertEquals(OwnedSkipAction.SKIP_RECAP, OwnedVoiceSkipGate.parse(" AUDIO BODYGUARD SKIP RECAP. ", true))
         assertNull(OwnedVoiceSkipGate.parse("Audio Bodyguard skip recap", false))
         for (text in listOf("skip intro", "Audio Bodyguard don't skip intro", "Audio Bodyguard skip next",
-                            "Audio Bodyguard skip intro please", "Audio Bodyguard skip intro and recap")) {
+                            "Audio Bodyguard skip intro please", "Audio Bodyguard skip intro and recap",
+                            "\u00A0Audio Bodyguard skip intro", "Audio Bodyguard skip recap\u00A0")) {
             assertNull(OwnedVoiceSkipGate.parse(text, true))
         }
     }
@@ -67,5 +68,24 @@ class OwnedVoiceSkipGateTest {
         assertEquals(OwnedSkipDecision.UNAVAILABLE,
             gate.request(proposal, "listen-1", state, true, true) { calls++; false })
         assertEquals(1, calls)
+    }
+
+    @Test fun lostPermissionOrForegroundInvalidatesPendingFinalResult() {
+        for ((permitted, foreground) in listOf(false to true, true to false)) {
+            val gate = OwnedVoiceSkipGate()
+            val state = player()
+            var calls = 0
+            assertTrue(gate.start("listen-1", state))
+            val proposal = assertNotNull(gate.propose("Audio Bodyguard skip intro", true, "listen-1", state))
+            val action: (OwnedSkipAction) -> Boolean = { calls++; true }
+            assertEquals(OwnedSkipDecision.UNAVAILABLE,
+                gate.request(proposal, "listen-1", state, permitted, foreground, action))
+            assertEquals(OwnedSkipDecision.UNAVAILABLE,
+                gate.request(proposal, "listen-1", state, true, true, action))
+            assertNull(gate.propose("Audio Bodyguard skip recap", true, "listen-1", state))
+            assertFalse(gate.start("listen-1", state))
+            assertTrue(gate.start("listen-2", state))
+            assertEquals(0, calls)
+        }
     }
 }

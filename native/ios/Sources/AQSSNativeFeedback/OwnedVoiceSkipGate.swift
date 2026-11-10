@@ -104,9 +104,11 @@ public struct OwnedSkipProposal {
     public func request(_ proposal: OwnedSkipProposal?, runID: String,
                         observed: OwnedSkipSnapshot, permitted: Bool, foreground: Bool,
                         pressOwnedButton: (OwnedSkipAction) -> Bool) -> OwnedSkipDecision {
-        guard let p = proposal, self.runID == runID, !used, permitted, foreground,
+        guard let p = proposal, self.runID == runID, !used,
               p.runID == runID, p.nonce == pending?.nonce, selected == observed,
               p.state == observed, observed.offers(p.action) else { return .unavailable }
+        // No authorization can be revived without another explicit listening Start.
+        guard permitted, foreground else { stop(); return .unavailable }
         used = true; pending = nil
         return pressOwnedButton(p.action) ? .requested : .callFailed
     }
