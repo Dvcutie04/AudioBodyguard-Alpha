@@ -19,6 +19,10 @@ import com.aqss.nativefeedback.boundedTVPhotoText
 import com.aqss.nativefeedback.TutorialContent
 import com.aqss.nativefeedback.ForegroundMicrophoneGate
 import com.aqss.nativefeedback.ForegroundAudioExclusion
+import com.aqss.nativefeedback.OwnedSkipAction
+import com.aqss.nativefeedback.OwnedSkipDecision
+import com.aqss.nativefeedback.OwnedSkipSnapshot
+import com.aqss.nativefeedback.OwnedVoiceSkipGate
 import com.aqss.nativefeedback.VoiceInputRun
 import com.aqss.nativefeedback.boundedRecognizedWords
 import com.google.mlkit.vision.common.InputImage
@@ -43,6 +47,56 @@ class InputAssistanceActivity : Activity() {
     private var recognizer: SpeechRecognizer? = null
     private var generation = 0L
     private val voiceRun = VoiceInputRun()
+    private val voiceSkipGate = OwnedVoiceSkipGate()
+    private var voiceSkipRunId: String? = null
+    private var demoGeneration = 1
+    private var demoIntroAvailable = true
+    private var demoRecapAvailable = true
+    private var demoIntroButton: Button? = null
+    private var demoRecapButton: Button? = null
+    private var demoResetButton: Button? = null
+    private var demoStatus: TextView? = null
+
+    private fun demoSnapshot() = OwnedSkipSnapshot(
+        "owned-test-player", "voice-demo", "test-episode", demoGeneration,
+        demoIntroAvailable, demoIntroAvailable, demoRecapAvailable, demoRecapAvailable
+    )
+    /** Both displayed demo buttons and final admitted speech call this same handler. */
+    private fun pressDemo(action: OwnedSkipAction): Boolean {
+        when (action) {
+            OwnedSkipAction.SKIP_INTRO -> if (demoIntroAvailable) {
+                demoIntroAvailable = false; demoGeneration++
+                demoStatus?.text = "Test player: Skip Intro button activated"
+            } else return false
+            OwnedSkipAction.SKIP_RECAP -> if (demoRecapAvailable) {
+                demoRecapAvailable = false; demoGeneration++
+                demoStatus?.text = "Test player: Skip Recap button activated"
+            } else return false
+        }
+        demoIntroButton?.isEnabled = demoIntroAvailable
+        demoRecapButton?.isEnabled = demoRecapAvailable
+        return true
+    }
+    private fun resetDemo() {
+        if (running) return
+        demoIntroAvailable = true; demoRecapAvailable = true; demoGeneration++
+        demoIntroButton?.isEnabled = true; demoRecapButton?.isEnabled = true
+        demoStatus?.text = "Test player ready — nothing connected"
+    }
+    private fun handleFinalDemoCommand(text: String?): String {
+        val id = voiceSkipRunId ?: return "Finished — no supported test-player command. Nothing sent to a TV."
+        val proposal = voiceSkipGate.propose(text, true, id, demoSnapshot())
+            ?: return "Finished — no available matching test-player Skip button. Nothing sent to a TV."
+        return when (voiceSkipGate.request(
+            proposal, id, demoSnapshot(),
+            checkSelfPermission(Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED,
+            visible && hasWindowFocus() && !isFinishing, ::pressDemo
+        )) {
+            OwnedSkipDecision.REQUESTED -> "Test-player Skip button requested. No TV command sent."
+            OwnedSkipDecision.CALL_FAILED -> "Test-player button unavailable. No TV command sent."
+            OwnedSkipDecision.UNAVAILABLE -> "Skip target changed or was unavailable. No TV command sent."
+        }
+    }
     private val microphone = ForegroundMicrophoneGate.process
     private var microphoneLease: ForegroundMicrophoneGate.Lease? = null
     private var visible = false
@@ -130,6 +184,12 @@ class InputAssistanceActivity : Activity() {
 
         label("Recent recognized words · may change", true)
         details = label("No words recognized yet")
+        label("Test player — this app only", true)
+        label("Try: Audio Bodyguard, skip intro. Or: Audio Bodyguard, skip recap. Only these test buttons are controlled.")
+        demoStatus = label("Test player ready — nothing connected")
+        demoIntroButton = action("Skip Intro") { pressDemo(OwnedSkipAction.SKIP_INTRO) }
+        demoRecapButton = action("Skip Recap") { pressDemo(OwnedSkipAction.SKIP_RECAP) }
+        demoResetButton = action("Reset test player") { resetDemo() }
         recent = action("Recent sound checks") {
             if (visible && hasWindowFocus() && !isFinishing && !isDestroyed &&
                 !running && recognizer == null && microphone.blocked) showRecentSoundChecks(this, skin)
@@ -169,6 +229,12 @@ class InputAssistanceActivity : Activity() {
         val token = voiceRun.start(SystemClock.elapsedRealtime())
         if (token == null) { stopVoice("The input clock is unavailable. Close and reopen this screen."); return }
         generation = token; lastLevelAt = 0
+        val skipId = "voice-$token"
+        if (!voiceSkipGate.start(skipId, demoSnapshot())) {
+            stopVoice("Test-player session could not start. Tap Start to retry."); return
+        }
+        voiceSkipRunId = skipId
+        demoResetButton?.isEnabled = false
         try {
             val service = SpeechRecognizer.createOnDeviceSpeechRecognizer(this); recognizer = service; running = true
             startButton.text = "Stop listening"; status.text = "Starting microphone…"
@@ -189,7 +255,13 @@ class InputAssistanceActivity : Activity() {
                 override fun onEndOfSpeech() { if (valid()) { status.text = "Finishing recognition…"; meter.clear(); levelText.text = "No live microphone samples" } }
                 override fun onError(error: Int) { if (valid()) stopVoice(voiceErrorMessage(error)) }
                 private fun words(results: Bundle?) { results?.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION)?.firstOrNull()?.let { details.text = boundedRecognizedWords(it) } }
-                override fun onResults(results: Bundle?) { if (valid()) { words(results); stopVoice("Finished — review the words. Nothing was sent to a TV.") } }
+                override fun onResults(results: Bundle?) {
+                    if (valid()) {
+                        val finalWords = results?.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION)?.firstOrNull()
+                        words(results)
+                        stopVoice(handleFinalDemoCommand(finalWords))
+                    }
+                }
                 override fun onPartialResults(partialResults: Bundle?) { if (valid()) words(partialResults) }
                 override fun onEvent(eventType: Int, params: Bundle?) {}
             })
@@ -290,6 +362,8 @@ class InputAssistanceActivity : Activity() {
     }
     private fun stopVoice(message: String = "Microphone off") {
         running = false; voiceRun.stop(); handler.removeCallbacks(voiceWatchdog)
+        voiceSkipGate.stop(); voiceSkipRunId = null
+        demoResetButton?.isEnabled = true
         var clean = true
         recognizer?.let { service ->
             recognizer = null

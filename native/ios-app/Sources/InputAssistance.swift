@@ -74,6 +74,61 @@ final class VoiceCheck: ObservableObject {
     private var run: UInt64 = 0
     private var lastSampleAt = 0.0
     private var inputRoute = ""
+    // This fixture has authored buttons, not a TV or third-party player adapter.
+    @Published private(set) var demoIntroAvailable = true
+    @Published private(set) var demoRecapAvailable = true
+    @Published private(set) var demoMessage = "Test player ready — nothing connected"
+    private var demoGeneration = 1
+    private let voiceSkipGate = OwnedVoiceSkipGate()
+    private var voiceSkipRunID: String?
+
+    private var demoSnapshot: OwnedSkipSnapshot {
+        OwnedSkipSnapshot(playerID: "owned-test-player", playbackSessionID: "voice-demo",
+                          contentID: "test-episode", generation: demoGeneration,
+                          introVisible: demoIntroAvailable, introEnabled: demoIntroAvailable,
+                          recapVisible: demoRecapAvailable, recapEnabled: demoRecapAvailable)
+    }
+
+    /// Shared callback used by the two visible buttons and admitted final voice intent.
+    @discardableResult func pressDemo(_ action: OwnedSkipAction) -> Bool {
+        switch action {
+        case .intro where demoIntroAvailable:
+            demoIntroAvailable = false; demoGeneration += 1
+            demoMessage = "Test player: Skip Intro button activated"
+            return true
+        case .recap where demoRecapAvailable:
+            demoRecapAvailable = false; demoGeneration += 1
+            demoMessage = "Test player: Skip Recap button activated"
+            return true
+        default: return false
+        }
+    }
+
+    func resetDemo() {
+        guard !running, !requesting else { return }
+        demoIntroAvailable = true; demoRecapAvailable = true
+        demoGeneration += 1
+        demoMessage = "Test player ready — nothing connected"
+    }
+
+    private func handleFinalSkipCommand(_ text: String?) -> String {
+        guard let runID = voiceSkipRunID, let text = text else {
+            return "Finished — no supported test-player command. Nothing sent to a TV."
+        }
+        let observed = demoSnapshot
+        guard let proposal = voiceSkipGate.propose(text, final: true, runID: runID, observed: observed) else {
+            return "Finished — no available matching test-player Skip button. Nothing sent to a TV."
+        }
+        let decision = voiceSkipGate.request(proposal, runID: runID, observed: demoSnapshot,
+            permitted: AVAudioSession.sharedInstance().recordPermission == .granted,
+            foreground: UIApplication.shared.applicationState == .active,
+            pressOwnedButton: { action in self.pressDemo(action) })
+        switch decision {
+        case .requested: return "Test-player Skip button requested. No TV command sent."
+        case .callFailed: return "Test-player button unavailable. No TV command sent."
+        case .unavailable: return "Skip target changed or was unavailable. No TV command sent."
+        }
+    }
 
     func start() {
         settingsAttempt = UUID()
@@ -211,6 +266,11 @@ final class VoiceCheck: ObservableObject {
             let now = ProcessInfo.processInfo.systemUptime
             guard let token = window.start(at: now) else { stop("The input clock is unavailable."); return }
             run = token; lastSampleAt = now; inputRoute = routeIdentity()
+            let skipRun = UUID().uuidString
+            guard voiceSkipGate.start(runID: skipRun, player: demoSnapshot) else {
+                stop("Test-player session could not start. Tap Start to retry."); return
+            }
+            voiceSkipRunID = skipRun
             transcript = ""; levels = []; levelText = "Waiting for microphone input"
             running = true; status = "Starting on-device voice check…"
             let updatesTimer = Timer(timeInterval: 0.1, repeats: true) { [weak self] _ in self?.tick() }
@@ -254,7 +314,7 @@ final class VoiceCheck: ObservableObject {
         if let update = words?.take() {
             if let text = update.text { transcript = text }
             if update.failed { stop("Speech recognition stopped. Tap Start to try again. Words may be incomplete."); return }
-            if update.final { stop("Finished — review the recognized words. Nothing was sent to a TV."); return }
+            if update.final { stop(handleFinalSkipCommand(update.text)); return }
         }
         guard let level = level else {
             levels = []; levelText = "No current microphone samples"; status = "Waiting for microphone input…"
@@ -280,6 +340,7 @@ final class VoiceCheck: ObservableObject {
         settingsAttempt = UUID()
         permissionRequest = UUID(); requesting = false; running = false
         timer?.invalidate(); timer = nil; window.stop()
+        voiceSkipGate.stop(); voiceSkipRunID = nil
         words?.close(); words = nil
         ingress?.close(); ingress = nil; summaries = nil
         engine?.stop()
@@ -332,6 +393,24 @@ struct VoiceCheckView: View {
                     Text("Digital input levels over time (dBFS).").font(.caption).foregroundColor(theme.muted)
                     Text("Recent recognized words · may change").font(.headline)
                     Text(voice.transcript.isEmpty ? "No words recognized yet" : voice.transcript).accessibilityIdentifier("voice-transcript")
+                    Text("Test player — this app only").font(.headline)
+                    Text("Try: Audio Bodyguard, skip intro. Or: Audio Bodyguard, skip recap. This only activates the test buttons below.")
+                        .font(.caption).foregroundColor(theme.muted)
+                    HStack {
+                        Button("Skip Intro") { voice.pressDemo(.intro) }
+                            .buttonStyle(AppButtonStyle(theme: theme))
+                            .disabled(!voice.demoIntroAvailable)
+                            .accessibilityIdentifier("voice-demo-skip-intro")
+                        Button("Skip Recap") { voice.pressDemo(.recap) }
+                            .buttonStyle(AppButtonStyle(theme: theme))
+                            .disabled(!voice.demoRecapAvailable)
+                            .accessibilityIdentifier("voice-demo-skip-recap")
+                    }
+                    Text(voice.demoMessage).accessibilityIdentifier("voice-demo-result")
+                    Button("Reset test player") { voice.resetDemo() }
+                        .buttonStyle(AppButtonStyle(theme: theme))
+                        .disabled(voice.running || voice.requesting)
+                        .accessibilityIdentifier("voice-demo-reset")
                     QuestionDisclosure(title: "Voice help", theme: theme, isExpanded: $voiceHelp, identifier: "voice-help") {
                         Text("Review recognized words before using them. Noise can change what appears. Recognition stays on this phone. Listening stops when you leave.")
                         Button("Jump to voice steps") { voice.clear(); setupVisible = true }.buttonStyle(AppButtonStyle(theme: theme))
