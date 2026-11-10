@@ -6,7 +6,7 @@
 - An explicit Start binds one listening run and one selected owned player, playback session, content and affordance generation. Stop invalidates that run. Partial/negated/ambiguous speech cannot propose an action.
 - The chosen control must be visible and enabled both when the proposal is created and immediately before dispatch; a changed owner/player/session/content/generation/target is refused. A run has at most one callback; permission loss, background state, a stale run, replay, or a duplicate is rejected with zero callback calls.
 - The resulting REQUESTED means only that the app-owned button callback accepted the request, NOT that playback has changed. A physically VERIFIED state needs an independent observation and qualified execution boundary later. No state restoration from speech or appearance.
-- First unit fixture: src/voice/skip_command.py and tests/test_voice_skip_command.py. Native iOS and Android foreground recognizers currently display words only; neither yet invokes this Python gate or a real button. A native authored player fixture and both native policy implementations are next milestones.
+- First shared unit fixture: `src/voice/skip_command.py` and `tests/test_voice_skip_command.py` (33 focused passing tests at the initial source). Native iOS and Android policy gates now exist, and current source `0c8a89985aadd18f4b1061141e6bdddf64016045` connects final on-device transcript callbacks to the corresponding owned test-player button handler. This is a code-path and compile/unit observation, **not** observed spoken-command execution or any external playback support.
 - No microphone permission, socket, third-party accessibility control, unconsented background recognition, cloud fallback, account, pairing or live actuation is added.
 
 ## Native and physical acceptance before claiming this feature
@@ -22,3 +22,11 @@ Official platform references consulted on November 10, 2026:
 - Media3: https://developer.android.com/media/media3/session/control-playback
 
 Source lineage: branch aqss/voice-skip-owned-player-fixture is stacked on #120 head 6ea247cc4ce8002e296b7c8d2d5846b939777a74, tree 11540179fa75705e866106563a2dca4213efe9e8. Earlier #120 Share failures remain and are not fixed by this increment. Keep iPhone and Android equal and the roadmap's N2b–N5 evidence gates unchanged.
+
+## November 10 ~11:30 Pacific — focused native UI acceptance increment
+
+Initial native gate source is [draft #121](https://github.com/Dvcutie04/AudioBodyguard-Alpha/pull/121) at `0c8a89985aadd18f4b1061141e6bdddf64016045` / tree `873ee8cc9dab589fe0af66bb7f767e69cc6e66ca`. Exact-head [core CI 42879668388](https://github.com/Dvcutie04/AudioBodyguard-Alpha/actions/runs/42879668388) passed 2,313 Python tests (+42 subtests), 144 Swift tests, Android build/unit, and C11; [unsigned preflight 42879677203](https://github.com/Dvcutie04/AudioBodyguard-Alpha/actions/runs/42879677203) passed. Those passes **precede** this UI-test increment and cannot prove its newer source.
+
+A new focused native UI harness is intended to check actual visible Skip Intro and Skip Recap test-player buttons and their independent disabled/reset states on iPhone Simulator and Android emulator, with screenshots and scoped source/revision receipts. It does **not synthesize spoken phrases** or claim external player control. Future separately consented microphone trials must produce actual recognizer final events, exercise the same matching callback once, verify a real player state transition, and document OS/language/device limitations. The phrase contract and owner authorization still fail closed for stale targets and unsupported players. A failed/queued native run must remain a failure/queued, not a success.
+
+The verified Android 0.50/build52 and iOS Simulator 0.50.0/build5 downloads remain old baselines; no new signed app or TestFlight/Play distribution is authorized.

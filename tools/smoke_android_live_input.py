@@ -100,6 +100,7 @@ def main():
     parser.add_argument("--setup-output-report-only", action="store_true")
     parser.add_argument("--tv-guides-only", action="store_true")
     parser.add_argument("--style-only", action="store_true")
+    parser.add_argument("--voice-fixture-only", action="store_true")
     parser.add_argument("--tv-certificate-fixture", action="store_true")
     parser.add_argument("--apk", default="native/android/app/build/outputs/apk/liveInput/app-liveInput.apk")
     parser.add_argument("--package", default="com.aqss.bodyguard.prototype.liveinput")
@@ -425,6 +426,59 @@ def main():
     version, build = versions[0].strip(), builds[0]
     (out / "installed-build-identity.json").write_text(
         json.dumps({"application_id": package, "version": version, "build": build}, sort_keys=True))
+    if args.voice_fixture_only:
+        # Exercise the two real native buttons, not a fake recognizer response.
+        wait_for("Connection not verified", "voice_fixture_home")
+        tap("Sound", "voice_fixture_open_sound")
+        tap("Voice check. See microphone activity and recognized words", "voice_fixture_open")
+        wait_for_all(("Microphone off", "No words recognized yet", "Start voice check"),
+                     "voice_fixture_no_capture")
+
+        def voice_tap(text, name):
+            # Controls are in a native ScrollView; keep scroll attempts bounded.
+            for attempt in range(8):
+                root, clicked = screen(f"{name}-{attempt}", click=text)
+                if clicked:
+                    return
+                scroller = next((n for n in root.iter("node")
+                                 if n.get("class") == "android.widget.ScrollView"), None)
+                if scroller is None:
+                    time.sleep(0.3)
+                    continue
+                x0, y0, x1, y1 = map(int, re.findall(r"-?\\d+", scroller.get("bounds", "")))
+                x = (x0 + x1) // 2
+                adb("shell", "input", "swipe", str(x), str(int(y0+(y1-y0)*.75)),
+                    str(x), str(int(y0+(y1-y0)*.3)), "350")
+            raise AssertionError("Owned test-player button is not reachable: " + text)
+
+        def check_buttons(root, intro_enabled, recap_enabled):
+            for text, expected in (("Skip Intro", intro_enabled), ("Skip Recap", recap_enabled)):
+                found = [n for n in root.iter("node")
+                         if n.get("class") == "android.widget.Button" and
+                         n.get("text", "").casefold() == text.casefold()]
+                assert len(found) == 1, (text, "expected exactly one authored button", len(found))
+                assert found[0].get("enabled") == str(expected).lower(), (text, expected, found[0].get("enabled"))
+
+        voice_tap("Skip Intro", "voice_fixture_press_intro")
+        root = wait_for("Test player: Skip Intro button activated", "voice_fixture_intro_state")
+        check_buttons(root, False, True)
+        screenshot("voice_fixture_intro_activated")
+        voice_tap("Reset test player", "voice_fixture_reset_intro")
+        root = wait_for("Test player ready — nothing connected", "voice_fixture_reset")
+        check_buttons(root, True, True)
+        voice_tap("Skip Recap", "voice_fixture_press_recap")
+        root = wait_for("Test player: Skip Recap button activated", "voice_fixture_recap_state")
+        check_buttons(root, True, False)
+        screenshot("voice_fixture_recap_activated")
+        # No speech event was injected, no microphone Start was pressed.
+        adb("shell", "input", "keyevent", "KEYCODE_HOME")
+        time.sleep(0.4)
+        launch()
+        wait_for("Start voice check", "voice_fixture_return_off")
+        screenshot("voice_fixture_background_off")
+        print("VOICE_OWNED_BUTTON_FIXTURE_PASS: real Intro/Recap buttons; no speech or TV claim", flush=True)
+        return
+
     if args.style_only:
         def reveal(label, name):
             for attempt in range(10):

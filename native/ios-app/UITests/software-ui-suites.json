@@ -54,6 +54,7 @@
       "AQSSReadOnlyUITests/testBuildDetailsShareOnlyInstalledMetadataAndReturn",
       "AQSSReadOnlyUITests/testBuildDetailsShareCancelReturnsWithoutCopy",
       "AQSSReadOnlyUITests/testBuildDetailsMatchInstalledMetadataAndReturnToSettings",
+      "AQSSReadOnlyUITests/testOwnedVoiceSkipButtonsStaySeparateAndResetWithoutCapture",
       "AQSSReadOnlyUITests/testVoiceCheckStartsIdleAndClosingItLeavesMeterUsable",
       "AQSSReadOnlyUITests/testLiveSoundCheckStartsOffAndHelpReturnsWithoutCapture",
       "AQSSReadOnlyUITests/testInputToolsStartIdleAndNeverClaimAConnection",

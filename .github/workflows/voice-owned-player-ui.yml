@@ -1,0 +1,105 @@
+name: Voice Skip owned-player native UI evidence
+
+on:
+  push:
+    branches: ["aqss/voice-skip-owned-player-fixture"]
+    paths:
+      - "native/ios-app/**"
+      - "native/android/**"
+      - "tools/smoke_android_live_input.py"
+      - "docs/voice-skip-2026-11-10.md"
+      - ".github/workflows/voice-owned-player-ui.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: voice-owned-ui-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  iphone-owned-buttons:
+    name: iPhone authored Skip buttons (no microphone synthesis)
+    runs-on: macos-15
+    timeout-minutes: 35
+    env:
+      DEVELOPER_DIR: /Applications/Xcode_26.3.app/Contents/Developer
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Compile and exercise real native authored buttons
+        shell: bash
+        run: |
+          set -euo pipefail
+          echo "SOURCE_SHA=$(git rev-parse HEAD)"
+          echo "SOURCE_TREE=$(git rev-parse HEAD^{tree})"
+          device="$(xcrun simctl list devices available -j | python3 -c 'import json,sys; print(next(d["udid"] for pool in json.load(sys.stdin)["devices"].values() for d in pool if d["name"].startswith("iPhone") and d.get("isAvailable",True)))')"
+          xcodebuild -project native/ios-app/AQSSReadOnly.xcodeproj -scheme AQSSReadOnly \
+            -configuration Release -destination "platform=iOS Simulator,id=$device" \
+            -derivedDataPath "$RUNNER_TEMP/voice-ui-build" CODE_SIGNING_ALLOWED=NO build-for-testing
+          xcrun simctl boot "$device" || true
+          xcrun simctl bootstatus "$device" -b
+          xcodebuild -project native/ios-app/AQSSReadOnly.xcodeproj -scheme AQSSReadOnly \
+            -configuration Release -destination "platform=iOS Simulator,id=$device" \
+            -derivedDataPath "$RUNNER_TEMP/voice-ui-build" CODE_SIGNING_ALLOWED=NO \
+            -resultBundlePath "$RUNNER_TEMP/voice-skip-owned-ui.xcresult" test-without-building \
+            -only-testing:AQSSReadOnlyUITests/AQSSReadOnlyUITests/testOwnedVoiceSkipButtonsStaySeparateAndResetWithoutCapture
+      - name: Retain genuine XCTest screen/interaction evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: voice-owned-iphone-xcresult
+          path: ${{ runner.temp }}/voice-skip-owned-ui.xcresult/
+          if-no-files-found: ignore
+          retention-days: 14
+
+  android-owned-buttons:
+    name: Android authored Skip buttons (no microphone synthesis)
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: "8.13"
+      - uses: android-actions/setup-android@v4
+      - name: Compile native fixture and inspect source
+        shell: bash
+        run: |
+          set -euo pipefail
+          echo "SOURCE_SHA=$(git rev-parse HEAD)"
+          echo "SOURCE_TREE=$(git rev-parse HEAD^{tree})"
+          sdkmanager "platforms;android-36"
+          gradle -p native/android :app:assembleLiveInput :uiprobe:assembleDebug :sharereceiver:assembleDebug
+          python3 -m py_compile tools/smoke_android_live_input.py
+      - name: Enable emulator acceleration
+        shell: bash
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+      - name: Check exact button effects and background-off state
+        uses: reactivecircus/android-emulator-runner@a421e43855164a8197daf9d8d40fe71c6996bb0d
+        with:
+          api-level: 36
+          arch: x86_64
+          profile: pixel_5
+          emulator-options: -no-window -gpu swiftshader -no-snapshot -noaudio -no-boot-anim -delay-adb
+          script: |
+            timeout 1000 python3 tools/smoke_android_live_input.py --voice-fixture-only
+      - name: Retain Android native hierarchy/screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: voice-owned-android-ui
+          path: artifacts/ui/android-live-input/
+          if-no-files-found: ignore
+          retention-days: 14

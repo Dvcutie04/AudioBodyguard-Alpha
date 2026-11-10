@@ -965,6 +965,42 @@ final class AQSSReadOnlyUITests: XCTestCase {
         label("Connection not verified", app)
     }
 
+    func testOwnedVoiceSkipButtonsStaySeparateAndResetWithoutCapture() {
+        let app = launch()
+        tab("sound", app); tap("Voice check", app)
+        label("Microphone off", app)
+        let intro = app.buttons["voice-demo-skip-intro"]
+        let recap = app.buttons["voice-demo-skip-recap"]
+        let reset = app.buttons["voice-demo-reset"]
+        let result = app.staticTexts["voice-demo-result"]
+        XCTAssertTrue(intro.waitForExistence(timeout: 5))
+        XCTAssertTrue(recap.exists && reset.exists && result.exists)
+        XCTAssertTrue(intro.isEnabled && recap.isEnabled && reset.isEnabled)
+        XCTAssertEqual(result.label, "Test player ready — nothing connected")
+
+        // These are actual on-screen fixture button taps, NOT synthesized recognition.
+        if !intro.isHittable { app.scrollViews.firstMatch.swipeUp() }
+        XCTAssertTrue(intro.isHittable)
+        intro.tap()
+        XCTAssertFalse(intro.isEnabled, "A consumed Skip Intro affordance cannot fire again")
+        XCTAssertTrue(recap.isEnabled, "Skip Recap must remain independently available")
+        XCTAssertEqual(result.label, "Test player: Skip Intro button activated")
+        screenshot("Owned test player intro button changes only intro", app)
+
+        reset.tap()
+        XCTAssertTrue(intro.isEnabled && recap.isEnabled)
+        XCTAssertEqual(result.label, "Test player ready — nothing connected")
+        recap.tap()
+        XCTAssertTrue(intro.isEnabled)
+        XCTAssertFalse(recap.isEnabled, "A consumed Skip Recap affordance cannot fire again")
+        XCTAssertEqual(result.label, "Test player: Skip Recap button activated")
+        screenshot("Owned test player recap button changes only recap", app)
+        XCTAssertEqual(app.buttons["voice-start-stop"].label, "Start voice check")
+        XCTAssertEqual(app.staticTexts["voice-transcript"].label, "No words recognized yet")
+        app.buttons["Close"].firstMatch.tap()
+        label("Voice check", app)
+    }
+
     func testVoiceCheckStartsIdleAndClosingItLeavesMeterUsable() {
         let app = launch()
         tab("sound", app); tap("Voice check", app)
