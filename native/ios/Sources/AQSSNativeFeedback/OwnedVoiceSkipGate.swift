@@ -69,7 +69,7 @@ public struct OwnedSkipProposal {
     public init() {}
 
     public static func parse(_ text: String, final: Bool) -> OwnedSkipAction? {
-        guard final, (1...96).contains(text.count), text.unicodeScalars.allSatisfy({ $0.isASCII }) else { return nil }
+        guard final, (1...96).contains(text.count), text.unicodeScalars.allSatisfy({ (32...126).contains(Int($0.value)) }) else { return nil }
         let normalized = text.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
         guard let regex = try? NSRegularExpression(pattern: #"^audio\s+bodyguard\s*,?\s*skip\s+(intro|recap)[.!?]?$"#),
               let match = regex.firstMatch(in: normalized, range: NSRange(normalized.startIndex..., in: normalized)),

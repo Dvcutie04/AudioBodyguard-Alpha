@@ -36,7 +36,7 @@ class OwnedVoiceSkipGate {
         const val GRAMMAR_VERSION = "voice-skip-v1"
         private val phrase = Regex("^audio\\s+bodyguard\\s*,?\\s*skip\\s+(intro|recap)[.!?]?$", RegexOption.IGNORE_CASE)
         fun parse(text: String?, final: Boolean): OwnedSkipAction? {
-            if (!final || text == null || text.length !in 1..96 || !text.all { it.code in 0..127 }) return null
+            if (!final || text == null || text.length !in 1..96 || !text.all { it.code in 32..126 }) return null
             return when (phrase.matchEntire(text.trim())?.groupValues?.get(1)?.lowercase()) {
                 "intro" -> OwnedSkipAction.SKIP_INTRO
                 "recap" -> OwnedSkipAction.SKIP_RECAP

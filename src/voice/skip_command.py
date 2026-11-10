@@ -29,7 +29,7 @@ class SkipDecision(str, Enum):
 
 def parse_skip_command(text: str, *, final: bool) -> SkipAction | None:
     """Only the two complete English phrases; no fuzzy or partial matching."""
-    if type(text) is not str or type(final) is not bool or not final or not (1 <= len(text) <= MAX_TRANSCRIPT_LENGTH) or not text.isascii():
+    if type(text) is not str or type(final) is not bool or not final or not (1 <= len(text) <= MAX_TRANSCRIPT_LENGTH) or any(not (32 <= ord(ch) <= 126) for ch in text):
         return None
     match = _PHRASE.fullmatch(text.strip().lower())
     if match is None:
