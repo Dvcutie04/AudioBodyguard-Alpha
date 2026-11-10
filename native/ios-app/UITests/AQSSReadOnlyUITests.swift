@@ -66,7 +66,22 @@ final class AQSSReadOnlyUITests: XCTestCase {
             if index == 6 { XCTAssertEqual(next.label, "Back to network check") }
             next.tap()
         }
-        XCTAssertTrue(field.waitForExistence(timeout: 5))
+        // A prior hosted iPhone failure returned no network-address field after the
+        // final tap. Retain the *post-tap* UI state when that exact assertion fails;
+        // do not alter the five-second bound, retry the tap, or dismiss a sheet.
+        let returnedToNetworkCheck = field.waitForExistence(timeout: 5)
+        if !returnedToNetworkCheck {
+            let screenshotAttachment = XCTAttachment(screenshot: app.screenshot())
+            screenshotAttachment.name = "Wi-Fi guide return missing network field"
+            screenshotAttachment.lifetime = .keepAlways
+            add(screenshotAttachment)
+            let hierarchyAttachment = XCTAttachment(string: app.debugDescription)
+            hierarchyAttachment.name = "Wi-Fi guide post-return accessibility hierarchy"
+            hierarchyAttachment.lifetime = .keepAlways
+            add(hierarchyAttachment)
+        }
+        XCTAssertTrue(returnedToNetworkCheck,
+                      "Wi-Fi guide must return directly to the original network check")
         XCTAssertEqual(field.value as? String, "8.8.8.8")
         label("Enter the private IPv4 address shown in your TV’s network settings.", app)
         XCTAssertEqual(app.buttons["tv-network-start-stop"].label, "Check this address")
