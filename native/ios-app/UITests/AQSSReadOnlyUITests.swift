@@ -969,6 +969,9 @@ final class AQSSReadOnlyUITests: XCTestCase {
         let app = launch()
         tab("sound", app); tap("Voice check", app)
         label("Microphone off", app)
+        label("Tap Start, then say “Audio Bodyguard, skip intro” or “Audio Bodyguard, skip recap.”", app)
+        label("These are test-player buttons in Audio Bodyguard only.", app)
+        XCTAssertFalse(app.staticTexts.containing(NSPredicate(format: "label CONTAINS %@", "Make the TV quieter")).firstMatch.exists)
         let intro = app.buttons["voice-demo-skip-intro"]
         let recap = app.buttons["voice-demo-skip-recap"]
         let reset = app.buttons["voice-demo-reset"]

@@ -175,7 +175,7 @@ class InputAssistanceActivity : Activity() {
     private fun voicePage() {
         label("See what your phone hears", true)
 
-        label("Tap Start, then say: ‘Make the TV quieter.’ See the incoming sound bars and recognized words.")
+        label("Tap Start, then say “Audio Bodyguard, skip intro” or “Audio Bodyguard, skip recap.”")
         status = label("Microphone off", true)
         permissionSettingsButton = action("Open app settings") { openVoicePermissionSettings() }.apply { visibility = View.GONE }
         meter = InputMeter(this, skin.violet)
@@ -185,7 +185,7 @@ class InputAssistanceActivity : Activity() {
         label("Recent recognized words · may change", true)
         details = label("No words recognized yet")
         label("Test player — this app only", true)
-        label("Try: Audio Bodyguard, skip intro. Or: Audio Bodyguard, skip recap. Only these test buttons are controlled.")
+        label("These are test-player buttons in Audio Bodyguard only. No TV or streaming app is controlled.")
         demoStatus = label("Test player ready — nothing connected")
         demoIntroButton = action("Skip Intro") { pressDemo(OwnedSkipAction.SKIP_INTRO) }
         demoRecapButton = action("Skip Recap") { pressDemo(OwnedSkipAction.SKIP_RECAP) }
@@ -200,7 +200,7 @@ class InputAssistanceActivity : Activity() {
         action("? Voice help") { skin.menu("Voice help", listOf(
             "Jump to voice steps" to { openSetup("voice") },
             "Clear words" to { stopVoice(); details.text = "No words recognized yet" }
-        ), "Digital recognizer levels are not room loudness. Recognition stays on supported phones. Review words before using them. Listening stops when you leave.") }
+        ), "Digital recognizer levels are not room loudness. A final recognized command can activate an available test-player button once. Check the result; no TV command is sent. Listening stops when you leave.") }
     }
     private fun startVoice() {
         if (!visible || !hasWindowFocus() || isFinishing) return

@@ -433,6 +433,8 @@ def main():
         tap("Voice check. See microphone activity and recognized words", "voice_fixture_open")
         wait_for_all(("Microphone off", "No words recognized yet", "Start voice check"),
                      "voice_fixture_no_capture")
+        instructions = wait_for("Tap Start, then say “Audio Bodyguard, skip intro” or “Audio Bodyguard, skip recap.”", "voice_fixture_new_commands")
+        assert not has(instructions, "Make the TV quieter"), "Voice setup must not suggest unsupported TV volume control"
 
         def move_voice_view(name, up):
             # Android's accessibility hierarchy contains only visible children.

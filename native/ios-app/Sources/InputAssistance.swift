@@ -370,7 +370,7 @@ struct VoiceCheckView: View {
                 VStack(alignment: .leading, spacing: 18) {
                     Text("See what your phone hears").font(.title.bold())
 
-                    Text("Tap Start, then say: ‘Make the TV quieter.’ See the incoming sound bars and recognized words.")
+                    Text("Tap Start, then say “Audio Bodyguard, skip intro” or “Audio Bodyguard, skip recap.”")
                     Text("This check may pause other audio on your iPhone.").font(.caption).foregroundColor(theme.muted)
                     Text(voice.status).font(.headline).accessibilityIdentifier("voice-status")
                     if voice.permissionSettingsAvailable && !voice.cleanupFailed {
@@ -394,7 +394,7 @@ struct VoiceCheckView: View {
                     Text("Recent recognized words · may change").font(.headline)
                     Text(voice.transcript.isEmpty ? "No words recognized yet" : voice.transcript).accessibilityIdentifier("voice-transcript")
                     Text("Test player — this app only").font(.headline)
-                    Text("Try: Audio Bodyguard, skip intro. Or: Audio Bodyguard, skip recap. This only activates the test buttons below.")
+                    Text("These are test-player buttons in Audio Bodyguard only. No TV or streaming app is controlled.")
                         .font(.caption).foregroundColor(theme.muted)
                     HStack {
                         Button("Skip Intro") { voice.pressDemo(.intro) }
@@ -412,7 +412,7 @@ struct VoiceCheckView: View {
                         .disabled(voice.running || voice.requesting)
                         .accessibilityIdentifier("voice-demo-reset")
                     QuestionDisclosure(title: "Voice help", theme: theme, isExpanded: $voiceHelp, identifier: "voice-help") {
-                        Text("Review recognized words before using them. Noise can change what appears. Recognition stays on this phone. Listening stops when you leave.")
+                        Text("A final recognized command can activate an available test-player button once. Check the result; no TV command is sent. Listening stops when you leave.")
                         Button("Jump to voice steps") { voice.clear(); setupVisible = true }.buttonStyle(AppButtonStyle(theme: theme))
                         Button("Clear words") { voice.clear() }.buttonStyle(AppButtonStyle(theme: theme))
                     }
