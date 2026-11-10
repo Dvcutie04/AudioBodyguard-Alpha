@@ -112,14 +112,11 @@ final class VoiceCheck: ObservableObject {
     }
 
     private func handleFinalSkipCommand(_ text: String?) -> String {
-        guard let runID = voiceSkipRunID, let text = text else {
+        guard let runID = voiceSkipRunID else {
             return "Finished — no supported test-player command. Nothing sent to a TV."
         }
-        let observed = demoSnapshot
-        guard let proposal = voiceSkipGate.propose(text, final: true, runID: runID, observed: observed) else {
-            return "Finished — no available matching test-player Skip button. Nothing sent to a TV."
-        }
-        let decision = voiceSkipGate.request(proposal, runID: runID, observed: demoSnapshot,
+        // The final recognizer event uses the same one-shot gate exercised in Swift native tests.
+        let decision = voiceSkipGate.requestFinal(text, runID: runID, observed: demoSnapshot,
             permitted: AVAudioSession.sharedInstance().recordPermission == .granted,
             foreground: UIApplication.shared.applicationState == .active,
             pressOwnedButton: { action in self.pressDemo(action) })

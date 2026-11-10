@@ -112,4 +112,18 @@ public struct OwnedSkipProposal {
         used = true; pending = nil
         return pressOwnedButton(p.action) ? .requested : .callFailed
     }
+    /// Final recognized text only requests an app-owned callback, never physical verification.
+    public func requestFinal(_ text: String?, runID: String, observed: OwnedSkipSnapshot,
+                             permitted: Bool, foreground: Bool,
+                             pressOwnedButton: (OwnedSkipAction) -> Bool) -> OwnedSkipDecision {
+        guard permitted, foreground else { stop(); return .unavailable }
+        guard let text = text,
+              let proposal = propose(text, final: true, runID: runID, observed: observed) else {
+            return .unavailable
+        }
+        return request(proposal, runID: runID, observed: observed,
+                       permitted: permitted, foreground: foreground,
+                       pressOwnedButton: pressOwnedButton)
+    }
+
 }

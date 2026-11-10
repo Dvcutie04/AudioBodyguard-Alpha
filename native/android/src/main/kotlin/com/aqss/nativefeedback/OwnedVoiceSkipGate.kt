@@ -77,4 +77,13 @@ class OwnedVoiceSkipGate {
             if (pressOwnedButton(proposal.action)) OwnedSkipDecision.REQUESTED else OwnedSkipDecision.CALL_FAILED
         } catch (_: RuntimeException) { OwnedSkipDecision.CALL_FAILED }
     }
+    /** Final recognition requests an owned button only; never physical verification. */
+    fun requestFinal(text: String?, runId: String, observed: OwnedSkipSnapshot,
+                     permitted: Boolean, foreground: Boolean,
+                     pressOwnedButton: (OwnedSkipAction) -> Boolean): OwnedSkipDecision {
+        if (!permitted || !foreground) { stop(); return OwnedSkipDecision.UNAVAILABLE }
+        val proposal = propose(text, true, runId, observed) ?: return OwnedSkipDecision.UNAVAILABLE
+        return request(proposal, runId, observed, permitted, foreground, pressOwnedButton)
+    }
+
 }

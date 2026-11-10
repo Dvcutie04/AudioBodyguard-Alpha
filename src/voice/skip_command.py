@@ -150,3 +150,17 @@ class OwnedVoiceSkipGate:
         except Exception:
             return SkipDecision.CALL_FAILED
         return SkipDecision.REQUESTED if accepted is True else SkipDecision.CALL_FAILED
+
+    def request_final(self, text: str | None, *, run_id: str, observed: OwnedPlayerState,
+                      permission: bool, foreground: bool,
+                      press_owned_button: Callable[[SkipAction], bool]) -> SkipDecision:
+        """Apply final recognition through the same one-shot owned-button policy."""
+        if permission is not True or foreground is not True:
+            self.stop()
+            return SkipDecision.UNAVAILABLE
+        proposal = self.propose(text, final=True, run_id=run_id, observed=observed)
+        if proposal is None:
+            return SkipDecision.UNAVAILABLE
+        return self.request(proposal, run_id=run_id, observed=observed,
+                            permission=permission, foreground=foreground,
+                            press_owned_button=press_owned_button)

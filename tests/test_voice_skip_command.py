@@ -194,3 +194,38 @@ def test_requested_is_not_physical_verification():
                         permission=True, foreground=True,
                         press_owned_button=lambda _: True) is SkipDecision.REQUESTED
     assert "VERIFIED" not in {state.value for state in SkipDecision}
+
+@pytest.mark.parametrize("phrase,kind", [
+    ("Audio Bodyguard skip intro", SkipAction.SKIP_INTRO),
+    ("Audio Bodyguard skip recap", SkipAction.SKIP_RECAP),
+])
+def test_final_event_entry_point_one_matching_button(phrase, kind):
+    state, gate, calls = player(), OwnedVoiceSkipGate(), []
+    press = lambda action: calls.append(action) or True
+    assert gate.start("listen-1", state)
+    assert gate.request_final(phrase, run_id="listen-1", observed=state, permission=True,
+                              foreground=True, press_owned_button=press) is SkipDecision.REQUESTED
+    assert gate.request_final(phrase, run_id="listen-1", observed=state, permission=True,
+                              foreground=True, press_owned_button=press) is SkipDecision.UNAVAILABLE
+    assert calls == [kind]
+
+
+@pytest.mark.parametrize("phrase,changed,permission,foreground", [
+    ("Audio Bodyguard skip intro please", {}, True, True),
+    ("Audio Bodyguard skip recap", {"recap_enabled": False}, True, True),
+    ("Audio Bodyguard skip intro", {"generation": 8}, True, True),
+    ("Audio Bodyguard skip intro", {}, False, True),
+    ("Audio Bodyguard skip intro", {}, True, False),
+])
+def test_final_event_entry_point_rejects_without_callbacks(phrase, changed, permission, foreground):
+    state, gate, calls = player(), OwnedVoiceSkipGate(), []
+    assert gate.start("listen-1", state)
+    press = lambda action: calls.append(action) or True
+    assert gate.request_final(phrase, run_id="listen-1", observed=player(**changed),
+                              permission=permission, foreground=foreground,
+                              press_owned_button=press) is SkipDecision.UNAVAILABLE
+    if not permission or not foreground:
+        assert gate.request_final("Audio Bodyguard skip recap", run_id="listen-1",
+                                  observed=state, permission=True, foreground=True,
+                                  press_owned_button=press) is SkipDecision.UNAVAILABLE
+    assert calls == []

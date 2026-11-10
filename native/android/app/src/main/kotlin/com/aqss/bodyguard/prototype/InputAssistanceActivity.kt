@@ -85,10 +85,9 @@ class InputAssistanceActivity : Activity() {
     }
     private fun handleFinalDemoCommand(text: String?): String {
         val id = voiceSkipRunId ?: return "Finished — no supported test-player command. Nothing sent to a TV."
-        val proposal = voiceSkipGate.propose(text, true, id, demoSnapshot())
-            ?: return "Finished — no available matching test-player Skip button. Nothing sent to a TV."
-        return when (voiceSkipGate.request(
-            proposal, id, demoSnapshot(),
+        // The Android final onResults event uses the same gate exercised in Kotlin tests.
+        return when (voiceSkipGate.requestFinal(
+            text, id, demoSnapshot(),
             checkSelfPermission(Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED,
             visible && hasWindowFocus() && !isFinishing, ::pressDemo
         )) {

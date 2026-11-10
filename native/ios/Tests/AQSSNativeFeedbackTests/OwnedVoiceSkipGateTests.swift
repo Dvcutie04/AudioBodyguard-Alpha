@@ -108,4 +108,36 @@ final class OwnedVoiceSkipGateTests: XCTestCase {
             }
         }
     }
+    func testNativeFinalResultEntryPointMatchesOnceAndRejectsConsentLoss() async {
+        await MainActor.run {
+            for (text, expected) in [("Audio Bodyguard skip intro", OwnedSkipAction.intro),
+                                     ("Audio Bodyguard skip recap", .recap)] {
+                let gate = OwnedVoiceSkipGate(), state = sample()
+                var calls: [OwnedSkipAction] = []
+                let press: (OwnedSkipAction) -> Bool = { calls.append($0); return true }
+                XCTAssertTrue(gate.start(runID: "voice-1", player: state))
+                XCTAssertEqual(gate.requestFinal(text, runID: "voice-1", observed: state,
+                                                 permitted: true, foreground: true,
+                                                 pressOwnedButton: press), .requested)
+                XCTAssertEqual(gate.requestFinal(text, runID: "voice-1", observed: state,
+                                                 permitted: true, foreground: true,
+                                                 pressOwnedButton: press), .unavailable)
+                XCTAssertEqual(calls, [expected])
+            }
+            for (permission, foreground) in [(false, true), (true, false)] {
+                let gate = OwnedVoiceSkipGate(), state = sample()
+                var calls = 0
+                let press: (OwnedSkipAction) -> Bool = { _ in calls += 1; return true }
+                XCTAssertTrue(gate.start(runID: "voice-1", player: state))
+                XCTAssertEqual(gate.requestFinal("Audio Bodyguard skip intro", runID: "voice-1",
+                                                 observed: state, permitted: permission,
+                                                 foreground: foreground, pressOwnedButton: press), .unavailable)
+                XCTAssertEqual(gate.requestFinal("Audio Bodyguard skip intro", runID: "voice-1",
+                                                 observed: state, permitted: true,
+                                                 foreground: true, pressOwnedButton: press), .unavailable)
+                XCTAssertEqual(calls, 0)
+            }
+        }
+    }
+
 }

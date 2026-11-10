@@ -88,4 +88,30 @@ class OwnedVoiceSkipGateTest {
             assertEquals(0, calls)
         }
     }
+    @Test fun nativeFinalResultEntryPointMatchesOnceAndRejectsConsentLoss() {
+        for ((text, expected) in listOf("Audio Bodyguard skip intro" to OwnedSkipAction.SKIP_INTRO,
+                                        "Audio Bodyguard skip recap" to OwnedSkipAction.SKIP_RECAP)) {
+            val gate = OwnedVoiceSkipGate()
+            val state = player()
+            val calls = mutableListOf<OwnedSkipAction>()
+            val press: (OwnedSkipAction) -> Boolean = { calls.add(it); true }
+            assertTrue(gate.start("voice-1", state))
+            assertEquals(OwnedSkipDecision.REQUESTED, gate.requestFinal(text, "voice-1", state, true, true, press))
+            assertEquals(OwnedSkipDecision.UNAVAILABLE, gate.requestFinal(text, "voice-1", state, true, true, press))
+            assertEquals(listOf(expected), calls)
+        }
+        for ((permission, foreground) in listOf(false to true, true to false)) {
+            val gate = OwnedVoiceSkipGate()
+            val state = player()
+            var calls = 0
+            val press: (OwnedSkipAction) -> Boolean = { calls++; true }
+            assertTrue(gate.start("voice-1", state))
+            assertEquals(OwnedSkipDecision.UNAVAILABLE,
+                gate.requestFinal("Audio Bodyguard skip intro", "voice-1", state, permission, foreground, press))
+            assertEquals(OwnedSkipDecision.UNAVAILABLE,
+                gate.requestFinal("Audio Bodyguard skip intro", "voice-1", state, true, true, press))
+            assertEquals(0, calls)
+        }
+    }
+
 }
