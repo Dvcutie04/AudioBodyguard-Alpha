@@ -66,6 +66,7 @@
     ]
   },
   "dedicated_fixture_tests": [
+    "AQSSReadOnlyUITests/testIndependentUIKitShareControlCopy",
     "AQSSReadOnlyUITests/testInsightsRecapsReviewClearAndRestart",
     "AQSSReadOnlyUITests/testPrivateSupportReportIncludesCompletedCheckAndClears",
     "AQSSReadOnlyUITests/testPrivateSupportReportExcludesCompletedCheckWithoutClearing",
