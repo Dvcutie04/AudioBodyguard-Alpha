@@ -434,42 +434,75 @@ def main():
         wait_for_all(("Microphone off", "No words recognized yet", "Start voice check"),
                      "voice_fixture_no_capture")
 
-        def voice_tap(text, name):
-            # Controls are in a native ScrollView; keep scroll attempts bounded.
-            for attempt in range(8):
-                root, clicked = screen(f"{name}-{attempt}", click=text)
+        def move_voice_view(name, up):
+            # Android's accessibility hierarchy contains only visible children.
+            root, _ = screen(name)
+            scroller = next((n for n in root.iter("node")
+                             if n.get("class") == "android.widget.ScrollView"), None)
+            if scroller is None:
+                time.sleep(0.3)
+                return
+            values = re.findall(r"-?\d+", scroller.get("bounds", ""))
+            assert len(values) == 4, "Voice viewport must have four screen bounds"
+            x0, y0, x1, y1 = map(int, values)
+            assert x1 > x0 and y1-y0 >= 100, "Voice viewport must be scrollable"
+            x = (x0 + x1) // 2
+            start = int(y0 + (y1-y0) * (0.3 if up else 0.72))
+            end = int(y0 + (y1-y0) * (0.72 if up else 0.3))
+            adb("shell", "input", "swipe", str(x), str(start), str(x), str(end), "350")
+
+        def voice_tap(text, name, up=False):
+            # Retry only when a target is not present/hittable. Do not retry a
+            # successfully clicked action; that could activate it twice.
+            for attempt in range(10):
+                _, clicked = screen(f"{name}-{attempt}", click=text)
                 if clicked:
                     return
-                scroller = next((n for n in root.iter("node")
-                                 if n.get("class") == "android.widget.ScrollView"), None)
-                if scroller is None:
-                    time.sleep(0.3)
-                    continue
-                x0, y0, x1, y1 = map(int, re.findall(r"-?\\d+", scroller.get("bounds", "")))
-                x = (x0 + x1) // 2
-                adb("shell", "input", "swipe", str(x), str(int(y0+(y1-y0)*.75)),
-                    str(x), str(int(y0+(y1-y0)*.3)), "350")
+                move_voice_view(f"{name}_scroll_{attempt}", up)
             raise AssertionError("Owned test-player button is not reachable: " + text)
 
-        def check_buttons(root, intro_enabled, recap_enabled):
-            for text, expected in (("Skip Intro", intro_enabled), ("Skip Recap", recap_enabled)):
-                found = [n for n in root.iter("node")
-                         if n.get("class") == "android.widget.Button" and
-                         n.get("text", "").casefold() == text.casefold()]
-                assert len(found) == 1, (text, "expected exactly one authored button", len(found))
-                assert found[0].get("enabled") == str(expected).lower(), (text, expected, found[0].get("enabled"))
+        def voice_find(text, name, up=False):
+            for attempt in range(10):
+                root, _ = screen(f"{name}-{attempt}")
+                if has(root, text):
+                    return root
+                move_voice_view(f"{name}_scroll_{attempt}", up)
+            raise AssertionError("Owned test-player text missing after bounded scroll: " + text)
 
+        def check_visible_button(root, text, expected_enabled):
+            matches = [n for n in root.iter("node")
+                       if n.get("class") == "android.widget.Button" and
+                       n.get("text", "").casefold() == text.casefold()]
+            assert len(matches) == 1, (text, "expected one VISIBLE authored button", len(matches))
+            actual = matches[0].get("enabled")
+            assert actual == str(expected_enabled).lower(), (text, expected_enabled, actual)
+
+        # One real Intro button click must disable only that authored control.
         voice_tap("Skip Intro", "voice_fixture_press_intro")
-        root = wait_for("Test player: Skip Intro button activated", "voice_fixture_intro_state")
-        check_buttons(root, False, True)
+        root = voice_find("Test player: Skip Intro button activated", "voice_fixture_intro_state", up=True)
+        check_visible_button(root, "Skip Intro", False)
         screenshot("voice_fixture_intro_activated")
-        voice_tap("Reset test player", "voice_fixture_reset_intro")
-        root = wait_for("Test player ready — nothing connected", "voice_fixture_reset")
-        check_buttons(root, True, True)
+
+        # The still-available Recap button lives BELOW the narrow viewport;
+        # search via real bounded scrolling, rather than treating absence from
+        # a single visible accessibility root as a disabled/missing control.
         voice_tap("Skip Recap", "voice_fixture_press_recap")
-        root = wait_for("Test player: Skip Recap button activated", "voice_fixture_recap_state")
-        check_buttons(root, True, False)
+        root = voice_find("Skip Recap", "voice_fixture_recap_button")
+        check_visible_button(root, "Skip Recap", False)
+        root = voice_find("Test player: Skip Recap button activated",
+                          "voice_fixture_recap_state", up=True)
         screenshot("voice_fixture_recap_activated")
+
+        # Reset should re-enable BOTH independent authored buttons.
+        voice_tap("Reset test player", "voice_fixture_reset_buttons")
+        root = voice_find("Test player ready — nothing connected",
+                          "voice_fixture_reset_status", up=True)
+        root = voice_find("Skip Intro", "voice_fixture_intro_restored")
+        check_visible_button(root, "Skip Intro", True)
+        root = voice_find("Skip Recap", "voice_fixture_recap_restored")
+        check_visible_button(root, "Skip Recap", True)
+        screenshot("voice_fixture_both_restored")
+
         # No speech event was injected, no microphone Start was pressed.
         adb("shell", "input", "keyevent", "KEYCODE_HOME")
         time.sleep(0.4)
