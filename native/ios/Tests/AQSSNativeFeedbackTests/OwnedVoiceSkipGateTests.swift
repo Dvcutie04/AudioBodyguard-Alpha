@@ -15,7 +15,9 @@ final class OwnedVoiceSkipGateTests: XCTestCase {
             XCTAssertEqual(OwnedVoiceSkipGate.parse(" AUDIO BODYGUARD SKIP RECAP. ", final: true), .recap)
             XCTAssertNil(OwnedVoiceSkipGate.parse("Audio Bodyguard skip recap", final: false))
             for text in ["skip intro", "Audio Bodyguard don't skip intro", "Audio Bodyguard skip next",
-                         "Audio Bodyguard skip intro please",\n                         "Audio Bodyguard\\nskip intro", "Audio Bodyguard\\tskip recap",\n                         "\\nAudio Bodyguard skip intro\\n", "Audio Bodyguard skip intro\\r", "Audio Bodyguard skip intro and recap",
+                         "Audio Bodyguard skip intro please",
+                         "Audio Bodyguard\nskip intro", "Audio Bodyguard\tskip recap",
+                         "\nAudio Bodyguard skip intro\n", "Audio Bodyguard skip intro\r", "Audio Bodyguard skip intro and recap",
                          "Audio Bodyguard skip intro \u{0000}",
                          "\u{00A0}Audio Bodyguard skip intro", "Audio Bodyguard skip recap\u{00A0}"] {
                 XCTAssertNil(OwnedVoiceSkipGate.parse(text, final: true))

@@ -32,7 +32,9 @@ def test_exact_final_phrases(phrase, kind):
     "Audio Bodyguard skip intro please", "Audio Bodyguard skip recap then skip intro",
     "Audio Bodyguard skip next", "Audio Bodyguard skip intro? yes",
     "Audio Bodyguard skip intro " * 10, "Audio Bodyguard skip recap\x00",
-    "Audio Bodyguard\nskip intro", "Audio Bodyguard\tskip recap",\n    "\nAudio Bodyguard skip intro\n", "Audio Bodyguard skip intro\r",\n    "Audio Bodyguard skip rеcap",  # visually similar non-ASCII character
+    "Audio Bodyguard\nskip intro", "Audio Bodyguard\tskip recap",
+    "\nAudio Bodyguard skip intro\n", "Audio Bodyguard skip intro\r",
+    "Audio Bodyguard skip rеcap",  # visually similar non-ASCII character
     "\u00a0Audio Bodyguard skip intro",  # Unicode trim must not bypass native ASCII policy
     "Audio Bodyguard skip recap\u00a0",
 ])

@@ -12,7 +12,9 @@ class OwnedVoiceSkipGateTest {
         assertEquals(OwnedSkipAction.SKIP_RECAP, OwnedVoiceSkipGate.parse(" AUDIO BODYGUARD SKIP RECAP. ", true))
         assertNull(OwnedVoiceSkipGate.parse("Audio Bodyguard skip recap", false))
         for (text in listOf("skip intro", "Audio Bodyguard don't skip intro", "Audio Bodyguard skip next",
-                            "Audio Bodyguard skip intro please",\n                            "Audio Bodyguard\\nskip intro", "Audio Bodyguard\\tskip recap",\n                            "\\nAudio Bodyguard skip intro\\n", "Audio Bodyguard skip intro\\r", "Audio Bodyguard skip intro and recap",
+                            "Audio Bodyguard skip intro please",
+                            "Audio Bodyguard\nskip intro", "Audio Bodyguard\tskip recap",
+                            "\nAudio Bodyguard skip intro\n", "Audio Bodyguard skip intro\r", "Audio Bodyguard skip intro and recap",
                             "\u00A0Audio Bodyguard skip intro", "Audio Bodyguard skip recap\u00A0")) {
             assertNull(OwnedVoiceSkipGate.parse(text, true))
         }
