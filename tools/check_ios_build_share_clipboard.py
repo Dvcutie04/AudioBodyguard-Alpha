@@ -8,6 +8,7 @@ import subprocess
 import sys
 
 FIXTURE = b"AQSS isolated build-share cancel fixture"
+DARWIN_ETIMEDOUT = 60  # simctl can return the timeout directly on macOS.
 
 
 def simctl_clipboard(simulator, *, data=None):
@@ -18,7 +19,9 @@ def simctl_clipboard(simulator, *, data=None):
     for attempt in range(1, attempts + 1):
         try:
             return subprocess.run(command, input=data, capture_output=True, timeout=20, check=True).stdout
-        except subprocess.TimeoutExpired:
+        except (subprocess.TimeoutExpired, subprocess.CalledProcessError) as error:
+            if isinstance(error, subprocess.CalledProcessError) and error.returncode != DARWIN_ETIMEDOUT:
+                raise
             if attempt == attempts:
                 raise
             print(f"Simulator {operation} timed out on {simulator} (attempt {attempt}/{attempts}); retrying",
