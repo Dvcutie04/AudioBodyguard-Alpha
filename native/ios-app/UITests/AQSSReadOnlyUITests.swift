@@ -2459,6 +2459,34 @@ final class AQSSReadOnlyUITests: XCTestCase {
         screenshot("Largest text illustrated setup", app)
         app.buttons["setup-close"].tap()
     }
+
+    // Independent UIKit control: separate installed fixture bundle with an
+    // authored constant payload, not Audio Bodyguard's report or presenter.
+    // Run on the SAME simulator after the real app's selected Share tests.
+    func testIndependentUIKitShareControlCopy() throws {
+        let fixture = XCUIApplication(bundleIdentifier: "com.aqss.native-share-control.fixture")
+        fixture.launch()
+        let open = fixture.buttons["native-share-control-open"]
+        XCTAssertTrue(open.waitForExistence(timeout: 8), "Independent UIKit fixture did not launch")
+        XCTAssertTrue(open.isHittable)
+        open.tap()
+        let copy = fixture.cells["Copy"].firstMatch
+        guard copy.waitForExistence(timeout: 20) else {
+            let image = XCTAttachment(screenshot: fixture.screenshot())
+            image.name = "Independent UIKit control native Copy missing"
+            image.lifetime = .keepAlways; add(image)
+            let hierarchy = XCTAttachment(string: fixture.debugDescription)
+            hierarchy.name = "Independent UIKit control hierarchy"
+            hierarchy.lifetime = .keepAlways; add(hierarchy)
+            XCTFail("Independent UIKit Share control did not show native Copy in 20 seconds: \(fixture.debugDescription)")
+            return
+        }
+        screenshot("Independent UIKit control native Copy visible", fixture)
+        copy.tap()
+        XCTAssertTrue(open.waitForExistence(timeout: 8))
+        print("AQSS_NATIVE_SHARE_CONTROL: native Copy appeared on independent UIKit fixture")
+    }
+
 }
 
 
