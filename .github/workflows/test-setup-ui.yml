@@ -2,7 +2,7 @@ name: Two-phone test setup worksheet verification
 
 on:
   push:
-    branches: ["aqss/test-setup-worksheet"]
+    branches: ["aqss/test-setup-worksheet", "aqss/overnight-cyan-guide-audit"]
   pull_request:
     branches: ["main"]
     paths:
