@@ -1,0 +1,68 @@
+name: Evening pinned native regression audit
+
+# Verification-only entry point. Application and reusable workflow remain pinned.
+# Any Simulator/demo artifacts are test evidence, not approved distribution.
+on:
+  push:
+    branches: ["aqss/overnight-cyan-guide-audit"]
+    paths: [".github/workflows/evening-regression-audit.yml"]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: aqss-evening-regression-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  source:
+    name: Verify pinned application source and suite inventory
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+          ref: 70d347ded84a12dea5fd2a840038c1b7702ba90c
+      - name: Check application identity and retain trigger distinction
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json, os, pathlib, subprocess
+          def git(*args):
+              return subprocess.check_output(['git', *args], text=True).strip()
+          source = git('rev-parse', 'HEAD')
+          tree = git('rev-parse', 'HEAD^{tree}')
+          assert source == '70d347ded84a12dea5fd2a840038c1b7702ba90c', source
+          assert tree == '3312a8e28ebbb724a0fc29bbd2c89c179bb0dbbe', tree
+          inventory = json.loads(subprocess.check_output(
+              ['python3', 'tools/prepare_ios_software_ui.py', '--check'], text=True))
+          assert inventory == {'navigation': 15, 'pictures': 15, 'tools': 28}, inventory
+          evidence = {
+              'source_commit': source, 'source_tree': tree,
+              'workflow_trigger_sha': os.environ['GITHUB_SHA'],
+              'workflow_run_id': os.environ['GITHUB_RUN_ID'],
+              'workflow_attempt': os.environ['GITHUB_RUN_ATTEMPT'],
+              'selected_suites': inventory,
+              'scope': 'Owned software fixtures and simulators only; no real TV qualification',
+              'distribution_authorized': False,
+          }
+          destination = pathlib.Path(os.environ['RUNNER_TEMP']) / 'evening-source-identity.json'
+          destination.write_text(json.dumps(evidence, indent=2) + '\n')
+          print(json.dumps(evidence, indent=2))
+          PY
+      - name: Retain exact application and workflow identity
+        uses: actions/upload-artifact@v4
+        with:
+          name: aqss-evening-source-${{ github.run_id }}
+          path: ${{ runner.temp }}/evening-source-identity.json
+          if-no-files-found: error
+          retention-days: 7
+
+  native:
+    name: Existing full native software gates
+    needs: source
+    uses: Dvcutie04/AudioBodyguard-Alpha/.github/workflows/read-only-ui-smoke.yml@70d347ded84a12dea5fd2a840038c1b7702ba90c
+    with:
+      source_revision: 70d347ded84a12dea5fd2a840038c1b7702ba90c

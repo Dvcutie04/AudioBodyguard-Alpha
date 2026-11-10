@@ -64,7 +64,14 @@ class SetupGuideActivity : Activity() {
     private var backCallback: OnBackInvokedCallback? = null
     private val group get(): com.aqss.nativefeedback.SetupGroup? {
         val original = SetupContent.groups.firstOrNull { it.id == groupId } ?: return null
-        if (groupId == "phone") return original.copy(routes = original.routes.filter { it != "phone_iphone" }, primaryRoutes = original.primaryRoutes.filter { it != "phone_iphone" })
+        if (groupId == "phone") {
+            // iPad and iPhone illustrations must never appear on Android.
+            val androidRoutes = setOf("phone_pixel", "phone_galaxy")
+            return original.copy(
+                routes = original.routes.filter { it in androidRoutes },
+                primaryRoutes = original.primaryRoutes.filter { it in androidRoutes },
+            )
+        }
         val tv = SetupContent.groups.firstOrNull { it.id == (selectedSystem ?: intent.getStringExtra("deviceGroup")) }
         if (groupId !in listOf("google", "alexa", "both") || tv == null) return original
         val routes = original.routes.filter { it in tv.routes }

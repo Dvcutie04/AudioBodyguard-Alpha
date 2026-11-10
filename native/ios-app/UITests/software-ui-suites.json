@@ -31,11 +31,14 @@
       "AQSSReadOnlyUITests/testLGVizioAndGoogleTVContinueIntoTheirOwnPhoneAppPictures",
       "AQSSReadOnlyUITests/testPhilipsAlreadyConnectedSkipsPairingAndBackRestoresTheChoice",
       "AQSSReadOnlyUITests/testNewBrandPicturesAreReachable",
+      "AQSSReadOnlyUITests/testSonyLegacyAndHisenseVIDAAKeepTheirOwnPicturesAndBack",
       "AQSSReadOnlyUITests/testIllustratedGuideKeepsScrollContainerAndResetsPosition"
     ],
     "tools": [
       "AQSSReadOnlyUITests/testTVNetworkRejectsPublicAddressWithoutContact",
       "AQSSReadOnlyUITests/testTVNetworkVisitClearsDraftOnBackgroundAndBack",
+      "AQSSReadOnlyUITests/testTVNetworkRejectedReportCancelPreservesClipboard",
+      "AQSSReadOnlyUITests/testTVNetworkRejectedReportCopyMatchesActualReviewedText",
       "AQSSReadOnlyUITests/testTVNetworkRejectedResultCanBeReviewedPrivately",
       "AQSSReadOnlyUITests/testTestSetupShareStartsWhenReviewAppears",
       "AQSSReadOnlyUITests/testTestSetupShareCancelAndReopenAtLargestText",
@@ -63,6 +66,7 @@
     ]
   },
   "dedicated_fixture_tests": [
+    "AQSSReadOnlyUITests/testIndependentUIKitShareControlCopy",
     "AQSSReadOnlyUITests/testInsightsRecapsReviewClearAndRestart",
     "AQSSReadOnlyUITests/testPrivateSupportReportIncludesCompletedCheckAndClears",
     "AQSSReadOnlyUITests/testPrivateSupportReportExcludesCompletedCheckWithoutClearing",

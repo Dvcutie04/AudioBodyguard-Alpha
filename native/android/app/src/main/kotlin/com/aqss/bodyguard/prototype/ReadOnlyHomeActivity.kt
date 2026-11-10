@@ -82,7 +82,7 @@ class ReadOnlyHomeActivity : Activity() {
     private val coverage = SessionEvidenceView.coverage(null, "prototype", "prototype", 0.0)
     private val capability = SessionEvidenceView.capability(CapabilityFacts(null, null, null, null, null, null, 0.0, 0.0, "prototype"), "prototype", 0.0)
     private var appearance: String
-        get() = getSharedPreferences("aqss-presentation", MODE_PRIVATE).getString("appearance", "midnight") ?: "midnight"
+        get() = getSharedPreferences("aqss-presentation", MODE_PRIVATE).getString("appearance", "daylight") ?: "daylight"
         set(value) { getSharedPreferences("aqss-presentation", MODE_PRIVATE).edit().putString("appearance", value).apply() }
 
     override fun onCreate(savedInstanceState: Bundle?) {

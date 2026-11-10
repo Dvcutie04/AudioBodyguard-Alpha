@@ -24,31 +24,87 @@ final class AQSSReadOnlyUITests: XCTestCase {
         let form = app.scrollViews["tv-network-scroll"]
         XCTAssertFalse(app.buttons["tv-network-wifi-guide-open"].exists)
         tap("Help with this check", app, scroll: form)
-        tap("Check phone Wi-Fi", app, scroll: form)
-        label("iPhone — connect to your home Wi-Fi", app)
+        let device = UIDevice.current.userInterfaceIdiom == .pad ? "iPad" : "iPhone"
+        tap(device == "iPad" ? "Check iPad Wi-Fi" : "Check phone Wi-Fi", app, scroll: form)
+        label("\(device) — connect to your home Wi-Fi", app)
         let next = app.buttons["tv-wifi-guide-next"]
         let back = app.buttons["tv-wifi-guide-back"]
         XCTAssertEqual(next.label, "Start Wi-Fi steps")
+        XCTAssertTrue(next.isHittable)
+        XCTAssertGreaterThanOrEqual(next.frame.width, app.scrollViews["tv-wifi-guide-scroll"].frame.width * 0.75,
+                                    "Wi-Fi guide's Next needs a wide touch target on \(device)")
+        if device == "iPad" {
+            let scroll = app.scrollViews["tv-wifi-guide-scroll"]
+            XCTAssertGreaterThan(scroll.frame.width, app.frame.width * 0.55,
+                                 "iPad Wi-Fi pictures must have page-sized width, not a narrow form sheet")
+            XCTAssertTrue(back.isHittable)
+        }
         next.tap()
         let targets = ["Settings", "Wi-Fi", "Wi-Fi switch", "Your TV’s home network", "Join", "✓ Your home network"]
         for index in 1...6 {
             label("Step \(index) of 6", app)
-            XCTAssertTrue(pictureDescription(app).contains("Highlighted: \(targets[index - 1])."))
+            let description = pictureDescription(app)
+            XCTAssertTrue(description.contains("Highlighted: \(targets[index - 1])."))
+            XCTAssertTrue(description.contains(device == "iPad" ? "Tablet screen: iPad" : "Phone screen: iPhone"))
             if index == 2 {
-                back.tap(); label("Open iPhone Settings", app)
+                back.tap(); label("Open \(device) Settings", app)
                 next.tap(); label("Open Wi-Fi", app)
-                screenshot("VIZIO check phone Wi-Fi picture on iPhone", app)
+                screenshot("VIZIO check Wi-Fi picture on \(device)", app)
+                if device == "iPad" {
+                    XCUIDevice.shared.orientation = .landscapeLeft
+                    let ready = XCTNSPredicateExpectation(predicate: NSPredicate(format: "hittable == true"), object: next)
+                    XCTAssertEqual(XCTWaiter.wait(for: [ready], timeout: 8), .completed)
+                    XCTAssertTrue(back.isHittable, "Back must remain usable after tablet rotation")
+                    label("Step 2 of 6", app)
+                    screenshot("iPad VIZIO Wi-Fi guide in landscape", app)
+                    XCUIDevice.shared.orientation = .portrait
+                    let portraitReady = XCTNSPredicateExpectation(predicate: NSPredicate(format: "hittable == true"), object: next)
+                    XCTAssertEqual(XCTWaiter.wait(for: [portraitReady], timeout: 8), .completed)
+                    label("Step 2 of 6", app)
+                }
             }
             if index == 6 { XCTAssertEqual(next.label, "Back to network check") }
             next.tap()
         }
-        XCTAssertTrue(field.waitForExistence(timeout: 5))
+        // A prior hosted iPhone failure returned no network-address field after the
+        // final tap. Retain the *post-tap* UI state when that exact assertion fails;
+        // do not alter the five-second bound, retry the tap, or dismiss a sheet.
+        let returnedToNetworkCheck = field.waitForExistence(timeout: 5)
+        if !returnedToNetworkCheck {
+            let screenshotAttachment = XCTAttachment(screenshot: app.screenshot())
+            screenshotAttachment.name = "Wi-Fi guide return missing network field"
+            screenshotAttachment.lifetime = .keepAlways
+            add(screenshotAttachment)
+            let hierarchyAttachment = XCTAttachment(string: app.debugDescription)
+            hierarchyAttachment.name = "Wi-Fi guide post-return accessibility hierarchy"
+            hierarchyAttachment.lifetime = .keepAlways
+            add(hierarchyAttachment)
+        }
+        XCTAssertTrue(returnedToNetworkCheck,
+                      "Wi-Fi guide must return directly to the original network check")
         XCTAssertEqual(field.value as? String, "8.8.8.8")
         label("Enter the private IPv4 address shown in your TV’s network settings.", app)
         XCTAssertEqual(app.buttons["tv-network-start-stop"].label, "Check this address")
         XCTAssertEqual(app.alerts.count, 0)
         app.buttons["tv-network-back"].tap()
         label("Connection not verified", app)
+
+        // Opening the shared Phone guide on iPad must not show iPhone pictures.
+        // The network-check help above uses its own view; exercise the other
+        // public entry path to catch mismatched route selection at the source.
+        tab("devices", app)
+        tap("Illustrated setup guides", app)
+        findSetupBrand("Phone Wi-Fi setup", app)
+        label("\(device) — connect to your home Wi-Fi", app)
+        label("Have your \(device) and home Wi-Fi password ready.", app)
+        app.buttons["setup-next"].tap()
+        label("Step 1 of 6", app)
+        label(device == "iPad" ? "On your iPad" : "On your phone", app)
+        let sharedPicture = pictureDescription(app)
+        XCTAssertTrue(sharedPicture.contains(device))
+        XCTAssertTrue(sharedPicture.contains("Highlighted: Settings"))
+        screenshot("Shared Phone Wi-Fi pictures match \(device)", app)
+        app.buttons["setup-close"].tap()
     }
     func testTVNetworkVisitClearsDraftOnBackgroundAndBack() {
         let app = launch()
@@ -98,6 +154,65 @@ final class AQSSReadOnlyUITests: XCTestCase {
         XCTAssertEqual(app.staticTexts["tv-network-result"].label, "Ready to check the address you enter.")
         app.buttons["tv-network-back"].tap()
     }
+    // A rejected public-address fixture must not perform any network check.
+    private func rejectedVizioReport(_ app: XCUIApplication) -> (XCUIElement, XCUIElement) {
+        tab("devices", app); tap("? Device help", app); tap("VIZIO network check", app)
+        let field = app.textFields["tv-network-address"]
+        XCTAssertTrue(field.waitForExistence(timeout: 5))
+        field.tap(); field.typeText("8.8.8.8")
+        tap("Check this address", app, scroll: app.scrollViews["tv-network-scroll"])
+        XCTAssertEqual(app.alerts.count, 0, "Rejected input must not request local-network access")
+        XCTAssertFalse(app.buttons["tv-network-certificate-read"].exists)
+        tap("Review test result", app, scroll: app.scrollViews["tv-network-scroll"])
+        let preview = app.staticTexts["tv-network-report-preview"]
+        XCTAssertTrue(preview.waitForExistence(timeout: 5))
+        XCTAssertTrue(preview.label.contains("Outcome: ADDRESS_REJECTED"))
+        XCTAssertTrue(preview.label.contains("No native check started"))
+        XCTAssertFalse(preview.label.contains("8.8.8.8"))
+        return (preview, app.buttons["tv-network-report-share"])
+    }
+
+    func testTVNetworkRejectedReportCancelPreservesClipboard() throws {
+        let app = launch()
+        let (preview, share) = rejectedVizioReport(app)
+        let frozen = preview.label
+        XCTAssertTrue(share.isEnabled); share.tap()
+        let nativeCopy = try requireReviewedNativeCopy(app)
+        XCTAssertFalse(share.isEnabled, "Keep the native sheet owned until dismissal")
+        try cancelReviewedNativeShare(app)
+        let returned = XCTNSPredicateExpectation(
+            predicate: NSPredicate(format: "enabled == true AND hittable == true"), object: share)
+        XCTAssertEqual(XCTWaiter.wait(for: [returned], timeout: 8), .completed)
+        XCTAssertFalse(nativeCopy.exists); XCTAssertEqual(preview.label, frozen)
+        screenshot("VIZIO native Cancel retains report review", app)
+        app.buttons["tv-network-report-back"].tap()
+        XCTAssertEqual(app.textFields["tv-network-address"].value as? String, "TV IP address")
+        app.buttons["tv-network-back"].tap()
+        label("Connection not verified", app)
+    }
+
+    func testTVNetworkRejectedReportCopyMatchesActualReviewedText() throws {
+        let app = launch()
+        let (preview, share) = rejectedVizioReport(app)
+        let frozen = preview.label
+        let attachment = XCTAttachment(string: frozen)
+        attachment.name = "VIZIO rejected network reviewed text"
+        attachment.lifetime = .keepAlways; add(attachment)
+        XCTAssertTrue(share.isEnabled); share.tap()
+        let nativeCopy = try requireReviewedNativeCopy(app)
+        XCTAssertFalse(share.isEnabled, "Keep the native sheet owned until dismissal")
+        nativeCopy.tap()
+        let returned = XCTNSPredicateExpectation(
+            predicate: NSPredicate(format: "enabled == true AND hittable == true"), object: share)
+        XCTAssertEqual(XCTWaiter.wait(for: [returned], timeout: 8), .completed)
+        XCTAssertFalse(nativeCopy.exists); XCTAssertEqual(preview.label, frozen)
+        screenshot("VIZIO native Copy returns to exact review", app)
+        app.buttons["tv-network-report-back"].tap()
+        XCTAssertEqual(app.textFields["tv-network-address"].value as? String, "TV IP address")
+        app.buttons["tv-network-back"].tap()
+        label("Connection not verified", app)
+    }
+
     func testTVAddressPicturesKeepTheCheckDraftAndStepOrder() {
         let app = launch()
         let isPad = UIDevice.current.userInterfaceIdiom == .pad
@@ -113,6 +228,9 @@ final class AQSSReadOnlyUITests: XCTestCase {
         XCTAssertFalse(app.otherElements["setup-illustration"].exists)
         let next = app.buttons["tv-address-guide-next"]
         let back = app.buttons["tv-address-guide-back"]
+        XCTAssertTrue(next.isHittable)
+        XCTAssertGreaterThanOrEqual(next.frame.width, app.scrollViews["tv-address-guide-scroll"].frame.width * 0.75,
+                                    "TV address guide's Next needs a wide touch target on \(device)")
         app.buttons["tv-address-guide-mismatch"].tap()
         label("Find the right screen", app)
         back.tap()
@@ -1333,9 +1451,27 @@ final class AQSSReadOnlyUITests: XCTestCase {
         let visible = button.frame.intersection(scroll.frame.intersection(appFrame).insetBy(dx: 0, dy: 24))
         app.coordinate(withNormalizedOffset: .zero).withOffset(CGVector(dx: visible.midX - appFrame.minX, dy: visible.midY - appFrame.minY)).tap()
     }
+    private func closeSetupAndReturnToDevices(_ app: XCUIApplication) {
+        // Closing an illustrated guide dismisses its sheet asynchronously.
+        // Reusing the old setup-scroll while it is disappearing can select
+        // a stale viewport, rather than the visible Devices scroll surface.
+        let guideScroll = app.scrollViews["setup-scroll"]
+        XCTAssertTrue(guideScroll.exists, "A picture guide must be open before Close")
+        app.buttons["setup-close"].tap()
+        let dismissed = XCTNSPredicateExpectation(
+            predicate: NSPredicate(format: "exists == false"), object: guideScroll)
+        XCTAssertEqual(XCTWaiter.wait(for: [dismissed], timeout: 8), .completed,
+                       "Close must dismiss the picture guide before the next brand is chosen")
+        XCTAssertTrue(app.scrollViews["home-scroll"].waitForExistence(timeout: 8),
+                      "Close must return to the Devices page")
+        XCTAssertTrue(app.buttons["tab-devices"].isHittable,
+                      "Devices navigation must remain reachable after Close")
+    }
     private func launch(_ firstVisit: Bool = false, largeText: Bool = false) -> XCUIApplication {
         let app = XCUIApplication()
         app.launchArguments = ["-aqssGuideDismissedV1", firstVisit ? "NO" : "YES"]
+        // Simulator-only, bounded, payload-free native Share lifecycle diagnostics.
+        app.launchArguments += ["--aqss-trace-sharing"]
         if largeText { app.launchArguments += ["-UIPreferredContentSizeCategoryName", "UICTContentSizeCategoryAccessibilityXXXL"] }
         app.launch(); return app
     }
@@ -1363,6 +1499,17 @@ final class AQSSReadOnlyUITests: XCTestCase {
         } else { app.buttons["tab-\(id)"].tap() }
     }
 
+    private func findSetupBrand(_ brand: String, _ app: XCUIApplication) {
+        let search = app.textFields["setup-brand-search"]
+        XCTAssertTrue(search.waitForExistence(timeout: 5), "Setup brand search must be visible")
+        search.tap()
+        search.typeText(brand)
+        let choice = app.scrollViews["setup-scroll"].buttons
+            .matching(NSPredicate(format: "label CONTAINS[cd] %@", brand)).firstMatch
+        XCTAssertTrue(choice.waitForExistence(timeout: 5), "Filtered setup brand must appear: \(brand)")
+        XCTAssertTrue(choice.isHittable, "Filtered setup brand must be reachable: \(brand)")
+        choice.tap()
+    }
     private func chooseTV(_ title: String, _ app: XCUIApplication) {
         tap("Choose TV brand", app)
         let search = app.textFields["brand-search"]
@@ -1815,7 +1962,7 @@ final class AQSSReadOnlyUITests: XCTestCase {
 
     func testNewVizioTVShowsAccountThenPhonePicturesInOrder() {
         let app = launch()
-        tab("devices", app); tap("Illustrated setup guides", app); tap("Vizio", app)
+        tab("devices", app); tap("Illustrated setup guides", app); findSetupBrand("Vizio", app)
         tap("VIZIO newer TV", app)
         label("VIZIO newer TV — My Hub account, then phone", app)
         for number in 1...14 {
@@ -2018,7 +2165,11 @@ final class AQSSReadOnlyUITests: XCTestCase {
         let app = launch()
         tab("devices", app); tap("Illustrated setup guides", app); tap("Sony", app)
         restartPictureGuide(app)
-        for _ in 0..<3 { app.buttons["setup-next"].tap() }
+        let isPad = UIDevice.current.userInterfaceIdiom == .pad
+        let deviceScreen = isPad ? "Tablet screen" : "Phone screen"
+        app.buttons["setup-next"].tap(); label("Step 2 of 9", app)
+        XCTAssertTrue(pictureDescription(app).contains(isPad ? "iPad • App Store" : "iPhone • App Store"))
+        for _ in 0..<2 { app.buttons["setup-next"].tap() }
         label("Step 4 of 9", app)
         XCTAssertTrue(pictureDescription(app).contains("bottom right"))
         screenshot("Google TV nearby control at bottom right", app)
@@ -2027,7 +2178,7 @@ final class AQSSReadOnlyUITests: XCTestCase {
         XCTAssertTrue(pictureDescription(app).contains("TV screen"))
         screenshot("Google TV code is read on the television", app)
         app.buttons["setup-next"].tap(); label("Step 7 of 9", app)
-        XCTAssertTrue(pictureDescription(app).contains("Phone screen"))
+        XCTAssertTrue(pictureDescription(app).contains(deviceScreen))
         screenshot("Google TV code is entered on the phone", app)
         app.buttons["setup-back"].tap(); label("Step 6 of 9", app)
         app.buttons["setup-close"].tap()
@@ -2045,13 +2196,13 @@ final class AQSSReadOnlyUITests: XCTestCase {
         app.buttons["setup-back"].tap(); label("Step 10 of 13", app)
         app.buttons["setup-close"].tap()
 
-        tap("Illustrated setup guides", app); tap("Vizio", app); tap("Other setup options", app)
+        tap("Illustrated setup guides", app); findSetupBrand("Vizio", app); tap("Other setup options", app)
         tap("Vizio — link the TV account", app); restartPictureGuide(app)
         for number in 2...11 {
             app.buttons["setup-next"].tap(); label("Step \(number) of 11", app)
             if [5, 6, 7, 8, 9, 10].contains(number) { screenshot("VIZIO legacy account picture \(number)", app) }
             if number == 9 { XCTAssertTrue(pictureDescription(app).contains("TV screen")) }
-            if number == 10 { XCTAssertTrue(pictureDescription(app).contains("Phone screen")) }
+            if number == 10 { XCTAssertTrue(pictureDescription(app).contains(deviceScreen)) }
         }
         app.buttons["setup-close"].tap(); tab("home", app); label("Connection not verified", app)
     }
@@ -2071,13 +2222,13 @@ final class AQSSReadOnlyUITests: XCTestCase {
             label("Step 3 of 5", app)
             XCTAssertTrue(pictureDescription(app).contains(highlight))
             screenshot("\(brand) \(platform) uses \(highlight)", app)
-            app.buttons["setup-close"].tap()
+            closeSetupAndReturnToDevices(app)
         }
-        tap("Illustrated setup guides", app); tap("Hisense", app); tap("VIDAA", app)
+        tap("Illustrated setup guides", app); findSetupBrand("Hisense", app); tap("VIDAA", app)
         label("43A6GV / VIDAA U5", app); screenshot("Hisense asks for the matching VIDAA menu", app)
-        app.buttons["setup-close"].tap()
+        closeSetupAndReturnToDevices(app)
 
-        tap("Illustrated setup guides", app); tap("Insignia", app); tap("Fire TV", app)
+        tap("Illustrated setup guides", app); findSetupBrand("Insignia", app); tap("Fire TV", app)
         restartPictureGuide(app)
         for _ in 0..<4 { app.buttons["setup-next"].tap() }
         XCTAssertTrue(pictureDescription(app).contains("neither is selected"))
@@ -2087,14 +2238,14 @@ final class AQSSReadOnlyUITests: XCTestCase {
         tap("Account sign-in finished", app); label("Step 8 of 8", app)
         app.buttons["setup-back"].tap(); label("Step 6 of 8", app)
         screenshot("Fire TV account completion can skip manual code entry", app)
-        app.buttons["setup-close"].tap()
+        closeSetupAndReturnToDevices(app)
 
         tap("Illustrated setup guides", app); tap("TCL", app); tap("Google TV / Android TV", app)
         showStepHelp(app); tap("Other setup options", app)
         tap("Google TV — first setup with Google Home", app)
         restartPictureGuide(app)
         for _ in 0..<8 { app.buttons["setup-next"].tap() }
-        label("Step 9 of 13", app); XCTAssertTrue(pictureDescription(app).contains("Phone screen"))
+        label("Step 9 of 13", app); XCTAssertTrue(pictureDescription(app).contains(UIDevice.current.userInterfaceIdiom == .pad ? "Tablet screen" : "Phone screen"))
         screenshot("Google Home opens the scanner on the phone", app)
         app.buttons["setup-next"].tap(); label("Step 10 of 13", app)
         XCTAssertTrue(pictureDescription(app).contains("TV screen"))
@@ -2105,7 +2256,7 @@ final class AQSSReadOnlyUITests: XCTestCase {
         label("Step 2 of 7", app); XCTAssertTrue(pictureDescription(app).contains("TV remote"))
         screenshot("Google TV manual setup uses the physical Down button", app)
         app.buttons["setup-back"].tap(); label("Step 1 of 7", app)
-        app.buttons["setup-close"].tap(); tab("home", app); label("Connection not verified", app)
+        closeSetupAndReturnToDevices(app); tab("home", app); label("Connection not verified", app)
     }
 
     func testLGVizioAndGoogleTVContinueIntoTheirOwnPhoneAppPictures() {
@@ -2158,6 +2309,51 @@ final class AQSSReadOnlyUITests: XCTestCase {
         app.buttons["setup-back"].tap(); label("Step 6 of 10", app)
         tap("Light is not blinking", app); label("Step 7 of 10", app)
         screenshot("Philips reset only when pairing light fails", app)
+    }
+
+    // Separate TV-platform routes must retain their own illustrated menu
+    // names and immediate Back behavior; no physical pairing is performed.
+    func testSonyLegacyAndHisenseVIDAAKeepTheirOwnPicturesAndBack() {
+        let app = launch()
+        tab("devices", app)
+        tap("Illustrated setup guides", app)
+        findSetupBrand("Sony", app)
+        // Sony opens its primary Google-TV route automatically. The legacy
+        // Alexa choice must be reached through the actual optional help path,
+        // not by assuming the route-picker is the first screen.
+        label("9 pictures. One step at a time.", app)
+        showStepHelp(app)
+        tap("Other setup options", app)
+        tap("Sony — TV Control Setup with Amazon Alexa", app)
+        restartPictureGuide(app)
+        label("Step 1 of 11", app)
+        XCTAssertTrue(pictureDescription(app).contains("TV screen"))
+        app.buttons["setup-next"].tap()
+        label("Step 2 of 11", app)
+        label("Find the legacy app", app)
+        XCTAssertTrue(pictureDescription(app).contains("TV Control Setup with Amazon Alexa"))
+        screenshot("Sony legacy Alexa app is TV-specific", app)
+        app.buttons["setup-next"].tap()
+        label("Step 3 of 11", app)
+        app.buttons["setup-back"].tap()
+        label("Step 2 of 11", app)
+        closeSetupAndReturnToDevices(app)
+
+        tap("Illustrated setup guides", app)
+        findSetupBrand("Hisense", app)
+        tap("VIDAA", app)
+        restartPictureGuide(app)
+        label("Step 1 of 16", app)
+        XCTAssertTrue(pictureDescription(app).contains("VIDAA Account"))
+        app.buttons["setup-next"].tap()
+        label("Step 2 of 16", app)
+        XCTAssertTrue(pictureDescription(app).contains("TV screen"))
+        screenshot("Hisense VIDAA account differs from Roku and Google TV", app)
+        app.buttons["setup-back"].tap()
+        label("Step 1 of 16", app)
+        closeSetupAndReturnToDevices(app)
+        tab("home", app)
+        label("Connection not verified", app)
     }
 
     func testNewBrandPicturesAreReachable() {
@@ -2245,8 +2441,15 @@ final class AQSSReadOnlyUITests: XCTestCase {
         tap("Illustrated setup guides", app)
         let choices = app.scrollViews["setup-scroll"]
         XCTAssertTrue(choices.waitForExistence(timeout: 5))
-        XCTAssertGreaterThan(choices.frame.height, app.frame.height / 2,
-                             "The largest-text header must leave room for the setup choices")
+        // Regular-width iPad sheets can be shorter than half the display.
+        // The choices must still provide a usable scroll region and brand search.
+        XCTAssertGreaterThan(choices.frame.height, app.frame.height / 4,
+                             "The largest-text sheet must retain usable setup choices")
+        if UIDevice.current.userInterfaceIdiom == .pad {
+            XCTAssertGreaterThan(choices.frame.height, app.frame.height * 0.52,
+                                 "At largest text, the iPad picture guide must use its available page height")
+        }
+        XCTAssertTrue(app.textFields["setup-brand-search"].isHittable)
         tap("Samsung", app)
         label("Samsung — connect with SmartThings", app); app.buttons["setup-next"].tap()
         label("Step 1 of 17", app)
@@ -2256,6 +2459,34 @@ final class AQSSReadOnlyUITests: XCTestCase {
         screenshot("Largest text illustrated setup", app)
         app.buttons["setup-close"].tap()
     }
+
+    // Independent UIKit control: separate installed fixture bundle with an
+    // authored constant payload, not Audio Bodyguard's report or presenter.
+    // Run on the SAME simulator after the real app's selected Share tests.
+    func testIndependentUIKitShareControlCopy() throws {
+        let fixture = XCUIApplication(bundleIdentifier: "com.aqss.native-share-control.fixture")
+        fixture.launch()
+        let open = fixture.buttons["native-share-control-open"]
+        XCTAssertTrue(open.waitForExistence(timeout: 8), "Independent UIKit fixture did not launch")
+        XCTAssertTrue(open.isHittable)
+        open.tap()
+        let copy = fixture.cells["Copy"].firstMatch
+        guard copy.waitForExistence(timeout: 20) else {
+            let image = XCTAttachment(screenshot: fixture.screenshot())
+            image.name = "Independent UIKit control native Copy missing"
+            image.lifetime = .keepAlways; add(image)
+            let hierarchy = XCTAttachment(string: fixture.debugDescription)
+            hierarchy.name = "Independent UIKit control hierarchy"
+            hierarchy.lifetime = .keepAlways; add(hierarchy)
+            XCTFail("Independent UIKit Share control did not show native Copy in 20 seconds: \(fixture.debugDescription)")
+            return
+        }
+        screenshot("Independent UIKit control native Copy visible", fixture)
+        copy.tap()
+        XCTAssertTrue(open.waitForExistence(timeout: 8))
+        print("AQSS_NATIVE_SHARE_CONTROL: native Copy appeared on independent UIKit fixture")
+    }
+
 }
 
 

@@ -1075,18 +1075,25 @@ def main():
         return
     if args.tv_guides_only:
         def guide_tap(label, name):
-            for attempt in range(8):
-                root, clicked = screen(f"{name}-{attempt}", click=label)
-                if clicked:
-                    return
-                scroll_meter(f"{name}-scroll-{attempt}", down=True)
+            # Reopening a brand chooser can retain a previous lower scroll
+            # offset. A valid brand may be above the viewport, so scan both
+            # directions rather than repeatedly scrolling away from it.
+            # Every successful path still requires a real observed tap.
+            for down in (True, False):
+                direction = "down" if down else "up"
+                for attempt in range(8):
+                    root, clicked = screen(f"{name}-{direction}-{attempt}", click=label)
+                    if clicked:
+                        return
+                    scroll_meter(f"{name}-scroll-{direction}-{attempt}", down=down)
             raise AssertionError(f"TV guide target unavailable: {label}")
 
         tap("Devices", "tv_guides_devices")
-        guide_tap("Illustrated setup guides. TV pairing, Google Home & Alexa · one picture at a time", "tv_guides_open")
+        tap("? Device help", "tv_guides_expand_device_help")
+        guide_tap("Illustrated setup guides. Jump to a TV or home app", "tv_guides_open")
         guide_tap("Philips", "tv_guides_philips")
         guide_tap("Google TV / Android TV", "tv_guides_philips_platform")
-        guide_tap("Need help?", "tv_guides_philips_help")
+        guide_tap("? Step help", "tv_guides_philips_help")
         guide_tap("Other setup options", "tv_guides_philips_options")
         guide_tap("Philips Google TV — pair the voice remote", "tv_guides_philips_remote")
         tap("Start guide", "tv_guides_philips_start")
@@ -1111,18 +1118,32 @@ def main():
         tap("Close", "tv_guides_philips_close")
 
         def open_brand(brand, name, platform=None):
-            guide_tap("Illustrated setup guides. TV pairing, Google Home & Alexa · one picture at a time", name + "_guides")
+            guide_tap("Illustrated setup guides. Jump to a TV or home app", name + "_guides")
             guide_tap(brand, name + "_brand")
             if platform:
                 guide_tap(platform, name + "_platform")
 
         def start_picture(name, phone=False):
-            root, _ = screen(name + "_intro")
+            # A new Activity may expose a partial or empty accessibility tree
+            # immediately after the platform picker. Shared Roku-family routes
+            # can also legitimately retain progress from another TV brand.
+            # Settle on the actual intro action before choosing Start or Resume.
+            # Never replace resume with a blind tap or accept the wrong route.
+            intro_actions = ("Resume guide", "Start part two" if phone else "Start guide")
+            for attempt in range(8):
+                root, _ = screen(f"{name}_intro_{attempt}")
+                if any(has(root, label) for label in intro_actions):
+                    break
+                time.sleep(0.5)
+            else:
+                screenshot(name + "_missing_intro")
+                raise AssertionError(f"TV guide intro not ready: {name}")
             if has(root, "Resume guide"):
-                guide_tap("Need help?", name + "_restart_help")
+                guide_tap("? Step help", name + "_restart_help")
                 guide_tap("Start from the beginning", name + "_restart")
             else:
                 tap("Start part two" if phone else "Start guide", name + "_start")
+            wait_for("Step 1 of", name + "_first_picture")
 
         open_brand("Sony", "tv_guides_google")
         start_picture("tv_guides_google")
@@ -1164,19 +1185,27 @@ def main():
         tap("Close", "tv_guides_lg_close")
 
         open_brand("LG", "tv_guides_lg_phone")
-        guide_tap("Need help?", "tv_guides_lg_phone_help")
+        guide_tap("? Step help", "tv_guides_lg_phone_help")
         guide_tap("Other setup options", "tv_guides_lg_phone_options")
         guide_tap("2. Check LG ThinQ on your phone", "tv_guides_lg_phone_select")
-        wait_for("Open pairing pictures", "tv_guides_lg_phone_pairing_help")
+        # Pairing is an optional action behind Step help, not a primary intro
+        # button. Exercise the real help disclosure and one-step Back history.
+        guide_tap("? Step help", "tv_guides_lg_phone_pairing_disclosure")
+        guide_tap("Open pairing pictures", "tv_guides_lg_phone_pairing_jump")
+        wait_for("LG — pair with ThinQ", "tv_guides_lg_pairing_intro")
+        tap("Back", "tv_guides_lg_pairing_back_to_phone")
+        wait_for("2. Check LG ThinQ on your phone", "tv_guides_lg_phone_restored")
         start_picture("tv_guides_lg_phone", phone=True)
         for number in range(4): tap("Next", f"tv_guides_lg_phone_{number}")
         wait_for_all(("Check the phone controls", "Finish part two"), "tv_guides_lg_phone_final")
         screenshot("tv_guides_lg_phone_final")
         tap("Finish part two", "tv_guides_lg_phone_finish")
-        wait_for("No qualified device connected", "tv_guides_lg_phone_no_connection")
+        wait_for_all(("DEVICES", "Connection not verified"), "tv_guides_lg_phone_no_connection")
 
+        # Vizio exposes two primary routes; its brand screen has a visible
+        # `? Other setup options` disclosure, not a route-intro step-help button.
         open_brand("Vizio", "tv_guides_vizio")
-        guide_tap("Other setup options", "tv_guides_vizio_options")
+        guide_tap("? Other setup options", "tv_guides_vizio_options")
         guide_tap("Vizio — link the TV account (6-digit code)", "tv_guides_vizio_account")
         start_picture("tv_guides_vizio")
         for number in range(2, 12):
@@ -1221,7 +1250,7 @@ def main():
         tap("Close", "tv_guides_fire_close")
 
         open_brand("TCL", "tv_guides_google_manual", "Google TV / Android TV")
-        guide_tap("Need help?", "tv_guides_google_setup_help")
+        guide_tap("? Step help", "tv_guides_google_setup_help")
         guide_tap("Other setup options", "tv_guides_google_setup_options")
         guide_tap("Google TV — first setup with Google Home", "tv_guides_google_setup")
         start_picture("tv_guides_google_qr")
@@ -1231,7 +1260,7 @@ def main():
         tap("Next", "tv_guides_google_qr_point")
         wait_for_all(("Step 10 of 13", "Scan the TV setup code", "Your TV + your phone"), "tv_guides_google_qr_tv")
         screenshot("tv_guides_google_qr_tv")
-        guide_tap("Need help?", "tv_guides_google_manual_help")
+        guide_tap("? Step help", "tv_guides_google_manual_help")
         guide_tap("Use the TV remote instead", "tv_guides_google_manual_select")
         wait_for("Google TV — finish setup with the TV remote", "tv_guides_google_manual_intro")
         start_picture("tv_guides_google_manual")

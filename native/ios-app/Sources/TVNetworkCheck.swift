@@ -235,6 +235,17 @@ struct TVNetworkCheckView: View {
     @State private var reportError: String?
 
     var body: some View {
+        // iPadOS 18+ otherwise presents this multi-step network check and its
+        // in-place picture helpers in a compact form sheet. Request page size
+        // from the hosting window; preserve iPhone and older-iOS behavior.
+        if #available(iOS 18.0, *), UIDevice.current.userInterfaceIdiom == .pad {
+            checkPresentation.presentationSizing(.page)
+        } else {
+            checkPresentation
+        }
+    }
+
+    private var checkPresentation: some View {
         VStack(spacing: 0) {
             if let guideContext = guideContext {
                 TVCheckPictureGuide(theme: theme, context: guideContext) { self.guideContext = nil }
@@ -301,7 +312,7 @@ struct TVNetworkCheckView: View {
                             .accessibilityIdentifier("tv-network-certificate-fingerprint")
                     }
                     if followUp == .phoneWiFi {
-                        Text("Check that your phone and TV use the same home Wi-Fi.").fixedSize(horizontal: false, vertical: true)
+                        Text("Check that this device and your TV use the same home Wi-Fi.").fixedSize(horizontal: false, vertical: true)
                         phoneWiFiButton(primary: true)
                     }
                     if check.lastOutcome != nil && !check.busy {
@@ -335,7 +346,7 @@ struct TVNetworkCheckView: View {
     }
 
     private func phoneWiFiButton(primary: Bool) -> some View {
-        Button("Check phone Wi-Fi") { openGuide(.phoneWiFi) }
+        Button(UIDevice.current.userInterfaceIdiom == .pad ? "Check iPad Wi-Fi" : "Check phone Wi-Fi") { openGuide(.phoneWiFi) }
             .buttonStyle(AppButtonStyle(theme: theme, primary: primary))
             .disabled(check.busy).accessibilityIdentifier("tv-network-wifi-guide-open")
     }
@@ -380,8 +391,7 @@ struct TVCheckPictureGuide: View {
         @MainActor var route: AQSSSetupRoute? {
             let id: String
             if self == .phoneWiFi {
-                guard UIDevice.current.userInterfaceIdiom == .phone else { return nil }
-                id = "phone_iphone"
+                id = UIDevice.current.userInterfaceIdiom == .pad ? "phone_ipad" : "phone_iphone"
             } else { id = "vizio_v505m_k09_address" }
             return AQSSSetupContent.routes.first { $0.id == id }
         }
@@ -408,7 +418,7 @@ struct TVCheckPictureGuide: View {
     private var step: AQSSSetupStep? { steps.indices.contains(index) ? steps[index] : nil }
     private var screenKey: String { "\(index)-\(mismatch)" }
     private var returnsToCaller: Bool { mismatch || index == steps.count - 1 }
-    private var helpTitle: String { isWiFi ? "Phone Wi-Fi help" : "TV address help" }
+    private var helpTitle: String { isWiFi ? "Wi-Fi help" : "TV address help" }
     private var prefix: String { isWiFi ? "tv-wifi-guide" : "tv-address-guide" }
     private var returnTitle: String {
         switch context {
@@ -463,8 +473,13 @@ struct TVCheckPictureGuide: View {
                     }
                 }.frame(maxWidth: 620, alignment: .leading).padding(20).frame(maxWidth: .infinity)
             }
-            Button(returnsToCaller ? returnTitle : index < 0 ? (isWiFi ? "Start Wi-Fi steps" : "My TV matches") : "Next") {
+            Button {
                 if returnsToCaller { onReturn() } else { index += 1 }
+            } label: {
+                Text(returnsToCaller ? returnTitle : index < 0 ? (isWiFi ? "Start Wi-Fi steps" : "My TV matches") : "Next")
+                    // Keep the painted cyan control and its hit target wide in the
+                    // compact iPad sheet and at accessibility text sizes.
+                    .frame(maxWidth: .infinity, minHeight: 52)
             }.buttonStyle(AppButtonStyle(theme: theme, primary: true))
                 .accessibilityIdentifier(prefix + "-next")
                 .padding(16).frame(maxWidth: .infinity).background(theme.surface)

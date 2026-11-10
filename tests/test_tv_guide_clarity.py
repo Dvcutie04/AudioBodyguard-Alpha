@@ -35,7 +35,7 @@ def test_phone_part_checks_the_existing_brand_app_with_separate_wifi_help():
         assert groups[group_id].get("phone_route") == route_id
         assert route_id in groups[group_id]["routes"]
         assert all(step["surface"] == "phone" for step in all_routes[route_id]["steps"])
-    assert set(groups["phone"]["routes"]) == {"phone_iphone", "phone_pixel", "phone_galaxy"}
+    assert set(groups["phone"]["routes"]) == {"phone_iphone", "phone_ipad", "phone_pixel", "phone_galaxy"}
 
 
 def test_optional_lg_link_does_not_highlight_a_default_account_approval():
@@ -119,3 +119,37 @@ def test_phone_pairing_help_cannot_jump_into_another_tv_group():
     next(r for r in data["routes"] if r["id"] == "lg_phone")["pairing_route"] = "samsung_ok"
     with pytest.raises(ValueError, match="its TV group"):
         validate(data)
+
+def test_android_brand_smoke_waits_for_stable_intro_and_restores_shared_route_progress():
+    # The emulator sometimes exposes an empty hierarchy during Activity
+    # transitions, and Roku routes share saved progress across TV makers.
+    # A single immediate snapshot once misread Resume as Start and failed the
+    # native walkthrough. Guard the actual Start/Resume branches instead of
+    # loosening the subsequent numbered-picture and Back assertions.
+    source = (ROOT / "tools/smoke_android_live_input.py").read_text()
+    section = source.split("        def start_picture(name, phone=False):", 1)[1].split(
+        '        open_brand("Sony", "tv_guides_google")', 1
+    )[0]
+    assert 'for attempt in range(8):' in section
+    assert 'screen(f"{name}_intro_{attempt}")' in section
+    assert 'any(has(root, label) for label in intro_actions)' in section
+    assert 'if has(root, "Resume guide"):' in section
+    assert 'Start from the beginning' in section
+    assert 'tap("Start part two" if phone else "Start guide"' in section
+    assert 'wait_for("Step 1 of"' in section
+
+
+def test_android_smoke_recovers_an_offscreen_brand_above_a_restored_scroll_position():
+    # In the exact-source Android failure, the reopened chooser's hierarchy
+    # showed its lower entries (Another brand, Philips, Insignia, Phone Wi-Fi)
+    # while LG was above the viewport. Eight downward swipes could not reach
+    # it. Keep the real brand tap and failure-on-missing-target assertions.
+    source = (ROOT / "tools/smoke_android_live_input.py").read_text()
+    section = source.split("        def guide_tap(label, name):", 1)[1].split(
+        '        tap("Devices", "tv_guides_devices")', 1
+    )[0]
+    assert "for down in (True, False):" in section
+    assert 'direction = "down" if down else "up"' in section
+    assert 'screen(f"{name}-{direction}-{attempt}", click=label)' in section
+    assert 'scroll_meter(f"{name}-scroll-{direction}-{attempt}", down=down)' in section
+    assert 'raise AssertionError(f"TV guide target unavailable: {label}")' in section
