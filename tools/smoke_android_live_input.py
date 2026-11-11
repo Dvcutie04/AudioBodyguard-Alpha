@@ -454,21 +454,23 @@ def main():
             adb("shell", "input", "swipe", str(x), str(start), str(x), str(end), "350")
 
         def voice_tap(text, name, up=False):
-            # Retry only when a target is not present/hittable. Do not retry a
-            # successfully clicked action; that could activate it twice.
-            for attempt in range(10):
-                _, clicked = screen(f"{name}-{attempt}", click=text)
-                if clicked:
-                    return
-                move_voice_view(f"{name}_scroll_{attempt}", up)
+            # Search both scroll directions, but never repeat an action after a
+            # successful click. The local video section expands the same view.
+            for direction in (up, not up):
+                for attempt in range(8):
+                    _, clicked = screen(f"{name}-{direction}-{attempt}", click=text)
+                    if clicked:
+                        return
+                    move_voice_view(f"{name}_{direction}_scroll_{attempt}", direction)
             raise AssertionError("Owned test-player button is not reachable: " + text)
 
         def voice_find(text, name, up=False):
-            for attempt in range(10):
-                root, _ = screen(f"{name}-{attempt}")
-                if has(root, text):
-                    return root
-                move_voice_view(f"{name}_scroll_{attempt}", up)
+            for direction in (up, not up):
+                for attempt in range(8):
+                    root, _ = screen(f"{name}-{direction}-{attempt}")
+                    if has(root, text):
+                        return root
+                    move_voice_view(f"{name}_{direction}_scroll_{attempt}", direction)
             raise AssertionError("Owned test-player text missing after bounded scroll: " + text)
 
         def check_visible_button(root, text, expected_enabled):
