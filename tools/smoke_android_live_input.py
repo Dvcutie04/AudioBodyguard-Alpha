@@ -550,7 +550,32 @@ def main():
         launch()
         wait_for("Start voice check", "voice_fixture_return_off")
         voice_find("Local video not prepared", "voice_fixture_background_abandons_video", up=True)
+        intro_off = voice_find("Skip Intro", "voice_fixture_background_intro_disabled")
+        check_visible_button(intro_off, "Skip Intro", False)
+        recap_off = voice_find("Skip Recap", "voice_fixture_background_recap_disabled")
+        check_visible_button(recap_off, "Skip Recap", False)
         screenshot("voice_fixture_background_off")
+
+        # A new Activity object after process death must also fail closed.
+        # The only persistent datum is an owned-fixture reset marker, not audio.
+        adb("shell", "am", "force-stop", package)
+        launch()
+        wait_for("Connection not verified", "voice_fixture_process_restart_home")
+        tap("Sound", "voice_fixture_process_restart_sound")
+        tap("Voice check. See microphone activity and recognized words",
+            "voice_fixture_process_restart_voice")
+        voice_find("Test player paused — reset to prepare video again",
+                   "voice_fixture_process_restart_requires_reset", up=True)
+        intro_off = voice_find("Skip Intro", "voice_fixture_process_intro_disabled")
+        check_visible_button(intro_off, "Skip Intro", False)
+        recap_off = voice_find("Skip Recap", "voice_fixture_process_recap_disabled")
+        check_visible_button(recap_off, "Skip Recap", False)
+        voice_tap("Reset test player", "voice_fixture_process_explicit_reset", up=True)
+        intro_on = voice_find("Skip Intro", "voice_fixture_process_intro_restored")
+        check_visible_button(intro_on, "Skip Intro", True)
+        recap_on = voice_find("Skip Recap", "voice_fixture_process_recap_restored")
+        check_visible_button(recap_on, "Skip Recap", True)
+        screenshot("voice_fixture_process_reset")
         print("VOICE_OWNED_BUTTON_FIXTURE_PASS: real Intro/Recap buttons; no speech or TV claim", flush=True)
         return
 

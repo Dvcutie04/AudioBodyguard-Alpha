@@ -89,6 +89,17 @@ final class VoiceCheck: ObservableObject {
     private var localMode: OwnedSkipAction?
     private var localBusy = false
     private var localEpoch = 0
+    // Only a boolean about the app-owned fixture is retained, never speech or media.
+    // A recreated screen must not restore a prepared Skip control after background.
+    private static let localVideoNeedsResetKey = "aqss.ownedLocalVideo.needsReset.v1"
+
+    init() {
+        if UserDefaults.standard.bool(forKey: Self.localVideoNeedsResetKey) {
+            demoIntroAvailable = false
+            demoRecapAvailable = false
+            demoMessage = "Test player paused — reset to prepare video again"
+        }
+    }
 
     /// Prepare the specific authored intro (0-2s) or recap (4-6s) segment.
     /// This does not grant TV authority or synthesize a voice result.
@@ -97,6 +108,8 @@ final class VoiceCheck: ObservableObject {
         guard let url = Bundle.main.url(forResource: "voice_skip_sample", withExtension: "mp4") else {
             localVideoStatus = "Local video unavailable: bundled clip missing"; return
         }
+        // Persist retirement before a prepared native control could be exposed.
+        UserDefaults.standard.set(true, forKey: Self.localVideoNeedsResetKey)
         localEpoch += 1; let epoch = localEpoch
         localMode = nil; localBusy = true
         demoIntroAvailable = false; demoRecapAvailable = false; demoGeneration += 1
@@ -171,7 +184,10 @@ final class VoiceCheck: ObservableObject {
 
     /// A returning screen cannot reuse an abandoned local-video affordance.
     func suspendLocalVideo() {
-        guard localVideoVisible else { return }
+        // Also revoke if an earlier lifecycle callback already dropped the
+        // player item but left a button state behind.
+        guard localVideoVisible ||
+              UserDefaults.standard.bool(forKey: Self.localVideoNeedsResetKey) else { return }
         closeLocalVideo()
         demoIntroAvailable = false; demoRecapAvailable = false
         demoGeneration += 1
@@ -203,6 +219,7 @@ final class VoiceCheck: ObservableObject {
 
     func resetDemo() {
         guard !running, !requesting else { return }
+        UserDefaults.standard.removeObject(forKey: Self.localVideoNeedsResetKey)
         demoIntroAvailable = true; demoRecapAvailable = true
         demoGeneration += 1
         demoMessage = "Test player ready — nothing connected"

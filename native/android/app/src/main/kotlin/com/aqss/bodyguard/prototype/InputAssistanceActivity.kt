@@ -64,6 +64,10 @@ class InputAssistanceActivity : Activity() {
     private var localVideoBusy = false
     private var localVideoEpoch = 0
     private var localStage: OwnedSkipAction? = null
+    // Persist only whether an abandoned owned-video trial requires explicit Reset.
+    // Do not persist a media control, recognized words, or an authorization.
+    private val localVideoNeedsResetKey = "needs_reset_v1"
+    private val localVideoPrefs get() = getSharedPreferences("aqss_owned_local_video", MODE_PRIVATE)
 
     private fun updateLocalStatus(message: String) { localVideoStatus?.text = message }
 
@@ -87,6 +91,11 @@ class InputAssistanceActivity : Activity() {
     private fun prepareLocalVideo(action: OwnedSkipAction) {
         if (running || localVideoBusy || recognizer != null) return
         val video = localVideo ?: return
+        // Fail closed if the local-only retirement marker cannot be saved.
+        if (!localVideoPrefs.edit().putBoolean(localVideoNeedsResetKey, true).commit()) {
+            updateLocalStatus("Local video unavailable: trial state could not be saved")
+            return
+        }
         localVideoEpoch++; val epoch = localVideoEpoch
         localVideoActive = true; localStage = null; localVideoBusy = true
         demoIntroAvailable = false; demoRecapAvailable = false; demoGeneration++
@@ -204,6 +213,10 @@ class InputAssistanceActivity : Activity() {
     }
     private fun resetDemo() {
         if (running) return
+        if (!localVideoPrefs.edit().remove(localVideoNeedsResetKey).commit()) {
+            demoStatus?.text = "Test player reset unavailable"
+            return
+        }
         demoIntroAvailable = true; demoRecapAvailable = true; demoGeneration++
         demoIntroButton?.isEnabled = true; demoRecapButton?.isEnabled = true
         demoStatus?.text = "Test player ready — nothing connected"
@@ -266,6 +279,10 @@ class InputAssistanceActivity : Activity() {
         val dark = intent.getBooleanExtra("dark", true)
         setTheme(if (dark) R.style.AQSSMidnightTheme else R.style.AQSSReadOnlyTheme)
         super.onCreate(savedInstanceState)
+        if (isVoice && localVideoPrefs.getBoolean(localVideoNeedsResetKey, false)) {
+            demoIntroAvailable = false
+            demoRecapAvailable = false
+        }
         skin = InterfaceTheme(this, dark)
         val root = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; setPadding(skin.dp(16), skin.dp(28), skin.dp(16), skin.dp(16)); setBackgroundColor(skin.background) }
         val header = LinearLayout(this)
@@ -311,9 +328,13 @@ class InputAssistanceActivity : Activity() {
         details = label("No words recognized yet")
         label("Test player — this app only", true)
         label("These are test-player buttons in Audio Bodyguard only. No TV or streaming app is controlled.")
-        demoStatus = label("Test player ready — nothing connected")
+        demoStatus = label(if (!demoIntroAvailable && !demoRecapAvailable)
+            "Test player paused — reset to prepare video again"
+            else "Test player ready — nothing connected")
         demoIntroButton = action("Skip Intro") { pressDemo(OwnedSkipAction.SKIP_INTRO) }
+            .apply { isEnabled = demoIntroAvailable }
         demoRecapButton = action("Skip Recap") { pressDemo(OwnedSkipAction.SKIP_RECAP) }
+            .apply { isEnabled = demoRecapAvailable }
         val localPanel = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
             visibility = View.GONE
