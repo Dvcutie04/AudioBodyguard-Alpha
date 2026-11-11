@@ -121,6 +121,14 @@ final class VoiceCheck: ObservableObject {
             demoMessage = "Fixture final text refused; no additional player action"
         }
     }
+    // Simulator-only cancellation of a supplied final-TEXT run. This does not
+    // claim to stop OS recognition, a microphone, or physical playback.
+    func cancelTestOnlyFinalText() {
+        guard textFixtureEnabled else { return }
+        retireTextFixture()
+        demoMessage = "Fixture final text canceled; no audio"
+    }
+
     // Simulates a competing playhead move on the real, bundled AVPlayer.
     // The final-text gate must not seek from an obsolete segment selection.
     func moveTestOnlyPlayhead() {
@@ -609,6 +617,8 @@ struct VoiceCheckView: View {
                                 .accessibilityIdentifier("voice-test-final-text-intro")
                             Button("Test final text Recap") { voice.requestTestOnlyFinalText(.recap) }
                                 .accessibilityIdentifier("voice-test-final-text-recap")
+                            Button("Fixture cancel final text (no audio)") { voice.cancelTestOnlyFinalText() }
+                                .accessibilityIdentifier("voice-test-cancel-final-text")
                             Button("Fixture move playhead (no audio)") { voice.moveTestOnlyPlayhead() }
                                 .accessibilityIdentifier("voice-test-manual-seek")
                         }

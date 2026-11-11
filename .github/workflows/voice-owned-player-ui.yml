@@ -49,7 +49,8 @@ jobs:
             -only-testing:AQSSReadOnlyUITests/AQSSReadOnlyUITests/testOwnedVoiceSkipButtonsStaySeparateAndResetWithoutCapture \
             -only-testing:AQSSReadOnlyUITests/AQSSReadOnlyUITests/testOwnedLocalVideoSeeksAndReadsActualPlayerPosition \
             -only-testing:AQSSReadOnlyUITests/AQSSReadOnlyUITests/testOnDeviceSpeechCapabilityProbeWithoutCapture \
-            -only-testing:AQSSReadOnlyUITests/AQSSReadOnlyUITests/testOwnedFinalTextGateToRealLocalPlayerWithoutRecognition
+            -only-testing:AQSSReadOnlyUITests/AQSSReadOnlyUITests/testOwnedFinalTextGateToRealLocalPlayerWithoutRecognition \
+            -only-testing:AQSSReadOnlyUITests/AQSSReadOnlyUITests/testOwnedFinalTextCancellationRejectsLateResultWithoutSeeking
       - name: Retain genuine XCTest screen/interaction evidence
         if: always()
         uses: actions/upload-artifact@v4

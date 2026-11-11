@@ -104,6 +104,14 @@ class InputAssistanceActivity : Activity() {
         }
     }
 
+    // Debug-emulator-only synthetic final-TEXT cancellation. It does not stop
+    // microphone capture or pretend an OS recognizer produced the phrase.
+    private fun cancelFinalTextFixture() {
+        if (!finalTextFixtureEnabled) return
+        retireFinalTextFixture()
+        demoStatus?.text = "Fixture final text canceled; no audio"
+    }
+
     // A competing user seek on the same actual local decoder, for emulator-only tests.
     // It is NOT voice recognition and never contacts a remote player.
     private fun moveFinalTextFixturePlayhead() {
@@ -431,6 +439,10 @@ class InputAssistanceActivity : Activity() {
                     setOnClickListener { requestFinalTextFixture(selection) }
                 })
             }
+            localPanel.addView(Button(this).apply {
+                text = "Fixture cancel final text (no audio)"; skin.style(this, false)
+                setOnClickListener { cancelFinalTextFixture() }
+            })
             localPanel.addView(Button(this).apply {
                 text = "Fixture move playhead (no audio)"; skin.style(this, false)
                 setOnClickListener { moveFinalTextFixturePlayhead() }

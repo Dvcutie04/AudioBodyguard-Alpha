@@ -577,6 +577,25 @@ def main():
         screenshot("text_fixture_recap_once_observed")
         print("VOICE_OWNED_FINAL_TEXT_FIXTURE_PASS: emulator supplied text -> gate -> MediaPlayer readback; OS audio NONE", flush=True)
 
+        # A canceled synthetic final-text run cannot seek an already prepared
+        # real MediaPlayer. Keep the current playhead and control enabled.
+        for segment, ready, phrase in (
+            ("intro", "Local video: intro ready at 0s", "Intro"),
+            ("recap", "Local video: recap ready at 4s", "Recap"),
+        ):
+            voice_tap("Reset test player", f"cancel_{segment}_reset", up=True)
+            voice_find("Local video not prepared", f"cancel_{segment}_off", up=True)
+            voice_tap(f"Prepare {segment} video", f"cancel_{segment}_prepare")
+            voice_find(ready, f"cancel_{segment}_ready", up=True)
+            voice_tap("Fixture cancel final text (no audio)", f"cancel_{segment}_run")
+            voice_find("Fixture final text canceled; no audio", f"cancel_{segment}_status", up=True)
+            voice_tap(f"Fixture final {phrase} text (no audio)", f"cancel_{segment}_late")
+            voice_find(ready, f"cancel_{segment}_position_unchanged", up=True)
+            voice_find("Fixture final text canceled; no audio", f"cancel_{segment}_still_canceled", up=True)
+            allowed = voice_find(f"Skip {phrase}", f"cancel_{segment}_control_retained")
+            check_visible_button(allowed, f"Skip {phrase}", True)
+        print("VOICE_OWNED_CANCELED_FINAL_TEXT_FIXTURE_PASS: late synthetic results cannot seek; OS audio NONE", flush=True)
+
         # A competing seek by the local player's user invalidates the selected
         # segment. The old final phrase must not seek to the Skip target.
         for segment, ready, moved, phrase in (

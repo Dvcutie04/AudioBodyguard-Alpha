@@ -1142,6 +1142,57 @@ final class AQSSReadOnlyUITests: XCTestCase {
         screenshot("Supplied final text to native player readback; audio NONE", app)
     }
 
+    func testOwnedFinalTextCancellationRejectsLateResultWithoutSeeking() {
+        // Simulator-only supplied TEXT: cancellation must leave both authored
+        // player positions untouched, not merely change a label or transcript.
+        let app = launch(fixtureText: true)
+        tab("sound", app); tap("Voice check", app)
+        let panel = app.buttons["voice-local-video-help"]
+        XCTAssertTrue(panel.waitForExistence(timeout: 5))
+        if !panel.isHittable { app.scrollViews.firstMatch.swipeUp() }
+        panel.tap()
+        let state = app.staticTexts["voice-local-video-status"]
+        let scroll = app.scrollViews.firstMatch
+        func press(_ button: XCUIElement) {
+            for _ in 0..<8 {
+                if button.isHittable { button.tap(); return }
+                scroll.swipeUp()
+            }
+            for _ in 0..<8 {
+                if button.isHittable { button.tap(); return }
+                scroll.swipeDown()
+            }
+            XCTFail("Canceled fixture test control unreachable")
+        }
+        func observe(_ text: String) {
+            let p = XCTNSPredicateExpectation(predicate:
+                NSPredicate(format: "label == %@", text), object: state)
+            XCTAssertEqual(XCTWaiter.wait(for: [p], timeout: 16), .completed)
+        }
+        for (prepare, ready, command, active) in [
+            ("voice-local-prepare-intro", "Local video: intro ready at 0s",
+             "voice-test-final-text-intro", "voice-demo-skip-intro"),
+            ("voice-local-prepare-recap", "Local video: recap ready at 4s",
+             "voice-test-final-text-recap", "voice-demo-skip-recap")
+        ] {
+            press(app.buttons["voice-demo-reset"])
+            observe("Local video not prepared")
+            press(app.buttons[prepare]); observe(ready)
+            press(app.buttons["voice-test-cancel-final-text"])
+            XCTAssertEqual(app.staticTexts["voice-demo-result"].label,
+                           "Fixture final text canceled; no audio")
+            press(app.buttons[command]) // Late final text after cancellation.
+            XCTAssertEqual(state.label, ready, "Canceled text must not seek the player")
+            XCTAssertTrue(app.buttons[active].isEnabled,
+                          "Cancel must not simulate a completed Skip action")
+            XCTAssertEqual(app.staticTexts["voice-demo-result"].label,
+                           "Fixture final text canceled; no audio")
+        }
+        XCTAssertEqual(app.buttons["voice-start-stop"].label, "Start voice check")
+        XCTAssertEqual(app.staticTexts["voice-transcript"].label, "No words recognized yet")
+        screenshot("Canceled supplied final text leaves real local playhead unchanged; audio NONE", app)
+    }
+
     func testOwnedVoiceSkipButtonsStaySeparateAndResetWithoutCapture() {
         let app = launch()
         tab("sound", app); tap("Voice check", app)
