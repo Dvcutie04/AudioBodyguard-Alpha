@@ -1,4 +1,5 @@
 import AVFoundation
+import AVKit
 import Speech
 import SwiftUI
 import Vision
@@ -81,6 +82,82 @@ final class VoiceCheck: ObservableObject {
     private var demoGeneration = 1
     private let voiceSkipGate = OwnedVoiceSkipGate()
     private var voiceSkipRunID: String?
+    // A silent, bundled eight-second H.264 fixture; never a remote player.
+    let localPlayer = AVPlayer()
+    @Published private(set) var localVideoVisible = false
+    @Published private(set) var localVideoStatus = "Local video not prepared"
+    private var localMode: OwnedSkipAction?
+    private var localBusy = false
+    private var localEpoch = 0
+
+    /// Prepare the specific authored intro (0-2s) or recap (4-6s) segment.
+    /// This does not grant TV authority or synthesize a voice result.
+    func prepareLocalVideo(_ action: OwnedSkipAction) {
+        guard !running, !requesting, !localBusy else { return }
+        guard let url = Bundle.main.url(forResource: "voice_skip_sample", withExtension: "mp4") else {
+            localVideoStatus = "Local video unavailable: bundled clip missing"; return
+        }
+        localEpoch += 1; let epoch = localEpoch
+        localMode = nil; localBusy = true
+        demoIntroAvailable = false; demoRecapAvailable = false; demoGeneration += 1
+        localVideoStatus = "Local video: preparing segment"
+        localPlayer.pause()
+        localPlayer.replaceCurrentItem(with: AVPlayerItem(url: url))
+        localVideoVisible = true
+        let entry = action == .intro ? 0.0 : 4.0
+        localPlayer.seek(to: CMTime(seconds: entry, preferredTimescale: 600),
+                         toleranceBefore: .zero, toleranceAfter: .zero) { [weak self] finished in
+            Task { @MainActor [weak self] in
+                guard let self = self, self.localEpoch == epoch else { return }
+                let observed = self.localPlayer.currentTime().seconds
+                self.localBusy = false
+                guard finished, observed.isFinite, abs(observed - entry) < 0.3 else {
+                    self.localVideoStatus = "Local video unavailable: entry not observed"
+                    return
+                }
+                self.localMode = action
+                self.demoIntroAvailable = action == .intro
+                self.demoRecapAvailable = action == .recap
+                self.demoGeneration += 1
+                self.localVideoStatus = action == .intro
+                    ? "Local video: intro ready at 0s" : "Local video: recap ready at 4s"
+            }
+        }
+    }
+
+    private func requestLocalVideoSkip(_ action: OwnedSkipAction) -> Bool {
+        guard !localBusy, localMode == action else { return false }
+        localEpoch += 1; let epoch = localEpoch
+        localMode = nil; localBusy = true
+        demoIntroAvailable = false; demoRecapAvailable = false; demoGeneration += 1
+        demoMessage = action == .intro ? "Test player: Skip Intro button activated"
+                                       : "Test player: Skip Recap button activated"
+        localVideoStatus = "Local video: transition requested, awaiting player readback"
+        let target = action == .intro ? 2.0 : 6.0
+        localPlayer.seek(to: CMTime(seconds: target, preferredTimescale: 600),
+                         toleranceBefore: .zero, toleranceAfter: .zero) { [weak self] finished in
+            Task { @MainActor [weak self] in
+                guard let self = self, self.localEpoch == epoch else { return }
+                self.localBusy = false
+                let observed = self.localPlayer.currentTime().seconds
+                guard finished, observed.isFinite, abs(observed - target) < 0.3 else {
+                    self.localVideoStatus = "Local video: requested but position NOT verified"
+                    return
+                }
+                // Read back the actual AVPlayer time, rather than trusting button state.
+                self.localVideoStatus = action == .intro
+                    ? "Local video observed: intro ends at 2s"
+                    : "Local video observed: recap ends at 6s"
+            }
+        }
+        return true // REQUESTED, never verified until the asynchronous player readback.
+    }
+
+    private func closeLocalVideo() {
+        localEpoch += 1; localMode = nil; localBusy = false
+        localPlayer.pause(); localPlayer.replaceCurrentItem(with: nil)
+        localVideoVisible = false; localVideoStatus = "Local video not prepared"
+    }
 
     private var demoSnapshot: OwnedSkipSnapshot {
         OwnedSkipSnapshot(playerID: "owned-test-player", playbackSessionID: "voice-demo",
@@ -91,6 +168,7 @@ final class VoiceCheck: ObservableObject {
 
     /// Shared callback used by the two visible buttons and admitted final voice intent.
     @discardableResult func pressDemo(_ action: OwnedSkipAction) -> Bool {
+        if localVideoVisible { return requestLocalVideoSkip(action) }
         switch action {
         case .intro where demoIntroAvailable:
             demoIntroAvailable = false; demoGeneration += 1
@@ -109,6 +187,7 @@ final class VoiceCheck: ObservableObject {
         demoIntroAvailable = true; demoRecapAvailable = true
         demoGeneration += 1
         demoMessage = "Test player ready — nothing connected"
+        closeLocalVideo()
     }
 
     private func handleFinalSkipCommand(_ text: String?) -> String {
@@ -350,7 +429,9 @@ final class VoiceCheck: ObservableObject {
         levels = []; levelText = "No live microphone samples"
         status = cleanupFailed ? "Microphone cleanup failed. Close this app completely before trying again." : message
     }
-    func clear(_ message: String = "Microphone off") { stop(message); transcript = "" }
+    func clear(_ message: String = "Microphone off") {
+        stop(message); transcript = ""; resetDemo()
+    }
 }
 
 struct VoiceCheckView: View {
@@ -360,6 +441,7 @@ struct VoiceCheckView: View {
     @StateObject private var voice = VoiceCheck()
     @State private var setupVisible = false
     @State private var voiceHelp = false
+    @State private var localVideoHelp = false
     var body: some View {
         VStack(spacing: 12) {
             HStack { Text("Voice check").font(.title2.bold()); Spacer(); RoseButton(title: "Close", theme: theme) { voice.clear(); dismiss() } }.padding()
@@ -404,6 +486,26 @@ struct VoiceCheckView: View {
                             .accessibilityIdentifier("voice-demo-skip-recap")
                     }
                     Text(voice.demoMessage).accessibilityIdentifier("voice-demo-result")
+                    QuestionDisclosure(title: "Local video trial", theme: theme,
+                                       isExpanded: $localVideoHelp, identifier: "voice-local-video-help") {
+                        Text("An eight-second silent test clip with separate intro and recap sections. No TV or streaming player is controlled.")
+                            .font(.caption).foregroundColor(theme.muted)
+                        HStack {
+                            Button("Prepare intro video") { voice.prepareLocalVideo(.intro) }
+                                .buttonStyle(AppButtonStyle(theme: theme))
+                                .disabled(voice.running || voice.requesting)
+                                .accessibilityIdentifier("voice-local-prepare-intro")
+                            Button("Prepare recap video") { voice.prepareLocalVideo(.recap) }
+                                .buttonStyle(AppButtonStyle(theme: theme))
+                                .disabled(voice.running || voice.requesting)
+                                .accessibilityIdentifier("voice-local-prepare-recap")
+                        }
+                        Text(voice.localVideoStatus).accessibilityIdentifier("voice-local-video-status")
+                        if voice.localVideoVisible {
+                            VideoPlayer(player: voice.localPlayer).frame(height: 110)
+                                .accessibilityIdentifier("voice-local-video-preview")
+                        }
+                    }
                     Button("Reset test player") { voice.resetDemo() }
                         .buttonStyle(AppButtonStyle(theme: theme))
                         .disabled(voice.running || voice.requesting)

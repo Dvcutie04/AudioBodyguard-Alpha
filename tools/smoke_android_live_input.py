@@ -505,6 +505,25 @@ def main():
         check_visible_button(root, "Skip Recap", True)
         screenshot("voice_fixture_both_restored")
 
+        # Exercise the actual bundled video decoder/player and observe its
+        # independently read currentPosition after each section-specific seek.
+        # No fake transcript, microphone, or third-party playback is involved.
+        voice_tap("? Local video trial", "local_video_open")
+        voice_tap("Prepare intro video", "local_video_prepare_intro")
+        voice_find("Local video: intro ready at 0s", "local_video_intro_staged", up=True)
+        voice_tap("Skip Intro", "local_video_intro_seek", up=True)
+        voice_find("Local video observed: intro ends at 2s",
+                   "local_video_intro_readback", up=True)
+        screenshot("local_video_intro_observed")
+        voice_tap("Reset test player", "local_video_reset", up=True)
+        voice_find("Local video not prepared", "local_video_reset_confirm", up=True)
+        voice_tap("Prepare recap video", "local_video_prepare_recap")
+        voice_find("Local video: recap ready at 4s", "local_video_recap_staged", up=True)
+        voice_tap("Skip Recap", "local_video_recap_seek", up=True)
+        voice_find("Local video observed: recap ends at 6s",
+                   "local_video_recap_readback", up=True)
+        screenshot("local_video_recap_observed")
+
         # No speech event was injected, no microphone Start was pressed.
         adb("shell", "input", "keyevent", "KEYCODE_HOME")
         time.sleep(0.4)

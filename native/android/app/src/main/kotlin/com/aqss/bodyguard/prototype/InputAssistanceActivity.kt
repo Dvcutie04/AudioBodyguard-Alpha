@@ -56,6 +56,110 @@ class InputAssistanceActivity : Activity() {
     private var demoRecapButton: Button? = null
     private var demoResetButton: Button? = null
     private var demoStatus: TextView? = null
+    // Silent, bundled local video only. This is NOT an external media adapter.
+    private var localVideo: VideoView? = null
+    private var localMedia: android.media.MediaPlayer? = null
+    private var localVideoStatus: TextView? = null
+    private var localVideoActive = false
+    private var localVideoBusy = false
+    private var localVideoEpoch = 0
+    private var localStage: OwnedSkipAction? = null
+
+    private fun updateLocalStatus(message: String) { localVideoStatus?.text = message }
+
+    private fun closeLocalVideo() {
+        localVideoEpoch++; localStage = null; localVideoBusy = false
+        localVideoActive = false
+        localMedia = null
+        localVideo?.stopPlayback()
+        updateLocalStatus("Local video not prepared")
+    }
+
+    private fun prepareLocalVideo(action: OwnedSkipAction) {
+        if (running || localVideoBusy || recognizer != null) return
+        val video = localVideo ?: return
+        localVideoEpoch++; val epoch = localVideoEpoch
+        localVideoActive = true; localStage = null; localVideoBusy = true
+        demoIntroAvailable = false; demoRecapAvailable = false; demoGeneration++
+        demoIntroButton?.isEnabled = false; demoRecapButton?.isEnabled = false
+        updateLocalStatus("Local video: preparing segment")
+        val entry = if (action == OwnedSkipAction.SKIP_INTRO) 0 else 4000
+        video.setOnErrorListener { _, _, _ ->
+            if (localVideoEpoch == epoch) {
+                localVideoBusy = false
+                updateLocalStatus("Local video unavailable: media decoder failed")
+            }
+            true
+        }
+        video.setOnPreparedListener { mp ->
+            if (localVideoEpoch == epoch) return@setOnPreparedListener
+            localMedia = mp
+            mp.setVolume(0f, 0f)
+            if (mp.duration !in 7500..8500) {
+                localVideoBusy = false
+                updateLocalStatus("Local video unavailable: wrong clip duration")
+                return@setOnPreparedListener
+            }
+            fun completeStage() {
+                if (localVideoEpoch != epoch) return
+                val observed = mp.currentPosition
+                localVideoBusy = false
+                if (kotlin.math.abs(observed - entry) > 300) {
+                    updateLocalStatus("Local video unavailable: entry not observed")
+                    return
+                }
+                localStage = action
+                demoIntroAvailable = action == OwnedSkipAction.SKIP_INTRO
+                demoRecapAvailable = action == OwnedSkipAction.SKIP_RECAP
+                demoGeneration++
+                demoIntroButton?.isEnabled = demoIntroAvailable
+                demoRecapButton?.isEnabled = demoRecapAvailable
+                updateLocalStatus(if (action == OwnedSkipAction.SKIP_INTRO)
+                    "Local video: intro ready at 0s" else "Local video: recap ready at 4s")
+            }
+            if (entry == 0 && mp.currentPosition <= 300) {
+                completeStage()
+            } else {
+                mp.setOnSeekCompleteListener { if (localVideoEpoch == epoch) completeStage() }
+                mp.seekTo(entry.toLong(), android.media.MediaPlayer.SEEK_CLOSEST)
+            }
+        }
+        video.setVideoURI(Uri.parse("android.resource://$packageName/${R.raw.voice_skip_sample}"))
+    }
+
+    private fun requestLocalVideoSkip(action: OwnedSkipAction): Boolean {
+        val mp = localMedia ?: return false
+        if (!localVideoActive || localVideoBusy || localStage != action) return false
+        localVideoEpoch++; val epoch = localVideoEpoch
+        localStage = null; localVideoBusy = true
+        demoIntroAvailable = false; demoRecapAvailable = false; demoGeneration++
+        demoIntroButton?.isEnabled = false; demoRecapButton?.isEnabled = false
+        demoStatus?.text = if (action == OwnedSkipAction.SKIP_INTRO)
+            "Test player: Skip Intro button activated" else "Test player: Skip Recap button activated"
+        updateLocalStatus("Local video: transition requested, awaiting player readback")
+        val target = if (action == OwnedSkipAction.SKIP_INTRO) 2000 else 6000
+        mp.setOnSeekCompleteListener { player ->
+            if (localVideoEpoch != epoch) return@setOnSeekCompleteListener
+            localVideoBusy = false
+            val actual = player.currentPosition
+            if (kotlin.math.abs(actual - target) > 300) {
+                updateLocalStatus("Local video: requested but position NOT verified")
+            } else {
+                // Direct native MediaPlayer position readback, not button-label proof.
+                updateLocalStatus(if (action == OwnedSkipAction.SKIP_INTRO)
+                    "Local video observed: intro ends at 2s"
+                    else "Local video observed: recap ends at 6s")
+            }
+        }
+        return try {
+            mp.seekTo(target.toLong(), android.media.MediaPlayer.SEEK_CLOSEST)
+            true // REQUESTED. Readback arrives asynchronously.
+        } catch (_: RuntimeException) {
+            localVideoBusy = false
+            updateLocalStatus("Local video: player seek was refused")
+            false
+        }
+    }
 
     private fun demoSnapshot() = OwnedSkipSnapshot(
         "owned-test-player", "voice-demo", "test-episode", demoGeneration,
@@ -63,6 +167,7 @@ class InputAssistanceActivity : Activity() {
     )
     /** Both displayed demo buttons and final admitted speech call this same handler. */
     private fun pressDemo(action: OwnedSkipAction): Boolean {
+        if (localVideoActive) return requestLocalVideoSkip(action)
         when (action) {
             OwnedSkipAction.SKIP_INTRO -> if (demoIntroAvailable) {
                 demoIntroAvailable = false; demoGeneration++
@@ -82,6 +187,7 @@ class InputAssistanceActivity : Activity() {
         demoIntroAvailable = true; demoRecapAvailable = true; demoGeneration++
         demoIntroButton?.isEnabled = true; demoRecapButton?.isEnabled = true
         demoStatus?.text = "Test player ready — nothing connected"
+        closeLocalVideo()
     }
     private fun handleFinalDemoCommand(text: String?): String {
         val id = voiceSkipRunId ?: return "Finished — no supported test-player command. Nothing sent to a TV."
@@ -188,6 +294,35 @@ class InputAssistanceActivity : Activity() {
         demoStatus = label("Test player ready — nothing connected")
         demoIntroButton = action("Skip Intro") { pressDemo(OwnedSkipAction.SKIP_INTRO) }
         demoRecapButton = action("Skip Recap") { pressDemo(OwnedSkipAction.SKIP_RECAP) }
+        val localPanel = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            visibility = View.GONE
+        }
+        action("? Local video trial") {
+            localPanel.visibility = if (localPanel.visibility == View.VISIBLE) View.GONE else View.VISIBLE
+        }
+        column.addView(localPanel)
+        localPanel.addView(TextView(this).apply {
+            text = "An eight-second silent test clip with separate intro and recap sections. No external player is controlled."
+            setTextColor(skin.text); textSize = 14f
+        })
+        fun localAction(title: String, action: OwnedSkipAction) {
+            val button = Button(this)
+            button.text = title; skin.style(button, false)
+            button.setOnClickListener { prepareLocalVideo(action) }
+            localPanel.addView(button)
+        }
+        localAction("Prepare intro video", OwnedSkipAction.SKIP_INTRO)
+        localAction("Prepare recap video", OwnedSkipAction.SKIP_RECAP)
+        localVideoStatus = TextView(this).apply {
+            text = "Local video not prepared"; textSize = 16f; setTextColor(skin.text)
+            setPadding(0, skin.dp(8), 0, skin.dp(8))
+        }
+        localPanel.addView(localVideoStatus)
+        localVideo = VideoView(this).apply {
+            setBackgroundColor(android.graphics.Color.BLACK)
+        }
+        localPanel.addView(localVideo, LinearLayout.LayoutParams(-1, skin.dp(112)))
         demoResetButton = action("Reset test player") { resetDemo() }
         recent = action("Recent sound checks") {
             if (visible && hasWindowFocus() && !isFinishing && !isDestroyed &&
@@ -642,7 +777,7 @@ class InputAssistanceActivity : Activity() {
     override fun onPause() {
         visible = false
         photoObservation?.close(); photoObservation = null
-        if (isVoice) { stopVoice(); if (::details.isInitialized) details.text = "No words recognized yet" }
+        if (isVoice) { stopVoice(); closeLocalVideo(); if (::details.isInitialized) details.text = "No words recognized yet" }
         super.onPause()
     }
     override fun onDestroy() { stopVoice(); stopPhotoWatchdog(); photoObservation?.close(); photoObservation = null; handler.removeCallbacksAndMessages(null); pendingPhoto = null; photoRun.clear(); cameraPhoto?.close(); cameraPhoto = null; worker.shutdown(); super.onDestroy() }

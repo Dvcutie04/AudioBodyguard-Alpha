@@ -80,3 +80,43 @@ These sources describe available API mechanisms, not proof that the hosted runne
 has the required speech model/service or that a user's phone is supported.
 Historical #114/#115 downloads remain unchanged and do not contain this newer
 voice work. Known native Share and setup failures are not repaired by this change.
+
+
+## November 10, ~17:30 Pacific — V3 native local-video candidate (new source, not yet CI-approved)
+
+A new controlled **8-second, silent, authored H.264 MP4 fixture** has been included
+in the iOS and Android application source. Four equal color segments give a
+known timeline: Intro 0–2 seconds, middle 2–4, Recap 4–6, continuation 6–8.
+This is **not** streamed, licensed, third-party, DRM-protected or a TV recording.
+The two files are byte-identical. SHA-256 of the authored binary is
+`6215d320cd022c808c3f1732aa47ae411b0b7d0df95c843a9768220f73dc931`
+(1,829 bytes, H.264 baseline 64×64 at two frames/second, 8.0s, keyframes
+at 0/2/4/6). Their Git blob SHA is
+`ea6a3fa26be4be533a8462404197562e407a8e82`.
+
+A new optional **Local video trial** within the existing voice check prepares
+either Intro at 0s or Recap at 4s in the currently owned test clip. It only
+enables the corresponding action when the initial position has been read
+back. The **same authored Skip button handler** invoked by final admitted
+voice intent requests native playback seek to 2s or 6s. Its immediate result
+is merely REQUESTED. A separate asynchronous AVPlayer/MediaPlayer completion
+callback then reads the player's actual current time/position before publishing
+a local-video observation; an interrupted/incorrect seek does not produce that
+observation. Consumption disables the control and increments its generation;
+new selection/reset invalidates old callbacks and changes its generation. The
+old manual button fixture remains separate, with original tests retained.
+No on-device speech-input result is implied by this new video path.
+
+A dedicated iPhone XCUITest and Android emulator smoke extension exercise both
+real local video seeks, native position readbacks, independent action states,
+reset and microphone-off state. Explicit SHA checks and provenance are in the
+focused UI workflow. **The new source requires exact-source hosted verification**;
+prior 7/7 jobs are not counted as passes for it. The newly authored MP4 is a
+local testing asset, not a release media feature. Playback position readback in
+a paused local decoder is software evidence only: it is not physical output,
+acoustic measurement, a third-party streaming Skip capability or a complete
+spoken-voice end-to-end trial.
+
+Actual V2 OS speech recognition remains unrun on this revision. No availability
+of an on-device speech recognizer or model has yet been established on hosted
+iOS/Android simulators. Do not inject a string and report a microphone result.

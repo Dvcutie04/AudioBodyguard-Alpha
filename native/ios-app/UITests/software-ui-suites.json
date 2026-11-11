@@ -55,6 +55,7 @@
       "AQSSReadOnlyUITests/testBuildDetailsShareCancelReturnsWithoutCopy",
       "AQSSReadOnlyUITests/testBuildDetailsMatchInstalledMetadataAndReturnToSettings",
       "AQSSReadOnlyUITests/testOwnedVoiceSkipButtonsStaySeparateAndResetWithoutCapture",
+    "AQSSReadOnlyUITests/testOwnedLocalVideoSeeksAndReadsActualPlayerPosition",
       "AQSSReadOnlyUITests/testVoiceCheckStartsIdleAndClosingItLeavesMeterUsable",
       "AQSSReadOnlyUITests/testLiveSoundCheckStartsOffAndHelpReturnsWithoutCapture",
       "AQSSReadOnlyUITests/testInputToolsStartIdleAndNeverClaimAConnection",

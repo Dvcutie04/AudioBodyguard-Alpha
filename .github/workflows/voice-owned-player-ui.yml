@@ -35,6 +35,7 @@ jobs:
           set -euo pipefail
           echo "SOURCE_SHA=$(git rev-parse HEAD)"
           echo "SOURCE_TREE=$(git rev-parse HEAD^{tree})"
+          test "$(shasum -a 256 native/ios-app/Resources/voice_skip_sample.mp4 | awk '{print $1}')" = "6215d320cd022c808c3f1732aa47ae411b0b7d0df95c843a9768220f73dc931"
           device="$(xcrun simctl list devices available -j | python3 -c 'import json,sys; print(next(d["udid"] for pool in json.load(sys.stdin)["devices"].values() for d in pool if d["name"].startswith("iPhone") and d.get("isAvailable",True)))')"
           xcodebuild -project native/ios-app/AQSSReadOnly.xcodeproj -scheme AQSSReadOnly \
             -configuration Release -destination "platform=iOS Simulator,id=$device" \
@@ -45,7 +46,8 @@ jobs:
             -configuration Release -destination "platform=iOS Simulator,id=$device" \
             -derivedDataPath "$RUNNER_TEMP/voice-ui-build" CODE_SIGNING_ALLOWED=NO \
             -resultBundlePath "$RUNNER_TEMP/voice-skip-owned-ui.xcresult" test-without-building \
-            -only-testing:AQSSReadOnlyUITests/AQSSReadOnlyUITests/testOwnedVoiceSkipButtonsStaySeparateAndResetWithoutCapture
+            -only-testing:AQSSReadOnlyUITests/AQSSReadOnlyUITests/testOwnedVoiceSkipButtonsStaySeparateAndResetWithoutCapture \
+            -only-testing:AQSSReadOnlyUITests/AQSSReadOnlyUITests/testOwnedLocalVideoSeeksAndReadsActualPlayerPosition
       - name: Retain genuine XCTest screen/interaction evidence
         if: always()
         uses: actions/upload-artifact@v4
@@ -78,6 +80,7 @@ jobs:
           echo "SOURCE_SHA=$(git rev-parse HEAD)"
           echo "SOURCE_TREE=$(git rev-parse HEAD^{tree})"
           sdkmanager "platforms;android-36"
+          test "$(sha256sum native/android/app/src/main/res/raw/voice_skip_sample.mp4 | awk '{print $1}')" = "6215d320cd022c808c3f1732aa47ae411b0b7d0df95c843a9768220f73dc931"
           gradle -p native/android :app:assembleLiveInput :uiprobe:assembleDebug :sharereceiver:assembleDebug
           python3 -m py_compile tools/smoke_android_live_input.py
       - name: Enable emulator acceleration

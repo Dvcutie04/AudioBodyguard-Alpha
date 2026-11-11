@@ -965,6 +965,70 @@ final class AQSSReadOnlyUITests: XCTestCase {
         label("Connection not verified", app)
     }
 
+    func testOwnedLocalVideoSeeksAndReadsActualPlayerPosition() {
+        let app = launch()
+        tab("sound", app); tap("Voice check", app)
+        XCTAssertEqual(app.buttons["voice-start-stop"].label, "Start voice check")
+        let panel = app.buttons["voice-local-video-help"]
+        XCTAssertTrue(panel.waitForExistence(timeout: 5))
+        if !panel.isHittable { app.scrollViews.firstMatch.swipeUp() }
+        XCTAssertTrue(panel.isHittable)
+        panel.tap()
+
+        let state = app.staticTexts["voice-local-video-status"]
+        let intro = app.buttons["voice-demo-skip-intro"]
+        let recap = app.buttons["voice-demo-skip-recap"]
+        let reset = app.buttons["voice-demo-reset"]
+        let prepareIntro = app.buttons["voice-local-prepare-intro"]
+        let prepareRecap = app.buttons["voice-local-prepare-recap"]
+        XCTAssertTrue(state.waitForExistence(timeout: 5))
+        let scroll = app.scrollViews.firstMatch
+        func press(_ button: XCUIElement) {
+            for _ in 0..<6 {
+                if button.isHittable { button.tap(); return }
+                scroll.swipeUp()
+            }
+            for _ in 0..<8 {
+                if button.isHittable { button.tap(); return }
+                scroll.swipeDown()
+            }
+            XCTFail("Local owned-video action not reachable: \\(button.identifier)")
+        }
+        func awaitPosition(_ expected: String) {
+            let p = XCTNSPredicateExpectation(predicate:
+                NSPredicate(format: "label == %@", expected), object: state)
+            XCTAssertEqual(XCTWaiter.wait(for: [p], timeout: 16), .completed,
+                           "Actual AVPlayer position must be read back after the seek")
+        }
+
+        press(prepareIntro)
+        awaitPosition("Local video: intro ready at 0s")
+        XCTAssertTrue(intro.isEnabled)
+        XCTAssertFalse(recap.isEnabled)
+        press(intro)
+        awaitPosition("Local video observed: intro ends at 2s")
+        XCTAssertFalse(intro.isEnabled)
+        XCTAssertFalse(recap.isEnabled)
+        screenshot("Native local H264 player reads back Intro transition", app)
+
+        press(reset)
+        awaitPosition("Local video not prepared")
+        press(prepareRecap)
+        awaitPosition("Local video: recap ready at 4s")
+        XCTAssertFalse(intro.isEnabled)
+        XCTAssertTrue(recap.isEnabled)
+        press(recap)
+        awaitPosition("Local video observed: recap ends at 6s")
+        XCTAssertFalse(intro.isEnabled)
+        XCTAssertFalse(recap.isEnabled)
+        screenshot("Native local H264 player reads back Recap transition", app)
+
+        // This test deliberately never presses Start. No speech recognition
+        // or TV/third-party player action is being claimed by this receipt.
+        XCTAssertEqual(app.buttons["voice-start-stop"].label, "Start voice check")
+        XCTAssertEqual(app.staticTexts["voice-transcript"].label, "No words recognized yet")
+    }
+
     func testOwnedVoiceSkipButtonsStaySeparateAndResetWithoutCapture() {
         let app = launch()
         tab("sound", app); tap("Voice check", app)
