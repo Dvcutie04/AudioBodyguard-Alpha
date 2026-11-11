@@ -130,6 +130,16 @@ class InputAssistanceActivity : Activity() {
     private fun requestLocalVideoSkip(action: OwnedSkipAction): Boolean {
         val mp = localMedia ?: return false
         if (!localVideoActive || localVideoBusy || localStage != action) return false
+        // Re-read the actual player position before dispatch, not a cached UI
+        // label or control generation. A changed section revokes the affordance.
+        val entry = if (action == OwnedSkipAction.SKIP_INTRO) 0 else 4000
+        if (kotlin.math.abs(mp.currentPosition - entry) > 300) {
+            localStage = null
+            demoIntroAvailable = false; demoRecapAvailable = false; demoGeneration++
+            demoIntroButton?.isEnabled = false; demoRecapButton?.isEnabled = false
+            updateLocalStatus("Local video unavailable: selected section changed")
+            return false
+        }
         localVideoEpoch++; val epoch = localVideoEpoch
         localStage = null; localVideoBusy = true
         demoIntroAvailable = false; demoRecapAvailable = false; demoGeneration++

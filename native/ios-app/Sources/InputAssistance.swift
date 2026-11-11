@@ -127,6 +127,16 @@ final class VoiceCheck: ObservableObject {
 
     private func requestLocalVideoSkip(_ action: OwnedSkipAction) -> Bool {
         guard !localBusy, localMode == action else { return false }
+        // VideoPlayer exposes its own scrubber: never execute a stale section
+        // after the user manually changed the actual native playback position.
+        let entry = action == .intro ? 0.0 : 4.0
+        let current = localPlayer.currentTime().seconds
+        guard current.isFinite, abs(current - entry) < 0.3 else {
+            localMode = nil
+            demoIntroAvailable = false; demoRecapAvailable = false; demoGeneration += 1
+            localVideoStatus = "Local video unavailable: selected section changed"
+            return false
+        }
         localEpoch += 1; let epoch = localEpoch
         localMode = nil; localBusy = true
         demoIntroAvailable = false; demoRecapAvailable = false; demoGeneration += 1
