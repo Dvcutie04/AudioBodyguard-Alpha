@@ -1019,6 +1019,10 @@ final class AQSSReadOnlyUITests: XCTestCase {
                            "Actual AVPlayer position must be read back after the seek")
         }
 
+        // A retired trial survives app relaunch. This independent scenario
+        // must explicitly Reset, never silently revive it from Prepare.
+        press(reset)
+        awaitPosition("Local video not prepared")
         press(prepareIntro)
         awaitPosition("Local video: intro ready at 0s")
         XCTAssertTrue(intro.isEnabled)
@@ -1101,6 +1105,10 @@ final class AQSSReadOnlyUITests: XCTestCase {
         }
         XCTAssertTrue(intro.exists && recap.exists)
         XCTAssertEqual(app.buttons["voice-start-stop"].label, "Start voice check")
+        // A previous XCTest may deliberately leave the durable reset barrier.
+        // Establish this scenario through the app's explicit Reset control.
+        press(app.buttons["voice-demo-reset"])
+        observe("Local video not prepared")
         press(app.buttons["voice-local-prepare-intro"])
         observe("Local video: intro ready at 0s")
         press(recap) // Wrong phrase: no local seek.
@@ -1237,6 +1245,11 @@ final class AQSSReadOnlyUITests: XCTestCase {
         let result = app.staticTexts["voice-demo-result"]
         XCTAssertTrue(intro.waitForExistence(timeout: 5))
         XCTAssertTrue(recap.exists && reset.exists && result.exists)
+        // Reset is the only authorized way to recover buttons after an
+        // abandoned owned-video trial carried across independent UI tests.
+        if !reset.isHittable { app.scrollViews.firstMatch.swipeUp() }
+        XCTAssertTrue(reset.isHittable)
+        reset.tap()
         XCTAssertTrue(intro.isEnabled && recap.isEnabled && reset.isEnabled)
         XCTAssertEqual(result.label, "Test player ready — nothing connected")
 
