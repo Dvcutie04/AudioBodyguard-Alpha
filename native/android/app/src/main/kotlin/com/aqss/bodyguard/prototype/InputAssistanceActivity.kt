@@ -104,6 +104,36 @@ class InputAssistanceActivity : Activity() {
         }
     }
 
+    // A competing user seek on the same actual local decoder, for emulator-only tests.
+    // It is NOT voice recognition and never contacts a remote player.
+    private fun moveFinalTextFixturePlayhead() {
+        if (!finalTextFixtureEnabled || running || recognizer != null ||
+            !localVideoActive || localVideoBusy) return
+        val player = localMedia ?: return
+        val stage = localStage ?: return
+        val target = if (stage == OwnedSkipAction.SKIP_INTRO) 1000 else 5000
+        val epoch = ++localVideoEpoch
+        localVideoBusy = true
+        player.setOnSeekCompleteListener { observedPlayer ->
+            if (localVideoEpoch != epoch) return@setOnSeekCompleteListener
+            localVideoBusy = false
+            val actual = observedPlayer.currentPosition
+            if (kotlin.math.abs(actual - target) > 300) {
+                updateLocalStatus("Local video: fixture playhead move NOT observed")
+            } else {
+                updateLocalStatus(if (stage == OwnedSkipAction.SKIP_INTRO)
+                    "Local video moved: intro playhead now 1s"
+                    else "Local video moved: recap playhead now 5s")
+            }
+        }
+        try {
+            player.seekTo(target.toLong(), android.media.MediaPlayer.SEEK_CLOSEST)
+        } catch (_: RuntimeException) {
+            localVideoBusy = false
+            updateLocalStatus("Local video: fixture playhead move refused")
+        }
+    }
+
     private fun closeLocalVideo() {
         retireFinalTextFixture()
         localVideoEpoch++; localStage = null; localVideoBusy = false
@@ -401,6 +431,10 @@ class InputAssistanceActivity : Activity() {
                     setOnClickListener { requestFinalTextFixture(selection) }
                 })
             }
+            localPanel.addView(Button(this).apply {
+                text = "Fixture move playhead (no audio)"; skin.style(this, false)
+                setOnClickListener { moveFinalTextFixturePlayhead() }
+            })
         }
         localVideoStatus = TextView(this).apply {
             text = "Local video not prepared"; textSize = 16f; setTextColor(skin.text)

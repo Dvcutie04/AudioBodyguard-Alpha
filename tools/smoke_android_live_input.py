@@ -577,6 +577,32 @@ def main():
         screenshot("text_fixture_recap_once_observed")
         print("VOICE_OWNED_FINAL_TEXT_FIXTURE_PASS: emulator supplied text -> gate -> MediaPlayer readback; OS audio NONE", flush=True)
 
+        # A competing seek by the local player's user invalidates the selected
+        # segment. The old final phrase must not seek to the Skip target.
+        for segment, ready, moved, phrase in (
+            ("intro", "Local video: intro ready at 0s",
+             "Local video moved: intro playhead now 1s", "Intro"),
+            ("recap", "Local video: recap ready at 4s",
+             "Local video moved: recap playhead now 5s", "Recap"),
+        ):
+            voice_tap("Reset test player", f"text_fixture_{segment}_manual_reset", up=True)
+            voice_find("Local video not prepared", f"text_fixture_{segment}_manual_off", up=True)
+            voice_tap(f"Prepare {segment} video", f"text_fixture_{segment}_manual_prepare")
+            voice_find(ready, f"text_fixture_{segment}_manual_ready", up=True)
+            voice_tap("Fixture move playhead (no audio)", f"text_fixture_{segment}_manual_seek")
+            voice_find(moved, f"text_fixture_{segment}_manual_observed", up=True)
+            voice_tap(f"Fixture final {phrase} text (no audio)",
+                      f"text_fixture_{segment}_manual_stale_request")
+            voice_find("Local video unavailable: selected section changed",
+                       f"text_fixture_{segment}_manual_refused", up=True)
+            voice_find("Fixture final text refused; no additional player action",
+                       f"text_fixture_{segment}_manual_policy_refused", up=True)
+            intro_off = voice_find("Skip Intro", f"text_fixture_{segment}_manual_intro_off")
+            check_visible_button(intro_off, "Skip Intro", False)
+            recap_off = voice_find("Skip Recap", f"text_fixture_{segment}_manual_recap_off")
+            check_visible_button(recap_off, "Skip Recap", False)
+        print("VOICE_OWNED_STALE_PLAYHEAD_FIXTURE_PASS: manual playhead readback rejects old intro/recap final text; OS audio NONE", flush=True)
+
         # Prepare a fresh Intro immediately before leaving the app.
         # A resumed session must not retain the old local-video entitlement.
         voice_tap("Reset test player", "local_video_before_background_reset", up=True)

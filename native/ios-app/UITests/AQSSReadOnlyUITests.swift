@@ -1115,6 +1115,28 @@ final class AQSSReadOnlyUITests: XCTestCase {
         observe("Local video observed: recap ends at 6s")
         press(recap)
         XCTAssertEqual(state.label, "Local video observed: recap ends at 6s")
+
+        // A real user/player playhead change after selection must win over a
+        // later supplied final phrase: no seek to the original Skip target.
+        for (prepare, ready, move, command) in [
+            ("voice-local-prepare-intro", "Local video: intro ready at 0s",
+             "Local video moved: intro playhead now 1s", intro),
+            ("voice-local-prepare-recap", "Local video: recap ready at 4s",
+             "Local video moved: recap playhead now 5s", recap)
+        ] {
+            press(app.buttons["voice-demo-reset"])
+            observe("Local video not prepared")
+            press(app.buttons[prepare])
+            observe(ready)
+            press(app.buttons["voice-test-manual-seek"])
+            observe(move) // Independently read AVPlayer.currentTime after manual seek.
+            press(command)
+            observe("Local video unavailable: selected section changed")
+            XCTAssertFalse(app.buttons["voice-demo-skip-intro"].isEnabled)
+            XCTAssertFalse(app.buttons["voice-demo-skip-recap"].isEnabled)
+            XCTAssertEqual(app.staticTexts["voice-demo-result"].label,
+                           "Fixture final text refused; no additional player action")
+        }
         XCTAssertEqual(app.buttons["voice-start-stop"].label, "Start voice check")
         XCTAssertEqual(app.staticTexts["voice-transcript"].label, "No words recognized yet")
         screenshot("Supplied final text to native player readback; audio NONE", app)

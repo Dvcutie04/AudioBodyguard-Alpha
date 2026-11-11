@@ -121,6 +121,28 @@ final class VoiceCheck: ObservableObject {
             demoMessage = "Fixture final text refused; no additional player action"
         }
     }
+    // Simulates a competing playhead move on the real, bundled AVPlayer.
+    // The final-text gate must not seek from an obsolete segment selection.
+    func moveTestOnlyPlayhead() {
+        guard textFixtureEnabled, localVideoVisible, !localBusy,
+              let stage = localMode else { return }
+        let target = stage == .intro ? 1.0 : 5.0
+        let epoch = localEpoch
+        let observedLabel = stage == .intro
+            ? "Local video moved: intro playhead now 1s"
+            : "Local video moved: recap playhead now 5s"
+        localBusy = true
+        localPlayer.seek(to: CMTime(seconds: target, preferredTimescale: 600),
+                         toleranceBefore: .zero, toleranceAfter: .zero) { [weak self] finished in
+            Task { @MainActor [weak self] in
+                guard let self = self, self.localEpoch == epoch else { return }
+                self.localBusy = false
+                let actual = self.localPlayer.currentTime().seconds
+                self.localVideoStatus = finished && actual.isFinite && abs(actual - target) < 0.3
+                    ? observedLabel : "Local video: fixture playhead move NOT observed"
+            }
+        }
+    }
 #endif
     // Only a boolean about the app-owned fixture is retained, never speech or media.
     // A recreated screen must not restore a prepared Skip control after background.
@@ -587,6 +609,8 @@ struct VoiceCheckView: View {
                                 .accessibilityIdentifier("voice-test-final-text-intro")
                             Button("Test final text Recap") { voice.requestTestOnlyFinalText(.recap) }
                                 .accessibilityIdentifier("voice-test-final-text-recap")
+                            Button("Fixture move playhead (no audio)") { voice.moveTestOnlyPlayhead() }
+                                .accessibilityIdentifier("voice-test-manual-seek")
                         }
 #endif
                         if voice.localVideoVisible {
