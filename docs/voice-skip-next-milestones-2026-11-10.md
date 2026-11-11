@@ -120,3 +120,23 @@ spoken-voice end-to-end trial.
 Actual V2 OS speech recognition remains unrun on this revision. No availability
 of an on-device speech recognizer or model has yet been established on hosted
 iOS/Android simulators. Do not inject a string and report a microphone result.
+
+
+## November 10 ~19:30 Pacific — V2 on-device service availability probes
+
+Native CI now adds two **observation-only** probes alongside the already verified
+manual local-video tests. An iOS Simulator XCTest directly queries
+`SFSpeechRecognizer(locale: en_US)` availability, on-device support and
+authorization, with a printed provenance line and explicit `XCTSkip` if any
+requirement is unavailable. The Android API 36 emulator uses a *separate
+test-only instrumentation APK* to call the actual
+`SpeechRecognizer.isOnDeviceRecognitionAvailable` API without invoking
+`startListening`; it records the API result and demands a completed
+instrumentation receipt. These probes do not open a microphone, provide an audio
+source, run a recognition task, inject final text or activate any button.
+An unavailable service is an evidence-backed blocker for V2 on that runner,
+not a failure of the already verified V3 local-player actions. Neither an iOS
+XCTest success nor an Android instrumentation success means an on-device speech
+model actually recognized a phrase. Next V2 acceptance is an authored audio
+sample consumed by the OS recognizer and a final result flowing through the
+same gate to the owned player. No silent microphone fallback is permitted.

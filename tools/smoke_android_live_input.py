@@ -401,6 +401,15 @@ def main():
         "No app dialog or post-launch ANR is suppressed.\n")
     print("SYSTEM_LAUNCHER_READY: three fresh observations before app installation", flush=True)
     adb("install", "-r", args.apk, timeout=120)
+    # Test APK reads actual Android on-device service availability without
+    # opening a microphone, starting recognition or injecting a transcript.
+    if args.voice_fixture_only:
+        probe = adb("shell", "am", "instrument", "-w", "-r",
+                    "com.aqss.bodyguard.uiprobe/.SpeechServiceAvailabilityProbe",
+                    timeout=60).decode(errors="replace")
+        (out / "voice-os-recognizer-service.txt").write_text(probe)
+        assert "AQSS_V2_SERVICE_PROBE=" in probe and "INSTRUMENTATION_CODE: -1" in probe, (
+            "Android service query failed; do not classify missing evidence as available", probe)
     adb("shell", "pm", "clear", package)
     adb("logcat", "-c")
     recording = subprocess.Popen(["adb", "shell", "screenrecord", "--time-limit", "12", "/sdcard/aqss-opening.mp4"],

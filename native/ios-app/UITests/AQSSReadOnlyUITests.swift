@@ -1,7 +1,25 @@
 import XCTest
 import UIKit
+import Speech
 
 final class AQSSReadOnlyUITests: XCTestCase {
+    /// OS service availability only. No audio, recognition task, microphone,
+    /// injected transcript or Skip action is started by this UI test.
+    func testOnDeviceSpeechCapabilityProbeWithoutCapture() throws {
+        let locale = Locale(identifier: "en_US")
+        let recognizer = SFSpeechRecognizer(locale: locale)
+        let available = recognizer?.isAvailable ?? false
+        let onDevice = recognizer?.supportsOnDeviceRecognition ?? false
+        let authorized = SFSpeechRecognizer.authorizationStatus() == .authorized
+        print("AQSS_V2_SERVICE_PROBE: os=iOS Simulator locale=en_US recognizer=\(recognizer != nil) onDevice=\(onDevice) available=\(available) speechAuthorized=\(authorized) audio=NONE")
+        guard recognizer != nil, available, onDevice else {
+            throw XCTSkip("On-device English speech recognition unavailable on this simulator. No audio was opened.")
+        }
+        guard authorized else {
+            throw XCTSkip("Speech permission not authorized for this UI-test process. No audio was opened.")
+        }
+        // Availability is not an audio-to-action or microphone result.
+    }
     override func setUpWithError() throws {
         continueAfterFailure = false
         XCUIDevice.shared.orientation = .portrait
