@@ -75,6 +75,15 @@ class InputAssistanceActivity : Activity() {
         updateLocalStatus("Local video not prepared")
     }
 
+    /** Backgrounded local video cannot leave its stale Skip control enabled. */
+    private fun suspendLocalVideo() {
+        if (!localVideoActive) return
+        closeLocalVideo()
+        demoIntroAvailable = false; demoRecapAvailable = false; demoGeneration++
+        demoIntroButton?.isEnabled = false; demoRecapButton?.isEnabled = false
+        demoStatus?.text = "Test player paused — reset to prepare video again"
+    }
+
     private fun prepareLocalVideo(action: OwnedSkipAction) {
         if (running || localVideoBusy || recognizer != null) return
         val video = localVideo ?: return
@@ -788,7 +797,7 @@ class InputAssistanceActivity : Activity() {
     override fun onPause() {
         visible = false
         photoObservation?.close(); photoObservation = null
-        if (isVoice) { stopVoice(); closeLocalVideo(); if (::details.isInitialized) details.text = "No words recognized yet" }
+        if (isVoice) { stopVoice(); suspendLocalVideo(); if (::details.isInitialized) details.text = "No words recognized yet" }
         super.onPause()
     }
     override fun onDestroy() { stopVoice(); stopPhotoWatchdog(); photoObservation?.close(); photoObservation = null; handler.removeCallbacksAndMessages(null); pendingPhoto = null; photoRun.clear(); cameraPhoto?.close(); cameraPhoto = null; worker.shutdown(); super.onDestroy() }

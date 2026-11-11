@@ -1041,6 +1041,24 @@ final class AQSSReadOnlyUITests: XCTestCase {
         XCTAssertFalse(recap.isEnabled)
         screenshot("Native local H264 player reads back Recap transition", app)
 
+        // Abandoning the prepared Intro on background must revoke both controls
+        // before the user returns. No microphone is involved in this test.
+        press(reset)
+        awaitPosition("Local video not prepared")
+        press(prepareIntro)
+        awaitPosition("Local video: intro ready at 0s")
+        XCTAssertTrue(intro.isEnabled)
+        XCUIDevice.shared.press(.home)
+        app.activate()
+        awaitPosition("Local video not prepared")
+        XCTAssertFalse(intro.isEnabled)
+        XCTAssertFalse(recap.isEnabled)
+        XCTAssertEqual(app.staticTexts["voice-demo-result"].label,
+                       "Test player paused — reset to prepare video again")
+        press(reset)
+        XCTAssertTrue(intro.isEnabled && recap.isEnabled)
+        screenshot("Returning from background rejects stale local Intro affordance", app)
+
         // This test deliberately never presses Start. No speech recognition
         // or TV/third-party player action is being claimed by this receipt.
         XCTAssertEqual(app.buttons["voice-start-stop"].label, "Start voice check")

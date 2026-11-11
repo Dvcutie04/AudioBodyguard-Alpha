@@ -169,6 +169,15 @@ final class VoiceCheck: ObservableObject {
         localVideoVisible = false; localVideoStatus = "Local video not prepared"
     }
 
+    /// A returning screen cannot reuse an abandoned local-video affordance.
+    func suspendLocalVideo() {
+        guard localVideoVisible else { return }
+        closeLocalVideo()
+        demoIntroAvailable = false; demoRecapAvailable = false
+        demoGeneration += 1
+        demoMessage = "Test player paused — reset to prepare video again"
+    }
+
     private var demoSnapshot: OwnedSkipSnapshot {
         OwnedSkipSnapshot(playerID: "owned-test-player", playbackSessionID: "voice-demo",
                           contentID: "test-episode", generation: demoGeneration,
@@ -536,7 +545,10 @@ struct VoiceCheckView: View {
             .sheet(isPresented: $setupVisible) { SetupGuidesView(theme: theme, initialGroup: "voice", onVoiceCheck: {}) }
             .onChange(of: phase) {
                 if $0 == .active { voice.refreshPermissionGuidance() }
-                else { voice.clear("Microphone stopped when you left the voice check.") }
+                else {
+                     voice.clear("Microphone stopped when you left the voice check.")
+                     voice.suspendLocalVideo()
+                 }
             }
             .onReceive(NotificationCenter.default.publisher(for: AVAudioSession.interruptionNotification)) { _ in voice.interrupt("Audio interrupted — tap Start to try again.") }
             .onReceive(NotificationCenter.default.publisher(for: AVAudioSession.routeChangeNotification)) { _ in voice.routeChanged() }
@@ -546,7 +558,7 @@ struct VoiceCheckView: View {
             .onReceive(NotificationCenter.default.publisher(for: AVAudioSession.mediaServicesWereResetNotification)) { _ in
                 voice.interrupt("Audio services reset. Tap Start to try again.")
             }
-            .onDisappear { voice.clear() }
+            .onDisappear { voice.clear(); voice.suspendLocalVideo() }
     }
 }
 

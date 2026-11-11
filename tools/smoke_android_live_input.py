@@ -538,11 +538,18 @@ def main():
                    "local_video_recap_readback", up=True)
         screenshot("local_video_recap_observed")
 
+        # Prepare a fresh Intro immediately before leaving the app.
+        # A resumed session must not retain the old local-video entitlement.
+        voice_tap("Reset test player", "local_video_before_background_reset", up=True)
+        voice_find("Local video not prepared", "local_video_before_background_off", up=True)
+        voice_tap("Prepare intro video", "local_video_prepare_before_background", up=True)
+        voice_find("Local video: intro ready at 0s", "local_video_ready_before_background", up=True)
         # No speech event was injected, no microphone Start was pressed.
         adb("shell", "input", "keyevent", "KEYCODE_HOME")
         time.sleep(0.4)
         launch()
         wait_for("Start voice check", "voice_fixture_return_off")
+        voice_find("Local video not prepared", "voice_fixture_background_abandons_video", up=True)
         screenshot("voice_fixture_background_off")
         print("VOICE_OWNED_BUTTON_FIXTURE_PASS: real Intro/Recap buttons; no speech or TV claim", flush=True)
         return
