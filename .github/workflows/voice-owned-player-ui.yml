@@ -48,7 +48,8 @@ jobs:
             -resultBundlePath "$RUNNER_TEMP/voice-skip-owned-ui.xcresult" test-without-building \
             -only-testing:AQSSReadOnlyUITests/AQSSReadOnlyUITests/testOwnedVoiceSkipButtonsStaySeparateAndResetWithoutCapture \
             -only-testing:AQSSReadOnlyUITests/AQSSReadOnlyUITests/testOwnedLocalVideoSeeksAndReadsActualPlayerPosition \
-            -only-testing:AQSSReadOnlyUITests/AQSSReadOnlyUITests/testOnDeviceSpeechCapabilityProbeWithoutCapture
+            -only-testing:AQSSReadOnlyUITests/AQSSReadOnlyUITests/testOnDeviceSpeechCapabilityProbeWithoutCapture \
+            -only-testing:AQSSReadOnlyUITests/AQSSReadOnlyUITests/testOwnedFinalTextGateToRealLocalPlayerWithoutRecognition
       - name: Retain genuine XCTest screen/interaction evidence
         if: always()
         uses: actions/upload-artifact@v4

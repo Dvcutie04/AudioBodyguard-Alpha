@@ -89,6 +89,39 @@ final class VoiceCheck: ObservableObject {
     private var localMode: OwnedSkipAction?
     private var localBusy = false
     private var localEpoch = 0
+#if targetEnvironment(simulator)
+    // Simulator-only supplied TEXT fixture: never OS recognition or microphone.
+    private let textFixtureGate = OwnedVoiceSkipGate()
+    private var textFixtureRunID: String?
+    var textFixtureEnabled: Bool {
+        ProcessInfo.processInfo.arguments.contains("--aqss-owned-final-text-fixture")
+    }
+    private func retireTextFixture() {
+        textFixtureGate.stop()
+        textFixtureRunID = nil
+    }
+    private func readyTextFixture() {
+        guard textFixtureEnabled else { return }
+        retireTextFixture()
+        let runID = UUID().uuidString
+        if textFixtureGate.start(runID: runID, player: demoSnapshot) {
+            textFixtureRunID = runID
+        }
+    }
+    func requestTestOnlyFinalText(_ action: OwnedSkipAction) {
+        guard textFixtureEnabled, let runID = textFixtureRunID else { return }
+        // Deliberately supplies final TEXT, not a recognizer or microphone event.
+        // Exercises the real owned policy gate and same native player handler.
+        let words = action == .intro ? "Audio Bodyguard, skip intro" : "Audio Bodyguard, skip recap"
+        let decision = textFixtureGate.requestFinal(
+            words, runID: runID, observed: demoSnapshot, permitted: true,
+            foreground: UIApplication.shared.applicationState == .active,
+            pressOwnedButton: { [weak self] action in self?.pressDemo(action) ?? false })
+        if decision != .requested {
+            demoMessage = "Fixture final text refused; no additional player action"
+        }
+    }
+#endif
     // Only a boolean about the app-owned fixture is retained, never speech or media.
     // A recreated screen must not restore a prepared Skip control after background.
     private static let localVideoNeedsResetKey = "aqss.ownedLocalVideo.needsReset.v1"
@@ -134,6 +167,9 @@ final class VoiceCheck: ObservableObject {
                 self.demoGeneration += 1
                 self.localVideoStatus = action == .intro
                     ? "Local video: intro ready at 0s" : "Local video: recap ready at 4s"
+#if targetEnvironment(simulator)
+                self.readyTextFixture()
+#endif
             }
         }
     }
@@ -177,6 +213,9 @@ final class VoiceCheck: ObservableObject {
     }
 
     private func closeLocalVideo() {
+#if targetEnvironment(simulator)
+        retireTextFixture()
+#endif
         localEpoch += 1; localMode = nil; localBusy = false
         localPlayer.pause(); localPlayer.replaceCurrentItem(with: nil)
         localVideoVisible = false; localVideoStatus = "Local video not prepared"
@@ -540,6 +579,16 @@ struct VoiceCheckView: View {
                                 .accessibilityIdentifier("voice-local-prepare-recap")
                         }
                         Text(voice.localVideoStatus).accessibilityIdentifier("voice-local-video-status")
+#if targetEnvironment(simulator)
+                        if voice.textFixtureEnabled {
+                            Text("Simulator software test: supplied final text, no OS speech or microphone")
+                                .font(.caption)
+                            Button("Test final text Intro") { voice.requestTestOnlyFinalText(.intro) }
+                                .accessibilityIdentifier("voice-test-final-text-intro")
+                            Button("Test final text Recap") { voice.requestTestOnlyFinalText(.recap) }
+                                .accessibilityIdentifier("voice-test-final-text-recap")
+                        }
+#endif
                         if voice.localVideoVisible {
                             VideoPlayer(player: voice.localPlayer).frame(height: 110)
                                 .accessibilityIdentifier("voice-local-video-preview")

@@ -1065,6 +1065,61 @@ final class AQSSReadOnlyUITests: XCTestCase {
         XCTAssertEqual(app.staticTexts["voice-transcript"].label, "No words recognized yet")
     }
 
+    func testOwnedFinalTextGateToRealLocalPlayerWithoutRecognition() {
+        // Supplied TEXT only: no OS recognition, microphone or external player.
+        let app = launch(fixtureText: true)
+        tab("sound", app); tap("Voice check", app)
+        let panel = app.buttons["voice-local-video-help"]
+        XCTAssertTrue(panel.waitForExistence(timeout: 5))
+        if !panel.isHittable { app.scrollViews.firstMatch.swipeUp() }
+        panel.tap()
+        let state = app.staticTexts["voice-local-video-status"]
+        let intro = app.buttons["voice-test-final-text-intro"]
+        let recap = app.buttons["voice-test-final-text-recap"]
+        let scroll = app.scrollViews.firstMatch
+        func press(_ control: XCUIElement) {
+            for _ in 0..<8 {
+                if control.isHittable { control.tap(); return }
+                scroll.swipeUp()
+            }
+            for _ in 0..<8 {
+                if control.isHittable { control.tap(); return }
+                scroll.swipeDown()
+            }
+            XCTFail("Fixture control unreachable")
+        }
+        func observe(_ expected: String) {
+            let p = XCTNSPredicateExpectation(predicate:
+                NSPredicate(format: "label == %@", expected), object: state)
+            XCTAssertEqual(XCTWaiter.wait(for: [p], timeout: 16), .completed)
+        }
+        XCTAssertTrue(intro.exists && recap.exists)
+        XCTAssertEqual(app.buttons["voice-start-stop"].label, "Start voice check")
+        press(app.buttons["voice-local-prepare-intro"])
+        observe("Local video: intro ready at 0s")
+        press(recap) // Wrong phrase: no local seek.
+        XCTAssertEqual(state.label, "Local video: intro ready at 0s")
+        press(intro)
+        observe("Local video observed: intro ends at 2s")
+        press(intro) // Consumed run: zero additional player actions.
+        XCTAssertEqual(state.label, "Local video observed: intro ends at 2s")
+        XCTAssertEqual(app.staticTexts["voice-demo-result"].label,
+                       "Fixture final text refused; no additional player action")
+        press(app.buttons["voice-demo-reset"])
+        observe("Local video not prepared")
+        press(app.buttons["voice-local-prepare-recap"])
+        observe("Local video: recap ready at 4s")
+        press(intro)
+        XCTAssertEqual(state.label, "Local video: recap ready at 4s")
+        press(recap)
+        observe("Local video observed: recap ends at 6s")
+        press(recap)
+        XCTAssertEqual(state.label, "Local video observed: recap ends at 6s")
+        XCTAssertEqual(app.buttons["voice-start-stop"].label, "Start voice check")
+        XCTAssertEqual(app.staticTexts["voice-transcript"].label, "No words recognized yet")
+        screenshot("Supplied final text to native player readback; audio NONE", app)
+    }
+
     func testOwnedVoiceSkipButtonsStaySeparateAndResetWithoutCapture() {
         let app = launch()
         tab("sound", app); tap("Voice check", app)
@@ -1606,11 +1661,12 @@ final class AQSSReadOnlyUITests: XCTestCase {
         XCTAssertTrue(app.buttons["tab-devices"].isHittable,
                       "Devices navigation must remain reachable after Close")
     }
-    private func launch(_ firstVisit: Bool = false, largeText: Bool = false) -> XCUIApplication {
+    private func launch(_ firstVisit: Bool = false, largeText: Bool = false, fixtureText: Bool = false) -> XCUIApplication {
         let app = XCUIApplication()
         app.launchArguments = ["-aqssGuideDismissedV1", firstVisit ? "NO" : "YES"]
         // Simulator-only, bounded, payload-free native Share lifecycle diagnostics.
         app.launchArguments += ["--aqss-trace-sharing"]
+        if fixtureText { app.launchArguments += ["--aqss-owned-final-text-fixture"] }
         if largeText { app.launchArguments += ["-UIPreferredContentSizeCategoryName", "UICTContentSizeCategoryAccessibilityXXXL"] }
         app.launch(); return app
     }
