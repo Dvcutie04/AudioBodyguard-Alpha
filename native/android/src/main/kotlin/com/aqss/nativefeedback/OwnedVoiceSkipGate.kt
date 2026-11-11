@@ -67,11 +67,13 @@ class OwnedVoiceSkipGate {
     fun request(proposal: OwnedSkipProposal?, runId: String, observed: OwnedSkipSnapshot,
                 permitted: Boolean, foreground: Boolean,
                 pressOwnedButton: (OwnedSkipAction) -> Boolean): OwnedSkipDecision {
-        if (proposal == null || this.runId != runId || used ||
+        // Retired callbacks cannot revoke a newer run. Current consent loss
+        // invalidates even a request with a rejected proposal or snapshot.
+        if (this.runId != runId) return OwnedSkipDecision.UNAVAILABLE
+        if (!permitted || !foreground) { stop(); return OwnedSkipDecision.UNAVAILABLE }
+        if (proposal == null || used ||
             proposal.runId != runId || proposal !== pending || selected != observed ||
             proposal.snapshot != observed || !observed.offers(proposal.action)) return OwnedSkipDecision.UNAVAILABLE
-        // Once session permission or foreground ownership is lost, require fresh Start.
-        if (!permitted || !foreground) { stop(); return OwnedSkipDecision.UNAVAILABLE }
         used = true; pending = null
         return try {
             if (pressOwnedButton(proposal.action)) OwnedSkipDecision.REQUESTED else OwnedSkipDecision.CALL_FAILED
@@ -81,6 +83,7 @@ class OwnedVoiceSkipGate {
     fun requestFinal(text: String?, runId: String, observed: OwnedSkipSnapshot,
                      permitted: Boolean, foreground: Boolean,
                      pressOwnedButton: (OwnedSkipAction) -> Boolean): OwnedSkipDecision {
+        if (this.runId != runId) return OwnedSkipDecision.UNAVAILABLE
         if (!permitted || !foreground) { stop(); return OwnedSkipDecision.UNAVAILABLE }
         val proposal = propose(text, true, runId, observed) ?: return OwnedSkipDecision.UNAVAILABLE
         return request(proposal, runId, observed, permitted, foreground, pressOwnedButton)

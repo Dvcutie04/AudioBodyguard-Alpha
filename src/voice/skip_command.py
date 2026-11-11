@@ -130,16 +130,18 @@ class OwnedVoiceSkipGate:
     def request(self, proposal: SkipProposal, *, run_id: str,
                 observed: OwnedPlayerState, permission: bool, foreground: bool,
                 press_owned_button: Callable[[SkipAction], bool]) -> SkipDecision:
-        if (self._run_id is None or run_id != self._run_id or self._used or
+        # A retired callback cannot revoke a newer run. For the current run,
+        # loss of consent must invalidate even an otherwise rejected request.
+        if self._run_id is None or run_id != self._run_id:
+            return SkipDecision.UNAVAILABLE
+        if permission is not True or foreground is not True:
+            self.stop()
+            return SkipDecision.UNAVAILABLE
+        if (self._used or
             proposal is not self._proposal or not isinstance(proposal, SkipProposal) or
             proposal.grammar_version != GRAMMAR_VERSION or
             observed != self._player or observed != proposal.player_state or
             not observed.offers(proposal.action) or not callable(press_owned_button)):
-            return SkipDecision.UNAVAILABLE
-        # Once permission or foreground ownership is lost, a stale final result
-        # must never revive within the same listening run.
-        if permission is not True or foreground is not True:
-            self.stop()
             return SkipDecision.UNAVAILABLE
         # Consumed before the callback: an exception or reentrant callback can
         # never turn the same recognized utterance into a second press.
@@ -155,6 +157,8 @@ class OwnedVoiceSkipGate:
                       permission: bool, foreground: bool,
                       press_owned_button: Callable[[SkipAction], bool]) -> SkipDecision:
         """Apply final recognition through the same one-shot owned-button policy."""
+        if self._run_id is None or run_id != self._run_id:
+            return SkipDecision.UNAVAILABLE
         if permission is not True or foreground is not True:
             self.stop()
             return SkipDecision.UNAVAILABLE

@@ -104,11 +104,13 @@ public struct OwnedSkipProposal {
     public func request(_ proposal: OwnedSkipProposal?, runID: String,
                         observed: OwnedSkipSnapshot, permitted: Bool, foreground: Bool,
                         pressOwnedButton: (OwnedSkipAction) -> Bool) -> OwnedSkipDecision {
-        guard let p = proposal, self.runID == runID, !used,
+        // A retired callback cannot revoke a newer run. Current consent loss
+        // invalidates the run even when the proposal or snapshot is rejected.
+        guard self.runID == runID else { return .unavailable }
+        guard permitted, foreground else { stop(); return .unavailable }
+        guard let p = proposal, !used,
               p.runID == runID, p.nonce == pending?.nonce, selected == observed,
               p.state == observed, observed.offers(p.action) else { return .unavailable }
-        // No authorization can be revived without another explicit listening Start.
-        guard permitted, foreground else { stop(); return .unavailable }
         used = true; pending = nil
         return pressOwnedButton(p.action) ? .requested : .callFailed
     }
@@ -116,6 +118,7 @@ public struct OwnedSkipProposal {
     public func requestFinal(_ text: String?, runID: String, observed: OwnedSkipSnapshot,
                              permitted: Bool, foreground: Bool,
                              pressOwnedButton: (OwnedSkipAction) -> Bool) -> OwnedSkipDecision {
+        guard self.runID == runID else { return .unavailable }
         guard permitted, foreground else { stop(); return .unavailable }
         guard let text = text,
               let proposal = propose(text, final: true, runID: runID, observed: observed) else {
