@@ -1,0 +1,150 @@
+name: Owner TestFlight dispatch November 11
+run-name: Launch the reviewed November 11 owner beta through the existing release pipeline
+
+# A one-time delivery-control branch; this file is not application source.
+# No Apple secrets, pipeline bypass, automatic merge, or repeated upload.
+on:
+  push:
+    branches: ["release/owner-testflight-20261111"]
+    paths: ["release-requests/owner-20261111.json"]
+
+permissions: {}
+concurrency:
+  group: owner-testflight-dispatch-20261111
+  cancel-in-progress: false
+
+jobs:
+  dispatch:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+      pull-requests: read
+      actions: write
+    steps:
+      - name: Validate the merged candidate and request exactly one signed internal beta
+        id: release
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          python3 - <<'PYTHON'
+          """One-time owner-authorized dispatch; never handles Apple signing credentials."""
+          import datetime
+          import json
+          import os
+          import pathlib
+          import urllib.error
+          import urllib.request
+          
+          REPO = "Dvcutie04/AudioBodyguard-Alpha"
+          SOURCE = "29e99bfde31f84a02622fb8e0b02779f7bf8276b"
+          TREE = "376731888b799cc40035bddd03a19f29cdb06cd5"
+          RELEASE_WORKFLOW_BLOB = "65a3ef3804638479fbbde17c5a4bcfdacdd98302"
+          CONTROL_BRANCH = "release/owner-testflight-20261111"
+          CHECK_RUNS = (43094829442, 43094829398, 43094829589,
+                        43094829397, 43094829570, 43094829374)
+          
+          
+          def require(condition, message):
+              if not condition:
+                  raise SystemExit(message)
+          
+          
+          def api(path, payload=None):
+              require(path.startswith("/repos/" + REPO + "/"), "Unexpected API path")
+              request = urllib.request.Request(
+                  "https://api.github.com" + path,
+                  data=None if payload is None else json.dumps(payload).encode("utf-8"),
+                  headers={
+                      "Authorization": "Bearer " + os.environ["GH_TOKEN"],
+                      "Accept": "application/vnd.github+json",
+                      "X-GitHub-Api-Version": "2026-03-10",
+                      "Content-Type": "application/json",
+                      "User-Agent": "AudioBodyguard-owner-release",
+                  },
+                  method="GET" if payload is None else "POST",
+              )
+              # A timeout after POST is indeterminate. Never automatically retry a dispatch.
+              try:
+                  with urllib.request.urlopen(request, timeout=40) as response:
+                      raw = response.read()
+                      return response.status, json.loads(raw) if raw else None
+              except urllib.error.HTTPError as error:
+                  raise SystemExit("GitHub request rejected; HTTP " + str(error.code)) from None
+              except (urllib.error.URLError, TimeoutError):
+                  raise SystemExit("GitHub request incomplete; inspect runs before any new dispatch") from None
+          
+          
+          def main():
+              require(os.environ.get("GITHUB_REPOSITORY") == REPO, "Wrong repository")
+              require(os.environ.get("GITHUB_REF") == "refs/heads/" + CONTROL_BRANCH,
+                      "Wrong delivery-control branch")
+              require(os.environ.get("GITHUB_EVENT_NAME") == "push", "Push authorization required")
+              require(os.environ.get("GITHUB_RUN_ATTEMPT") == "1", "No automatic repeat dispatch")
+              prefix = "/repos/" + REPO
+              _, pr = api(prefix + "/pulls/122")
+              require(pr["merged"] and not pr["draft"] and pr["base"]["ref"] == "main"
+                      and pr["head"]["sha"] == SOURCE, "Exact reviewed candidate must be merged")
+              _, main_branch = api(prefix + "/branches/main")
+              main_commit = main_branch["commit"]
+              require(main_commit["sha"] == pr["merge_commit_sha"], "Main moved; review before dispatch")
+              require(main_commit["commit"]["tree"]["sha"] == TREE, "Merged application tree changed")
+              _, source = api(prefix + "/git/commits/" + SOURCE)
+              require(source["tree"]["sha"] == TREE, "Source tree mismatch")
+              _, ancestry = api(prefix + "/compare/" + SOURCE + "..." + main_commit["sha"])
+              require(ancestry["merge_base_commit"]["sha"] == SOURCE,
+                      "Candidate is not an ancestor of main")
+              _, workflow = api(prefix + "/contents/.github/workflows/testflight-beta.yml?ref=main")
+              require(workflow["sha"] == RELEASE_WORKFLOW_BLOB, "Existing release workflow changed")
+              for run_id in CHECK_RUNS:
+                  _, run = api(prefix + "/actions/runs/" + str(run_id))
+                  require(run["head_sha"] == SOURCE and run["status"] == "completed"
+                          and run["conclusion"] == "success",
+                          "Candidate check not successful: " + str(run_id))
+              # The candidate merge is new; a dispatch on this main SHA means this request
+              # may already have been acted on. Fail closed rather than upload twice.
+              _, recent = api(prefix + "/actions/workflows/testflight-beta.yml/runs"
+                              "?event=workflow_dispatch&per_page=100")
+              require(not any(run["head_sha"] == main_commit["sha"]
+                              for run in recent["workflow_runs"]), "A release dispatch already exists")
+              inputs = {"source_revision": SOURCE, "version": "1.0.0",
+                        "testing_audience": "internal", "upload": "true"}
+              status, accepted = api(prefix + "/actions/workflows/testflight-beta.yml/dispatches",
+                              {"ref": "main", "inputs": inputs})
+              require(status == 200 and isinstance(accepted, dict),
+                      "Unexpected dispatch response; inspect runs before retry")
+              release_run_id = accepted.get("workflow_run_id")
+              require(type(release_run_id) is int and release_run_id > 0,
+                      "Dispatch accepted without a usable run ID; inspect runs before retry")
+              require(accepted.get("run_url") == "https://api.github.com" + prefix + "/actions/runs/" + str(release_run_id),
+                      "Unexpected release run URL; inspect runs before retry")
+              receipt = {"scope": "RELEASE_DISPATCH_ACCEPTED_NOT_TESTFLIGHT_DELIVERY",
+                         "source_revision": SOURCE, "source_tree": TREE,
+                         "merged_main_revision": main_commit["sha"], "reviewed_pr": 122,
+                         "release_workflow_blob": RELEASE_WORKFLOW_BLOB,
+                         "checked_run_ids": list(CHECK_RUNS),
+                         "dispatcher_run_id": os.environ["GITHUB_RUN_ID"],
+                         "release_run_id": release_run_id,
+                         "requested_at": datetime.datetime.now(datetime.timezone.utc).isoformat(),
+                         "inputs": inputs, "signed_upload_confirmed": False,
+                         "apple_processing_confirmed": False, "owner_testing_available": False}
+              pathlib.Path("owner-release-dispatch.json").write_text(
+                  json.dumps(receipt, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+              print(json.dumps(receipt, indent=2, sort_keys=True))
+              if os.environ.get("GITHUB_OUTPUT"):
+                  with open(os.environ["GITHUB_OUTPUT"], "a", encoding="utf-8") as out:
+                      out.write("release_run_id=" + str(release_run_id) + "\n")
+          
+          
+          if __name__ == "__main__":
+              main()
+          PYTHON
+      - name: Retain the non-secret dispatch receipt
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: owner-testflight-dispatch-${{ github.run_id }}
+          path: owner-release-dispatch.json
+          if-no-files-found: ignore
+          retention-days: 7
