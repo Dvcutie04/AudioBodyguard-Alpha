@@ -1188,9 +1188,34 @@ final class AQSSReadOnlyUITests: XCTestCase {
             XCTAssertEqual(app.staticTexts["voice-demo-result"].label,
                            "Fixture final text canceled; no audio")
         }
+        // A final TEXT event delivered after Home/background may not revive the
+        // abandoned local-video run or restore either stale player control.
+        // This is an app-owned simulator test, not a microphone callback.
+        for (prepare, ready, command) in [
+            ("voice-local-prepare-intro", "Local video: intro ready at 0s",
+             "voice-test-final-text-intro"),
+            ("voice-local-prepare-recap", "Local video: recap ready at 4s",
+             "voice-test-final-text-recap")
+        ] {
+            press(app.buttons["voice-demo-reset"])
+            observe("Local video not prepared")
+            press(app.buttons[prepare]); observe(ready)
+            XCUIDevice.shared.press(.home)
+            app.activate()
+            observe("Local video not prepared")
+            XCTAssertFalse(app.buttons["voice-demo-skip-intro"].isEnabled)
+            XCTAssertFalse(app.buttons["voice-demo-skip-recap"].isEnabled)
+            press(app.buttons[command])
+            XCTAssertEqual(state.label, "Local video not prepared",
+                           "A backgrounded final-text run must not seek or restore video")
+            XCTAssertEqual(app.staticTexts["voice-demo-result"].label,
+                           "Test player paused — reset to prepare video again")
+            XCTAssertFalse(app.buttons["voice-demo-skip-intro"].isEnabled)
+            XCTAssertFalse(app.buttons["voice-demo-skip-recap"].isEnabled)
+        }
         XCTAssertEqual(app.buttons["voice-start-stop"].label, "Start voice check")
         XCTAssertEqual(app.staticTexts["voice-transcript"].label, "No words recognized yet")
-        screenshot("Canceled supplied final text leaves real local playhead unchanged; audio NONE", app)
+        screenshot("Canceled and backgrounded final text cannot seek owned video; audio NONE", app)
     }
 
     func testOwnedVoiceSkipButtonsStaySeparateAndResetWithoutCapture() {

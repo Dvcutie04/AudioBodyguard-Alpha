@@ -640,6 +640,21 @@ def main():
         check_visible_button(recap_off, "Skip Recap", False)
         screenshot("voice_fixture_background_off")
 
+        # A late supplied final TEXT after Home/resume must not seek or restore
+        # the abandoned local-player run. This is NOT an OS recognizer callback.
+        for phrase in ("Intro", "Recap"):
+            voice_tap(f"Fixture final {phrase} text (no audio)",
+                      f"voice_fixture_background_late_{phrase.lower()}", up=True)
+            voice_find("Local video not prepared",
+                       f"voice_fixture_background_{phrase.lower()}_still_off", up=True)
+            voice_find("Test player paused — reset to prepare video again",
+                       f"voice_fixture_background_{phrase.lower()}_still_retired", up=True)
+            intro_off = voice_find("Skip Intro", f"voice_fixture_background_{phrase.lower()}_intro_off")
+            check_visible_button(intro_off, "Skip Intro", False)
+            recap_off = voice_find("Skip Recap", f"voice_fixture_background_{phrase.lower()}_recap_off")
+            check_visible_button(recap_off, "Skip Recap", False)
+        print("VOICE_OWNED_BACKGROUND_FINAL_TEXT_FIXTURE_PASS: no stale player seek after Home; OS audio NONE", flush=True)
+
         # A new Activity object after process death must also fail closed.
         # The only persistent datum is an owned-fixture reset marker, not audio.
         adb("shell", "am", "force-stop", package)
