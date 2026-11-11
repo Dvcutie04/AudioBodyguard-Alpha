@@ -92,7 +92,8 @@ class InputAssistanceActivity : Activity() {
             true
         }
         video.setOnPreparedListener { mp ->
-            if (localVideoEpoch == epoch) return@setOnPreparedListener
+            // Only a retired prepare may be ignored. The matching epoch is the active video.
+            if (localVideoEpoch != epoch) return@setOnPreparedListener
             localMedia = mp
             mp.setVolume(0f, 0f)
             if (mp.duration !in 7500..8500) {
