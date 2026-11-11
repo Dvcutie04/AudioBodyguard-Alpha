@@ -168,6 +168,12 @@ final class VoiceCheck: ObservableObject {
     /// This does not grant TV authority or synthesize a voice result.
     func prepareLocalVideo(_ action: OwnedSkipAction) {
         guard !running, !requesting, !localBusy else { return }
+        // A new screen cannot revive an abandoned local-player session by
+        // preparing a different clip. The user must explicitly Reset first.
+        if !localVideoVisible && UserDefaults.standard.bool(forKey: Self.localVideoNeedsResetKey) {
+            localVideoStatus = "Local video unavailable: reset required before preparing again"
+            return
+        }
         guard let url = Bundle.main.url(forResource: "voice_skip_sample", withExtension: "mp4") else {
             localVideoStatus = "Local video unavailable: bundled clip missing"; return
         }

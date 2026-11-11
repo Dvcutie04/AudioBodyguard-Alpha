@@ -1055,6 +1055,12 @@ final class AQSSReadOnlyUITests: XCTestCase {
         XCTAssertFalse(recap.isEnabled)
         XCTAssertEqual(app.staticTexts["voice-demo-result"].label,
                        "Test player paused — reset to prepare video again")
+        // A new Prepare must not bypass the durable background reset barrier.
+        // Before this repair, it silently re-enabled the abandoned Intro.
+        press(prepareIntro)
+        awaitPosition("Local video unavailable: reset required before preparing again")
+        XCTAssertFalse(intro.isEnabled)
+        XCTAssertFalse(recap.isEnabled)
         press(reset)
         XCTAssertTrue(intro.isEnabled && recap.isEnabled)
         screenshot("Returning from background rejects stale local Intro affordance", app)

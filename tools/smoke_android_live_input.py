@@ -653,7 +653,16 @@ def main():
             check_visible_button(intro_off, "Skip Intro", False)
             recap_off = voice_find("Skip Recap", f"voice_fixture_background_{phrase.lower()}_recap_off")
             check_visible_button(recap_off, "Skip Recap", False)
-        print("VOICE_OWNED_BACKGROUND_FINAL_TEXT_FIXTURE_PASS: no stale player seek after Home; OS audio NONE", flush=True)
+        # Preparing a new clip without explicit Reset must not bypass the
+        # background retirement barrier or revive Skip eligibility.
+        voice_tap("Prepare intro video", "voice_fixture_background_reprepare_denied", up=True)
+        voice_find("Local video unavailable: reset required before preparing again",
+                   "voice_fixture_background_reprepare_status", up=True)
+        intro_off = voice_find("Skip Intro", "voice_fixture_background_reprepare_intro_off")
+        check_visible_button(intro_off, "Skip Intro", False)
+        recap_off = voice_find("Skip Recap", "voice_fixture_background_reprepare_recap_off")
+        check_visible_button(recap_off, "Skip Recap", False)
+        print("VOICE_OWNED_BACKGROUND_FINAL_TEXT_FIXTURE_PASS: no stale player seek or reprepare after Home; OS audio NONE", flush=True)
 
         # A new Activity object after process death must also fail closed.
         # The only persistent datum is an owned-fixture reset marker, not audio.
@@ -668,6 +677,14 @@ def main():
         intro_off = voice_find("Skip Intro", "voice_fixture_process_intro_disabled")
         check_visible_button(intro_off, "Skip Intro", False)
         recap_off = voice_find("Skip Recap", "voice_fixture_process_recap_disabled")
+        check_visible_button(recap_off, "Skip Recap", False)
+        voice_tap("? Local video trial", "voice_fixture_process_open_video", up=True)
+        voice_tap("Prepare recap video", "voice_fixture_process_reprepare_denied", up=True)
+        voice_find("Local video unavailable: reset required before preparing again",
+                   "voice_fixture_process_reprepare_status", up=True)
+        intro_off = voice_find("Skip Intro", "voice_fixture_process_reprepare_intro_off")
+        check_visible_button(intro_off, "Skip Intro", False)
+        recap_off = voice_find("Skip Recap", "voice_fixture_process_reprepare_recap_off")
         check_visible_button(recap_off, "Skip Recap", False)
         voice_tap("Reset test player", "voice_fixture_process_explicit_reset", up=True)
         intro_on = voice_find("Skip Intro", "voice_fixture_process_intro_restored")

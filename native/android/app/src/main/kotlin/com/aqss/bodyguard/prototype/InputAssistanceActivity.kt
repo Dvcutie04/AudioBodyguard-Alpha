@@ -162,6 +162,11 @@ class InputAssistanceActivity : Activity() {
 
     private fun prepareLocalVideo(action: OwnedSkipAction) {
         if (running || localVideoBusy || recognizer != null) return
+        // A recreated view must not revive a retired local-player trial without Reset.
+        if (!localVideoActive && localVideoPrefs.getBoolean(localVideoNeedsResetKey, false)) {
+            updateLocalStatus("Local video unavailable: reset required before preparing again")
+            return
+        }
         val video = localVideo ?: return
         // Fail closed if the local-only retirement marker cannot be saved.
         if (!localVideoPrefs.edit().putBoolean(localVideoNeedsResetKey, true).commit()) {
