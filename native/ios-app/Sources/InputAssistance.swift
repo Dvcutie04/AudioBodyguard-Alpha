@@ -466,7 +466,10 @@ final class VoiceCheck: ObservableObject {
         status = cleanupFailed ? "Microphone cleanup failed. Close this app completely before trying again." : message
     }
     func clear(_ message: String = "Microphone off") {
-        stop(message); transcript = ""; resetDemo()
+        // Dismissing or backgrounding the voice check must never count as the
+        // user explicitly resetting a prepared video and its retired controls.
+        // The view calls suspendLocalVideo after this microphone-only cleanup.
+        stop(message); transcript = ""
     }
 }
 
