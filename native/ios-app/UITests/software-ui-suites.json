@@ -74,6 +74,7 @@
     "AQSSReadOnlyUITests/testPrivateSupportReportExcludesCompletedCheckWithoutClearing",
     "AQSSReadOnlyUITests/testVoiceCheckDeniedMicrophoneCannotRequestSpeechOrCapture",
     "AQSSReadOnlyUITests/testVoiceSpeechPermissionGrantDoesNotStartDeferredCapture",
+    "AQSSReadOnlyUITests/testOnDeviceSpeechCapabilityProbeWithoutCapture",
     "AQSSReadOnlyUITests/testLiveSoundCheckDeniedPermissionNeverStartsCapture",
     "AQSSReadOnlyUITests/testVoiceMicrophoneSettingsReturnStaysOff",
     "AQSSReadOnlyUITests/testVoiceSpeechSettingsReturnStaysOff",

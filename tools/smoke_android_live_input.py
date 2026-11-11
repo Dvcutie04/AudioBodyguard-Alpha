@@ -408,6 +408,9 @@ def main():
                     "com.aqss.bodyguard.uiprobe/.SpeechServiceAvailabilityProbe",
                     timeout=60).decode(errors="replace")
         (out / "voice-os-recognizer-service.txt").write_text(probe)
+        for service_line in probe.splitlines():
+            if "AQSS_V2_SERVICE_PROBE=" in service_line:
+                print(service_line.strip(), flush=True)
         assert "AQSS_V2_SERVICE_PROBE=" in probe and "INSTRUMENTATION_CODE: -1" in probe, (
             "Android service query failed; do not classify missing evidence as available", probe)
     adb("shell", "pm", "clear", package)
