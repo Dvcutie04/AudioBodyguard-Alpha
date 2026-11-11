@@ -89,7 +89,7 @@ in the iOS and Android application source. Four equal color segments give a
 known timeline: Intro 0–2 seconds, middle 2–4, Recap 4–6, continuation 6–8.
 This is **not** streamed, licensed, third-party, DRM-protected or a TV recording.
 The two files are byte-identical. SHA-256 of the authored binary is
-`6215d320cd022c808c3f1732aa47ae411b0b7d0df95c843a9768220f73dc931`
+`6215d320cd022c808c3f1732aa47ae411b0b7d0df95c843a9768220f73dc931e`
 (1,829 bytes, H.264 baseline 64×64 at two frames/second, 8.0s, keyframes
 at 0/2/4/6). Their Git blob SHA is
 `ea6a3fa26be4be533a8462404197562e407a8e82`.
