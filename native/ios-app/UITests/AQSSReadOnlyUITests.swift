@@ -992,7 +992,7 @@ final class AQSSReadOnlyUITests: XCTestCase {
                 if button.isHittable { button.tap(); return }
                 scroll.swipeDown()
             }
-            XCTFail("Local owned-video action not reachable: \\(button.identifier)")
+            XCTFail("Local owned-video action not reachable: \(button.identifier)")
         }
         func awaitPosition(_ expected: String) {
             let p = XCTNSPredicateExpectation(predicate:
