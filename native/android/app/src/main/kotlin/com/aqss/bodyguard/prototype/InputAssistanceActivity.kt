@@ -49,6 +49,13 @@ class InputAssistanceActivity : Activity() {
     private val voiceRun = VoiceInputRun()
     private val voiceSkipGate = OwnedVoiceSkipGate()
     private var voiceSkipRunId: String? = null
+    // Emulator-only supplied FINAL TEXT, deliberately not microphone/OS recognition.
+    private val finalTextFixtureGate = OwnedVoiceSkipGate()
+    private var finalTextFixtureRunId: String? = null
+    private var finalTextFixtureSequence = 0
+    private val finalTextFixtureEnabled: Boolean
+        get() = (applicationInfo.flags and android.content.pm.ApplicationInfo.FLAG_DEBUGGABLE) != 0 &&
+            (Build.HARDWARE == "ranchu" || Build.FINGERPRINT.startsWith("generic"))
     private var demoGeneration = 1
     private var demoIntroAvailable = true
     private var demoRecapAvailable = true
@@ -71,7 +78,34 @@ class InputAssistanceActivity : Activity() {
 
     private fun updateLocalStatus(message: String) { localVideoStatus?.text = message }
 
+    private fun retireFinalTextFixture() {
+        finalTextFixtureGate.stop()
+        finalTextFixtureRunId = null
+    }
+    private fun readyFinalTextFixture() {
+        if (!finalTextFixtureEnabled) return
+        retireFinalTextFixture()
+        finalTextFixtureSequence++
+        val id = "fixture-${finalTextFixtureSequence}"
+        if (finalTextFixtureGate.start(id, demoSnapshot())) finalTextFixtureRunId = id
+    }
+    private fun requestFinalTextFixture(action: OwnedSkipAction) {
+        if (!finalTextFixtureEnabled || running || recognizer != null) return
+        val id = finalTextFixtureRunId ?: return
+        // Explicit synthetic final text: no OS recognizer, permission or audio was exercised.
+        val words = if (action == OwnedSkipAction.SKIP_INTRO)
+            "Audio Bodyguard, skip intro" else "Audio Bodyguard, skip recap"
+        val decision = finalTextFixtureGate.requestFinal(
+            words, id, demoSnapshot(), permitted = true,
+            foreground = visible && hasWindowFocus() && !isFinishing && !isDestroyed,
+            pressOwnedButton = ::pressDemo)
+        if (decision != OwnedSkipDecision.REQUESTED) {
+            demoStatus?.text = "Fixture final text refused; no additional player action"
+        }
+    }
+
     private fun closeLocalVideo() {
+        retireFinalTextFixture()
         localVideoEpoch++; localStage = null; localVideoBusy = false
         localVideoActive = false
         localMedia = null
@@ -135,6 +169,7 @@ class InputAssistanceActivity : Activity() {
                 demoRecapButton?.isEnabled = demoRecapAvailable
                 updateLocalStatus(if (action == OwnedSkipAction.SKIP_INTRO)
                     "Local video: intro ready at 0s" else "Local video: recap ready at 4s")
+                readyFinalTextFixture()
             }
             if (entry == 0 && mp.currentPosition <= 300) {
                 completeStage()
@@ -355,6 +390,18 @@ class InputAssistanceActivity : Activity() {
         }
         localAction("Prepare intro video", OwnedSkipAction.SKIP_INTRO)
         localAction("Prepare recap video", OwnedSkipAction.SKIP_RECAP)
+        if (finalTextFixtureEnabled) {
+            // Debug/emulator-only controls; absent on production/physical phone runs.
+            for ((title, selection) in listOf(
+                "Fixture final Intro text (no audio)" to OwnedSkipAction.SKIP_INTRO,
+                "Fixture final Recap text (no audio)" to OwnedSkipAction.SKIP_RECAP
+            )) {
+                localPanel.addView(Button(this).apply {
+                    text = title; skin.style(this, false)
+                    setOnClickListener { requestFinalTextFixture(selection) }
+                })
+            }
+        }
         localVideoStatus = TextView(this).apply {
             text = "Local video not prepared"; textSize = 16f; setTextColor(skin.text)
             setPadding(0, skin.dp(8), 0, skin.dp(8))

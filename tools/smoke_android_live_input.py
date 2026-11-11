@@ -538,6 +538,45 @@ def main():
                    "local_video_recap_readback", up=True)
         screenshot("local_video_recap_observed")
 
+        # Emulator/debug-only final TEXT goes through OwnedVoiceSkipGate and the
+        # same MediaPlayer handler as the real controls. No recognizer or mic.
+        voice_tap("Reset test player", "text_fixture_intro_reset", up=True)
+        voice_tap("Prepare intro video", "text_fixture_intro_prepare")
+        voice_find("Local video: intro ready at 0s", "text_fixture_intro_ready", up=True)
+        voice_tap("Fixture final Recap text (no audio)", "text_fixture_wrong_recap")
+        voice_find("Fixture final text refused; no additional player action",
+                   "text_fixture_wrong_recap_refusal", up=True)
+        intro_available = voice_find("Skip Intro", "text_fixture_intro_still_available")
+        check_visible_button(intro_available, "Skip Intro", True)
+        voice_tap("Fixture final Intro text (no audio)", "text_fixture_intro_request")
+        voice_find("Local video observed: intro ends at 2s",
+                   "text_fixture_intro_observed", up=True)
+        voice_tap("Fixture final Intro text (no audio)", "text_fixture_intro_duplicate")
+        voice_find("Fixture final text refused; no additional player action",
+                   "text_fixture_intro_duplicate_refused", up=True)
+        voice_find("Local video observed: intro ends at 2s",
+                   "text_fixture_intro_readback_retained", up=True)
+        screenshot("text_fixture_intro_once_observed")
+
+        voice_tap("Reset test player", "text_fixture_recap_reset", up=True)
+        voice_tap("Prepare recap video", "text_fixture_recap_prepare")
+        voice_find("Local video: recap ready at 4s", "text_fixture_recap_ready", up=True)
+        voice_tap("Fixture final Intro text (no audio)", "text_fixture_wrong_intro")
+        voice_find("Fixture final text refused; no additional player action",
+                   "text_fixture_wrong_intro_refusal", up=True)
+        recap_available = voice_find("Skip Recap", "text_fixture_recap_still_available")
+        check_visible_button(recap_available, "Skip Recap", True)
+        voice_tap("Fixture final Recap text (no audio)", "text_fixture_recap_request")
+        voice_find("Local video observed: recap ends at 6s",
+                   "text_fixture_recap_observed", up=True)
+        voice_tap("Fixture final Recap text (no audio)", "text_fixture_recap_duplicate")
+        voice_find("Fixture final text refused; no additional player action",
+                   "text_fixture_recap_duplicate_refused", up=True)
+        voice_find("Local video observed: recap ends at 6s",
+                   "text_fixture_recap_readback_retained", up=True)
+        screenshot("text_fixture_recap_once_observed")
+        print("VOICE_OWNED_FINAL_TEXT_FIXTURE_PASS: emulator supplied text -> gate -> MediaPlayer readback; OS audio NONE", flush=True)
+
         # Prepare a fresh Intro immediately before leaving the app.
         # A resumed session must not retain the old local-video entitlement.
         voice_tap("Reset test player", "local_video_before_background_reset", up=True)
