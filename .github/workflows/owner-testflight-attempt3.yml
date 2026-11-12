@@ -23,7 +23,8 @@ jobs:
           python3 - <<'PYTHON'
           import json, os, time, urllib.request, urllib.error
           REPO = 'Dvcutie04/AudioBodyguard-Alpha'
-          MAIN = 'e1d53fc2b70066d7d6096851612fb66386a6f0e7'
+          BASE_MAIN = '4176b6bebdc597638a3ffa73fbd84bee08c8be13'
+          RELEASE_MAIN = 'e1d53fc2b70066d7d6096851612fb66386a6f0e7'
           HELPER = '.github/workflows/owner-testflight-attempt3.yml'
           RUN = 43139474513
           REQUIRED = {
@@ -57,18 +58,18 @@ jobs:
           def context(api, env):
               need(env.get('GITHUB_REPOSITORY') == REPO and env.get('GITHUB_REF') == 'refs/heads/main'
                   and env.get('GITHUB_EVENT_NAME') == 'push' and env.get('GITHUB_ACTOR') == 'Dvcutie04'
-                  and env.get('GITHUB_RUN_NUMBER') == '1' and env.get('GITHUB_RUN_ATTEMPT') == '1', 'Wrong one-shot context')
+                  and env.get('GITHUB_RUN_NUMBER') == '2' and env.get('GITHUB_RUN_ATTEMPT') == '1', 'Wrong one-shot context')
               sha = env.get('GITHUB_SHA','')
               need(len(sha) == 40 and all(c in '0123456789abcdef' for c in sha), 'Invalid observer identity')
-              need([p['sha'] for p in api('/git/commits/'+sha)['parents']] == [MAIN], 'Unexpected parent')
-              diff = api('/compare/'+MAIN+'...'+sha)
+              need([p['sha'] for p in api('/git/commits/'+sha)['parents']] == [BASE_MAIN], 'Unexpected parent')
+              diff = api('/compare/'+BASE_MAIN+'...'+sha)
               files = diff.get('files', [])
               need(diff.get('ahead_by') == 1 and diff.get('behind_by') == 0 and diff.get('total_commits') == 1
-                  and len(files) == 1 and files[0].get('filename') == HELPER and files[0].get('status') == 'added',
+                  and len(files) == 1 and files[0].get('filename') == HELPER and files[0].get('status') == 'modified',
                   'Changes outside this observer')
           def validate_run(run):
               need(run.get('id') == RUN and run.get('workflow_id') == 380984259 and run.get('run_number') == 17
-                  and run.get('run_attempt') == 3 and run.get('head_sha') == MAIN and run.get('head_branch') == 'main'
+                  and run.get('run_attempt') == 3 and run.get('head_sha') == RELEASE_MAIN and run.get('head_branch') == 'main'
                   and run.get('event') == 'workflow_dispatch' and run.get('path') == '.github/workflows/testflight-beta.yml'
                   and run.get('repository',{}).get('full_name') == REPO, 'Different release identity')
               need(run.get('status') in {'queued','pending','waiting','in_progress','completed'}, 'Unknown release state')
@@ -199,6 +200,7 @@ jobs:
               require(0 < len(encoded) <= 16384, 'Missing or oversized key')
               key = base64.b64decode(encoded, validate=True)
               require(key.startswith(b'-----BEGIN PRIVATE KEY-----') and b'-----END PRIVATE KEY-----' in key, 'Invalid key format')
+              print('APPLE_READONLY_CHECK_START: signed provenance matched; attempting GET-only Apple state')
               with tempfile.TemporaryDirectory(prefix='aqss-readonly-apple-') as temporary:
                   path = Path(temporary)/'key.p8'
                   with path.open('xb') as file:
@@ -217,8 +219,28 @@ jobs:
               with Path(os.environ['GITHUB_STEP_SUMMARY']).open('a') as out:
                   out.write('## Exact retry Apple observation\n\n```json\n'+output+'\n```\n')
                   out.write('GET-only check. No tester, compliance, account or distribution setting changed. Group access is not proof of installation.\n')
-          except (observer['ObservationError'], KeyError, TypeError, ValueError, OSError):
-              print('APPLE_READINESS_NOT_VERIFIED: no availability claim')
+          except observer['ObservationError'] as error:
+              # Whitelisted diagnostics only: do not print paths, URLs, API bodies, JWTs or secrets.
+              reason = str(error)
+              matched = re.fullmatch(r'Apple read-only API returned HTTP ([1-5][0-9]{2})', reason)
+              if matched:
+                  print('APPLE_READONLY_HTTP_STATUS: '+matched.group(1))
+              elif reason in ('Missing or oversized configured key', 'Configured key is not PKCS8 PEM',
+                              'Invalid configured key ID', 'Invalid configured issuer',
+                              'Could not sign the read-only Apple request',
+                              'Apple read-only API request failed',
+                              'Invalid ECDSA signature length', 'Invalid ECDSA sequence',
+                              'Invalid ECDSA integer', 'Invalid ECDSA integer length',
+                              'Negative ECDSA integer', 'Noncanonical ECDSA integer',
+                              'Invalid ECDSA value', 'Trailing ECDSA signature bytes'):
+                  print('APPLE_READONLY_CLASS: '+reason)
+              else:
+                  print('APPLE_READONLY_CLASS: OTHER_OBSERVATION_FAILURE')
+              print('APPLE_READINESS_NOT_VERIFIED: no owner installation claim')
+              raise SystemExit(1) from None
+          except (KeyError, TypeError, ValueError, OSError):
+              print('APPLE_READONLY_CLASS: CLIENT_RUNTIME_FAILURE')
+              print('APPLE_READINESS_NOT_VERIFIED: no owner installation claim')
               raise SystemExit(1) from None
           raise SystemExit(0 if receipt['state'] == 'EXISTING_OWNER_GROUP_ACCESS_OBSERVED' else 1)
           PYTHON
