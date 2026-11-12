@@ -65,7 +65,7 @@ struct SetupGuidesView: View {
     private var phoneSurfaceText: String { phoneLabel == "iPad" ? "On your iPad" : "On your phone" }
     private var bothSurfaceText: String { phoneLabel == "iPad" ? "Your TV + your iPad" : "Your TV + your phone" }
     private var phoneSurfaceIcon: String { phoneLabel == "iPad" ? "ipad" : "iphone" }
-    private var title: String { mismatch ? "Find the right screen" : step?.title ?? route?.title ?? (group == nil ? "Choose your TV or app" : group!.title) }
+    private var title: String { mismatch ? "Find the right screen" : step?.title ?? (route?.id == "lg_pair" ? "Connect your LG TV" : route?.title) ?? (group == nil ? "Choose your TV or app" : group!.title) }
     private var platforms: [(String, String)] {
         switch groupID {
         case "tcl": return [("Roku TV", "tcl_roku"), ("Google TV / Android TV", "tcl_google"), ("Fire TV", "tcl_fire")]
@@ -176,11 +176,11 @@ struct SetupGuidesView: View {
                         if group.routes.isEmpty { control("Choose another TV or app", icon: "tv", id: "setup-other-group") { chooseGroup("") } }
                         ForEach(group.primaryRoutes, id: \.self) { id in
                             if let route = AQSSSetupContent.routes.first(where: { $0.id == id }) {
-                                control(id == "roku_network" ? "Start TV setup" : route.title, icon: "rectangle.stack", id: "setup-route-\(id)", primary: group.primaryRoutes.count == 1) { chooseRoute(id) }
+                                control(id == "roku_network" ? "Start TV setup" : id == "lg_pair" ? "Connect your LG TV" : route.title, icon: "rectangle.stack", id: "setup-route-\(id)", primary: group.primaryRoutes.count == 1) { chooseRoute(id) }
                             }
                         }
                         if group.routes.contains(where: { !group.primaryRoutes.contains($0) }) {
-                            control(pickerExpanded ? "? Hide other options" : "? Other setup options", icon: pickerExpanded ? "chevron.up" : "chevron.down", id: "setup-more-options") { pickerExpanded.toggle() }
+                            control(pickerExpanded ? "Hide other ways" : "Try another way", icon: pickerExpanded ? "chevron.up" : "chevron.down", id: "setup-more-options") { pickerExpanded.toggle() }
                         }
                         if pickerExpanded {
                             ForEach(group.routes.filter { !group.primaryRoutes.contains($0) }, id: \.self) { id in
@@ -320,6 +320,15 @@ struct SetupGuidesView: View {
             .font(.system(size: 36)).foregroundColor(theme.violet).accessibilityHidden(true)
         Text(route.id.hasPrefix("phone_") ? "Have your \(phoneLabel) and home Wi-Fi password ready." : route.id == "roku_phone" ? "Keep your \(phoneLabel) and TV on the same Wi-Fi." : route.steps.first?.surface == "tv" ? "Have your TV remote ready." : "Have your \(phoneLabel) and TV ready.").font(.body)
         Text("\(route.steps.count) pictures. One step at a time.").foregroundColor(theme.accent)
+        if route.id == "lg_pair" {
+            Text("LG ThinQ is LG’s official TV setup app. Follow one picture at a time.")
+                .font(.callout).fixedSize(horizontal: false, vertical: true)
+        }
+        if let group = group, group.routes.count > 1 {
+            control("Try another way", icon: "arrow.triangle.branch", id: "setup-intro-options") {
+                remember(); routeID = nil; index = -1; mismatch = false; detailsExpanded = false; pickerExpanded = true; referencesExpanded = false
+            }
+        }
         if !route.models.isEmpty {
             Text("Documented model examples: \(route.models.joined(separator: ", "))")
                 .font(.callout).foregroundColor(theme.muted).accessibilityIdentifier("setup-model-scope")
@@ -335,11 +344,6 @@ struct SetupGuidesView: View {
                 Text("Use the official setup screens for passwords and approvals.").font(.callout)
                 if !route.id.hasPrefix("phone_") {
                     control("Phone Wi-Fi pictures", icon: "wifi", id: "setup-phone-wifi") { chooseGroup("phone") }
-                }
-                if let group = group, group.routes.count > 1 {
-                    control("Other setup options", icon: "rectangle.stack", id: "setup-intro-options") {
-                        remember(); routeID = nil; index = -1; mismatch = false; detailsExpanded = false; pickerExpanded = true; referencesExpanded = false
-                    }
                 }
                 if route.id == "roku_network" || route.id == "roku_model" {
                     control("I’m already in Settings", icon: "gearshape", id: "setup-skip-home") { remember(); index = 2; detailsExpanded = false; referencesExpanded = false }
