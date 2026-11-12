@@ -65,7 +65,7 @@ jobs:
               diff = api('/compare/'+BASE_MAIN+'...'+sha)
               files = diff.get('files', [])
               need(diff.get('ahead_by') == 1 and diff.get('behind_by') == 0 and diff.get('total_commits') == 1
-                  and len(files) == 1 and files[0].get('filename') == HELPER and files[0].get('status') == 'added',
+                  and len(files) == 1 and files[0].get('filename') == HELPER and files[0].get('status') == 'modified',
                   'Changes outside this observer')
           def validate_run(run):
               need(run.get('id') == RUN and run.get('workflow_id') == 380984259 and run.get('run_number') == 17
