@@ -74,7 +74,7 @@ struct SetupGuidesView: View {
     private var title: String {
         if mismatch { return "Find the right screen" }
         if let step = step { return step.title }
-        if route != nil, let brand = brandName {
+        if route != nil, group?.primaryRoutes.contains(routeID ?? "") == true, let brand = brandName {
             return groupID == "lg" ? "Connect your LG TV" : "Set up your \(brand) TV"
         }
         return route?.title ?? group?.title ?? "Choose your TV brand"
@@ -423,7 +423,7 @@ struct SetupGuidesView: View {
             .buttonStyle(AppButtonStyle(theme: theme)).accessibilityIdentifier("setup-picture-jump")
     }
     private func disclosure(_ title: String, id: String, action: @escaping () -> Void) -> some View {
-        let label = detailsExpanded ? "? Hide step help" : title
+        let label = detailsExpanded ? "? Hide help" : title
         return Button(action: action) { Label(label.hasPrefix("? ") ? String(label.dropFirst(2)) : label, systemImage: "questionmark.circle").frame(maxWidth: .infinity, minHeight: 44, alignment: .leading) }
             .buttonStyle(AppButtonStyle(theme: theme)).accessibilityLabel(label).accessibilityIdentifier(id).accessibilityValue(detailsExpanded ? "Expanded" : "Collapsed")
     }
