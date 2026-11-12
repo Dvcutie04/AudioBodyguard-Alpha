@@ -79,6 +79,34 @@ struct SetupGuidesView: View {
         }
         return route?.title ?? group?.title ?? "Choose your TV brand"
     }
+    private func simpleRouteTitle(_ id: String, fallback: String) -> String {
+        switch id {
+        case "samsung_ok": return "Connect your Samsung TV"
+        case "lg_pair": return "Connect your LG TV"
+        case "google_remote": return "Use your phone as a TV remote"
+        case "roku_network": return "Find your TV network settings"
+        case "roku_model": return "Find your TV model"
+        case "vidaa_google": return "Follow VIDAA TV steps"
+        case "vizio_pair": return "Connect with VIZIO Mobile"
+        case "vizio_walmart": return "Set up a newer VIZIO TV"
+        case "philips_voice_remote": return "Connect your Philips remote"
+        case "fire_setup": return "Follow Fire TV steps"
+        case "identify": return "Help identify your TV"
+        default: return fallback
+        }
+    }
+    private func shortHelp(_ route: AQSSSetupRoute) -> String? {
+        switch brandName {
+        case "Samsung": return "SmartThings is Samsung’s official phone app. A PIN is the code shown on your TV."
+        case "LG": return "ThinQ is LG’s official phone app. A PIN is the code shown on your TV."
+        case "Sony": return "Google TV is the TV’s menu system. Use the code shown on the TV to connect your phone."
+        case "TCL", "Hisense", "Philips", "Insignia":
+            return "Roku, Google TV, Fire TV and VIDAA are TV menu systems. Choose the name shown on your TV, not just its brand."
+        case "VIZIO": return "VIZIO Mobile is VIZIO’s phone app. Only enter a code shown on your own TV."
+        case "Sharp", "Roku": return "Roku is the TV’s menu system. An IP address is a number shown in the TV’s network settings."
+        default: return nil
+        }
+    }
     private var platforms: [(String, String)] {
         switch groupID {
         case "tcl": return [("Roku TV", "tcl_roku"), ("Google TV / Android TV", "tcl_google"), ("Fire TV", "tcl_fire")]
@@ -149,6 +177,7 @@ struct SetupGuidesView: View {
                             }
                             disclosure("? Step help", id: "setup-step-details") { detailsExpanded.toggle() }
                             if detailsExpanded {
+                                if let hint = shortHelp(route) { Text(hint).font(.callout).foregroundColor(theme.muted) }
                                 if index == 14 && route.id == "samsung_ok" {
                                     control("TV shows a PIN", icon: "number", id: "setup-samsung-pin") { switchSamsungApproval("samsung_pin") }
                                 }
@@ -189,7 +218,7 @@ struct SetupGuidesView: View {
                         if group.routes.isEmpty { control("Choose another TV or app", icon: "tv", id: "setup-other-group") { chooseGroup("") } }
                         ForEach(group.primaryRoutes, id: \.self) { id in
                             if let route = AQSSSetupContent.routes.first(where: { $0.id == id }) {
-                                control(id == "roku_network" ? "Find your TV settings" : id == "lg_pair" ? "Connect your LG TV" : route.title, icon: "rectangle.stack", id: "setup-route-\(id)", primary: group.primaryRoutes.count == 1) { chooseRoute(id) }
+                                control(simpleRouteTitle(id, fallback: route.title), icon: "rectangle.stack", id: "setup-route-\(id)", primary: group.primaryRoutes.count == 1) { chooseRoute(id) }
                             }
                         }
                         if group.routes.contains(where: { !group.primaryRoutes.contains($0) }) {
@@ -356,6 +385,7 @@ struct SetupGuidesView: View {
                     .font(.callout).foregroundColor(theme.muted).accessibilityIdentifier("setup-model-scope")
             }
             if let saved = resumeIndex(route) { Text("You can continue at picture \(saved + 1).").foregroundColor(theme.accent) }
+            if let hint = shortHelp(route) { Text(hint).font(.callout).foregroundColor(theme.muted) }
             Text(route.appliesTo).font(.callout).foregroundColor(theme.muted)
             pictureJumps(route)
             pairingHelp(route)
