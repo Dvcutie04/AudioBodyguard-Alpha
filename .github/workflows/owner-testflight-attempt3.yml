@@ -1,0 +1,232 @@
+name: Verify requested TestFlight retry 17.3
+on:
+  push:
+    branches: ["main"]
+    paths: [".github/workflows/owner-testflight-attempt3.yml"]
+permissions:
+  contents: read
+  actions: read
+concurrency:
+  group: aqss-owner-testflight-43139474513-attempt3
+  cancel-in-progress: false
+jobs:
+  signed-release:
+    if: github.repository == 'Dvcutie04/AudioBodyguard-Alpha' && github.actor == 'Dvcutie04'
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - name: Require every original release check and signed upload to succeed
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          python3 - <<'PYTHON'
+          import json, os, time, urllib.request, urllib.error
+          REPO = 'Dvcutie04/AudioBodyguard-Alpha'
+          MAIN = 'e1d53fc2b70066d7d6096851612fb66386a6f0e7'
+          HELPER = '.github/workflows/owner-testflight-attempt3.yml'
+          RUN = 43139474513
+          REQUIRED = {
+              'identify-source', 'checked-candidate', 'signed-upload',
+              'core-checks / Python contracts and regression suite',
+              'core-checks / Swift contracts and read-only iOS simulator app',
+              'core-checks / C11 owned-output lab (scripted backend)',
+              'core-checks / Android contracts and read-only APK',
+              'device-preflight / unsigned-device-archive',
+              'native-walkthroughs / Verify and package connected appearance for Appetize',
+              'native-walkthroughs / Verify Android setup and contextual help',
+              'native-walkthroughs / Verify iPhone navigation',
+              'native-walkthroughs / Verify iPhone pictures',
+              'native-walkthroughs / Verify iPhone tools',
+          }
+          class Blocked(RuntimeError): pass
+          def need(ok, reason):
+              if not ok: raise Blocked(reason)
+          class NoRedirect(urllib.request.HTTPRedirectHandler):
+              def redirect_request(self, *args): raise Blocked('Redirect refused')
+          def api(path):
+              need(path.startswith('/') and not path.startswith('//'), 'Invalid read path')
+              request = urllib.request.Request('https://api.github.com/repos/'+REPO+path,
+                  method='GET', headers={'Authorization':'Bearer '+os.environ['GH_TOKEN'],
+                  'Accept':'application/vnd.github+json','X-GitHub-Api-Version':'2022-11-28'})
+              with urllib.request.build_opener(NoRedirect).open(request, timeout=30) as response:
+                  need(response.status == 200, 'Unexpected response')
+                  raw = response.read(2000001)
+              need(len(raw) <= 2000000, 'Oversized response')
+              return json.loads(raw)
+          def context(api, env):
+              need(env.get('GITHUB_REPOSITORY') == REPO and env.get('GITHUB_REF') == 'refs/heads/main'
+                  and env.get('GITHUB_EVENT_NAME') == 'push' and env.get('GITHUB_ACTOR') == 'Dvcutie04'
+                  and env.get('GITHUB_RUN_NUMBER') == '1' and env.get('GITHUB_RUN_ATTEMPT') == '1', 'Wrong one-shot context')
+              sha = env.get('GITHUB_SHA','')
+              need(len(sha) == 40 and all(c in '0123456789abcdef' for c in sha), 'Invalid observer identity')
+              need([p['sha'] for p in api('/git/commits/'+sha)['parents']] == [MAIN], 'Unexpected parent')
+              diff = api('/compare/'+MAIN+'...'+sha)
+              files = diff.get('files', [])
+              need(diff.get('ahead_by') == 1 and diff.get('behind_by') == 0 and diff.get('total_commits') == 1
+                  and len(files) == 1 and files[0].get('filename') == HELPER and files[0].get('status') == 'added',
+                  'Changes outside this observer')
+          def validate_run(run):
+              need(run.get('id') == RUN and run.get('workflow_id') == 380984259 and run.get('run_number') == 17
+                  and run.get('run_attempt') == 3 and run.get('head_sha') == MAIN and run.get('head_branch') == 'main'
+                  and run.get('event') == 'workflow_dispatch' and run.get('path') == '.github/workflows/testflight-beta.yml'
+                  and run.get('repository',{}).get('full_name') == REPO, 'Different release identity')
+              need(run.get('status') in {'queued','pending','waiting','in_progress','completed'}, 'Unknown release state')
+              if run['status'] != 'completed': return False
+              need(run.get('conclusion') == 'success', 'Release failed')
+              return True
+          def verify_jobs(api):
+              jobs = []
+              for page in range(1, 11):
+                  response = api(f'/actions/runs/{RUN}/attempts/3/jobs?per_page=100&page={page}')
+                  items, total = response.get('jobs'), response.get('total_count')
+                  need(isinstance(items, list) and type(total) is int and total >= 0, 'Invalid jobs list')
+                  jobs.extend(items)
+                  if len(jobs) >= total:
+                      need(len(jobs) == total, 'Inconsistent pagination')
+                      break
+                  need(bool(items), 'Incomplete jobs list')
+              else: raise Blocked('Too many jobs')
+              need(len({j['id'] for j in jobs}) == len(jobs), 'Duplicate jobs')
+              for name in REQUIRED:
+                  matches = [j for j in jobs if j.get('name') == name]
+                  need(len(matches) == 1 and matches[0].get('run_id') == RUN
+                      and matches[0].get('status') == 'completed' and matches[0].get('conclusion') == 'success',
+                      'Required release job did not succeed')
+          def await_release(api, clock=time.monotonic, sleep=time.sleep):
+              deadline = clock()+2400
+              while True:
+                  if validate_run(api(f'/actions/runs/{RUN}')):
+                      verify_jobs(api)
+                      need(validate_run(api(f'/actions/runs/{RUN}')), 'Release changed during observation')
+                      return
+                  need(clock() < deadline, 'Observation timed out')
+                  sleep(min(30, max(0, deadline-clock())))
+          if __name__ == '__main__':
+              try:
+                  context(api, os.environ)
+                  await_release(api)
+              except (Blocked, KeyError, TypeError, ValueError, OSError):
+                  print('RELEASE_NOT_VERIFIED: exact release 43139474513 attempt 3 must pass all original checks and upload')
+                  raise SystemExit(1) from None
+              print('SIGNED_RELEASE_VERIFIED: 43139474513 attempt 3; Apple processing and tester access not yet established')
+          PYTHON
+  apple-readiness:
+    needs: signed-release
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    environment: testflight-internal
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          ref: be1a7a478f9a3838bf90f10fc73d1bd3f69d9cd8
+          persist-credentials: false
+          sparse-checkout: tools/release_20261111_apple_readiness.py
+          sparse-checkout-cone-mode: false
+      - name: Verify the existing GET-only Apple observer
+        run: |
+          test "$(git hash-object tools/release_20261111_apple_readiness.py)" = 'a863f64cfa67d87b660d1c12ecd90fe4729fa292'
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          github-token: ${{ github.token }}
+          repository: Dvcutie04/AudioBodyguard-Alpha
+          run-id: 43139474513
+          name: aqss-testflight-provenance-43139474513
+          path: ${{ runner.temp }}/aqss-owner-provenance
+      - name: Validate exact retry provenance before using Apple credentials
+        env:
+          PROVENANCE_DIRECTORY: ${{ runner.temp }}/aqss-owner-provenance
+        run: |
+          python3 - <<'PYTHON'
+          import json, os, re
+          from pathlib import Path
+          EXPECTED = {
+              'source_revision':'2a51c435491a0524f85f530a69e54c6869c2e014',
+              'source_tree_sha':'bdae3290b5e39555c2976293b4f8a333c2b85708',
+              'workflow_run_id':'43139474513', 'workflow_attempt':'3',
+              'app_version':'1.0.0', 'build_number':'17.3',
+              'delivery_status':'UPLOAD_ACCEPTED_PROCESSING_UNVERIFIED',
+              'evidence_scope':'SIGNED_IPA_UPLOAD_ACCEPTED_PROCESSING_UNVERIFIED',
+              'testflight_audience_requested':'internal', 'internal_only_export_configured':True,
+              'physical_protection_qualified':False,
+          }
+          def validate(report):
+              for key, value in EXPECTED.items():
+                  if type(report.get(key)) is not type(value) or report.get(key) != value:
+                      raise ValueError('Different uploaded release')
+              for key in ('submitted_ipa_sha256','privacy_manifest_sha256','export_options_sha256'):
+                  if not isinstance(report.get(key), str) or not re.fullmatch(r'[0-9a-f]{64}', report[key]):
+                      raise ValueError('Invalid package digest')
+              bundle = report.get('bundle_id')
+              if not isinstance(bundle, str) or not re.fullmatch(r'[A-Za-z0-9-]+(?:\.[A-Za-z0-9-]+)+', bundle) or bundle.endswith('.demo'):
+                  raise ValueError('Invalid ordinary app bundle')
+              return bundle, report['submitted_ipa_sha256']
+          if __name__ == '__main__':
+              try:
+                  files = list(Path(os.environ['PROVENANCE_DIRECTORY']).rglob('*'))
+                  regular = [p for p in files if p.is_file()]
+                  if any(p.is_symlink() for p in files) or len(regular) != 1 or regular[0].name != 'testflight-upload-provenance.json' or regular[0].stat().st_size > 65536:
+                      raise ValueError('Unexpected provenance artifact')
+                  bundle, digest = validate(json.loads(regular[0].read_text(encoding='utf-8')))
+                  with Path(os.environ['GITHUB_ENV']).open('a') as out:
+                      out.write('EXPECTED_BUNDLE_ID='+bundle+'\nEXPECTED_IPA_SHA256='+digest+'\n')
+              except (KeyError, TypeError, ValueError, OSError):
+                  print('UPLOAD_PROVENANCE_MISMATCH: Apple credentials will not be used')
+                  raise SystemExit(1) from None
+              print('EXACT_UPLOAD_PROVENANCE_VERIFIED: 1.0.0 (17.3)')
+          PYTHON
+      - name: Observe Apple processing and the existing David Internal group
+        env:
+          IOS_BUNDLE_ID: ${{ vars.IOS_BUNDLE_ID }}
+          ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
+          ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
+          ASC_PRIVATE_KEY_P8_BASE64: ${{ secrets.ASC_PRIVATE_KEY_P8_BASE64 }}
+          READINESS_RECEIPT: ${{ runner.temp }}/apple-beta-readiness.json
+        run: |
+          python3 - <<'PYTHON'
+          import base64, json, os, re, runpy, tempfile
+          from datetime import datetime, timezone
+          from pathlib import Path
+          # Use reviewed GET-only functions, not the historical main() pinned to 17.1.
+          observer = runpy.run_path('tools/release_20261111_apple_readiness.py', run_name='aqss_readonly_observer')
+          require = observer['require']
+          try:
+              bundle = os.environ.get('IOS_BUNDLE_ID', '')
+              require(bool(bundle) and bundle == os.environ.get('EXPECTED_BUNDLE_ID'), 'Wrong configured app')
+              digest = os.environ.get('EXPECTED_IPA_SHA256', '')
+              require(re.fullmatch(r'[0-9a-f]{64}', digest), 'Missing verified package digest')
+              encoded = os.environ.get('ASC_PRIVATE_KEY_P8_BASE64', '')
+              require(0 < len(encoded) <= 16384, 'Missing or oversized key')
+              key = base64.b64decode(encoded, validate=True)
+              require(key.startswith(b'-----BEGIN PRIVATE KEY-----') and b'-----END PRIVATE KEY-----' in key, 'Invalid key format')
+              with tempfile.TemporaryDirectory(prefix='aqss-readonly-apple-') as temporary:
+                  path = Path(temporary)/'key.p8'
+                  with path.open('xb') as file:
+                      os.chmod(path, 0o600)
+                      file.write(key)
+                  api = observer['AppleReadOnly'](path, os.environ.get('ASC_KEY_ID', ''), os.environ.get('ASC_ISSUER_ID', ''))
+                  receipt = observer['await_observation'](api, bundle=bundle, build='17.3', marketing='1.0.0',
+                      not_before='2026-11-12T02:09:54Z')
+              receipt.update(release_run_id=43139474513, release_attempt=3,
+                  source_revision='2a51c435491a0524f85f530a69e54c6869c2e014',
+                  source_tree_sha='bdae3290b5e39555c2976293b4f8a333c2b85708', submitted_ipa_sha256=digest,
+                  observed_at=datetime.now(timezone.utc).isoformat())
+              output = json.dumps(receipt, indent=2, sort_keys=True)
+              Path(os.environ['READINESS_RECEIPT']).write_text(output+'\n', encoding='utf-8')
+              print(output)
+              with Path(os.environ['GITHUB_STEP_SUMMARY']).open('a') as out:
+                  out.write('## Exact retry Apple observation\n\n```json\n'+output+'\n```\n')
+                  out.write('GET-only check. No tester, compliance, account or distribution setting changed. Group access is not proof of installation.\n')
+          except (observer['ObservationError'], KeyError, TypeError, ValueError, OSError):
+              print('APPLE_READINESS_NOT_VERIFIED: no availability claim')
+              raise SystemExit(1) from None
+          raise SystemExit(0 if receipt['state'] == 'EXISTING_OWNER_GROUP_ACCESS_OBSERVED' else 1)
+          PYTHON
+      - name: Retain only non-secret observation
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: aqss-apple-readiness-43139474513-attempt3
+          path: ${{ runner.temp }}/apple-beta-readiness.json
+          if-no-files-found: ignore
+          retention-days: 7
