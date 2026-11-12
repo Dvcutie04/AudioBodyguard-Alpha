@@ -9,6 +9,8 @@ on:
       - "native/ios-app/**"
       - "native/ios/**"
       - "tools/check_ios*clipboard.py"
+      - "tools/prepare_ios_worksheet_rotation_test.py"
+      - "tests/test_ios_worksheet_rotation_preparation.py"
       - ".github/workflows/test-setup-ui.yml"
   workflow_dispatch:
 
@@ -139,6 +141,13 @@ jobs:
           }, indent=2) + '\n')
           print('SWIFT_SETUP_MISSING_API_REPRODUCED ' + source)
           PYTHON
+      - name: Prepare attributed rotation-safe worksheet test source
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 tools/prepare_ios_worksheet_rotation_test.py \
+            native/ios-app/UITests/AQSSReadOnlyUITests.swift \
+            --receipt "$RUNNER_TEMP/sound-check-screenshots/compiled-test-source.json"
       - name: Build and prepare native worksheet tests
         shell: bash
         run: |
