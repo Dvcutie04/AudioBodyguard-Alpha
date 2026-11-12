@@ -136,21 +136,6 @@ struct SetupGuidesView: View {
                                   systemImage: step.pictureKind == "remote" ? "appletvremote.gen1" : step.surface == "phone" ? phoneSurfaceIcon : "tv")
                                 .font(.subheadline.weight(.semibold)).foregroundColor(theme.accent)
                             Text(step.instruction).font(.body.weight(.medium)).fixedSize(horizontal: false, vertical: true)
-                            if index == 14 && route.id == "samsung_ok" {
-                                control("TV shows a PIN", icon: "number", id: "setup-samsung-pin") { switchSamsungApproval("samsung_pin") }
-                            }
-                            if index == 14 && route.id == "samsung_pin" {
-                                control("TV shows OK instead", icon: "checkmark", id: "setup-samsung-ok") { switchSamsungApproval("samsung_ok") }
-                            }
-                            if route.id == "philips_voice_remote" && index == 4 {
-                                control("Remote already connected", icon: "checkmark", id: "setup-philips-connected") { skipTo(route.id, from: 4, to: 9) }
-                            }
-                            if route.id == "philips_voice_remote" && index == 5 {
-                                control("Light is not blinking", icon: "questionmark.circle", id: "setup-philips-not-blinking") { skipTo(route.id, from: 5, to: 6) }
-                            }
-                            if route.id == "fire_setup" && [5, 6].contains(index) {
-                                control("Account sign-in finished", icon: "checkmark", id: "setup-fire-account-finished") { skipTo(route.id, from: index, to: 7) }
-                            }
                             GuidePictureCue(screenKey: key) {
                                 Group {
                             if route.id == "roku_network" || route.id == "roku_model" {
@@ -164,6 +149,21 @@ struct SetupGuidesView: View {
                             }
                             disclosure("? Step help", id: "setup-step-details") { detailsExpanded.toggle() }
                             if detailsExpanded {
+                                if index == 14 && route.id == "samsung_ok" {
+                                    control("TV shows a PIN", icon: "number", id: "setup-samsung-pin") { switchSamsungApproval("samsung_pin") }
+                                }
+                                if index == 14 && route.id == "samsung_pin" {
+                                    control("TV shows OK instead", icon: "checkmark", id: "setup-samsung-ok") { switchSamsungApproval("samsung_ok") }
+                                }
+                                if route.id == "philips_voice_remote" && index == 4 {
+                                    control("Remote already connected", icon: "checkmark", id: "setup-philips-connected") { skipTo(route.id, from: 4, to: 9) }
+                                }
+                                if route.id == "philips_voice_remote" && index == 5 {
+                                    control("Light is not blinking", icon: "questionmark.circle", id: "setup-philips-not-blinking") { skipTo(route.id, from: 5, to: 6) }
+                                }
+                                if route.id == "fire_setup" && [5, 6].contains(index) {
+                                    control("Account sign-in finished", icon: "checkmark", id: "setup-fire-account-finished") { skipTo(route.id, from: index, to: 7) }
+                                }
                                 control("My screen looks different", icon: "questionmark.circle", id: "setup-mismatch") { remember(); mismatch = true; detailsExpanded = false; referencesExpanded = false }
                                 pictureJumps(route)
                                 pairingHelp(route)
