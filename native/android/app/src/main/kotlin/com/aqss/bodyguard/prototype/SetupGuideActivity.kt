@@ -80,6 +80,26 @@ class SetupGuideActivity : Activity() {
         val preferred = listOf("vidaa_google", "vidaa_alexa", "google_setup", "sony_new", "fire_alexa").filter { it in routes }
         return original.copy(title = "${original.title} • ${tv.title}", routes = routes, primaryRoutes = primary.ifEmpty { (preferred.ifEmpty { routes }).take(3) })
     }
+    private val brandName: String? get() = mapOf(
+        "samsung" to "Samsung", "lg" to "LG", "sony" to "Sony",
+        "tcl" to "TCL", "hisense" to "Hisense", "vizio" to "VIZIO",
+        "philips" to "Philips", "sharp" to "Sharp", "roku" to "Roku",
+        "insignia" to "Insignia"
+    )[groupId.substringBefore("_")]
+    private fun simpleRouteTitle(id: String, fallback: String): String = when (id) {
+        "samsung_ok" -> "Connect your Samsung TV"
+        "lg_pair" -> "Connect your LG TV"
+        "google_remote" -> "Use your phone as a TV remote"
+        "roku_network" -> "Find your TV network settings"
+        "roku_model" -> "Find your TV model"
+        "vidaa_google" -> "Follow VIDAA TV steps"
+        "vizio_pair" -> "Connect with VIZIO Mobile"
+        "vizio_walmart" -> "Set up a newer VIZIO TV"
+        "philips_voice_remote" -> "Connect your Philips remote"
+        "fire_setup" -> "Follow Fire TV steps"
+        "identify" -> "Help identify your TV"
+        else -> fallback
+    }
     private val route get() = SetupContent.routes.firstOrNull { it.id == routeId }
     private val phone get() = SetupPhone.androidManufacturer(Build.MANUFACTURER)
     private fun startingRoute(): String? = when {
@@ -241,7 +261,7 @@ class SetupGuideActivity : Activity() {
         progressBar.visibility = if (route != null && index >= 0) View.VISIBLE else View.GONE
         if (route != null && index >= 0) { progressBar.max = route.steps.size; progressBar.setProgress(index + 1, false) }
         group?.let { words(content, "${it.title}  ·  ${phone.label}", 14f, skin.muted, true) }
-        val heading = words(content, if (mismatch) "Find the right screen" else step?.title ?: route?.title ?: group?.title ?: "Choose your TV or app", 28f, bold = true).apply {
+        val heading = words(content, if (mismatch) "Find the right screen" else step?.title ?: (if (route != null && brandName != null) (if (groupId == "lg") "Connect your LG TV" else "Set up your ${brandName} TV") else route?.title) ?: group?.title ?: "Choose your TV brand", 28f, bold = true).apply {
             if (Build.VERSION.SDK_INT >= 28) isAccessibilityHeading = true
             accessibilityLiveRegion = View.ACCESSIBILITY_LIVE_REGION_POLITE
         }
@@ -271,7 +291,7 @@ class SetupGuideActivity : Activity() {
             }
             route != null -> intro(route)
             platforms.isNotEmpty() -> {
-                words(content, "Choose the name on your TV’s home screen.", color = skin.muted)
+                words(content, "Which name do you see on your TV?", color = skin.muted)
                 for ((name, id) in platforms) {
                     content.addView(button(name) { chooseGroup(id) }.apply {
                         setCompoundDrawablesWithIntrinsicBounds(InterfaceSymbol(skin, "tv", skin.accent), null, null, null)
@@ -286,17 +306,27 @@ class SetupGuideActivity : Activity() {
             }
             group != null -> {
                 val selectedGroup = group!!
-                words(content, if (selectedGroup.routes.isEmpty()) "No documented route for this combination. Choose the system shown on your TV." else "Start here. Follow one picture at a time.", color = skin.muted)
+                words(content, if (selectedGroup.routes.isEmpty()) "No guide for this choice. Choose another TV." else if (selectedGroup.primaryRoutes.size > 1) "Choose what matches your TV." else "One picture at a time.", color = skin.muted)
                 if (selectedGroup.routes.isEmpty()) action(content, "Choose another TV or app") { chooseGroup("") }
                 selectedGroup.primaryRoutes.forEach { id -> SetupContent.routes.firstOrNull { it.id == id }?.let { guide ->
-                    action(content, if (id == "roku_network") "Start TV setup" else guide.title, selectedGroup.primaryRoutes.size == 1) { chooseRoute(id) }
+                    action(content, simpleRouteTitle(id, guide.title), selectedGroup.primaryRoutes.size == 1) { chooseRoute(id) }
                 } }
                 if (selectedGroup.routes.any { it !in selectedGroup.primaryRoutes }) action(content, if (pickerExpanded) "Hide other options" else "? Other setup options") { pickerExpanded = !pickerExpanded; render(true) }
                 if (pickerExpanded) selectedGroup.routes.filter { it !in selectedGroup.primaryRoutes }.forEach { id -> SetupContent.routes.firstOrNull { it.id == id }?.let { guide -> action(content, guide.title) { chooseRoute(id) } } }
             }
             else -> {
-                words(content, "Choose a name to start the pictures.", color = skin.muted)
-                SetupContent.groups.filter { it.id !in listOf("both", "neither") && !it.id.contains("_") }.forEach { choice -> action(content, choice.title) { chooseGroup(choice.id) } }
+                words(content, "Which brand is on your TV?", color = skin.muted)
+                SetupContent.groups.filter { it.id !in listOf("both", "neither", "google", "alexa", "phone", "voice") && !it.id.contains("_") }
+                    .forEach { choice -> action(content, choice.title) { chooseGroup(choice.id) } }
+                action(content, if (detailsExpanded) "? Hide help" else "? Help") { detailsExpanded = !detailsExpanded; render(true) }
+                if (detailsExpanded) {
+                    words(content, "Need phone or home-app instructions?", color = skin.muted)
+                    for (id in listOf("phone", "google", "alexa", "voice")) {
+                        SetupContent.groups.firstOrNull { it.id == id }?.let { option ->
+                            action(content, option.title) { chooseGroup(id) }
+                        }
+                    }
+                }
             }
         }
         backButton.visibility = if (group != null || route != null || history.isNotEmpty()) View.VISIBLE else View.GONE
