@@ -311,8 +311,18 @@ class SetupGuideActivity : Activity() {
                 selectedGroup.primaryRoutes.forEach { id -> SetupContent.routes.firstOrNull { it.id == id }?.let { guide ->
                     action(content, simpleRouteTitle(id, guide.title), selectedGroup.primaryRoutes.size == 1) { chooseRoute(id) }
                 } }
-                if (selectedGroup.routes.any { it !in selectedGroup.primaryRoutes }) action(content, if (pickerExpanded) "Hide other options" else "? Other setup options") { pickerExpanded = !pickerExpanded; render(true) }
-                if (pickerExpanded) selectedGroup.routes.filter { it !in selectedGroup.primaryRoutes }.forEach { id -> SetupContent.routes.firstOrNull { it.id == id }?.let { guide -> action(content, guide.title) { chooseRoute(id) } } }
+                if (selectedGroup.routes.any { it !in selectedGroup.primaryRoutes }) {
+                    action(content, if (detailsExpanded) "? Hide help" else "? Help") { detailsExpanded = !detailsExpanded; render(true) }
+                    if (detailsExpanded) {
+                        words(content, "Need a different way or TV menu?", color = skin.muted)
+                        action(content, if (pickerExpanded) "Hide other ways" else "Try another way") { pickerExpanded = !pickerExpanded; render(true) }
+                        if (pickerExpanded) selectedGroup.routes.filter { it !in selectedGroup.primaryRoutes }.forEach { id ->
+                            SetupContent.routes.firstOrNull { it.id == id }?.let { guide ->
+                                action(content, guide.title) { chooseRoute(id) }
+                            }
+                        }
+                    }
+                }
             }
             else -> {
                 words(content, "Which brand is on your TV?", color = skin.muted)
@@ -363,18 +373,19 @@ class SetupGuideActivity : Activity() {
     }
     private fun intro(route: SetupRoute) {
         words(content, if (route.id.startsWith("phone_")) "Have your phone and home Wi-Fi password ready." else if (route.id == "roku_phone") "Keep your phone and TV on the same Wi-Fi." else if (route.steps.first().surface == "tv") "Have your TV remote ready." else "Have your phone and TV ready.")
-        words(content, "${route.steps.size} pictures. One step at a time.", 18f, skin.accent)
-        if (route.models.isNotEmpty()) words(content, "Documented model examples: ${route.models.joinToString()}", 16f, skin.muted)
-        resumeIndex(route)?.let { saved -> words(content, "Continue at picture ${saved + 1}.", color = skin.accent) }
-        action(content, if (detailsExpanded) "? Hide step help" else "? Step help") { detailsExpanded = !detailsExpanded; render(true) }
+        words(content, "One picture at a time.", 18f, skin.accent)
+        action(content, if (detailsExpanded) "? Hide help" else "? Help") { detailsExpanded = !detailsExpanded; render(true) }
         if (detailsExpanded) {
+            if (route.id == "lg_pair") words(content, "LG ThinQ is LG’s official TV setup app.")
+            if (route.models.isNotEmpty()) words(content, "Example TV models: ${route.models.joinToString()}", 16f, skin.muted)
+            resumeIndex(route)?.let { saved -> words(content, "You can continue at picture ${saved + 1}.", color = skin.accent) }
             words(content, route.appliesTo, 16f, skin.muted)
             pictureJumps(route)
             pairingHelp(route)
             manualHelp(route)
             if (!route.id.startsWith("phone_")) action(content, "Phone Wi-Fi pictures") { chooseGroup("phone") }
-            if ((group?.routes?.size ?: 0) > 1) action(content, "Other setup options") {
-                remember(); routeId = null; index = -1; mismatch = false; detailsExpanded = false; pickerExpanded = true; referencesExpanded = false; render()
+            if ((group?.routes?.size ?: 0) > 1) action(content, "Try another way") {
+                remember(); routeId = null; index = -1; mismatch = false; detailsExpanded = true; pickerExpanded = true; referencesExpanded = false; render()
             }
             words(content, "Use the official setup screens for passwords and approvals.", color = skin.muted)
             if (route.id in listOf("roku_network", "roku_model")) action(content, "I’m already in Settings") { remember(); index = 2; detailsExpanded = false; referencesExpanded = false; render() }
