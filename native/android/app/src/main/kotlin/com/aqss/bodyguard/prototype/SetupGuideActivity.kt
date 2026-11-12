@@ -270,16 +270,16 @@ class SetupGuideActivity : Activity() {
             route != null && step != null -> {
                 words(content, if (step.pictureKind == "remote") "On your TV remote" else when (step.surface) { "tv" -> "On your TV · use the remote"; "both" -> "Your TV + your phone"; else -> "On your phone" }, 15f, skin.accent, true)
                 words(content, step.instruction, 16f, bold = true)
-                if (index == 14 && route.id == "samsung_ok") action(content, "TV shows a PIN") { switchSamsungApproval("samsung_pin") }
-                if (index == 14 && route.id == "samsung_pin") action(content, "TV shows OK instead") { switchSamsungApproval("samsung_ok") }
-                if (route.id == "philips_voice_remote" && index == 4) action(content, "Remote already connected") { skipTo(route.id, 4, 9) }
-                if (route.id == "philips_voice_remote" && index == 5) action(content, "Light is not blinking") { skipTo(route.id, 5, 6) }
-                if (route.id == "fire_setup" && index in 5..6) action(content, "Account sign-in finished") { skipTo(route.id, index, 7) }
                 val picture = if (route.id == "roku_network" || route.id == "roku_model") rokuIllustration(step, index + 1, route.id) else if (route.id == "philips_voice_remote" && index in 1..2) profileIllustration(step, index + 1) else stepPictures.picture(step, index + 1)
                 if (!preserveScroll) skin.guideCue(picture)
                 content.addView(picture, LinearLayout.LayoutParams(-1, -2).apply { bottomMargin = dp(18) })
                 action(content, if (detailsExpanded) "? Hide step help" else "? Step help") { detailsExpanded = !detailsExpanded; render(true) }
                 if (detailsExpanded) {
+                if (index == 14 && route.id == "samsung_ok") action(content, "TV shows a PIN") { switchSamsungApproval("samsung_pin") }
+                if (index == 14 && route.id == "samsung_pin") action(content, "TV shows OK instead") { switchSamsungApproval("samsung_ok") }
+                if (route.id == "philips_voice_remote" && index == 4) action(content, "Remote already connected") { skipTo(route.id, 4, 9) }
+                if (route.id == "philips_voice_remote" && index == 5) action(content, "Light is not blinking") { skipTo(route.id, 5, 6) }
+                if (route.id == "fire_setup" && index in 5..6) action(content, "Account sign-in finished") { skipTo(route.id, index, 7) }
                     action(content, "My screen looks different") { remember(); mismatch = true; detailsExpanded = false; referencesExpanded = false; render() }
                     pictureJumps(route)
                     pairingHelp(route)
