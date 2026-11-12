@@ -100,6 +100,7 @@ def main():
     parser.add_argument("--setup-output-report-only", action="store_true")
     parser.add_argument("--tv-guides-only", action="store_true")
     parser.add_argument("--style-only", action="store_true")
+    parser.add_argument("--voice-fixture-only", action="store_true")
     parser.add_argument("--tv-certificate-fixture", action="store_true")
     parser.add_argument("--apk", default="native/android/app/build/outputs/apk/liveInput/app-liveInput.apk")
     parser.add_argument("--package", default="com.aqss.bodyguard.prototype.liveinput")
@@ -400,6 +401,18 @@ def main():
         "No app dialog or post-launch ANR is suppressed.\n")
     print("SYSTEM_LAUNCHER_READY: three fresh observations before app installation", flush=True)
     adb("install", "-r", args.apk, timeout=120)
+    # Test APK reads actual Android on-device service availability without
+    # opening a microphone, starting recognition or injecting a transcript.
+    if args.voice_fixture_only:
+        probe = adb("shell", "am", "instrument", "-w", "-r",
+                    "com.aqss.bodyguard.uiprobe/.SpeechServiceAvailabilityProbe",
+                    timeout=60).decode(errors="replace")
+        (out / "voice-os-recognizer-service.txt").write_text(probe)
+        for service_line in probe.splitlines():
+            if "AQSS_V2_SERVICE_PROBE=" in service_line:
+                print(service_line.strip(), flush=True)
+        assert "AQSS_V2_SERVICE_PROBE=" in probe and "INSTRUMENTATION_CODE: -1" in probe, (
+            "Android service query failed; do not classify missing evidence as available", probe)
     adb("shell", "pm", "clear", package)
     adb("logcat", "-c")
     recording = subprocess.Popen(["adb", "shell", "screenrecord", "--time-limit", "12", "/sdcard/aqss-opening.mp4"],
@@ -425,6 +438,263 @@ def main():
     version, build = versions[0].strip(), builds[0]
     (out / "installed-build-identity.json").write_text(
         json.dumps({"application_id": package, "version": version, "build": build}, sort_keys=True))
+    if args.voice_fixture_only:
+        # Exercise the two real native buttons, not a fake recognizer response.
+        wait_for("Connection not verified", "voice_fixture_home")
+        tap("Sound", "voice_fixture_open_sound")
+        tap("Voice check. See microphone activity and recognized words", "voice_fixture_open")
+        wait_for_all(("Microphone off", "No words recognized yet", "Start voice check"),
+                     "voice_fixture_no_capture")
+        instructions = wait_for("Tap Start, then say “Audio Bodyguard, skip intro” or “Audio Bodyguard, skip recap.”", "voice_fixture_new_commands")
+        assert not has(instructions, "Make the TV quieter"), "Voice setup must not suggest unsupported TV volume control"
+
+        def move_voice_view(name, up):
+            # Android's accessibility hierarchy contains only visible children.
+            root, _ = screen(name)
+            scroller = next((n for n in root.iter("node")
+                             if n.get("class") == "android.widget.ScrollView"), None)
+            if scroller is None:
+                time.sleep(0.3)
+                return
+            values = re.findall(r"-?\d+", scroller.get("bounds", ""))
+            assert len(values) == 4, "Voice viewport must have four screen bounds"
+            x0, y0, x1, y1 = map(int, values)
+            assert x1 > x0 and y1-y0 >= 100, "Voice viewport must be scrollable"
+            x = (x0 + x1) // 2
+            start = int(y0 + (y1-y0) * (0.3 if up else 0.72))
+            end = int(y0 + (y1-y0) * (0.72 if up else 0.3))
+            adb("shell", "input", "swipe", str(x), str(start), str(x), str(end), "350")
+
+        def voice_tap(text, name, up=False):
+            # Search both scroll directions, but never repeat an action after a
+            # successful click. The local video section expands the same view.
+            for direction in (up, not up):
+                for attempt in range(8):
+                    _, clicked = screen(f"{name}-{direction}-{attempt}", click=text)
+                    if clicked:
+                        return
+                    move_voice_view(f"{name}_{direction}_scroll_{attempt}", direction)
+            raise AssertionError("Owned test-player button is not reachable: " + text)
+
+        def voice_find(text, name, up=False):
+            for direction in (up, not up):
+                for attempt in range(8):
+                    root, _ = screen(f"{name}-{direction}-{attempt}")
+                    if has(root, text):
+                        return root
+                    move_voice_view(f"{name}_{direction}_scroll_{attempt}", direction)
+            raise AssertionError("Owned test-player text missing after bounded scroll: " + text)
+
+        def check_visible_button(root, text, expected_enabled):
+            matches = [n for n in root.iter("node")
+                       if n.get("class") == "android.widget.Button" and
+                       n.get("text", "").casefold() == text.casefold()]
+            assert len(matches) == 1, (text, "expected one VISIBLE authored button", len(matches))
+            actual = matches[0].get("enabled")
+            assert actual == str(expected_enabled).lower(), (text, expected_enabled, actual)
+
+        # One real Intro button click must disable only that authored control.
+        voice_tap("Skip Intro", "voice_fixture_press_intro")
+        root = voice_find("Test player: Skip Intro button activated", "voice_fixture_intro_state", up=True)
+        check_visible_button(root, "Skip Intro", False)
+        screenshot("voice_fixture_intro_activated")
+
+        # The still-available Recap button lives BELOW the narrow viewport;
+        # search via real bounded scrolling, rather than treating absence from
+        # a single visible accessibility root as a disabled/missing control.
+        voice_tap("Skip Recap", "voice_fixture_press_recap")
+        root = voice_find("Skip Recap", "voice_fixture_recap_button")
+        check_visible_button(root, "Skip Recap", False)
+        root = voice_find("Test player: Skip Recap button activated",
+                          "voice_fixture_recap_state", up=True)
+        screenshot("voice_fixture_recap_activated")
+
+        # Reset should re-enable BOTH independent authored buttons.
+        voice_tap("Reset test player", "voice_fixture_reset_buttons")
+        root = voice_find("Test player ready — nothing connected",
+                          "voice_fixture_reset_status", up=True)
+        root = voice_find("Skip Intro", "voice_fixture_intro_restored")
+        check_visible_button(root, "Skip Intro", True)
+        root = voice_find("Skip Recap", "voice_fixture_recap_restored")
+        check_visible_button(root, "Skip Recap", True)
+        screenshot("voice_fixture_both_restored")
+
+        # Exercise the actual bundled video decoder/player and observe its
+        # independently read currentPosition after each section-specific seek.
+        # No fake transcript, microphone, or third-party playback is involved.
+        voice_tap("? Local video trial", "local_video_open")
+        voice_tap("Prepare intro video", "local_video_prepare_intro")
+        voice_find("Local video: intro ready at 0s", "local_video_intro_staged", up=True)
+        voice_tap("Skip Intro", "local_video_intro_seek", up=True)
+        voice_find("Local video observed: intro ends at 2s",
+                   "local_video_intro_readback", up=True)
+        screenshot("local_video_intro_observed")
+        voice_tap("Reset test player", "local_video_reset", up=True)
+        voice_find("Local video not prepared", "local_video_reset_confirm", up=True)
+        voice_tap("Prepare recap video", "local_video_prepare_recap")
+        voice_find("Local video: recap ready at 4s", "local_video_recap_staged", up=True)
+        voice_tap("Skip Recap", "local_video_recap_seek", up=True)
+        voice_find("Local video observed: recap ends at 6s",
+                   "local_video_recap_readback", up=True)
+        screenshot("local_video_recap_observed")
+
+        # Emulator/debug-only final TEXT goes through OwnedVoiceSkipGate and the
+        # same MediaPlayer handler as the real controls. No recognizer or mic.
+        voice_tap("Reset test player", "text_fixture_intro_reset", up=True)
+        voice_tap("Prepare intro video", "text_fixture_intro_prepare")
+        voice_find("Local video: intro ready at 0s", "text_fixture_intro_ready", up=True)
+        voice_tap("Fixture final Recap text (no audio)", "text_fixture_wrong_recap")
+        voice_find("Fixture final text refused; no additional player action",
+                   "text_fixture_wrong_recap_refusal", up=True)
+        intro_available = voice_find("Skip Intro", "text_fixture_intro_still_available")
+        check_visible_button(intro_available, "Skip Intro", True)
+        voice_tap("Fixture final Intro text (no audio)", "text_fixture_intro_request")
+        voice_find("Local video observed: intro ends at 2s",
+                   "text_fixture_intro_observed", up=True)
+        voice_tap("Fixture final Intro text (no audio)", "text_fixture_intro_duplicate")
+        voice_find("Fixture final text refused; no additional player action",
+                   "text_fixture_intro_duplicate_refused", up=True)
+        voice_find("Local video observed: intro ends at 2s",
+                   "text_fixture_intro_readback_retained", up=True)
+        screenshot("text_fixture_intro_once_observed")
+
+        voice_tap("Reset test player", "text_fixture_recap_reset", up=True)
+        voice_tap("Prepare recap video", "text_fixture_recap_prepare")
+        voice_find("Local video: recap ready at 4s", "text_fixture_recap_ready", up=True)
+        voice_tap("Fixture final Intro text (no audio)", "text_fixture_wrong_intro")
+        voice_find("Fixture final text refused; no additional player action",
+                   "text_fixture_wrong_intro_refusal", up=True)
+        recap_available = voice_find("Skip Recap", "text_fixture_recap_still_available")
+        check_visible_button(recap_available, "Skip Recap", True)
+        voice_tap("Fixture final Recap text (no audio)", "text_fixture_recap_request")
+        voice_find("Local video observed: recap ends at 6s",
+                   "text_fixture_recap_observed", up=True)
+        voice_tap("Fixture final Recap text (no audio)", "text_fixture_recap_duplicate")
+        voice_find("Fixture final text refused; no additional player action",
+                   "text_fixture_recap_duplicate_refused", up=True)
+        voice_find("Local video observed: recap ends at 6s",
+                   "text_fixture_recap_readback_retained", up=True)
+        screenshot("text_fixture_recap_once_observed")
+        print("VOICE_OWNED_FINAL_TEXT_FIXTURE_PASS: emulator supplied text -> gate -> MediaPlayer readback; OS audio NONE", flush=True)
+
+        # A canceled synthetic final-text run cannot seek an already prepared
+        # real MediaPlayer. Keep the current playhead and control enabled.
+        for segment, ready, phrase in (
+            ("intro", "Local video: intro ready at 0s", "Intro"),
+            ("recap", "Local video: recap ready at 4s", "Recap"),
+        ):
+            voice_tap("Reset test player", f"cancel_{segment}_reset", up=True)
+            voice_find("Local video not prepared", f"cancel_{segment}_off", up=True)
+            voice_tap(f"Prepare {segment} video", f"cancel_{segment}_prepare")
+            voice_find(ready, f"cancel_{segment}_ready", up=True)
+            voice_tap("Fixture cancel final text (no audio)", f"cancel_{segment}_run")
+            voice_find("Fixture final text canceled; no audio", f"cancel_{segment}_status", up=True)
+            voice_tap(f"Fixture final {phrase} text (no audio)", f"cancel_{segment}_late")
+            voice_find(ready, f"cancel_{segment}_position_unchanged", up=True)
+            voice_find("Fixture final text canceled; no audio", f"cancel_{segment}_still_canceled", up=True)
+            allowed = voice_find(f"Skip {phrase}", f"cancel_{segment}_control_retained")
+            check_visible_button(allowed, f"Skip {phrase}", True)
+        print("VOICE_OWNED_CANCELED_FINAL_TEXT_FIXTURE_PASS: late synthetic results cannot seek; OS audio NONE", flush=True)
+
+        # A competing seek by the local player's user invalidates the selected
+        # segment. The old final phrase must not seek to the Skip target.
+        for segment, ready, moved, phrase in (
+            ("intro", "Local video: intro ready at 0s",
+             "Local video moved: intro playhead now 1s", "Intro"),
+            ("recap", "Local video: recap ready at 4s",
+             "Local video moved: recap playhead now 5s", "Recap"),
+        ):
+            voice_tap("Reset test player", f"text_fixture_{segment}_manual_reset", up=True)
+            voice_find("Local video not prepared", f"text_fixture_{segment}_manual_off", up=True)
+            voice_tap(f"Prepare {segment} video", f"text_fixture_{segment}_manual_prepare")
+            voice_find(ready, f"text_fixture_{segment}_manual_ready", up=True)
+            voice_tap("Fixture move playhead (no audio)", f"text_fixture_{segment}_manual_seek")
+            voice_find(moved, f"text_fixture_{segment}_manual_observed", up=True)
+            voice_tap(f"Fixture final {phrase} text (no audio)",
+                      f"text_fixture_{segment}_manual_stale_request")
+            voice_find("Local video unavailable: selected section changed",
+                       f"text_fixture_{segment}_manual_refused", up=True)
+            voice_find("Fixture final text refused; no additional player action",
+                       f"text_fixture_{segment}_manual_policy_refused", up=True)
+            intro_off = voice_find("Skip Intro", f"text_fixture_{segment}_manual_intro_off")
+            check_visible_button(intro_off, "Skip Intro", False)
+            recap_off = voice_find("Skip Recap", f"text_fixture_{segment}_manual_recap_off")
+            check_visible_button(recap_off, "Skip Recap", False)
+        print("VOICE_OWNED_STALE_PLAYHEAD_FIXTURE_PASS: manual playhead readback rejects old intro/recap final text; OS audio NONE", flush=True)
+
+        # Prepare a fresh Intro immediately before leaving the app.
+        # A resumed session must not retain the old local-video entitlement.
+        voice_tap("Reset test player", "local_video_before_background_reset", up=True)
+        voice_find("Local video not prepared", "local_video_before_background_off", up=True)
+        voice_tap("Prepare intro video", "local_video_prepare_before_background", up=True)
+        voice_find("Local video: intro ready at 0s", "local_video_ready_before_background", up=True)
+        # No speech event was injected, no microphone Start was pressed.
+        adb("shell", "input", "keyevent", "KEYCODE_HOME")
+        time.sleep(0.4)
+        launch()
+        wait_for("Start voice check", "voice_fixture_return_off")
+        voice_find("Local video not prepared", "voice_fixture_background_abandons_video", up=True)
+        intro_off = voice_find("Skip Intro", "voice_fixture_background_intro_disabled")
+        check_visible_button(intro_off, "Skip Intro", False)
+        recap_off = voice_find("Skip Recap", "voice_fixture_background_recap_disabled")
+        check_visible_button(recap_off, "Skip Recap", False)
+        screenshot("voice_fixture_background_off")
+
+        # A late supplied final TEXT after Home/resume must not seek or restore
+        # the abandoned local-player run. This is NOT an OS recognizer callback.
+        for phrase in ("Intro", "Recap"):
+            voice_tap(f"Fixture final {phrase} text (no audio)",
+                      f"voice_fixture_background_late_{phrase.lower()}", up=True)
+            voice_find("Local video not prepared",
+                       f"voice_fixture_background_{phrase.lower()}_still_off", up=True)
+            voice_find("Test player paused — reset to prepare video again",
+                       f"voice_fixture_background_{phrase.lower()}_still_retired", up=True)
+            intro_off = voice_find("Skip Intro", f"voice_fixture_background_{phrase.lower()}_intro_off")
+            check_visible_button(intro_off, "Skip Intro", False)
+            recap_off = voice_find("Skip Recap", f"voice_fixture_background_{phrase.lower()}_recap_off")
+            check_visible_button(recap_off, "Skip Recap", False)
+        # Preparing a new clip without explicit Reset must not bypass the
+        # background retirement barrier or revive Skip eligibility.
+        voice_tap("Prepare intro video", "voice_fixture_background_reprepare_denied", up=True)
+        voice_find("Local video unavailable: reset required before preparing again",
+                   "voice_fixture_background_reprepare_status", up=True)
+        intro_off = voice_find("Skip Intro", "voice_fixture_background_reprepare_intro_off")
+        check_visible_button(intro_off, "Skip Intro", False)
+        recap_off = voice_find("Skip Recap", "voice_fixture_background_reprepare_recap_off")
+        check_visible_button(recap_off, "Skip Recap", False)
+        print("VOICE_OWNED_BACKGROUND_FINAL_TEXT_FIXTURE_PASS: no stale player seek or reprepare after Home; OS audio NONE", flush=True)
+
+        # A new Activity object after process death must also fail closed.
+        # The only persistent datum is an owned-fixture reset marker, not audio.
+        adb("shell", "am", "force-stop", package)
+        launch()
+        wait_for("Connection not verified", "voice_fixture_process_restart_home")
+        tap("Sound", "voice_fixture_process_restart_sound")
+        tap("Voice check. See microphone activity and recognized words",
+            "voice_fixture_process_restart_voice")
+        voice_find("Test player paused — reset to prepare video again",
+                   "voice_fixture_process_restart_requires_reset", up=True)
+        intro_off = voice_find("Skip Intro", "voice_fixture_process_intro_disabled")
+        check_visible_button(intro_off, "Skip Intro", False)
+        recap_off = voice_find("Skip Recap", "voice_fixture_process_recap_disabled")
+        check_visible_button(recap_off, "Skip Recap", False)
+        voice_tap("? Local video trial", "voice_fixture_process_open_video", up=True)
+        voice_tap("Prepare recap video", "voice_fixture_process_reprepare_denied", up=True)
+        voice_find("Local video unavailable: reset required before preparing again",
+                   "voice_fixture_process_reprepare_status", up=True)
+        intro_off = voice_find("Skip Intro", "voice_fixture_process_reprepare_intro_off")
+        check_visible_button(intro_off, "Skip Intro", False)
+        recap_off = voice_find("Skip Recap", "voice_fixture_process_reprepare_recap_off")
+        check_visible_button(recap_off, "Skip Recap", False)
+        voice_tap("Reset test player", "voice_fixture_process_explicit_reset", up=True)
+        intro_on = voice_find("Skip Intro", "voice_fixture_process_intro_restored")
+        check_visible_button(intro_on, "Skip Intro", True)
+        recap_on = voice_find("Skip Recap", "voice_fixture_process_recap_restored")
+        check_visible_button(recap_on, "Skip Recap", True)
+        screenshot("voice_fixture_process_reset")
+        print("VOICE_OWNED_BUTTON_FIXTURE_PASS: real Intro/Recap buttons; no speech or TV claim", flush=True)
+        return
+
     if args.style_only:
         def reveal(label, name):
             for attempt in range(10):

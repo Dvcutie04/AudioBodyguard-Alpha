@@ -6,6 +6,7 @@
     objects = {
 
 /* Begin PBXBuildFile section */
+        B32000000000000000000001 /* voice_skip_sample.mp4 in Resources */ = {isa = PBXBuildFile; fileRef = B32000000000000000000011; };
         C20000000000000000000001 /* TVNetworkCheck.swift in Sources */ = {isa = PBXBuildFile; fileRef = C20000000000000000000011; };
         C20000000000000000000002 /* TVNetworkTarget.swift in Sources */ = {isa = PBXBuildFile; fileRef = C20000000000000000000012; };
         B90000000000000000000001 /* SetupPresentation.swift in Sources */ = {isa = PBXBuildFile; fileRef = B90000000000000000000012; };
@@ -34,6 +35,7 @@
         B20000000000000000000001 /* LiveSoundCheck.swift in Sources */ = {isa = PBXBuildFile; fileRef = B20000000000000000000011 /* LiveSoundCheck.swift */; };
         B20000000000000000000002 /* SoundCheck.swift in Sources */ = {isa = PBXBuildFile; fileRef = B20000000000000000000012 /* SoundCheck.swift */; };
         B30000000000000000000001 /* MicrophoneLifecycle.swift in Sources */ = {isa = PBXBuildFile; fileRef = B30000000000000000000011; };
+        B31000000000000000000001 /* OwnedVoiceSkipGate.swift in Sources */ = {isa = PBXBuildFile; fileRef = B31000000000000000000011; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -41,6 +43,7 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
+        B32000000000000000000011 /* voice_skip_sample.mp4 */ = {isa = PBXFileReference; lastKnownFileType = video.mp4; name = voice_skip_sample.mp4; path = Resources/voice_skip_sample.mp4; sourceTree = SOURCE_ROOT; };
         C20000000000000000000011 /* TVNetworkCheck.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TVNetworkCheck.swift; sourceTree = "<group>"; };
         C20000000000000000000012 /* TVNetworkTarget.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = TVNetworkTarget.swift; path = ../ios/Sources/AQSSNativeFeedback/TVNetworkTarget.swift; sourceTree = SOURCE_ROOT; };
         B90000000000000000000012 /* SetupPresentation.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = SetupPresentation.swift; path = ../ios/Sources/AQSSNativeFeedback/SetupPresentation.swift; sourceTree = SOURCE_ROOT; };
@@ -71,10 +74,11 @@
         B20000000000000000000011 /* LiveSoundCheck.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = LiveSoundCheck.swift; path = Sources/LiveSoundCheck.swift; sourceTree = SOURCE_ROOT; };
         B20000000000000000000012 /* SoundCheck.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = SoundCheck.swift; path = ../ios/Sources/AQSSNativeFeedback/SoundCheck.swift; sourceTree = SOURCE_ROOT; };
         B30000000000000000000011 /* MicrophoneLifecycle.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = MicrophoneLifecycle.swift; path = ../ios/Sources/AQSSNativeFeedback/MicrophoneLifecycle.swift; sourceTree = SOURCE_ROOT; };
+        B31000000000000000000011 /* OwnedVoiceSkipGate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = OwnedVoiceSkipGate.swift; path = ../ios/Sources/AQSSNativeFeedback/OwnedVoiceSkipGate.swift; sourceTree = SOURCE_ROOT; };
 /* End PBXFileReference section */
 
 /* Begin PBXGroup section */
-        A10000000000000000000020 = {isa = PBXGroup; children = (B90000000000000000000012, B70000000000000000000012, B70000000000000000000011, B60000000000000000000011, B50000000000000000000011, B40000000000000000000011, B30000000000000000000011, B20000000000000000000012, B20000000000000000000011, F10000000000000000000011 /* PrivacyInfo.xcprivacy */, E10000000000000000000011, D10000000000000000000011, D10000000000000000000012, C10000000000000000000012, C10000000000000000000011, A10000000000000000000021 /* Sources */, A10000000000000000000023 /* UITests */, A10000000000000000000016 /* Assets.xcassets */, A10000000000000000000019 /* LaunchScreen.storyboard */, A10000000000000000000012 /* SessionEvidenceView.swift */, A10000000000000000000017 /* TutorialContent.swift */, A10000000000000000000018 /* InterfaceContent.swift */, A1000000000000000000001A /* GuideProgress.swift */, A10000000000000000000022 /* Products */); sourceTree = "<group>"; };
+        A10000000000000000000020 = {isa = PBXGroup; children = (B32000000000000000000011, B90000000000000000000012, B70000000000000000000012, B70000000000000000000011, B60000000000000000000011, B50000000000000000000011, B40000000000000000000011, B30000000000000000000011, B31000000000000000000011, B20000000000000000000012, B20000000000000000000011, F10000000000000000000011 /* PrivacyInfo.xcprivacy */, E10000000000000000000011, D10000000000000000000011, D10000000000000000000012, C10000000000000000000012, C10000000000000000000011, A10000000000000000000021 /* Sources */, A10000000000000000000023 /* UITests */, A10000000000000000000016 /* Assets.xcassets */, A10000000000000000000019 /* LaunchScreen.storyboard */, A10000000000000000000012 /* SessionEvidenceView.swift */, A10000000000000000000017 /* TutorialContent.swift */, A10000000000000000000018 /* InterfaceContent.swift */, A1000000000000000000001A /* GuideProgress.swift */, A10000000000000000000022 /* Products */); sourceTree = "<group>"; };
         A10000000000000000000021 /* Sources */ = {isa = PBXGroup; children = (C20000000000000000000011, C20000000000000000000012, A10000000000000000000011 /* AQSSReadOnlyApp.swift */); path = Sources; sourceTree = "<group>"; };
         A10000000000000000000022 /* Products */ = {isa = PBXGroup; children = (A10000000000000000000013 /* AQSSReadOnly.app */, A10000000000000000000014 /* AQSSReadOnlyUITests.xctest */); name = Products; sourceTree = "<group>"; };
         A10000000000000000000023 /* UITests */ = {isa = PBXGroup; children = (A10000000000000000000015 /* AQSSReadOnlyUITests.swift */); path = UITests; sourceTree = "<group>"; };
@@ -90,12 +94,12 @@
 /* End PBXProject section */
 
 /* Begin PBXSourcesBuildPhase section */
-        A10000000000000000000040 /* Sources */ = {isa = PBXSourcesBuildPhase; buildActionMask = 2147483647; files = (C20000000000000000000001, C20000000000000000000002, B90000000000000000000001, B80000000000000000000001, B80000000000000000000002, B70000000000000000000002, B70000000000000000000001, B60000000000000000000001, B50000000000000000000001, B40000000000000000000001, B30000000000000000000001, B20000000000000000000002, B20000000000000000000001, E10000000000000000000001, D10000000000000000000001, D10000000000000000000002, C10000000000000000000002, C10000000000000000000001, A10000000000000000000008 /* GuideProgress.swift in Sources */, A10000000000000000000006 /* InterfaceContent.swift in Sources */, A10000000000000000000005 /* TutorialContent.swift in Sources */, A10000000000000000000001 /* AQSSReadOnlyApp.swift in Sources */, A10000000000000000000002 /* SessionEvidenceView.swift in Sources */); runOnlyForDeploymentPostprocessing = 0; };
+        A10000000000000000000040 /* Sources */ = {isa = PBXSourcesBuildPhase; buildActionMask = 2147483647; files = (C20000000000000000000001, C20000000000000000000002, B90000000000000000000001, B80000000000000000000001, B80000000000000000000002, B70000000000000000000002, B70000000000000000000001, B60000000000000000000001, B50000000000000000000001, B40000000000000000000001, B30000000000000000000001, B31000000000000000000001, B20000000000000000000002, B20000000000000000000001, E10000000000000000000001, D10000000000000000000001, D10000000000000000000002, C10000000000000000000002, C10000000000000000000001, A10000000000000000000008 /* GuideProgress.swift in Sources */, A10000000000000000000006 /* InterfaceContent.swift in Sources */, A10000000000000000000005 /* TutorialContent.swift in Sources */, A10000000000000000000001 /* AQSSReadOnlyApp.swift in Sources */, A10000000000000000000002 /* SessionEvidenceView.swift in Sources */); runOnlyForDeploymentPostprocessing = 0; };
         A10000000000000000000041 /* Sources */ = {isa = PBXSourcesBuildPhase; buildActionMask = 2147483647; files = (B80000000000000000000003, A10000000000000000000003 /* AQSSReadOnlyUITests.swift in Sources */); runOnlyForDeploymentPostprocessing = 0; };
 /* End PBXSourcesBuildPhase section */
 
 /* Begin PBXResourcesBuildPhase section */
-        A10000000000000000000042 /* Resources */ = {isa = PBXResourcesBuildPhase; buildActionMask = 2147483647; files = (F10000000000000000000001 /* PrivacyInfo.xcprivacy in Resources */, A10000000000000000000004 /* Assets.xcassets in Resources */, A10000000000000000000007 /* LaunchScreen.storyboard in Resources */); runOnlyForDeploymentPostprocessing = 0; };
+        A10000000000000000000042 /* Resources */ = {isa = PBXResourcesBuildPhase; buildActionMask = 2147483647; files = (B32000000000000000000001, F10000000000000000000001 /* PrivacyInfo.xcprivacy in Resources */, A10000000000000000000004 /* Assets.xcassets in Resources */, A10000000000000000000007 /* LaunchScreen.storyboard in Resources */); runOnlyForDeploymentPostprocessing = 0; };
 /* End PBXResourcesBuildPhase section */
 
 /* Begin PBXTargetDependency section */

@@ -1,7 +1,25 @@
 import XCTest
 import UIKit
+import Speech
 
 final class AQSSReadOnlyUITests: XCTestCase {
+    /// OS service availability only. No audio, recognition task, microphone,
+    /// injected transcript or Skip action is started by this UI test.
+    func testOnDeviceSpeechCapabilityProbeWithoutCapture() throws {
+        let locale = Locale(identifier: "en_US")
+        let recognizer = SFSpeechRecognizer(locale: locale)
+        let available = recognizer?.isAvailable ?? false
+        let onDevice = recognizer?.supportsOnDeviceRecognition ?? false
+        let authorized = SFSpeechRecognizer.authorizationStatus() == .authorized
+        print("AQSS_V2_SERVICE_PROBE: os=iOS Simulator locale=en_US recognizer=\(recognizer != nil) onDevice=\(onDevice) available=\(available) speechAuthorized=\(authorized) audio=NONE")
+        guard recognizer != nil, available, onDevice else {
+            throw XCTSkip("On-device English speech recognition unavailable on this simulator. No audio was opened.")
+        }
+        guard authorized else {
+            throw XCTSkip("Speech permission not authorized for this UI-test process. No audio was opened.")
+        }
+        // Availability is not an audio-to-action or microphone result.
+    }
     override func setUpWithError() throws {
         continueAfterFailure = false
         XCUIDevice.shared.orientation = .portrait
@@ -965,6 +983,299 @@ final class AQSSReadOnlyUITests: XCTestCase {
         label("Connection not verified", app)
     }
 
+    func testOwnedLocalVideoSeeksAndReadsActualPlayerPosition() {
+        let app = launch()
+        tab("sound", app); tap("Voice check", app)
+        XCTAssertEqual(app.buttons["voice-start-stop"].label, "Start voice check")
+        let panel = app.buttons["voice-local-video-help"]
+        XCTAssertTrue(panel.waitForExistence(timeout: 5))
+        if !panel.isHittable { app.scrollViews.firstMatch.swipeUp() }
+        XCTAssertTrue(panel.isHittable)
+        panel.tap()
+
+        let state = app.staticTexts["voice-local-video-status"]
+        let intro = app.buttons["voice-demo-skip-intro"]
+        let recap = app.buttons["voice-demo-skip-recap"]
+        let reset = app.buttons["voice-demo-reset"]
+        let prepareIntro = app.buttons["voice-local-prepare-intro"]
+        let prepareRecap = app.buttons["voice-local-prepare-recap"]
+        XCTAssertTrue(state.waitForExistence(timeout: 5))
+        let scroll = app.scrollViews.firstMatch
+        func press(_ button: XCUIElement) {
+            for _ in 0..<6 {
+                if button.isHittable { button.tap(); return }
+                scroll.swipeUp()
+            }
+            for _ in 0..<8 {
+                if button.isHittable { button.tap(); return }
+                scroll.swipeDown()
+            }
+            XCTFail("Local owned-video action not reachable: \(button.identifier)")
+        }
+        func awaitPosition(_ expected: String) {
+            let p = XCTNSPredicateExpectation(predicate:
+                NSPredicate(format: "label == %@", expected), object: state)
+            XCTAssertEqual(XCTWaiter.wait(for: [p], timeout: 16), .completed,
+                           "Actual AVPlayer position must be read back after the seek")
+        }
+
+        // A retired trial survives app relaunch. This independent scenario
+        // must explicitly Reset, never silently revive it from Prepare.
+        press(reset)
+        awaitPosition("Local video not prepared")
+        press(prepareIntro)
+        awaitPosition("Local video: intro ready at 0s")
+        XCTAssertTrue(intro.isEnabled)
+        XCTAssertFalse(recap.isEnabled)
+        press(intro)
+        awaitPosition("Local video observed: intro ends at 2s")
+        XCTAssertFalse(intro.isEnabled)
+        XCTAssertFalse(recap.isEnabled)
+        screenshot("Native local H264 player reads back Intro transition", app)
+
+        press(reset)
+        awaitPosition("Local video not prepared")
+        press(prepareRecap)
+        awaitPosition("Local video: recap ready at 4s")
+        XCTAssertFalse(intro.isEnabled)
+        XCTAssertTrue(recap.isEnabled)
+        press(recap)
+        awaitPosition("Local video observed: recap ends at 6s")
+        XCTAssertFalse(intro.isEnabled)
+        XCTAssertFalse(recap.isEnabled)
+        screenshot("Native local H264 player reads back Recap transition", app)
+
+        // Abandoning the prepared Intro on background must revoke both controls
+        // before the user returns. No microphone is involved in this test.
+        press(reset)
+        awaitPosition("Local video not prepared")
+        press(prepareIntro)
+        awaitPosition("Local video: intro ready at 0s")
+        XCTAssertTrue(intro.isEnabled)
+        XCUIDevice.shared.press(.home)
+        app.activate()
+        awaitPosition("Local video not prepared")
+        XCTAssertFalse(intro.isEnabled)
+        XCTAssertFalse(recap.isEnabled)
+        XCTAssertEqual(app.staticTexts["voice-demo-result"].label,
+                       "Test player paused — reset to prepare video again")
+        // A new Prepare must not bypass the durable background reset barrier.
+        // Before this repair, it silently re-enabled the abandoned Intro.
+        press(prepareIntro)
+        awaitPosition("Local video unavailable: reset required before preparing again")
+        XCTAssertFalse(intro.isEnabled)
+        XCTAssertFalse(recap.isEnabled)
+        press(reset)
+        XCTAssertTrue(intro.isEnabled && recap.isEnabled)
+        screenshot("Returning from background rejects stale local Intro affordance", app)
+
+        // This test deliberately never presses Start. No speech recognition
+        // or TV/third-party player action is being claimed by this receipt.
+        XCTAssertEqual(app.buttons["voice-start-stop"].label, "Start voice check")
+        XCTAssertEqual(app.staticTexts["voice-transcript"].label, "No words recognized yet")
+    }
+
+    func testOwnedFinalTextGateToRealLocalPlayerWithoutRecognition() {
+        // Supplied TEXT only: no OS recognition, microphone or external player.
+        let app = launch(fixtureText: true)
+        tab("sound", app); tap("Voice check", app)
+        let panel = app.buttons["voice-local-video-help"]
+        XCTAssertTrue(panel.waitForExistence(timeout: 5))
+        if !panel.isHittable { app.scrollViews.firstMatch.swipeUp() }
+        panel.tap()
+        let state = app.staticTexts["voice-local-video-status"]
+        let intro = app.buttons["voice-test-final-text-intro"]
+        let recap = app.buttons["voice-test-final-text-recap"]
+        let scroll = app.scrollViews.firstMatch
+        func press(_ control: XCUIElement) {
+            for _ in 0..<8 {
+                if control.isHittable { control.tap(); return }
+                scroll.swipeUp()
+            }
+            for _ in 0..<8 {
+                if control.isHittable { control.tap(); return }
+                scroll.swipeDown()
+            }
+            XCTFail("Fixture control unreachable")
+        }
+        func observe(_ expected: String) {
+            let p = XCTNSPredicateExpectation(predicate:
+                NSPredicate(format: "label == %@", expected), object: state)
+            XCTAssertEqual(XCTWaiter.wait(for: [p], timeout: 16), .completed)
+        }
+        XCTAssertTrue(intro.exists && recap.exists)
+        XCTAssertEqual(app.buttons["voice-start-stop"].label, "Start voice check")
+        // A previous XCTest may deliberately leave the durable reset barrier.
+        // Establish this scenario through the app's explicit Reset control.
+        press(app.buttons["voice-demo-reset"])
+        observe("Local video not prepared")
+        press(app.buttons["voice-local-prepare-intro"])
+        observe("Local video: intro ready at 0s")
+        press(recap) // Wrong phrase: no local seek.
+        XCTAssertEqual(state.label, "Local video: intro ready at 0s")
+        press(intro)
+        observe("Local video observed: intro ends at 2s")
+        press(intro) // Consumed run: zero additional player actions.
+        XCTAssertEqual(state.label, "Local video observed: intro ends at 2s")
+        XCTAssertEqual(app.staticTexts["voice-demo-result"].label,
+                       "Fixture final text refused; no additional player action")
+        press(app.buttons["voice-demo-reset"])
+        observe("Local video not prepared")
+        press(app.buttons["voice-local-prepare-recap"])
+        observe("Local video: recap ready at 4s")
+        press(intro)
+        XCTAssertEqual(state.label, "Local video: recap ready at 4s")
+        press(recap)
+        observe("Local video observed: recap ends at 6s")
+        press(recap)
+        XCTAssertEqual(state.label, "Local video observed: recap ends at 6s")
+
+        // A real user/player playhead change after selection must win over a
+        // later supplied final phrase: no seek to the original Skip target.
+        for (prepare, ready, move, command) in [
+            ("voice-local-prepare-intro", "Local video: intro ready at 0s",
+             "Local video moved: intro playhead now 1s", intro),
+            ("voice-local-prepare-recap", "Local video: recap ready at 4s",
+             "Local video moved: recap playhead now 5s", recap)
+        ] {
+            press(app.buttons["voice-demo-reset"])
+            observe("Local video not prepared")
+            press(app.buttons[prepare])
+            observe(ready)
+            press(app.buttons["voice-test-manual-seek"])
+            observe(move) // Independently read AVPlayer.currentTime after manual seek.
+            press(command)
+            observe("Local video unavailable: selected section changed")
+            XCTAssertFalse(app.buttons["voice-demo-skip-intro"].isEnabled)
+            XCTAssertFalse(app.buttons["voice-demo-skip-recap"].isEnabled)
+            XCTAssertEqual(app.staticTexts["voice-demo-result"].label,
+                           "Fixture final text refused; no additional player action")
+        }
+        XCTAssertEqual(app.buttons["voice-start-stop"].label, "Start voice check")
+        XCTAssertEqual(app.staticTexts["voice-transcript"].label, "No words recognized yet")
+        screenshot("Supplied final text to native player readback; audio NONE", app)
+    }
+
+    func testOwnedFinalTextCancellationRejectsLateResultWithoutSeeking() {
+        // Simulator-only supplied TEXT: cancellation must leave both authored
+        // player positions untouched, not merely change a label or transcript.
+        let app = launch(fixtureText: true)
+        tab("sound", app); tap("Voice check", app)
+        let panel = app.buttons["voice-local-video-help"]
+        XCTAssertTrue(panel.waitForExistence(timeout: 5))
+        if !panel.isHittable { app.scrollViews.firstMatch.swipeUp() }
+        panel.tap()
+        let state = app.staticTexts["voice-local-video-status"]
+        let scroll = app.scrollViews.firstMatch
+        func press(_ button: XCUIElement) {
+            for _ in 0..<8 {
+                if button.isHittable { button.tap(); return }
+                scroll.swipeUp()
+            }
+            for _ in 0..<8 {
+                if button.isHittable { button.tap(); return }
+                scroll.swipeDown()
+            }
+            XCTFail("Canceled fixture test control unreachable")
+        }
+        func observe(_ text: String) {
+            let p = XCTNSPredicateExpectation(predicate:
+                NSPredicate(format: "label == %@", text), object: state)
+            XCTAssertEqual(XCTWaiter.wait(for: [p], timeout: 16), .completed)
+        }
+        for (prepare, ready, command, active) in [
+            ("voice-local-prepare-intro", "Local video: intro ready at 0s",
+             "voice-test-final-text-intro", "voice-demo-skip-intro"),
+            ("voice-local-prepare-recap", "Local video: recap ready at 4s",
+             "voice-test-final-text-recap", "voice-demo-skip-recap")
+        ] {
+            press(app.buttons["voice-demo-reset"])
+            observe("Local video not prepared")
+            press(app.buttons[prepare]); observe(ready)
+            press(app.buttons["voice-test-cancel-final-text"])
+            XCTAssertEqual(app.staticTexts["voice-demo-result"].label,
+                           "Fixture final text canceled; no audio")
+            press(app.buttons[command]) // Late final text after cancellation.
+            XCTAssertEqual(state.label, ready, "Canceled text must not seek the player")
+            XCTAssertTrue(app.buttons[active].isEnabled,
+                          "Cancel must not simulate a completed Skip action")
+            XCTAssertEqual(app.staticTexts["voice-demo-result"].label,
+                           "Fixture final text canceled; no audio")
+        }
+        // A final TEXT event delivered after Home/background may not revive the
+        // abandoned local-video run or restore either stale player control.
+        // This is an app-owned simulator test, not a microphone callback.
+        for (prepare, ready, command) in [
+            ("voice-local-prepare-intro", "Local video: intro ready at 0s",
+             "voice-test-final-text-intro"),
+            ("voice-local-prepare-recap", "Local video: recap ready at 4s",
+             "voice-test-final-text-recap")
+        ] {
+            press(app.buttons["voice-demo-reset"])
+            observe("Local video not prepared")
+            press(app.buttons[prepare]); observe(ready)
+            XCUIDevice.shared.press(.home)
+            app.activate()
+            observe("Local video not prepared")
+            XCTAssertFalse(app.buttons["voice-demo-skip-intro"].isEnabled)
+            XCTAssertFalse(app.buttons["voice-demo-skip-recap"].isEnabled)
+            press(app.buttons[command])
+            XCTAssertEqual(state.label, "Local video not prepared",
+                           "A backgrounded final-text run must not seek or restore video")
+            XCTAssertEqual(app.staticTexts["voice-demo-result"].label,
+                           "Test player paused — reset to prepare video again")
+            XCTAssertFalse(app.buttons["voice-demo-skip-intro"].isEnabled)
+            XCTAssertFalse(app.buttons["voice-demo-skip-recap"].isEnabled)
+        }
+        XCTAssertEqual(app.buttons["voice-start-stop"].label, "Start voice check")
+        XCTAssertEqual(app.staticTexts["voice-transcript"].label, "No words recognized yet")
+        screenshot("Canceled and backgrounded final text cannot seek owned video; audio NONE", app)
+    }
+
+    func testOwnedVoiceSkipButtonsStaySeparateAndResetWithoutCapture() {
+        let app = launch()
+        tab("sound", app); tap("Voice check", app)
+        label("Microphone off", app)
+        label("Tap Start, then say “Audio Bodyguard, skip intro” or “Audio Bodyguard, skip recap.”", app)
+        label("These are test-player buttons in Audio Bodyguard only.", app)
+        XCTAssertFalse(app.staticTexts.containing(NSPredicate(format: "label CONTAINS %@", "Make the TV quieter")).firstMatch.exists)
+        let intro = app.buttons["voice-demo-skip-intro"]
+        let recap = app.buttons["voice-demo-skip-recap"]
+        let reset = app.buttons["voice-demo-reset"]
+        let result = app.staticTexts["voice-demo-result"]
+        XCTAssertTrue(intro.waitForExistence(timeout: 5))
+        XCTAssertTrue(recap.exists && reset.exists && result.exists)
+        // Reset is the only authorized way to recover buttons after an
+        // abandoned owned-video trial carried across independent UI tests.
+        if !reset.isHittable { app.scrollViews.firstMatch.swipeUp() }
+        XCTAssertTrue(reset.isHittable)
+        reset.tap()
+        XCTAssertTrue(intro.isEnabled && recap.isEnabled && reset.isEnabled)
+        XCTAssertEqual(result.label, "Test player ready — nothing connected")
+
+        // These are actual on-screen fixture button taps, NOT synthesized recognition.
+        if !intro.isHittable { app.scrollViews.firstMatch.swipeUp() }
+        XCTAssertTrue(intro.isHittable)
+        intro.tap()
+        XCTAssertFalse(intro.isEnabled, "A consumed Skip Intro affordance cannot fire again")
+        XCTAssertTrue(recap.isEnabled, "Skip Recap must remain independently available")
+        XCTAssertEqual(result.label, "Test player: Skip Intro button activated")
+        screenshot("Owned test player intro button changes only intro", app)
+
+        reset.tap()
+        XCTAssertTrue(intro.isEnabled && recap.isEnabled)
+        XCTAssertEqual(result.label, "Test player ready — nothing connected")
+        recap.tap()
+        XCTAssertTrue(intro.isEnabled)
+        XCTAssertFalse(recap.isEnabled, "A consumed Skip Recap affordance cannot fire again")
+        XCTAssertEqual(result.label, "Test player: Skip Recap button activated")
+        screenshot("Owned test player recap button changes only recap", app)
+        XCTAssertEqual(app.buttons["voice-start-stop"].label, "Start voice check")
+        XCTAssertEqual(app.staticTexts["voice-transcript"].label, "No words recognized yet")
+        app.buttons["Close"].firstMatch.tap()
+        label("Voice check", app)
+    }
+
     func testVoiceCheckStartsIdleAndClosingItLeavesMeterUsable() {
         let app = launch()
         tab("sound", app); tap("Voice check", app)
@@ -1467,11 +1778,12 @@ final class AQSSReadOnlyUITests: XCTestCase {
         XCTAssertTrue(app.buttons["tab-devices"].isHittable,
                       "Devices navigation must remain reachable after Close")
     }
-    private func launch(_ firstVisit: Bool = false, largeText: Bool = false) -> XCUIApplication {
+    private func launch(_ firstVisit: Bool = false, largeText: Bool = false, fixtureText: Bool = false) -> XCUIApplication {
         let app = XCUIApplication()
         app.launchArguments = ["-aqssGuideDismissedV1", firstVisit ? "NO" : "YES"]
         // Simulator-only, bounded, payload-free native Share lifecycle diagnostics.
         app.launchArguments += ["--aqss-trace-sharing"]
+        if fixtureText { app.launchArguments += ["--aqss-owned-final-text-fixture"] }
         if largeText { app.launchArguments += ["-UIPreferredContentSizeCategoryName", "UICTContentSizeCategoryAccessibilityXXXL"] }
         app.launch(); return app
     }
