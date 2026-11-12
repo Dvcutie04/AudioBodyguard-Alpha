@@ -1,0 +1,194 @@
+name: Owner-requested November 11 internal TestFlight dispatch
+
+on:
+  push:
+    branches: ["release/owner-testflight-20261111-2a51c43"]
+    paths: [".github/workflows/owner-testflight-20261111.yml"]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: aqss-owner-testflight-20261111-2a51c43
+  cancel-in-progress: false
+
+jobs:
+  dispatch:
+    if: github.repository == 'Dvcutie04/AudioBodyguard-Alpha' && github.actor == 'Dvcutie04'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+      pull-requests: read
+      actions: write
+    steps:
+      - name: Verify pinned merged candidate and request existing protected release once
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          python3 - <<'PYTHON'
+          """One explicit owner release request. Does not sign or upload an app itself."""
+          from __future__ import annotations
+          import json
+          import os
+          import re
+          import urllib.error
+          import urllib.request
+          from pathlib import Path
+
+          REPO = "Dvcutie04/AudioBodyguard-Alpha"
+          SOURCE = "2a51c435491a0524f85f530a69e54c6869c2e014"
+          TREE = "bdae3290b5e39555c2976293b4f8a333c2b85708"
+          MAIN = "e1d53fc2b70066d7d6096851612fb66386a6f0e7"
+          BRANCH = "release/owner-testflight-20261111-2a51c43"
+          HELPER = ".github/workflows/owner-testflight-20261111.yml"
+          RELEASE = ".github/workflows/testflight-beta.yml"
+          RELEASE_BLOB = "65a3ef3804638479fbbde17c5a4bcfdacdd98302"
+          REQUEST_START = "2026-11-11T20:15:39Z"
+          EVIDENCE = {
+              43133846478: 341702324, 43133846613: 368064538,
+              43133846488: 398382096, 43133846484: 398892648,
+              43133846493: 386172896, 43133846483: 368096578,
+              43133848088: 368096578,
+          }
+
+          class ReleaseBlocked(RuntimeError):
+              pass
+
+          def require(value: bool, reason: str) -> None:
+              if not value:
+                  raise ReleaseBlocked(reason)
+
+          class NoRedirect(urllib.request.HTTPRedirectHandler):
+              def redirect_request(self, req, fp, code, msg, headers, newurl):
+                  raise ReleaseBlocked("API redirected; no credentials followed the redirect")
+
+          class GitHubAPI:
+              def __init__(self, token: str):
+                  require(bool(token), "Missing workflow token")
+                  self.token = token
+                  self.opener = urllib.request.build_opener(NoRedirect)
+
+              def __call__(self, path: str, *, body: dict | None = None):
+                  require(path.startswith("/") and not path.startswith("//"), "Invalid API path")
+                  data = None if body is None else json.dumps(body).encode("utf-8")
+                  request = urllib.request.Request(
+                      "https://api.github.com/repos/" + REPO + path,
+                      data=data, method="GET" if data is None else "POST",
+                      headers={"Accept": "application/vnd.github+json",
+                               "Authorization": "Bearer " + self.token,
+                               "X-GitHub-Api-Version": "2022-11-28",
+                               "Content-Type": "application/json", "User-Agent": "AQSS-owner-release-once"})
+                  # No request retry. A lost POST response is ambiguous, never replayable.
+                  try:
+                      with self.opener.open(request, timeout=30) as response:
+                          status = response.status
+                          raw = response.read(2_000_001)
+                  except urllib.error.HTTPError as error:
+                      raise ReleaseBlocked("GitHub API returned HTTP " + str(error.code)) from None
+                  except (urllib.error.URLError, TimeoutError, OSError):
+                      raise ReleaseBlocked("API transport failed; do not repeat a potentially accepted dispatch") from None
+                  require(len(raw) <= 2_000_000, "API response exceeds bound")
+                  require(status in ((200,) if body is None else (200, 204)), "Unexpected API status")
+                  return json.loads(raw) if raw else {}
+
+          def validate(api, env):
+              require(env.get("GITHUB_REPOSITORY") == REPO, "Wrong repository")
+              require(env.get("GITHUB_EVENT_NAME") == "push", "Not the explicit release-branch push")
+              require(env.get("GITHUB_REF") == "refs/heads/" + BRANCH, "Wrong release branch")
+              require(env.get("GITHUB_ACTOR", "").casefold() == "dvcutie04", "Owner push required")
+              require(env.get("GITHUB_RUN_ATTEMPT") == "1" and env.get("GITHUB_RUN_NUMBER") == "1",
+                      "One-shot request cannot be rerun")
+              helper_sha = env.get("GITHUB_SHA", "")
+              require(re.fullmatch(r"[0-9a-f]{40}", helper_sha) is not None, "Invalid helper SHA")
+              require(re.fullmatch(r"[0-9a-f]{40}", MAIN) is not None, "Merge identity not pinned")
+
+              pr = api("/pulls/122")
+              require(pr.get("merged") is True and pr.get("merge_commit_sha") == MAIN,
+                      "Candidate is not the reviewed normal merge")
+              require(pr.get("head", {}).get("sha") == SOURCE and pr.get("base", {}).get("ref") == "main",
+                      "Candidate changed")
+              require(pr.get("head", {}).get("repo", {}).get("full_name") == REPO,
+                      "Candidate repository changed")
+              require(api("/git/ref/heads/main")["object"]["sha"] == MAIN, "Main moved")
+              require(api("/git/commits/" + SOURCE)["tree"]["sha"] == TREE, "Source tree mismatch")
+              require(api("/git/commits/" + MAIN)["tree"]["sha"] == TREE, "Merged tree differs from tested candidate")
+              helper = api("/git/commits/" + helper_sha)
+              require([p["sha"] for p in helper["parents"]] == [MAIN], "Helper is not directly based on reviewed main")
+              comparison = api("/compare/" + MAIN + "..." + helper_sha)
+              require(comparison.get("status") == "ahead" and comparison.get("ahead_by") == 1
+                      and comparison.get("behind_by") == 0 and comparison.get("total_commits") == 1,
+                      "Unexpected helper history")
+              files = comparison.get("files", [])
+              require(len(files) == 1 and files[0].get("filename") == HELPER
+                      and files[0].get("status") == "added", "Helper modifies files outside its own dispatcher")
+              for revision in (SOURCE, MAIN):
+                  require(api("/contents/" + RELEASE + "?ref=" + revision).get("sha") == RELEASE_BLOB,
+                          "Existing signing workflow changed")
+              for run_id, workflow_id in EVIDENCE.items():
+                  run = api("/actions/runs/" + str(run_id))
+                  require(run.get("id") == run_id and run.get("workflow_id") == workflow_id
+                          and run.get("repository", {}).get("full_name") == REPO
+                          and run.get("head_sha") == SOURCE and run.get("event") == "pull_request"
+                          and run.get("status") == "completed" and run.get("conclusion") == "success",
+                          "Exact-source verification not successful: " + str(run_id))
+              workflow = api("/actions/workflows/testflight-beta.yml")
+              require(workflow.get("path") == RELEASE and workflow.get("state") == "active"
+                      and type(workflow.get("id")) is int, "Existing release workflow unavailable")
+              return workflow["id"]
+
+          def reject_duplicate(api, workflow_id):
+              # Refuse even an unsigned or failed new manual release: never infer that a
+              # prior POST failed from absent Apple evidence and issue another upload.
+              seen = 0
+              for page in range(1, 21):
+                  listing = api("/actions/workflows/" + str(workflow_id)
+                                + "/runs?event=workflow_dispatch&per_page=100&page=" + str(page))
+                  runs = listing.get("workflow_runs", [])
+                  require(isinstance(runs, list), "Invalid release run listing")
+                  for run in runs:
+                      require(isinstance(run.get("created_at"), str), "Missing release run timestamp")
+                      require(run["created_at"] < REQUEST_START,
+                              "A release request already exists since the owner's request; inspect it instead")
+                  seen += len(runs)
+                  total = listing.get("total_count")
+                  require(type(total) is int and total >= 0, "Invalid release run count")
+                  if seen >= total:
+                      return
+                  require(bool(runs), "Incomplete release run listing")
+              raise ReleaseBlocked("Release history exceeds verification bound")
+
+          def dispatch(api, env):
+              workflow_id = validate(api, env)
+              reject_duplicate(api, workflow_id)
+              require(api("/git/ref/heads/main")["object"]["sha"] == MAIN, "Main moved before dispatch")
+              result = api("/actions/workflows/" + str(workflow_id) + "/dispatches", body={
+                  "ref": "main", "inputs": {"source_revision": SOURCE, "version": "1.0.0",
+                                              "testing_audience": "internal", "upload": True}})
+              receipt = {"state": "WORKFLOW_DISPATCH_ACCEPTED_NOT_APPLE_UPLOAD", "source": SOURCE,
+                         "source_tree": TREE, "reviewed_merge": MAIN, "workflow_id": workflow_id,
+                         "verification_run_ids": list(EVIDENCE), "version": "1.0.0", "audience": "internal"}
+              if type(result.get("workflow_run_id")) is int:
+                  receipt["release_run_id"] = result["workflow_run_id"]
+              return receipt
+
+          def main():
+              try:
+                  receipt = dispatch(GitHubAPI(os.environ.get("GH_TOKEN", "")), os.environ)
+              except (ReleaseBlocked, KeyError, TypeError, ValueError) as error:
+                  # Never print headers, the token, or unrestricted API payloads.
+                  print("OWNER_RELEASE_BLOCKED: " + str(error))
+                  raise SystemExit(1) from None
+              output = json.dumps(receipt, indent=2)
+              print(output)
+              summary = os.environ.get("GITHUB_STEP_SUMMARY")
+              if summary:
+                  with Path(summary).open("a", encoding="utf-8") as file:
+                      file.write("## Owner-requested internal beta dispatch\n\n```json\n" + output + "\n```\n")
+                      file.write("The existing signing environment and all release checks remain mandatory. "
+                                 "This receipt is not Apple acceptance or TestFlight availability.\n")
+
+          if __name__ == "__main__":
+              main()
+          PYTHON
