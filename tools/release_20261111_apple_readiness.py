@@ -146,11 +146,14 @@ def observe(api, *, bundle, build, marketing, not_before):
     if state != 'IN_BETA_TESTING':
         receipt['state'] = 'INTERNAL_TESTING_NOT_ACTIVE'; return receipt
     groups = single_page(api('/v1/betaGroups', {'filter[app]': app_id, 'filter[builds]': item['id'],
-        'filter[isInternalGroup]': 'true', 'fields[betaGroups]': 'isInternalGroup', 'limit': '200'}))
+        'filter[isInternalGroup]': 'true', 'fields[betaGroups]': 'isInternalGroup,name', 'limit': '200'}))
     require(all(g.get('type') == 'betaGroups' and g.get('attributes', {}).get('isInternalGroup') is True for g in groups),
             'Unexpected tester-group response')
     receipt['internal_group_count'] = len(groups)
-    receipt['state'] = 'INTERNAL_GROUP_ACCESS_OBSERVED' if groups else 'NO_INTERNAL_GROUP_ACCESS_OBSERVED'
+    owner_groups = [g for g in groups if g.get('attributes', {}).get('name') == 'David Internal']
+    require(len(owner_groups) <= 1, 'Existing owner group is ambiguous')
+    receipt['existing_owner_group_observed'] = len(owner_groups) == 1
+    receipt['state'] = 'EXISTING_OWNER_GROUP_ACCESS_OBSERVED' if owner_groups else 'NO_EXISTING_OWNER_GROUP_ACCESS_OBSERVED'
     return receipt
 
 def await_observation(api, *, bundle, build, marketing, not_before,
@@ -197,7 +200,7 @@ def main():
             with Path(summary).open('a') as file:
                 file.write('## Read-only Apple beta observation\n\n```json\n'+output+'\n```\n')
                 file.write('No tester, group, compliance or distribution setting was changed. Owner installation is not established by a group count.\n')
-        return 0 if receipt['state'] == 'INTERNAL_GROUP_ACCESS_OBSERVED' else 1
+        return 0 if receipt['state'] == 'EXISTING_OWNER_GROUP_ACCESS_OBSERVED' else 1
     except (ObservationError, KeyError, TypeError, ValueError, OSError):
         # Do not echo environment values, JWTs, key bytes or response bodies.
         print('APPLE_READINESS_OBSERVATION_FAILED: no availability claim is established')
