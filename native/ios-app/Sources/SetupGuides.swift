@@ -345,23 +345,17 @@ struct SetupGuidesView: View {
         HStack(spacing: 20) { Image(systemName: route.id.hasPrefix("phone_") ? "wifi" : "tv"); Image(systemName: "arrow.right"); Image(systemName: phoneSurfaceIcon) }
             .font(.system(size: 36)).foregroundColor(theme.violet).accessibilityHidden(true)
         Text(route.id.hasPrefix("phone_") ? "Have your \(phoneLabel) and home Wi-Fi password ready." : route.id == "roku_phone" ? "Keep your \(phoneLabel) and TV on the same Wi-Fi." : route.steps.first?.surface == "tv" ? "Have your TV remote ready." : "Have your \(phoneLabel) and TV ready.").font(.body)
-        Text("\(route.steps.count) pictures. One step at a time.").foregroundColor(theme.accent)
-        if route.id == "lg_pair" {
-            Text("LG ThinQ is LG’s official TV setup app. Follow one picture at a time.")
-                .font(.callout).fixedSize(horizontal: false, vertical: true)
-        }
-        if let group = group, group.routes.count > 1 {
-            control("Try another way", icon: "arrow.triangle.branch", id: "setup-intro-options") {
-                remember(); routeID = nil; index = -1; mismatch = false; detailsExpanded = false; pickerExpanded = true; referencesExpanded = false
-            }
-        }
-        if !route.models.isEmpty {
-            Text("Documented model examples: \(route.models.joined(separator: ", "))")
-                .font(.callout).foregroundColor(theme.muted).accessibilityIdentifier("setup-model-scope")
-        }
-        if let saved = resumeIndex(route) { Text("Continue at picture \(saved + 1).").foregroundColor(theme.accent) }
-        disclosure("? Step help", id: "setup-details") { detailsExpanded.toggle() }
+        Text("One picture at a time.").foregroundColor(theme.accent)
+        disclosure("? Help", id: "setup-details") { detailsExpanded.toggle() }
         if detailsExpanded {
+            if route.id == "lg_pair" {
+                Text("LG ThinQ is LG’s official TV setup app.").font(.callout)
+            }
+            if !route.models.isEmpty {
+                Text("Example TV models: \(route.models.joined(separator: ", "))")
+                    .font(.callout).foregroundColor(theme.muted).accessibilityIdentifier("setup-model-scope")
+            }
+            if let saved = resumeIndex(route) { Text("You can continue at picture \(saved + 1).").foregroundColor(theme.accent) }
             Text(route.appliesTo).font(.callout).foregroundColor(theme.muted)
             pictureJumps(route)
             pairingHelp(route)
@@ -371,13 +365,18 @@ struct SetupGuidesView: View {
                 if !route.id.hasPrefix("phone_") {
                     control("Phone Wi-Fi pictures", icon: "wifi", id: "setup-phone-wifi") { chooseGroup("phone") }
                 }
+                if let group = group, group.routes.count > 1 {
+                    control("Try another way", icon: "questionmark.circle", id: "setup-intro-options") {
+                        remember(); routeID = nil; index = -1; mismatch = false; detailsExpanded = true; pickerExpanded = true; referencesExpanded = false
+                    }
+                }
                 if route.id == "roku_network" || route.id == "roku_model" {
                     control("I’m already in Settings", icon: "gearshape", id: "setup-skip-home") { remember(); index = 2; detailsExpanded = false; referencesExpanded = false }
                 }
                 if resumeIndex(route) != nil {
                     control("Start from the beginning", icon: "arrow.counterclockwise", id: "setup-restart") { remember(); writeProgress(route.id, nil); index = 0; detailsExpanded = false }
                 }
-                if route.models.isEmpty { Text("Menu-family guide · compare with your device.").font(.callout) }
+                if route.models.isEmpty { Text("Compare these pictures with your own TV.").font(.callout) }
                 Text("Labels, layout and services can differ by country, software and language. Compare each picture with your own screen.").font(.callout)
                 control("My screen looks different", icon: "questionmark.circle", id: "setup-mismatch") { remember(); mismatch = true; detailsExpanded = false; referencesExpanded = false }
                 control(referencesExpanded ? "Hide reference links" : "Reference links", icon: "doc.text", id: "setup-references") { referencesExpanded.toggle() }
