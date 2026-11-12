@@ -65,7 +65,20 @@ struct SetupGuidesView: View {
     private var phoneSurfaceText: String { phoneLabel == "iPad" ? "On your iPad" : "On your phone" }
     private var bothSurfaceText: String { phoneLabel == "iPad" ? "Your TV + your iPad" : "Your TV + your phone" }
     private var phoneSurfaceIcon: String { phoneLabel == "iPad" ? "ipad" : "iphone" }
-    private var title: String { mismatch ? "Find the right screen" : step?.title ?? (route?.id == "lg_pair" ? "Connect your LG TV" : route?.title) ?? (group == nil ? "Choose your TV or app" : group!.title) }
+    private var brandName: String? {
+        let id = groupID.split(separator: "_").first.map(String.init) ?? ""
+        return ["samsung": "Samsung", "lg": "LG", "sony": "Sony", "tcl": "TCL",
+                "hisense": "Hisense", "vizio": "VIZIO", "philips": "Philips",
+                "sharp": "Sharp", "roku": "Roku", "insignia": "Insignia"][id]
+    }
+    private var title: String {
+        if mismatch { return "Find the right screen" }
+        if let step = step { return step.title }
+        if route != nil, let brand = brandName {
+            return groupID == "lg" ? "Connect your LG TV" : "Set up your \(brand) TV"
+        }
+        return route?.title ?? group?.title ?? "Choose your TV brand"
+    }
     private var platforms: [(String, String)] {
         switch groupID {
         case "tcl": return [("Roku TV", "tcl_roku"), ("Google TV / Android TV", "tcl_google"), ("Fire TV", "tcl_fire")]
@@ -161,7 +174,7 @@ struct SetupGuidesView: View {
                             }
                         } else { introduction(route) }
                     } else if !platforms.isEmpty {
-                        Text("Choose the name on your TV’s home screen.").foregroundColor(theme.muted)
+                        Text("Which name do you see on your TV?").foregroundColor(theme.muted)
                         ForEach(platforms, id: \.1) { name, id in
                             platformChoice(name, subtitle: "The TV must show " + name, group: id, blue: id.hasSuffix("_roku"))
                         }
@@ -172,11 +185,11 @@ struct SetupGuidesView: View {
                         }
                     }
                     else if let group = group {
-                        Text(group.routes.isEmpty ? "No documented route for this combination. Choose the system shown on your TV." : "Start here. Follow one picture at a time.").foregroundColor(theme.muted)
+                        Text(group.routes.isEmpty ? "No guide for this choice. Choose another TV." : group.primaryRoutes.count > 1 ? "Choose what matches your TV." : "One picture at a time.").foregroundColor(theme.muted)
                         if group.routes.isEmpty { control("Choose another TV or app", icon: "tv", id: "setup-other-group") { chooseGroup("") } }
                         ForEach(group.primaryRoutes, id: \.self) { id in
                             if let route = AQSSSetupContent.routes.first(where: { $0.id == id }) {
-                                control(id == "roku_network" ? "Start TV setup" : id == "lg_pair" ? "Connect your LG TV" : route.title, icon: "rectangle.stack", id: "setup-route-\(id)", primary: group.primaryRoutes.count == 1) { chooseRoute(id) }
+                                control(id == "roku_network" ? "Find your TV settings" : id == "lg_pair" ? "Connect your LG TV" : route.title, icon: "rectangle.stack", id: "setup-route-\(id)", primary: group.primaryRoutes.count == 1) { chooseRoute(id) }
                             }
                         }
                         if group.routes.contains(where: { !group.primaryRoutes.contains($0) }) {
@@ -190,17 +203,17 @@ struct SetupGuidesView: View {
                             }
                         }
                     } else {
-                        Text("Choose a name to start the pictures.").foregroundColor(theme.muted)
+                        Text("Which brand is on your TV?").foregroundColor(theme.muted)
                         TextField("Search TV and app brands", text: $brandQuery)
                             .textFieldStyle(.roundedBorder)
                             .textInputAutocapitalization(.never)
                             .autocorrectionDisabled()
                             .accessibilityIdentifier("setup-brand-search")
                         ForEach(AQSSSetupContent.groups.filter {
-                            !["both", "neither"].contains($0.id) && !$0.id.contains("_")
+                            !["both", "neither", "google", "alexa", "phone", "voice"].contains($0.id) && !$0.id.contains("_")
                                 && (brandQuery.isEmpty || $0.title.localizedCaseInsensitiveContains(brandQuery))
                         }, id: \.id) { item in
-                            control(item.title, icon: item.id == "voice" ? "mic" : ["google", "alexa"].contains(item.id) ? "house" : "tv", id: "setup-group-\(item.id)") { chooseGroup(item.id) }
+                            control(item.title, icon: "tv", id: "setup-group-\(item.id)") { chooseGroup(item.id) }
                         }
                     }
                 }.frame(maxWidth: 620, alignment: .leading).padding(20).frame(maxWidth: .infinity)
