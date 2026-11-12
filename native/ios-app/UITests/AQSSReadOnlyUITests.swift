@@ -2582,6 +2582,11 @@ final class AQSSReadOnlyUITests: XCTestCase {
             next(app)
             chooseTV(brand, app)
             tap("Show \(brand) steps", app)
+            if brand == "LG" {
+                label("Connect your LG TV", app)
+                XCTAssertTrue(app.buttons["setup-intro-options"].isHittable,
+                              "Alternative LG setup routes must be visible without opening Help")
+            }
             if !pairingChoice.isEmpty { tap(pairingChoice, app) }
             restartPictureGuide(app)
             for _ in 1..<count { app.buttons["setup-next"].tap() }
