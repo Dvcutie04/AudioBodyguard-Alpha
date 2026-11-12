@@ -1,4 +1,9 @@
+import Dispatch
 import XCTest
+#if os(macOS)
+import Network
+import Security
+#endif
 @testable import AQSSNativeFeedback
 
 final class TVNetworkTargetTests: XCTestCase {
@@ -39,6 +44,16 @@ final class TVNetworkTargetTests: XCTestCase {
         }
     }
 
+    func testTrialFollowUpKeepsReachabilitySeparateFromReviewAndPairing() {
+        XCTAssertEqual(TVTrialOutcome.addressRejected.followUp, .addressPictures)
+        XCTAssertEqual(TVTrialOutcome.wifiRequired.followUp, .phoneWiFi)
+        XCTAssertEqual(TVTrialOutcome.noResponse.followUp, .phoneWiFi)
+        XCTAssertEqual(TVTrialOutcome.serviceAnswered.followUp, .review)
+        for outcome in [TVTrialOutcome.unavailable, .stopped, .cleanupUnresolved] {
+            XCTAssertNil(outcome.followUp)
+        }
+    }
+
     func testTrialReviewRetainsOneImmutableOutcomeAndExactBuild() throws {
         let build = "Audio Bodyguard\nPlatform: iPhone/iPad\nVersion: 1.0.0\nBuild: 10.1"
         let first = try TVTrialReport.capture(buildDetails: build, outcome: .serviceAnswered, reviewedAtMillis: 0)
@@ -49,4 +64,122 @@ final class TVNetworkTargetTests: XCTestCase {
         XCTAssertThrowsError(try TVTrialReport.capture(buildDetails: build, outcome: .stopped, reviewedAtMillis: -1))
         XCTAssertThrowsError(try TVTrialReport.capture(buildDetails: build, outcome: .stopped, reviewedAtMillis: 253_402_300_800_000))
     }
+
+    func testCertificateReadReleasesOneTimelyFingerprintOnCancellation() {
+        let start = DispatchTime(uptimeNanoseconds: 1_000_000_000)
+        let fingerprint = String(repeating: "a", count: 64)
+        var read = AQSSCertificateRead(startedAt: start)
+        XCTAssertTrue(read.resolve(fingerprint, at: start))
+        XCTAssertFalse(read.resolve(nil, at: start + .seconds(1)))
+        XCTAssertEqual(read.finishCancellation()?.fingerprint, fingerprint)
+        XCTAssertNil(read.finishCancellation())
+    }
+
+    func testCertificateReadStopDropsEarlyAndLateObservations() {
+        let start = DispatchTime(uptimeNanoseconds: 1_000_000_000)
+        let fingerprint = String(repeating: "a", count: 64)
+        for stoppedAfterObservation in [false, true] {
+            var read = AQSSCertificateRead(startedAt: start)
+            if stoppedAfterObservation { XCTAssertTrue(read.resolve(fingerprint, at: start)) }
+            read.stop(clear: false)
+            XCTAssertFalse(read.resolve(fingerprint, at: start + .seconds(1)))
+            XCTAssertEqual(read.finishCancellation(), .stopped)
+        }
+    }
+
+    func testCertificateReadDeadlineRefusesAtOrAfterFourSeconds() {
+        let start = DispatchTime(uptimeNanoseconds: 1_000_000_000)
+        let fingerprint = String(repeating: "a", count: 64)
+        let deadline = start + .seconds(4)
+        var stalledRead = AQSSCertificateRead(startedAt: start)
+        XCTAssertEqual(stalledRead.expires, deadline)
+        XCTAssertTrue(stalledRead.resolve(nil, at: deadline))
+        XCTAssertFalse(stalledRead.resolve(fingerprint, at: deadline))
+        XCTAssertEqual(stalledRead.finishCancellation(), .timedOut)
+
+        for seconds in [4, 5] {
+            var read = AQSSCertificateRead(startedAt: start)
+            XCTAssertTrue(read.resolve(fingerprint, at: start + .seconds(seconds)))
+            XCTAssertEqual(read.finishCancellation(), .timedOut)
+        }
+    }
+
+    func testCertificateReadForegroundClearDropsQueuedResultAndCallback() {
+        let start = DispatchTime(uptimeNanoseconds: 1_000_000_000)
+        let fingerprint = String(repeating: "a", count: 64)
+        var read = AQSSCertificateRead(startedAt: start)
+        XCTAssertTrue(read.resolve(fingerprint, at: start))
+        read.stop(clear: true)
+        XCTAssertFalse(read.resolve(fingerprint, at: start + .seconds(1)))
+        XCTAssertNil(read.finishCancellation())
+    }
+
+#if os(macOS)
+    func testCertificateObservationReadsTheFixtureLeafAndRefusesTLS() throws {
+        guard #available(macOS 15.0, *) else { throw XCTSkip("Requires in-memory identity import") }
+        // Reuse the Android loopback fixture so both transports check the same leaf.
+        let nativeRoot = URL(fileURLWithPath: #filePath)
+            .deletingLastPathComponent().deletingLastPathComponent()
+            .deletingLastPathComponent().deletingLastPathComponent()
+        let fixture = nativeRoot.appendingPathComponent("android/src/test/resources/tv-loopback-fixture.p12.fixture")
+        let data = try Data(contentsOf: fixture)
+        var items: CFArray?
+        let importOptions = [kSecImportExportPassphrase as String: "fixture-only",
+                             kSecImportToMemoryOnly as String: true] as CFDictionary
+        let status = SecPKCS12Import(data as CFData, importOptions, &items)
+        XCTAssertEqual(status, errSecSuccess)
+        let entry = try XCTUnwrap((items as? [[String: Any]])?.first)
+        let identity = try XCTUnwrap(entry[kSecImportItemIdentity as String]) as! SecIdentity
+        let serverOptions = NWProtocolTLS.Options()
+        sec_protocol_options_set_local_identity(serverOptions.securityProtocolOptions,
+                                                try XCTUnwrap(sec_identity_create(identity)))
+        let serverParameters = NWParameters(tls: serverOptions)
+        let loopback: NWEndpoint.Host = "127.0.0.1"
+        serverParameters.requiredLocalEndpoint = .hostPort(host: loopback, port: .any)
+        let listener = try NWListener(using: serverParameters)
+        defer { listener.cancel() }
+
+        let listening = expectation(description: "Synthetic TLS listener started")
+        let serverRejected = expectation(description: "Server handshake was refused")
+        listener.stateUpdateHandler = { state in
+            if case .ready = state { listening.fulfill() }
+        }
+        listener.newConnectionHandler = { peer in
+            peer.stateUpdateHandler = { state in
+                switch state {
+                case .failed:
+                    serverRejected.fulfill()
+                    peer.cancel()
+                case .ready:
+                    XCTFail("Observation let the server finish the handshake")
+                    peer.cancel()
+                case .cancelled:
+                    peer.stateUpdateHandler = nil
+                default: break
+                }
+            }
+            peer.start(queue: .main)
+        }
+        listener.start(queue: .main)
+        wait(for: [listening], timeout: 8)
+
+        let observer = AQSSPeerCertificateObserver()
+        XCTAssertNil(observer.fingerprint)
+        let leafObserved = expectation(description: "Client observed the peer certificate and refused TLS")
+        let options = observer.makeTLSOptions { leafObserved.fulfill() }
+        let client = NWConnection(host: loopback, port: try XCTUnwrap(listener.port),
+                                  using: NWParameters(tls: options))
+        defer { client.cancel() }
+        let clientClosed = expectation(description: "Client connection was cancelled")
+        client.stateUpdateHandler = { state in
+            if case .cancelled = state { clientClosed.fulfill() }
+            if case .ready = state { XCTFail("Observation let the client finish the handshake") }
+        }
+        client.start(queue: .main)
+        wait(for: [leafObserved, serverRejected], timeout: 8)
+        client.cancel()
+        wait(for: [clientClosed], timeout: 5)
+        XCTAssertEqual(observer.fingerprint, "eb7b8b2d7b964b9513c28b8d64e4722047ee0eb83bc85644796587590be6e904")
+    }
+#endif
 }

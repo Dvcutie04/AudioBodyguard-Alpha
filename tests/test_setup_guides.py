@@ -238,6 +238,24 @@ def test_new_vizio_account_and_phone_pairing_follow_distinct_official_codes():
     assert 'google_link' not in routes['vizio_alexa']['sources']
 
 
+def test_vizio_address_help_scopes_the_manual_menu_and_phone_handoff_to_v505m_k09():
+    from tools.export_picture_guide import svg
+
+    route = setup_routes()['vizio_v505m_k09_address']
+    assert route['models'] == ['V505M-K09']
+    assert route['sources'] == ['vizio_v505m_k09_manual']
+    steps = route['steps']
+    assert [step['items'][step['focus']] for step in steps] == [
+        'Menu (gear)', 'Network', 'Network Information', 'IP Address', 'TV IP address'
+    ]
+    assert [step['surface'] for step in steps] == ['tv', 'tv', 'tv', 'tv', 'phone']
+    assert steps[0]['picture_surface'] == 'remote'
+    assert steps[-2]['screen'] == 'Address label to look for'
+    assert steps[-1]['screen'] == 'VIZIO network check'
+    assert 'arrows + OK' not in svg(steps[0], 1, route)
+    assert 'arrows + OK' not in svg(steps[3], 4, route)
+
+
 def test_tv_codes_and_results_appear_on_the_tv_in_all_both_device_pictures():
     from tools.export_picture_guide import TV_SCREEN_PICTURES, svg
 
@@ -261,6 +279,10 @@ def test_faster_google_setup_states_platform_limits_and_checks_the_tv_result():
     assert 'TV and phone software' in route['applies_to']
     assert 'current phone requirements' in route['steps'][1]['note']
     assert 'Google Home or manual setup' in route['steps'][1]['note']
+    # Visible directions must state Google's faster-setup OS requirements and fallback.
+    visible = route['steps'][1]['instruction']
+    assert 'Android 9+' in visible and 'iOS 17+' in visible
+    assert 'TV remote setup' in visible
     assert route['steps'][-1]['surface'] == 'tv'
     assert 'Home screen' in route['steps'][-1]['instruction']
 
@@ -293,3 +315,106 @@ def test_legacy_sony_remote_start_precedes_the_google_account_selection():
     start = next(i for i, step in enumerate(steps) if step['screen'] == 'Remote start')
     account = next(i for i, step in enumerate(steps) if step['title'] == 'Choose the TV Google account')
     assert start < account
+
+
+def test_ipad_wifi_guide_has_distinct_apple_source_and_six_numbered_targets():
+    routes = setup_routes()
+    ipad = routes['phone_ipad']
+    iphone = routes['phone_iphone']
+    assert ipad['sources'] == ['ipad_wifi'] and ipad['id'] != iphone['id']
+    assert len(ipad['steps']) == len(iphone['steps']) == 6
+    assert all(step['surface'] == 'phone' and step['screen'].startswith('iPad •') for step in ipad['steps'])
+    assert [step['items'][step['focus']] for step in ipad['steps']] == [
+        'Settings', 'Wi-Fi', 'Wi-Fi switch', 'Your TV’s home network', 'Join', '✓ Your home network'
+    ]
+    assert 'TV identity' in ipad['steps'][-1]['note']
+
+def test_native_android_phone_picker_never_offers_ios_only_picture_routes():
+    # Catalog supports all four platforms; the Android UI must scope its picker.
+    source = (Path(__file__).resolve().parents[1] / "native/android/app/src/main/kotlin/com/aqss/bodyguard/prototype/SetupGuideActivity.kt").read_text()
+    assert 'val androidRoutes = setOf("phone_pixel", "phone_galaxy")' in source
+    assert "routes = original.routes.filter { it in androidRoutes }" in source
+    assert "primaryRoutes = original.primaryRoutes.filter { it in androidRoutes }" in source
+
+
+def test_fire_tv_first_setup_keeps_one_action_visible_with_optional_recovery():
+    """Keep conditional Fire TV setup advice out of the main picture instruction."""
+    steps = setup_routes()['fire_setup']['steps']
+    expected = {
+        0: ('Once the TV is safely installed, press Power.', 'Alexa linking guide'),
+        1: ('If unpaired, hold Home for about 10 seconds.', 'Press Play/Pause to start'),
+        3: ('Review the TV voice option if it appears.', 'does not activate listening'),
+        4: ('Choose Phone QR setup if it appears.', 'Remote Wi-Fi setup'),
+        5: ('Scan the QR code shown on your TV.', 'exact address shown on your TV'),
+        7: ('Follow the remaining TV prompts until Home appears.', 'My screen looks different'),
+    }
+    for index, (main_action, recovery) in expected.items():
+        step = steps[index]
+        assert step['instruction'] == main_action, index
+        assert len(main_action.split()) <= 10, index
+        assert recovery in step['note'], index
+        assert 'does not confirm a connection' in step['note'], index
+    assert 'Enter passwords only during official TV setup.' in steps[4]['note']
+    assert steps[4]['items'][steps[4]['focus']] == 'Phone QR setup'
+    assert 'official Amazon page' in steps[5]['note']
+    assert 'never in Audio Bodyguard' in steps[5]['note']
+
+def test_philips_voice_remote_keeps_one_visible_action_and_conditional_recovery():
+    """Do not make the optional Philips remote reset look like a required pairing step."""
+    route = setup_routes()['philips_voice_remote']
+    assert route['sources'] == ['philips_remote']
+    expected = {
+        4: ('If not connected, select + Pair accessory.', '+ Pair accessory', 'already says Connected'),
+        5: ('Hold Google Voice + VOL − for 3–5 seconds.', 'Google Voice + VOL −', 'light should blink'),
+        6: ('If no light blinks, hold OPTIONS + VOL − for 3–5 seconds.', 'OPTIONS + VOL −', 'skip this reset'),
+        7: ('Find Philips TV Voice RC_8 on the TV.', 'Philips TV Voice RC_8', 'reopen + Pair accessory'),
+        9: ('Check that Philips TV Voice RC_8 says Connected.', 'Philips TV Voice RC_8 — Connected', 'My screen looks different'),
+    }
+    for index, (instruction, focus, recovery) in expected.items():
+        step = route['steps'][index]
+        assert step['instruction'] == instruction
+        assert len(instruction.split()) <= 14
+        assert step['items'][step['focus']] == focus
+        assert recovery in step['note']
+        assert 'Audio Bodyguard' in step['note']
+    assert 'different remote' in route['steps'][6]['note']
+    assert 'only TV remote pairing' in route['steps'][9]['note']
+
+def test_voice_check_shows_one_action_per_picture_with_optional_safety_context():
+    """Voice-check pictures are short and do not imply TV commands or permission."""
+    steps = setup_routes()['voice']['steps']
+    visible_actions = [
+            "Tap Sound in the bottom bar.",
+            "Tap Voice check.",
+            "Tap Start voice check.",
+            "Choose whether to allow microphone access.",
+            "Say a short phrase.",
+            "Read the recent recognized words.",
+            "Tap Stop listening.",
+            "Read the voice status.",
+            "Tap Open Voice check to try it."
+    ]
+    targets = [
+            "Sound",
+            "Voice check",
+            "Start voice check",
+            "Allow / Don’t allow",
+            "Input-level bars",
+            "Recent recognized words",
+            "Stop listening",
+            "Permission / recognizer status",
+            "Open Voice check"
+    ]
+    assert len(steps) == len(visible_actions) == len(targets) == 9
+    for number, (step, action, target) in enumerate(zip(steps, visible_actions, targets), 1):
+        assert step['instruction'] == action, number
+        assert len(action.split()) <= 10, number
+        assert step['items'][step['focus']] == target, number
+        assert step['note'], number
+    assert 'microphone off' in steps[1]['note']
+    assert 'iPhone' in steps[3]['note'] and 'speech recognition' in steps[3]['note']
+    assert 'No command is sent to the TV' in steps[5]['note']
+    assert 'Leaving or closing the app also stops capture' in steps[6]['note']
+    assert '30 seconds' in steps[7]['note'] and 'no cloud fallback' in steps[7]['note']
+    assert 'not authenticated TV control' in steps[8]['note']
+

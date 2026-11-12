@@ -3,14 +3,66 @@
 from pathlib import Path
 import argparse
 import base64
+from contextlib import contextmanager
+import hashlib
 import json
 import os
 import re
 import shlex
+import socket
+import ssl
 import subprocess
+import tempfile
+import threading
 import time
 import xml.etree.ElementTree as ET
 from android_frame_evidence import compare_frames
+
+
+@contextmanager
+def _loopback_tv_service():
+    fixture = Path(__file__).resolve().parents[1] / "native/android/src/test/resources/tv-loopback-fixture.p12.fixture"
+    with tempfile.TemporaryDirectory() as temporary:
+        bundle = Path(temporary) / "fixture.pem"
+        subprocess.run(["openssl", "pkcs12", "-in", str(fixture), "-passin", "pass:fixture-only",
+                        "-noenc", "-out", str(bundle)], check=True, timeout=15, capture_output=True)
+        context = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
+        context.load_cert_chain(bundle)
+        certificate = re.search(r"-----BEGIN CERTIFICATE-----.*?-----END CERTIFICATE-----",
+                                bundle.read_text(), re.DOTALL)
+        assert certificate is not None
+        expected = hashlib.sha256(ssl.PEM_cert_to_DER_cert(certificate.group())).hexdigest()
+        with socket.socket() as unused_port, socket.socket() as server:
+            unused_port.bind(("127.0.0.1", 7345))
+            server.bind(("127.0.0.1", 9000))
+            server.listen(2)
+            server.settimeout(0.2)
+            done = threading.Event()
+            handshakes = []
+
+            def serve():
+                while not done.is_set():
+                    try:
+                        peer, _ = server.accept()
+                    except TimeoutError:
+                        continue
+                    with peer:
+                        peer.settimeout(4)
+                        try:
+                            with context.wrap_socket(peer, server_side=True):
+                                handshakes.append("accepted")
+                        except OSError:
+                            handshakes.append("ended")
+
+            worker = threading.Thread(target=serve, name="tv-loopback-fixture", daemon=True)
+            worker.start()
+            try:
+                yield expected
+            finally:
+                done.set()
+                worker.join(timeout=5)
+            assert not worker.is_alive()
+            assert handshakes == ["ended", "ended"], handshakes
 
 
 def _visible_share_target(root):
@@ -33,6 +85,12 @@ def _visible_share_target(root):
     return targets[0] if len(targets) == 1 else None
 
 
+def _support_report_anchor(root):
+    anchors = [node.get("bounds") for node in root.iter("node")
+               if node.get("content-desc") == "About Private support report"]
+    return anchors[0] if len(anchors) == 1 else None
+
+
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--samsung-setup-only", action="store_true")
@@ -42,11 +100,15 @@ def main():
     parser.add_argument("--setup-output-report-only", action="store_true")
     parser.add_argument("--tv-guides-only", action="store_true")
     parser.add_argument("--style-only", action="store_true")
+    parser.add_argument("--voice-fixture-only", action="store_true")
+    parser.add_argument("--tv-certificate-fixture", action="store_true")
     parser.add_argument("--apk", default="native/android/app/build/outputs/apk/liveInput/app-liveInput.apk")
     parser.add_argument("--package", default="com.aqss.bodyguard.prototype.liveinput")
     parser.add_argument("--probe-apk", default="native/android/uiprobe/build/outputs/apk/debug/uiprobe-debug.apk")
     parser.add_argument("--share-receiver-apk", default="native/android/sharereceiver/build/outputs/apk/debug/sharereceiver-debug.apk")
     args = parser.parse_args()
+    if args.tv_certificate_fixture and not args.style_only:
+        parser.error("--tv-certificate-fixture requires --style-only")
     out = Path("artifacts/ui/android-live-input")
     out.mkdir(parents=True, exist_ok=True)
     package = args.package
@@ -158,7 +220,6 @@ def main():
             "Test setup. Record the two-phone test arrangement": ("? More sound tools", "Jump to Test setup"),
             "Output inventory. Check this phone’s available audio outputs": ("? More sound tools", "Jump to Output inventory"),
             "TV photo setup. Read a model label or Network settings photo": ("? Device help", "TV photo setup. Read a model label or settings photo"),
-            "Clear photo details": ("? Photo help", "Clear photo details"),
             "Show photo details": ("? Photo help", "Show photo details"),
         }
         if text not in routes:
@@ -340,6 +401,18 @@ def main():
         "No app dialog or post-launch ANR is suppressed.\n")
     print("SYSTEM_LAUNCHER_READY: three fresh observations before app installation", flush=True)
     adb("install", "-r", args.apk, timeout=120)
+    # Test APK reads actual Android on-device service availability without
+    # opening a microphone, starting recognition or injecting a transcript.
+    if args.voice_fixture_only:
+        probe = adb("shell", "am", "instrument", "-w", "-r",
+                    "com.aqss.bodyguard.uiprobe/.SpeechServiceAvailabilityProbe",
+                    timeout=60).decode(errors="replace")
+        (out / "voice-os-recognizer-service.txt").write_text(probe)
+        for service_line in probe.splitlines():
+            if "AQSS_V2_SERVICE_PROBE=" in service_line:
+                print(service_line.strip(), flush=True)
+        assert "AQSS_V2_SERVICE_PROBE=" in probe and "INSTRUMENTATION_CODE: -1" in probe, (
+            "Android service query failed; do not classify missing evidence as available", probe)
     adb("shell", "pm", "clear", package)
     adb("logcat", "-c")
     recording = subprocess.Popen(["adb", "shell", "screenrecord", "--time-limit", "12", "/sdcard/aqss-opening.mp4"],
@@ -365,6 +438,263 @@ def main():
     version, build = versions[0].strip(), builds[0]
     (out / "installed-build-identity.json").write_text(
         json.dumps({"application_id": package, "version": version, "build": build}, sort_keys=True))
+    if args.voice_fixture_only:
+        # Exercise the two real native buttons, not a fake recognizer response.
+        wait_for("Connection not verified", "voice_fixture_home")
+        tap("Sound", "voice_fixture_open_sound")
+        tap("Voice check. See microphone activity and recognized words", "voice_fixture_open")
+        wait_for_all(("Microphone off", "No words recognized yet", "Start voice check"),
+                     "voice_fixture_no_capture")
+        instructions = wait_for("Tap Start, then say “Audio Bodyguard, skip intro” or “Audio Bodyguard, skip recap.”", "voice_fixture_new_commands")
+        assert not has(instructions, "Make the TV quieter"), "Voice setup must not suggest unsupported TV volume control"
+
+        def move_voice_view(name, up):
+            # Android's accessibility hierarchy contains only visible children.
+            root, _ = screen(name)
+            scroller = next((n for n in root.iter("node")
+                             if n.get("class") == "android.widget.ScrollView"), None)
+            if scroller is None:
+                time.sleep(0.3)
+                return
+            values = re.findall(r"-?\d+", scroller.get("bounds", ""))
+            assert len(values) == 4, "Voice viewport must have four screen bounds"
+            x0, y0, x1, y1 = map(int, values)
+            assert x1 > x0 and y1-y0 >= 100, "Voice viewport must be scrollable"
+            x = (x0 + x1) // 2
+            start = int(y0 + (y1-y0) * (0.3 if up else 0.72))
+            end = int(y0 + (y1-y0) * (0.72 if up else 0.3))
+            adb("shell", "input", "swipe", str(x), str(start), str(x), str(end), "350")
+
+        def voice_tap(text, name, up=False):
+            # Search both scroll directions, but never repeat an action after a
+            # successful click. The local video section expands the same view.
+            for direction in (up, not up):
+                for attempt in range(8):
+                    _, clicked = screen(f"{name}-{direction}-{attempt}", click=text)
+                    if clicked:
+                        return
+                    move_voice_view(f"{name}_{direction}_scroll_{attempt}", direction)
+            raise AssertionError("Owned test-player button is not reachable: " + text)
+
+        def voice_find(text, name, up=False):
+            for direction in (up, not up):
+                for attempt in range(8):
+                    root, _ = screen(f"{name}-{direction}-{attempt}")
+                    if has(root, text):
+                        return root
+                    move_voice_view(f"{name}_{direction}_scroll_{attempt}", direction)
+            raise AssertionError("Owned test-player text missing after bounded scroll: " + text)
+
+        def check_visible_button(root, text, expected_enabled):
+            matches = [n for n in root.iter("node")
+                       if n.get("class") == "android.widget.Button" and
+                       n.get("text", "").casefold() == text.casefold()]
+            assert len(matches) == 1, (text, "expected one VISIBLE authored button", len(matches))
+            actual = matches[0].get("enabled")
+            assert actual == str(expected_enabled).lower(), (text, expected_enabled, actual)
+
+        # One real Intro button click must disable only that authored control.
+        voice_tap("Skip Intro", "voice_fixture_press_intro")
+        root = voice_find("Test player: Skip Intro button activated", "voice_fixture_intro_state", up=True)
+        check_visible_button(root, "Skip Intro", False)
+        screenshot("voice_fixture_intro_activated")
+
+        # The still-available Recap button lives BELOW the narrow viewport;
+        # search via real bounded scrolling, rather than treating absence from
+        # a single visible accessibility root as a disabled/missing control.
+        voice_tap("Skip Recap", "voice_fixture_press_recap")
+        root = voice_find("Skip Recap", "voice_fixture_recap_button")
+        check_visible_button(root, "Skip Recap", False)
+        root = voice_find("Test player: Skip Recap button activated",
+                          "voice_fixture_recap_state", up=True)
+        screenshot("voice_fixture_recap_activated")
+
+        # Reset should re-enable BOTH independent authored buttons.
+        voice_tap("Reset test player", "voice_fixture_reset_buttons")
+        root = voice_find("Test player ready — nothing connected",
+                          "voice_fixture_reset_status", up=True)
+        root = voice_find("Skip Intro", "voice_fixture_intro_restored")
+        check_visible_button(root, "Skip Intro", True)
+        root = voice_find("Skip Recap", "voice_fixture_recap_restored")
+        check_visible_button(root, "Skip Recap", True)
+        screenshot("voice_fixture_both_restored")
+
+        # Exercise the actual bundled video decoder/player and observe its
+        # independently read currentPosition after each section-specific seek.
+        # No fake transcript, microphone, or third-party playback is involved.
+        voice_tap("? Local video trial", "local_video_open")
+        voice_tap("Prepare intro video", "local_video_prepare_intro")
+        voice_find("Local video: intro ready at 0s", "local_video_intro_staged", up=True)
+        voice_tap("Skip Intro", "local_video_intro_seek", up=True)
+        voice_find("Local video observed: intro ends at 2s",
+                   "local_video_intro_readback", up=True)
+        screenshot("local_video_intro_observed")
+        voice_tap("Reset test player", "local_video_reset", up=True)
+        voice_find("Local video not prepared", "local_video_reset_confirm", up=True)
+        voice_tap("Prepare recap video", "local_video_prepare_recap")
+        voice_find("Local video: recap ready at 4s", "local_video_recap_staged", up=True)
+        voice_tap("Skip Recap", "local_video_recap_seek", up=True)
+        voice_find("Local video observed: recap ends at 6s",
+                   "local_video_recap_readback", up=True)
+        screenshot("local_video_recap_observed")
+
+        # Emulator/debug-only final TEXT goes through OwnedVoiceSkipGate and the
+        # same MediaPlayer handler as the real controls. No recognizer or mic.
+        voice_tap("Reset test player", "text_fixture_intro_reset", up=True)
+        voice_tap("Prepare intro video", "text_fixture_intro_prepare")
+        voice_find("Local video: intro ready at 0s", "text_fixture_intro_ready", up=True)
+        voice_tap("Fixture final Recap text (no audio)", "text_fixture_wrong_recap")
+        voice_find("Fixture final text refused; no additional player action",
+                   "text_fixture_wrong_recap_refusal", up=True)
+        intro_available = voice_find("Skip Intro", "text_fixture_intro_still_available")
+        check_visible_button(intro_available, "Skip Intro", True)
+        voice_tap("Fixture final Intro text (no audio)", "text_fixture_intro_request")
+        voice_find("Local video observed: intro ends at 2s",
+                   "text_fixture_intro_observed", up=True)
+        voice_tap("Fixture final Intro text (no audio)", "text_fixture_intro_duplicate")
+        voice_find("Fixture final text refused; no additional player action",
+                   "text_fixture_intro_duplicate_refused", up=True)
+        voice_find("Local video observed: intro ends at 2s",
+                   "text_fixture_intro_readback_retained", up=True)
+        screenshot("text_fixture_intro_once_observed")
+
+        voice_tap("Reset test player", "text_fixture_recap_reset", up=True)
+        voice_tap("Prepare recap video", "text_fixture_recap_prepare")
+        voice_find("Local video: recap ready at 4s", "text_fixture_recap_ready", up=True)
+        voice_tap("Fixture final Intro text (no audio)", "text_fixture_wrong_intro")
+        voice_find("Fixture final text refused; no additional player action",
+                   "text_fixture_wrong_intro_refusal", up=True)
+        recap_available = voice_find("Skip Recap", "text_fixture_recap_still_available")
+        check_visible_button(recap_available, "Skip Recap", True)
+        voice_tap("Fixture final Recap text (no audio)", "text_fixture_recap_request")
+        voice_find("Local video observed: recap ends at 6s",
+                   "text_fixture_recap_observed", up=True)
+        voice_tap("Fixture final Recap text (no audio)", "text_fixture_recap_duplicate")
+        voice_find("Fixture final text refused; no additional player action",
+                   "text_fixture_recap_duplicate_refused", up=True)
+        voice_find("Local video observed: recap ends at 6s",
+                   "text_fixture_recap_readback_retained", up=True)
+        screenshot("text_fixture_recap_once_observed")
+        print("VOICE_OWNED_FINAL_TEXT_FIXTURE_PASS: emulator supplied text -> gate -> MediaPlayer readback; OS audio NONE", flush=True)
+
+        # A canceled synthetic final-text run cannot seek an already prepared
+        # real MediaPlayer. Keep the current playhead and control enabled.
+        for segment, ready, phrase in (
+            ("intro", "Local video: intro ready at 0s", "Intro"),
+            ("recap", "Local video: recap ready at 4s", "Recap"),
+        ):
+            voice_tap("Reset test player", f"cancel_{segment}_reset", up=True)
+            voice_find("Local video not prepared", f"cancel_{segment}_off", up=True)
+            voice_tap(f"Prepare {segment} video", f"cancel_{segment}_prepare")
+            voice_find(ready, f"cancel_{segment}_ready", up=True)
+            voice_tap("Fixture cancel final text (no audio)", f"cancel_{segment}_run")
+            voice_find("Fixture final text canceled; no audio", f"cancel_{segment}_status", up=True)
+            voice_tap(f"Fixture final {phrase} text (no audio)", f"cancel_{segment}_late")
+            voice_find(ready, f"cancel_{segment}_position_unchanged", up=True)
+            voice_find("Fixture final text canceled; no audio", f"cancel_{segment}_still_canceled", up=True)
+            allowed = voice_find(f"Skip {phrase}", f"cancel_{segment}_control_retained")
+            check_visible_button(allowed, f"Skip {phrase}", True)
+        print("VOICE_OWNED_CANCELED_FINAL_TEXT_FIXTURE_PASS: late synthetic results cannot seek; OS audio NONE", flush=True)
+
+        # A competing seek by the local player's user invalidates the selected
+        # segment. The old final phrase must not seek to the Skip target.
+        for segment, ready, moved, phrase in (
+            ("intro", "Local video: intro ready at 0s",
+             "Local video moved: intro playhead now 1s", "Intro"),
+            ("recap", "Local video: recap ready at 4s",
+             "Local video moved: recap playhead now 5s", "Recap"),
+        ):
+            voice_tap("Reset test player", f"text_fixture_{segment}_manual_reset", up=True)
+            voice_find("Local video not prepared", f"text_fixture_{segment}_manual_off", up=True)
+            voice_tap(f"Prepare {segment} video", f"text_fixture_{segment}_manual_prepare")
+            voice_find(ready, f"text_fixture_{segment}_manual_ready", up=True)
+            voice_tap("Fixture move playhead (no audio)", f"text_fixture_{segment}_manual_seek")
+            voice_find(moved, f"text_fixture_{segment}_manual_observed", up=True)
+            voice_tap(f"Fixture final {phrase} text (no audio)",
+                      f"text_fixture_{segment}_manual_stale_request")
+            voice_find("Local video unavailable: selected section changed",
+                       f"text_fixture_{segment}_manual_refused", up=True)
+            voice_find("Fixture final text refused; no additional player action",
+                       f"text_fixture_{segment}_manual_policy_refused", up=True)
+            intro_off = voice_find("Skip Intro", f"text_fixture_{segment}_manual_intro_off")
+            check_visible_button(intro_off, "Skip Intro", False)
+            recap_off = voice_find("Skip Recap", f"text_fixture_{segment}_manual_recap_off")
+            check_visible_button(recap_off, "Skip Recap", False)
+        print("VOICE_OWNED_STALE_PLAYHEAD_FIXTURE_PASS: manual playhead readback rejects old intro/recap final text; OS audio NONE", flush=True)
+
+        # Prepare a fresh Intro immediately before leaving the app.
+        # A resumed session must not retain the old local-video entitlement.
+        voice_tap("Reset test player", "local_video_before_background_reset", up=True)
+        voice_find("Local video not prepared", "local_video_before_background_off", up=True)
+        voice_tap("Prepare intro video", "local_video_prepare_before_background", up=True)
+        voice_find("Local video: intro ready at 0s", "local_video_ready_before_background", up=True)
+        # No speech event was injected, no microphone Start was pressed.
+        adb("shell", "input", "keyevent", "KEYCODE_HOME")
+        time.sleep(0.4)
+        launch()
+        wait_for("Start voice check", "voice_fixture_return_off")
+        voice_find("Local video not prepared", "voice_fixture_background_abandons_video", up=True)
+        intro_off = voice_find("Skip Intro", "voice_fixture_background_intro_disabled")
+        check_visible_button(intro_off, "Skip Intro", False)
+        recap_off = voice_find("Skip Recap", "voice_fixture_background_recap_disabled")
+        check_visible_button(recap_off, "Skip Recap", False)
+        screenshot("voice_fixture_background_off")
+
+        # A late supplied final TEXT after Home/resume must not seek or restore
+        # the abandoned local-player run. This is NOT an OS recognizer callback.
+        for phrase in ("Intro", "Recap"):
+            voice_tap(f"Fixture final {phrase} text (no audio)",
+                      f"voice_fixture_background_late_{phrase.lower()}", up=True)
+            voice_find("Local video not prepared",
+                       f"voice_fixture_background_{phrase.lower()}_still_off", up=True)
+            voice_find("Test player paused — reset to prepare video again",
+                       f"voice_fixture_background_{phrase.lower()}_still_retired", up=True)
+            intro_off = voice_find("Skip Intro", f"voice_fixture_background_{phrase.lower()}_intro_off")
+            check_visible_button(intro_off, "Skip Intro", False)
+            recap_off = voice_find("Skip Recap", f"voice_fixture_background_{phrase.lower()}_recap_off")
+            check_visible_button(recap_off, "Skip Recap", False)
+        # Preparing a new clip without explicit Reset must not bypass the
+        # background retirement barrier or revive Skip eligibility.
+        voice_tap("Prepare intro video", "voice_fixture_background_reprepare_denied", up=True)
+        voice_find("Local video unavailable: reset required before preparing again",
+                   "voice_fixture_background_reprepare_status", up=True)
+        intro_off = voice_find("Skip Intro", "voice_fixture_background_reprepare_intro_off")
+        check_visible_button(intro_off, "Skip Intro", False)
+        recap_off = voice_find("Skip Recap", "voice_fixture_background_reprepare_recap_off")
+        check_visible_button(recap_off, "Skip Recap", False)
+        print("VOICE_OWNED_BACKGROUND_FINAL_TEXT_FIXTURE_PASS: no stale player seek or reprepare after Home; OS audio NONE", flush=True)
+
+        # A new Activity object after process death must also fail closed.
+        # The only persistent datum is an owned-fixture reset marker, not audio.
+        adb("shell", "am", "force-stop", package)
+        launch()
+        wait_for("Connection not verified", "voice_fixture_process_restart_home")
+        tap("Sound", "voice_fixture_process_restart_sound")
+        tap("Voice check. See microphone activity and recognized words",
+            "voice_fixture_process_restart_voice")
+        voice_find("Test player paused — reset to prepare video again",
+                   "voice_fixture_process_restart_requires_reset", up=True)
+        intro_off = voice_find("Skip Intro", "voice_fixture_process_intro_disabled")
+        check_visible_button(intro_off, "Skip Intro", False)
+        recap_off = voice_find("Skip Recap", "voice_fixture_process_recap_disabled")
+        check_visible_button(recap_off, "Skip Recap", False)
+        voice_tap("? Local video trial", "voice_fixture_process_open_video", up=True)
+        voice_tap("Prepare recap video", "voice_fixture_process_reprepare_denied", up=True)
+        voice_find("Local video unavailable: reset required before preparing again",
+                   "voice_fixture_process_reprepare_status", up=True)
+        intro_off = voice_find("Skip Intro", "voice_fixture_process_reprepare_intro_off")
+        check_visible_button(intro_off, "Skip Intro", False)
+        recap_off = voice_find("Skip Recap", "voice_fixture_process_reprepare_recap_off")
+        check_visible_button(recap_off, "Skip Recap", False)
+        voice_tap("Reset test player", "voice_fixture_process_explicit_reset", up=True)
+        intro_on = voice_find("Skip Intro", "voice_fixture_process_intro_restored")
+        check_visible_button(intro_on, "Skip Intro", True)
+        recap_on = voice_find("Skip Recap", "voice_fixture_process_recap_restored")
+        check_visible_button(recap_on, "Skip Recap", True)
+        screenshot("voice_fixture_process_reset")
+        print("VOICE_OWNED_BUTTON_FIXTURE_PASS: real Intro/Recap buttons; no speech or TV claim", flush=True)
+        return
+
     if args.style_only:
         def reveal(label, name):
             for attempt in range(10):
@@ -489,18 +819,89 @@ def main():
             page("Devices", prefix + "_devices_page")
             reveal("? Device help", prefix + "_device_help")
             reveal("VIZIO network check. Check one TV address on home Wi-Fi", prefix + "_network_open")
-            wait_for("TV IP address", prefix + "_network_idle")
+            root = wait_for("TV IP address", prefix + "_network_idle")
+            assert not has(root, "Read service certificate")
             tap("TV IP address", prefix + "_network_address")
             adb("shell", "input", "text", "8.8.8.8")
+            reveal("Find my TV’s IP address", prefix + "_address_guide_open")
+            wait_for_all(("VIZIO V505M-K09 · Android", "My TV matches"), prefix + "_address_guide_model")
+            reveal("My screen looks different", prefix + "_address_guide_mismatch")
+            wait_for("Find the right screen", prefix + "_address_guide_recovery")
+            tap("Back", prefix + "_address_guide_model_back")
+            tap("My TV matches", prefix + "_address_guide_start")
+            targets = ("Menu (gear)", "Network", "Network Information", "IP Address", "TV IP address")
+            for step, target in enumerate(targets, 1):
+                name = prefix + f"_address_guide_picture_{step}"
+                root = wait_for(f"Step {step} of {len(targets)}", name)
+                assert any(f"Highlighted: {target}." in node.get("content-desc", "") for node in root.iter("node")), target
+                if step == 2:
+                    adb("shell", "input", "keyevent", "KEYCODE_BACK")
+                    wait_for("Step 1 of 5", name + "_back")
+                    tap("Next", name + "_again")
+                    wait_for("Step 2 of 5", name + "_restored")
+                if step in (3, 5):
+                    screenshot(name)
+                tap("Back to address field" if step == len(targets) else "Next", name + "_next")
+            wait_for_all(("8.8.8.8", "Ready to check the address you enter."), prefix + "_address_guide_return")
             reveal("Check this address", prefix + "_network_rejected")
-            wait_for_all(("Enter the private IPv4 address", "TV identity, pairing and audio protection are not verified."), prefix + "_network_boundary")
+            root = wait_for_all(("Enter the private IPv4 address", "TV identity, pairing and audio protection are not verified."), prefix + "_network_boundary")
+            assert not has(root, "Read service certificate")
             screenshot(prefix + "_network_public_address_rejected")
+            reveal("? Help with this check", prefix + "_network_help")
+            tap("Check phone Wi-Fi", prefix + "_wifi_guide_open")
+            maker = adb("shell", "getprop", "ro.product.manufacturer").decode().strip().casefold()
+            route = {
+                "google": ("Google Pixel", "Open Pixel Settings", "Network & internet"),
+                "samsung": ("Samsung Galaxy", "Open Galaxy Settings", "Connections"),
+            }.get(maker)
+            if route:
+                phone, settings_title, second_target = route
+                wait_for(f"{phone} — connect to your home Wi-Fi", prefix + "_wifi_guide_intro")
+                tap("Start Wi-Fi steps", prefix + "_wifi_guide_start")
+                wait_for_all(("Step 1 of 7", settings_title), prefix + "_wifi_guide_settings")
+                tap("Next", prefix + "_wifi_guide_second")
+                root = wait_for("Step 2 of 7", prefix + "_wifi_guide_picture")
+                assert any(f"Highlighted: {second_target}." in n.get("content-desc", "") for n in root.iter("node")), second_target
+                screenshot(prefix + "_wifi_guide_picture")
+                adb("shell", "input", "keyevent", "KEYCODE_BACK")
+                wait_for_all(("Step 1 of 7", settings_title), prefix + "_wifi_guide_back_one")
+                tap("Next", prefix + "_wifi_guide_resume")
+                for step in range(2, 8):
+                    name = prefix + f"_wifi_guide_{step}"
+                    wait_for(f"Step {step} of 7", name)
+                    tap("Back to network check" if step == 7 else "Next", name + "_next")
+            else:
+                root = wait_for_all(("1. Open Settings.", "2. Search for Wi-Fi."), prefix + "_wifi_guide_unmatched")
+                assert not has(root, "Google Pixel") and not has(root, "Samsung Galaxy")
+                tap("Back to network check", prefix + "_wifi_guide_return")
+            root = wait_for("VIZIO network check", prefix + "_wifi_guide_caller")
+            for attempt in range(6):
+                if has(root, "8.8.8.8"):
+                    break
+                scroll = next(n for n in root.iter("node") if n.get("class") == "android.widget.ScrollView")
+                x0, y0, x1, y1 = map(int, re.findall(r"-?\d+", scroll.get("bounds")))
+                x = str((x0 + x1) // 2)
+                adb("shell", "input", "swipe", x, str(y0 + (y1-y0)//5), x, str(y1 - (y1-y0)//5), "300")
+                root, _ = screen(prefix + f"_wifi_guide_preserved_{attempt}")
+            assert has(root, "8.8.8.8"), "Wi-Fi help must preserve the address in the same visit"
             reveal("Review test result", prefix + "_network_review")
             root = wait_for_all(("Audio Bodyguard connection trial (v1)", "Outcome: ADDRESS_REJECTED", "No native check started"), prefix + "_network_review_private")
             assert not any("8.8.8.8" in n.get("text", "") for n in root.iter("node")), "Entered address leaked into the reviewed result"
             screenshot(prefix + "_network_review_private")
             tap("Back", prefix + "_network_review_back")
             wait_for("Ready to check the address you enter.", prefix + "_network_review_cleared")
+            if args.tv_certificate_fixture and scale == "1.0":
+                # Android Emulator's host loopback alias reaches only this owned test service.
+                with _loopback_tv_service() as expected:
+                    tap("TV IP address", prefix + "_certificate_address")
+                    adb("shell", "input", "text", "10.0.2.2")
+                    reveal("Check this address", prefix + "_certificate_check")
+                    wait_for("A network service answered", prefix + "_certificate_reply")
+                    reveal("Read service certificate", prefix + "_certificate_read")
+                    wait_for_all(("Certificate fingerprint read. TV identity is still unverified.", expected),
+                                 prefix + "_certificate_observed")
+                    screenshot(prefix + "_certificate_observed")
+                print("ANDROID_TV_CERTIFICATE_VERIFIED: exact loopback leaf fingerprint, TLS ended before acceptance")
             tap("Back", prefix + "_network_back")
             reveal("Illustrated setup guides. Jump to a TV or home app", prefix + "_guides")
             reveal("Sony", prefix + "_google_tv")
@@ -944,18 +1345,25 @@ def main():
         return
     if args.tv_guides_only:
         def guide_tap(label, name):
-            for attempt in range(8):
-                root, clicked = screen(f"{name}-{attempt}", click=label)
-                if clicked:
-                    return
-                scroll_meter(f"{name}-scroll-{attempt}", down=True)
+            # Reopening a brand chooser can retain a previous lower scroll
+            # offset. A valid brand may be above the viewport, so scan both
+            # directions rather than repeatedly scrolling away from it.
+            # Every successful path still requires a real observed tap.
+            for down in (True, False):
+                direction = "down" if down else "up"
+                for attempt in range(8):
+                    root, clicked = screen(f"{name}-{direction}-{attempt}", click=label)
+                    if clicked:
+                        return
+                    scroll_meter(f"{name}-scroll-{direction}-{attempt}", down=down)
             raise AssertionError(f"TV guide target unavailable: {label}")
 
         tap("Devices", "tv_guides_devices")
-        guide_tap("Illustrated setup guides. TV pairing, Google Home & Alexa · one picture at a time", "tv_guides_open")
+        tap("? Device help", "tv_guides_expand_device_help")
+        guide_tap("Illustrated setup guides. Jump to a TV or home app", "tv_guides_open")
         guide_tap("Philips", "tv_guides_philips")
         guide_tap("Google TV / Android TV", "tv_guides_philips_platform")
-        guide_tap("Need help?", "tv_guides_philips_help")
+        guide_tap("? Step help", "tv_guides_philips_help")
         guide_tap("Other setup options", "tv_guides_philips_options")
         guide_tap("Philips Google TV — pair the voice remote", "tv_guides_philips_remote")
         tap("Start guide", "tv_guides_philips_start")
@@ -980,18 +1388,32 @@ def main():
         tap("Close", "tv_guides_philips_close")
 
         def open_brand(brand, name, platform=None):
-            guide_tap("Illustrated setup guides. TV pairing, Google Home & Alexa · one picture at a time", name + "_guides")
+            guide_tap("Illustrated setup guides. Jump to a TV or home app", name + "_guides")
             guide_tap(brand, name + "_brand")
             if platform:
                 guide_tap(platform, name + "_platform")
 
         def start_picture(name, phone=False):
-            root, _ = screen(name + "_intro")
+            # A new Activity may expose a partial or empty accessibility tree
+            # immediately after the platform picker. Shared Roku-family routes
+            # can also legitimately retain progress from another TV brand.
+            # Settle on the actual intro action before choosing Start or Resume.
+            # Never replace resume with a blind tap or accept the wrong route.
+            intro_actions = ("Resume guide", "Start part two" if phone else "Start guide")
+            for attempt in range(8):
+                root, _ = screen(f"{name}_intro_{attempt}")
+                if any(has(root, label) for label in intro_actions):
+                    break
+                time.sleep(0.5)
+            else:
+                screenshot(name + "_missing_intro")
+                raise AssertionError(f"TV guide intro not ready: {name}")
             if has(root, "Resume guide"):
-                guide_tap("Need help?", name + "_restart_help")
+                guide_tap("? Step help", name + "_restart_help")
                 guide_tap("Start from the beginning", name + "_restart")
             else:
                 tap("Start part two" if phone else "Start guide", name + "_start")
+            wait_for("Step 1 of", name + "_first_picture")
 
         open_brand("Sony", "tv_guides_google")
         start_picture("tv_guides_google")
@@ -1033,19 +1455,27 @@ def main():
         tap("Close", "tv_guides_lg_close")
 
         open_brand("LG", "tv_guides_lg_phone")
-        guide_tap("Need help?", "tv_guides_lg_phone_help")
+        guide_tap("? Step help", "tv_guides_lg_phone_help")
         guide_tap("Other setup options", "tv_guides_lg_phone_options")
         guide_tap("2. Check LG ThinQ on your phone", "tv_guides_lg_phone_select")
-        wait_for("Open pairing pictures", "tv_guides_lg_phone_pairing_help")
+        # Pairing is an optional action behind Step help, not a primary intro
+        # button. Exercise the real help disclosure and one-step Back history.
+        guide_tap("? Step help", "tv_guides_lg_phone_pairing_disclosure")
+        guide_tap("Open pairing pictures", "tv_guides_lg_phone_pairing_jump")
+        wait_for("LG — pair with ThinQ", "tv_guides_lg_pairing_intro")
+        tap("Back", "tv_guides_lg_pairing_back_to_phone")
+        wait_for("2. Check LG ThinQ on your phone", "tv_guides_lg_phone_restored")
         start_picture("tv_guides_lg_phone", phone=True)
         for number in range(4): tap("Next", f"tv_guides_lg_phone_{number}")
         wait_for_all(("Check the phone controls", "Finish part two"), "tv_guides_lg_phone_final")
         screenshot("tv_guides_lg_phone_final")
         tap("Finish part two", "tv_guides_lg_phone_finish")
-        wait_for("No qualified device connected", "tv_guides_lg_phone_no_connection")
+        wait_for_all(("DEVICES", "Connection not verified"), "tv_guides_lg_phone_no_connection")
 
+        # Vizio exposes two primary routes; its brand screen has a visible
+        # `? Other setup options` disclosure, not a route-intro step-help button.
         open_brand("Vizio", "tv_guides_vizio")
-        guide_tap("Other setup options", "tv_guides_vizio_options")
+        guide_tap("? Other setup options", "tv_guides_vizio_options")
         guide_tap("Vizio — link the TV account (6-digit code)", "tv_guides_vizio_account")
         start_picture("tv_guides_vizio")
         for number in range(2, 12):
@@ -1090,7 +1520,7 @@ def main():
         tap("Close", "tv_guides_fire_close")
 
         open_brand("TCL", "tv_guides_google_manual", "Google TV / Android TV")
-        guide_tap("Need help?", "tv_guides_google_setup_help")
+        guide_tap("? Step help", "tv_guides_google_setup_help")
         guide_tap("Other setup options", "tv_guides_google_setup_options")
         guide_tap("Google TV — first setup with Google Home", "tv_guides_google_setup")
         start_picture("tv_guides_google_qr")
@@ -1100,7 +1530,7 @@ def main():
         tap("Next", "tv_guides_google_qr_point")
         wait_for_all(("Step 10 of 13", "Scan the TV setup code", "Your TV + your phone"), "tv_guides_google_qr_tv")
         screenshot("tv_guides_google_qr_tv")
-        guide_tap("Need help?", "tv_guides_google_manual_help")
+        guide_tap("? Step help", "tv_guides_google_manual_help")
         guide_tap("Use the TV remote instead", "tv_guides_google_manual_select")
         wait_for("Google TV — finish setup with the TV remote", "tv_guides_google_manual_intro")
         start_picture("tv_guides_google_manual")
@@ -1250,14 +1680,27 @@ def main():
     print("BUILD_DETAILS_SHARE_OBSERVED: native cancel, exact four-field Intent receipt and enabled preview return", flush=True)
     tap("Back", "build_details_close")
     wait_for_all(("Appearance", "? More settings"), "build_details_return_to_settings")
+
+    def open_support_report(name):
+        tap("Advanced Settings", name + "_advanced")
+        for attempt in range(7):
+            root, _ = screen(f"{name}_find_{attempt}")
+            bounds = _support_report_anchor(root)
+            if bounds:
+                tap("About Private support report", name + "_open")
+                return bounds
+            scroll_meter(f"{name}_scroll_{attempt}", down=True)
+        raise AssertionError("Private support report was not visible in Advanced Settings")
+
+    def close_support_report(name, caller_bounds):
+        tap("Back", name + "_back")
+        # The title can be above the viewport. Require the same visible report
+        # control in the restored settings scroll position.
+        returned = wait_for_all(("Jump to", "Private support report"), name + "_caller")
+        assert _support_report_anchor(returned) == caller_bounds, "Back must preserve the report's settings position"
+
     # Start with a genuinely fresh process: no completed input checks exist.
-    tap("Advanced Settings", "support_report_advanced")
-    for attempt in range(7):
-        report_root, _ = screen(f"support_report_find_{attempt}")
-        if any(n.get("content-desc") == "About Private support report" for n in report_root.iter("node")):
-            break
-        scroll_meter(f"support_report_scroll_{attempt}", down=True)
-    tap("About Private support report", "support_report_open")
+    caller_bounds = open_support_report("support_report")
     expected_report = expected_share + "\n\nRecent sound checks (this app session)\nNo completed sound checks in this app session.\n\nInput observations only; not proof of sound safety, protection or TV control."
     wait_for(expected_report, "support_report_default_includes_checks")
     tap("Include recent sound checks", "support_report_exclude_choice_required")
@@ -1293,8 +1736,7 @@ def main():
     report_appops = adb("shell", "cmd", "appops", "get", package, "RECORD_AUDIO").decode()
     (out / "support-report-appops.txt").write_text(report_appops)
     assert "(running)" not in report_appops, report_appops
-    tap("Back", "support_report_close")
-    wait_for("Advanced Settings", "support_report_back_to_caller")
+    close_support_report("support_report", caller_bounds)
     adb("shell", "input", "keyevent", "KEYCODE_BACK")
     wait_for("Appearance", "support_report_back_to_settings")
     print("SUPPORT_REPORT_SHARE_OBSERVED: empty allowlisted preview, native Cancel, exact Intent receipt and return to Advanced Settings", flush=True)
@@ -1303,13 +1745,7 @@ def main():
     def review_report(name, recap, share=False, exclude=False):
         expected = expected_share + "\n\nRecent sound checks (this app session)\n" + recap + "\n\nInput observations only; not proof of sound safety, protection or TV control."
         tap("Settings", name + "_settings")
-        tap("Advanced Settings", name + "_advanced")
-        for attempt in range(7):
-            root, _ = screen(f"{name}_find_{attempt}")
-            if any(n.get("content-desc") == "About Private support report" for n in root.iter("node")):
-                break
-            scroll_meter(f"{name}_scroll_{attempt}", down=True)
-        tap("About Private support report", name + "_open")
+        caller_bounds = open_support_report(name)
         wait_for(expected, name + "_preview")
         if exclude:
             tap("Include recent sound checks", name + "_exclude_checks")
@@ -1344,8 +1780,7 @@ def main():
         ops = adb("shell", "cmd", "appops", "get", package, "RECORD_AUDIO").decode()
         (out / (name + "_appops.txt")).write_text(ops)
         assert "(running)" not in ops, ops
-        tap("Back", name + "_back")
-        wait_for("Advanced Settings", name + "_caller")
+        close_support_report(name, caller_bounds)
         adb("shell", "input", "keyevent", "KEYCODE_BACK")
         wait_for("Appearance", name + "_ordinary_settings")
         tap("Sound", name + "_return_sound")
@@ -1379,6 +1814,24 @@ def main():
         tap("TV photo setup. Read a model label or Network settings photo", "open_photo_check")
         empty = wait_for("No photo selected", f"{case_prefix}_starts_empty")
         assert not has(empty, "Brand:") and not has(empty, "Model:") and not has(empty, "TV IP hint:"), "New photo screen must keep optional details hidden"
+        if case_prefix == "photo":
+            tap("? Photo help", "photo_open_guide_help")
+            tap("VIZIO V505M-K09 address pictures", "photo_open_model_guide")
+            intro = wait_for_all(("VIZIO V505M-K09 · Android", "My TV matches"), "photo_confirm_guide_model")
+            assert not has(intro, "Check this address"), "Photo help must open the pictures only"
+            tap("My TV matches", "photo_start_model_guide")
+            for step, target in enumerate(("Menu (gear)", "Network", "Network Information", "IP Address"), start=1):
+                page = wait_for(f"Step {step} of 4", f"photo_model_guide_step_{step}")
+                assert any(f"Highlighted: {target}." in n.get("content-desc", "") for n in page.iter("node"))
+                if step == 2:
+                    adb("shell", "input", "keyevent", "KEYCODE_BACK")
+                    wait_for("Step 1 of 4", "photo_guide_system_back")
+                    tap("Next", "photo_guide_next_again")
+                    wait_for("Step 2 of 4", "photo_guide_step_restored")
+                if step == 4:
+                    screenshot("photo_guide_ip_address")
+                tap("Back to photo setup" if step == 4 else "Next", f"photo_guide_advance_{step}")
+            wait_for_all(("TV photo setup", "No photo selected"), "photo_guide_returns_to_photo")
         tap("Show photo details", f"{case_prefix}_show_details")
         wait_photo_fields(("No photo selected", "Brand: Not identified", "Model: Not identified", "TV IP hint: Not identified"), f"{case_prefix}_empty_details")
         fixture = Path("native/ios/Tests/AQSSNativeFeedbackTests/Fixtures") / fixture_name
@@ -1411,16 +1864,36 @@ def main():
                          f"{case_prefix}_native_ocr_result", attempts=30)
             screenshot(f"{case_prefix}_native_ocr_result")
             if case_prefix == "photo":
+                wait_for("Address read from photo: 10.20.30.40", "photo_address_review")
+                tap("Use address in VIZIO check", "photo_address_confirm")
+                check = wait_for_all(("VIZIO network check", "Ready to check the address you enter."), "photo_address_idle_check")
+                field = next(n for n in check.iter("node") if n.get("class") == "android.widget.EditText")
+                assert field.get("text") == "10.20.30.40" and field.get("enabled") == "true"
+                assert not has(check, "Review test result"), "Filling the address must not start the check"
+                screenshot("photo_address_idle_check")
+                adb("shell", "input", "keyevent", "KEYCODE_HOME"); launch()
+                check = wait_for_all(("TV IP address", "Ready to check the address you enter."), "photo_address_check_cleared")
+                assert not has(check, "10.20.30.40"), "The handoff must not replay after backgrounding"
+                tap("Back", "photo_address_back")
+                wait_for("Address read from photo: 10.20.30.40", "photo_address_back_to_review")
                 # A newly opened selection replaces the old review even if cancelled.
                 # Use the real picker, then prove the old VIZIO/model/IP do not return.
                 tap("Choose a photo", "photo_replace_to_cancel")
                 screen("photo_replacement_picker")
                 adb("shell", "input", "keyevent", "KEYCODE_BACK")
-                wait_photo_fields(("No photo selected", "Brand: Not identified", "Model: Not identified", "TV IP hint: Not identified"),
-                             "photo_replacement_cancel_empty")
+                empty = wait_photo_fields(("No photo selected", "Brand: Not identified", "Model: Not identified", "TV IP hint: Not identified"),
+                                          "photo_replacement_cancel_empty")
+                assert not has(empty, "Use address in VIZIO check"), "Cancelled replacement must clear the old address action"
                 screenshot("photo_replacement_cancel_empty")
                 choose_photo_fixture(display_name, "photo_reselect")
                 wait_photo_fields(expected, "photo_reselect_native_ocr_result", attempts=30)
+            for attempt in range(4):
+                _, opened = screen(f"{case_prefix}_clear_help_{attempt}", click="? Photo help")
+                if opened:
+                    break
+                scroll_meter(f"{case_prefix}_find_photo_help_{attempt}", down=True)
+            else:
+                raise AssertionError("Photo help is unreachable in the photo review")
             tap("Clear photo details", f"{case_prefix}_clear")
             for attempt in range(3):
                 scroll_meter(f"{case_prefix}_after_clear_top_{attempt}", down=False)

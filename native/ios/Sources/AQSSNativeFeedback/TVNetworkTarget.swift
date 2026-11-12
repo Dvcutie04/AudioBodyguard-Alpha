@@ -1,4 +1,108 @@
+import Dispatch
 import Foundation
+#if canImport(Network) && canImport(Security) && canImport(CryptoKit)
+import CryptoKit
+import Network
+import Security
+
+/// Observe one leaf certificate and always reject the handshake.
+@available(macOS 12.0, *)
+final class AQSSPeerCertificateObserver: @unchecked Sendable {
+    private let lock = NSLock()
+    private var digest: String?
+
+    var fingerprint: String? {
+        lock.lock()
+        defer { lock.unlock() }
+        return digest
+    }
+
+    func makeTLSOptions(onObservation: @escaping @Sendable () -> Void) -> NWProtocolTLS.Options {
+        let options = NWProtocolTLS.Options()
+        sec_protocol_options_set_verify_block(options.securityProtocolOptions, { [self] _, trust, complete in
+            var didObserve = false
+            defer {
+                complete(false)
+                if didObserve { onObservation() }
+            }
+            let peerTrust = sec_trust_copy_ref(trust).takeRetainedValue()
+            guard SecTrustSetNetworkFetchAllowed(peerTrust, false) == errSecSuccess,
+                  let chain = SecTrustCopyCertificateChain(peerTrust) as? [SecCertificate],
+                  let leaf = chain.first else { return }
+            let der = SecCertificateCopyData(leaf) as Data
+            guard !der.isEmpty, der.count <= 16 * 1024 else { return }
+            let fingerprint = SHA256.hash(data: der).map { String(format: "%02x", $0) }.joined()
+            lock.lock()
+            if digest == nil {
+                digest = fingerprint
+                didObserve = true
+            }
+            lock.unlock()
+        }, DispatchQueue.global(qos: .userInitiated))
+        return options
+    }
+}
+#endif
+
+/// A read can stage one result. Cancellation releases it to the foreground UI.
+struct AQSSCertificateRead {
+    enum Result: Equatable {
+        case observed(String)
+        case noCertificate
+        case timedOut
+        case stopped
+
+        var message: String {
+            switch self {
+            case .observed: return "Certificate read. Compare the fingerprint with a trusted source."
+            case .noCertificate: return "No service certificate was read."
+            case .timedOut: return "Certificate read timed out. Try again when you are ready."
+            case .stopped: return "Certificate read stopped."
+            }
+        }
+
+        var fingerprint: String? {
+            if case .observed(let fingerprint) = self { return fingerprint }
+            return nil
+        }
+    }
+
+    private enum State {
+        case reading
+        case closing(Result)
+        case closed
+    }
+
+    let expires: DispatchTime
+    private var state = State.reading
+
+    init(startedAt: DispatchTime) {
+        expires = startedAt + .seconds(AQSSLocalTVTarget.timeoutSeconds)
+    }
+
+    mutating func resolve(_ observation: String?, at instant: DispatchTime) -> Bool {
+        guard case .reading = state else { return false }
+        if instant >= expires {
+            state = .closing(.timedOut)
+        } else if let observation = observation {
+            state = .closing(.observed(observation))
+        } else {
+            state = .closing(.noCertificate)
+        }
+        return true
+    }
+
+    mutating func stop(clear: Bool) {
+        if case .closed = state { return }
+        state = clear ? .closed : .closing(.stopped)
+    }
+
+    mutating func finishCancellation() -> Result? {
+        defer { state = .closed }
+        if case .closing(let result) = state { return result }
+        return nil
+    }
+}
 
 /// A single explicitly entered private IPv4 host. This is not a TV identity.
 public struct AQSSLocalTVTarget: Equatable, Sendable {
@@ -30,11 +134,24 @@ public struct AQSSLocalTVTarget: Equatable, Sendable {
     }
 }
 
+public enum TVTrialFollowUp: Equatable, Sendable {
+    case addressPictures, phoneWiFi, review
+}
+
 public enum TVTrialOutcome: String, CaseIterable, Sendable {
     case addressRejected = "ADDRESS_REJECTED", wifiRequired = "WIFI_REQUIRED"
     case unavailable = "CHECK_UNAVAILABLE", serviceAnswered = "SERVICE_ANSWERED_UNVERIFIED"
     case noResponse = "NO_SERVICE_RESPONSE", stopped = "CHECK_STOPPED"
     case cleanupUnresolved = "CLEANUP_UNRESOLVED"
+
+    public var followUp: TVTrialFollowUp? {
+        switch self {
+        case .addressRejected: return .addressPictures
+        case .wifiRequired, .noResponse: return .phoneWiFi
+        case .serviceAnswered: return .review
+        case .unavailable, .stopped, .cleanupUnresolved: return nil
+        }
+    }
 }
 
 /// One explicitly reviewed, historical description. No host, free-text notes,

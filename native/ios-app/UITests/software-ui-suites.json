@@ -8,7 +8,7 @@
       "AQSSReadOnlyUITests/testAllFivePagesKeepHelpAndTruthfulEmptyStates",
       "AQSSReadOnlyUITests/testFirstVisitHasOnePathChoiceGatesTailoredPlanAndReplay",
       "AQSSReadOnlyUITests/testOptionsAndAdvancedRemainUnavailable",
-      "AQSSReadOnlyUITests/testAdvancedSwitchAttemptResetsAfterTwoSecondsAndHelpReturnsToCaller",
+      "AQSSReadOnlyUITests/testAdvancedSwitchExplainsWhyItStaysOffAndHelpReturnsToCaller",
       "AQSSReadOnlyUITests/testAdvancedSwitchResetSurvivesNavigationBackgroundAndLargestText",
       "AQSSReadOnlyUITests/testExitAtWelcomeAndContextualGuideRestoreFullApp",
       "AQSSReadOnlyUITests/testExampleAppearanceAndFutureFeatureDoNotClaimAudio",
@@ -18,6 +18,7 @@
       "AQSSReadOnlyUITests/testLargeTextSetupHelpScrollsWithoutOpeningAShortcut"
     ],
     "pictures": [
+      "AQSSReadOnlyUITests/testTVAddressPicturesKeepTheCheckDraftAndStepOrder",
       "AQSSReadOnlyUITests/testRokuPicturesResumeAndFinishWithoutClaimingConnection",
       "AQSSReadOnlyUITests/testNewVizioTVShowsAccountThenPhonePicturesInOrder",
       "AQSSReadOnlyUITests/testRokuPartOneImmediatelyOpensPhonePicturesInFirstVisit",
@@ -30,11 +31,14 @@
       "AQSSReadOnlyUITests/testLGVizioAndGoogleTVContinueIntoTheirOwnPhoneAppPictures",
       "AQSSReadOnlyUITests/testPhilipsAlreadyConnectedSkipsPairingAndBackRestoresTheChoice",
       "AQSSReadOnlyUITests/testNewBrandPicturesAreReachable",
+      "AQSSReadOnlyUITests/testSonyLegacyAndHisenseVIDAAKeepTheirOwnPicturesAndBack",
       "AQSSReadOnlyUITests/testIllustratedGuideKeepsScrollContainerAndResetsPosition"
     ],
     "tools": [
       "AQSSReadOnlyUITests/testTVNetworkRejectsPublicAddressWithoutContact",
       "AQSSReadOnlyUITests/testTVNetworkVisitClearsDraftOnBackgroundAndBack",
+      "AQSSReadOnlyUITests/testTVNetworkRejectedReportCancelPreservesClipboard",
+      "AQSSReadOnlyUITests/testTVNetworkRejectedReportCopyMatchesActualReviewedText",
       "AQSSReadOnlyUITests/testTVNetworkRejectedResultCanBeReviewedPrivately",
       "AQSSReadOnlyUITests/testTestSetupShareStartsWhenReviewAppears",
       "AQSSReadOnlyUITests/testTestSetupShareCancelAndReopenAtLargestText",
@@ -50,6 +54,8 @@
       "AQSSReadOnlyUITests/testBuildDetailsShareOnlyInstalledMetadataAndReturn",
       "AQSSReadOnlyUITests/testBuildDetailsShareCancelReturnsWithoutCopy",
       "AQSSReadOnlyUITests/testBuildDetailsMatchInstalledMetadataAndReturnToSettings",
+      "AQSSReadOnlyUITests/testOwnedVoiceSkipButtonsStaySeparateAndResetWithoutCapture",
+    "AQSSReadOnlyUITests/testOwnedLocalVideoSeeksAndReadsActualPlayerPosition",
       "AQSSReadOnlyUITests/testVoiceCheckStartsIdleAndClosingItLeavesMeterUsable",
       "AQSSReadOnlyUITests/testLiveSoundCheckStartsOffAndHelpReturnsWithoutCapture",
       "AQSSReadOnlyUITests/testInputToolsStartIdleAndNeverClaimAConnection",
@@ -62,11 +68,15 @@
     ]
   },
   "dedicated_fixture_tests": [
+    "AQSSReadOnlyUITests/testIndependentUIKitShareControlCopy",
     "AQSSReadOnlyUITests/testInsightsRecapsReviewClearAndRestart",
     "AQSSReadOnlyUITests/testPrivateSupportReportIncludesCompletedCheckAndClears",
     "AQSSReadOnlyUITests/testPrivateSupportReportExcludesCompletedCheckWithoutClearing",
     "AQSSReadOnlyUITests/testVoiceCheckDeniedMicrophoneCannotRequestSpeechOrCapture",
     "AQSSReadOnlyUITests/testVoiceSpeechPermissionGrantDoesNotStartDeferredCapture",
+    "AQSSReadOnlyUITests/testOnDeviceSpeechCapabilityProbeWithoutCapture",
+    "AQSSReadOnlyUITests/testOwnedFinalTextGateToRealLocalPlayerWithoutRecognition",
+    "AQSSReadOnlyUITests/testOwnedFinalTextCancellationRejectsLateResultWithoutSeeking",
     "AQSSReadOnlyUITests/testLiveSoundCheckDeniedPermissionNeverStartsCapture",
     "AQSSReadOnlyUITests/testVoiceMicrophoneSettingsReturnStaysOff",
     "AQSSReadOnlyUITests/testVoiceSpeechSettingsReturnStaysOff",

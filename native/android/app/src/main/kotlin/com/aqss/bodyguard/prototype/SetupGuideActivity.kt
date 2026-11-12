@@ -40,6 +40,7 @@ class SetupGuideActivity : Activity() {
         )
     }
     private lateinit var skin: InterfaceTheme
+    private val stepPictures by lazy { SetupStepPictures(this, skin) }
     private lateinit var root: LinearLayout
     private lateinit var header: LinearLayout
     private lateinit var content: LinearLayout
@@ -63,7 +64,14 @@ class SetupGuideActivity : Activity() {
     private var backCallback: OnBackInvokedCallback? = null
     private val group get(): com.aqss.nativefeedback.SetupGroup? {
         val original = SetupContent.groups.firstOrNull { it.id == groupId } ?: return null
-        if (groupId == "phone") return original.copy(routes = original.routes.filter { it != "phone_iphone" }, primaryRoutes = original.primaryRoutes.filter { it != "phone_iphone" })
+        if (groupId == "phone") {
+            // iPad and iPhone illustrations must never appear on Android.
+            val androidRoutes = setOf("phone_pixel", "phone_galaxy")
+            return original.copy(
+                routes = original.routes.filter { it in androidRoutes },
+                primaryRoutes = original.primaryRoutes.filter { it in androidRoutes },
+            )
+        }
         val tv = SetupContent.groups.firstOrNull { it.id == (selectedSystem ?: intent.getStringExtra("deviceGroup")) }
         if (groupId !in listOf("google", "alexa", "both") || tv == null) return original
         val routes = original.routes.filter { it in tv.routes }
@@ -74,10 +82,9 @@ class SetupGuideActivity : Activity() {
     }
     private val route get() = SetupContent.routes.firstOrNull { it.id == routeId }
     private val phone get() = SetupPhone.androidManufacturer(Build.MANUFACTURER)
-    private val phoneRoute get() = when (Build.MANUFACTURER.lowercase()) { "samsung" -> "phone_galaxy"; "google" -> "phone_pixel"; else -> null }
     private fun startingRoute(): String? = when {
         groupId == "voice" -> "voice"
-        groupId == "phone" -> phoneRoute
+        groupId == "phone" -> phone.wifiRoute
         groupId == "samsung" -> samsungStartingRoute()
         platforms.isNotEmpty() -> null
         else -> group?.primaryRoutes?.singleOrNull()
@@ -248,7 +255,7 @@ class SetupGuideActivity : Activity() {
                 if (route.id == "philips_voice_remote" && index == 4) action(content, "Remote already connected") { skipTo(route.id, 4, 9) }
                 if (route.id == "philips_voice_remote" && index == 5) action(content, "Light is not blinking") { skipTo(route.id, 5, 6) }
                 if (route.id == "fire_setup" && index in 5..6) action(content, "Account sign-in finished") { skipTo(route.id, index, 7) }
-                val picture = if (route.id == "roku_network" || route.id == "roku_model") rokuIllustration(step, index + 1, route.id) else if (route.id == "philips_voice_remote" && index in 1..2) profileIllustration(step, index + 1) else if (step.pictureKind == "remote") remoteIllustration(step, index + 1) else illustration(step, index + 1)
+                val picture = if (route.id == "roku_network" || route.id == "roku_model") rokuIllustration(step, index + 1, route.id) else if (route.id == "philips_voice_remote" && index in 1..2) profileIllustration(step, index + 1) else stepPictures.picture(step, index + 1)
                 if (!preserveScroll) skin.guideCue(picture)
                 content.addView(picture, LinearLayout.LayoutParams(-1, -2).apply { bottomMargin = dp(18) })
                 action(content, if (detailsExpanded) "? Hide step help" else "? Step help") { detailsExpanded = !detailsExpanded; render(true) }
@@ -438,6 +445,40 @@ class SetupGuideActivity : Activity() {
         return box
     }
 
+    private fun back() {
+        val previous = history.pollLast() ?: run { finish(); return }
+        groupId = previous.getString("group") ?: ""; routeId = previous.getString("route"); index = previous.getInt("index", -1); mismatch = previous.getBoolean("mismatch")
+        detailsExpanded = previous.getBoolean("details"); pickerExpanded = previous.getBoolean("picker"); referencesExpanded = previous.getBoolean("references")
+        render()
+    }
+    @Deprecated("Compatibility for Android 12 and earlier")
+    @android.annotation.SuppressLint("GestureBackNavigation") // API 33+ uses the platform OnBackInvokedCallback.
+    override fun onBackPressed() { back() }
+    override fun onSaveInstanceState(outState: Bundle) {
+        outState.putAll(location()); outState.putString("completedTVRoute", completedTVRoute); outState.putString(SELECTED_SYSTEM, selectedSystem); outState.putParcelableArrayList("setupHistory", ArrayList(history)); super.onSaveInstanceState(outState)
+    }
+    override fun onDestroy() {
+        if (Build.VERSION.SDK_INT >= 33) backCallback?.let { onBackInvokedDispatcher.unregisterOnBackInvokedCallback(it) }
+        super.onDestroy()
+    }
+}
+
+/** The same picture renderers serve the setup catalog and in-screen address help. */
+internal class SetupStepPictures(private val activity: Activity, private val skin: InterfaceTheme) {
+    fun picture(step: SetupStep, number: Int): View =
+        if (step.pictureKind == "remote") remoteIllustration(step, number) else illustration(step, number)
+
+    private fun dp(value: Int) = skin.dp(value)
+    private fun column() = LinearLayout(activity).apply { orientation = LinearLayout.VERTICAL }
+    private fun words(parent: LinearLayout, value: String, size: Float, color: Int = skin.text, bold: Boolean = false): TextView {
+        val view = TextView(activity).apply {
+            text = value; textSize = size; setTextColor(color); setPadding(0, 0, 0, dp(12))
+            if (bold) setTypeface(null, Typeface.BOLD)
+        }
+        parent.addView(view, LinearLayout.LayoutParams(-1, -2))
+        return view
+    }
+
     private fun remoteIllustration(step: SetupStep, number: Int): View {
         val box = column().apply {
             setPadding(dp(14), dp(14), dp(14), dp(14)); background = skin.shape(skin.raised, 22)
@@ -448,7 +489,7 @@ class SetupGuideActivity : Activity() {
         val buttons = step.focusLabel.split(" + ")
         words(box, "$number → " + if (buttons.size > 1) "Hold both buttons together" else step.focusLabel, 17f, skin.accent, true)
         val remote = column().apply { setPadding(dp(18), dp(18), dp(18), dp(18)); background = skin.shape(skin.surface, 28, true); importantForAccessibility = View.IMPORTANT_FOR_ACCESSIBILITY_NO_HIDE_DESCENDANTS }
-        buttons.forEach { label -> remote.addView(TextView(this).apply {
+        buttons.forEach { label -> remote.addView(TextView(activity).apply {
             text = label; textSize = 17f; gravity = Gravity.CENTER; setTypeface(null, Typeface.BOLD)
             setTextColor(skin.controlText); setPadding(dp(8), dp(18), dp(8), dp(18)); background = skin.shape(skin.control, 12)
         }, LinearLayout.LayoutParams(-1, -2).apply { bottomMargin = dp(18) }) }
@@ -466,53 +507,37 @@ class SetupGuideActivity : Activity() {
             contentDescription = "Illustration $number. ${if (screenOnTV) "TV screen" else if (screenOnPhone) "Phone screen" else "TV and phone"}: ${step.screen}. ${if (choice) "Choose one; neither is selected" else "Highlighted"}: ${step.focusLabel}. Action: ${step.action}. ${step.instruction}"
         }
         words(box, "Illustration", 11f, skin.muted, true).importantForAccessibility = View.IMPORTANT_FOR_ACCESSIBILITY_NO
-        if (step.surface == "both") box.addView(SetupActionPicture(this, skin, "both", step.action), LinearLayout.LayoutParams(-1, dp(64)))
+        if (step.surface == "both") box.addView(SetupActionPicture(activity, skin, "both", step.action), LinearLayout.LayoutParams(-1, dp(64)))
         val screen = column().apply { setPadding(dp(12), dp(12), dp(12), dp(12)); background = skin.shape(skin.surface, if (screenOnTV) 12 else 26, true); importantForAccessibility = View.IMPORTANT_FOR_ACCESSIBILITY_NO_HIDE_DESCENDANTS }
         box.addView(screen, LinearLayout.LayoutParams(-1, -2).apply { if (step.surface == "phone") { marginStart = dp(10); marginEnd = dp(10) } })
         if (screenOnPhone) words(screen, "9:41                         ● ▰", 10f, skin.muted)
         words(screen, step.screen, 17f, bold = true)
         if (nearbyTVs) {
-            val previews = LinearLayout(this).apply { importantForAccessibility = View.IMPORTANT_FOR_ACCESSIBILITY_NO_HIDE_DESCENDANTS }
+            val previews = LinearLayout(activity).apply { importantForAccessibility = View.IMPORTANT_FOR_ACCESSIBILITY_NO_HIDE_DESCENDANTS }
             repeat(3) {
-                previews.addView(View(this).apply { background = skin.shape(skin.raised, 8) }, LinearLayout.LayoutParams(0, dp(64), 1f).apply { marginEnd = dp(6) })
+                previews.addView(View(activity).apply { background = skin.shape(skin.raised, 8) }, LinearLayout.LayoutParams(0, dp(64), 1f).apply { marginEnd = dp(6) })
             }
             screen.addView(previews, LinearLayout.LayoutParams(-1, -2).apply { bottomMargin = dp(40) })
         }
         if (choice) words(screen, "$number → Choose one", 17f, skin.accent, true)
         step.items.forEachIndexed { i, item ->
             val selected = !choice && i == step.focus
-            val row = LinearLayout(this).apply {
+            val row = LinearLayout(activity).apply {
                 gravity = Gravity.CENTER_VERTICAL; setPadding(dp(10), dp(10), dp(10), dp(10)); minimumHeight = dp(48)
                 background = skin.shape(if (selected) skin.control else skin.raised, 9, true)
             }
             val ink = if (selected) skin.controlText else skin.text
-            row.addView(TextView(this).apply { text = if (selected) number.toString() else "○"; textSize = 14f; setTypeface(null, Typeface.BOLD); setTextColor(ink); gravity = Gravity.CENTER }, LinearLayout.LayoutParams(dp(30), -2))
-            row.addView(TextView(this).apply { text = item; textSize = 15f; setTextColor(ink); if (selected) setTypeface(null, Typeface.BOLD) }, LinearLayout.LayoutParams(0, -2, 1f))
-            row.addView(TextView(this).apply { text = if (selected) "←" else if (choice) "" else "›"; textSize = 20f; setTextColor(ink) }, LinearLayout.LayoutParams(dp(22), -2))
+            row.addView(TextView(activity).apply { text = if (selected) number.toString() else "○"; textSize = 14f; setTypeface(null, Typeface.BOLD); setTextColor(ink); gravity = Gravity.CENTER }, LinearLayout.LayoutParams(dp(30), -2))
+            row.addView(TextView(activity).apply { text = item; textSize = 15f; setTextColor(ink); if (selected) setTypeface(null, Typeface.BOLD) }, LinearLayout.LayoutParams(0, -2, 1f))
+            row.addView(TextView(activity).apply { text = if (selected) "←" else if (choice) "" else "›"; textSize = 20f; setTextColor(ink) }, LinearLayout.LayoutParams(dp(22), -2))
             screen.addView(row, LinearLayout.LayoutParams(-1, -2).apply { bottomMargin = dp(8); if (nearbyTVs) marginStart = dp(60) })
         }
         if (screenOnTV) {
-            box.addView(View(this).apply { setBackgroundColor(skin.outline) }, LinearLayout.LayoutParams(dp(14), dp(12)).apply { gravity = Gravity.CENTER })
-            box.addView(View(this).apply { background = skin.shape(skin.outline, 4) }, LinearLayout.LayoutParams(dp(90), dp(4)).apply { gravity = Gravity.CENTER })
-        } else if (screenOnPhone) screen.addView(View(this).apply { background = skin.shape(skin.muted, 4) }, LinearLayout.LayoutParams(dp(70), dp(4)).apply { gravity = Gravity.CENTER; topMargin = dp(8) })
-        if (step.surface != "both" || step.action in listOf("scan", "type")) box.addView(SetupActionPicture(this, skin, if (step.surface == "both") "phone" else step.surface, step.action), LinearLayout.LayoutParams(-1, dp(64)).apply { topMargin = dp(8) })
+            box.addView(View(activity).apply { setBackgroundColor(skin.outline) }, LinearLayout.LayoutParams(dp(14), dp(12)).apply { gravity = Gravity.CENTER })
+            box.addView(View(activity).apply { background = skin.shape(skin.outline, 4) }, LinearLayout.LayoutParams(dp(90), dp(4)).apply { gravity = Gravity.CENTER })
+        } else if (screenOnPhone) screen.addView(View(activity).apply { background = skin.shape(skin.muted, 4) }, LinearLayout.LayoutParams(dp(70), dp(4)).apply { gravity = Gravity.CENTER; topMargin = dp(8) })
+        if (step.surface != "both" || step.action in listOf("scan", "type")) box.addView(SetupActionPicture(activity, skin, if (step.surface == "both") "phone" else step.surface, step.action), LinearLayout.LayoutParams(-1, dp(64)).apply { topMargin = dp(8) })
         return box
-    }
-    private fun back() {
-        val previous = history.pollLast() ?: run { finish(); return }
-        groupId = previous.getString("group") ?: ""; routeId = previous.getString("route"); index = previous.getInt("index", -1); mismatch = previous.getBoolean("mismatch")
-        detailsExpanded = previous.getBoolean("details"); pickerExpanded = previous.getBoolean("picker"); referencesExpanded = previous.getBoolean("references")
-        render()
-    }
-    @Deprecated("Compatibility for Android 12 and earlier")
-    @android.annotation.SuppressLint("GestureBackNavigation") // API 33+ uses the platform OnBackInvokedCallback.
-    override fun onBackPressed() { back() }
-    override fun onSaveInstanceState(outState: Bundle) {
-        outState.putAll(location()); outState.putString("completedTVRoute", completedTVRoute); outState.putString(SELECTED_SYSTEM, selectedSystem); outState.putParcelableArrayList("setupHistory", ArrayList(history)); super.onSaveInstanceState(outState)
-    }
-    override fun onDestroy() {
-        if (Build.VERSION.SDK_INT >= 33) backCallback?.let { onBackInvokedDispatcher.unregisterOnBackInvokedCallback(it) }
-        super.onDestroy()
     }
 }
 

@@ -153,12 +153,17 @@ jobs:
         run: |
           set -euo pipefail
           simulator_udid="$(xcrun simctl list devices available -j | python3 -c 'import json,sys; devices=json.load(sys.stdin)["devices"]; print(next(d["udid"] for group in devices.values() for d in group if d["name"].startswith("iPhone") and d.get("isAvailable", True)))')"
+          # Prepare the selected runner-owned Simulator before XCTest starts.
+          # This is not permission preauthorization or an application-state reset.
+          xcrun simctl bootstatus "$simulator_udid" -b
           xcodebuild -project native/ios-app/AQSSReadOnly.xcodeproj \
             -scheme AQSSReadOnly -configuration Release \
+            -parallel-testing-enabled NO \
             -destination "platform=iOS Simulator,id=$simulator_udid" \
             -resultBundlePath "$RUNNER_TEMP/aqss-connected-demo.xcresult" \
             -only-testing:AQSSReadOnlyUITests/AQSSReadOnlyUITests/testConnectedDemoAppearanceKeepsPhysicalReadinessUnverified \
-            SWIFT_ACTIVE_COMPILATION_CONDITIONS=AQSS_CONNECTED_DEMO CODE_SIGNING_ALLOWED=NO test
+            SWIFT_ACTIVE_COMPILATION_CONDITIONS=AQSS_CONNECTED_DEMO CODE_SIGNING_ALLOWED=NO test \
+            2>&1 | tee "$RUNNER_TEMP/aqss-connected-demo-xcodebuild.log"
       - name: Export connected-demo screenshots
         if: always()
         shell: bash
@@ -216,6 +221,16 @@ jobs:
         with:
           name: aqss-ios-connected-demo-screenshots
           path: ${{ runner.temp }}/aqss-connected-demo-screenshots/
+          if-no-files-found: error
+          retention-days: 7
+      - name: Keep connected-demo native results and startup log
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: aqss-ios-connected-demo-native-${{ github.run_id }}-${{ github.run_attempt }}
+          path: |
+            ${{ runner.temp }}/aqss-connected-demo.xcresult
+            ${{ runner.temp }}/aqss-connected-demo-xcodebuild.log
           if-no-files-found: error
           retention-days: 7
       - name: Build the separate ARM iOS Simulator connected demo
@@ -301,7 +316,7 @@ jobs:
           profile: pixel_5
           emulator-options: -no-window -gpu swiftshader -no-snapshot -noaudio -no-boot-anim -delay-adb
           script: |
-            timeout 600 python3 tools/smoke_android_live_input.py --style-only
+            timeout 600 python3 tools/smoke_android_live_input.py --style-only --tv-certificate-fixture
             # Stop only this isolated runner’s headless emulator after successful checks.
             pkill -KILL -f "^$ANDROID_HOME/emulator/qemu/[^ ]*/qemu-system-x86_64-headless( |$)" || true
       - name: Keep compact Android review screenshots

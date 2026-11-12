@@ -1,4 +1,5 @@
 import AVFoundation
+import AVKit
 import Speech
 import SwiftUI
 import Vision
@@ -74,6 +75,247 @@ final class VoiceCheck: ObservableObject {
     private var run: UInt64 = 0
     private var lastSampleAt = 0.0
     private var inputRoute = ""
+    // This fixture has authored buttons, not a TV or third-party player adapter.
+    @Published private(set) var demoIntroAvailable = true
+    @Published private(set) var demoRecapAvailable = true
+    @Published private(set) var demoMessage = "Test player ready — nothing connected"
+    private var demoGeneration = 1
+    private let voiceSkipGate = OwnedVoiceSkipGate()
+    private var voiceSkipRunID: String?
+    // A silent, bundled eight-second H.264 fixture; never a remote player.
+    let localPlayer = AVPlayer()
+    @Published private(set) var localVideoVisible = false
+    @Published private(set) var localVideoStatus = "Local video not prepared"
+    private var localMode: OwnedSkipAction?
+    private var localBusy = false
+    private var localEpoch = 0
+#if targetEnvironment(simulator)
+    // Simulator-only supplied TEXT fixture: never OS recognition or microphone.
+    private let textFixtureGate = OwnedVoiceSkipGate()
+    private var textFixtureRunID: String?
+    var textFixtureEnabled: Bool {
+        ProcessInfo.processInfo.arguments.contains("--aqss-owned-final-text-fixture")
+    }
+    private func retireTextFixture() {
+        textFixtureGate.stop()
+        textFixtureRunID = nil
+    }
+    private func readyTextFixture() {
+        guard textFixtureEnabled else { return }
+        retireTextFixture()
+        let runID = UUID().uuidString
+        if textFixtureGate.start(runID: runID, player: demoSnapshot) {
+            textFixtureRunID = runID
+        }
+    }
+    func requestTestOnlyFinalText(_ action: OwnedSkipAction) {
+        guard textFixtureEnabled, let runID = textFixtureRunID else { return }
+        // Deliberately supplies final TEXT, not a recognizer or microphone event.
+        // Exercises the real owned policy gate and same native player handler.
+        let words = action == .intro ? "Audio Bodyguard, skip intro" : "Audio Bodyguard, skip recap"
+        let decision = textFixtureGate.requestFinal(
+            words, runID: runID, observed: demoSnapshot, permitted: true,
+            foreground: UIApplication.shared.applicationState == .active,
+            pressOwnedButton: { [weak self] action in self?.pressDemo(action) ?? false })
+        if decision != .requested {
+            demoMessage = "Fixture final text refused; no additional player action"
+        }
+    }
+    // Simulator-only cancellation of a supplied final-TEXT run. This does not
+    // claim to stop OS recognition, a microphone, or physical playback.
+    func cancelTestOnlyFinalText() {
+        guard textFixtureEnabled else { return }
+        retireTextFixture()
+        demoMessage = "Fixture final text canceled; no audio"
+    }
+
+    // Simulates a competing playhead move on the real, bundled AVPlayer.
+    // The final-text gate must not seek from an obsolete segment selection.
+    func moveTestOnlyPlayhead() {
+        guard textFixtureEnabled, localVideoVisible, !localBusy,
+              let stage = localMode else { return }
+        let target = stage == .intro ? 1.0 : 5.0
+        let epoch = localEpoch
+        let observedLabel = stage == .intro
+            ? "Local video moved: intro playhead now 1s"
+            : "Local video moved: recap playhead now 5s"
+        localBusy = true
+        localPlayer.seek(to: CMTime(seconds: target, preferredTimescale: 600),
+                         toleranceBefore: .zero, toleranceAfter: .zero) { [weak self] finished in
+            Task { @MainActor [weak self] in
+                guard let self = self, self.localEpoch == epoch else { return }
+                self.localBusy = false
+                let actual = self.localPlayer.currentTime().seconds
+                self.localVideoStatus = finished && actual.isFinite && abs(actual - target) < 0.3
+                    ? observedLabel : "Local video: fixture playhead move NOT observed"
+            }
+        }
+    }
+#endif
+    // Only a boolean about the app-owned fixture is retained, never speech or media.
+    // A recreated screen must not restore a prepared Skip control after background.
+    private static let localVideoNeedsResetKey = "aqss.ownedLocalVideo.needsReset.v1"
+
+    init() {
+        if UserDefaults.standard.bool(forKey: Self.localVideoNeedsResetKey) {
+            demoIntroAvailable = false
+            demoRecapAvailable = false
+            demoMessage = "Test player paused — reset to prepare video again"
+        }
+    }
+
+    /// Prepare the specific authored intro (0-2s) or recap (4-6s) segment.
+    /// This does not grant TV authority or synthesize a voice result.
+    func prepareLocalVideo(_ action: OwnedSkipAction) {
+        guard !running, !requesting, !localBusy else { return }
+        // A new screen cannot revive an abandoned local-player session by
+        // preparing a different clip. The user must explicitly Reset first.
+        if !localVideoVisible && UserDefaults.standard.bool(forKey: Self.localVideoNeedsResetKey) {
+            localVideoStatus = "Local video unavailable: reset required before preparing again"
+            return
+        }
+        guard let url = Bundle.main.url(forResource: "voice_skip_sample", withExtension: "mp4") else {
+            localVideoStatus = "Local video unavailable: bundled clip missing"; return
+        }
+        // Persist retirement before a prepared native control could be exposed.
+        UserDefaults.standard.set(true, forKey: Self.localVideoNeedsResetKey)
+        localEpoch += 1; let epoch = localEpoch
+        localMode = nil; localBusy = true
+        demoIntroAvailable = false; demoRecapAvailable = false; demoGeneration += 1
+        localVideoStatus = "Local video: preparing segment"
+        localPlayer.pause()
+        localPlayer.replaceCurrentItem(with: AVPlayerItem(url: url))
+        localVideoVisible = true
+        let entry = action == .intro ? 0.0 : 4.0
+        localPlayer.seek(to: CMTime(seconds: entry, preferredTimescale: 600),
+                         toleranceBefore: .zero, toleranceAfter: .zero) { [weak self] finished in
+            Task { @MainActor [weak self] in
+                guard let self = self, self.localEpoch == epoch else { return }
+                let observed = self.localPlayer.currentTime().seconds
+                self.localBusy = false
+                guard finished, observed.isFinite, abs(observed - entry) < 0.3 else {
+                    self.localVideoStatus = "Local video unavailable: entry not observed"
+                    return
+                }
+                self.localMode = action
+                self.demoIntroAvailable = action == .intro
+                self.demoRecapAvailable = action == .recap
+                self.demoGeneration += 1
+                self.localVideoStatus = action == .intro
+                    ? "Local video: intro ready at 0s" : "Local video: recap ready at 4s"
+#if targetEnvironment(simulator)
+                self.readyTextFixture()
+#endif
+            }
+        }
+    }
+
+    private func requestLocalVideoSkip(_ action: OwnedSkipAction) -> Bool {
+        guard !localBusy, localMode == action else { return false }
+        // VideoPlayer exposes its own scrubber: never execute a stale section
+        // after the user manually changed the actual native playback position.
+        let entry = action == .intro ? 0.0 : 4.0
+        let current = localPlayer.currentTime().seconds
+        guard current.isFinite, abs(current - entry) < 0.3 else {
+            localMode = nil
+            demoIntroAvailable = false; demoRecapAvailable = false; demoGeneration += 1
+            localVideoStatus = "Local video unavailable: selected section changed"
+            return false
+        }
+        localEpoch += 1; let epoch = localEpoch
+        localMode = nil; localBusy = true
+        demoIntroAvailable = false; demoRecapAvailable = false; demoGeneration += 1
+        demoMessage = action == .intro ? "Test player: Skip Intro button activated"
+                                       : "Test player: Skip Recap button activated"
+        localVideoStatus = "Local video: transition requested, awaiting player readback"
+        let target = action == .intro ? 2.0 : 6.0
+        localPlayer.seek(to: CMTime(seconds: target, preferredTimescale: 600),
+                         toleranceBefore: .zero, toleranceAfter: .zero) { [weak self] finished in
+            Task { @MainActor [weak self] in
+                guard let self = self, self.localEpoch == epoch else { return }
+                self.localBusy = false
+                let observed = self.localPlayer.currentTime().seconds
+                guard finished, observed.isFinite, abs(observed - target) < 0.3 else {
+                    self.localVideoStatus = "Local video: requested but position NOT verified"
+                    return
+                }
+                // Read back the actual AVPlayer time, rather than trusting button state.
+                self.localVideoStatus = action == .intro
+                    ? "Local video observed: intro ends at 2s"
+                    : "Local video observed: recap ends at 6s"
+            }
+        }
+        return true // REQUESTED, never verified until the asynchronous player readback.
+    }
+
+    private func closeLocalVideo() {
+#if targetEnvironment(simulator)
+        retireTextFixture()
+#endif
+        localEpoch += 1; localMode = nil; localBusy = false
+        localPlayer.pause(); localPlayer.replaceCurrentItem(with: nil)
+        localVideoVisible = false; localVideoStatus = "Local video not prepared"
+    }
+
+    /// A returning screen cannot reuse an abandoned local-video affordance.
+    func suspendLocalVideo() {
+        // Also revoke if an earlier lifecycle callback already dropped the
+        // player item but left a button state behind.
+        guard localVideoVisible ||
+              UserDefaults.standard.bool(forKey: Self.localVideoNeedsResetKey) else { return }
+        closeLocalVideo()
+        demoIntroAvailable = false; demoRecapAvailable = false
+        demoGeneration += 1
+        demoMessage = "Test player paused — reset to prepare video again"
+    }
+
+    private var demoSnapshot: OwnedSkipSnapshot {
+        OwnedSkipSnapshot(playerID: "owned-test-player", playbackSessionID: "voice-demo",
+                          contentID: "test-episode", generation: demoGeneration,
+                          introVisible: demoIntroAvailable, introEnabled: demoIntroAvailable,
+                          recapVisible: demoRecapAvailable, recapEnabled: demoRecapAvailable)
+    }
+
+    /// Shared callback used by the two visible buttons and admitted final voice intent.
+    @discardableResult func pressDemo(_ action: OwnedSkipAction) -> Bool {
+        if localVideoVisible { return requestLocalVideoSkip(action) }
+        switch action {
+        case .intro where demoIntroAvailable:
+            demoIntroAvailable = false; demoGeneration += 1
+            demoMessage = "Test player: Skip Intro button activated"
+            return true
+        case .recap where demoRecapAvailable:
+            demoRecapAvailable = false; demoGeneration += 1
+            demoMessage = "Test player: Skip Recap button activated"
+            return true
+        default: return false
+        }
+    }
+
+    func resetDemo() {
+        guard !running, !requesting else { return }
+        UserDefaults.standard.removeObject(forKey: Self.localVideoNeedsResetKey)
+        demoIntroAvailable = true; demoRecapAvailable = true
+        demoGeneration += 1
+        demoMessage = "Test player ready — nothing connected"
+        closeLocalVideo()
+    }
+
+    private func handleFinalSkipCommand(_ text: String?) -> String {
+        guard let runID = voiceSkipRunID else {
+            return "Finished — no supported test-player command. Nothing sent to a TV."
+        }
+        // The final recognizer event uses the same one-shot gate exercised in Swift native tests.
+        let decision = voiceSkipGate.requestFinal(text, runID: runID, observed: demoSnapshot,
+            permitted: AVAudioSession.sharedInstance().recordPermission == .granted,
+            foreground: UIApplication.shared.applicationState == .active,
+            pressOwnedButton: { action in self.pressDemo(action) })
+        switch decision {
+        case .requested: return "Test-player Skip button requested. No TV command sent."
+        case .callFailed: return "Test-player button unavailable. No TV command sent."
+        case .unavailable: return "Skip target changed or was unavailable. No TV command sent."
+        }
+    }
 
     func start() {
         settingsAttempt = UUID()
@@ -211,6 +453,11 @@ final class VoiceCheck: ObservableObject {
             let now = ProcessInfo.processInfo.systemUptime
             guard let token = window.start(at: now) else { stop("The input clock is unavailable."); return }
             run = token; lastSampleAt = now; inputRoute = routeIdentity()
+            let skipRun = UUID().uuidString
+            guard voiceSkipGate.start(runID: skipRun, player: demoSnapshot) else {
+                stop("Test-player session could not start. Tap Start to retry."); return
+            }
+            voiceSkipRunID = skipRun
             transcript = ""; levels = []; levelText = "Waiting for microphone input"
             running = true; status = "Starting on-device voice check…"
             let updatesTimer = Timer(timeInterval: 0.1, repeats: true) { [weak self] _ in self?.tick() }
@@ -254,7 +501,7 @@ final class VoiceCheck: ObservableObject {
         if let update = words?.take() {
             if let text = update.text { transcript = text }
             if update.failed { stop("Speech recognition stopped. Tap Start to try again. Words may be incomplete."); return }
-            if update.final { stop("Finished — review the recognized words. Nothing was sent to a TV."); return }
+            if update.final { stop(handleFinalSkipCommand(update.text)); return }
         }
         guard let level = level else {
             levels = []; levelText = "No current microphone samples"; status = "Waiting for microphone input…"
@@ -280,6 +527,7 @@ final class VoiceCheck: ObservableObject {
         settingsAttempt = UUID()
         permissionRequest = UUID(); requesting = false; running = false
         timer?.invalidate(); timer = nil; window.stop()
+        voiceSkipGate.stop(); voiceSkipRunID = nil
         words?.close(); words = nil
         ingress?.close(); ingress = nil; summaries = nil
         engine?.stop()
@@ -292,7 +540,12 @@ final class VoiceCheck: ObservableObject {
         levels = []; levelText = "No live microphone samples"
         status = cleanupFailed ? "Microphone cleanup failed. Close this app completely before trying again." : message
     }
-    func clear(_ message: String = "Microphone off") { stop(message); transcript = "" }
+    func clear(_ message: String = "Microphone off") {
+        // Dismissing or backgrounding the voice check must never count as the
+        // user explicitly resetting a prepared video and its retired controls.
+        // The view calls suspendLocalVideo after this microphone-only cleanup.
+        stop(message); transcript = ""
+    }
 }
 
 struct VoiceCheckView: View {
@@ -302,6 +555,7 @@ struct VoiceCheckView: View {
     @StateObject private var voice = VoiceCheck()
     @State private var setupVisible = false
     @State private var voiceHelp = false
+    @State private var localVideoHelp = false
     var body: some View {
         VStack(spacing: 12) {
             HStack { Text("Voice check").font(.title2.bold()); Spacer(); RoseButton(title: "Close", theme: theme) { voice.clear(); dismiss() } }.padding()
@@ -309,7 +563,7 @@ struct VoiceCheckView: View {
                 VStack(alignment: .leading, spacing: 18) {
                     Text("See what your phone hears").font(.title.bold())
 
-                    Text("Tap Start, then say: ‘Make the TV quieter.’ See the incoming sound bars and recognized words.")
+                    Text("Tap Start, then say “Audio Bodyguard, skip intro” or “Audio Bodyguard, skip recap.”")
                     Text("This check may pause other audio on your iPhone.").font(.caption).foregroundColor(theme.muted)
                     Text(voice.status).font(.headline).accessibilityIdentifier("voice-status")
                     if voice.permissionSettingsAvailable && !voice.cleanupFailed {
@@ -332,8 +586,60 @@ struct VoiceCheckView: View {
                     Text("Digital input levels over time (dBFS).").font(.caption).foregroundColor(theme.muted)
                     Text("Recent recognized words · may change").font(.headline)
                     Text(voice.transcript.isEmpty ? "No words recognized yet" : voice.transcript).accessibilityIdentifier("voice-transcript")
+                    Text("Test player — this app only").font(.headline)
+                    Text("These are test-player buttons in Audio Bodyguard only. No TV or streaming app is controlled.")
+                        .font(.caption).foregroundColor(theme.muted)
+                    HStack {
+                        Button("Skip Intro") { voice.pressDemo(.intro) }
+                            .buttonStyle(AppButtonStyle(theme: theme))
+                            .disabled(!voice.demoIntroAvailable)
+                            .accessibilityIdentifier("voice-demo-skip-intro")
+                        Button("Skip Recap") { voice.pressDemo(.recap) }
+                            .buttonStyle(AppButtonStyle(theme: theme))
+                            .disabled(!voice.demoRecapAvailable)
+                            .accessibilityIdentifier("voice-demo-skip-recap")
+                    }
+                    Text(voice.demoMessage).accessibilityIdentifier("voice-demo-result")
+                    QuestionDisclosure(title: "Local video trial", theme: theme,
+                                       isExpanded: $localVideoHelp, identifier: "voice-local-video-help") {
+                        Text("An eight-second silent test clip with separate intro and recap sections. No TV or streaming player is controlled.")
+                            .font(.caption).foregroundColor(theme.muted)
+                        HStack {
+                            Button("Prepare intro video") { voice.prepareLocalVideo(.intro) }
+                                .buttonStyle(AppButtonStyle(theme: theme))
+                                .disabled(voice.running || voice.requesting)
+                                .accessibilityIdentifier("voice-local-prepare-intro")
+                            Button("Prepare recap video") { voice.prepareLocalVideo(.recap) }
+                                .buttonStyle(AppButtonStyle(theme: theme))
+                                .disabled(voice.running || voice.requesting)
+                                .accessibilityIdentifier("voice-local-prepare-recap")
+                        }
+                        Text(voice.localVideoStatus).accessibilityIdentifier("voice-local-video-status")
+#if targetEnvironment(simulator)
+                        if voice.textFixtureEnabled {
+                            Text("Simulator software test: supplied final text, no OS speech or microphone")
+                                .font(.caption)
+                            Button("Test final text Intro") { voice.requestTestOnlyFinalText(.intro) }
+                                .accessibilityIdentifier("voice-test-final-text-intro")
+                            Button("Test final text Recap") { voice.requestTestOnlyFinalText(.recap) }
+                                .accessibilityIdentifier("voice-test-final-text-recap")
+                            Button("Fixture cancel final text (no audio)") { voice.cancelTestOnlyFinalText() }
+                                .accessibilityIdentifier("voice-test-cancel-final-text")
+                            Button("Fixture move playhead (no audio)") { voice.moveTestOnlyPlayhead() }
+                                .accessibilityIdentifier("voice-test-manual-seek")
+                        }
+#endif
+                        if voice.localVideoVisible {
+                            VideoPlayer(player: voice.localPlayer).frame(height: 110)
+                                .accessibilityIdentifier("voice-local-video-preview")
+                        }
+                    }
+                    Button("Reset test player") { voice.resetDemo() }
+                        .buttonStyle(AppButtonStyle(theme: theme))
+                        .disabled(voice.running || voice.requesting)
+                        .accessibilityIdentifier("voice-demo-reset")
                     QuestionDisclosure(title: "Voice help", theme: theme, isExpanded: $voiceHelp, identifier: "voice-help") {
-                        Text("Review recognized words before using them. Noise can change what appears. Recognition stays on this phone. Listening stops when you leave.")
+                        Text("A final recognized command can activate an available test-player button once. Check the result; no TV command is sent. Listening stops when you leave.")
                         Button("Jump to voice steps") { voice.clear(); setupVisible = true }.buttonStyle(AppButtonStyle(theme: theme))
                         Button("Clear words") { voice.clear() }.buttonStyle(AppButtonStyle(theme: theme))
                     }
@@ -348,7 +654,10 @@ struct VoiceCheckView: View {
             .sheet(isPresented: $setupVisible) { SetupGuidesView(theme: theme, initialGroup: "voice", onVoiceCheck: {}) }
             .onChange(of: phase) {
                 if $0 == .active { voice.refreshPermissionGuidance() }
-                else { voice.clear("Microphone stopped when you left the voice check.") }
+                else {
+                     voice.clear("Microphone stopped when you left the voice check.")
+                     voice.suspendLocalVideo()
+                 }
             }
             .onReceive(NotificationCenter.default.publisher(for: AVAudioSession.interruptionNotification)) { _ in voice.interrupt("Audio interrupted — tap Start to try again.") }
             .onReceive(NotificationCenter.default.publisher(for: AVAudioSession.routeChangeNotification)) { _ in voice.routeChanged() }
@@ -358,7 +667,7 @@ struct VoiceCheckView: View {
             .onReceive(NotificationCenter.default.publisher(for: AVAudioSession.mediaServicesWereResetNotification)) { _ in
                 voice.interrupt("Audio services reset. Tap Start to try again.")
             }
-            .onDisappear { voice.clear() }
+            .onDisappear { voice.clear(); voice.suspendLocalVideo() }
     }
 }
 
@@ -506,6 +815,9 @@ struct TVPhotoView: View {
     @State private var instructions = false
     @State private var detailsExpanded = false
     @State private var setupRequest: SetupGuideRequest?
+    @State private var showsVizioAddressPictures = false
+    @State private var networkCheckVisible = false
+    @State private var checkDraft: AQSSLocalTVTarget?
     @State private var cameraNotice = ""
     private var suggestedChoice: AQSSTutorialChoice? {
         guard let brand = photo.hints.brand?.lowercased() else { return nil }
@@ -518,7 +830,7 @@ struct TVPhotoView: View {
                 VStack(alignment: .leading, spacing: 18) {
                     Image(systemName: "tv").font(.system(size: 42)).foregroundColor(theme.violet).accessibilityHidden(true)
                     Text("Find your TV details").font(.title.bold())
-                    Text("Photograph the TV’s About screen or model label. Keep passwords out of the picture.")
+                    Text("Photograph your TV’s model label, About screen, or IP address row. Keep passwords out of the picture.")
                     Button("Take a TV photo") { choosePhoto(camera: true) }.buttonStyle(AppButtonStyle(theme: theme, primary: true))
                     Button("Choose a photo") { choosePhoto(camera: false) }.buttonStyle(AppButtonStyle(theme: theme))
                     if !cameraNotice.isEmpty { Text(cameraNotice).foregroundColor(theme.warning) }
@@ -529,6 +841,16 @@ struct TVPhotoView: View {
                             .buttonStyle(AppButtonStyle(theme: theme, primary: true))
                             .accessibilityIdentifier("photo-use-brand")
                     }
+                    if onUseBrand == nil, let target = photo.hints.vizioCheckTarget {
+                        Text("Address read from photo: \(target.address)").monospacedDigit()
+                        Text("Compare this address with your VIZIO TV’s network screen.")
+                        Button("Use address in VIZIO check") {
+                            guard phase == .active, !networkCheckVisible else { return }
+                            checkDraft = target
+                            networkCheckVisible = true
+                        }.buttonStyle(AppButtonStyle(theme: theme, primary: true))
+                            .accessibilityIdentifier("photo-use-vizio-address")
+                    }
                     if detailsExpanded {
                         Text("Model: \(photo.hints.model ?? "Not identified")")
                         Text("TV IP hint: \(photo.hints.address ?? "Not identified")")
@@ -536,6 +858,10 @@ struct TVPhotoView: View {
                     Text("Check the suggested details on your TV. A photo does not connect it. Choosing another picture clears these details.").font(.caption).foregroundColor(theme.muted)
                     Button(instructions ? "? Hide photo help" : "? Photo help") { instructions.toggle() }.buttonStyle(AppButtonStyle(theme: theme)).accessibilityIdentifier("photo-help")
                     if instructions {
+                        if onUseBrand == nil && TVCheckPictureGuide.Context.photoSetup.route != nil {
+                            Button("VIZIO V505M-K09 address pictures") { showsVizioAddressPictures = true }
+                                .buttonStyle(AppButtonStyle(theme: theme))
+                        }
                         Text("1. On your TV, open Settings. Look for About, Support or Device information to find the model. Menu names differ by TV.")
                         Text("2. Look for Network, Connection or Network status, then IP settings. Photograph the row labeled IP address — not Gateway or DNS. A label on the back usually does not show the current IP address.")
                         Text("3. Put your phone and TV on the same home Wi-Fi. Avoid a guest network. An IP address can change and does not prove which TV owns it.")
@@ -551,6 +877,19 @@ struct TVPhotoView: View {
             }.accessibilityIdentifier("photo-review-scroll")
         }.background(theme.background.ignoresSafeArea()).foregroundColor(theme.text)
             .sheet(item: $setupRequest) { request in SetupGuidesView(theme: theme, initialGroup: request.group) }
+            .sheet(isPresented: $showsVizioAddressPictures) {
+                if TVCheckPictureGuide.Context.photoSetup.route != nil {
+                    TVCheckPictureGuide(theme: theme, context: .photoSetup) {
+                        showsVizioAddressPictures = false
+                    }
+                }
+            }
+            .sheet(isPresented: $networkCheckVisible, onDismiss: { checkDraft = nil }) {
+                TVNetworkCheckView(theme: theme, takePhotoTarget: {
+                    defer { checkDraft = nil }
+                    return checkDraft
+                })
+            }
             .sheet(item: $pickerRequest) { request in
                 Group {
                     if request.camera { LocalCameraPicker { finishPhoto($0, request: request) } }
@@ -561,7 +900,7 @@ struct TVPhotoView: View {
             .onDisappear { photo.stopObservingWork(); photo.clear() }
             .onChange(of: phase) { value in
                 if value == .active { photo.checkDeadline(); photo.observeWork() }
-                else { photo.stopObservingWork() }
+                else { checkDraft = nil; photo.stopObservingWork() }
             }
     }
     private func choosePhoto(camera: Bool) {

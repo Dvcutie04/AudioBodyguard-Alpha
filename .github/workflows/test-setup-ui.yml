@@ -2,13 +2,15 @@ name: Two-phone test setup worksheet verification
 
 on:
   push:
-    branches: ["aqss/test-setup-worksheet"]
+    branches: ["aqss/test-setup-worksheet", "aqss/overnight-cyan-guide-audit"]
   pull_request:
     branches: ["main"]
     paths:
       - "native/ios-app/**"
       - "native/ios/**"
       - "tools/check_ios*clipboard.py"
+      - "tools/prepare_ios_worksheet_rotation_test.py"
+      - "tests/test_ios_worksheet_rotation_preparation.py"
       - ".github/workflows/test-setup-ui.yml"
   workflow_dispatch:
 
@@ -139,6 +141,13 @@ jobs:
           }, indent=2) + '\n')
           print('SWIFT_SETUP_MISSING_API_REPRODUCED ' + source)
           PYTHON
+      - name: Prepare attributed rotation-safe worksheet test source
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 tools/prepare_ios_worksheet_rotation_test.py \
+            native/ios-app/UITests/AQSSReadOnlyUITests.swift \
+            --receipt "$RUNNER_TEMP/sound-check-screenshots/compiled-test-source.json"
       - name: Build and prepare native worksheet tests
         shell: bash
         run: |
@@ -200,12 +209,71 @@ jobs:
             "$RUNNER_TEMP/sound-test-setup-copy.xcresult" \
             "$RUNNER_TEMP/test-setup-build/Build/Products/Release-iphonesimulator/AQSSReadOnly.app/Info.plist" \
             "$RUNNER_TEMP/setup-clipboard"
+      # Runs after the real-app checks, even if they fail; no retry or
+      # substitution of the failed assertion. Separate, fixed-text UIKit app.
+      - name: Compare independent UIKit system Share on same Simulator
+        if: always() && env.AQSS_SIMULATOR != ''
+        shell: bash
+        run: |
+          set -euo pipefail
+          control_app="$RUNNER_TEMP/aqss-independent-share-fixture/NativeShareControl.app"
+          mkdir -p "$control_app"
+          xcrun --sdk iphonesimulator swiftc \
+            -sdk "$(xcrun --sdk iphonesimulator --show-sdk-path)" \
+            -target "$(uname -m)-apple-ios15.0-simulator" \
+            -o "$control_app/NativeShareControl" \
+            tools/ios_share_control/ShareControl.swift
+          python3 - "$control_app" <<'PYTHON'
+          import pathlib, plistlib, sys
+          app = pathlib.Path(sys.argv[1])
+          with (app / 'Info.plist').open('wb') as file:
+              plistlib.dump({
+                  'CFBundleDevelopmentRegion': 'en',
+                  'CFBundleDisplayName': 'Native Share Control',
+                  'CFBundleExecutable': 'NativeShareControl',
+                  'CFBundleIdentifier': 'com.aqss.native-share-control.fixture',
+                  'CFBundleInfoDictionaryVersion': '6.0',
+                  'CFBundleName': 'NativeShareControl',
+                  'CFBundlePackageType': 'APPL',
+                  'CFBundleShortVersionString': '0.0.1',
+                  'CFBundleVersion': '1',
+                  'LSRequiresIPhoneOS': True,
+                  'UIDeviceFamily': [1, 2],
+                  'UISupportedInterfaceOrientations': [
+                      'UIInterfaceOrientationPortrait',
+                      'UIInterfaceOrientationLandscapeLeft',
+                      'UIInterfaceOrientationLandscapeRight',
+                  ],
+              }, file)
+          PYTHON
+          xcrun simctl install "$AQSS_SIMULATOR" "$control_app"
+          xcodebuild test-without-building \
+            -xctestrun "$RUNNER_TEMP/test-setup-build/Build/Products/test-setup.xctestrun" \
+            -destination "platform=iOS Simulator,id=$AQSS_SIMULATOR" -parallel-testing-enabled NO \
+            -resultBundlePath "$RUNNER_TEMP/sound-test-setup-control.xcresult" \
+            -only-testing:AQSSReadOnlyUITests/AQSSReadOnlyUITests/testIndependentUIKitShareControlCopy
       - name: Clear isolated clipboard fixture
         if: always()
         run: python3 tools/check_ios_build_share_clipboard.py clear "$AQSS_SIMULATOR" --output "$RUNNER_TEMP/setup-clipboard"
+      - name: Retain opt-in simulator Share lifecycle events
+        if: always()
+        shell: bash
+        run: |
+          set -u
+          mkdir -p "$RUNNER_TEMP/sound-check-screenshots"
+          trace="$RUNNER_TEMP/sound-check-screenshots/native-share-lifecycle.log"
+          if [ -n "${AQSS_SIMULATOR:-}" ]; then
+            xcrun simctl spawn "$AQSS_SIMULATOR" log show --last 40m --style compact \
+              --predicate 'eventMessage CONTAINS "AQSS_SHARE_TRACE"' > "$trace" 2>&1 || true
+            if ! grep -q 'AQSS_SHARE_TRACE.*event=' "$trace"; then
+              printf '%s\n' 'No AQSS_SHARE_TRACE events found; this is not proof of a successful native Share presentation.' >> "$trace"
+            fi
+          else
+            printf '%s\n' 'Simulator not initialized; Share lifecycle trace unavailable.' > "$trace"
+          fi
       - name: Export native worksheet screenshots
         if: always()
-        run: python3 tools/export_ios_input_screenshots.py "$RUNNER_TEMP" test-setup-cancel test-setup-immediate test-setup-copy
+        run: python3 tools/export_ios_input_screenshots.py "$RUNNER_TEMP" test-setup-cancel test-setup-immediate test-setup-copy test-setup-control
       - name: Retain worksheet receipts and screenshots
         if: always()
         uses: actions/upload-artifact@v4

@@ -6,9 +6,12 @@ final class SetupPresentationTests: XCTestCase {
         let route = try XCTUnwrap(AQSSSetupContent.routes.first { $0.id == "google_remote" })
         let original = route.steps[1]
         let iphone = AQSSSetupPresentation.step(original, phone: .iphone)
+        let ipad = AQSSSetupPresentation.step(original, phone: .ipad)
         let android = AQSSSetupPresentation.step(original, phone: .android)
         XCTAssertEqual(iphone.screen, "iPhone • App Store")
         XCTAssertEqual(iphone.items[iphone.focus], "Get")
+        XCTAssertEqual(ipad.screen, "iPad • App Store")
+        XCTAssertEqual(ipad.items[ipad.focus], "Get")
         XCTAssertEqual(android.screen, "Android • Google Play")
         XCTAssertEqual(android.items[android.focus], "Install")
         XCTAssertEqual(original.screen, "App Store or Google Play")
@@ -36,5 +39,6 @@ final class SetupPresentationTests: XCTestCase {
         XCTAssertEqual(AQSSSetupPhone.androidManufacturer("Motorola"), .android)
         XCTAssertEqual(AQSSSetupPhone.androidManufacturer(""), .android)
         XCTAssertEqual(AQSSSetupPhone.iphone.label, "iPhone")
+        XCTAssertEqual(AQSSSetupPhone.ipad.label, "iPad")
     }
 }

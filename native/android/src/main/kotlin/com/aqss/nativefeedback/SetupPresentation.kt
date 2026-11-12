@@ -3,8 +3,9 @@ package com.aqss.nativefeedback
 import java.util.Locale
 
 /** Presentation only; a phone label does not identify, pair or authorize a TV. */
-enum class SetupPhone(val label: String) {
-    IPHONE("iPhone"), PIXEL("Google Pixel"), GALAXY("Samsung Galaxy"), ANDROID("Android");
+enum class SetupPhone(val label: String, val wifiRoute: String? = null) {
+    IPHONE("iPhone", "phone_iphone"), PIXEL("Google Pixel", "phone_pixel"),
+    GALAXY("Samsung Galaxy", "phone_galaxy"), ANDROID("Android");
     companion object {
         fun androidManufacturer(value: String): SetupPhone = when (value.lowercase(Locale.ROOT)) {
             "samsung" -> GALAXY

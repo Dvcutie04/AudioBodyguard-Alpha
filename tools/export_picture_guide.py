@@ -20,6 +20,7 @@ def esc(s): return html.escape(str(s), quote=True)
 def svg(step, number, route):
     label = step['items'][step['focus']]
     kind = step.get('picture_surface', step['surface'])
+    tablet = kind == 'phone' and step['screen'].startswith('iPad •')
     if kind == 'choice': label = 'Choose one: ' + ' or '.join(step['items'])
     title = f"Picture {number}. {step['screen']}. Highlighted: {label}."
     pieces = [f'<svg viewBox="0 0 640 420" role="img" aria-label="{esc(title)}"><title>{esc(title)}</title>', '<rect width="640" height="420" rx="22" fill="#18253c"/>']
@@ -80,17 +81,21 @@ def svg(step, number, route):
         text(250,337,'TV remote',size=16)
     else:
         phone = kind == 'phone'
-        x,w = (92,456) if phone else (18,604)
+        x,w = (50,540) if tablet else (92,456) if phone else (18,604)
         rect(x,18,w,342,'#536c96');rect(x+6,24,w-12,330,'#0c172c')
         text(x+18,52,('On your TV: ' if kind=='tv' else '')+step['screen'],size=22 if phone else 20)
-        text(x+w-140,380,'Phone screen' if phone else 'TV screen' if kind=='tv' else 'TV + phone',size=12)
+        text(x+w-140,380,'Tablet screen' if tablet else 'Phone screen' if phone else 'TV screen' if kind=='tv' else 'TV + phone',size=12)
         for i,item in enumerate(step['items']):row(x+18,78+i*54,w-36,item,i==step['focus'])
         if kind == 'tv':rect(292,360,56,12,'#536c96');rect(250,372,140,6,'#536c96')
         elif phone:rect(286,344,68,4,'#536c96')
         elif kind == 'both' and len(step['items']) <= 2:
             rect(80,236,210,100,'#243958');rect(173,336,24,10,'#536c96')
             rect(420,214,82,132,'#243958');text(114,276,'TV',size=21);text(430,276,'Phone',size=14)
-    text(28,398,('TV remote: arrows + OK' if step['surface']=='tv' else 'TV + phone' if step['surface']=='both' else 'On your phone')+' · '+step['action'],color='#60d8e5',size=19)
+    if route['id'] == 'vizio_v505m_k09_address':
+        caption = {'remote': 'On your TV remote', 'tv': 'On your TV', 'phone': 'On your phone'}.get(kind, 'Follow the highlighted step')
+    else:
+        caption = ('TV remote: arrows + OK' if step['surface']=='tv' else 'TV + phone' if step['surface']=='both' else 'On your iPad' if tablet else 'On your phone')+' · '+step['action']
+    text(28,398,caption,color='#60d8e5',size=19)
     pieces.append('</svg>');return ''.join(pieces)
 
 def render(data):

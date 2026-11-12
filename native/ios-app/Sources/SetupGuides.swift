@@ -30,6 +30,7 @@ struct SetupGuidesView: View {
     @State private var initialized = false
     @State private var detailsExpanded = false
     @State private var pickerExpanded = false
+    @State private var brandQuery = ""
     @State private var referencesExpanded = false
     private struct Location {
         let group: String
@@ -43,7 +44,8 @@ struct SetupGuidesView: View {
     private var group: AQSSSetupGroup? {
         guard let original = AQSSSetupContent.groups.first(where: { $0.id == groupID }) else { return nil }
         if groupID == "phone" {
-            return AQSSSetupGroup(id: original.id, title: original.title, routes: ["phone_iphone"], primaryRoutes: ["phone_iphone"])
+            let route = UIDevice.current.userInterfaceIdiom == .pad ? "phone_ipad" : "phone_iphone"
+            return AQSSSetupGroup(id: original.id, title: original.title, routes: [route], primaryRoutes: [route])
         }
         guard ["google", "alexa", "both"].contains(groupID),
               let tv = AQSSSetupContent.groups.first(where: { $0.id == deviceGroup }) else { return original }
@@ -56,9 +58,13 @@ struct SetupGuidesView: View {
     private var route: AQSSSetupRoute? { AQSSSetupContent.routes.first { $0.id == routeID } }
     private var step: AQSSSetupStep? {
         guard let route = route, route.steps.indices.contains(index) else { return nil }
-        return AQSSSetupPresentation.step(route.steps[index], phone: .iphone)
+        return AQSSSetupPresentation.step(route.steps[index], phone: UIDevice.current.userInterfaceIdiom == .pad ? .ipad : .iphone)
     }
     private var key: String { "\(groupID)-\(routeID ?? "")-\(index)-\(mismatch)" }
+    private var phoneLabel: String { UIDevice.current.userInterfaceIdiom == .pad ? "iPad" : "iPhone" }
+    private var phoneSurfaceText: String { phoneLabel == "iPad" ? "On your iPad" : "On your phone" }
+    private var bothSurfaceText: String { phoneLabel == "iPad" ? "Your TV + your iPad" : "Your TV + your phone" }
+    private var phoneSurfaceIcon: String { phoneLabel == "iPad" ? "ipad" : "iphone" }
     private var title: String { mismatch ? "Find the right screen" : step?.title ?? route?.title ?? (group == nil ? "Choose your TV or app" : group!.title) }
     private var platforms: [(String, String)] {
         switch groupID {
@@ -71,6 +77,18 @@ struct SetupGuidesView: View {
     }
 
     var body: some View {
+        // iPadOS 18 changed automatic sheets to compact form sizing. This
+        // illustrated guide needs page-sized space, especially at large text.
+        // The system adapts it to the hosting window; iPhone and older iOS
+        // retain their existing presentation. State remains owned by this view.
+        if #available(iOS 18.0, *), UIDevice.current.userInterfaceIdiom == .pad {
+            guideContent.presentationSizing(.page)
+        } else {
+            guideContent
+        }
+    }
+
+    private var guideContent: some View {
         VStack(spacing: 0) {
             VStack(spacing: 10) {
                 HStack {
@@ -93,7 +111,7 @@ struct SetupGuidesView: View {
             GuideScrollView(screenKey: key, identifier: "setup-scroll", onStepReady: { key in headingFocused = key }) {
                 VStack(alignment: .leading, spacing: 18) {
                     if let group = group {
-                        Text("\(group.title)  ·  iPhone").font(.caption.weight(.semibold)).foregroundColor(theme.muted)
+                        Text("\(group.title)  ·  \(phoneLabel)").font(.caption.weight(.semibold)).foregroundColor(theme.muted)
                             .fixedSize(horizontal: false, vertical: true).accessibilityIdentifier("setup-device-context")
                     }
                     Text(title).font(.title.bold()).fixedSize(horizontal: false, vertical: true)
@@ -101,7 +119,8 @@ struct SetupGuidesView: View {
                     if mismatch { mismatchContent }
                     else if let route = route {
                         if let step = step {
-                            Label(step.pictureKind == "remote" ? "On your TV remote" : step.surface == "tv" ? "On your TV · use the remote" : step.surface == "both" ? "Your TV + your phone" : "On your phone", systemImage: step.pictureKind == "remote" ? "appletvremote.gen1" : step.surface == "phone" ? "iphone" : "tv")
+                            Label(step.pictureKind == "remote" ? "On your TV remote" : step.surface == "tv" ? "On your TV · use the remote" : step.surface == "both" ? bothSurfaceText : phoneSurfaceText,
+                                  systemImage: step.pictureKind == "remote" ? "appletvremote.gen1" : step.surface == "phone" ? phoneSurfaceIcon : "tv")
                                 .font(.subheadline.weight(.semibold)).foregroundColor(theme.accent)
                             Text(step.instruction).font(.body.weight(.medium)).fixedSize(horizontal: false, vertical: true)
                             if index == 14 && route.id == "samsung_ok" {
@@ -127,7 +146,7 @@ struct SetupGuidesView: View {
                                 ProfileMenuIllustration(step: step, number: index + 1, theme: theme)
                             } else if step.pictureKind == "remote" {
                                 RemoteButtonsIllustration(step: step, number: index + 1, theme: theme)
-                            } else { SetupScreenIllustration(step: step, number: index + 1, theme: theme) }
+                            } else { SetupScreenIllustration(step: step, number: index + 1, theme: theme, phoneIsPad: phoneLabel == "iPad") }
                                 }
                             }
                             disclosure("? Step help", id: "setup-step-details") { detailsExpanded.toggle() }
@@ -172,7 +191,15 @@ struct SetupGuidesView: View {
                         }
                     } else {
                         Text("Choose a name to start the pictures.").foregroundColor(theme.muted)
-                        ForEach(AQSSSetupContent.groups.filter { !["both", "neither"].contains($0.id) && !$0.id.contains("_") }, id: \.id) { item in
+                        TextField("Search TV and app brands", text: $brandQuery)
+                            .textFieldStyle(.roundedBorder)
+                            .textInputAutocapitalization(.never)
+                            .autocorrectionDisabled()
+                            .accessibilityIdentifier("setup-brand-search")
+                        ForEach(AQSSSetupContent.groups.filter {
+                            !["both", "neither"].contains($0.id) && !$0.id.contains("_")
+                                && (brandQuery.isEmpty || $0.title.localizedCaseInsensitiveContains(brandQuery))
+                        }, id: \.id) { item in
                             control(item.title, icon: item.id == "voice" ? "mic" : ["google", "alexa"].contains(item.id) ? "house" : "tv", id: "setup-group-\(item.id)") { chooseGroup(item.id) }
                         }
                     }
@@ -258,7 +285,10 @@ struct SetupGuidesView: View {
     private func chooseGroup(_ id: String, recording: Bool = true) {
         if recording { remember() }
         groupID = AQSSSetupContent.groups.contains { $0.id == id } ? id : ""
-        routeID = groupID == "voice" ? "voice" : groupID == "phone" ? "phone_iphone" : nil
+        // A direct Phone Wi-Fi guide must follow this device, not always iPhone.
+        // The shared catalog contains distinct, illustrated iPad and iPhone routes.
+        routeID = groupID == "voice" ? "voice" : groupID == "phone"
+            ? (UIDevice.current.userInterfaceIdiom == .pad ? "phone_ipad" : "phone_iphone") : nil
         index = groupID == "voice" ? 0 : -1
         mismatch = false
         detailsExpanded = false
@@ -286,9 +316,9 @@ struct SetupGuidesView: View {
         } else { Label(title, systemImage: icon) }
     }
     @ViewBuilder private func introduction(_ route: AQSSSetupRoute) -> some View {
-        HStack(spacing: 20) { Image(systemName: route.id.hasPrefix("phone_") ? "wifi" : "tv"); Image(systemName: "arrow.right"); Image(systemName: "iphone") }
+        HStack(spacing: 20) { Image(systemName: route.id.hasPrefix("phone_") ? "wifi" : "tv"); Image(systemName: "arrow.right"); Image(systemName: phoneSurfaceIcon) }
             .font(.system(size: 36)).foregroundColor(theme.violet).accessibilityHidden(true)
-        Text(route.id.hasPrefix("phone_") ? "Have your phone and home Wi-Fi password ready." : route.id == "roku_phone" ? "Keep your phone and TV on the same Wi-Fi." : route.steps.first?.surface == "tv" ? "Have your TV remote ready." : "Have your phone and TV ready.").font(.body)
+        Text(route.id.hasPrefix("phone_") ? "Have your \(phoneLabel) and home Wi-Fi password ready." : route.id == "roku_phone" ? "Keep your \(phoneLabel) and TV on the same Wi-Fi." : route.steps.first?.surface == "tv" ? "Have your TV remote ready." : "Have your \(phoneLabel) and TV ready.").font(.body)
         Text("\(route.steps.count) pictures. One step at a time.").foregroundColor(theme.accent)
         if !route.models.isEmpty {
             Text("Documented model examples: \(route.models.joined(separator: ", "))")
@@ -350,7 +380,7 @@ struct SetupGuidesView: View {
     }
     private var mismatchContent: some View {
         VStack(alignment: .leading, spacing: 16) {
-            Image(systemName: route?.id.hasPrefix("phone_") == true ? "iphone" : "tv.and.mediabox").font(.system(size: 40)).foregroundColor(theme.violet).accessibilityHidden(true)
+            Image(systemName: route?.id.hasPrefix("phone_") == true ? phoneSurfaceIcon : "tv.and.mediabox").font(.system(size: 40)).foregroundColor(theme.violet).accessibilityHidden(true)
             Text("Choose the name or menu that matches your device.")
             control("Choose another model or menu", icon: "rectangle.stack", id: "setup-other-menu") { remember(); routeID = nil; index = -1; mismatch = false; pickerExpanded = true; detailsExpanded = false }
             control("Choose another TV or app", icon: "tv", id: "setup-other-group") { chooseGroup("") }
@@ -416,14 +446,16 @@ private final class SetupProgressStore: ObservableObject {
 
 /// A scalable screen mock-up with a device frame, numbered target and action pictogram.
 /// Text also has an accessible description; color is never the only instruction.
-private struct SetupScreenIllustration: View {
+struct SetupScreenIllustration: View {
     let step: AQSSSetupStep
     let number: Int
     let theme: AppTheme
+    var phoneIsPad = false
     private var choice: Bool { step.pictureKind == "choice" }
     private var screenOnTV: Bool { step.pictureKind == "tv" || (choice && step.surface == "tv") }
     private var screenOnPhone: Bool { step.pictureKind == "phone" || (choice && step.surface == "phone") }
     private var nearbyTVs: Bool { step.screen == "Google TV" && step.items == ["TVs nearby"] }
+    private var tabletScreen: Bool { screenOnPhone && (phoneIsPad || step.screen.hasPrefix("iPad •")) }
     private var glyph: String {
         switch step.action {
         case "home": return "house.fill"
@@ -440,12 +472,12 @@ private struct SetupScreenIllustration: View {
     }
     var body: some View {
         VStack(spacing: 10) {
-            HStack { Text("Illustration").font(.caption2.weight(.semibold)); Spacer(); Image(systemName: step.surface == "phone" ? "iphone" : "tv") }.foregroundColor(theme.muted)
+            HStack { Text("Illustration").font(.caption2.weight(.semibold)); Spacer(); Image(systemName: tabletScreen || (step.surface == "both" && phoneIsPad) ? "ipad" : step.surface == "phone" ? "iphone" : "tv") }.foregroundColor(theme.muted)
             if step.surface == "both" {
                 HStack(spacing: 16) {
                     Image(systemName: "tv").font(.system(size: 34))
                     Image(systemName: step.action == "scan" ? "camera.viewfinder" : "arrow.right").font(.title2)
-                    Image(systemName: "iphone").font(.system(size: 34))
+                    Image(systemName: phoneIsPad ? "ipad" : "iphone").font(.system(size: 34))
                 }.foregroundColor(theme.violet).padding(.vertical, 6)
             }
             VStack(spacing: 0) {
@@ -485,9 +517,9 @@ private struct SetupScreenIllustration: View {
                     }
                 }.padding(12)
                 if screenOnPhone { Capsule().fill(theme.muted).frame(width: 70, height: 4).padding(10) }
-            }.background(theme.surface).clipShape(RoundedRectangle(cornerRadius: screenOnTV ? 12 : 26))
-                .overlay(RoundedRectangle(cornerRadius: screenOnTV ? 12 : 26).stroke(theme.outline, lineWidth: 3))
-                .padding(.horizontal, step.surface == "phone" ? 12 : 0)
+            }.background(theme.surface).clipShape(RoundedRectangle(cornerRadius: screenOnTV ? 12 : tabletScreen ? 18 : 26))
+                .overlay(RoundedRectangle(cornerRadius: screenOnTV ? 12 : tabletScreen ? 18 : 26).stroke(theme.outline, lineWidth: 3))
+                .padding(.horizontal, step.surface == "phone" ? (tabletScreen ? 4 : 12) : 0)
             if screenOnTV {
                 VStack(spacing: 0) { Rectangle().fill(theme.outline).frame(width: 14, height: 12); Capsule().fill(theme.outline).frame(width: 90, height: 4) }
             }
@@ -503,12 +535,12 @@ private struct SetupScreenIllustration: View {
             }.foregroundColor(theme.violet).padding(.top, 4)
         }.padding(14).background(theme.raised.opacity(0.7)).clipShape(RoundedRectangle(cornerRadius: 22))
             .accessibilityElement(children: .ignore)
-            .accessibilityLabel("Illustration \(number). \(screenOnTV ? "TV screen" : screenOnPhone ? "Phone screen" : "TV and phone"): \(step.screen). \(choice ? "Choose one; neither is selected" : "Highlighted"): \(step.focusLabel). Action: \(step.action). \(step.instruction)")
+            .accessibilityLabel("Illustration \(number). \(screenOnTV ? "TV screen" : screenOnPhone ? (tabletScreen ? "Tablet screen" : "Phone screen") : (phoneIsPad ? "TV and iPad" : "TV and phone")): \(step.screen). \(choice ? "Choose one; neither is selected" : "Highlighted"): \(step.focusLabel). Action: \(step.action). \(step.instruction)")
             .accessibilityIdentifier("setup-illustration")
     }
 }
 
-private struct RemoteButtonsIllustration: View {
+struct RemoteButtonsIllustration: View {
     let step: AQSSSetupStep
     let number: Int
     let theme: AppTheme

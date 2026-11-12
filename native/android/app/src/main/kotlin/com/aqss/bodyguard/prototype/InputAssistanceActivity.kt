@@ -11,6 +11,7 @@ import android.provider.Settings
 import android.speech.*
 import android.view.View
 import android.widget.*
+import com.aqss.nativefeedback.LocalTVTarget
 import com.aqss.nativefeedback.TVPhotoHints
 import com.aqss.nativefeedback.PhotoReviewRun
 import com.aqss.nativefeedback.PhotoWorkSlot
@@ -18,6 +19,10 @@ import com.aqss.nativefeedback.boundedTVPhotoText
 import com.aqss.nativefeedback.TutorialContent
 import com.aqss.nativefeedback.ForegroundMicrophoneGate
 import com.aqss.nativefeedback.ForegroundAudioExclusion
+import com.aqss.nativefeedback.OwnedSkipAction
+import com.aqss.nativefeedback.OwnedSkipDecision
+import com.aqss.nativefeedback.OwnedSkipSnapshot
+import com.aqss.nativefeedback.OwnedVoiceSkipGate
 import com.aqss.nativefeedback.VoiceInputRun
 import com.aqss.nativefeedback.boundedRecognizedWords
 import com.google.mlkit.vision.common.InputImage
@@ -42,6 +47,272 @@ class InputAssistanceActivity : Activity() {
     private var recognizer: SpeechRecognizer? = null
     private var generation = 0L
     private val voiceRun = VoiceInputRun()
+    private val voiceSkipGate = OwnedVoiceSkipGate()
+    private var voiceSkipRunId: String? = null
+    // Emulator-only supplied FINAL TEXT, deliberately not microphone/OS recognition.
+    private val finalTextFixtureGate = OwnedVoiceSkipGate()
+    private var finalTextFixtureRunId: String? = null
+    private var finalTextFixtureSequence = 0
+    private val finalTextFixtureEnabled: Boolean
+        get() = (applicationInfo.flags and android.content.pm.ApplicationInfo.FLAG_DEBUGGABLE) != 0 &&
+            (Build.HARDWARE == "ranchu" || Build.FINGERPRINT.startsWith("generic"))
+    private var demoGeneration = 1
+    private var demoIntroAvailable = true
+    private var demoRecapAvailable = true
+    private var demoIntroButton: Button? = null
+    private var demoRecapButton: Button? = null
+    private var demoResetButton: Button? = null
+    private var demoStatus: TextView? = null
+    // Silent, bundled local video only. This is NOT an external media adapter.
+    private var localVideo: VideoView? = null
+    private var localMedia: android.media.MediaPlayer? = null
+    private var localVideoStatus: TextView? = null
+    private var localVideoActive = false
+    private var localVideoBusy = false
+    private var localVideoEpoch = 0
+    private var localStage: OwnedSkipAction? = null
+    // Persist only whether an abandoned owned-video trial requires explicit Reset.
+    // Do not persist a media control, recognized words, or an authorization.
+    private val localVideoNeedsResetKey = "needs_reset_v1"
+    private val localVideoPrefs get() = getSharedPreferences("aqss_owned_local_video", MODE_PRIVATE)
+
+    private fun updateLocalStatus(message: String) { localVideoStatus?.text = message }
+
+    private fun retireFinalTextFixture() {
+        finalTextFixtureGate.stop()
+        finalTextFixtureRunId = null
+    }
+    private fun readyFinalTextFixture() {
+        if (!finalTextFixtureEnabled) return
+        retireFinalTextFixture()
+        finalTextFixtureSequence++
+        val id = "fixture-${finalTextFixtureSequence}"
+        if (finalTextFixtureGate.start(id, demoSnapshot())) finalTextFixtureRunId = id
+    }
+    private fun requestFinalTextFixture(action: OwnedSkipAction) {
+        if (!finalTextFixtureEnabled || running || recognizer != null) return
+        val id = finalTextFixtureRunId ?: return
+        // Explicit synthetic final text: no OS recognizer, permission or audio was exercised.
+        val words = if (action == OwnedSkipAction.SKIP_INTRO)
+            "Audio Bodyguard, skip intro" else "Audio Bodyguard, skip recap"
+        val decision = finalTextFixtureGate.requestFinal(
+            words, id, demoSnapshot(), permitted = true,
+            foreground = visible && hasWindowFocus() && !isFinishing && !isDestroyed,
+            pressOwnedButton = ::pressDemo)
+        if (decision != OwnedSkipDecision.REQUESTED) {
+            demoStatus?.text = "Fixture final text refused; no additional player action"
+        }
+    }
+
+    // Debug-emulator-only synthetic final-TEXT cancellation. It does not stop
+    // microphone capture or pretend an OS recognizer produced the phrase.
+    private fun cancelFinalTextFixture() {
+        if (!finalTextFixtureEnabled) return
+        retireFinalTextFixture()
+        demoStatus?.text = "Fixture final text canceled; no audio"
+    }
+
+    // A competing user seek on the same actual local decoder, for emulator-only tests.
+    // It is NOT voice recognition and never contacts a remote player.
+    private fun moveFinalTextFixturePlayhead() {
+        if (!finalTextFixtureEnabled || running || recognizer != null ||
+            !localVideoActive || localVideoBusy) return
+        val player = localMedia ?: return
+        val stage = localStage ?: return
+        val target = if (stage == OwnedSkipAction.SKIP_INTRO) 1000 else 5000
+        val epoch = ++localVideoEpoch
+        localVideoBusy = true
+        player.setOnSeekCompleteListener { observedPlayer ->
+            if (localVideoEpoch != epoch) return@setOnSeekCompleteListener
+            localVideoBusy = false
+            val actual = observedPlayer.currentPosition
+            if (kotlin.math.abs(actual - target) > 300) {
+                updateLocalStatus("Local video: fixture playhead move NOT observed")
+            } else {
+                updateLocalStatus(if (stage == OwnedSkipAction.SKIP_INTRO)
+                    "Local video moved: intro playhead now 1s"
+                    else "Local video moved: recap playhead now 5s")
+            }
+        }
+        try {
+            player.seekTo(target.toLong(), android.media.MediaPlayer.SEEK_CLOSEST)
+        } catch (_: RuntimeException) {
+            localVideoBusy = false
+            updateLocalStatus("Local video: fixture playhead move refused")
+        }
+    }
+
+    private fun closeLocalVideo() {
+        retireFinalTextFixture()
+        localVideoEpoch++; localStage = null; localVideoBusy = false
+        localVideoActive = false
+        localMedia = null
+        localVideo?.stopPlayback()
+        updateLocalStatus("Local video not prepared")
+    }
+
+    /** Backgrounded local video cannot leave its stale Skip control enabled. */
+    private fun suspendLocalVideo() {
+        if (!localVideoActive) return
+        closeLocalVideo()
+        demoIntroAvailable = false; demoRecapAvailable = false; demoGeneration++
+        demoIntroButton?.isEnabled = false; demoRecapButton?.isEnabled = false
+        demoStatus?.text = "Test player paused — reset to prepare video again"
+    }
+
+    private fun prepareLocalVideo(action: OwnedSkipAction) {
+        if (running || localVideoBusy || recognizer != null) return
+        // A recreated view must not revive a retired local-player trial without Reset.
+        if (!localVideoActive && localVideoPrefs.getBoolean(localVideoNeedsResetKey, false)) {
+            updateLocalStatus("Local video unavailable: reset required before preparing again")
+            return
+        }
+        val video = localVideo ?: return
+        // Fail closed if the local-only retirement marker cannot be saved.
+        if (!localVideoPrefs.edit().putBoolean(localVideoNeedsResetKey, true).commit()) {
+            updateLocalStatus("Local video unavailable: trial state could not be saved")
+            return
+        }
+        localVideoEpoch++; val epoch = localVideoEpoch
+        localVideoActive = true; localStage = null; localVideoBusy = true
+        demoIntroAvailable = false; demoRecapAvailable = false; demoGeneration++
+        demoIntroButton?.isEnabled = false; demoRecapButton?.isEnabled = false
+        updateLocalStatus("Local video: preparing segment")
+        val entry = if (action == OwnedSkipAction.SKIP_INTRO) 0 else 4000
+        video.setOnErrorListener { _, _, _ ->
+            if (localVideoEpoch == epoch) {
+                localVideoBusy = false
+                updateLocalStatus("Local video unavailable: media decoder failed")
+            }
+            true
+        }
+        video.setOnPreparedListener { mp ->
+            // Only a retired prepare may be ignored. The matching epoch is the active video.
+            if (localVideoEpoch != epoch) return@setOnPreparedListener
+            localMedia = mp
+            mp.setVolume(0f, 0f)
+            if (mp.duration !in 7500..8500) {
+                localVideoBusy = false
+                updateLocalStatus("Local video unavailable: wrong clip duration")
+                return@setOnPreparedListener
+            }
+            fun completeStage() {
+                if (localVideoEpoch != epoch) return
+                val observed = mp.currentPosition
+                localVideoBusy = false
+                if (kotlin.math.abs(observed - entry) > 300) {
+                    updateLocalStatus("Local video unavailable: entry not observed")
+                    return
+                }
+                localStage = action
+                demoIntroAvailable = action == OwnedSkipAction.SKIP_INTRO
+                demoRecapAvailable = action == OwnedSkipAction.SKIP_RECAP
+                demoGeneration++
+                demoIntroButton?.isEnabled = demoIntroAvailable
+                demoRecapButton?.isEnabled = demoRecapAvailable
+                updateLocalStatus(if (action == OwnedSkipAction.SKIP_INTRO)
+                    "Local video: intro ready at 0s" else "Local video: recap ready at 4s")
+                readyFinalTextFixture()
+            }
+            if (entry == 0 && mp.currentPosition <= 300) {
+                completeStage()
+            } else {
+                mp.setOnSeekCompleteListener { if (localVideoEpoch == epoch) completeStage() }
+                mp.seekTo(entry.toLong(), android.media.MediaPlayer.SEEK_CLOSEST)
+            }
+        }
+        video.setVideoURI(Uri.parse("android.resource://$packageName/${R.raw.voice_skip_sample}"))
+    }
+
+    private fun requestLocalVideoSkip(action: OwnedSkipAction): Boolean {
+        val mp = localMedia ?: return false
+        if (!localVideoActive || localVideoBusy || localStage != action) return false
+        // Re-read the actual player position before dispatch, not a cached UI
+        // label or control generation. A changed section revokes the affordance.
+        val entry = if (action == OwnedSkipAction.SKIP_INTRO) 0 else 4000
+        if (kotlin.math.abs(mp.currentPosition - entry) > 300) {
+            localStage = null
+            demoIntroAvailable = false; demoRecapAvailable = false; demoGeneration++
+            demoIntroButton?.isEnabled = false; demoRecapButton?.isEnabled = false
+            updateLocalStatus("Local video unavailable: selected section changed")
+            return false
+        }
+        localVideoEpoch++; val epoch = localVideoEpoch
+        localStage = null; localVideoBusy = true
+        demoIntroAvailable = false; demoRecapAvailable = false; demoGeneration++
+        demoIntroButton?.isEnabled = false; demoRecapButton?.isEnabled = false
+        demoStatus?.text = if (action == OwnedSkipAction.SKIP_INTRO)
+            "Test player: Skip Intro button activated" else "Test player: Skip Recap button activated"
+        updateLocalStatus("Local video: transition requested, awaiting player readback")
+        val target = if (action == OwnedSkipAction.SKIP_INTRO) 2000 else 6000
+        mp.setOnSeekCompleteListener { player ->
+            if (localVideoEpoch != epoch) return@setOnSeekCompleteListener
+            localVideoBusy = false
+            val actual = player.currentPosition
+            if (kotlin.math.abs(actual - target) > 300) {
+                updateLocalStatus("Local video: requested but position NOT verified")
+            } else {
+                // Direct native MediaPlayer position readback, not button-label proof.
+                updateLocalStatus(if (action == OwnedSkipAction.SKIP_INTRO)
+                    "Local video observed: intro ends at 2s"
+                    else "Local video observed: recap ends at 6s")
+            }
+        }
+        return try {
+            mp.seekTo(target.toLong(), android.media.MediaPlayer.SEEK_CLOSEST)
+            true // REQUESTED. Readback arrives asynchronously.
+        } catch (_: RuntimeException) {
+            localVideoBusy = false
+            updateLocalStatus("Local video: player seek was refused")
+            false
+        }
+    }
+
+    private fun demoSnapshot() = OwnedSkipSnapshot(
+        "owned-test-player", "voice-demo", "test-episode", demoGeneration,
+        demoIntroAvailable, demoIntroAvailable, demoRecapAvailable, demoRecapAvailable
+    )
+    /** Both displayed demo buttons and final admitted speech call this same handler. */
+    private fun pressDemo(action: OwnedSkipAction): Boolean {
+        if (localVideoActive) return requestLocalVideoSkip(action)
+        when (action) {
+            OwnedSkipAction.SKIP_INTRO -> if (demoIntroAvailable) {
+                demoIntroAvailable = false; demoGeneration++
+                demoStatus?.text = "Test player: Skip Intro button activated"
+            } else return false
+            OwnedSkipAction.SKIP_RECAP -> if (demoRecapAvailable) {
+                demoRecapAvailable = false; demoGeneration++
+                demoStatus?.text = "Test player: Skip Recap button activated"
+            } else return false
+        }
+        demoIntroButton?.isEnabled = demoIntroAvailable
+        demoRecapButton?.isEnabled = demoRecapAvailable
+        return true
+    }
+    private fun resetDemo() {
+        if (running) return
+        if (!localVideoPrefs.edit().remove(localVideoNeedsResetKey).commit()) {
+            demoStatus?.text = "Test player reset unavailable"
+            return
+        }
+        demoIntroAvailable = true; demoRecapAvailable = true; demoGeneration++
+        demoIntroButton?.isEnabled = true; demoRecapButton?.isEnabled = true
+        demoStatus?.text = "Test player ready — nothing connected"
+        closeLocalVideo()
+    }
+    private fun handleFinalDemoCommand(text: String?): String {
+        val id = voiceSkipRunId ?: return "Finished — no supported test-player command. Nothing sent to a TV."
+        // The Android final onResults event uses the same gate exercised in Kotlin tests.
+        return when (voiceSkipGate.requestFinal(
+            text, id, demoSnapshot(),
+            checkSelfPermission(Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED,
+            visible && hasWindowFocus() && !isFinishing, ::pressDemo
+        )) {
+            OwnedSkipDecision.REQUESTED -> "Test-player Skip button requested. No TV command sent."
+            OwnedSkipDecision.CALL_FAILED -> "Test-player button unavailable. No TV command sent."
+            OwnedSkipDecision.UNAVAILABLE -> "Skip target changed or was unavailable. No TV command sent."
+        }
+    }
     private val microphone = ForegroundMicrophoneGate.process
     private var microphoneLease: ForegroundMicrophoneGate.Lease? = null
     private var visible = false
@@ -67,6 +338,9 @@ class InputAssistanceActivity : Activity() {
     private var photoBrand: String? = null
     private var useBrand: Button? = null
     private var photoExtra: TextView? = null
+    private var photoTarget: LocalTVTarget? = null
+    private var photoAddressReview: TextView? = null
+    private var usePhotoAddress: Button? = null
     private val voiceWatchdog = object : Runnable {
         override fun run() {
             if (!validVoice(generation)) return
@@ -83,6 +357,10 @@ class InputAssistanceActivity : Activity() {
         val dark = intent.getBooleanExtra("dark", true)
         setTheme(if (dark) R.style.AQSSMidnightTheme else R.style.AQSSReadOnlyTheme)
         super.onCreate(savedInstanceState)
+        if (isVoice && localVideoPrefs.getBoolean(localVideoNeedsResetKey, false)) {
+            demoIntroAvailable = false
+            demoRecapAvailable = false
+        }
         skin = InterfaceTheme(this, dark)
         val root = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; setPadding(skin.dp(16), skin.dp(28), skin.dp(16), skin.dp(16)); setBackgroundColor(skin.background) }
         val header = LinearLayout(this)
@@ -117,7 +395,7 @@ class InputAssistanceActivity : Activity() {
     private fun voicePage() {
         label("See what your phone hears", true)
 
-        label("Tap Start, then say: ‘Make the TV quieter.’ See the incoming sound bars and recognized words.")
+        label("Tap Start, then say “Audio Bodyguard, skip intro” or “Audio Bodyguard, skip recap.”")
         status = label("Microphone off", true)
         permissionSettingsButton = action("Open app settings") { openVoicePermissionSettings() }.apply { visibility = View.GONE }
         meter = InputMeter(this, skin.violet)
@@ -126,6 +404,65 @@ class InputAssistanceActivity : Activity() {
 
         label("Recent recognized words · may change", true)
         details = label("No words recognized yet")
+        label("Test player — this app only", true)
+        label("These are test-player buttons in Audio Bodyguard only. No TV or streaming app is controlled.")
+        demoStatus = label(if (!demoIntroAvailable && !demoRecapAvailable)
+            "Test player paused — reset to prepare video again"
+            else "Test player ready — nothing connected")
+        demoIntroButton = action("Skip Intro") { pressDemo(OwnedSkipAction.SKIP_INTRO) }
+            .apply { isEnabled = demoIntroAvailable }
+        demoRecapButton = action("Skip Recap") { pressDemo(OwnedSkipAction.SKIP_RECAP) }
+            .apply { isEnabled = demoRecapAvailable }
+        val localPanel = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            visibility = View.GONE
+        }
+        action("? Local video trial") {
+            localPanel.visibility = if (localPanel.visibility == View.VISIBLE) View.GONE else View.VISIBLE
+        }
+        column.addView(localPanel)
+        localPanel.addView(TextView(this).apply {
+            text = "An eight-second silent test clip with separate intro and recap sections. No external player is controlled."
+            setTextColor(skin.text); textSize = 14f
+        })
+        fun localAction(title: String, action: OwnedSkipAction) {
+            val button = Button(this)
+            button.text = title; skin.style(button, false)
+            button.setOnClickListener { prepareLocalVideo(action) }
+            localPanel.addView(button)
+        }
+        localAction("Prepare intro video", OwnedSkipAction.SKIP_INTRO)
+        localAction("Prepare recap video", OwnedSkipAction.SKIP_RECAP)
+        if (finalTextFixtureEnabled) {
+            // Debug/emulator-only controls; absent on production/physical phone runs.
+            for ((title, selection) in listOf(
+                "Fixture final Intro text (no audio)" to OwnedSkipAction.SKIP_INTRO,
+                "Fixture final Recap text (no audio)" to OwnedSkipAction.SKIP_RECAP
+            )) {
+                localPanel.addView(Button(this).apply {
+                    text = title; skin.style(this, false)
+                    setOnClickListener { requestFinalTextFixture(selection) }
+                })
+            }
+            localPanel.addView(Button(this).apply {
+                text = "Fixture cancel final text (no audio)"; skin.style(this, false)
+                setOnClickListener { cancelFinalTextFixture() }
+            })
+            localPanel.addView(Button(this).apply {
+                text = "Fixture move playhead (no audio)"; skin.style(this, false)
+                setOnClickListener { moveFinalTextFixturePlayhead() }
+            })
+        }
+        localVideoStatus = TextView(this).apply {
+            text = "Local video not prepared"; textSize = 16f; setTextColor(skin.text)
+            setPadding(0, skin.dp(8), 0, skin.dp(8))
+        }
+        localPanel.addView(localVideoStatus)
+        localVideo = VideoView(this).apply {
+            setBackgroundColor(android.graphics.Color.BLACK)
+        }
+        localPanel.addView(localVideo, LinearLayout.LayoutParams(-1, skin.dp(112)))
+        demoResetButton = action("Reset test player") { resetDemo() }
         recent = action("Recent sound checks") {
             if (visible && hasWindowFocus() && !isFinishing && !isDestroyed &&
                 !running && recognizer == null && microphone.blocked) showRecentSoundChecks(this, skin)
@@ -136,7 +473,7 @@ class InputAssistanceActivity : Activity() {
         action("? Voice help") { skin.menu("Voice help", listOf(
             "Jump to voice steps" to { openSetup("voice") },
             "Clear words" to { stopVoice(); details.text = "No words recognized yet" }
-        ), "Digital recognizer levels are not room loudness. Recognition stays on supported phones. Review words before using them. Listening stops when you leave.") }
+        ), "Digital recognizer levels are not room loudness. A final recognized command can activate an available test-player button once. Check the result; no TV command is sent. Listening stops when you leave.") }
     }
     private fun startVoice() {
         if (!visible || !hasWindowFocus() || isFinishing) return
@@ -165,6 +502,12 @@ class InputAssistanceActivity : Activity() {
         val token = voiceRun.start(SystemClock.elapsedRealtime())
         if (token == null) { stopVoice("The input clock is unavailable. Close and reopen this screen."); return }
         generation = token; lastLevelAt = 0
+        val skipId = "voice-$token"
+        if (!voiceSkipGate.start(skipId, demoSnapshot())) {
+            stopVoice("Test-player session could not start. Tap Start to retry."); return
+        }
+        voiceSkipRunId = skipId
+        demoResetButton?.isEnabled = false
         try {
             val service = SpeechRecognizer.createOnDeviceSpeechRecognizer(this); recognizer = service; running = true
             startButton.text = "Stop listening"; status.text = "Starting microphone…"
@@ -185,7 +528,13 @@ class InputAssistanceActivity : Activity() {
                 override fun onEndOfSpeech() { if (valid()) { status.text = "Finishing recognition…"; meter.clear(); levelText.text = "No live microphone samples" } }
                 override fun onError(error: Int) { if (valid()) stopVoice(voiceErrorMessage(error)) }
                 private fun words(results: Bundle?) { results?.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION)?.firstOrNull()?.let { details.text = boundedRecognizedWords(it) } }
-                override fun onResults(results: Bundle?) { if (valid()) { words(results); stopVoice("Finished — review the words. Nothing was sent to a TV.") } }
+                override fun onResults(results: Bundle?) {
+                    if (valid()) {
+                        val finalWords = results?.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION)?.firstOrNull()
+                        words(results)
+                        stopVoice(handleFinalDemoCommand(finalWords))
+                    }
+                }
                 override fun onPartialResults(partialResults: Bundle?) { if (valid()) words(partialResults) }
                 override fun onEvent(eventType: Int, params: Bundle?) {}
             })
@@ -286,6 +635,8 @@ class InputAssistanceActivity : Activity() {
     }
     private fun stopVoice(message: String = "Microphone off") {
         running = false; voiceRun.stop(); handler.removeCallbacks(voiceWatchdog)
+        voiceSkipGate.stop(); voiceSkipRunId = null
+        demoResetButton?.isEnabled = true
         var clean = true
         recognizer?.let { service ->
             recognizer = null
@@ -308,28 +659,57 @@ class InputAssistanceActivity : Activity() {
         }
     }
     private fun photoPage() {
+        val fromTutorial = intent.getBooleanExtra("fromTutorial", false)
         label("Find your TV details", true)
-        label("Photograph the TV’s About screen or model label. Keep passwords out of the picture.")
+        label("Photograph your TV’s model label, About screen, or IP address row. Keep passwords out of the picture.")
         action("Take a TV photo", primary = true) { selectPhoto(camera = true) }
         action("Choose a photo") { selectPhoto(camera = false) }
         status = label("No photo selected", true)
         details = label("Brand: Not identified").apply { visibility = View.GONE }
-        photoExtra = label("Model: Not identified\nTV IP hint: Not identified").apply {
-            visibility = View.GONE
-        }
-        label("Check the suggested details on your TV. A photo does not connect it. Choosing another picture clears these details.")
-        if (intent.getBooleanExtra("fromTutorial", false)) {
+        if (fromTutorial) {
             useBrand = action("Use brand and continue", primary = true) {
                 photoBrand?.lowercase()?.let { id ->
                     setResult(RESULT_OK, Intent().putExtra("suggestedBrand", id)); finish()
                 }
             }.apply { visibility = View.GONE }
+        } else {
+            photoAddressReview = label("").apply { visibility = View.GONE }
+            usePhotoAddress = action("Use address in VIZIO check", primary = true) {
+                val target = photoTarget ?: return@action
+                if (!visible) return@action
+                usePhotoAddress?.isEnabled = false
+                if (!TVNetworkCheckActivity.openPhotoDraft(this, target, skin.dark)) {
+                    usePhotoAddress?.isEnabled = true
+                }
+            }.apply { visibility = View.GONE }
         }
-        action("? Photo help") { skin.menu("Photo help", listOf(
-            "Show photo details" to { photoExtra?.visibility = View.VISIBLE },
-            "Jump to illustrated setup guides" to { openSetup(photoBrand?.lowercase() ?: "") },
-            "Clear photo details" to { clearPhoto() }
-        ), "Use About in your TV’s Settings; do not move a heavy TV. For an IP hint, photograph the Network screen’s IP address row, not Gateway or DNS. Keep TV and phone on the same home Wi-Fi. Text recognition stays on this phone; details clear on close.") }
+        photoExtra = label("Model: Not identified\nTV IP hint: Not identified").apply {
+            visibility = View.GONE
+        }
+        label("Check the suggested details on your TV. A photo does not connect it. Choosing another picture clears these details.")
+        action("? Photo help") {
+            val options = buildList<Pair<String, () -> Unit>> {
+                if (!fromTutorial) add("VIZIO V505M-K09 address pictures" to {
+                    TVNetworkCheckActivity.showAddressPictures(this@InputAssistanceActivity, skin.dark)
+                })
+                add("Show photo details" to { photoExtra?.visibility = View.VISIBLE })
+                add("Jump to illustrated setup guides" to { openSetup(photoBrand?.lowercase() ?: "") })
+                add("Clear photo details" to { clearPhoto() })
+            }
+            skin.menu("Photo help", options, "Use About in your TV’s Settings; do not move a heavy TV. For an IP hint, photograph the Network screen’s IP address row, not Gateway or DNS. Keep TV and phone on the same home Wi-Fi. Text recognition stays on this phone; details clear on close.")
+        }
+    }
+
+    private fun showPhotoTarget(target: LocalTVTarget?) {
+        photoTarget = target
+        val reviewVisibility = if (target == null) View.GONE else View.VISIBLE
+        photoAddressReview?.apply {
+            text = target?.let {
+                "Address read from photo: ${it.address}\nCompare this address with your VIZIO TV’s network screen."
+            }.orEmpty()
+            visibility = reviewVisibility
+        }
+        usePhotoAddress?.visibility = reviewVisibility
     }
 
     private fun clearPhoto() {
@@ -338,6 +718,7 @@ class InputAssistanceActivity : Activity() {
         pendingPhoto = null; photoRun.clear(); cameraPhoto?.close(); cameraPhoto = null; photoBrand = null
         status.text = "No photo selected"; details.text = "Brand: Not identified"; details.visibility = View.GONE
         photoExtra?.text = "Model: Not identified\nTV IP hint: Not identified"; useBrand?.visibility = View.GONE
+        showPhotoTarget(null)
     }
     private fun stopPhotoWatchdog() {
         photoWatchdog?.let { handler.removeCallbacks(it) }
@@ -348,6 +729,7 @@ class InputAssistanceActivity : Activity() {
         stopPhotoWatchdog(); cameraPhoto?.close(); cameraPhoto = null; photoBrand = null
         details.text = "Brand: Not identified"
         photoExtra?.text = "Model: Not identified\nTV IP hint: Not identified"; useBrand?.visibility = View.GONE
+        showPhotoTarget(null)
         status.text = if (reason == PhotoReviewRun.EndReason.timeLimit)
             "Photo review timed out. Choose the picture again."
         else "Photo review ended. Choose the picture again."
@@ -479,9 +861,10 @@ class InputAssistanceActivity : Activity() {
                 runOnUiThread {
                     if (acceptPhoto(token)) {
                         details.text = "Brand: ${hints.brand ?: "Not identified"}"
-        details.visibility = if (hints.brand == null) View.GONE else View.VISIBLE
+                        details.visibility = if (hints.brand == null) View.GONE else View.VISIBLE
                         photoExtra?.text = "Model: ${hints.model ?: "Not identified"}\nTV IP hint: ${hints.address ?: "Not identified"}"
                         photoBrand = hints.brand
+                        if (usePhotoAddress != null) showPhotoTarget(hints.vizioCheckTarget)
                         val choice = TutorialContent.choices["chooseTV"]?.firstOrNull { it.id == hints.brand?.lowercase() }
                         useBrand?.apply { this.text = "Use ${choice?.title ?: "brand"} and continue"; visibility = if (choice == null) View.GONE else View.VISIBLE }
                         status.text = when {
@@ -521,6 +904,7 @@ class InputAssistanceActivity : Activity() {
     }
     override fun onResume() {
         super.onResume(); visible = true
+        usePhotoAddress?.isEnabled = true
         readingPhoto?.let { if (!photoRun.isReading(it)) showPhotoEnd(it) }
         if (isVoice) refreshVoicePermissionGuidance() else observePhotoWork()
     }
@@ -532,7 +916,7 @@ class InputAssistanceActivity : Activity() {
     override fun onPause() {
         visible = false
         photoObservation?.close(); photoObservation = null
-        if (isVoice) { stopVoice(); if (::details.isInitialized) details.text = "No words recognized yet" }
+        if (isVoice) { stopVoice(); suspendLocalVideo(); if (::details.isInitialized) details.text = "No words recognized yet" }
         super.onPause()
     }
     override fun onDestroy() { stopVoice(); stopPhotoWatchdog(); photoObservation?.close(); photoObservation = null; handler.removeCallbacksAndMessages(null); pendingPhoto = null; photoRun.clear(); cameraPhoto?.close(); cameraPhoto = null; worker.shutdown(); super.onDestroy() }

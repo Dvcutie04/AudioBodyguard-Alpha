@@ -2,6 +2,17 @@ package com.aqss.nativefeedback
 import kotlin.test.*
 
 class TVPhotoHintsTest {
+    @Test fun vizioCheckTargetRequiresAnUnambiguousPrivateHost() {
+        val addressRow = "IPv4 IP Address: 10.20.30.40"
+        assertEquals("10.20.30.40", TVPhotoHints("VIZIO\n$addressRow").vizioCheckTarget?.address)
+        assertEquals("10.20.30.40", TVPhotoHints(addressRow).vizioCheckTarget?.address)
+        for (text in listOf("SAMSUNG\n$addressRow", "VIZIO\nSAMSUNG\n$addressRow",
+            "$addressRow\nIP: 10.20.30.41", "IP: 10.20.30.0", "IP: 10.20.30.255",
+            "IP: 8.8.8.8", "IPv4 Default Gateway: 10.20.30.40")) {
+            assertNull(TVPhotoHints(text).vizioCheckTarget, text)
+        }
+    }
+
     @Test fun exactRowLimitKeepsTheLastRowAndRejectsTheNextConflict() {
         val hundred = listOf("VIZIO", "Model: X1") + List(97) { "other row" } + "IP: 10.0.0.2"
         val text = assertNotNull(boundedTVPhotoText(hundred.asSequence()))

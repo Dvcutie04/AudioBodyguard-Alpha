@@ -2,6 +2,7 @@ package com.aqss.nativefeedback
 
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertNull
 
 class SetupPresentationTest {
     @Test fun phoneStoreUsesItsOwnLabelsWithoutChangingTheCatalog() {
@@ -32,5 +33,20 @@ class SetupPresentationTest {
         assertEquals(SetupPhone.PIXEL, SetupPhone.androidManufacturer("Google"))
         assertEquals(SetupPhone.ANDROID, SetupPhone.androidManufacturer("Motorola"))
         assertEquals(SetupPhone.ANDROID, SetupPhone.androidManufacturer(""))
+    }
+
+    @Test fun wifiPicturesUseOnlyTheMatchingPhoneCatalog() {
+        val paths = listOf(
+            Triple("Google", "phone_pixel", "Open Pixel Settings"),
+            Triple("Samsung", "phone_galaxy", "Open Galaxy Settings")
+        )
+        for ((manufacturer, routeId, firstTitle) in paths) {
+            val phone = SetupPhone.androidManufacturer(manufacturer)
+            assertEquals(routeId, phone.wifiRoute)
+            val steps = SetupContent.routes.single { it.id == routeId }.steps
+            assertEquals(7, steps.size)
+            assertEquals(firstTitle, steps.first().title)
+        }
+        assertNull(SetupPhone.androidManufacturer("Motorola").wifiRoute)
     }
 }
