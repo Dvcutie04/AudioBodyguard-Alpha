@@ -371,7 +371,7 @@ final class AQSSReadOnlyUITests: XCTestCase {
         XCTAssertTrue(app.buttons["setup-next"].waitForExistence(timeout: 5))
         app.buttons["setup-next"].tap(); label("Step 1 of 17", app)
         screenshot("Simplified TV picture \(large)", app)
-        tap("? Step help", app)
+        app.buttons["setup-step-details"].tap()
         XCTAssertTrue(app.buttons["setup-picture-jump"].exists)
         app.buttons["setup-next"].tap(); label("Step 2 of 17", app)
         app.buttons["setup-back"].tap(); label("Step 1 of 17", app)
@@ -1851,7 +1851,7 @@ final class AQSSReadOnlyUITests: XCTestCase {
     private func hideStepHelp(_ app: XCUIApplication) {
         let toggle = ["setup-step-details", "setup-details", "setup-platform-help", "setup-mismatch-details"]
             .map { app.buttons[$0] }.first { $0.exists }
-        if toggle?.value as? String == "Expanded" { tap("? Hide step help", app) }
+        if toggle?.value as? String == "Expanded" { toggle?.tap() }
     }
     private func assertNoPhotoBrand(_ app: XCUIApplication) {
         XCTAssertFalse(app.staticTexts.matching(NSPredicate(format: "label BEGINSWITH %@", "Brand:")).firstMatch.exists)
