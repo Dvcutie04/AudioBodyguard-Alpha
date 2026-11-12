@@ -193,12 +193,16 @@ struct SetupGuidesView: View {
                             }
                         }
                         if group.routes.contains(where: { !group.primaryRoutes.contains($0) }) {
-                            control(pickerExpanded ? "Hide other ways" : "Try another way", icon: pickerExpanded ? "chevron.up" : "chevron.down", id: "setup-more-options") { pickerExpanded.toggle() }
-                        }
-                        if pickerExpanded {
-                            ForEach(group.routes.filter { !group.primaryRoutes.contains($0) }, id: \.self) { id in
-                                if let route = AQSSSetupContent.routes.first(where: { $0.id == id }) {
-                                    control(route.title, icon: "rectangle.stack", id: "setup-route-\(id)") { chooseRoute(id) }
+                            disclosure("? Help", id: "setup-group-help") { detailsExpanded.toggle() }
+                            if detailsExpanded {
+                                Text("Need a different way or TV menu?").font(.callout).foregroundColor(theme.muted)
+                                control(pickerExpanded ? "Hide other ways" : "Try another way", icon: pickerExpanded ? "chevron.up" : "chevron.down", id: "setup-more-options") { pickerExpanded.toggle() }
+                                if pickerExpanded {
+                                    ForEach(group.routes.filter { !group.primaryRoutes.contains($0) }, id: \.self) { id in
+                                        if let route = AQSSSetupContent.routes.first(where: { $0.id == id }) {
+                                            control(route.title, icon: "rectangle.stack", id: "setup-route-\(id)") { chooseRoute(id) }
+                                        }
+                                    }
                                 }
                             }
                         }
@@ -214,6 +218,15 @@ struct SetupGuidesView: View {
                                 && (brandQuery.isEmpty || $0.title.localizedCaseInsensitiveContains(brandQuery))
                         }, id: \.id) { item in
                             control(item.title, icon: "tv", id: "setup-group-\(item.id)") { chooseGroup(item.id) }
+                        }
+                        disclosure("? Help", id: "setup-brand-help") { detailsExpanded.toggle() }
+                        if detailsExpanded {
+                            Text("Need phone or home-app instructions?").font(.callout).foregroundColor(theme.muted)
+                            ForEach(["phone", "google", "alexa", "voice"], id: \.self) { id in
+                                if let item = AQSSSetupContent.groups.first(where: { $0.id == id }) {
+                                    control(item.title, icon: "questionmark.circle", id: "setup-group-\(id)") { chooseGroup(id) }
+                                }
+                            }
                         }
                     }
                 }.frame(maxWidth: 620, alignment: .leading).padding(20).frame(maxWidth: .infinity)
