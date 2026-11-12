@@ -905,7 +905,7 @@ def main():
             tap("Back", prefix + "_network_back")
             reveal("Illustrated setup guides. Jump to a TV or home app", prefix + "_guides")
             reveal("Sony", prefix + "_google_tv")
-            wait_for_all(("Google TV / Android TV — pair a phone remote", "Start guide"), prefix + "_google_intro")
+            wait_for_all(("Set up your Sony TV", "Start guide"), prefix + "_google_intro")
             tap("Start guide", prefix + "_google_start")
             tap("Next", prefix + "_google_store")
             root = wait_for("Google Play", prefix + "_google_phone_store")
@@ -1434,7 +1434,8 @@ def main():
         wait_for("Step 6 of 9", "tv_guides_google_back_on_tv")
         tap("Close", "tv_guides_google_close")
         open_brand("Sony", "tv_guides_google_reopen")
-        wait_for("Continue at picture 6.", "tv_guides_google_resume_intro")
+        guide_tap("? Help", "tv_guides_google_resume_help")
+        wait_for("You can continue at picture 6.", "tv_guides_google_resume_intro")
         tap("Resume guide", "tv_guides_google_resume")
         wait_for("Read your TV code", "tv_guides_google_resumed_tv")
         tap("Close", "tv_guides_google_close_resume")
@@ -1478,6 +1479,7 @@ def main():
         # `? Other setup options` disclosure, not a route-intro step-help button.
         open_brand("Vizio", "tv_guides_vizio")
         guide_tap("? Help", "tv_guides_vizio_options")
+        guide_tap("Try another way", "tv_guides_vizio_other_routes")
         guide_tap("Vizio — link the TV account (6-digit code)", "tv_guides_vizio_account")
         start_picture("tv_guides_vizio")
         for number in range(2, 12):
@@ -1489,10 +1491,10 @@ def main():
         tap("Close", "tv_guides_vizio_close")
 
         for name, brand, platform, title, selection in (
-            ("tcl_roku", "TCL", "Roku TV", "Find my IP address", "Network"),
-            ("sharp", "Sharp — Roku TV models", None, "Find my exact model", "System"),
-            ("roku", "Roku-branded TV", None, "Find my IP address", "Network"),
-            ("philips_roku", "Philips", "Roku TV", "Find my IP address", "Network"),
+            ("tcl_roku", "TCL", "Roku TV", "Set up your TCL TV", "Network"),
+            ("sharp", "Sharp — Roku TV models", None, "Set up your Sharp TV", "System"),
+            ("roku", "Roku-branded TV", None, "Set up your Roku TV", "Network"),
+            ("philips_roku", "Philips", "Roku TV", "Set up your Philips TV", "Network"),
         ):
             open_brand(brand, "tv_guides_" + name, platform)
             wait_for(title, "tv_guides_" + name + "_title")
@@ -1504,6 +1506,7 @@ def main():
             tap("Close", "tv_guides_" + name + "_close")
 
         open_brand("Hisense", "tv_guides_hisense", "VIDAA")
+        guide_tap("? Help", "tv_guides_hisense_model_help")
         wait_for("43A6GV / VIDAA U5", "tv_guides_hisense_model_scope")
         screenshot("tv_guides_hisense_model_scope")
         tap("Close", "tv_guides_hisense_close")
@@ -1578,7 +1581,6 @@ def main():
         screenshot("samsung_tv_pin")
         adb("shell", "input", "keyevent", "KEYCODE_BACK")
         wait_for_all(("Step 15 of 17", "Approve on the television"), "samsung_branch_back")
-        tap_scroll("? Step help", "samsung_pin_options_help")
         tap_scroll("TV shows a PIN", "samsung_switch_pin_again")
         tap("Next", "samsung_pin_phone")
         wait_for_all(("Step 16 of 18", "Enter the TV PIN", "On your phone"), "samsung_phone_pin")
@@ -1590,7 +1592,8 @@ def main():
         wait_for("Enter the TV PIN", "samsung_pin_portrait")
         tap("Close", "samsung_close_pin")
         open_samsung("samsung_reopen_pin")
-        wait_for("Continue at picture 16.", "samsung_pin_resume_intro")
+        tap_scroll("? Help", "samsung_pin_resume_help")
+        wait_for("You can continue at picture 16.", "samsung_pin_resume_intro")
         tap("Resume guide", "samsung_resume_pin")
         wait_for("Enter the TV PIN", "samsung_resumed_phone_pin")
         tap("Next", "samsung_name"); tap("Next", "samsung_result")
@@ -1598,7 +1601,7 @@ def main():
         tap("Finish guide", "samsung_pin_finish")
         wait_for("No qualified device connected", "samsung_pin_finished_unknown")
         open_samsung("samsung_cleared")
-        root = wait_for_all(("Samsung — connect with SmartThings", "Start guide"), "samsung_pairing_bookmark_cleared")
+        root = wait_for_all(("Set up your Samsung TV", "Start guide"), "samsung_pairing_bookmark_cleared")
         assert not has(root, "Continue at picture"), "Completing the variant must clear the shared pairing bookmark"
         tap("Close", "samsung_close_cleared")
         tap("Home", "samsung_home")
