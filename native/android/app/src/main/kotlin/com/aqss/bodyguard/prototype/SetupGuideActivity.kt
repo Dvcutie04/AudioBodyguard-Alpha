@@ -100,6 +100,15 @@ class SetupGuideActivity : Activity() {
         "identify" -> "Help identify your TV"
         else -> fallback
     }
+    private fun shortHelp(): String? = when (brandName) {
+        "Samsung" -> "SmartThings is Samsung’s official phone app. A PIN is the code shown on your TV."
+        "LG" -> "ThinQ is LG’s official phone app. A PIN is the code shown on your TV."
+        "Sony" -> "Google TV is the TV’s menu system. Use the code on the TV to connect your phone."
+        "TCL", "Hisense", "Philips", "Insignia" -> "Roku, Google TV, Fire TV and VIDAA are TV menu systems. Pick the one shown on your TV."
+        "VIZIO" -> "VIZIO Mobile is VIZIO’s phone app. Only enter a code shown on your own TV."
+        "Sharp", "Roku" -> "Roku is the TV’s menu system. An IP address is a number in its network settings."
+        else -> null
+    }
     private val route get() = SetupContent.routes.firstOrNull { it.id == routeId }
     private val phone get() = SetupPhone.androidManufacturer(Build.MANUFACTURER)
     private fun startingRoute(): String? = when {
@@ -275,7 +284,8 @@ class SetupGuideActivity : Activity() {
                 content.addView(picture, LinearLayout.LayoutParams(-1, -2).apply { bottomMargin = dp(18) })
                 action(content, if (detailsExpanded) "? Hide step help" else "? Step help") { detailsExpanded = !detailsExpanded; render(true) }
                 if (detailsExpanded) {
-                if (index == 14 && route.id == "samsung_ok") action(content, "TV shows a PIN") { switchSamsungApproval("samsung_pin") }
+                    shortHelp()?.let { words(content, it, color = skin.muted) }
+                    if (index == 14 && route.id == "samsung_ok") action(content, "TV shows a PIN") { switchSamsungApproval("samsung_pin") }
                 if (index == 14 && route.id == "samsung_pin") action(content, "TV shows OK instead") { switchSamsungApproval("samsung_ok") }
                 if (route.id == "philips_voice_remote" && index == 4) action(content, "Remote already connected") { skipTo(route.id, 4, 9) }
                 if (route.id == "philips_voice_remote" && index == 5) action(content, "Light is not blinking") { skipTo(route.id, 5, 6) }
@@ -379,6 +389,7 @@ class SetupGuideActivity : Activity() {
             if (route.id == "lg_pair") words(content, "LG ThinQ is LG’s official TV setup app.")
             if (route.models.isNotEmpty()) words(content, "Example TV models: ${route.models.joinToString()}", 16f, skin.muted)
             resumeIndex(route)?.let { saved -> words(content, "You can continue at picture ${saved + 1}.", color = skin.accent) }
+            shortHelp()?.let { words(content, it, color = skin.muted) }
             words(content, route.appliesTo, 16f, skin.muted)
             pictureJumps(route)
             pairingHelp(route)
