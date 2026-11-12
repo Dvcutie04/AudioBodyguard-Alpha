@@ -270,7 +270,7 @@ class SetupGuideActivity : Activity() {
         progressBar.visibility = if (route != null && index >= 0) View.VISIBLE else View.GONE
         if (route != null && index >= 0) { progressBar.max = route.steps.size; progressBar.setProgress(index + 1, false) }
         group?.let { words(content, "${it.title}  ·  ${phone.label}", 14f, skin.muted, true) }
-        val heading = words(content, if (mismatch) "Find the right screen" else step?.title ?: (if (route != null && brandName != null) (if (groupId == "lg") "Connect your LG TV" else "Set up your ${brandName} TV") else route?.title) ?: group?.title ?: "Choose your TV brand", 28f, bold = true).apply {
+        val heading = words(content, if (mismatch) "Find the right screen" else step?.title ?: (if (route != null && group?.primaryRoutes?.contains(routeId) == true && brandName != null) (if (groupId == "lg") "Connect your LG TV" else "Set up your ${brandName} TV") else route?.title) ?: group?.title ?: "Choose your TV brand", 28f, bold = true).apply {
             if (Build.VERSION.SDK_INT >= 28) isAccessibilityHeading = true
             accessibilityLiveRegion = View.ACCESSIBILITY_LIVE_REGION_POLITE
         }
