@@ -1449,7 +1449,7 @@ def main():
         tap("Close", "tv_guides_google_close")
         open_brand("Sony", "tv_guides_google_reopen")
         guide_tap("? Help", "tv_guides_google_resume_help")
-        wait_for("You can continue at picture 6.", "tv_guides_google_resume_intro")
+        wait_for("Continue at picture 6.", "tv_guides_google_resume_intro")
         tap("Resume guide", "tv_guides_google_resume")
         wait_for("Read your TV code", "tv_guides_google_resumed_tv")
         tap("Close", "tv_guides_google_close_resume")
@@ -1490,8 +1490,7 @@ def main():
         tap("Finish part two", "tv_guides_lg_phone_finish")
         wait_for_all(("DEVICES", "Connection not verified"), "tv_guides_lg_phone_no_connection")
 
-        # Vizio exposes two primary routes; its brand screen has a visible
-        # `? Other setup options` disclosure, not a route-intro step-help button.
+        # Open the brand's Help to reach the alternate Vizio account route.
         open_brand("Vizio", "tv_guides_vizio")
         guide_tap("? Help", "tv_guides_vizio_options")
         guide_tap("Try another way", "tv_guides_vizio_other_routes")
@@ -1608,7 +1607,7 @@ def main():
         tap("Close", "samsung_close_pin")
         open_samsung("samsung_reopen_pin")
         tap_scroll("? Help", "samsung_pin_resume_help")
-        wait_for("You can continue at picture 16.", "samsung_pin_resume_intro")
+        wait_for("Continue at picture 16.", "samsung_pin_resume_intro")
         tap("Resume guide", "samsung_resume_pin")
         wait_for("Enter the TV PIN", "samsung_resumed_phone_pin")
         tap("Next", "samsung_name"); tap("Next", "samsung_result")
