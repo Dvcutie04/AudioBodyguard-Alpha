@@ -2,7 +2,7 @@ name: TV brand picture guide verification
 
 on:
   push:
-    branches: ["aqss/tv-guide-clarity-0323", "aqss/overnight-cyan-guide-audit", "aqss/vizio-address-recovery"]
+    branches: ["aqss/tv-guide-clarity-0323", "aqss/overnight-cyan-guide-audit", "aqss/vizio-address-recovery", "aqss/all-brand-beta-trial"]
   workflow_dispatch:
 
 permissions:
