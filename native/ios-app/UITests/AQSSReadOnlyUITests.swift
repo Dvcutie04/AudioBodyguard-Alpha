@@ -1411,9 +1411,7 @@ final class AQSSReadOnlyUITests: XCTestCase {
                 throw NSError(domain: "AQSSPermissionSettings", code: 1)
             }
             button.tap()
-            XCTAssertTrue(settings.wait(for: .runningForeground, timeout: 8))
-            // Cold Settings startup can outlast its foreground transition.
-            guard settings.navigationBars["Audio Bodyguard"].waitForExistence(timeout: 20) else {
+            guard reachAudioBodyguardSettings(settings) else {
                 screenshot("Settings destination unavailable", settings)
                 XCTFail("Require this app's Settings page")
                 throw NSError(domain: "AQSSPermissionSettings", code: 2)
@@ -1472,6 +1470,22 @@ final class AQSSReadOnlyUITests: XCTestCase {
 
     }
 
+    private func reachAudioBodyguardSettings(_ settings: XCUIApplication) -> Bool {
+        guard settings.wait(for: .runningForeground, timeout: 8) else { return false }
+        let appPage = settings.navigationBars["Audio Bodyguard"]
+        let appsPage = settings.navigationBars["Apps"]
+        let appRow = settings.staticTexts.matching(NSPredicate(format: "label == %@", "Audio Bodyguard"))
+        let destination = XCTNSPredicateExpectation(predicate: NSPredicate { _, _ in
+            appPage.exists || (appsPage.exists && appRow.count == 1 && appRow.firstMatch.isHittable)
+        }, object: nil)
+        guard XCTWaiter.wait(for: [destination], timeout: 20) == .completed else { return false }
+        if appPage.exists { return true }
+        // Some Simulator runtimes open the Apps list through the Settings shortcut.
+        guard appsPage.exists, appRow.count == 1, appRow.firstMatch.isHittable else { return false }
+        appRow.firstMatch.tap()
+        return appPage.waitForExistence(timeout: 8)
+    }
+
     private func openVoicePermissionSettings(_ app: XCUIApplication, _ settings: XCUIApplication) throws {
         let button = app.buttons["voice-open-settings"]
         guard button.waitForExistence(timeout: 5) else {
@@ -1479,8 +1493,7 @@ final class AQSSReadOnlyUITests: XCTestCase {
             throw NSError(domain: "AQSSVoicePermissionSettings", code: 1)
         }
         button.tap()
-        XCTAssertTrue(settings.wait(for: .runningForeground, timeout: 8))
-        guard settings.navigationBars["Audio Bodyguard"].waitForExistence(timeout: 20) else {
+        guard reachAudioBodyguardSettings(settings) else {
             screenshot("Voice Settings destination unavailable", settings)
             XCTFail("Require this app's actual Settings page")
             throw NSError(domain: "AQSSVoicePermissionSettings", code: 2)
