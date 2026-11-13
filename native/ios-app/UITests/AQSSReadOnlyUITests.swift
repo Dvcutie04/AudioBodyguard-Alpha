@@ -112,7 +112,9 @@ final class AQSSReadOnlyUITests: XCTestCase {
         // public entry path to catch mismatched route selection at the source.
         tab("devices", app)
         tap("Illustrated setup guides", app)
-        findSetupBrand("Phone Wi-Fi setup", app)
+        // Phone setup remains available under Help, not in the TV-brand list.
+        tap("? Help", app, scroll: app.scrollViews["setup-scroll"])
+        tap("Phone Wi-Fi setup", app, scroll: app.scrollViews["setup-scroll"])
         label("\(device) — connect to your home Wi-Fi", app)
         label("Have your \(device) and home Wi-Fi password ready.", app)
         app.buttons["setup-next"].tap()
@@ -251,6 +253,15 @@ final class AQSSReadOnlyUITests: XCTestCase {
                                     "TV address guide's Next needs a wide touch target on \(device)")
         app.buttons["tv-address-guide-mismatch"].tap()
         label("Find the right screen", app)
+        tap("Network menu", app, scroll: app.scrollViews["tv-address-guide-scroll"])
+        label("Step 3 of \(addressTargets.count)", app)
+        XCTAssertTrue(pictureDescription(app).contains("Highlighted: Network Information."))
+        next.tap()
+        label("Step 4 of \(addressTargets.count)", app)
+        back.tap()
+        label("Step 3 of \(addressTargets.count)", app)
+        back.tap()
+        label("Find the right screen", app)
         back.tap()
         XCTAssertEqual(next.label, "My TV matches")
         next.tap()
@@ -276,6 +287,12 @@ final class AQSSReadOnlyUITests: XCTestCase {
         XCTAssertEqual(field.value as? String, "192.168.0.42")
         label("Ready to check the address you enter.", app)
         XCTAssertFalse(app.buttons["tv-network-review"].exists)
+        tap("Find my TV’s IP address", app, scroll: app.scrollViews["tv-network-scroll"])
+        app.buttons["tv-address-guide-mismatch"].tap()
+        XCTAssertEqual(next.label, "Back to address field")
+        next.tap()
+        XCTAssertEqual(field.value as? String, "192.168.0.42")
+        XCTAssertFalse(app.buttons["tv-network-review"].exists)
         app.buttons["tv-network-back"].tap()
 
         tap("TV photo setup", app)
@@ -295,6 +312,16 @@ final class AQSSReadOnlyUITests: XCTestCase {
             }
             next.tap()
         }
+        XCTAssertTrue(photoScroll.waitForExistence(timeout: 5))
+        label("No photo selected", app)
+        XCTAssertFalse(field.exists)
+        if !app.buttons["VIZIO V505M-K09 address pictures"].exists {
+            tap("Photo help", app, scroll: photoScroll)
+        }
+        tap("VIZIO V505M-K09 address pictures", app, scroll: photoScroll)
+        app.buttons["tv-address-guide-mismatch"].tap()
+        XCTAssertEqual(next.label, "Back to photo setup")
+        next.tap()
         XCTAssertTrue(photoScroll.waitForExistence(timeout: 5))
         label("No photo selected", app)
         XCTAssertFalse(field.exists)
@@ -371,7 +398,7 @@ final class AQSSReadOnlyUITests: XCTestCase {
         XCTAssertTrue(app.buttons["setup-next"].waitForExistence(timeout: 5))
         app.buttons["setup-next"].tap(); label("Step 1 of 17", app)
         screenshot("Simplified TV picture \(large)", app)
-        tap("? Step help", app)
+        app.buttons["setup-step-details"].tap()
         XCTAssertTrue(app.buttons["setup-picture-jump"].exists)
         app.buttons["setup-next"].tap(); label("Step 2 of 17", app)
         app.buttons["setup-back"].tap(); label("Step 1 of 17", app)
@@ -1384,9 +1411,7 @@ final class AQSSReadOnlyUITests: XCTestCase {
                 throw NSError(domain: "AQSSPermissionSettings", code: 1)
             }
             button.tap()
-            XCTAssertTrue(settings.wait(for: .runningForeground, timeout: 8))
-            // Cold Settings startup can outlast its foreground transition.
-            guard settings.navigationBars["Audio Bodyguard"].waitForExistence(timeout: 20) else {
+            guard reachAudioBodyguardSettings(settings) else {
                 screenshot("Settings destination unavailable", settings)
                 XCTFail("Require this app's Settings page")
                 throw NSError(domain: "AQSSPermissionSettings", code: 2)
@@ -1445,6 +1470,22 @@ final class AQSSReadOnlyUITests: XCTestCase {
 
     }
 
+    private func reachAudioBodyguardSettings(_ settings: XCUIApplication) -> Bool {
+        guard settings.wait(for: .runningForeground, timeout: 8) else { return false }
+        let appPage = settings.navigationBars["Audio Bodyguard"]
+        let appsPage = settings.navigationBars["Apps"]
+        let appRow = settings.staticTexts.matching(NSPredicate(format: "label == %@", "Audio Bodyguard"))
+        let destination = XCTNSPredicateExpectation(predicate: NSPredicate { _, _ in
+            appPage.exists || (appsPage.exists && appRow.count == 1 && appRow.firstMatch.isHittable)
+        }, object: nil)
+        guard XCTWaiter.wait(for: [destination], timeout: 20) == .completed else { return false }
+        if appPage.exists { return true }
+        // Some Simulator runtimes open the Apps list through the Settings shortcut.
+        guard appsPage.exists, appRow.count == 1, appRow.firstMatch.isHittable else { return false }
+        appRow.firstMatch.tap()
+        return appPage.waitForExistence(timeout: 8)
+    }
+
     private func openVoicePermissionSettings(_ app: XCUIApplication, _ settings: XCUIApplication) throws {
         let button = app.buttons["voice-open-settings"]
         guard button.waitForExistence(timeout: 5) else {
@@ -1452,8 +1493,7 @@ final class AQSSReadOnlyUITests: XCTestCase {
             throw NSError(domain: "AQSSVoicePermissionSettings", code: 1)
         }
         button.tap()
-        XCTAssertTrue(settings.wait(for: .runningForeground, timeout: 8))
-        guard settings.navigationBars["Audio Bodyguard"].waitForExistence(timeout: 20) else {
+        guard reachAudioBodyguardSettings(settings) else {
             screenshot("Voice Settings destination unavailable", settings)
             XCTFail("Require this app's actual Settings page")
             throw NSError(domain: "AQSSVoicePermissionSettings", code: 2)
@@ -1709,10 +1749,36 @@ final class AQSSReadOnlyUITests: XCTestCase {
                 action.tap(); return
             }
         }
+        // More settings is intentionally collapsed on the beginner page.
+        // XCTest coordinate taps can be swallowed while a new tab settles;
+        // target the actual disclosure and require its observable expanded
+        // state before asking for a child action. No retries or skipped checks.
+        // A Jump to sheet owns its own advanced-actions menu. Do not require
+        // the obscured Settings-page disclosure to be hittable through that sheet.
+        // On the Settings page itself, scroll until the actual button has a full
+        // touch target, then verify that one tap really expands its children.
+        if ["Advanced Settings", "Build details"].contains(title),
+           !app.scrollViews["menu-scroll"].exists, app.buttons["more-settings"].exists {
+            let disclosure = app.buttons["more-settings"]
+            if disclosure.value as? String != "Expanded" {
+                let scroll = app.scrollViews["home-scroll"]
+                for _ in 0..<8 {
+                    let visible = disclosure.frame.intersection(scroll.frame.intersection(app.frame))
+                    if disclosure.isHittable && !visible.isNull && visible.width >= 44 && visible.height >= 44 { break }
+                    scroll.swipeUp(velocity: .slow)
+                }
+                let visible = disclosure.frame.intersection(scroll.frame.intersection(app.frame))
+                XCTAssertTrue(disclosure.isHittable && !visible.isNull && visible.width >= 44 && visible.height >= 44,
+                              "More settings must be reachable before opening an advanced action")
+                disclosure.tap()
+                let expanded = XCTNSPredicateExpectation(
+                    predicate: NSPredicate(format: "value == %@", "Expanded"), object: disclosure)
+                XCTAssertEqual(XCTWaiter.wait(for: [expanded], timeout: 3), .completed,
+                               "More settings must expand before choosing \(title)")
+            }
+        }
         if !app.buttons.matching(NSPredicate(format: "label CONTAINS %@", title)).firstMatch.exists {
-            if ["Advanced Settings", "Build details"].contains(title), app.buttons["more-settings"].exists {
-                tap("More settings", app)
-            } else if ["TV photo setup", "Illustrated setup guides"].contains(title), app.buttons.matching(NSPredicate(format: "label CONTAINS %@", "Device help")).firstMatch.exists {
+            if ["TV photo setup", "Illustrated setup guides"].contains(title), app.buttons.matching(NSPredicate(format: "label CONTAINS %@", "Device help")).firstMatch.exists {
                 tap("Device help", app)
             } else if title == "Explore an example", app.buttons["insights-help"].exists {
                 tap("Insights help", app)
@@ -1843,15 +1909,15 @@ final class AQSSReadOnlyUITests: XCTestCase {
         XCTAssertEqual(XCTWaiter.wait(for: [closed], timeout: 5), .completed)
     }
     private func showStepHelp(_ app: XCUIApplication) {
-        let toggle = ["setup-step-details", "setup-details", "setup-platform-help", "setup-mismatch-details"]
+        let toggle = ["setup-step-details", "setup-details", "setup-group-help", "setup-platform-help", "setup-brand-help", "setup-mismatch-details"]
             .map { app.buttons[$0] }.first { $0.exists }
         XCTAssertNotNil(toggle)
-        if toggle?.value as? String != "Expanded" { tap("? Step help", app) }
+        if toggle?.value as? String != "Expanded" { toggle?.tap() }
     }
     private func hideStepHelp(_ app: XCUIApplication) {
-        let toggle = ["setup-step-details", "setup-details", "setup-platform-help", "setup-mismatch-details"]
+        let toggle = ["setup-step-details", "setup-details", "setup-group-help", "setup-platform-help", "setup-brand-help", "setup-mismatch-details"]
             .map { app.buttons[$0] }.first { $0.exists }
-        if toggle?.value as? String == "Expanded" { tap("? Hide step help", app) }
+        if toggle?.value as? String == "Expanded" { toggle?.tap() }
     }
     private func assertNoPhotoBrand(_ app: XCUIApplication) {
         XCTAssertFalse(app.staticTexts.matching(NSPredicate(format: "label BEGINSWITH %@", "Brand:")).firstMatch.exists)
@@ -1872,7 +1938,10 @@ final class AQSSReadOnlyUITests: XCTestCase {
     }
 
     private func jump(_ title: String, _ app: XCUIApplication) {
-        app.buttons["Jump to"].tap(); tap(title, app)
+        app.buttons["Jump to"].tap()
+        let menu = app.scrollViews["menu-scroll"]
+        XCTAssertTrue(menu.waitForExistence(timeout: 5), "Jump menu must be visible before choosing \(title)")
+        tap(title, app, scroll: menu)
         // Wait for the native sheet animation before choosing the next scroll
         // surface. Its outgoing menu otherwise captures the next lookup.
         let dismissed = XCTNSPredicateExpectation(predicate: NSPredicate(format: "exists == false"), object: app.scrollViews["menu-scroll"])
@@ -2231,7 +2300,7 @@ final class AQSSReadOnlyUITests: XCTestCase {
         XCTAssertFalse(app.links.firstMatch.exists)
         screenshot("Roku opens its primary guide directly", app)
         showStepHelp(app)
-        tap("Other setup options", app)
+        tap("Try another way", app)
         tap("Find my exact model", app)
         XCTAssertFalse(app.buttons["setup-references"].exists)
         screenshot("Simple model guide introduction", app)
@@ -2275,8 +2344,13 @@ final class AQSSReadOnlyUITests: XCTestCase {
     func testNewVizioTVShowsAccountThenPhonePicturesInOrder() {
         let app = launch()
         tab("devices", app); tap("Illustrated setup guides", app); findSetupBrand("Vizio", app)
-        tap("VIZIO newer TV", app)
-        label("VIZIO newer TV — My Hub account, then phone", app)
+        tap("Set up a newer VIZIO TV", app)
+        // Keep the simplified primary heading, but verify the exact
+        // account-setup qualification is still available in contextual Help.
+        label("Set up your VIZIO TV", app)
+        showStepHelp(app)
+        label("My Hub", app)
+        hideStepHelp(app)
         for number in 1...14 {
             app.buttons["setup-next"].tap(); label("Step \(number) of 14", app)
             if [2, 3, 4, 7, 9, 13, 14].contains(number) {
@@ -2337,7 +2411,7 @@ final class AQSSReadOnlyUITests: XCTestCase {
         app.buttons["setup-back"].tap()
         XCTAssertTrue(app.buttons["setup-platform-tcl_google"].exists)
         hideStepHelp(app)
-        tap("Google TV / Android TV", app); showStepHelp(app); tap("Other setup options", app); tap("TCL QM851G", app)
+        tap("Google TV / Android TV", app); showStepHelp(app); tap("Try another way", app); tap("TCL QM851G", app)
         showStepHelp(app); label("85QM851G", app)
         app.buttons["setup-next"].tap(); label("Step 1 of 13", app)
         screenshot("TCL illustrated TV first setup", app)
@@ -2381,18 +2455,18 @@ final class AQSSReadOnlyUITests: XCTestCase {
     func testSamsungPinChoiceBackAndResumeStayAtTheApproval() {
         let app = launch()
         tab("devices", app); tap("Illustrated setup guides", app); tap("Samsung", app)
-        label("Samsung — connect with SmartThings", app)
+        label("Set up your Samsung TV", app)
         XCTAssertFalse(app.buttons["setup-samsung-pin"].exists)
         if app.buttons["setup-next"].label == "Resume guide" {
             showStepHelp(app); tap("Start from the beginning", app)
         } else { app.buttons["setup-next"].tap() }
         for _ in 0..<14 { app.buttons["setup-next"].tap() }
         label("Approve on the television", app)
-        tap("TV shows a PIN", app); label("Step 15 of 18", app)
+        showStepHelp(app); tap("TV shows a PIN", app); label("Step 15 of 18", app)
         label("Read the TV PIN", app); screenshot("Samsung PIN shown on TV", app)
         app.buttons["setup-back"].tap()
         label("Step 15 of 17", app); label("Approve on the television", app)
-        tap("TV shows a PIN", app); app.buttons["setup-next"].tap()
+        showStepHelp(app); tap("TV shows a PIN", app); app.buttons["setup-next"].tap()
         label("Step 16 of 18", app); label("Enter the TV PIN", app)
         screenshot("Samsung PIN entered on phone", app)
         app.buttons["setup-close"].tap()
@@ -2404,7 +2478,7 @@ final class AQSSReadOnlyUITests: XCTestCase {
         label("Check the actual result", app); app.buttons["setup-next"].tap()
         label("Connection not verified", app)
         tap("Illustrated setup guides", app); tap("Samsung", app)
-        label("Samsung — connect with SmartThings", app)
+        label("Set up your Samsung TV", app)
         XCTAssertEqual(app.buttons["setup-next"].label, "Start guide")
         app.buttons["setup-close"].tap(); tab("home", app)
         label("Connection not verified", app)
@@ -2413,7 +2487,7 @@ final class AQSSReadOnlyUITests: XCTestCase {
     func testIllustratedApprovalFinishesWithoutClaimingConnection() {
         let app = launch()
         tab("devices", app); tap("Illustrated setup guides", app); tap("Samsung", app)
-        label("Samsung — connect with SmartThings", app); app.buttons["setup-next"].tap()
+        label("Set up your Samsung TV", app); app.buttons["setup-next"].tap()
         XCTAssertFalse(app.staticTexts["Use your real device. This picture is an illustration."].exists)
         XCTAssertFalse(app.staticTexts.containing(NSPredicate(format: "label CONTAINS %@", "Illustrations may differ from your screen")).firstMatch.exists)
         for _ in 0..<14 { app.buttons["setup-next"].tap() }
@@ -2424,7 +2498,7 @@ final class AQSSReadOnlyUITests: XCTestCase {
         app.buttons["setup-next"].tap()
         label("Connection not verified", app)
         tap("Illustrated setup guides", app); tap("Roku-branded TV", app)
-        showStepHelp(app); tap("Other setup options", app); tap("Roku TV → Alexa", app)
+        showStepHelp(app); tap("Try another way", app); tap("Roku TV → Alexa", app)
         app.buttons["setup-next"].tap()
         for _ in 0..<6 { app.buttons["setup-next"].tap() }
         label("Review Roku approval", app)
@@ -2436,7 +2510,7 @@ final class AQSSReadOnlyUITests: XCTestCase {
     func testFinishedPairingPicturesAdvanceLocallyAndCloseKeepsThePhoneStep() {
         let app = launch(true)
         next(app); chooseTV("Samsung", app)
-        tap("Show Samsung steps", app); label("Samsung — connect with SmartThings", app)
+        tap("Show Samsung steps", app); label("Set up your Samsung TV", app)
         app.buttons["setup-close"].tap(); label("Step 3 of 5", app)
         tap("Show Samsung steps", app); restartPictureGuide(app)
         for _ in 0..<16 { app.buttons["setup-next"].tap() }
@@ -2508,7 +2582,7 @@ final class AQSSReadOnlyUITests: XCTestCase {
         app.buttons["setup-back"].tap(); label("Step 10 of 13", app)
         app.buttons["setup-close"].tap()
 
-        tap("Illustrated setup guides", app); findSetupBrand("Vizio", app); tap("Other setup options", app)
+        tap("Illustrated setup guides", app); findSetupBrand("Vizio", app); showStepHelp(app); tap("Try another way", app)
         tap("Vizio — link the TV account", app); restartPictureGuide(app)
         for number in 2...11 {
             app.buttons["setup-next"].tap(); label("Step \(number) of 11", app)
@@ -2522,10 +2596,10 @@ final class AQSSReadOnlyUITests: XCTestCase {
     func testBrandPlatformsKeepRokuMenusSeparateAndOfferManualGoogleTVSetup() {
         let app = launch(); tab("devices", app)
         for (brand, platform, heading, highlight) in [
-            ("TCL", "Roku TV", "Find my IP address", "Network"),
-            ("Sharp", "", "Find my exact model", "System"),
-            ("Roku-branded TV", "", "Find my IP address", "Network"),
-            ("Philips", "Roku TV", "Find my IP address", "Network")
+            ("TCL", "Roku TV", "Set up your TCL TV", "Network"),
+            ("Sharp", "", "Set up your Sharp TV", "System"),
+            ("Roku-branded TV", "", "Set up your Roku TV", "Network"),
+            ("Philips", "Roku TV", "Set up your Philips TV", "Network")
         ] {
             tap("Illustrated setup guides", app); tap(brand, app)
             if !platform.isEmpty { tap(platform, app) }
@@ -2537,7 +2611,14 @@ final class AQSSReadOnlyUITests: XCTestCase {
             closeSetupAndReturnToDevices(app)
         }
         tap("Illustrated setup guides", app); findSetupBrand("Hisense", app); tap("VIDAA", app)
-        label("43A6GV / VIDAA U5", app); screenshot("Hisense asks for the matching VIDAA menu", app)
+        // Model and firmware qualifiers belong in Help, not on the
+        // one-action introduction. Both must remain discoverable.
+        label("Set up your Hisense TV", app)
+        showStepHelp(app)
+        label("Example TV models: 43A6GV", app)
+        label("VIDAA U5", app)
+        screenshot("Hisense asks for the matching VIDAA menu", app)
+        hideStepHelp(app)
         closeSetupAndReturnToDevices(app)
 
         tap("Illustrated setup guides", app); findSetupBrand("Insignia", app); tap("Fire TV", app)
@@ -2547,13 +2628,13 @@ final class AQSSReadOnlyUITests: XCTestCase {
         screenshot("Fire TV phone or remote Wi-Fi choice", app)
         app.buttons["setup-next"].tap(); label("Step 6 of 8", app)
         XCTAssertTrue(pictureDescription(app).contains("TV screen"))
-        tap("Account sign-in finished", app); label("Step 8 of 8", app)
+        showStepHelp(app); tap("Account sign-in finished", app); label("Step 8 of 8", app)
         app.buttons["setup-back"].tap(); label("Step 6 of 8", app)
         screenshot("Fire TV account completion can skip manual code entry", app)
         closeSetupAndReturnToDevices(app)
 
         tap("Illustrated setup guides", app); tap("TCL", app); tap("Google TV / Android TV", app)
-        showStepHelp(app); tap("Other setup options", app)
+        showStepHelp(app); tap("Try another way", app)
         tap("Google TV — first setup with Google Home", app)
         restartPictureGuide(app)
         for _ in 0..<8 { app.buttons["setup-next"].tap() }
@@ -2575,13 +2656,21 @@ final class AQSSReadOnlyUITests: XCTestCase {
         continueAfterFailure = false
         for (brand, pairingChoice, count, phoneTitle) in [
             ("LG", "", 13, "2. Check LG ThinQ on your phone"),
-            ("Vizio", "Vizio — pair the phone", 9, "2. Check VIZIO Mobile on your phone"),
+            ("Vizio", "Connect with VIZIO Mobile", 9, "2. Check VIZIO Mobile on your phone"),
             ("Sony", "", 9, "2. Check Google TV on your phone")
         ] {
             let app = launch(true)
             next(app)
             chooseTV(brand, app)
             tap("Show \(brand) steps", app)
+            if brand == "LG" {
+                label("Connect your LG TV", app)
+                XCTAssertFalse(app.buttons["setup-intro-options"].exists)
+                showStepHelp(app)
+                label("Testing on your TV?", app)
+                XCTAssertTrue(app.buttons["setup-intro-options"].isHittable,
+                              "Alternate LG routes must be available only after opening Help")
+            }
             if !pairingChoice.isEmpty { tap(pairingChoice, app) }
             restartPictureGuide(app)
             for _ in 1..<count { app.buttons["setup-next"].tap() }
@@ -2603,14 +2692,14 @@ final class AQSSReadOnlyUITests: XCTestCase {
         let app = launch()
         tab("devices", app); tap("Illustrated setup guides", app)
         tap("Philips", app); tap("Google TV / Android TV", app)
-        showStepHelp(app); tap("Other setup options", app)
+        showStepHelp(app); tap("Try another way", app)
         tap("Philips Google TV — pair the voice remote", app)
         if app.buttons["setup-next"].label == "Resume guide" {
             showStepHelp(app); tap("Start from the beginning", app)
         } else { app.buttons["setup-next"].tap() }
         for _ in 0..<4 { app.buttons["setup-next"].tap() }
         label("Step 5 of 10", app)
-        tap("Remote already connected", app)
+        showStepHelp(app); tap("Remote already connected", app)
         label("Step 10 of 10", app); label("Check the real status", app)
         screenshot("Philips already connected skips pairing", app)
         app.buttons["setup-back"].tap(); label("Step 5 of 10", app)
@@ -2619,7 +2708,7 @@ final class AQSSReadOnlyUITests: XCTestCase {
         screenshot("Philips remote button combination", app)
         app.buttons["setup-next"].tap(); label("Step 8 of 10", app)
         app.buttons["setup-back"].tap(); label("Step 6 of 10", app)
-        tap("Light is not blinking", app); label("Step 7 of 10", app)
+        showStepHelp(app); tap("Light is not blinking", app); label("Step 7 of 10", app)
         screenshot("Philips reset only when pairing light fails", app)
     }
 
@@ -2633,9 +2722,9 @@ final class AQSSReadOnlyUITests: XCTestCase {
         // Sony opens its primary Google-TV route automatically. The legacy
         // Alexa choice must be reached through the actual optional help path,
         // not by assuming the route-picker is the first screen.
-        label("9 pictures. One step at a time.", app)
+        label("One picture at a time.", app)
         showStepHelp(app)
-        tap("Other setup options", app)
+        tap("Try another way", app)
         tap("Sony — TV Control Setup with Amazon Alexa", app)
         restartPictureGuide(app)
         label("Step 1 of 11", app)
@@ -2670,7 +2759,7 @@ final class AQSSReadOnlyUITests: XCTestCase {
 
     func testNewBrandPicturesAreReachable() {
         let app = launch()
-        tab("devices", app); tap("Illustrated setup guides", app); tap("Philips", app); tap("Google TV / Android TV", app); showStepHelp(app); tap("Other setup options", app)
+        tab("devices", app); tap("Illustrated setup guides", app); tap("Philips", app); tap("Google TV / Android TV", app); showStepHelp(app); tap("Try another way", app)
         tap("Philips Google TV — pair the voice remote", app)
         app.buttons["setup-next"].tap()
         label("Start with your TV home screen", app)
@@ -2763,7 +2852,7 @@ final class AQSSReadOnlyUITests: XCTestCase {
         }
         XCTAssertTrue(app.textFields["setup-brand-search"].isHittable)
         tap("Samsung", app)
-        label("Samsung — connect with SmartThings", app); app.buttons["setup-next"].tap()
+        label("Set up your Samsung TV", app); app.buttons["setup-next"].tap()
         label("Step 1 of 17", app)
         XCTAssertTrue(app.buttons["setup-close"].isHittable)
         XCTAssertTrue(app.buttons["setup-next"].isHittable)

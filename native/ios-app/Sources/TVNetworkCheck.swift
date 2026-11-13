@@ -402,6 +402,7 @@ struct TVCheckPictureGuide: View {
     let onReturn: () -> Void
     @State private var index = -1
     @State private var mismatch = false
+    @State private var recoveryHistory: [(step: Int, origin: Int)] = []
     @AccessibilityFocusState private var focusedHeading: String?
 
     private var route: AQSSSetupRoute? { context.route }
@@ -448,7 +449,17 @@ struct TVCheckPictureGuide: View {
                         .font(.title.bold()).fixedSize(horizontal: false, vertical: true)
                         .accessibilityAddTraits(.isHeader).accessibilityFocused($focusedHeading, equals: screenKey)
                     if mismatch {
-                        Text(isWiFi ? "Search for Wi-Fi in Settings." : "Look up the network information for your exact TV model in VIZIO Support.")
+                        if isWiFi {
+                            Text("Search for Wi-Fi in Settings.")
+                        } else {
+                            Text("Check the model number on the back of your TV. If it says V505M-K09, choose what you see on the TV.")
+                            ForEach(recoveryChoices.indices, id: \.self) { index in
+                                Button(recoveryChoices[index]) { resumeFromRecovery(at: index) }
+                                    .buttonStyle(AppButtonStyle(theme: theme))
+                                    .accessibilityIdentifier(prefix + "-recovery-\(index)")
+                            }
+                            Text("If your model or menu differs, return to setup. Use the address from your TV’s own network settings.")
+                        }
                     } else {
                         if let step = step {
                             Text(step.instruction).font(.body.weight(.medium)).fixedSize(horizontal: false, vertical: true)
@@ -486,9 +497,26 @@ struct TVCheckPictureGuide: View {
         }.background(theme.background.ignoresSafeArea()).foregroundColor(theme.text)
     }
 
+    private let recoveryChoices = ["TV home screen", "TV Settings", "Network menu", "Network Information"]
+
+    private func resumeFromRecovery(at step: Int) {
+        guard steps.indices.contains(step) else { return }
+        recoveryHistory.append((step: step, origin: index))
+        index = step
+        mismatch = false
+    }
+
     private func back() {
-        if mismatch { mismatch = false }
-        else if index >= 0 { index -= 1 }
-        else { onReturn() }
+        if mismatch {
+            mismatch = false
+        } else if let recovery = recoveryHistory.last, index == recovery.step {
+            recoveryHistory.removeLast()
+            index = recovery.origin
+            mismatch = true
+        } else if index >= 0 {
+            index -= 1
+        } else {
+            onReturn()
+        }
     }
 }

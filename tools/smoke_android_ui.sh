@@ -568,7 +568,7 @@ tap_tutorial_label "Devices" model_devices
 tap_scroll_label "Illustrated setup guides. TV pairing, Google Home & Alexa · one picture at a time" model_open
 tap_scroll_label "Roku-branded TV" model_brand
 tap_scroll_label "Need help?" model_help
-tap_scroll_label "Other setup options" model_options
+tap_scroll_label "Try another way" model_options
 tap_scroll_label "Find my exact model (Roku TV)" model_select
 tap_tutorial_label "Start guide" model_start
 tap_tutorial_label "Next" model_home_picture
@@ -623,7 +623,7 @@ tap_scroll_label "Illustrated setup guides. TV pairing, Google Home & Alexa · o
 tap_scroll_label "Philips" philips_brand
 tap_scroll_label "Google TV / Android TV" philips_platform
 tap_scroll_label "Need help?" philips_primary_help
-tap_scroll_label "Other setup options" philips_other
+tap_scroll_label "Try another way" philips_other
 tap_scroll_label "Philips Google TV — pair the voice remote" philips_route
 tap_tutorial_label "Start guide" philips_start
 tap_tutorial_label "Next" philips_profile
@@ -646,7 +646,7 @@ tap_scroll_label "Illustrated setup guides. TV pairing, Google Home & Alexa · o
 tap_scroll_label "TCL" setup_large_tcl
 tap_scroll_label "Google TV / Android TV" setup_large_platform
 tap_scroll_label "Need help?" setup_large_primary_help
-tap_scroll_label "Other setup options" setup_large_more_options
+tap_scroll_label "Try another way" setup_large_more_options
 tap_scroll_label "TCL QM851G / Q651G / QM891G — first setup" setup_large_route
 tap_tutorial_label "Start guide" setup_large_start
 capture_ui setup_large_step

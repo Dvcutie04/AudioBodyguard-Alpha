@@ -13,7 +13,7 @@ import hashlib
 import json
 from pathlib import Path
 
-EXPECTED_BLOB = "94eede57ee25784dedfee2889feb96e1d624db89"
+EXPECTED_BLOB = "30ef185d69414c83340e55597a73a480c62f9376"
 ANCHOR = '''        XCUIDevice.shared.orientation = .landscapeLeft
         app.buttons["test-setup-review"].tap()
         XCTAssertTrue(preview.waitForExistence(timeout: 5)); let reviewed = preview.label
@@ -26,30 +26,38 @@ REPLACEMENT = '''        XCUIDevice.shared.orientation = .landscapeLeft
         let reviewAfterRotation = app.buttons["test-setup-review"]
         var previousLayout: (window: CGRect, button: CGRect)?
         var stableSince: TimeInterval?
+        var readinessSamples = 0
+        var lastReadiness = "No review geometry observed"
         let layoutReady = XCTNSPredicateExpectation(predicate: NSPredicate { _, _ in
             guard reviewAfterRotation.exists, reviewAfterRotation.isEnabled,
                   reviewAfterRotation.isHittable else {
+                lastReadiness = "Review not present, enabled and hittable"
                 previousLayout = nil; stableSince = nil; return false
             }
             let window = app.frame
             let button = reviewAfterRotation.frame
+            readinessSamples += 1
+            lastReadiness = "Sample \\(readinessSamples): window=\\(window), review=\\(button)"
             let dimensions = [window.minX, window.minY, window.width, window.height,
                               button.minX, button.minY, button.width, button.height]
             guard dimensions.allSatisfy({ $0.isFinite }), window.width > window.height,
                   window.height > 0, button.width >= 44, button.height >= 44,
                   window.contains(button) else {
+                lastReadiness += "; geometry not landscape, in-bounds and at least 44pt"
                 previousLayout = nil; stableSince = nil; return false
             }
             let now = ProcessInfo.processInfo.systemUptime
             guard let previous = previousLayout, previous.window == window,
                   previous.button == button, let since = stableSince else {
+                lastReadiness += "; awaiting matching subsequent frame"
                 previousLayout = (window, button); stableSince = now; return false
             }
+            lastReadiness += "; matching frame for \\(now - since) seconds"
             return now >= since && now - since >= 0.25
         }, object: nil)
         guard XCTWaiter.wait(for: [layoutReady], timeout: 3) == .completed else {
             screenshot("Worksheet rotation did not settle before Review", app)
-            XCTFail("Require stable landscape Review geometry before the first tap: \\(app.debugDescription)")
+            XCTFail("Require stable landscape Review geometry before the first tap; last observation: \\(lastReadiness). \\(app.debugDescription)")
             return
         }
         reviewAfterRotation.tap()
