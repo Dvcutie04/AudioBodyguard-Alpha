@@ -1846,6 +1846,12 @@ def main():
                     screenshot("photo_guide_ip_address")
                 tap("Back to photo setup" if step == 4 else "Next", f"photo_guide_advance_{step}")
             wait_for_all(("TV photo setup", "No photo selected"), "photo_guide_returns_to_photo")
+            if not has(screen("photo_guide_help_state")[0], "VIZIO V505M-K09 address pictures"):
+                tap("? Photo help", "photo_reopen_guide_help")
+            tap("VIZIO V505M-K09 address pictures", "photo_reopen_model_guide")
+            tap("My screen looks different", "photo_guide_unmatched")
+            tap("Back to photo setup", "photo_guide_leave_recovery")
+            wait_for_all(("TV photo setup", "No photo selected"), "photo_guide_unmatched_returns_to_photo")
         tap("Show photo details", f"{case_prefix}_show_details")
         wait_photo_fields(("No photo selected", "Brand: Not identified", "Model: Not identified", "TV IP hint: Not identified"), f"{case_prefix}_empty_details")
         fixture = Path("native/ios/Tests/AQSSNativeFeedbackTests/Fixtures") / fixture_name

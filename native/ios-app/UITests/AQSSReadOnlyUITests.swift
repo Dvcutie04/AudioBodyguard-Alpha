@@ -251,7 +251,7 @@ final class AQSSReadOnlyUITests: XCTestCase {
                                     "TV address guide's Next needs a wide touch target on \(device)")
         app.buttons["tv-address-guide-mismatch"].tap()
         label("Find the right screen", app)
-        app.buttons["tv-address-guide-recovery-2"].tap()
+        tap("Network menu", app, scroll: app.scrollViews["tv-address-guide-scroll"])
         label("Step 3 of \(addressTargets.count)", app)
         XCTAssertTrue(pictureDescription(app).contains("Highlighted: Network Information."))
         next.tap()
