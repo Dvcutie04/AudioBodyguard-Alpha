@@ -188,3 +188,18 @@ The tool only reads local evidence and prints the comparison state and report
 digest. Its fixtures use synthetic certificates. A real enrollment design
 still depends on a supported identity source and observations from the intended
 phone and TV.
+
+### Loopback peer possession fixture
+
+The [software lab](../native/lab/vizio_peer_proof.py) supplies the expected
+synthetic leaf before making a TLS connection to `127.0.0.1`. The TLS client
+validates the loopback address and the supplied trust reference, compares the
+exact leaf and closes the session without sending an application payload.
+The tests exercise the expected peer, a replacement leaf with the same key,
+a peer with a different key, a wrong certificate address and missing or
+malformed references.
+
+Run `PYTHONPATH=. python -m pytest -q tests/test_vizio_peer_proof.py` from the
+repository root. A pass demonstrates key possession for the synthetic peer.
+Live enrollment and pairing require a supported TV identity source and
+separate physical evidence.
