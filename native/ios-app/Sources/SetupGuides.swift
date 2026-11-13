@@ -109,6 +109,8 @@ struct SetupGuidesView: View {
     }
     @ViewBuilder private func wifiRecoveryHelp(_ route: AQSSSetupRoute) -> some View {
         if route.id != "voice" && route.id != "identify" && !route.id.hasPrefix("phone_") {
+            Text("Testing on your TV?").font(.headline)
+            Text("Follow one picture at a time on your own TV. After the last step, check the result on the TV or in the official app. If the screen differs, open My screen looks different and return with Back.").font(.callout).foregroundColor(theme.muted)
             Text("TV missing from the phone app? Check that the phone and TV use the same home Wi-Fi. Guest Wi-Fi may hide devices.").font(.callout).foregroundColor(theme.muted)
         }
     }

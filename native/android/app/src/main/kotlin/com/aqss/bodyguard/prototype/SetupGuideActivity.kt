@@ -111,6 +111,8 @@ class SetupGuideActivity : Activity() {
     }
     private fun wifiRecoveryHelp(route: SetupRoute) {
         if (!route.id.startsWith("phone_") && route.id !in listOf("voice", "identify")) {
+            words(content, "Testing on your TV?", 18f, bold = true)
+            words(content, "Follow one picture at a time on your own TV. After the last step, check the result on the TV or in the official app. If the screen differs, open My screen looks different and return with Back.", color = skin.muted)
             words(content, "TV missing from the phone app? Check that the phone and TV use the same home Wi-Fi. Guest Wi-Fi may hide devices.", color = skin.muted)
         }
     }

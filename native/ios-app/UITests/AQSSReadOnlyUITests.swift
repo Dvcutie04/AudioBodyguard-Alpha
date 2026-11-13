@@ -253,6 +253,15 @@ final class AQSSReadOnlyUITests: XCTestCase {
                                     "TV address guide's Next needs a wide touch target on \(device)")
         app.buttons["tv-address-guide-mismatch"].tap()
         label("Find the right screen", app)
+        tap("Network menu", app, scroll: app.scrollViews["tv-address-guide-scroll"])
+        label("Step 3 of \(addressTargets.count)", app)
+        XCTAssertTrue(pictureDescription(app).contains("Highlighted: Network Information."))
+        next.tap()
+        label("Step 4 of \(addressTargets.count)", app)
+        back.tap()
+        label("Step 3 of \(addressTargets.count)", app)
+        back.tap()
+        label("Find the right screen", app)
         back.tap()
         XCTAssertEqual(next.label, "My TV matches")
         next.tap()
@@ -278,6 +287,12 @@ final class AQSSReadOnlyUITests: XCTestCase {
         XCTAssertEqual(field.value as? String, "192.168.0.42")
         label("Ready to check the address you enter.", app)
         XCTAssertFalse(app.buttons["tv-network-review"].exists)
+        tap("Find my TV’s IP address", app, scroll: app.scrollViews["tv-network-scroll"])
+        app.buttons["tv-address-guide-mismatch"].tap()
+        XCTAssertEqual(next.label, "Back to address field")
+        next.tap()
+        XCTAssertEqual(field.value as? String, "192.168.0.42")
+        XCTAssertFalse(app.buttons["tv-network-review"].exists)
         app.buttons["tv-network-back"].tap()
 
         tap("TV photo setup", app)
@@ -297,6 +312,16 @@ final class AQSSReadOnlyUITests: XCTestCase {
             }
             next.tap()
         }
+        XCTAssertTrue(photoScroll.waitForExistence(timeout: 5))
+        label("No photo selected", app)
+        XCTAssertFalse(field.exists)
+        if !app.buttons["VIZIO V505M-K09 address pictures"].exists {
+            tap("Photo help", app, scroll: photoScroll)
+        }
+        tap("VIZIO V505M-K09 address pictures", app, scroll: photoScroll)
+        app.buttons["tv-address-guide-mismatch"].tap()
+        XCTAssertEqual(next.label, "Back to photo setup")
+        next.tap()
         XCTAssertTrue(photoScroll.waitForExistence(timeout: 5))
         label("No photo selected", app)
         XCTAssertFalse(field.exists)
@@ -2629,6 +2654,7 @@ final class AQSSReadOnlyUITests: XCTestCase {
                 label("Connect your LG TV", app)
                 XCTAssertFalse(app.buttons["setup-intro-options"].exists)
                 showStepHelp(app)
+                label("Testing on your TV?", app)
                 XCTAssertTrue(app.buttons["setup-intro-options"].isHittable,
                               "Alternate LG routes must be available only after opening Help")
             }
