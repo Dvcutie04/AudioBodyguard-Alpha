@@ -1711,10 +1711,26 @@ final class AQSSReadOnlyUITests: XCTestCase {
                 action.tap(); return
             }
         }
+        // More settings is intentionally collapsed on the beginner page.
+        // XCTest coordinate taps can be swallowed while a new tab settles;
+        // target the actual disclosure and require its observable expanded
+        // state before asking for a child action. No retries or skipped checks.
+        if ["Advanced Settings", "Build details"].contains(title), app.buttons["more-settings"].exists {
+            let disclosure = app.buttons["more-settings"]
+            if disclosure.value as? String != "Expanded" {
+                let scroll = app.scrollViews["home-scroll"]
+                let visible = disclosure.frame.intersection(scroll.frame.intersection(app.frame))
+                XCTAssertTrue(disclosure.isHittable && visible.width >= 44 && visible.height >= 44,
+                              "More settings must be reachable before opening an advanced action")
+                disclosure.tap()
+                let expanded = XCTNSPredicateExpectation(
+                    predicate: NSPredicate(format: "value == %@", "Expanded"), object: disclosure)
+                XCTAssertEqual(XCTWaiter.wait(for: [expanded], timeout: 3), .completed,
+                               "More settings must expand before choosing \(title)")
+            }
+        }
         if !app.buttons.matching(NSPredicate(format: "label CONTAINS %@", title)).firstMatch.exists {
-            if ["Advanced Settings", "Build details"].contains(title), app.buttons["more-settings"].exists {
-                tap("More settings", app)
-            } else if ["TV photo setup", "Illustrated setup guides"].contains(title), app.buttons.matching(NSPredicate(format: "label CONTAINS %@", "Device help")).firstMatch.exists {
+            if ["TV photo setup", "Illustrated setup guides"].contains(title), app.buttons.matching(NSPredicate(format: "label CONTAINS %@", "Device help")).firstMatch.exists {
                 tap("Device help", app)
             } else if title == "Explore an example", app.buttons["insights-help"].exists {
                 tap("Insights help", app)
