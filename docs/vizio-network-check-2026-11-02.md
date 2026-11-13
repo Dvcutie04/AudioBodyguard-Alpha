@@ -18,6 +18,35 @@ For the physical trial, record the phone OS and TV firmware, compare the
 pictures to the real menus, and record the service reachability result.
 Pairing and identity require their own physical evidence.
 
+### Live acceptance for address recovery
+
+Use a VIZIO V505M-K09 and an iPhone or Android phone. Repeat on both phone
+platforms. Record the phone model, OS, installed app build and TV firmware.
+
+1. Connect the phone and TV to the same home Wi-Fi.
+2. Open **Devices → Device help → VIZIO network check**.
+3. Open **Find my TV’s IP address**.
+4. Tap **My screen looks different**.
+5. Check the model label on the TV.
+6. Choose the screen shown on the TV. Compare the highlighted control with
+   the real remote or menu.
+7. Follow the pictures to the IP Address row. Check that each action leads to
+   the menu shown in the next picture.
+8. Press **Back** until the recovery choices return. Check that each press
+   returns to the previous app screen.
+9. Tap **Back to address field**. Check that any value already entered is
+   still there.
+10. Enter the actual TV address.
+11. Tap **Check this address**. Record the outcome. A service reply establishes
+    reachability at the time of the check.
+12. Repeat the mismatch and exit from **Photo help**. Check that the app
+    returns directly to the same photo setup screen.
+
+If the menu differs from all the choices, capture the menu labels privately and
+record the firmware. On Android, also use system Back. Record any separately
+authorized pairing trial by observing the TV’s approval and confirming that the
+intended set responds to the paired controller.
+
 ## Decision and scope
 
 The owner wants a working TV/phone beta rather than more setup screens. Their

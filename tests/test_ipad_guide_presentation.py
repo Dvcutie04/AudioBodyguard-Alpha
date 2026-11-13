@@ -57,5 +57,7 @@ def test_network_page_ownership_retains_address_route_and_back_navigation():
     assert 'GuideScrollView(screenKey: screenKey, identifier: prefix + "-scroll"' in source
     assert 'accessibilityIdentifier(prefix + "-back")' in source
     assert 'accessibilityIdentifier(prefix + "-next")' in source
-    assert "if mismatch { mismatch = false }" in source
-    assert "else if index >= 0 { index -= 1 }" in source
+    back = source.split("private func back() {", 1)[1]
+    assert "if mismatch {\n            mismatch = false" in back
+    assert "index = recovery.origin\n            mismatch = true" in back
+    assert "else if index >= 0 {\n            index -= 1" in back
