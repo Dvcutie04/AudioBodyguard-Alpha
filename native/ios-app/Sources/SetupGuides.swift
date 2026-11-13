@@ -375,13 +375,17 @@ struct SetupGuidesView: View {
             .font(.system(size: 36)).foregroundColor(theme.violet).accessibilityHidden(true)
         Text(route.id.hasPrefix("phone_") ? "Have your \(phoneLabel) and home Wi-Fi password ready." : route.id == "roku_phone" ? "Keep your \(phoneLabel) and TV on the same Wi-Fi." : route.steps.first?.surface == "tv" ? "Have your TV remote ready." : "Have your \(phoneLabel) and TV ready.").font(.body)
         Text("One picture at a time.").foregroundColor(theme.accent)
+        if let saved = resumeIndex(route) {
+            Text("Continue at picture \(saved + 1).").foregroundColor(theme.accent)
+                .accessibilityIdentifier("setup-resume-location")
+        }
         disclosure("? Help", id: "setup-details") { detailsExpanded.toggle() }
         if detailsExpanded {
-                if let group = group, group.routes.count > 1 {
-                    control("Try another way", icon: "questionmark.circle", id: "setup-intro-options") {
-                        remember(); routeID = nil; index = -1; mismatch = false; detailsExpanded = true; pickerExpanded = true; referencesExpanded = false
-                    }
+            if let group = group, group.routes.count > 1 {
+                control("Try another way", icon: "questionmark.circle", id: "setup-intro-options") {
+                    remember(); routeID = nil; index = -1; mismatch = false; detailsExpanded = true; pickerExpanded = true; referencesExpanded = false
                 }
+            }
             if route.id == "lg_pair" {
                 Text("LG ThinQ is LG’s official TV setup app.").font(.callout)
             }
@@ -389,7 +393,6 @@ struct SetupGuidesView: View {
                 Text("Example TV models: \(route.models.joined(separator: ", "))")
                     .font(.callout).foregroundColor(theme.muted).accessibilityIdentifier("setup-model-scope")
             }
-            if let saved = resumeIndex(route) { Text("You can continue at picture \(saved + 1).").foregroundColor(theme.accent) }
             if let hint = shortHelp(route) { Text(hint).font(.callout).foregroundColor(theme.muted) }
             Text(route.appliesTo).font(.callout).foregroundColor(theme.muted)
             pictureJumps(route)

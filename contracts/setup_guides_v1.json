@@ -1045,7 +1045,7 @@
         },
         {
           "title": "Approve on the television",
-          "instruction": "Read the request on your TV and choose OK. If it shows a code instead, tap ? Help.",
+          "instruction": "Read the request on your TV and choose OK. If it shows a PIN code instead, tap ? Help.",
           "surface": "tv",
           "screen": "Connection request",
           "items": [

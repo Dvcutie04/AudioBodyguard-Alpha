@@ -384,20 +384,20 @@ class SetupGuideActivity : Activity() {
     private fun intro(route: SetupRoute) {
         words(content, if (route.id.startsWith("phone_")) "Have your phone and home Wi-Fi password ready." else if (route.id == "roku_phone") "Keep your phone and TV on the same Wi-Fi." else if (route.steps.first().surface == "tv") "Have your TV remote ready." else "Have your phone and TV ready.")
         words(content, "One picture at a time.", 18f, skin.accent)
+        resumeIndex(route)?.let { saved -> words(content, "Continue at picture ${saved + 1}.", color = skin.accent) }
         action(content, if (detailsExpanded) "? Hide help" else "? Help") { detailsExpanded = !detailsExpanded; render(true) }
         if (detailsExpanded) {
+            if ((group?.routes?.size ?: 0) > 1) action(content, "Try another way") {
+                remember(); routeId = null; index = -1; mismatch = false; detailsExpanded = true; pickerExpanded = true; referencesExpanded = false; render()
+            }
             if (route.id == "lg_pair") words(content, "LG ThinQ is LG’s official TV setup app.")
             if (route.models.isNotEmpty()) words(content, "Example TV models: ${route.models.joinToString()}", 16f, skin.muted)
-            resumeIndex(route)?.let { saved -> words(content, "You can continue at picture ${saved + 1}.", color = skin.accent) }
             shortHelp()?.let { words(content, it, color = skin.muted) }
             words(content, route.appliesTo, 16f, skin.muted)
             pictureJumps(route)
             pairingHelp(route)
             manualHelp(route)
             if (!route.id.startsWith("phone_")) action(content, "Phone Wi-Fi pictures") { chooseGroup("phone") }
-            if ((group?.routes?.size ?: 0) > 1) action(content, "Try another way") {
-                remember(); routeId = null; index = -1; mismatch = false; detailsExpanded = true; pickerExpanded = true; referencesExpanded = false; render()
-            }
             words(content, "Use the official setup screens for passwords and approvals.", color = skin.muted)
             if (route.id in listOf("roku_network", "roku_model")) action(content, "I’m already in Settings") { remember(); index = 2; detailsExpanded = false; referencesExpanded = false; render() }
             if (resumeIndex(route) != null) action(content, "Start from the beginning") { remember(); saveProgress(route, null); index = 0; detailsExpanded = false; render() }

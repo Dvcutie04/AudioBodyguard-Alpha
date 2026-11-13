@@ -112,7 +112,9 @@ final class AQSSReadOnlyUITests: XCTestCase {
         // public entry path to catch mismatched route selection at the source.
         tab("devices", app)
         tap("Illustrated setup guides", app)
-        findSetupBrand("Phone Wi-Fi setup", app)
+        // Phone setup remains available under Help, not in the TV-brand list.
+        tap("? Help", app, scroll: app.scrollViews["setup-scroll"])
+        tap("Phone Wi-Fi setup", app, scroll: app.scrollViews["setup-scroll"])
         label("\(device) — connect to your home Wi-Fi", app)
         label("Have your \(device) and home Wi-Fi password ready.", app)
         app.buttons["setup-next"].tap()
@@ -2275,7 +2277,7 @@ final class AQSSReadOnlyUITests: XCTestCase {
     func testNewVizioTVShowsAccountThenPhonePicturesInOrder() {
         let app = launch()
         tab("devices", app); tap("Illustrated setup guides", app); findSetupBrand("Vizio", app)
-        tap("VIZIO newer TV", app)
+        tap("Set up a newer VIZIO TV", app)
         label("VIZIO newer TV — My Hub account, then phone", app)
         for number in 1...14 {
             app.buttons["setup-next"].tap(); label("Step \(number) of 14", app)
@@ -2522,10 +2524,10 @@ final class AQSSReadOnlyUITests: XCTestCase {
     func testBrandPlatformsKeepRokuMenusSeparateAndOfferManualGoogleTVSetup() {
         let app = launch(); tab("devices", app)
         for (brand, platform, heading, highlight) in [
-            ("TCL", "Roku TV", "Find my IP address", "Network"),
-            ("Sharp", "", "Find my exact model", "System"),
-            ("Roku-branded TV", "", "Find my IP address", "Network"),
-            ("Philips", "Roku TV", "Find my IP address", "Network")
+            ("TCL", "Roku TV", "Set up your TCL TV", "Network"),
+            ("Sharp", "", "Set up your Sharp TV", "System"),
+            ("Roku-branded TV", "", "Set up your Roku TV", "Network"),
+            ("Philips", "Roku TV", "Set up your Philips TV", "Network")
         ] {
             tap("Illustrated setup guides", app); tap(brand, app)
             if !platform.isEmpty { tap(platform, app) }
@@ -2575,7 +2577,7 @@ final class AQSSReadOnlyUITests: XCTestCase {
         continueAfterFailure = false
         for (brand, pairingChoice, count, phoneTitle) in [
             ("LG", "", 13, "2. Check LG ThinQ on your phone"),
-            ("Vizio", "Vizio — pair the phone", 9, "2. Check VIZIO Mobile on your phone"),
+            ("Vizio", "Connect with VIZIO Mobile", 9, "2. Check VIZIO Mobile on your phone"),
             ("Sony", "", 9, "2. Check Google TV on your phone")
         ] {
             let app = launch(true)

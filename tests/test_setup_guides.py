@@ -451,4 +451,5 @@ def test_beginner_guide_choices_are_bounded_for_every_supported_tv_brand():
                   'Philips', 'Sharp', 'Roku', 'Insignia'):
         assert f'"{brand}"' in ios
         assert f'"{brand}"' in android
-    assert 'If it shows a code instead, tap ? Help.' in catalog['routes'][0]['steps'][14]['instruction']
+    samsung = next(route for route in catalog['routes'] if route['id'] == 'samsung_ok')
+    assert 'If it shows a PIN code instead, tap ? Help.' in samsung['steps'][14]['instruction']
