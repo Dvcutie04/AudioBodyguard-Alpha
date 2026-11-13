@@ -280,7 +280,7 @@ struct SetupGuidesView: View {
                 VStack(alignment: .leading, spacing: 3) {
                     Image(systemName: "tv").font(.title2)
                     ForEach(0..<3) { n in Capsule().fill(n == 0 ? Color.white : Color.white.opacity(0.35)).frame(width: n == 0 ? 40 : 28, height: 3) }
-                }.foregroundColor(.white).padding(10).background(blue ? Color.blue : theme.violet).clipShape(RoundedRectangle(cornerRadius: 8)).accessibilityHidden(true)
+                }.foregroundColor(theme.controlText).padding(10).background(theme.control).clipShape(RoundedRectangle(cornerRadius: 8)).accessibilityHidden(true)
                 VStack(alignment: .leading) { Text(title).font(.headline); Text(subtitle).font(.caption).foregroundColor(theme.muted) }
                 Spacer(minLength: 0); Image(systemName: "chevron.right").accessibilityHidden(true)
             }.frame(maxWidth: .infinity, minHeight: 64, alignment: .leading)
