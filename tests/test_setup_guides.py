@@ -438,7 +438,7 @@ def test_beginner_guide_choices_are_bounded_for_every_supported_tv_brand():
     # The catalog keeps the TV manufacturer's real button/menu names.
     # Explanations and alternative routes belong in the app's Help disclosure.
     for route in catalog['routes']:
-        assert all(1 <= len(step['instruction'].split()) <= 25 for step in route['steps'])
+        assert all(1 <= len(step['instruction'].split()) <= 20 for step in route['steps'])
     ios = (root / 'native/ios-app/Sources/SetupGuides.swift').read_text()
     android = (root / 'native/android/app/src/main/kotlin/com/aqss/bodyguard/prototype/SetupGuideActivity.kt').read_text()
     assert 'id: "setup-brand-help"' in ios
