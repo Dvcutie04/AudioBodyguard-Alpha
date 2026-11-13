@@ -107,6 +107,11 @@ struct SetupGuidesView: View {
         default: return nil
         }
     }
+    @ViewBuilder private func wifiRecoveryHelp(_ route: AQSSSetupRoute) -> some View {
+        if route.id != "voice" && route.id != "identify" && !route.id.hasPrefix("phone_") {
+            Text("TV missing from the phone app? Check that the phone and TV use the same home Wi-Fi. Guest Wi-Fi may hide devices.").font(.callout).foregroundColor(theme.muted)
+        }
+    }
     private var platforms: [(String, String)] {
         switch groupID {
         case "tcl": return [("Roku TV", "tcl_roku"), ("Google TV / Android TV", "tcl_google"), ("Fire TV", "tcl_fire")]
@@ -178,6 +183,7 @@ struct SetupGuidesView: View {
                             disclosure("? Step help", id: "setup-step-details") { detailsExpanded.toggle() }
                             if detailsExpanded {
                                 if let hint = shortHelp(route) { Text(hint).font(.callout).foregroundColor(theme.muted) }
+                                wifiRecoveryHelp(route)
                                 if index == 14 && route.id == "samsung_ok" {
                                     control("TV shows a PIN", icon: "number", id: "setup-samsung-pin") { switchSamsungApproval("samsung_pin") }
                                 }
@@ -394,6 +400,7 @@ struct SetupGuidesView: View {
                     .font(.callout).foregroundColor(theme.muted).accessibilityIdentifier("setup-model-scope")
             }
             if let hint = shortHelp(route) { Text(hint).font(.callout).foregroundColor(theme.muted) }
+            wifiRecoveryHelp(route)
             Text(route.appliesTo).font(.callout).foregroundColor(theme.muted)
             pictureJumps(route)
             pairingHelp(route)

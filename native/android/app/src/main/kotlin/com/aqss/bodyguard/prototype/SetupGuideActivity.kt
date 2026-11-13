@@ -109,6 +109,11 @@ class SetupGuideActivity : Activity() {
         "Sharp", "Roku" -> "Roku is the TV’s menu system. An IP address is a number in its network settings."
         else -> null
     }
+    private fun wifiRecoveryHelp(route: SetupRoute) {
+        if (!route.id.startsWith("phone_") && route.id !in listOf("voice", "identify")) {
+            words(content, "TV missing from the phone app? Check that the phone and TV use the same home Wi-Fi. Guest Wi-Fi may hide devices.", color = skin.muted)
+        }
+    }
     private val route get() = SetupContent.routes.firstOrNull { it.id == routeId }
     private val phone get() = SetupPhone.androidManufacturer(Build.MANUFACTURER)
     private fun startingRoute(): String? = when {
@@ -285,6 +290,7 @@ class SetupGuideActivity : Activity() {
                 action(content, if (detailsExpanded) "? Hide step help" else "? Step help") { detailsExpanded = !detailsExpanded; render(true) }
                 if (detailsExpanded) {
                     shortHelp()?.let { words(content, it, color = skin.muted) }
+                    wifiRecoveryHelp(route)
                     if (index == 14 && route.id == "samsung_ok") action(content, "TV shows a PIN") { switchSamsungApproval("samsung_pin") }
                 if (index == 14 && route.id == "samsung_pin") action(content, "TV shows OK instead") { switchSamsungApproval("samsung_ok") }
                 if (route.id == "philips_voice_remote" && index == 4) action(content, "Remote already connected") { skipTo(route.id, 4, 9) }
@@ -393,6 +399,7 @@ class SetupGuideActivity : Activity() {
             if (route.id == "lg_pair") words(content, "LG ThinQ is LG’s official TV setup app.")
             if (route.models.isNotEmpty()) words(content, "Example TV models: ${route.models.joinToString()}", 16f, skin.muted)
             shortHelp()?.let { words(content, it, color = skin.muted) }
+            wifiRecoveryHelp(route)
             words(content, route.appliesTo, 16f, skin.muted)
             pictureJumps(route)
             pairingHelp(route)
