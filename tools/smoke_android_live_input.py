@@ -1425,7 +1425,7 @@ def main():
                 screenshot(name + "_missing_intro")
                 raise AssertionError(f"TV guide intro not ready: {name}")
             if has(root, "Resume guide"):
-                guide_tap("? Step help", name + "_restart_help")
+                guide_tap("? Help", name + "_restart_help")
                 guide_tap("Start from the beginning", name + "_restart")
             else:
                 tap("Start part two" if phone else "Start guide", name + "_start")
@@ -1476,9 +1476,8 @@ def main():
         wait_for("Testing on your TV?", "tv_guides_lg_live_check_help")
         guide_tap("Try another way", "tv_guides_lg_phone_options")
         guide_tap("2. Check LG ThinQ on your phone", "tv_guides_lg_phone_select")
-        # Pairing is an optional action behind Step help, not a primary intro
-        # button. Exercise the real help disclosure and one-step Back history.
-        guide_tap("? Step help", "tv_guides_lg_phone_pairing_disclosure")
+        # Open intro Help before jumping to the pairing guide, then verify Back.
+        guide_tap("? Help", "tv_guides_lg_phone_pairing_disclosure")
         guide_tap("Open pairing pictures", "tv_guides_lg_phone_pairing_jump")
         wait_for("Connect your LG TV", "tv_guides_lg_pairing_intro")
         tap("Back", "tv_guides_lg_pairing_back_to_phone")
