@@ -2406,7 +2406,7 @@
         },
         {
           "title": "Check which setup screen you have",
-          "instruction": "Scan only if your TV offers it and your phone runs Android 9+ or iOS 17+. Otherwise use the remote.",
+          "instruction": "Scan if your TV offers it and your phone runs Android 9+ or iOS 17+. Otherwise choose TV remote setup.",
           "surface": "tv",
           "screen": "Set up with your phone",
           "items": [
