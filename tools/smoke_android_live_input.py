@@ -1520,7 +1520,8 @@ def main():
 
         open_brand("Hisense", "tv_guides_hisense", "VIDAA")
         guide_tap("? Help", "tv_guides_hisense_model_help")
-        wait_for("43A6GV / VIDAA U5", "tv_guides_hisense_model_scope")
+        wait_for_all(("Hisense • VIDAA (43A6GV / U5 documented)", "Example TV models: 43A6GV"),
+                     "tv_guides_hisense_model_scope")
         screenshot("tv_guides_hisense_model_scope")
         tap("Close", "tv_guides_hisense_close")
         open_brand("Insignia — match Roku TV or Fire TV", "tv_guides_insignia", "Fire TV")
