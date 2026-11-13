@@ -1715,12 +1715,22 @@ final class AQSSReadOnlyUITests: XCTestCase {
         // XCTest coordinate taps can be swallowed while a new tab settles;
         // target the actual disclosure and require its observable expanded
         // state before asking for a child action. No retries or skipped checks.
-        if ["Advanced Settings", "Build details"].contains(title), app.buttons["more-settings"].exists {
+        // A Jump to sheet owns its own advanced-actions menu. Do not require
+        // the obscured Settings-page disclosure to be hittable through that sheet.
+        // On the Settings page itself, scroll until the actual button has a full
+        // touch target, then verify that one tap really expands its children.
+        if ["Advanced Settings", "Build details"].contains(title),
+           !app.scrollViews["menu-scroll"].exists, app.buttons["more-settings"].exists {
             let disclosure = app.buttons["more-settings"]
             if disclosure.value as? String != "Expanded" {
                 let scroll = app.scrollViews["home-scroll"]
+                for _ in 0..<8 {
+                    let visible = disclosure.frame.intersection(scroll.frame.intersection(app.frame))
+                    if disclosure.isHittable && !visible.isNull && visible.width >= 44 && visible.height >= 44 { break }
+                    scroll.swipeUp(velocity: .slow)
+                }
                 let visible = disclosure.frame.intersection(scroll.frame.intersection(app.frame))
-                XCTAssertTrue(disclosure.isHittable && visible.width >= 44 && visible.height >= 44,
+                XCTAssertTrue(disclosure.isHittable && !visible.isNull && visible.width >= 44 && visible.height >= 44,
                               "More settings must be reachable before opening an advanced action")
                 disclosure.tap()
                 let expanded = XCTNSPredicateExpectation(
@@ -1890,7 +1900,10 @@ final class AQSSReadOnlyUITests: XCTestCase {
     }
 
     private func jump(_ title: String, _ app: XCUIApplication) {
-        app.buttons["Jump to"].tap(); tap(title, app)
+        app.buttons["Jump to"].tap()
+        let menu = app.scrollViews["menu-scroll"]
+        XCTAssertTrue(menu.waitForExistence(timeout: 5), "Jump menu must be visible before choosing \(title)")
+        tap(title, app, scroll: menu)
         // Wait for the native sheet animation before choosing the next scroll
         // surface. Its outgoing menu otherwise captures the next lookup.
         let dismissed = XCTNSPredicateExpectation(predicate: NSPredicate(format: "exists == false"), object: app.scrollViews["menu-scroll"])
