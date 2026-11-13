@@ -377,6 +377,11 @@ struct SetupGuidesView: View {
         Text("One picture at a time.").foregroundColor(theme.accent)
         disclosure("? Help", id: "setup-details") { detailsExpanded.toggle() }
         if detailsExpanded {
+                if let group = group, group.routes.count > 1 {
+                    control("Try another way", icon: "questionmark.circle", id: "setup-intro-options") {
+                        remember(); routeID = nil; index = -1; mismatch = false; detailsExpanded = true; pickerExpanded = true; referencesExpanded = false
+                    }
+                }
             if route.id == "lg_pair" {
                 Text("LG ThinQ is LG’s official TV setup app.").font(.callout)
             }
@@ -394,11 +399,6 @@ struct SetupGuidesView: View {
                 Text("Use the official setup screens for passwords and approvals.").font(.callout)
                 if !route.id.hasPrefix("phone_") {
                     control("Phone Wi-Fi pictures", icon: "wifi", id: "setup-phone-wifi") { chooseGroup("phone") }
-                }
-                if let group = group, group.routes.count > 1 {
-                    control("Try another way", icon: "questionmark.circle", id: "setup-intro-options") {
-                        remember(); routeID = nil; index = -1; mismatch = false; detailsExpanded = true; pickerExpanded = true; referencesExpanded = false
-                    }
                 }
                 if route.id == "roku_network" || route.id == "roku_model" {
                     control("I’m already in Settings", icon: "gearshape", id: "setup-skip-home") { remember(); index = 2; detailsExpanded = false; referencesExpanded = false }
