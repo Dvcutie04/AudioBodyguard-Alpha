@@ -25,6 +25,11 @@ class WorksheetRotationPreparationTests(unittest.TestCase):
         self.assertIn(b'XCTAssertEqual(preview.label, reviewed)', patched)
         self.assertIn(b'preview.waitForExistence(timeout: 5)', patched)
         self.assertIn(b'timeout: 3', patched)
+        self.assertIn(b'button.width >= 44, button.height >= 44', patched)
+        self.assertIn(b'now - since >= 0.25', patched)
+        self.assertIn(b'lastReadiness', patched)
+        self.assertIn(b'readinessSamples', patched)
+        self.assertIn(b'last observation:', patched)
         self.assertNotIn(b'sleep(', patched)
         self.assertNotIn(b'XCTSkip', patched)
 
