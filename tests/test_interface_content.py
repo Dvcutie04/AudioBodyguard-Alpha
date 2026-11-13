@@ -76,6 +76,13 @@ class InterfaceContentTests(unittest.TestCase):
         android = (ROOT / "native/android/app/src/main/kotlin/com/aqss/bodyguard/prototype/SetupGuideActivity.kt").read_text()
         self.assertIn("skin.style(this, primary)", android)
 
+    def test_daylight_canvas_is_pure_white_with_accessible_controls(self):
+        # The owner's white default is a presentation choice, not proof of connectivity.
+        self.assertEqual(self.data["palettes"]["daylight"]["background"], "FFFFFF")
+        self.assertEqual(self.data["palettes"]["daylight"]["control"], "64DAE8")
+        # Existing contrast and neutral disabled-state contract checks still apply.
+        validate(self.data)
+
     def test_fresh_install_defaults_to_daylight_without_overriding_saved_preferences(self):
         # Static guard for first-launch presentation; native light-appearance screenshots
         # remain a separate verification gate. Existing saved choices are untouched.
