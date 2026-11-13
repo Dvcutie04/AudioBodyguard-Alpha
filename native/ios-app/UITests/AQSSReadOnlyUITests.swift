@@ -1845,13 +1845,13 @@ final class AQSSReadOnlyUITests: XCTestCase {
         XCTAssertEqual(XCTWaiter.wait(for: [closed], timeout: 5), .completed)
     }
     private func showStepHelp(_ app: XCUIApplication) {
-        let toggle = ["setup-step-details", "setup-details", "setup-platform-help", "setup-mismatch-details"]
+        let toggle = ["setup-step-details", "setup-details", "setup-group-help", "setup-platform-help", "setup-brand-help", "setup-mismatch-details"]
             .map { app.buttons[$0] }.first { $0.exists }
         XCTAssertNotNil(toggle)
         if toggle?.value as? String != "Expanded" { toggle?.tap() }
     }
     private func hideStepHelp(_ app: XCUIApplication) {
-        let toggle = ["setup-step-details", "setup-details", "setup-platform-help", "setup-mismatch-details"]
+        let toggle = ["setup-step-details", "setup-details", "setup-group-help", "setup-platform-help", "setup-brand-help", "setup-mismatch-details"]
             .map { app.buttons[$0] }.first { $0.exists }
         if toggle?.value as? String == "Expanded" { toggle?.tap() }
     }
@@ -2278,7 +2278,12 @@ final class AQSSReadOnlyUITests: XCTestCase {
         let app = launch()
         tab("devices", app); tap("Illustrated setup guides", app); findSetupBrand("Vizio", app)
         tap("Set up a newer VIZIO TV", app)
-        label("VIZIO newer TV — My Hub account, then phone", app)
+        // Keep the simplified primary heading, but verify the exact
+        // account-setup qualification is still available in contextual Help.
+        label("Set up your VIZIO TV", app)
+        showStepHelp(app)
+        label("My Hub", app)
+        hideStepHelp(app)
         for number in 1...14 {
             app.buttons["setup-next"].tap(); label("Step \(number) of 14", app)
             if [2, 3, 4, 7, 9, 13, 14].contains(number) {
@@ -2539,7 +2544,14 @@ final class AQSSReadOnlyUITests: XCTestCase {
             closeSetupAndReturnToDevices(app)
         }
         tap("Illustrated setup guides", app); findSetupBrand("Hisense", app); tap("VIDAA", app)
-        label("43A6GV / VIDAA U5", app); screenshot("Hisense asks for the matching VIDAA menu", app)
+        // Model and firmware qualifiers belong in Help, not on the
+        // one-action introduction. Both must remain discoverable.
+        label("Set up your Hisense TV", app)
+        showStepHelp(app)
+        label("Example TV models: 43A6GV", app)
+        label("VIDAA U5", app)
+        screenshot("Hisense asks for the matching VIDAA menu", app)
+        hideStepHelp(app)
         closeSetupAndReturnToDevices(app)
 
         tap("Illustrated setup guides", app); findSetupBrand("Insignia", app); tap("Fire TV", app)

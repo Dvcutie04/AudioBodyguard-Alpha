@@ -13,7 +13,7 @@ import hashlib
 import json
 from pathlib import Path
 
-EXPECTED_BLOB = "30ffc66d850754dfcf5a7cab0a4016dcb0c76442"
+EXPECTED_BLOB = "a330506ddf6f1841b7ce9c76713fc2afca88b5d9"
 ANCHOR = '''        XCUIDevice.shared.orientation = .landscapeLeft
         app.buttons["test-setup-review"].tap()
         XCTAssertTrue(preview.waitForExistence(timeout: 5)); let reviewed = preview.label
