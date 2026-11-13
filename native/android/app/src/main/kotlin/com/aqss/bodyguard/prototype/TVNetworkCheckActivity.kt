@@ -79,6 +79,9 @@ class TVNetworkCheckActivity : Activity() {
     private var guidePanel: LinearLayout? = null
     private var guideIndex = -1
     private var guideMismatch = false
+    private data class RecoveryJump(val step: Int, val origin: Int)
+    private val recoveryHistory = mutableListOf<RecoveryJump>()
+    private val recoveryChoices = listOf("TV home screen", "TV Settings", "Network menu", "Network Information")
     private var lastOutcome: TVTrialOutcome? = null
     private data class ReachedPeer(val target: LocalTVTarget, val port: Int, val wifi: Network)
     private var reachedPeer: ReachedPeer? = null
@@ -173,6 +176,7 @@ class TVNetworkCheckActivity : Activity() {
         currentGuide = guide
         guideIndex = -1
         guideMismatch = false
+        recoveryHistory.clear()
         val panel = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL }
         guidePanel = panel
         form.visibility = View.GONE
@@ -199,7 +203,21 @@ class TVNetworkCheckActivity : Activity() {
             accessibilityLiveRegion = View.ACCESSIBILITY_LIVE_REGION_POLITE
         })
         if (guideMismatch) {
-            content.addView(words(if (isWiFi) "Search for Wi-Fi in Settings." else "Look up the network information for your exact TV model in VIZIO Support."))
+            if (isWiFi) {
+                content.addView(words("Search for Wi-Fi in Settings."))
+            } else {
+                content.addView(words("Check the model number on the back of your TV. If it says V505M-K09, choose what you see on the TV."))
+                recoveryChoices.forEachIndexed { index, label ->
+                    content.addView(button(label) {
+                        if (index !in steps.indices) return@button
+                        recoveryHistory.add(RecoveryJump(index, guideIndex))
+                        guideIndex = index
+                        guideMismatch = false
+                        renderPictureGuide()
+                    })
+                }
+                content.addView(words("If your model or menu differs, return to setup. Use the address from your TV’s own network settings."))
+            }
         } else {
             when {
                 step != null -> {
@@ -246,9 +264,16 @@ class TVNetworkCheckActivity : Activity() {
     }
 
     private fun back() {
+        val recovery = recoveryHistory.lastOrNull()
         when {
             guidePanel == null -> finish()
             guideMismatch -> { guideMismatch = false; renderPictureGuide() }
+            recovery != null && guideIndex == recovery.step -> {
+                recoveryHistory.removeAt(recoveryHistory.lastIndex)
+                guideIndex = recovery.origin
+                guideMismatch = true
+                renderPictureGuide()
+            }
             guideIndex >= 0 -> { guideIndex -= 1; renderPictureGuide() }
             else -> closePictureGuide()
         }
