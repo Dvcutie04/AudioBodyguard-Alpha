@@ -827,6 +827,15 @@ def main():
             wait_for_all(("VIZIO V505M-K09 · Android", "My TV matches"), prefix + "_address_guide_model")
             reveal("My screen looks different", prefix + "_address_guide_mismatch")
             wait_for("Find the right screen", prefix + "_address_guide_recovery")
+            reveal("Network menu", prefix + "_address_guide_recovery_network")
+            recovered = wait_for("Step 3 of 5", prefix + "_address_guide_recovery_step")
+            assert any("Highlighted: Network Information." in node.get("content-desc", "") for node in recovered.iter("node"))
+            tap("Next", prefix + "_address_guide_recovery_next")
+            wait_for("Step 4 of 5", prefix + "_address_guide_recovery_next_step")
+            adb("shell", "input", "keyevent", "KEYCODE_BACK")
+            wait_for("Step 3 of 5", prefix + "_address_guide_back_to_recovered_step")
+            adb("shell", "input", "keyevent", "KEYCODE_BACK")
+            wait_for("Find the right screen", prefix + "_address_guide_back_to_recovery")
             tap("Back", prefix + "_address_guide_model_back")
             tap("My TV matches", prefix + "_address_guide_start")
             targets = ("Menu (gear)", "Network", "Network Information", "IP Address", "TV IP address")
@@ -843,6 +852,11 @@ def main():
                     screenshot(name)
                 tap("Back to address field" if step == len(targets) else "Next", name + "_next")
             wait_for_all(("8.8.8.8", "Ready to check the address you enter."), prefix + "_address_guide_return")
+            reveal("Find my TV’s IP address", prefix + "_address_guide_reopen")
+            reveal("My screen looks different", prefix + "_address_guide_unmatched")
+            tap("Back to address field", prefix + "_address_guide_leave_recovery")
+            idle = wait_for_all(("8.8.8.8", "Ready to check the address you enter."), prefix + "_address_guide_unmatched_return")
+            assert not has(idle, "Read service certificate") and not has(idle, "Review test result")
             reveal("Check this address", prefix + "_network_rejected")
             root = wait_for_all(("Enter the private IPv4 address", "TV identity, pairing and audio protection are not verified."), prefix + "_network_boundary")
             assert not has(root, "Read service certificate")
@@ -905,7 +919,7 @@ def main():
             tap("Back", prefix + "_network_back")
             reveal("Illustrated setup guides. Jump to a TV or home app", prefix + "_guides")
             reveal("Sony", prefix + "_google_tv")
-            wait_for_all(("Google TV / Android TV — pair a phone remote", "Start guide"), prefix + "_google_intro")
+            wait_for_all(("Set up your Sony TV", "Start guide"), prefix + "_google_intro")
             tap("Start guide", prefix + "_google_start")
             tap("Next", prefix + "_google_store")
             root = wait_for("Google Play", prefix + "_google_phone_store")
@@ -938,7 +952,11 @@ def main():
                 if clicked:
                     return
                 scroller = next((n for n in root.iter("node") if n.get("class") == "android.widget.ScrollView"), None)
-                assert scroller is not None, "Worksheet content viewport unavailable"
+                if scroller is None:
+                    # The emulator can expose only its root during a keyboard/layout transition.
+                    # Wait for the worksheet before attempting a scroll.
+                    time.sleep(0.5)
+                    continue
                 x0, y0, x1, y1 = map(int, re.findall(r"-?\d+", scroller.get("bounds")))
                 x = (x0 + x1) // 2
                 adb("shell", "input", "swipe", str(x), str(int(y0 + (y1-y0)*.8)), str(x), str(int(y0 + (y1-y0)*.2)), "350")
@@ -1363,13 +1381,14 @@ def main():
         guide_tap("Illustrated setup guides. Jump to a TV or home app", "tv_guides_open")
         guide_tap("Philips", "tv_guides_philips")
         guide_tap("Google TV / Android TV", "tv_guides_philips_platform")
-        guide_tap("? Step help", "tv_guides_philips_help")
-        guide_tap("Other setup options", "tv_guides_philips_options")
+        guide_tap("? Help", "tv_guides_philips_help")
+        guide_tap("Try another way", "tv_guides_philips_options")
         guide_tap("Philips Google TV — pair the voice remote", "tv_guides_philips_remote")
         tap("Start guide", "tv_guides_philips_start")
         for number in range(4):
             tap("Next", f"tv_guides_philips_prefix_{number}")
         wait_for_all(("Step 5 of 10", "Check whether the remote is already paired"), "tv_guides_philips_decision")
+        guide_tap("? Step help", "tv_guides_philips_remote_help")
         guide_tap("Remote already connected", "tv_guides_philips_connected")
         wait_for_all(("Step 10 of 10", "Check the real status"), "tv_guides_philips_skipped")
         screenshot("tv_guides_philips_skipped")
@@ -1382,6 +1401,7 @@ def main():
         wait_for("Step 8 of 10", "tv_guides_philips_skips_reset")
         tap("Back", "tv_guides_philips_blinking_back")
         wait_for("Step 6 of 10", "tv_guides_philips_pair_back")
+        guide_tap("? Step help", "tv_guides_philips_blinking_help")
         guide_tap("Light is not blinking", "tv_guides_philips_not_blinking")
         wait_for("Step 7 of 10", "tv_guides_philips_reset_only_when_needed")
         screenshot("tv_guides_philips_reset_only_when_needed")
@@ -1409,7 +1429,7 @@ def main():
                 screenshot(name + "_missing_intro")
                 raise AssertionError(f"TV guide intro not ready: {name}")
             if has(root, "Resume guide"):
-                guide_tap("? Step help", name + "_restart_help")
+                guide_tap("? Help", name + "_restart_help")
                 guide_tap("Start from the beginning", name + "_restart")
             else:
                 tap("Start part two" if phone else "Start guide", name + "_start")
@@ -1432,6 +1452,7 @@ def main():
         wait_for("Step 6 of 9", "tv_guides_google_back_on_tv")
         tap("Close", "tv_guides_google_close")
         open_brand("Sony", "tv_guides_google_reopen")
+        guide_tap("? Help", "tv_guides_google_resume_help")
         wait_for("Continue at picture 6.", "tv_guides_google_resume_intro")
         tap("Resume guide", "tv_guides_google_resume")
         wait_for("Read your TV code", "tv_guides_google_resumed_tv")
@@ -1455,14 +1476,14 @@ def main():
         tap("Close", "tv_guides_lg_close")
 
         open_brand("LG", "tv_guides_lg_phone")
-        guide_tap("? Step help", "tv_guides_lg_phone_help")
-        guide_tap("Other setup options", "tv_guides_lg_phone_options")
+        guide_tap("? Help", "tv_guides_lg_phone_help")
+        wait_for("Testing on your TV?", "tv_guides_lg_live_check_help")
+        guide_tap("Try another way", "tv_guides_lg_phone_options")
         guide_tap("2. Check LG ThinQ on your phone", "tv_guides_lg_phone_select")
-        # Pairing is an optional action behind Step help, not a primary intro
-        # button. Exercise the real help disclosure and one-step Back history.
-        guide_tap("? Step help", "tv_guides_lg_phone_pairing_disclosure")
+        # Open intro Help before jumping to the pairing guide, then verify Back.
+        guide_tap("? Help", "tv_guides_lg_phone_pairing_disclosure")
         guide_tap("Open pairing pictures", "tv_guides_lg_phone_pairing_jump")
-        wait_for("LG — pair with ThinQ", "tv_guides_lg_pairing_intro")
+        wait_for("Connect your LG TV", "tv_guides_lg_pairing_intro")
         tap("Back", "tv_guides_lg_pairing_back_to_phone")
         wait_for("2. Check LG ThinQ on your phone", "tv_guides_lg_phone_restored")
         start_picture("tv_guides_lg_phone", phone=True)
@@ -1472,10 +1493,10 @@ def main():
         tap("Finish part two", "tv_guides_lg_phone_finish")
         wait_for_all(("DEVICES", "Connection not verified"), "tv_guides_lg_phone_no_connection")
 
-        # Vizio exposes two primary routes; its brand screen has a visible
-        # `? Other setup options` disclosure, not a route-intro step-help button.
+        # Open the brand's Help to reach the alternate Vizio account route.
         open_brand("Vizio", "tv_guides_vizio")
-        guide_tap("? Other setup options", "tv_guides_vizio_options")
+        guide_tap("? Help", "tv_guides_vizio_options")
+        guide_tap("Try another way", "tv_guides_vizio_other_routes")
         guide_tap("Vizio — link the TV account (6-digit code)", "tv_guides_vizio_account")
         start_picture("tv_guides_vizio")
         for number in range(2, 12):
@@ -1487,10 +1508,10 @@ def main():
         tap("Close", "tv_guides_vizio_close")
 
         for name, brand, platform, title, selection in (
-            ("tcl_roku", "TCL", "Roku TV", "Find my IP address", "Network"),
-            ("sharp", "Sharp — Roku TV models", None, "Find my exact model", "System"),
-            ("roku", "Roku-branded TV", None, "Find my IP address", "Network"),
-            ("philips_roku", "Philips", "Roku TV", "Find my IP address", "Network"),
+            ("tcl_roku", "TCL", "Roku TV", "Set up your TCL TV", "Network"),
+            ("sharp", "Sharp — Roku TV models", None, "Set up your Sharp TV", "System"),
+            ("roku", "Roku-branded TV", None, "Set up your Roku TV", "Network"),
+            ("philips_roku", "Philips", "Roku TV", "Set up your Philips TV", "Network"),
         ):
             open_brand(brand, "tv_guides_" + name, platform)
             wait_for(title, "tv_guides_" + name + "_title")
@@ -1502,7 +1523,9 @@ def main():
             tap("Close", "tv_guides_" + name + "_close")
 
         open_brand("Hisense", "tv_guides_hisense", "VIDAA")
-        wait_for("43A6GV / VIDAA U5", "tv_guides_hisense_model_scope")
+        guide_tap("? Help", "tv_guides_hisense_model_help")
+        wait_for_all(("Hisense • VIDAA (43A6GV / U5 documented)", "Example TV models: 43A6GV"),
+                     "tv_guides_hisense_model_scope")
         screenshot("tv_guides_hisense_model_scope")
         tap("Close", "tv_guides_hisense_close")
         open_brand("Insignia — match Roku TV or Fire TV", "tv_guides_insignia", "Fire TV")
@@ -1512,6 +1535,7 @@ def main():
         screenshot("tv_guides_fire_choice")
         tap("Next", "tv_guides_fire_account")
         wait_for_all(("Step 6 of 8", "Read the account approval screen"), "tv_guides_fire_tv_account")
+        guide_tap("? Step help", "tv_guides_fire_account_help")
         guide_tap("Account sign-in finished", "tv_guides_fire_account_done")
         wait_for("Step 8 of 8", "tv_guides_fire_skipped_code")
         tap("Back", "tv_guides_fire_back")
@@ -1520,8 +1544,8 @@ def main():
         tap("Close", "tv_guides_fire_close")
 
         open_brand("TCL", "tv_guides_google_manual", "Google TV / Android TV")
-        guide_tap("? Step help", "tv_guides_google_setup_help")
-        guide_tap("Other setup options", "tv_guides_google_setup_options")
+        guide_tap("? Help", "tv_guides_google_setup_help")
+        guide_tap("Try another way", "tv_guides_google_setup_options")
         guide_tap("Google TV — first setup with Google Home", "tv_guides_google_setup")
         start_picture("tv_guides_google_qr")
         for number in range(8): tap("Next", f"tv_guides_google_qr_prefix_{number}")
@@ -1562,13 +1586,14 @@ def main():
 
         tap("Devices", "samsung_devices")
         open_samsung("samsung_first")
-        intro = wait_for("Samsung — connect with SmartThings", "samsung_single_intro")
+        intro = wait_for("Set up your Samsung TV", "samsung_single_intro")
         assert not has(intro, "TV shows a PIN"), "Do not predict the TV request at the entry screen"
         tap("Start guide", "samsung_start")
         for number in range(14):
             tap("Next", f"samsung_prefix_{number}")
         wait_for_all(("Step 15 of 17", "Approve on the television"), "samsung_ok_request")
         screenshot("samsung_ok_request")
+        tap_scroll("? Step help", "samsung_pin_options_help")
         tap_scroll("TV shows a PIN", "samsung_switch_pin")
         wait_for_all(("Step 15 of 18", "Read the TV PIN", "On your TV"), "samsung_tv_pin")
         screenshot("samsung_tv_pin")
@@ -1585,6 +1610,7 @@ def main():
         wait_for("Enter the TV PIN", "samsung_pin_portrait")
         tap("Close", "samsung_close_pin")
         open_samsung("samsung_reopen_pin")
+        tap_scroll("? Help", "samsung_pin_resume_help")
         wait_for("Continue at picture 16.", "samsung_pin_resume_intro")
         tap("Resume guide", "samsung_resume_pin")
         wait_for("Enter the TV PIN", "samsung_resumed_phone_pin")
@@ -1593,7 +1619,7 @@ def main():
         tap("Finish guide", "samsung_pin_finish")
         wait_for("No qualified device connected", "samsung_pin_finished_unknown")
         open_samsung("samsung_cleared")
-        root = wait_for_all(("Samsung — connect with SmartThings", "Start guide"), "samsung_pairing_bookmark_cleared")
+        root = wait_for_all(("Set up your Samsung TV", "Start guide"), "samsung_pairing_bookmark_cleared")
         assert not has(root, "Continue at picture"), "Completing the variant must clear the shared pairing bookmark"
         tap("Close", "samsung_close_cleared")
         tap("Home", "samsung_home")
@@ -1612,7 +1638,7 @@ def main():
         tap_scroll("Phone pictures", "samsung_phone_pictures")
         wait_for_all(("2. Check Samsung on your phone", "TV is missing — open pairing"), "samsung_phone_intro")
         tap_scroll("TV is missing — open pairing", "samsung_missing_help")
-        wait_for("Samsung — connect with SmartThings", "samsung_missing_pairing_intro")
+        wait_for("Set up your Samsung TV", "samsung_missing_pairing_intro")
         tap("Back", "samsung_missing_back")
         wait_for("2. Check Samsung on your phone", "samsung_missing_returns_to_phone_intro")
         tap("Start part two", "samsung_phone_begin")
@@ -1832,6 +1858,12 @@ def main():
                     screenshot("photo_guide_ip_address")
                 tap("Back to photo setup" if step == 4 else "Next", f"photo_guide_advance_{step}")
             wait_for_all(("TV photo setup", "No photo selected"), "photo_guide_returns_to_photo")
+            if not has(screen("photo_guide_help_state")[0], "VIZIO V505M-K09 address pictures"):
+                tap("? Photo help", "photo_reopen_guide_help")
+            tap("VIZIO V505M-K09 address pictures", "photo_reopen_model_guide")
+            tap("My screen looks different", "photo_guide_unmatched")
+            tap("Back to photo setup", "photo_guide_leave_recovery")
+            wait_for_all(("TV photo setup", "No photo selected"), "photo_guide_unmatched_returns_to_photo")
         tap("Show photo details", f"{case_prefix}_show_details")
         wait_photo_fields(("No photo selected", "Brand: Not identified", "Model: Not identified", "TV IP hint: Not identified"), f"{case_prefix}_empty_details")
         fixture = Path("native/ios/Tests/AQSSNativeFeedbackTests/Fixtures") / fixture_name

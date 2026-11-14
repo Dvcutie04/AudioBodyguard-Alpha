@@ -41,6 +41,7 @@ jobs:
             -destination "platform=iOS Simulator,id=$simulator_udid" \
             -derivedDataPath "$RUNNER_TEMP/software-ui-build" \
             CODE_SIGNING_ALLOWED=NO build-for-testing
+          echo "AQSS_SOFTWARE_SIMULATOR=$simulator_udid" >> "$GITHUB_ENV"
           xcrun simctl boot "$simulator_udid" || true
           xcrun simctl bootstatus "$simulator_udid" -b
           python3 tools/prepare_ios_software_ui.py \
@@ -97,6 +98,16 @@ jobs:
           walk(get())
           print("Exported", len(exported), "PNG screenshots")
           PYTHON
+      - name: Retain simulator Share lifecycle events from iPhone tools
+        if: always() && matrix.suite == 'tools' && env.AQSS_SOFTWARE_SIMULATOR != ''
+        shell: bash
+        run: |
+          out="$RUNNER_TEMP/aqss-ios-screenshots"
+          mkdir -p "$out"
+          if ! xcrun simctl spawn "$AQSS_SOFTWARE_SIMULATOR" log show --last 40m --style compact \
+            --predicate 'eventMessage CONTAINS "AQSS_SHARE_TRACE"' > "$out/native-share-lifecycle.log" 2>&1; then
+            echo 'Unable to read simulator Share events.' >> "$out/native-share-lifecycle.log"
+          fi
       - name: Keep compact iOS screenshots
         if: always()
         uses: actions/upload-artifact@v4

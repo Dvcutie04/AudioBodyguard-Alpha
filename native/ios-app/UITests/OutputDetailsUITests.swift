@@ -22,14 +22,14 @@ final class OutputDetailsUITests: XCTestCase {
         if !app.buttons["output-details-open"].exists {
             let more = app.buttons["more-sound-tools"]
             XCTAssertTrue(more.waitForExistence(timeout: 5))
-            reach(more, in: app.scrollViews["home-scroll"], app: app); more.tap()
+            try reachScrollControl(more, in: app.scrollViews["home-scroll"], app: app); more.tap()
         }
         let entry = app.buttons["output-details-open"]
         guard entry.waitForExistence(timeout: 5) else {
             shot("Output details entry missing", app); XCTFail("Sound has no Output details entry")
             throw NSError(domain: "AQSSOutputDetails", code: 1)
         }
-        reach(entry, in: app.scrollViews["home-scroll"], app: app)
+        try reachScrollControl(entry, in: app.scrollViews["home-scroll"], app: app)
         entry.tap(); XCTAssertTrue(app.buttons["output-details-refresh"].waitForExistence(timeout: 5))
     }
     private func launch() -> XCUIApplication {
@@ -128,38 +128,15 @@ final class OutputDetailsUITests: XCTestCase {
         XCTAssertTrue(app.buttons["test-setup-remove-output"].exists)
         return source
     }
-    private func reach(_ target: XCUIElement, in scroll: XCUIElement, app: XCUIApplication) {
-        for _ in 0..<20 {
-            let viewport = scroll.frame.intersection(app.frame).insetBy(dx: 15, dy: 15)
-            guard viewport.width > 0, viewport.height > 40 else {
-                XCTFail("No visible scroll viewport for \(target.identifier)"); return
-            }
-            let frame = target.exists ? target.frame : .zero
-            if target.exists && target.isHittable && viewport.contains(CGPoint(x: frame.midX, y: frame.midY)) { return }
-            // Full-height swipes overshoot fields in the short iPad sheet and
-            // can oscillate forever. Drag only a bounded part of its viewport.
-            let downward = frame.height > 0 && frame.midY < viewport.midY
-            let distance = min(viewport.height * 0.25, 100)
-            let startY = viewport.midY + (downward ? -distance / 2 : distance / 2)
-            let endY = viewport.midY + (downward ? distance / 2 : -distance / 2)
-            let origin = app.coordinate(withNormalizedOffset: .zero)
-            let start = origin.withOffset(CGVector(dx: viewport.midX - app.frame.minX, dy: startY - app.frame.minY))
-            let end = origin.withOffset(CGVector(dx: viewport.midX - app.frame.minX, dy: endY - app.frame.minY))
-            start.press(forDuration: 0.05, thenDragTo: end)
-        }
-        shot("Scroll target unreachable: \(target.identifier)", app)
-        XCTFail("Could not reach \(target.identifier) inside its scroll viewport: \(app.debugDescription)")
-    }
-
-    private func fillCombined(_ app: XCUIApplication) {
+    private func fillCombined(_ app: XCUIApplication) throws {
         let scroll = app.scrollViews["test-setup-form"]
         for (key, value) in [("playback_phone", "Android test phone"), ("intended_output", "Phone speaker"), ("constraints", "No calibration")] {
-            let field = app.textFields["test-setup-" + key]; reach(field, in: scroll, app: app)
+            let field = app.textFields["test-setup-" + key]; try reachScrollControl(field, in: scroll, app: app)
             field.tap(); field.typeText(value + "\n")
         }
     }
     private func combinedShare(_ copy: Bool) throws {
-        let app = launch(); let source = try combinedEntry(app); fillCombined(app)
+        let app = launch(); let source = try combinedEntry(app); try fillCombined(app)
         app.buttons["test-setup-review"].tap()
         let preview = app.staticTexts["test-setup-preview"]; XCTAssertTrue(preview.waitForExistence(timeout: 5))
         let text = preview.label
@@ -184,7 +161,7 @@ final class OutputDetailsUITests: XCTestCase {
     func testCombinedSetupCopyMatchesActualReviewedText() throws { try combinedShare(true) }
 
     func testCombinedSetupClearRemoveLifecycleAndLargestText() throws {
-        let app = launch(); let source = try combinedEntry(app); fillCombined(app)
+        let app = launch(); let source = try combinedEntry(app); try fillCombined(app)
         app.buttons["test-setup-review"].tap()
         let preview = app.staticTexts["test-setup-preview"]; XCTAssertTrue(preview.waitForExistence(timeout: 5))
         let frozen = preview.label; XCUIDevice.shared.orientation = .landscapeLeft
@@ -195,8 +172,8 @@ final class OutputDetailsUITests: XCTestCase {
         XCTAssertFalse(app.buttons["test-setup-clear"].isEnabled)
         app.buttons["test-setup-review"].tap(); XCTAssertTrue(preview.waitForExistence(timeout: 5))
         XCTAssertTrue(preview.label.hasSuffix(source)); XCTAssertTrue(preview.label.contains("Intended output: Unknown"))
-        app.buttons["test-setup-back"].tap(); fillCombined(app)
-        let remove = app.buttons["test-setup-remove-output"]; reach(remove, in: app.scrollViews["test-setup-form"], app: app); remove.tap()
+        app.buttons["test-setup-back"].tap(); try fillCombined(app)
+        let remove = app.buttons["test-setup-remove-output"]; try reachScrollControl(remove, in: app.scrollViews["test-setup-form"], app: app); remove.tap()
         XCTAssertFalse(remove.exists)
         app.buttons["test-setup-review"].tap(); XCTAssertTrue(preview.waitForExistence(timeout: 5))
         XCTAssertTrue(preview.label.contains("Intended output: \"Phone speaker\""))

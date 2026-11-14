@@ -1045,7 +1045,7 @@
         },
         {
           "title": "Approve on the television",
-          "instruction": "Read the request on your TV. Select OK for your phone. If the TV displays a PIN, choose TV shows a PIN below.",
+          "instruction": "Read the request on your TV and choose OK. If it shows a PIN code instead, tap ? Help.",
           "surface": "tv",
           "screen": "Connection request",
           "items": [
@@ -2406,7 +2406,7 @@
         },
         {
           "title": "Check which setup screen you have",
-          "instruction": "Scan only if your TV offers this and your phone has Android 9+ or iOS 17+. Otherwise, use TV remote setup.",
+          "instruction": "Scan if your TV offers it and your phone runs Android 9+ or iOS 17+. Otherwise choose TV remote setup.",
           "surface": "tv",
           "screen": "Set up with your phone",
           "items": [
@@ -2471,7 +2471,7 @@
         },
         {
           "title": "Check the actual TV result",
-          "instruction": "Check that setup finished and the Home screen appears on your own TV. If it does not, use My screen looks different.",
+          "instruction": "Check that your TV shows its Home screen. If not, open ? Step help and select My screen looks different.",
           "surface": "tv",
           "screen": "Google TV Home",
           "items": [
@@ -3361,7 +3361,7 @@
         },
         {
           "title": "Check the TV account link",
-          "instruction": "If not linked, first follow LG webOS 5.0 or webOS 6.0+ account steps from this guide list. Return here after the account link is complete.",
+          "instruction": "If not linked, follow LG webOS 5.0 or webOS 6.0+ account steps in this guide list. Then return.",
           "surface": "phone",
           "screen": "Before Alexa setup",
           "items": [
@@ -3397,7 +3397,7 @@
         },
         {
           "title": "Select the TV-capable skill",
-          "instruction": "Choose the official LG ThinQ skill whose description supports your TV. Where Basic and Complete both include TV support, either is valid.",
+          "instruction": "Choose an official LG ThinQ skill supporting your TV. Check whether Basic or Complete lists TV support.",
           "surface": "phone",
           "screen": "LG ThinQ",
           "items": [
@@ -4326,7 +4326,7 @@
         },
         {
           "title": "Open Alexa skills",
-          "instruction": "In the Alexa version with a menu, open Skills / Skills & Games. If your app differs, use the official source in Help.",
+          "instruction": "In Alexa, open Skills / Skills & Games. If your menu differs, check the official source under ? Help.",
           "surface": "phone",
           "screen": "Alexa menu",
           "items": [
@@ -5174,7 +5174,7 @@
         },
         {
           "title": "Choose the matching guide",
-          "instruction": "Return to the guide list and select that platform or menu version. Exact model examples are listed before a guide begins.",
+          "instruction": "Choose the matching TV menu in the guide list. Model examples appear before each guide starts.",
           "surface": "phone",
           "screen": "Audio Bodyguard",
           "items": [

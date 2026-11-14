@@ -253,7 +253,7 @@ jobs:
             -resultBundlePath "$RUNNER_TEMP/sound-test-setup-control.xcresult" \
             -only-testing:AQSSReadOnlyUITests/AQSSReadOnlyUITests/testIndependentUIKitShareControlCopy
       - name: Clear isolated clipboard fixture
-        if: always()
+        if: always() && env.AQSS_SIMULATOR != ''
         run: python3 tools/check_ios_build_share_clipboard.py clear "$AQSS_SIMULATOR" --output "$RUNNER_TEMP/setup-clipboard"
       - name: Retain opt-in simulator Share lifecycle events
         if: always()

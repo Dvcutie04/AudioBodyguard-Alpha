@@ -3,7 +3,7 @@ name: iPhone foreground input verification
 on:
   workflow_dispatch:
   push:
-    branches: ["aqss/ios-live-sound-check", "aqss/ios-microphone-lifecycle", "aqss/android-microphone-lifecycle", "aqss/sound-check-recaps", "aqss/tv-photo-labels", "aqss/tv-photo-text-bounds", "aqss/tv-photo-selection", "aqss/photo-review-deadline", "aqss/photo-work-ownership", "aqss/photo-work-ready", "aqss/photo-retry-guidance", "aqss/sound-permission-settings", "aqss/voice-permission-settings", "aqss/build-details", "aqss/share-build-details", "aqss/private-support-report", "aqss/support-report-privacy", "aqss/insights-sound-checks", "aqss/input-activation-cleanup", "aqss/voice-error-guidance", "aqss/ios-voice-stop-guidance", "aqss/recap-support-report", "aqss/frame-clock-evidence", "aqss/frame-process-evidence", "aqss/frame-completion-evidence", "aqss/frame-uptime-evidence", "aqss/frame-schema-evidence", "aqss/frame-csv-evidence"]
+    branches: ["aqss/ios-live-sound-check", "aqss/ios-microphone-lifecycle", "aqss/android-microphone-lifecycle", "aqss/sound-check-recaps", "aqss/tv-photo-labels", "aqss/tv-photo-text-bounds", "aqss/tv-photo-selection", "aqss/photo-review-deadline", "aqss/photo-work-ownership", "aqss/photo-work-ready", "aqss/photo-retry-guidance", "aqss/sound-permission-settings", "aqss/voice-permission-settings", "aqss/build-details", "aqss/share-build-details", "aqss/private-support-report", "aqss/support-report-privacy", "aqss/insights-sound-checks", "aqss/input-activation-cleanup", "aqss/voice-error-guidance", "aqss/ios-voice-stop-guidance", "aqss/recap-support-report", "aqss/frame-clock-evidence", "aqss/frame-process-evidence", "aqss/frame-completion-evidence", "aqss/frame-uptime-evidence", "aqss/frame-schema-evidence", "aqss/frame-csv-evidence", "aqss/vizio-address-recovery", "aqss/all-brand-beta-trial", "aqss/all-brand-night-preflight"]
 
 permissions:
   contents: read
@@ -17,7 +17,7 @@ jobs:
     runs-on: macos-15
     env:
       DEVELOPER_DIR: /Applications/Xcode_26.3.app/Contents/Developer
-    timeout-minutes: 35
+    timeout-minutes: 55
     steps:
       - uses: actions/checkout@v4
         with:
@@ -25,6 +25,7 @@ jobs:
       - name: Test digital input, shared ownership and bounded speech results
         run: swift test --package-path native/ios
       - name: Build and prepare iPhone Simulator
+        id: simulator-setup
         shell: bash
         run: |
           set -euo pipefail
@@ -41,9 +42,10 @@ jobs:
           fixture = pathlib.Path('native/ios/Tests/AQSSNativeFeedbackTests/Fixtures/tv-photo-labels.png')
           assert hashlib.sha256(fixture.read_bytes()).hexdigest() == '2f55775447c5d28841737a25713ae83a76b37bb6d614fa33007621ce92853f31'
           # Different capture dates identify each fixture in the real Photos picker.
-          for day, name in enumerate(('empty', 'unrelated', 'brand-only'), 15):
+          year = datetime.datetime.now(datetime.timezone.utc).year
+          for day, name in enumerate(('labels', 'empty', 'unrelated', 'brand-only'), 14):
               photo = fixture.with_name('tv-photo-' + name + '.png')
-              captured = datetime.datetime(2026, 1, day, 12, tzinfo=datetime.timezone.utc).timestamp()
+              captured = datetime.datetime(year, 1, day, 12, tzinfo=datetime.timezone.utc).timestamp()
               os.utime(photo, (captured, captured))
           PYTHON
           xcrun simctl addmedia "$simulator_udid" native/ios/Tests/AQSSNativeFeedbackTests/Fixtures/tv-photo-labels.png
@@ -72,7 +74,7 @@ jobs:
               (root / ('sound-' + mode.lower() + '.xctestrun')).write_bytes(plistlib.dumps(data))
           PYTHON
       - name: Verify empty Insights recaps without microphone access
-        timeout-minutes: 4
+        timeout-minutes: 7
         shell: bash
         run: |
           set -euo pipefail
@@ -110,8 +112,7 @@ jobs:
             -only-testing:AQSSReadOnlyUITests/AQSSReadOnlyUITests/testLiveSoundCheckStartsOffAndHelpReturnsWithoutCapture \
             -only-testing:AQSSReadOnlyUITests/AQSSReadOnlyUITests/testVoiceCheckStartsIdleAndClosingItLeavesMeterUsable \
             -only-testing:AQSSReadOnlyUITests/AQSSReadOnlyUITests/testVoiceCheckDeniedMicrophoneCannotRequestSpeechOrCapture \
-            -only-testing:AQSSReadOnlyUITests/AQSSReadOnlyUITests/testInputToolsStartIdleAndNeverClaimAConnection \
-            -only-testing:AQSSReadOnlyUITests/AQSSReadOnlyUITests/testPhotoReviewGuidanceAndReplacement
+            -only-testing:AQSSReadOnlyUITests/AQSSReadOnlyUITests/testInputToolsStartIdleAndNeverClaimAConnection
           python3 tools/check_ios_build_share_clipboard.py cancel "$AQSS_SIMULATOR" --output "$RUNNER_TEMP/build-share-clipboard"
       - name: Verify native iPhone Copy and exact clipboard handoff
         timeout-minutes: 4
@@ -221,6 +222,18 @@ jobs:
             -only-testing:AQSSReadOnlyUITests/AQSSReadOnlyUITests/testVoiceSpeechPermissionGrantDoesNotStartDeferredCapture \
             -only-testing:AQSSReadOnlyUITests/AQSSReadOnlyUITests/testPrivateSupportReportIncludesCompletedCheckAndClears
           python3 tools/check_ios_build_share_clipboard.py copy "$AQSS_SIMULATOR" --app-info "$RUNNER_TEMP/sound-check-build/Build/Products/Release-iphonesimulator/AQSSReadOnly.app/Info.plist" --support-report --completed-check --output "$RUNNER_TEMP/support-report-populated-clipboard"
+      - name: Verify photo import and replacement through the system picker
+        if: ${{ !cancelled() && steps.simulator-setup.outcome == 'success' }}
+        timeout-minutes: 6
+        shell: bash
+        run: |
+          set -euo pipefail
+          xcrun simctl privacy "$AQSS_SIMULATOR" revoke microphone com.aqss.bodyguard.prototype
+          xcodebuild test-without-building \
+            -xctestrun "$RUNNER_TEMP/sound-check-build/Build/Products/sound-denied.xctestrun" \
+            -destination "platform=iOS Simulator,id=$AQSS_SIMULATOR" \
+            -parallel-testing-enabled NO -resultBundlePath "$RUNNER_TEMP/sound-photo-picker.xcresult" \
+            -only-testing:AQSSReadOnlyUITests/AQSSReadOnlyUITests/testPhotoReviewGuidanceAndReplacement
       - name: Clear isolated clipboard fixture
         if: always() && env.AQSS_SIMULATOR != ''
         run: python3 tools/check_ios_build_share_clipboard.py clear "$AQSS_SIMULATOR" --output "$RUNNER_TEMP/build-share-clipboard"
@@ -228,13 +241,14 @@ jobs:
         if: always()
         shell: bash
         run: |
-          python3 tools/export_ios_input_screenshots.py "$RUNNER_TEMP" denied build-share-copy support-report-cancel support-report-copy settings voice-microphone granted support-report-populated-build-only support-report-build-only-cancel support-report-build-only-copy insights-empty insights-completed
+          python3 tools/export_ios_input_screenshots.py "$RUNNER_TEMP" denied photo-picker build-share-copy support-report-cancel support-report-copy settings voice-microphone granted support-report-populated-build-only support-report-build-only-cancel support-report-build-only-copy insights-empty insights-completed
       - name: Keep Simulator test evidence
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: ios-sound-check-evidence
           path: |
+            ${{ runner.temp }}/sound-photo-picker.xcresult
             ${{ runner.temp }}/sound-insights-empty.xcresult
             ${{ runner.temp }}/sound-insights-completed.xcresult
             ${{ runner.temp }}/recap-report-clipboard
@@ -261,7 +275,7 @@ jobs:
     runs-on: macos-15
     env:
       DEVELOPER_DIR: /Applications/Xcode_26.3.app/Contents/Developer
-    timeout-minutes: 15
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
         with:
