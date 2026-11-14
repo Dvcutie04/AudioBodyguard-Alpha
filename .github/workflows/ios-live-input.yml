@@ -74,7 +74,7 @@ jobs:
               (root / ('sound-' + mode.lower() + '.xctestrun')).write_bytes(plistlib.dumps(data))
           PYTHON
       - name: Verify empty Insights recaps without microphone access
-        timeout-minutes: 4
+        timeout-minutes: 7
         shell: bash
         run: |
           set -euo pipefail

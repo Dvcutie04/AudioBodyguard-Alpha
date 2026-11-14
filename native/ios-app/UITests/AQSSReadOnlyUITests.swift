@@ -495,19 +495,30 @@ final class AQSSReadOnlyUITests: XCTestCase {
         // The iPad run lost the next field's focus after submitting the previous field.
         // Keep one keyboard session while moving between fields.
         for (id, value) in setupAnswers {
-            let field = app.textFields["test-setup-" + id]
-            func fieldIsReachable() -> Bool {
-                let viewport = scroll.frame.intersection(app.frame).insetBy(dx: 0, dy: 15)
-                let frame = field.frame
-                return field.isHittable && viewport.contains(CGPoint(x: frame.midX, y: frame.midY))
+            let field = scroll.textFields["test-setup-" + id]
+            func viewport() -> CGRect {
+                scroll.frame.intersection(app.frame).insetBy(dx: 0, dy: 15)
             }
+            func fieldIsReachable(_ frame: CGRect, in bounds: CGRect) -> Bool {
+                field.isHittable && bounds.contains(CGPoint(x: frame.midX, y: frame.midY))
+            }
+            // The iPhone's keyboard shortens the form. A full swipe can take
+            // the requested field above the viewport rather than reveal it.
+            var below = true
             for _ in 0..<10 {
-                if fieldIsReachable() { break }
-                scroll.swipeUp(velocity: .slow)
+                let bounds = viewport()
+                guard !bounds.isNull, !bounds.isEmpty else { break }
+                if field.exists {
+                    let frame = field.frame
+                    if fieldIsReachable(frame, in: bounds) { break }
+                    if !frame.isEmpty { below = frame.midY >= bounds.midY }
+                }
+                if below { scroll.swipeUp(velocity: .slow) }
+                else { scroll.swipeDown(velocity: .slow) }
             }
-            guard fieldIsReachable() else {
+            guard fieldIsReachable(field.frame, in: viewport()) else {
                 screenshot("Worksheet field unreachable " + id, app)
-                XCTFail("The worksheet field is outside the usable form: \(id)")
+                XCTFail("The worksheet field is outside the usable form: \(id), field=\(field.frame), form=\(viewport())")
                 throw NSError(domain: "AQSSTestSetup", code: 4)
             }
             field.tap()
