@@ -496,31 +496,7 @@ final class AQSSReadOnlyUITests: XCTestCase {
         // Keep one keyboard session while moving between fields.
         for (id, value) in setupAnswers {
             let field = scroll.textFields["test-setup-" + id]
-            func viewport() -> CGRect {
-                scroll.frame.intersection(app.frame).insetBy(dx: 0, dy: 15)
-            }
-            func fieldIsReachable(_ frame: CGRect, in bounds: CGRect) -> Bool {
-                field.isHittable && bounds.contains(CGPoint(x: frame.midX, y: frame.midY))
-            }
-            // The iPhone's keyboard shortens the form. A full swipe can take
-            // the requested field above the viewport rather than reveal it.
-            var below = true
-            for _ in 0..<10 {
-                let bounds = viewport()
-                guard !bounds.isNull, !bounds.isEmpty else { break }
-                if field.exists {
-                    let frame = field.frame
-                    if fieldIsReachable(frame, in: bounds) { break }
-                    if !frame.isEmpty { below = frame.midY >= bounds.midY }
-                }
-                if below { scroll.swipeUp(velocity: .slow) }
-                else { scroll.swipeDown(velocity: .slow) }
-            }
-            guard fieldIsReachable(field.frame, in: viewport()) else {
-                screenshot("Worksheet field unreachable " + id, app)
-                XCTFail("The worksheet field is outside the usable form: \(id), field=\(field.frame), form=\(viewport())")
-                throw NSError(domain: "AQSSTestSetup", code: 4)
-            }
+            try reachScrollControl(field, in: scroll, app: app)
             field.tap()
             field.typeText(value)
             XCTAssertEqual(field.value as? String, value, id)
@@ -2916,6 +2892,36 @@ final class AQSSReadOnlyUITests: XCTestCase {
 
 }
 
+
+extension XCTestCase {
+    func reachScrollControl(_ target: XCUIElement, in scroll: XCUIElement, app: XCUIApplication) throws {
+        for _ in 0..<20 {
+            let viewport = scroll.frame.intersection(app.frame).insetBy(dx: 15, dy: 15)
+            guard viewport.width > 0, viewport.height > 40 else {
+                XCTFail("No visible scroll viewport for \(target.identifier)")
+                throw NSError(domain: "AQSSTestSetup", code: 4)
+            }
+            let frame = target.exists ? target.frame : .zero
+            if target.exists && target.isHittable && viewport.contains(CGPoint(x: frame.midX, y: frame.midY)) { return }
+            // Full-height swipes overshoot fields in the short keyboard viewport and
+            // can oscillate forever. Drag only a bounded part of its viewport.
+            let downward = frame.height > 0 && frame.midY < viewport.midY
+            let distance = min(viewport.height * 0.25, 100)
+            let startY = viewport.midY + (downward ? -distance / 2 : distance / 2)
+            let endY = viewport.midY + (downward ? distance / 2 : -distance / 2)
+            let origin = app.coordinate(withNormalizedOffset: .zero)
+            let start = origin.withOffset(CGVector(dx: viewport.midX - app.frame.minX, dy: startY - app.frame.minY))
+            let end = origin.withOffset(CGVector(dx: viewport.midX - app.frame.minX, dy: endY - app.frame.minY))
+            start.press(forDuration: 0.05, thenDragTo: end)
+        }
+        let evidence = XCTAttachment(screenshot: app.screenshot())
+        evidence.name = "Scroll target unreachable: " + target.identifier
+        evidence.lifetime = .keepAlways
+        add(evidence)
+        XCTFail("Could not reach \(target.identifier) inside its scroll viewport: \(app.debugDescription)")
+        throw NSError(domain: "AQSSTestSetup", code: 4)
+    }
+}
 
 // Shared native-share assertions. Never substitute an app Copy action or
 // dismiss/reopen a failed activity: these tests must observe the real system UI.
