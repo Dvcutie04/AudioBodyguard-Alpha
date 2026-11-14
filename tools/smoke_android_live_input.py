@@ -952,7 +952,11 @@ def main():
                 if clicked:
                     return
                 scroller = next((n for n in root.iter("node") if n.get("class") == "android.widget.ScrollView"), None)
-                assert scroller is not None, "Worksheet content viewport unavailable"
+                if scroller is None:
+                    # The emulator can expose only its root during a keyboard/layout transition.
+                    # Wait for the worksheet before attempting a scroll.
+                    time.sleep(0.5)
+                    continue
                 x0, y0, x1, y1 = map(int, re.findall(r"-?\d+", scroller.get("bounds")))
                 x = (x0 + x1) // 2
                 adb("shell", "input", "swipe", str(x), str(int(y0 + (y1-y0)*.8)), str(x), str(int(y0 + (y1-y0)*.2)), "350")
