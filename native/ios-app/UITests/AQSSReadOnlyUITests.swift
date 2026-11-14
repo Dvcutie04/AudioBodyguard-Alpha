@@ -490,21 +490,37 @@ final class AQSSReadOnlyUITests: XCTestCase {
         XCTAssertTrue(app.buttons["test-setup-review"].waitForExistence(timeout: 5))
     }
 
-    private func fillTestSetup(_ app: XCUIApplication) {
+    private func fillTestSetup(_ app: XCUIApplication) throws {
         let scroll = app.scrollViews["test-setup-form"]
+        // The iPad run lost the next field's focus after submitting the previous field.
+        // Keep one keyboard session while moving between fields.
         for (id, value) in setupAnswers {
             let field = app.textFields["test-setup-" + id]
-            for _ in 0..<10 {
+            func fieldIsReachable() -> Bool {
                 let viewport = scroll.frame.intersection(app.frame).insetBy(dx: 0, dy: 15)
-                if field.isHittable && viewport.contains(CGPoint(x: field.frame.midX, y: field.frame.midY)) { break }
+                let frame = field.frame
+                return field.isHittable && viewport.contains(CGPoint(x: frame.midX, y: frame.midY))
+            }
+            for _ in 0..<10 {
+                if fieldIsReachable() { break }
                 scroll.swipeUp(velocity: .slow)
             }
-            XCTAssertTrue(field.isHittable, id); field.tap(); field.typeText(value + "\n")
+            guard fieldIsReachable() else {
+                screenshot("Worksheet field unreachable " + id, app)
+                XCTFail("The worksheet field is outside the usable form: \(id)")
+                throw NSError(domain: "AQSSTestSetup", code: 4)
+            }
+            field.tap()
+            field.typeText(value)
+            XCTAssertEqual(field.value as? String, value, id)
         }
+        // Submit only the final field before reviewing or rotating the worksheet.
+        let finalField = try XCTUnwrap(setupAnswers.last?.0)
+        app.textFields["test-setup-" + finalField].typeText("\n")
     }
 
     private func inspectTestSetupShare(_ app: XCUIApplication, copy: Bool) throws {
-        fillTestSetup(app)
+        try fillTestSetup(app)
         app.buttons["test-setup-review"].tap()
         let preview = app.staticTexts["test-setup-preview"]
         XCTAssertTrue(preview.waitForExistence(timeout: 5))
@@ -594,7 +610,7 @@ final class AQSSReadOnlyUITests: XCTestCase {
         app.buttons["test-setup-review"].tap()
         let preview = app.staticTexts["test-setup-preview"]
         XCTAssertTrue(preview.waitForExistence(timeout: 5)); XCTAssertTrue(preview.label.contains("Playback phone: Unknown"))
-        app.buttons["test-setup-back"].tap(); fillTestSetup(app)
+        app.buttons["test-setup-back"].tap(); try fillTestSetup(app)
         XCUIDevice.shared.orientation = .landscapeLeft
         app.buttons["test-setup-review"].tap()
         XCTAssertTrue(preview.waitForExistence(timeout: 5)); let reviewed = preview.label
@@ -614,7 +630,7 @@ final class AQSSReadOnlyUITests: XCTestCase {
         app.buttons["test-setup-back"].tap(); app.buttons["test-setup-back"].tap()
         app.buttons["test-setup-open"].tap()
         XCTAssertFalse(app.buttons["test-setup-clear"].isEnabled)
-        fillTestSetup(app); app.buttons["test-setup-review"].tap()
+        try fillTestSetup(app); app.buttons["test-setup-review"].tap()
         app.terminate(); app.launch(); try openTestSetup(app)
         XCTAssertFalse(app.buttons["test-setup-clear"].isEnabled)
         app.buttons["test-setup-back"].tap(); app.terminate()
@@ -1973,13 +1989,12 @@ final class AQSSReadOnlyUITests: XCTestCase {
             let prefix = "Photo, " + date.string(from: Date(timeIntervalSince1970: modified)) + ", "
             tap("Choose a photo", app, scroll: app.scrollViews["photo-review-scroll"])
             // Match each fixture's capture date, never an assumed grid position.
-            let images = app.images.matching(NSPredicate(format: "label BEGINSWITH %@", prefix))
-            _ = images.firstMatch.waitForExistence(timeout: 10)
-            let candidates = images.allElementsBoundByIndex.filter {
-                // Current-year assets omit the year; an older same-day photo
-                // has another comma after its year and is not our fresh fixture.
-                !$0.label.dropFirst(prefix.count).contains(",")
-            }
+            // The picker can remain on Loading while the Photos service starts.
+            // Wait for an exact date label shape, excluding older assets that show a year.
+            let dateLabel = NSRegularExpression.escapedPattern(for: prefix) + "[^,]+"
+            let images = app.images.matching(NSPredicate(format: "label MATCHES %@", dateLabel))
+            _ = images.firstMatch.waitForExistence(timeout: 30)
+            let candidates = images.allElementsBoundByIndex
             let inventory = XCTAttachment(string: app.debugDescription)
             inventory.name = "System photo picker inventory"; inventory.lifetime = .keepAlways; add(inventory)
             if candidates.count != 1 {

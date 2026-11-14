@@ -254,7 +254,10 @@ private struct ReviewedTextSharePresenter: UIViewControllerRepresentable {
         private func present(_ pending: ReviewedTextShareRequest, from presenter: UIViewController,
                              anchor: UIViewController) {
             let controller = UIActivityViewController(activityItems: [pending.text], applicationActivities: nil)
-            controller.modalPresentationStyle = UIDevice.current.userInterfaceIdiom == .pad ? .popover : .pageSheet
+            // Leave the phone's modal layout to UIKit, as in the native Share control.
+            if UIDevice.current.userInterfaceIdiom == .pad {
+                controller.modalPresentationStyle = .popover
+            }
             if let popover = controller.popoverPresentationController {
                 popover.sourceView = anchor.view
                 popover.sourceRect = anchor.view.bounds
