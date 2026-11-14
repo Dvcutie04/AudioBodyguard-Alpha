@@ -492,18 +492,29 @@ final class AQSSReadOnlyUITests: XCTestCase {
 
     private func fillTestSetup(_ app: XCUIApplication) throws {
         let scroll = app.scrollViews["test-setup-form"]
-        // The iPad run lost the next field's focus after submitting the previous field.
-        // Keep one keyboard session while moving between fields.
+        // The iPhone keyboard can leave only a short scrolling area. Submit
+        // each phone field to restore the viewport before finding the next one.
+        // On iPad, keep the keyboard open to avoid the sheet relayout between fields.
+        let submitEachField = UIDevice.current.userInterfaceIdiom == .phone
         for (id, value) in setupAnswers {
             let field = scroll.textFields["test-setup-" + id]
             try reachScrollControl(field, in: scroll, app: app)
             field.tap()
             field.typeText(value)
             XCTAssertEqual(field.value as? String, value, id)
+            if submitEachField {
+                field.typeText("\n")
+                let keyboard = app.keyboards.firstMatch
+                let dismissed = XCTNSPredicateExpectation(
+                    predicate: NSPredicate(format: "exists == false"), object: keyboard)
+                XCTAssertEqual(XCTWaiter.wait(for: [dismissed], timeout: 5), .completed,
+                               "The keyboard should close after submitting \(id)")
+            }
         }
-        // Submit only the final field before reviewing or rotating the worksheet.
-        let finalField = try XCTUnwrap(setupAnswers.last?.0)
-        app.textFields["test-setup-" + finalField].typeText("\n")
+        if !submitEachField {
+            let finalField = try XCTUnwrap(setupAnswers.last?.0)
+            scroll.textFields["test-setup-" + finalField].typeText("\n")
+        }
     }
 
     private func inspectTestSetupShare(_ app: XCUIApplication, copy: Bool) throws {
