@@ -34,7 +34,8 @@ final class AQSSReadOnlyUITests: XCTestCase {
         XCTAssertFalse(app.buttons["tv-network-certificate-read"].exists)
         field.tap(); field.typeText("8.8.8.8")
         tap("Check this address", app, scroll: app.scrollViews["tv-network-scroll"])
-        label("Enter the private IPv4 address shown in your TV’s network settings.", app)
+        let rejected = "Enter the private IPv4 address shown in your TV’s network settings."
+        label(rejected, app)
         XCTAssertEqual(app.staticTexts["tv-network-boundary"].label,
                        "TV identity, pairing and audio protection are not verified.")
         XCTAssertEqual(app.alerts.count, 0, "Rejected input must not request local-network access")
@@ -47,13 +48,43 @@ final class AQSSReadOnlyUITests: XCTestCase {
         label("\(device) — connect to your home Wi-Fi", app)
         let next = app.buttons["tv-wifi-guide-next"]
         let back = app.buttons["tv-wifi-guide-back"]
+        let guide = app.scrollViews["tv-wifi-guide-scroll"]
+
+        func checkGuideReturn(from screen: String) {
+            XCTAssertTrue(next.isHittable, "Return must be reachable from \(screen)")
+            screenshot("Wi-Fi guide before return from \(screen) on \(device)", app)
+            next.tap()
+            let ready = XCTNSPredicateExpectation(
+                predicate: NSPredicate(format: "exists == true AND hittable == true AND enabled == true"),
+                object: field
+            )
+            let fieldIsUsable = XCTWaiter.wait(for: [ready], timeout: 5) == .completed
+            let guideClosed = !guide.exists
+            let address = fieldIsUsable ? field.value as? String : nil
+            let result = app.staticTexts["tv-network-result"]
+            let resultPreserved = result.exists && result.label == rejected
+            screenshot("Wi-Fi guide after return from \(screen) on \(device)", app)
+            if !fieldIsUsable || !guideClosed || address != "8.8.8.8" || !resultPreserved {
+                let attachment = XCTAttachment(string: app.debugDescription)
+                attachment.name = "Wi-Fi guide post-return hierarchy from \(screen)"
+                attachment.lifetime = .keepAlways
+                add(attachment)
+            }
+            XCTAssertTrue(fieldIsUsable, "Return must expose an editable field on the original network check")
+            XCTAssertTrue(guideClosed, "The Wi-Fi guide must close on return")
+            XCTAssertEqual(address, "8.8.8.8")
+            XCTAssertTrue(resultPreserved, "Return must preserve the original address rejection")
+            XCTAssertEqual(app.buttons["tv-network-start-stop"].label, "Check this address")
+            XCTAssertEqual(app.alerts.count, 0)
+            XCTAssertFalse(app.buttons["tv-network-certificate-read"].exists)
+        }
+
         XCTAssertEqual(next.label, "Start Wi-Fi steps")
         XCTAssertTrue(next.isHittable)
-        XCTAssertGreaterThanOrEqual(next.frame.width, app.scrollViews["tv-wifi-guide-scroll"].frame.width * 0.75,
+        XCTAssertGreaterThanOrEqual(next.frame.width, guide.frame.width * 0.75,
                                     "Wi-Fi guide's Next needs a wide touch target on \(device)")
         if device == "iPad" {
-            let scroll = app.scrollViews["tv-wifi-guide-scroll"]
-            XCTAssertGreaterThan(scroll.frame.width, app.frame.width * 0.55,
+            XCTAssertGreaterThan(guide.frame.width, app.frame.width * 0.55,
                                  "iPad Wi-Fi pictures must have page-sized width, not a narrow form sheet")
             XCTAssertTrue(back.isHittable)
         }
@@ -81,29 +112,23 @@ final class AQSSReadOnlyUITests: XCTestCase {
                     label("Step 2 of 6", app)
                 }
             }
-            if index == 6 { XCTAssertEqual(next.label, "Back to network check") }
-            next.tap()
+            if index < 6 { next.tap() }
         }
-        // A prior hosted iPhone failure returned no network-address field after the
-        // final tap. Retain the *post-tap* UI state when that exact assertion fails;
-        // do not alter the five-second bound, retry the tap, or dismiss a sheet.
-        let returnedToNetworkCheck = field.waitForExistence(timeout: 5)
-        if !returnedToNetworkCheck {
-            let screenshotAttachment = XCTAttachment(screenshot: app.screenshot())
-            screenshotAttachment.name = "Wi-Fi guide return missing network field"
-            screenshotAttachment.lifetime = .keepAlways
-            add(screenshotAttachment)
-            let hierarchyAttachment = XCTAttachment(string: app.debugDescription)
-            hierarchyAttachment.name = "Wi-Fi guide post-return accessibility hierarchy"
-            hierarchyAttachment.lifetime = .keepAlways
-            add(hierarchyAttachment)
-        }
-        XCTAssertTrue(returnedToNetworkCheck,
-                      "Wi-Fi guide must return directly to the original network check")
-        XCTAssertEqual(field.value as? String, "8.8.8.8")
-        label("Enter the private IPv4 address shown in your TV’s network settings.", app)
-        XCTAssertEqual(app.buttons["tv-network-start-stop"].label, "Check this address")
-        XCTAssertEqual(app.alerts.count, 0)
+        XCTAssertEqual(next.label, "Back to network check")
+        checkGuideReturn(from: "last picture")
+
+        tap(device == "iPad" ? "Check iPad Wi-Fi" : "Check phone Wi-Fi", app, scroll: form)
+        next.tap()
+        label("Step 1 of 6", app)
+        tap("My screen looks different", app, scroll: guide)
+        label("Find the right screen", app)
+        back.tap()
+        label("Step 1 of 6", app)
+        XCTAssertTrue(pictureDescription(app).contains("Highlighted: Settings."))
+        tap("My screen looks different", app, scroll: guide)
+        label("Find the right screen", app)
+        XCTAssertEqual(next.label, "Back to network check")
+        checkGuideReturn(from: "screen mismatch")
         app.buttons["tv-network-back"].tap()
         label("Connection not verified", app)
 
