@@ -12,7 +12,7 @@ android {
         minSdk = 26
         targetSdk = 36
         versionCode = 52
-        versionName = "0.50-vizio-trial"
+        versionName = "0.50-all-brand-beta"
     }
 
     buildTypes {
