@@ -336,7 +336,12 @@ class SetupGuideActivity : Activity() {
             }
             group != null -> {
                 val selectedGroup = group!!
-                words(content, if (selectedGroup.routes.isEmpty()) "No guide for this choice. Choose another TV." else if (selectedGroup.primaryRoutes.size > 1) "Choose what matches your TV." else "One picture at a time.", color = skin.muted)
+                if (groupId == "phone") {
+                    SetupPresentation.androidWiFiSteps.forEach { words(content, it) }
+                    words(content, "Pixel or Galaxy? Choose your phone for pictures.", color = skin.muted)
+                } else {
+                    words(content, if (selectedGroup.routes.isEmpty()) "No guide for this choice. Choose another TV." else if (selectedGroup.primaryRoutes.size > 1) "Choose what matches your TV." else "One picture at a time.", color = skin.muted)
+                }
                 if (selectedGroup.routes.isEmpty()) action(content, "Choose another TV or app") { chooseGroup("") }
                 selectedGroup.primaryRoutes.forEach { id -> SetupContent.routes.firstOrNull { it.id == id }?.let { guide ->
                     action(content, simpleRouteTitle(id, guide.title), selectedGroup.primaryRoutes.size == 1) { chooseRoute(id) }

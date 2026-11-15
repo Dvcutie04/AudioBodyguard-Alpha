@@ -33,6 +33,7 @@ import android.window.OnBackInvokedDispatcher
 import com.aqss.nativefeedback.LocalTVTarget
 import com.aqss.nativefeedback.SetupContent
 import com.aqss.nativefeedback.SetupPhone
+import com.aqss.nativefeedback.SetupPresentation
 import com.aqss.nativefeedback.TVNetworkOutcome
 import com.aqss.nativefeedback.TVNetworkResult
 import com.aqss.nativefeedback.TVNetworkRunner
@@ -225,11 +226,7 @@ class TVNetworkCheckActivity : Activity() {
                     content.addView(stepPictures.picture(step, guideIndex + 1).also(skin::guideCue))
                 }
                 route != null -> content.addView(words(route.appliesTo))
-                else -> {
-                    content.addView(words("1. Open Settings."))
-                    content.addView(words("2. Search for Wi-Fi."))
-                    content.addView(words("3. Choose the home network your TV uses."))
-                }
+                else -> SetupPresentation.androidWiFiSteps.forEach { content.addView(words(it)) }
             }
             if (route != null) {
                 content.addView(button("My screen looks different") {

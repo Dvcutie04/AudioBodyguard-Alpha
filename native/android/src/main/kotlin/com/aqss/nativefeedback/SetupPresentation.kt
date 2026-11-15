@@ -16,6 +16,12 @@ enum class SetupPhone(val label: String, val wifiRoute: String? = null) {
 }
 
 object SetupPresentation {
+    val androidWiFiSteps = listOf(
+        "1. Open Settings.",
+        "2. Search for Wi-Fi.",
+        "3. Choose the home network your TV uses.",
+    )
+
     /** Keep documented shared labels; specialize only actual phone surfaces. */
     fun step(original: SetupStep, phone: SetupPhone): SetupStep {
         if (original.surface != "phone") return original

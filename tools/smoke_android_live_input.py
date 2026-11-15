@@ -696,6 +696,10 @@ def main():
         return
 
     if args.style_only:
+        manufacturer = adb("shell", "getprop", "ro.product.manufacturer").decode().strip().lower()
+        wifi_steps = ("1. Open Settings.", "2. Search for Wi-Fi.", "3. Choose the home network your TV uses.")
+        phone_titles = {"google": "Google Pixel", "samsung": "Samsung Galaxy"}
+
         def reveal(label, name):
             for attempt in range(10):
                 root, clicked = screen(f"{name}_{attempt}", click=label)
@@ -748,9 +752,18 @@ def main():
             reveal("? Setup help", prefix + "_home_help")
             wait_for("Jump to Google Home pictures", prefix + "_chosen_home")
             tap("Jump to phone Wi-Fi pictures", prefix + "_wifi_help")
-            root = wait_for("connect to your home Wi-Fi", prefix + "_wifi_intro")
-            if has(root, "Phone Wi-Fi setup") and has(root, "Google Pixel — connect to your home Wi-Fi"):
+            phone = phone_titles.get(manufacturer)
+            if phone:
+                wait_for(f"{phone} — connect to your home Wi-Fi", prefix + "_wifi_matched_intro")
+            else:
+                root = wait_for_all(("Phone Wi-Fi setup", *wifi_steps), prefix + "_wifi_generic_steps")
+                visible_text = [node.get("text") for node in root.iter("node")]
+                order = [visible_text.index(step) for step in wifi_steps]
+                assert order == sorted(order), "Keep the Android Wi-Fi steps in reading order"
+                assert not has(root, "Choose what matches your TV.") and not has(root, "Start guide")
+                screenshot(prefix + "_wifi_generic_steps")
                 reveal("Google Pixel — connect to your home Wi-Fi", prefix + "_wifi_virtual_phone_choice")
+                wait_for("Google Pixel — connect to your home Wi-Fi", prefix + "_wifi_chosen_intro")
             wait_for("Start guide", prefix + "_wifi_ready")
             tap("Start guide", prefix + "_wifi_start")
             for n in range(7):

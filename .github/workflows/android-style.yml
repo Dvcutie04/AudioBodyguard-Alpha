@@ -2,7 +2,7 @@ name: Simple setup verification — Android
 
 on:
   push:
-    branches: ["aqss/simple-setup"]
+    branches: ["aqss/simple-setup", "aqss/android-phone-wifi-fallback"]
     paths:
       - "native/android/**"
       - "contracts/**"
