@@ -809,6 +809,8 @@ def main():
             root = wait_for("About the sound check", prefix + "_sound_shortcut")
             assert any(n.get("text", "").casefold() == "jump to recent sound checks" for n in root.iter("node"))
             tap("Close", prefix + "_sound_help_close")
+            # Close is asynchronous. Wait for the sound check window before sending system Back.
+            wait_for_all(("Live sound check", "Start sound check"), prefix + "_sound_help_dismissed")
             adb("shell", "input", "keyevent", "KEYCODE_BACK")
             wait_for("Step 5 of 5", prefix + "_sound_back")
             tap("Go to Home", prefix + "_done")
