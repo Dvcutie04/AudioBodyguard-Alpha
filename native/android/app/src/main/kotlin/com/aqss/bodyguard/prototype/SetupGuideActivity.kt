@@ -125,7 +125,9 @@ class SetupGuideActivity : Activity() {
         platforms.isNotEmpty() -> null
         else -> group?.primaryRoutes?.singleOrNull()
     }
-    private val platforms get() = when (groupId) {
+    private val platforms get() = platformChoices(groupId)
+
+    private fun platformChoices(group: String) = when (group) {
         "tcl" -> listOf("Roku TV" to "tcl_roku", "Google TV / Android TV" to "tcl_google", "Fire TV" to "tcl_fire")
         "hisense" -> listOf("Roku TV" to "hisense_roku", "Google TV / Android TV" to "hisense_google", "VIDAA" to "hisense_vidaa", "Fire TV" to "hisense_fire")
         "philips" -> listOf("Google TV / Android TV" to "philips_google", "Roku TV" to "philips_roku")
@@ -228,6 +230,16 @@ class SetupGuideActivity : Activity() {
     private fun remember() {
         if (history.size >= 100) history.removeFirst()
         history.addLast(location())
+    }
+    private fun showOtherRoutes() {
+        remember()
+        routeId = null
+        index = -1
+        mismatch = false
+        detailsExpanded = true
+        pickerExpanded = true
+        referencesExpanded = false
+        render()
     }
     private fun chooseRoute(id: String) {
         remember(); routeId = if (id == "samsung_ok") samsungStartingRoute() else id; index = -1; mismatch = false; detailsExpanded = false; referencesExpanded = false; render()
@@ -395,9 +407,7 @@ class SetupGuideActivity : Activity() {
         resumeIndex(route)?.let { saved -> words(content, "Continue at picture ${saved + 1}.", color = skin.accent) }
         action(content, if (detailsExpanded) "? Hide help" else "? Help") { detailsExpanded = !detailsExpanded; render(true) }
         if (detailsExpanded) {
-            if ((group?.routes?.size ?: 0) > 1) action(content, "Try another way") {
-                remember(); routeId = null; index = -1; mismatch = false; detailsExpanded = true; pickerExpanded = true; referencesExpanded = false; render()
-            }
+            if ((group?.routes?.size ?: 0) > 1) action(content, "Try another way", block = ::showOtherRoutes)
             if (route.id == "lg_pair") words(content, "LG ThinQ is LG’s official TV setup app.")
             if (route.models.isNotEmpty()) words(content, "Example TV models: ${route.models.joinToString()}", 16f, skin.muted)
             shortHelp()?.let { words(content, it, color = skin.muted) }
@@ -438,8 +448,14 @@ class SetupGuideActivity : Activity() {
         } }
     }
     private fun mismatchContent(route: SetupRoute?) {
+        val brandGroup = groupId.substringBefore("_")
         words(content, "Choose the name or menu that matches your device.")
-        action(content, "Choose another model or menu") { remember(); routeId = null; index = -1; mismatch = false; pickerExpanded = true; detailsExpanded = false; render() }
+        if (platforms.isNotEmpty() || platformChoices(brandGroup).any { (_, id) -> id == groupId }) {
+            action(content, "Choose another TV system") { chooseGroup(brandGroup) }
+        }
+        if ((group?.routes?.size ?: 0) > 1 && platforms.isEmpty()) {
+            action(content, "Choose another model or menu", block = ::showOtherRoutes)
+        }
         action(content, "Choose another TV or app") { chooseGroup("") }
         if (route != null) {
             action(content, if (detailsExpanded) "? Hide step help" else "? Step help") { detailsExpanded = !detailsExpanded; render(true) }

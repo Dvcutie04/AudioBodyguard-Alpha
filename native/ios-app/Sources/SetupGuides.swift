@@ -114,8 +114,10 @@ struct SetupGuidesView: View {
             Text("TV missing from the phone app? Check that the phone and TV use the same home Wi-Fi. Guest Wi-Fi may hide devices.").font(.callout).foregroundColor(theme.muted)
         }
     }
-    private var platforms: [(String, String)] {
-        switch groupID {
+    private var platforms: [(String, String)] { platformChoices(for: groupID) }
+
+    private func platformChoices(for group: String) -> [(String, String)] {
+        switch group {
         case "tcl": return [("Roku TV", "tcl_roku"), ("Google TV / Android TV", "tcl_google"), ("Fire TV", "tcl_fire")]
         case "hisense": return [("Roku TV", "hisense_roku"), ("Google TV / Android TV", "hisense_google"), ("VIDAA", "hisense_vidaa"), ("Fire TV", "hisense_fire")]
         case "philips": return [("Google TV / Android TV", "philips_google"), ("Roku TV", "philips_roku")]
@@ -301,6 +303,15 @@ struct SetupGuidesView: View {
         if history.count >= 100 { history.removeFirst() }
         history.append(Location(group: groupID, route: routeID, index: index, mismatch: mismatch, details: detailsExpanded, picker: pickerExpanded, references: referencesExpanded))
     }
+    private func showOtherRoutes() {
+        remember()
+        routeID = nil
+        index = -1
+        mismatch = false
+        detailsExpanded = true
+        pickerExpanded = true
+        referencesExpanded = false
+    }
     private func chooseRoute(_ id: String) {
         remember(); routeID = id == "samsung_ok" ? samsungStartingRoute() : id; index = -1; mismatch = false; detailsExpanded = false; referencesExpanded = false
     }
@@ -390,9 +401,7 @@ struct SetupGuidesView: View {
         disclosure("? Help", id: "setup-details") { detailsExpanded.toggle() }
         if detailsExpanded {
             if let group = group, group.routes.count > 1 {
-                control("Try another way", icon: "questionmark.circle", id: "setup-intro-options") {
-                    remember(); routeID = nil; index = -1; mismatch = false; detailsExpanded = true; pickerExpanded = true; referencesExpanded = false
-                }
+                control("Try another way", icon: "questionmark.circle", id: "setup-intro-options", action: showOtherRoutes)
             }
             if route.id == "lg_pair" {
                 Text("LG ThinQ is LG’s official TV setup app.").font(.callout)
@@ -450,10 +459,17 @@ struct SetupGuidesView: View {
         }
     }
     private var mismatchContent: some View {
-        VStack(alignment: .leading, spacing: 16) {
+        let brandGroup = String(groupID.prefix(while: { $0 != "_" }))
+        let canChangeSystem = !platforms.isEmpty || platformChoices(for: brandGroup).contains { $0.1 == groupID }
+        return VStack(alignment: .leading, spacing: 16) {
             Image(systemName: route?.id.hasPrefix("phone_") == true ? phoneSurfaceIcon : "tv.and.mediabox").font(.system(size: 40)).foregroundColor(theme.violet).accessibilityHidden(true)
             Text("Choose the name or menu that matches your device.")
-            control("Choose another model or menu", icon: "rectangle.stack", id: "setup-other-menu") { remember(); routeID = nil; index = -1; mismatch = false; pickerExpanded = true; detailsExpanded = false }
+            if canChangeSystem {
+                control("Choose another TV system", icon: "tv", id: "setup-other-system") { chooseGroup(brandGroup) }
+            }
+            if (group?.routes.count ?? 0) > 1 && platforms.isEmpty {
+                control("Choose another model or menu", icon: "rectangle.stack", id: "setup-other-menu", action: showOtherRoutes)
+            }
             control("Choose another TV or app", icon: "tv", id: "setup-other-group") { chooseGroup("") }
             if let route = route {
                 disclosure("? Step help", id: "setup-mismatch-details") { detailsExpanded.toggle() }
