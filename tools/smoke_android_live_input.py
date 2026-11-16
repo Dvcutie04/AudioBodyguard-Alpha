@@ -751,6 +751,31 @@ def main():
             tap("Resume guide", "roku_handoff_resume_phone")
             wait_for_all(("TCL • Roku TV", "Step 2 of 5", "Check your Wi-Fi"), "roku_handoff_resumed_wifi")
             screenshot("roku_handoff_resumed_wifi")
+
+            # Keep the paused tutorial's system when standalone guides are explored.
+            tap("Back to Tutorial", "roku_pause_close_phone")
+            wait_for_all(("Step 4 of 5", "Phone pictures"), "roku_pause_tutorial_phone")
+            tap("Exit tutorial", "roku_pause_exit_home")
+            wait_for("Connection not verified", "roku_pause_unverified")
+            tap("Devices", "roku_pause_devices")
+            reveal("? Device help", "roku_pause_device_help")
+            reveal("Illustrated setup guides. Jump to a TV or home app", "roku_pause_guides")
+            reveal("LG", "roku_pause_other_brand")
+            wait_for("Connect your LG TV", "roku_pause_lg_intro")
+            tap("Close", "roku_pause_lg_close")
+            tap("Home", "roku_pause_home")
+            reveal("Back to Tutorial", "roku_pause_restore")
+            wait_for_all(("Step 4 of 5", "Phone pictures"), "roku_pause_restored_step")
+            tap("Phone pictures", "roku_pause_reopen_phone")
+            try:
+                wait_for_all(("2. Connect to your phone (Roku)", "Resume guide"), "roku_pause_resume_ready")
+            except AssertionError:
+                screenshot("roku_pause_unexpected_companion")
+                raise
+            tap("Resume guide", "roku_pause_resume_phone")
+            wait_for_all(("TCL • Roku TV", "Step 2 of 5", "Check your Wi-Fi"), "roku_pause_retained_wifi")
+            screenshot("roku_pause_retained_wifi")
+
             for step in range(3, 6):
                 tap("Next", f"roku_handoff_phone_next_{step}")
                 wait_for(f"Step {step} of 5", f"roku_handoff_phone_{step}")
