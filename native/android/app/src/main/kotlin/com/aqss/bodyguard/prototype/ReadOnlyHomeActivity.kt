@@ -390,9 +390,16 @@ class ReadOnlyHomeActivity : Activity() {
             return
         }
         if (requestCode != PICTURE_REQUEST) return
-        data?.getStringExtra(SetupGuideActivity.SELECTED_SYSTEM)?.takeIf { id -> com.aqss.nativefeedback.SetupContent.groups.any { it.id == id } }?.let { selectedSetupSystem = it }
         val expected = pendingPictureTarget
         pendingPictureTarget = null
+        val system = data?.getStringExtra(SetupGuideActivity.SELECTED_SYSTEM)
+            ?.takeIf { id -> com.aqss.nativefeedback.SetupContent.groups.any { it.id == id } }
+        if (system != null) {
+            // Viewing another brand from mismatch help does not replace the tutorial TV.
+            val brand = if (expected != null && ::tutorial.isInitialized) tutorial.selectedTV else ""
+            if (brand !in listOf("", "other", "unsure") && system != brand && !system.startsWith(brand + "_")) return
+            selectedSetupSystem = system
+        }
         if (resultCode == RESULT_OK && expected != null && ::tutorial.isInitialized) {
             val partOne = data?.getStringExtra(SetupGuideActivity.COMPLETED_TV_ROUTE)
             if (expected == "connectionPlan" && partOne != null) tutorial.completePictures(expected, partOne)
