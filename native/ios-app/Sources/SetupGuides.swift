@@ -371,7 +371,12 @@ struct SetupGuidesView: View {
         if routeID == nil, platforms.isEmpty, let primary = group?.primaryRoutes, primary.count == 1 {
             routeID = groupID == "samsung" ? samsungStartingRoute() : primary[0]
         }
-        if !["", "google", "alexa", "both", "neither", "phone", "voice"].contains(groupID) { onDeviceGroupSelected?(groupID) }
+        reportDeviceGroupSelection()
+    }
+    private func reportDeviceGroupSelection() {
+        // Opening a brand's system picker is not a system selection.
+        guard platforms.isEmpty, !["", "google", "alexa", "both", "neither", "phone", "voice"].contains(groupID) else { return }
+        onDeviceGroupSelected?(groupID)
     }
     private func control(_ title: String, icon: String, id: String, primary: Bool = false, action: @escaping () -> Void) -> some View {
         Button(action: action) {
@@ -511,7 +516,7 @@ struct SetupGuidesView: View {
         guard let previous = history.popLast() else { dismiss(); return }
         groupID = previous.group; routeID = previous.route; index = previous.index; mismatch = previous.mismatch
         detailsExpanded = previous.details; pickerExpanded = previous.picker; referencesExpanded = previous.references
-        if !["", "google", "alexa", "both", "neither", "phone", "voice"].contains(groupID) { onDeviceGroupSelected?(groupID) }
+        reportDeviceGroupSelection()
     }
 }
 
