@@ -19,8 +19,8 @@ struct SetupGuidesView: View {
     var returningToTutorial = false
     var onDeviceGroupSelected: ((String) -> Void)? = nil
     var onVoiceCheck: (() -> Void)? = nil
-    var onPartOne: ((String) -> Void)? = nil
-    var onFinish: ((String) -> Void)? = nil
+    var onPartOne: ((String, String) -> Void)? = nil
+    var onFinish: ((String, String) -> Void)? = nil
     @Environment(\.dismiss) private var dismiss
     @Environment(\.dynamicTypeSize) private var textSize
     @State private var groupID = ""
@@ -491,12 +491,12 @@ struct SetupGuidesView: View {
                         if ["roku_network", "roku_model"].contains(route.id) {
                             remember()
                             writeProgress(route.id, nil)
-                            onPartOne?(route.id)
+                            onPartOne?(route.id, groupID)
                             routeID = "roku_phone"; index = -1; detailsExpanded = false; referencesExpanded = false
                             return
                         }
                         if route.id == "voice" { onVoiceCheck?() }
-                        else { onFinish?(route.id) }
+                        else { onFinish?(route.id, groupID) }
                         writeProgress(route.id, nil)
                         dismiss()
                     } else { remember(); index = index < 0 ? resumeIndex(route) ?? 0 : route.id == "philips_voice_remote" && index == 5 ? 7 : index + 1; detailsExpanded = false; referencesExpanded = false }
