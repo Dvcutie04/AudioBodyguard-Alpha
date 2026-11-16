@@ -714,6 +714,53 @@ def main():
                 x = (x0 + x1) // 2
                 adb("shell", "input", "swipe", str(x), str(int(y0 + (y1-y0)*.8)), str(x), str(int(y0 + (y1-y0)*.2)), "300")
             raise AssertionError("Unreachable control: " + label)
+        def check_roku_handoff():
+            reveal("Replay connection guide", "roku_handoff_replay")
+            tap("Start picture setup", "roku_handoff_start")
+            reveal("Choose TV brand", "roku_handoff_picker")
+            tap("TCL", "roku_handoff_brand")
+            wait_for_all(("Step 3 of 5", "Show TCL steps"), "roku_handoff_plan")
+            reveal("Show TCL steps", "roku_handoff_open")
+            reveal("Roku TV", "roku_handoff_platform")
+            wait_for_all(("TCL • Roku TV", "Start guide"), "roku_handoff_intro")
+            tap("Start guide", "roku_handoff_start_tv")
+            for step in range(2, 6):
+                tap("Next", f"roku_handoff_tv_next_{step}")
+                wait_for(f"Step {step} of 5", f"roku_handoff_tv_{step}")
+            wait_for("Read your TV address", "roku_handoff_tv_result")
+            tap("Finish part one", "roku_handoff_to_phone")
+            wait_for_all(("2. Connect to your phone (Roku)", "Start part two"), "roku_handoff_phone_intro")
+
+            adb("shell", "input", "keyevent", "KEYCODE_BACK")
+            wait_for_all(("TCL • Roku TV", "Step 5 of 5", "Read your TV address"), "roku_handoff_back_to_tv")
+            screenshot("roku_handoff_back_to_tv")
+            tap("Finish part one", "roku_handoff_reopen_phone")
+            tap("Start part two", "roku_handoff_start_phone")
+            wait_for_all(("Step 1 of 5", "Get the Roku app"), "roku_handoff_phone_first")
+            tap("Next", "roku_handoff_phone_next")
+            wait_for_all(("Step 2 of 5", "Check your Wi-Fi"), "roku_handoff_phone_wifi")
+            tap("Back", "roku_handoff_back_from_wifi")
+            wait_for_all(("Step 1 of 5", "Get the Roku app"), "roku_handoff_back_to_first")
+            tap("Next", "roku_handoff_phone_next_again")
+            wait_for_all(("Step 2 of 5", "Check your Wi-Fi"), "roku_handoff_phone_wifi_again")
+
+            tap("Back to Tutorial", "roku_handoff_pause_phone")
+            wait_for_all(("Step 4 of 5", "Phone pictures"), "roku_handoff_tutorial_phone")
+            tap("Phone pictures", "roku_handoff_reopen_from_tutorial")
+            wait_for_all(("2. Connect to your phone (Roku)", "Resume guide"), "roku_handoff_resume_ready")
+            tap("Resume guide", "roku_handoff_resume_phone")
+            wait_for_all(("TCL • Roku TV", "Step 2 of 5", "Check your Wi-Fi"), "roku_handoff_resumed_wifi")
+            screenshot("roku_handoff_resumed_wifi")
+            for step in range(3, 6):
+                tap("Next", f"roku_handoff_phone_next_{step}")
+                wait_for(f"Step {step} of 5", f"roku_handoff_phone_{step}")
+            wait_for("Check the phone remote", "roku_handoff_phone_result")
+            tap("Finish part two", "roku_handoff_finish_phone")
+            wait_for_all(("Step 5 of 5", "Go to Home"), "roku_handoff_finished")
+            tap("Go to Home", "roku_handoff_done")
+            wait_for("Connection not verified", "roku_handoff_unverified")
+            print("ROKU_HANDOFF_BACK_OBSERVED: returned to TV picture 5, resumed phone picture 2, connection unverified", flush=True)
+
         for scale in ("1.0", "1.5"):
             adb("shell", "settings", "put", "system", "font_scale", scale)
             adb("shell", "settings", "put", "global", "animator_duration_scale", "0" if scale == "1.5" else "1")
@@ -839,6 +886,8 @@ def main():
             print(f"SETUP_REVERSE_OBSERVED: {scale} text scale; steps 5, 4, 3, 2, 1; TV and home-app choices retained", flush=True)
             tap("Go to Home", prefix + "_done")
             wait_for("Connection not verified", prefix + "_unverified")
+            if scale == "1.0":
+                check_roku_handoff()
             appops = adb("shell", "cmd", "appops", "get", package, "RECORD_AUDIO").decode()
             assert "(running)" not in appops, appops
             def page(label, name):

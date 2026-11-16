@@ -35,4 +35,13 @@ Start at **Step 5 of 5** in the main setup tutorial. You can reach it by finishi
 
 Repeat at a larger system font size if you use one. Record the first step that differs, which Back control you used, and the screen it opened.
 
+### TCL Roku TV handoff
+
+1. Choose **TCL**, then **Roku TV**. Open the TV pictures and go to **Read your TV address**.
+2. Tap **Finish part one**. Confirm the next screen is **2. Connect to your phone (Roku)**.
+3. Use Android’s Back. Confirm the TV address picture returns.
+4. Tap **Finish part one** again. Start part two and go to **Check your Wi-Fi**.
+5. Tap **Back to Tutorial**. Confirm **Step 4 of 5** shows **Phone pictures**.
+6. Open **Phone pictures** and tap **Resume guide**. Confirm you return to **Check your Wi-Fi** for the same TCL Roku TV.
+
 Record the first mismatch or failure, the step number, and whether Back kept your place. Keep codes, passwords and private network details out of shared screenshots. Report external-app pairing, Audio Bodyguard reachability and guide completion as separate observations. Simulator and emulator runs establish software behavior only.
