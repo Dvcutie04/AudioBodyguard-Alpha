@@ -26,6 +26,8 @@ class TutorialGuide(
     private val skin: InterfaceTheme,
     private val currentPage: () -> String,
     private val openSetup: (String) -> Unit,
+    private val currentSetupSystem: () -> String?,
+    private val restoreSetupSystem: (String?) -> Unit,
     private val openPhoto: () -> Unit,
     private val openTool: (String) -> Unit,
     private val navigate: (String, String?) -> Unit,
@@ -299,7 +301,10 @@ class TutorialGuide(
     }
     private fun exitToHome() {
         val saved = Bundle()
-        pausedTutorial = null; save(saved); pausedTutorial = saved
+        pausedTutorial = null
+        save(saved)
+        saved.putString("tutorialSetupSystem", currentSetupSystem())
+        pausedTutorial = saved
         close(restore = false); restorePage("home"); focusHelp()
     }
     fun returnToTutorial() {
@@ -307,6 +312,7 @@ class TutorialGuide(
         if (saved == null) { start("getting_started"); return }
         pausedTutorial = null
         saved.putString("tutorialPreviousPage", currentPage())
+        if (saved.containsKey("tutorialSetupSystem")) restoreSetupSystem(saved.getString("tutorialSetupSystem"))
         restore(saved)
     }
     fun back() {
