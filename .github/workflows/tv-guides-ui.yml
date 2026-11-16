@@ -10,6 +10,7 @@ on:
       - aqss/all-brand-night-preflight
       - aqss/vizio-guide-return-verification
       - aqss/tv-setup-mismatch-recovery
+      - aqss/ios-setup-backward
   workflow_dispatch:
 
 permissions:
@@ -134,6 +135,8 @@ jobs:
             -only-testing:AQSSReadOnlyUITests/AQSSReadOnlyUITests/testSonyLegacyAndHisenseVIDAAKeepTheirOwnPicturesAndBack \
             -only-testing:AQSSReadOnlyUITests/AQSSReadOnlyUITests/testNewVizioTVShowsAccountThenPhonePicturesInOrder \
             -only-testing:AQSSReadOnlyUITests/AQSSReadOnlyUITests/testLargestTextKeepsExitAndNextReachable \
+            -only-testing:AQSSReadOnlyUITests/AQSSReadOnlyUITests/testSetupBackKeepsTVAndHomeAppAtStandardAndLargestText \
+            -only-testing:AQSSReadOnlyUITests/AQSSReadOnlyUITests/testTCLRokuPhonePicturesResumeAfterBackToTutorial \
             -only-testing:AQSSReadOnlyUITests/AQSSReadOnlyUITests/testTVNetworkRejectsPublicAddressWithoutContact \
             -only-testing:AQSSReadOnlyUITests/AQSSReadOnlyUITests/testTVAddressPicturesKeepTheCheckDraftAndStepOrder \
             -only-testing:AQSSReadOnlyUITests/AQSSReadOnlyUITests/testTVNetworkVisitClearsDraftOnBackgroundAndBack \
@@ -193,4 +196,20 @@ jobs:
             ${{ runner.temp }}/sound-tv-guides.xcresult
             ${{ runner.temp }}/sound-vizio-*.xcresult
           if-no-files-found: ignore
+          retention-days: 14
+      - name: Package the tested iOS Simulator app
+        if: matrix.device == 'iPhone'
+        run: |
+          ditto -c -k --sequesterRsrc --keepParent \
+            "$RUNNER_TEMP/tv-guide-build/Build/Products/Release-iphonesimulator/AQSSReadOnly.app" \
+            "$RUNNER_TEMP/AQSSReadOnly-iOS-SIMULATION.app.zip"
+      - name: Retain the tested iOS Simulator app
+        if: matrix.device == 'iPhone'
+        uses: actions/upload-artifact@v4
+        with:
+          name: tv-guides-iOS-Simulator
+          path: |
+            ${{ runner.temp }}/AQSSReadOnly-iOS-SIMULATION.app.zip
+            ${{ runner.temp }}/sound-check-screenshots/source-identity.json
+          if-no-files-found: error
           retention-days: 14

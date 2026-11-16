@@ -1108,7 +1108,9 @@ private struct ReadOnlyHomeView: View {
         } else { startTutorial("getting_started") }
     }
     private func tutorialPanel(topic: AQSSTutorialTopic, step: AQSSTutorialStep) -> some View {
-        VStack(spacing: 0) {
+        let phone: AQSSSetupPhone = UIDevice.current.userInterfaceIdiom == .pad ? .ipad : .iphone
+        let phoneSymbol = phone == .ipad ? "ipad" : "iphone"
+        return VStack(spacing: 0) {
             HStack {
                 Text("Step \(guide.stepNumber) of \(guide.stepCount)").font(.subheadline.weight(.semibold)).foregroundColor(theme.muted)
                 Spacer(minLength: 8)
@@ -1120,17 +1122,17 @@ private struct ReadOnlyHomeView: View {
                 VStack(alignment: .leading, spacing: 20) {
                     GuidePictureCue(screenKey: tutorialStepKey) {
                         HStack(spacing: 18) {
-                            Image(systemName: step.target == "connectionCheck" ? "iphone" : "tv")
+                            Image(systemName: step.target == "connectionCheck" ? phoneSymbol : "tv")
                             Image(systemName: "arrow.right")
-                            Image(systemName: "iphone")
+                            Image(systemName: phoneSymbol)
                         }.font(.system(size: 32, weight: .light)).foregroundColor(theme.violet)
                     }.accessibilityHidden(true)
                     Text(step.title).font(.largeTitle.bold()).fixedSize(horizontal: false, vertical: true)
                         .accessibilityAddTraits(.isHeader).accessibilityFocused($focusedElement, equals: .tutorial(tutorialStepKey))
                     Text(step.explanation).fixedSize(horizontal: false, vertical: true)
                     if topic.id == "getting_started" {
-                        if let selected = guide.selected("chooseTV"), step.target != "chooseTV" {
-                            Text("\(selected.title)  ·  iPhone").font(.callout.weight(.semibold)).foregroundColor(theme.accent)
+                        if let selected = guide.selected("chooseTV") {
+                            Text("\(selected.title)  ·  \(phone.label)").font(.callout.weight(.semibold)).foregroundColor(theme.accent)
                                 .accessibilityIdentifier("guide-device-context")
                         }
                         if step.target == "welcome" { Text("1. Your TV  →  2. Your phone").foregroundColor(theme.accent).font(.headline) }
