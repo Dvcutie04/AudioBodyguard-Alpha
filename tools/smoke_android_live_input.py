@@ -776,6 +776,36 @@ def main():
             wait_for_all(("TCL • Roku TV", "Step 2 of 5", "Check your Wi-Fi"), "roku_pause_retained_wifi")
             screenshot("roku_pause_retained_wifi")
 
+            for leave in ("back", "close"):
+                prefix = f"roku_mismatch_{leave}"
+                if leave == "back":
+                    reveal("? Step help", prefix + "_help")
+                reveal("My screen looks different", prefix + "_mismatch")
+                wait_for("Find the right screen", prefix + "_recovery")
+                reveal("Choose another TV or app", prefix + "_brands")
+                wait_for("Choose your TV brand", prefix + "_brand_picker")
+                reveal("LG", prefix + "_lg")
+                wait_for("Connect your LG TV", prefix + "_lg_intro")
+                if leave == "back":
+                    tap("Back", prefix + "_from_lg")
+                    wait_for("Choose your TV brand", prefix + "_back_to_picker")
+                    tap("Back", prefix + "_from_picker")
+                    wait_for("Find the right screen", prefix + "_back_to_recovery")
+                    tap("Return to step", prefix + "_return_to_step")
+                else:
+                    tap("Back to Tutorial", prefix + "_exit")
+                    wait_for_all(("Step 4 of 5", "Phone pictures"), prefix + "_tutorial")
+                    tap("Phone pictures", prefix + "_reopen")
+                    try:
+                        wait_for_all(("2. Connect to your phone (Roku)", "Resume guide"), prefix + "_resume_ready")
+                    except AssertionError:
+                        screenshot(prefix + "_unexpected_companion")
+                        raise
+                    tap("Resume guide", prefix + "_resume")
+                wait_for_all(("TCL • Roku TV", "Step 2 of 5", "Check your Wi-Fi"), prefix + "_retained_wifi")
+                screenshot(prefix + "_retained_wifi")
+            print("ROKU_MISMATCH_DETOUR_OBSERVED: Back and direct return retain Roku Wi-Fi picture 2", flush=True)
+
             for step in range(3, 6):
                 tap("Next", f"roku_handoff_phone_next_{step}")
                 wait_for(f"Step {step} of 5", f"roku_handoff_phone_{step}")
