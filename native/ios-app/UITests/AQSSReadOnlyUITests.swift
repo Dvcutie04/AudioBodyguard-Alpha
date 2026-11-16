@@ -2649,6 +2649,22 @@ final class AQSSReadOnlyUITests: XCTestCase {
         XCTAssertEqual(progress.label, "Step 2 of 5")
         XCTAssertEqual(pictureDescription(app), wifiPicture)
         screenshot("Roku phone Wi-Fi picture resumes from the tutorial", app)
+
+        app.buttons["setup-close"].tap(); label("Step 4 of 5", app)
+        exit(app); label("Connection not verified", app)
+        tab("devices", app)
+        tap("Illustrated setup guides", app); tap("LG", app)
+        label("Connect your LG TV", app)
+        closeSetupAndReturnToDevices(app)
+        tab("home", app)
+        tap("Back to Tutorial", app); label("Step 4 of 5", app)
+        tap("Phone pictures", app); label("2. Connect to your phone (Roku)", app)
+        XCTAssertEqual(nextPicture.label, "Resume guide")
+        nextPicture.tap(); label("Check your Wi-Fi", app)
+        XCTAssertEqual(progress.label, "Step 2 of 5")
+        XCTAssertEqual(pictureDescription(app), wifiPicture)
+        screenshot("Roku Wi-Fi picture resumes after visiting a different brand", app)
+
         for _ in 2..<5 { nextPicture.tap() }
         XCTAssertEqual(nextPicture.label, "Finish part two")
         nextPicture.tap(); label("Step 5 of 5", app)

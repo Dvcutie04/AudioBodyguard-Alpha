@@ -458,7 +458,7 @@ private struct ReadOnlyHomeView: View {
     @AppStorage("aqssGuideDismissedV1") private var guideDismissed = false
     @State private var checkedFirstVisit = false
     @State private var guide = AQSSGuideProgress()
-    @State private var pausedGuide: AQSSGuideProgress?
+    @State private var pausedGuide: (progress: AQSSGuideProgress, setupSystem: String?)?
     private var tutorialTopicID: String? { guide.topicID }
     private var tutorialIndex: Int { guide.index }
     @State private var beginnerTourFinished = false
@@ -1096,14 +1096,17 @@ private struct ReadOnlyHomeView: View {
         if restore { page = previousPage; focusedElement = .help }
     }
     private func exitToHome() {
-        pausedGuide = guide
+        pausedGuide = (progress: guide, setupSystem: selectedSetupSystem)
         if page != "home" { rememberPage() }
         closeTutorial(restore: false)
         page = "home"; navigationTarget = "page-heading"; navigationRequest += 1
     }
     private func resumeTutorial() {
         if let saved = pausedGuide {
-            previousPage = page; guide = saved; pausedGuide = nil
+            previousPage = page
+            selectedSetupSystem = saved.setupSystem
+            guide = saved.progress
+            pausedGuide = nil
             moreFeatures = false; tutorialHelp = false
         } else { startTutorial("getting_started") }
     }
