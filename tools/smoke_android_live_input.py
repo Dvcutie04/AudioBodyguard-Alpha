@@ -806,6 +806,20 @@ def main():
                 screenshot(prefix + "_retained_wifi")
             print("ROKU_MISMATCH_DETOUR_OBSERVED: Back and direct return retain Roku Wi-Fi picture 2", flush=True)
 
+            reveal("? Step help", "roku_system_picker_help")
+            reveal("My screen looks different", "roku_system_picker_mismatch")
+            wait_for("Find the right screen", "roku_system_picker_recovery")
+            reveal("Choose another TV system", "roku_system_picker_open")
+            wait_for_all(("Which name do you see on your TV?", "Roku TV"), "roku_system_picker_options")
+            tap("Back to Tutorial", "roku_system_picker_exit")
+            wait_for_all(("Step 4 of 5", "Phone pictures"), "roku_system_picker_tutorial")
+            tap("Phone pictures", "roku_system_picker_reopen")
+            wait_for_all(("2. Connect to your phone (Roku)", "Resume guide"), "roku_system_picker_resume_ready")
+            tap("Resume guide", "roku_system_picker_resume")
+            wait_for_all(("TCL • Roku TV", "Step 2 of 5", "Check your Wi-Fi"), "roku_system_picker_retained_wifi")
+            screenshot("roku_system_picker_retained_wifi")
+            print("ROKU_SYSTEM_PICKER_CLOSE_OBSERVED: resume retains Roku Wi-Fi picture 2", flush=True)
+
             for step in range(3, 6):
                 tap("Next", f"roku_handoff_phone_next_{step}")
                 wait_for(f"Step {step} of 5", f"roku_handoff_phone_{step}")
