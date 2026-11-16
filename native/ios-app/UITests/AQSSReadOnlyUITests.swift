@@ -2665,6 +2665,38 @@ final class AQSSReadOnlyUITests: XCTestCase {
         XCTAssertEqual(pictureDescription(app), wifiPicture)
         screenshot("Roku Wi-Fi picture resumes after visiting a different brand", app)
 
+        let brandContext = app.staticTexts["setup-device-context"]
+        XCTAssertTrue(brandContext.exists)
+        let rokuContext = brandContext.label
+        let back = app.buttons["setup-back"]
+        for closeToTutorial in [false, true] {
+            showStepHelp(app)
+            tap("My screen looks different", app); label("Find the right screen", app)
+            tap("Choose another TV or app", app); label("Choose your TV brand", app)
+            tap("LG", app); label("Connect your LG TV", app)
+            if closeToTutorial {
+                app.buttons["setup-close"].tap(); label("Step 4 of 5", app)
+                tap("Phone pictures", app)
+                guard app.staticTexts["2. Connect to your phone (Roku)"].waitForExistence(timeout: 10) else {
+                    screenshot("Unexpected phone guide after closing the LG detour", app)
+                    XCTFail("Back to Tutorial from LG must keep the selected TCL Roku system")
+                    return
+                }
+                XCTAssertEqual(nextPicture.label, "Resume guide")
+                nextPicture.tap()
+            } else {
+                back.tap(); label("Choose your TV brand", app)
+                back.tap(); label("Find the right screen", app)
+                XCTAssertEqual(back.label, "Return to step")
+                back.tap()
+            }
+            label("Check your Wi-Fi", app)
+            XCTAssertEqual(progress.label, "Step 2 of 5")
+            XCTAssertEqual(brandContext.label, rokuContext)
+            XCTAssertEqual(pictureDescription(app), wifiPicture)
+            screenshot(closeToTutorial ? "Back to Tutorial retains the Roku Wi-Fi picture" : "Step-by-step Back retains the Roku Wi-Fi picture", app)
+        }
+
         for _ in 2..<5 { nextPicture.tap() }
         XCTAssertEqual(nextPicture.label, "Finish part two")
         nextPicture.tap(); label("Step 5 of 5", app)
