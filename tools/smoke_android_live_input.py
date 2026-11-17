@@ -847,6 +847,27 @@ def main():
             screenshot("roku_system_picker_retained_wifi")
             print("ROKU_SYSTEM_PICKER_CLOSE_OBSERVED: resume retains Roku Wi-Fi picture 2", flush=True)
 
+            reveal("? Step help", "roku_system_preview_help")
+            reveal("My screen looks different", "roku_system_preview_mismatch")
+            wait_for("Find the right screen", "roku_system_preview_recovery")
+            reveal("Choose another TV system", "roku_system_preview_options")
+            reveal("Google TV / Android TV", "roku_system_preview_google")
+            wait_for("TCL • Google TV / Android TV", "roku_system_preview_google_open")
+            tap("Back", "roku_system_preview_back")
+            wait_for_all(("Which name do you see on your TV?", "Roku TV"), "roku_system_preview_back_to_choices")
+            tap("Back to Tutorial", "roku_system_preview_exit")
+            wait_for_all(("Step 4 of 5", "Phone pictures"), "roku_system_preview_tutorial")
+            tap("Phone pictures", "roku_system_preview_reopen")
+            try:
+                wait_for_all(("2. Connect to your phone (Roku)", "Resume guide"), "roku_system_preview_resume_ready")
+            except AssertionError:
+                screenshot("roku_system_preview_wrong_phone_guide")
+                raise
+            tap("Resume guide", "roku_system_preview_resume")
+            wait_for_all(("TCL • Roku TV", "Step 2 of 5", "Check your Wi-Fi"), "roku_system_preview_retained_wifi")
+            screenshot("roku_system_preview_retained_wifi")
+            print("ROKU_SYSTEM_PREVIEW_BACK_OBSERVED: backing out of Google TV retains the Roku phone guide", flush=True)
+
             for step in range(3, 6):
                 tap("Next", f"roku_handoff_phone_next_{step}")
                 wait_for(f"Step {step} of 5", f"roku_handoff_phone_{step}")
