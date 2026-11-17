@@ -2697,23 +2697,30 @@ final class AQSSReadOnlyUITests: XCTestCase {
             screenshot(closeToTutorial ? "Back to Tutorial retains the Roku Wi-Fi picture" : "Step-by-step Back retains the Roku Wi-Fi picture", app)
         }
 
-        showStepHelp(app)
-        tap("My screen looks different", app); label("Find the right screen", app)
-        tap("Choose another TV system", app); label("Which name do you see on your TV?", app)
-        XCTAssertTrue(app.buttons["setup-platform-tcl_roku"].exists)
-        app.buttons["setup-close"].tap(); label("Step 4 of 5", app)
-        tap("Phone pictures", app)
-        guard app.staticTexts["2. Connect to your phone (Roku)"].waitForExistence(timeout: 10) else {
-            screenshot("Unexpected phone guide after closing the TV system picker", app)
-            XCTFail("Closing the TV system picker without a choice must keep TCL Roku")
-            return
+        for openedGoogleTV in [false, true] {
+            showStepHelp(app)
+            tap("My screen looks different", app); label("Find the right screen", app)
+            tap("Choose another TV system", app); label("Which name do you see on your TV?", app)
+            XCTAssertTrue(app.buttons["setup-platform-tcl_roku"].exists)
+            if openedGoogleTV {
+                tap("Google TV / Android TV", app); label("TCL • Google TV / Android TV", app)
+                back.tap(); label("Which name do you see on your TV?", app)
+            }
+            app.buttons["setup-close"].tap(); label("Step 4 of 5", app)
+            tap("Phone pictures", app)
+            let action = openedGoogleTV ? "backing out of Google TV" : "closing the TV system picker"
+            guard app.staticTexts["2. Connect to your phone (Roku)"].waitForExistence(timeout: 10) else {
+                screenshot("Unexpected phone guide after \(action)", app)
+                XCTFail("Roku setup should be retained after \(action)")
+                return
+            }
+            XCTAssertEqual(nextPicture.label, "Resume guide")
+            nextPicture.tap(); label("Check your Wi-Fi", app)
+            XCTAssertEqual(progress.label, "Step 2 of 5")
+            XCTAssertEqual(brandContext.label, rokuContext)
+            XCTAssertEqual(pictureDescription(app), wifiPicture)
+            screenshot("Roku Wi-Fi picture retained after \(action)", app)
         }
-        XCTAssertEqual(nextPicture.label, "Resume guide")
-        nextPicture.tap(); label("Check your Wi-Fi", app)
-        XCTAssertEqual(progress.label, "Step 2 of 5")
-        XCTAssertEqual(brandContext.label, rokuContext)
-        XCTAssertEqual(pictureDescription(app), wifiPicture)
-        screenshot("Closing the TV system picker retains the Roku Wi-Fi picture", app)
 
         for _ in 2..<5 { nextPicture.tap() }
         XCTAssertEqual(nextPicture.label, "Finish part two")
