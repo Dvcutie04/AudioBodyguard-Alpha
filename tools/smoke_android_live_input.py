@@ -828,9 +828,10 @@ def main():
                     name = f"roku_system_picker_rotation_{rotation}"
                     for _ in range(6):
                         root, _ = screen(name)
-                        if root.get("rotation") == rotation and all(
-                            has(root, label) for label in ("Which name do you see on your TV?", "Roku TV", "Google TV / Android TV")
-                        ):
+                        x0, y0, x1, y1 = map(int, re.findall(r"-?\d+", root.find("node").get("bounds")))
+                        width, height = x1 - x0, y1 - y0
+                        orientation_matches = width > height if rotation == "1" else height > width
+                        if orientation_matches and has(root, "Which name do you see on your TV?") and has(root, "Roku TV"):
                             break
                         time.sleep(1)
                     else:
