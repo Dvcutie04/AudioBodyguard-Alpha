@@ -39,17 +39,36 @@ fun boundedTVPhotoText(rows: Sequence<String?>): String? {
     return text.toString()
 }
 
+/** Session-only TV label details for the picture guide. */
+data class TVModelIdentity private constructor(val model: String, val brand: String?, val make: String?, val year: String?) {
+    val summary: String get() = "Model: $model\nBrand: ${brand ?: "Unknown"} · Make: ${make ?: "Unknown"}\nModel year: ${year ?: "Unknown"}"
+
+    companion object {
+        fun fromNumber(number: String, brand: String? = null, make: String? = null, year: String? = null): TVModelIdentity? {
+            if (number.length > 128) return null
+            val code = number.trim(' ', '\t')
+            if (code.length !in 2..40 || !Regex("[A-Za-z0-9]+(?:[._/-][A-Za-z0-9]+)*").matches(code) ||
+                code.none { it in '0'..'9' } || ('.' in code && code.none { it.isLetter() })) return null
+            val model = code.uppercase(Locale.ROOT)
+            val entry = SetupContent.modelCatalog[model]
+            if (brand != null && entry != null && !entry.brand.equals(brand, ignoreCase = true)) return null
+            return TVModelIdentity(model, entry?.brand ?: brand, make ?: entry?.make, year ?: entry?.year)
+        }
+    }
+}
+
 /** Untrusted presentation hints; there is intentionally no connection or authority API. */
 class TVPhotoHints(text: String) {
     val brand: String?
     val model: String?
+    val identity: TVModelIdentity?
     val address: String?
     val vizioCheckTarget: LocalTVTarget?
     init {
-        val modelLabel = "MODEL(?:[ \\t]+(?:NAME|CODE|NUMBER|NO\\.?))?"
+        val modelLabel = "(?:FULL[ \\t]+)?MODEL(?![ \\t]+YEAR\\b)(?:[ \\t]+(?:NAME|CODE|NUMBER|NO\\.?))?"
         val addressLabel = "(?:IPV4[ \\t]+IP[ \\t]+ADDRESS|IP(?:V4)?(?:[ \\t]+ADDRESS)?)"
         val upper = if (photoTextFits(text))
-            text.uppercase(Locale.ROOT).replace(Regex("(?m)^[ \\t]*($modelLabel|$addressLabel)[ \\t]*[:=]?[ \\t]*\\r?\\n[ \\t]*"), "$1: ") else ""
+            text.uppercase(Locale.ROOT).replace(Regex("(?m)^[ \\t]*($modelLabel|$addressLabel|BRAND|MAKE|MANUFACTURER|MODEL[ \\t]+YEAR)[ \\t]*[:=]?[ \\t]*\\r?\\n[ \\t]*"), "$1: ") else ""
         fun matches(pattern: String) = Regex(pattern, RegexOption.MULTILINE).findAll(upper).map { it.groupValues[1] }.toSet()
         // Include malformed labelled values before checking uniqueness: do not salvage
         // one readable candidate from a conflicting or unreadable second row.
@@ -62,7 +81,17 @@ class TVPhotoHints(text: String) {
         }
         val brands = matches("\\b(SAMSUNG|LG|SONY|TCL|HISENSE|VIZIO|PANASONIC|PHILIPS)\\b")
         brand = brands.singleOrNull()
-        model = labelled(modelLabel)?.takeIf { Regex("[A-Z0-9][A-Z0-9._-]{1,39}").matches(it) && it.any { c -> c in '0'..'9' } }
+        val modelRows = matches("^[ \\t]*($modelLabel)(?=[ \\t:=]|$)")
+        val loneCodes = upper.lineSequence().map { it.trim() }.filter(SetupContent.modelCatalog::containsKey).toSet()
+        val bare = upper.trim()
+        val candidate = if (modelRows.isEmpty() && bare in SetupContent.modelCatalog) bare else labelled(modelLabel)
+        model = candidate?.let { TVModelIdentity.fromNumber(it)?.model }
+        fun name(label: String) = labelled(label)?.takeIf { Regex("[A-Z][A-Z0-9 &.,'()-]{0,55}").matches(it) }
+        val namedBrand = name("BRAND")
+        val year = labelled("MODEL[ \\t]+YEAR")?.takeIf { Regex("(19|20)[0-9]{2}").matches(it) }
+        identity = if (model != null && brands.size <= 1 && loneCodes.all { it == model } &&
+            (namedBrand == null || brand == null || namedBrand == brand))
+            TVModelIdentity.fromNumber(model, namedBrand ?: brand, name("(?:MANUFACTURER|MAKE)"), year) else null
         address = labelled(addressLabel)?.takeIf(::isPrivateIPv4)
         vizioCheckTarget = if (brands.isEmpty() || brand == "VIZIO") address?.let { LocalTVTarget.parse(it) } else null
     }

@@ -5,6 +5,26 @@ import Vision
 #endif
 
 final class TVPhotoHintsTests: XCTestCase {
+    func testModelEntryMatchesExactCodesAndKeepsUnknownDetailsUnknown() throws {
+        let typed = try XCTUnwrap(TVModelIdentity(number: "  v505m-k09 "))
+        XCTAssertEqual(typed.brand, "VIZIO"); XCTAssertEqual(typed.make, "VIZIO")
+        XCTAssertEqual(typed.year, "2023 lineup")
+        XCTAssertEqual(TVPhotoHints("VIZIO\nFull model number:\nV505M-K09").identity, typed)
+        XCTAssertEqual(TVPhotoHints("V505M-K09").identity, typed)
+        let label = try XCTUnwrap(TVPhotoHints("Brand: Example\nManufacturer: Maker Labs\nFull model number: 42PFL/F7\nModel year: 2021").identity)
+        XCTAssertEqual(label.model, "42PFL/F7"); XCTAssertEqual(label.brand, "EXAMPLE")
+        XCTAssertEqual(label.make, "MAKER LABS"); XCTAssertEqual(label.year, "2021")
+        XCTAssertEqual(TVModelIdentity(number: "xr-65x90k")?.year, "2022")
+        XCTAssertNil(TVModelIdentity(number: "XR-65X90K-EU")?.year)
+        XCTAssertNil(TVPhotoHints("Model: 42PFL/F7\nManufactured: 2021").identity?.year)
+        for invalid in ["", "full model number", "10.20.30.40", "X1\nY2", "X1/"] {
+            XCTAssertNil(TVModelIdentity(number: invalid), invalid)
+        }
+        for text in ["Serial number:\nV505M-K09", "Model: X1\nModel: Y2", "SAMSUNG\nModel: V505M-K09"] {
+            XCTAssertNil(TVPhotoHints(text).identity, text)
+        }
+    }
+
     func testVizioCheckTargetRequiresAnUnambiguousPrivateHost() {
         let addressRow = "IPv4 IP Address: 10.20.30.40"
         XCTAssertEqual(TVPhotoHints("VIZIO\n\(addressRow)").vizioCheckTarget?.address, "10.20.30.40")

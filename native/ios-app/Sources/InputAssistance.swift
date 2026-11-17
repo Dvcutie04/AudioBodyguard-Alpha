@@ -808,6 +808,7 @@ private struct PhotoPickerRequest: Identifiable {
 struct TVPhotoView: View {
     let theme: AppTheme
     var onUseBrand: ((String) -> Void)? = nil
+    var onModelRead: ((TVModelIdentity) -> Void)? = nil
     @Environment(\.dismiss) private var dismiss
     @Environment(\.scenePhase) private var phase
     @StateObject private var photo = PhotoCheck()
@@ -825,53 +826,63 @@ struct TVPhotoView: View {
     }
     var body: some View {
         VStack {
-            HStack { Text("TV photo setup").font(.title2.bold()); Spacer(); RoseButton(title: "Close", theme: theme) { photo.clear(); dismiss() } }.padding()
+            HStack { Text(onModelRead == nil ? "TV photo setup" : "Read model from photo").font(.title2.bold()); Spacer(); RoseButton(title: "Close", theme: theme) { photo.clear(); dismiss() }.accessibilityIdentifier("photo-close") }.padding()
             ScrollView {
                 VStack(alignment: .leading, spacing: 18) {
                     Image(systemName: "tv").font(.system(size: 42)).foregroundColor(theme.violet).accessibilityHidden(true)
-                    Text("Find your TV details").font(.title.bold())
-                    Text("Photograph your TV’s model label, About screen, or IP address row. Keep passwords out of the picture.")
+                    if onModelRead != nil {
+                        Text("Take a clear picture of the model number on your TV label or About screen.")
+                    } else {
+                        Text("Find your TV details").font(.title.bold())
+                        Text("Photograph your TV’s model label, About screen, or IP address row. Keep passwords out of the picture.")
+                    }
                     Button("Take a TV photo") { choosePhoto(camera: true) }.buttonStyle(AppButtonStyle(theme: theme, primary: true))
                     Button("Choose a photo") { choosePhoto(camera: false) }.buttonStyle(AppButtonStyle(theme: theme))
                     if !cameraNotice.isEmpty { Text(cameraNotice).foregroundColor(theme.warning) }
                     Text(photo.status).font(.headline).accessibilityIdentifier("photo-status")
-                    if let brand = photo.hints.brand { Text("Brand: " + brand).font(.headline) }
-                    if let choice = suggestedChoice, let onUseBrand = onUseBrand {
-                        Button("Use \(choice.title) and continue") { onUseBrand(choice.id); photo.clear(); dismiss() }
-                            .buttonStyle(AppButtonStyle(theme: theme, primary: true))
-                            .accessibilityIdentifier("photo-use-brand")
-                    }
-                    if onUseBrand == nil, let target = photo.hints.vizioCheckTarget {
-                        Text("Address read from photo: \(target.address)").monospacedDigit()
-                        Text("Compare this address with your VIZIO TV’s network screen.")
-                        Button("Use address in VIZIO check") {
-                            guard phase == .active, !networkCheckVisible else { return }
-                            checkDraft = target
-                            networkCheckVisible = true
-                        }.buttonStyle(AppButtonStyle(theme: theme, primary: true))
-                            .accessibilityIdentifier("photo-use-vizio-address")
-                    }
-                    if detailsExpanded {
-                        Text("Model: \(photo.hints.model ?? "Not identified")")
-                        Text("TV IP hint: \(photo.hints.address ?? "Not identified")")
-                    }
-                    Text("Check the suggested details on your TV. A photo does not connect it. Choosing another picture clears these details.").font(.caption).foregroundColor(theme.muted)
-                    Button(instructions ? "? Hide photo help" : "? Photo help") { instructions.toggle() }.buttonStyle(AppButtonStyle(theme: theme)).accessibilityIdentifier("photo-help")
-                    if instructions {
-                        if onUseBrand == nil && TVCheckPictureGuide.Context.photoSetup.route != nil {
-                            Button("VIZIO V505M-K09 address pictures") { showsVizioAddressPictures = true }
-                                .buttonStyle(AppButtonStyle(theme: theme))
+                    if onModelRead != nil {
+                        if photo.hints.identity == nil && (photo.hints.brand != nil || photo.hints.model != nil || photo.hints.address != nil) {
+                            Text("Couldn’t identify one model. Try a closer photo, or close this screen and type the number.")
                         }
-                        Text("1. On your TV, open Settings. Look for About, Support or Device information to find the model. Menu names differ by TV.")
-                        Text("2. Look for Network, Connection or Network status, then IP settings. Photograph the row labeled IP address — not Gateway or DNS. A label on the back usually does not show the current IP address.")
-                        Text("3. Put your phone and TV on the same home Wi-Fi. Avoid a guest network. An IP address can change and does not prove which TV owns it.")
-                        Text("4. For Samsung, supported models use SmartThings and may ask you to approve on the TV. For Alexa or Google Home, add/link a supported TV in that app and follow its approval steps. Compatibility varies by model.")
-                    }
-                    if instructions {
-                        Button(detailsExpanded ? "Hide photo details" : "Show photo details") { detailsExpanded.toggle() }.buttonStyle(AppButtonStyle(theme: theme))
-                        Button("Jump to illustrated setup guides") { setupRequest = SetupGuideRequest(group: photo.hints.brand?.lowercased() ?? "") }.buttonStyle(AppButtonStyle(theme: theme))
-                        Button("Clear photo details") { photo.clear() }.buttonStyle(AppButtonStyle(theme: theme))
-                        Text("Text recognition stays on this phone. Details clear on close. Your original photo remains in Photos.").font(.caption).foregroundColor(theme.muted)
+                    } else {
+                        if let brand = photo.hints.brand { Text("Brand: " + brand).font(.headline) }
+                        if let choice = suggestedChoice, let onUseBrand = onUseBrand {
+                            Button("Use \(choice.title) and continue") { onUseBrand(choice.id); photo.clear(); dismiss() }
+                                .buttonStyle(AppButtonStyle(theme: theme, primary: true))
+                                .accessibilityIdentifier("photo-use-brand")
+                        }
+                        if onUseBrand == nil, let target = photo.hints.vizioCheckTarget {
+                            Text("Address read from photo: \(target.address)").monospacedDigit()
+                            Text("Compare this address with your VIZIO TV’s network screen.")
+                            Button("Use address in VIZIO check") {
+                                guard phase == .active, !networkCheckVisible else { return }
+                                checkDraft = target
+                                networkCheckVisible = true
+                            }.buttonStyle(AppButtonStyle(theme: theme, primary: true))
+                                .accessibilityIdentifier("photo-use-vizio-address")
+                        }
+                        if detailsExpanded {
+                            Text("Model: \(photo.hints.model ?? "Not identified")")
+                            Text("TV IP hint: \(photo.hints.address ?? "Not identified")")
+                        }
+                        Text("Check the suggested details on your TV. A photo does not connect it. Choosing another picture clears these details.").font(.caption).foregroundColor(theme.muted)
+                        Button(instructions ? "? Hide photo help" : "? Photo help") { instructions.toggle() }.buttonStyle(AppButtonStyle(theme: theme)).accessibilityIdentifier("photo-help")
+                        if instructions {
+                            if onUseBrand == nil && TVCheckPictureGuide.Context.photoSetup.route != nil {
+                                Button("VIZIO V505M-K09 address pictures") { showsVizioAddressPictures = true }
+                                    .buttonStyle(AppButtonStyle(theme: theme))
+                            }
+                            Text("1. On your TV, open Settings. Look for About, Support or Device information to find the model. Menu names differ by TV.")
+                            Text("2. Look for Network, Connection or Network status, then IP settings. Photograph the row labeled IP address — not Gateway or DNS. A label on the back usually does not show the current IP address.")
+                            Text("3. Put your phone and TV on the same home Wi-Fi. Avoid a guest network. An IP address can change and does not prove which TV owns it.")
+                            Text("4. For Samsung, supported models use SmartThings and may ask you to approve on the TV. For Alexa or Google Home, add/link a supported TV in that app and follow its approval steps. Compatibility varies by model.")
+                        }
+                        if instructions {
+                            Button(detailsExpanded ? "Hide photo details" : "Show photo details") { detailsExpanded.toggle() }.buttonStyle(AppButtonStyle(theme: theme))
+                            Button("Jump to illustrated setup guides") { setupRequest = SetupGuideRequest(group: photo.hints.brand?.lowercased() ?? "") }.buttonStyle(AppButtonStyle(theme: theme))
+                            Button("Clear photo details") { photo.clear() }.buttonStyle(AppButtonStyle(theme: theme))
+                            Text("Text recognition stays on this phone. Details clear on close. Your original photo remains in Photos.").font(.caption).foregroundColor(theme.muted)
+                        }
                     }
                 }.padding()
             }.accessibilityIdentifier("photo-review-scroll")
@@ -896,10 +907,16 @@ struct TVPhotoView: View {
                     else { LocalPhotoPicker(beginImport: { beginPhotoImport(request) }) { image, work in finishPhoto(image, request: request, work: work) } }
                 }.onDisappear { photo.cancelSelection(request.token) }
             }
+            .onChange(of: photo.hints.identity) { model in
+                if phase == .active, let model { onModelRead?(model) }
+            }
             .onAppear { photo.observeWork() }
             .onDisappear { photo.stopObservingWork(); photo.clear() }
             .onChange(of: phase) { value in
-                if value == .active { photo.checkDeadline(); photo.observeWork() }
+                if value == .active {
+                    photo.checkDeadline(); photo.observeWork()
+                    if let model = photo.hints.identity { onModelRead?(model) }
+                }
                 else { checkDraft = nil; photo.stopObservingWork() }
             }
     }

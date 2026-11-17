@@ -8,6 +8,13 @@ import android.graphics.Paint
 import android.graphics.Path
 import android.graphics.Typeface
 import android.net.Uri
+import android.content.Context
+import android.text.InputType
+import android.view.KeyEvent
+import android.view.inputmethod.EditorInfo
+import android.view.inputmethod.InputMethodManager
+import android.widget.EditText
+import com.aqss.nativefeedback.TVModelIdentity
 import android.os.Build
 import android.os.Bundle
 import android.view.Gravity
@@ -30,6 +37,7 @@ import java.util.ArrayDeque
 /** Local illustrated instructions. Finishing a guide changes no connection state. */
 class SetupGuideActivity : Activity() {
     companion object {
+        private const val MODEL_PHOTO_REQUEST = 41
         const val COMPLETED_ROUTE = "completedPictureRoute"
         const val COMPLETED_TV_ROUTE = "completedTVPictureRoute"
         const val SELECTED_SYSTEM = "selectedSetupSystem"
@@ -50,6 +58,15 @@ class SetupGuideActivity : Activity() {
     private lateinit var progressBar: ProgressBar
     private lateinit var backButton: Button
     private lateinit var nextButton: Button
+    // Keep label details within this guide visit, including an orientation change.
+    private class ModelEntry(var group: String) {
+        var draft = ""
+        var identity: TVModelIdentity? = null
+        var photoOrigin: String? = null
+    }
+    private var modelEntry = ModelEntry("")
+    private var modelField: EditText? = null
+    private val modelOrigin get() = "$groupId/$routeId/$index"
     private var renderVersion = 0
     private var groupId = ""
     private var routeId: String? = null
@@ -140,6 +157,7 @@ class SetupGuideActivity : Activity() {
         setTheme(if (dark) R.style.AQSSMidnightTheme else R.style.AQSSReadOnlyTheme)
         super.onCreate(savedInstanceState)
         skin = InterfaceTheme(this, dark)
+        (lastNonConfigurationInstance as? ModelEntry)?.let { modelEntry = it }
         groupId = (savedInstanceState?.getString("group") ?: intent.getStringExtra("group") ?: "")
             .takeIf { id -> SetupContent.groups.any { it.id == id } } ?: ""
         selectedSystem = savedInstanceState?.getString(SELECTED_SYSTEM) ?: intent.getStringExtra("deviceGroup")
@@ -175,7 +193,10 @@ class SetupGuideActivity : Activity() {
         header.addView(progressBar, LinearLayout.LayoutParams(-1, dp(6)).apply { topMargin = dp(10) })
         val footer = LinearLayout(this)
         backButton = button("Back") { back() }
-        nextButton = button("Next", primary = true) { advance() }
+        nextButton = button("Next", primary = true) {
+            val field = modelField
+            if (field != null && field.text.isNotEmpty()) submitModel(field, modelOrigin) else advance()
+        }
         footer.addView(backButton, LinearLayout.LayoutParams(-2, -2).apply { marginEnd = dp(12) })
         footer.addView(nextButton, LinearLayout.LayoutParams(0, -2, 1f))
         controls.addView(footer)
@@ -275,6 +296,10 @@ class SetupGuideActivity : Activity() {
         edit.apply()
     }
     private fun render(preserveScroll: Boolean = false) {
+        if (modelEntry.group == groupId) {
+            modelField?.let { modelEntry.draft = it.text.toString() }
+        } else { modelEntry = ModelEntry(groupId) }
+        modelField = null
         val oldScroll = if (preserveScroll) scroll.scrollY else 0
         val version = ++renderVersion
         // Opening a brand's system chooser keeps the current system until a choice is made.
@@ -292,16 +317,23 @@ class SetupGuideActivity : Activity() {
         progressLabel.text = if (route != null && index >= 0) "Step ${index + 1} of ${route.steps.size}" else "Illustrated setup"
         progressBar.visibility = if (route != null && index >= 0) View.VISIBLE else View.GONE
         if (route != null && index >= 0) { progressBar.max = route.steps.size; progressBar.setProgress(index + 1, false) }
-        group?.let { words(content, "${it.title}  ·  ${phone.label}", 14f, skin.muted, true) }
+        group?.let { selected ->
+            val brand = if (selected.id == "other" || selected.id == "unsure") modelEntry.identity?.brand else null
+            words(content, "${brand ?: selected.title}  ·  ${phone.label}", 14f, skin.muted, true)
+        }
         val heading = words(content, if (mismatch) "Find the right screen" else step?.title ?: (if (route != null && group?.primaryRoutes?.contains(route.id) == true && brandName != null) (if (groupId == "lg") "Connect your LG TV" else "Set up your ${brandName} TV") else route?.title) ?: group?.title ?: "Choose your TV brand", 28f, bold = true).apply {
             if (Build.VERSION.SDK_INT >= 28) isAccessibilityHeading = true
             accessibilityLiveRegion = View.ACCESSIBILITY_LIVE_REGION_POLITE
+        }
+        if (!mismatch && route != null && step?.modelInput != true) {
+            modelEntry.identity?.let { words(content, it.summary, 15f, skin.muted) }
         }
         when {
             mismatch -> mismatchContent(route)
             route != null && step != null -> {
                 words(content, if (step.pictureKind == "remote") "On your TV remote" else when (step.surface) { "tv" -> "On your TV · use the remote"; "both" -> "Your TV + your phone"; else -> "On your phone" }, 15f, skin.accent, true)
                 words(content, step.instruction, 16f, bold = true)
+                if (step.modelInput) addModelEntry()
                 val picture = if (route.id == "roku_network" || route.id == "roku_model") rokuIllustration(step, index + 1, route.id) else if (route.id == "philips_voice_remote" && index in 1..2) profileIllustration(step, index + 1) else stepPictures.picture(step, index + 1)
                 if (!preserveScroll) skin.guideCue(picture)
                 content.addView(picture, LinearLayout.LayoutParams(-1, -2).apply { bottomMargin = dp(18) })
@@ -394,6 +426,82 @@ class SetupGuideActivity : Activity() {
             }
         }
     }
+    private fun addModelEntry() {
+        val origin = modelOrigin
+        val field = EditText(this).apply {
+            hint = "Full model number"
+            setSingleLine(true)
+            isSaveEnabled = false
+            inputType = InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_FLAG_CAP_CHARACTERS or InputType.TYPE_TEXT_FLAG_NO_SUGGESTIONS
+            imeOptions = EditorInfo.IME_ACTION_NEXT or EditorInfo.IME_FLAG_NO_PERSONALIZED_LEARNING
+            setTextColor(skin.text); setHintTextColor(skin.muted)
+            setText(modelEntry.draft)
+            setOnEditorActionListener { _, action, event ->
+                val enter = event?.keyCode == KeyEvent.KEYCODE_ENTER || event?.keyCode == KeyEvent.KEYCODE_NUMPAD_ENTER
+                if (!enter && action != EditorInfo.IME_ACTION_NEXT && action != EditorInfo.IME_ACTION_DONE) false
+                else {
+                    if (event == null || event.action == KeyEvent.ACTION_DOWN && event.repeatCount == 0)
+                        submitModel(this, origin)
+                    true
+                }
+            }
+        }
+        modelField = field
+        content.addView(field, LinearLayout.LayoutParams(-1, -2))
+        action(content, "Read model from photo") {
+            if (modelOrigin == origin && modelEntry.photoOrigin == null) {
+                modelEntry.photoOrigin = origin
+                @Suppress("DEPRECATION")
+                startActivityForResult(Intent(this, InputAssistanceActivity::class.java)
+                    .putExtra("mode", "modelPhoto").putExtra("dark", skin.dark), MODEL_PHOTO_REQUEST)
+            }
+        }
+    }
+
+    private fun submitModel(field: EditText, origin: String) {
+        if (field !== modelField || modelOrigin != origin) return
+        val identity = TVModelIdentity.fromNumber(field.text.toString())
+        if (identity == null) { field.error = "Enter the full model number from your TV label."; return }
+        acceptModel(modelEntry.identity?.takeIf { it.model == identity.model } ?: identity, origin)
+    }
+
+    private fun acceptModel(identity: TVModelIdentity, origin: String) {
+        val route = route ?: return
+        if (isFinishing || mismatch || origin != modelOrigin || route.steps.getOrNull(index)?.modelInput != true) return
+        modelField?.let { field ->
+            (getSystemService(Context.INPUT_METHOD_SERVICE) as InputMethodManager).hideSoftInputFromWindow(field.windowToken, 0)
+            field.clearFocus()
+        }
+        modelField = null
+        modelEntry.draft = identity.model
+        modelEntry.identity = identity
+        if (index == route.steps.lastIndex && route.id != "roku_model") {
+            val identify = SetupContent.routes.first { it.id == "identify" }
+            remember(); saveProgress(route, null)
+            routeId = identify.id; index = identify.steps.indexOfFirst { it.modelInput } + 1
+            detailsExpanded = false; referencesExpanded = false
+            render()
+        } else { advance() }
+    }
+
+    @Deprecated("Platform activity result for the guide photo")
+    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
+        super.onActivityResult(requestCode, resultCode, data)
+        if (requestCode != MODEL_PHOTO_REQUEST) return
+        val origin = modelEntry.photoOrigin ?: return
+        modelEntry.photoOrigin = null
+        if (resultCode != RESULT_OK || data == null) return
+        val model = data.getStringExtra("model") ?: return
+        val identity = TVModelIdentity.fromNumber(model, data.getStringExtra("brand"),
+            data.getStringExtra("make"), data.getStringExtra("year")) ?: return
+        acceptModel(identity, origin)
+    }
+
+    override fun onRetainNonConfigurationInstance(): Any {
+        modelField?.let { modelEntry.draft = it.text.toString() }
+        return modelEntry
+    }
+
     private fun advance() {
         val route = route ?: return
         if (mismatch || isFinishing) return
