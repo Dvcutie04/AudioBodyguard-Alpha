@@ -220,6 +220,7 @@ class SetupGuideActivity : Activity() {
     private fun location() = Bundle().apply {
         putString("group", groupId); putString("route", routeId); putInt("index", index); putBoolean("mismatch", mismatch)
         putString("guideBookmarkID", route?.bookmarkID)
+        putString(SELECTED_SYSTEM, selectedSystem)
         putBoolean("details", detailsExpanded); putBoolean("picker", pickerExpanded); putBoolean("references", referencesExpanded)
     }
     private fun compatibleLocation(saved: Bundle): Boolean {
@@ -276,7 +277,10 @@ class SetupGuideActivity : Activity() {
     private fun render(preserveScroll: Boolean = false) {
         val oldScroll = if (preserveScroll) scroll.scrollY else 0
         val version = ++renderVersion
-        if (groupId !in listOf("", "google", "alexa", "both", "neither", "phone", "voice")) selectedSystem = groupId
+        // Opening a brand's system chooser keeps the current system until a choice is made.
+        if (platforms.isEmpty() && groupId !in listOf("", "google", "alexa", "both", "neither", "phone", "voice")) {
+            selectedSystem = groupId
+        }
         setResult(RESULT_OK, resultPayload())
         content.removeAllViews()
         val route = route
@@ -529,6 +533,7 @@ class SetupGuideActivity : Activity() {
 
     private fun back() {
         val previous = history.pollLast() ?: run { finish(); return }
+        if (previous.containsKey(SELECTED_SYSTEM)) selectedSystem = previous.getString(SELECTED_SYSTEM)
         groupId = previous.getString("group") ?: ""; routeId = previous.getString("route"); index = previous.getInt("index", -1); mismatch = previous.getBoolean("mismatch")
         detailsExpanded = previous.getBoolean("details"); pickerExpanded = previous.getBoolean("picker"); referencesExpanded = previous.getBoolean("references")
         render()
@@ -537,7 +542,10 @@ class SetupGuideActivity : Activity() {
     @android.annotation.SuppressLint("GestureBackNavigation") // API 33+ uses the platform OnBackInvokedCallback.
     override fun onBackPressed() { back() }
     override fun onSaveInstanceState(outState: Bundle) {
-        outState.putAll(location()); outState.putString("completedTVRoute", completedTVRoute); outState.putString(SELECTED_SYSTEM, selectedSystem); outState.putParcelableArrayList("setupHistory", ArrayList(history)); super.onSaveInstanceState(outState)
+        outState.putAll(location())
+        outState.putString("completedTVRoute", completedTVRoute)
+        outState.putParcelableArrayList("setupHistory", ArrayList(history))
+        super.onSaveInstanceState(outState)
     }
     override fun onDestroy() {
         if (Build.VERSION.SDK_INT >= 33) backCallback?.let { onBackInvokedDispatcher.unregisterOnBackInvokedCallback(it) }

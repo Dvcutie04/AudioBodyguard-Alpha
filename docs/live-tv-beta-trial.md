@@ -44,6 +44,16 @@ Repeat at a larger system font size if you use one. Record the first step that d
 5. Tap **Back to Tutorial**. Confirm **Step 4 of 5** shows **Phone pictures**.
 6. Open **Phone pictures** and tap **Resume guide**. Confirm you return to **Check your Wi-Fi** for the same TCL Roku TV.
 
+
+### Close the TCL system chooser on an Android phone
+
+1. Start on **TCL Roku TV → Check your Wi-Fi**, picture 2 of 5. Open **? Step help → My screen looks different → Choose another TV system**.
+2. Use Android’s Back, then tap **Return to step**. Confirm the same TCL Roku Wi-Fi picture returns.
+3. Reopen the chooser. Rotate the phone to landscape and back to portrait with auto-rotate enabled. Tap **Back to Tutorial** without choosing a system.
+4. Open **Phone pictures → Resume guide**. Confirm the header still reads **TCL • Roku TV** and the same Wi-Fi picture opens. Finish the pictures, go to Home, and confirm **Connection not verified** if you haven't independently verified the connection.
+
+For a failure, record the phone model, Android version, orientation, and first unexpected screen. If you also compare a picture with the actual TV menu, note the TV model and firmware and report that separately from pairing.
+
 ## Test setup backward on iPhone or iPad
 
 Start at **Step 5 of 5**. Finish the TV and phone pictures or use **Continue without pictures** under **? Setup help** at Steps 3 and 4.

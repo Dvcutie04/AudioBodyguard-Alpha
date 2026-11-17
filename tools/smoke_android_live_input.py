@@ -751,6 +751,156 @@ def main():
             tap("Resume guide", "roku_handoff_resume_phone")
             wait_for_all(("TCL • Roku TV", "Step 2 of 5", "Check your Wi-Fi"), "roku_handoff_resumed_wifi")
             screenshot("roku_handoff_resumed_wifi")
+
+            # Keep the paused tutorial's system when standalone guides are explored.
+            tap("Back to Tutorial", "roku_pause_close_phone")
+            wait_for_all(("Step 4 of 5", "Phone pictures"), "roku_pause_tutorial_phone")
+            tap("Exit tutorial", "roku_pause_exit_home")
+            wait_for("Connection not verified", "roku_pause_unverified")
+            tap("Devices", "roku_pause_devices")
+            reveal("? Device help", "roku_pause_device_help")
+            reveal("Illustrated setup guides. Jump to a TV or home app", "roku_pause_guides")
+            reveal("LG", "roku_pause_other_brand")
+            wait_for("Connect your LG TV", "roku_pause_lg_intro")
+            tap("Close", "roku_pause_lg_close")
+            tap("Home", "roku_pause_home")
+            reveal("Back to Tutorial", "roku_pause_restore")
+            wait_for_all(("Step 4 of 5", "Phone pictures"), "roku_pause_restored_step")
+            tap("Phone pictures", "roku_pause_reopen_phone")
+            try:
+                wait_for_all(("2. Connect to your phone (Roku)", "Resume guide"), "roku_pause_resume_ready")
+            except AssertionError:
+                screenshot("roku_pause_unexpected_companion")
+                raise
+            tap("Resume guide", "roku_pause_resume_phone")
+            wait_for_all(("TCL • Roku TV", "Step 2 of 5", "Check your Wi-Fi"), "roku_pause_retained_wifi")
+            screenshot("roku_pause_retained_wifi")
+
+            for leave in ("back", "close"):
+                prefix = f"roku_mismatch_{leave}"
+                if leave == "back":
+                    reveal("? Step help", prefix + "_help")
+                reveal("My screen looks different", prefix + "_mismatch")
+                wait_for("Find the right screen", prefix + "_recovery")
+                reveal("Choose another TV or app", prefix + "_brands")
+                wait_for("Choose your TV brand", prefix + "_brand_picker")
+                reveal("LG", prefix + "_lg")
+                wait_for("Connect your LG TV", prefix + "_lg_intro")
+                if leave == "back":
+                    tap("Back", prefix + "_from_lg")
+                    wait_for("Choose your TV brand", prefix + "_back_to_picker")
+                    tap("Back", prefix + "_from_picker")
+                    wait_for("Find the right screen", prefix + "_back_to_recovery")
+                    tap("Return to step", prefix + "_return_to_step")
+                else:
+                    tap("Back to Tutorial", prefix + "_exit")
+                    wait_for_all(("Step 4 of 5", "Phone pictures"), prefix + "_tutorial")
+                    tap("Phone pictures", prefix + "_reopen")
+                    try:
+                        wait_for_all(("2. Connect to your phone (Roku)", "Resume guide"), prefix + "_resume_ready")
+                    except AssertionError:
+                        screenshot(prefix + "_unexpected_companion")
+                        raise
+                    tap("Resume guide", prefix + "_resume")
+                wait_for_all(("TCL • Roku TV", "Step 2 of 5", "Check your Wi-Fi"), prefix + "_retained_wifi")
+                screenshot(prefix + "_retained_wifi")
+            print("ROKU_MISMATCH_DETOUR_OBSERVED: Back and direct return retain Roku Wi-Fi picture 2", flush=True)
+
+            reveal("? Step help", "roku_system_picker_help")
+            reveal("My screen looks different", "roku_system_picker_mismatch")
+            wait_for("Find the right screen", "roku_system_picker_recovery")
+            reveal("Choose another TV system", "roku_system_picker_open")
+            wait_for_all(("Which name do you see on your TV?", "Roku TV"), "roku_system_picker_options")
+            adb("shell", "input", "keyevent", "KEYCODE_BACK")
+            wait_for("Find the right screen", "roku_system_picker_back_to_recovery")
+            tap("Return to step", "roku_system_picker_back_to_picture")
+            wait_for_all(("TCL • Roku TV", "Step 2 of 5", "Check your Wi-Fi"), "roku_system_picker_back_retained_wifi")
+            screenshot("roku_system_picker_back_retained_wifi")
+
+            reveal("My screen looks different", "roku_system_picker_reopen_mismatch")
+            wait_for("Find the right screen", "roku_system_picker_reopen_recovery")
+            reveal("Choose another TV system", "roku_system_picker_reopen_options")
+            wait_for_all(("Which name do you see on your TV?", "Roku TV"), "roku_system_picker_options_again")
+            adb("shell", "settings", "put", "system", "accelerometer_rotation", "0")
+            try:
+                for rotation in ("1", "0"):
+                    adb("shell", "settings", "put", "system", "user_rotation", rotation)
+                    name = f"roku_system_picker_rotation_{rotation}"
+                    for _ in range(6):
+                        root, _ = screen(name)
+                        x0, y0, x1, y1 = map(int, re.findall(r"-?\d+", root.find("node").get("bounds")))
+                        width, height = x1 - x0, y1 - y0
+                        orientation_matches = width > height if rotation == "1" else height > width
+                        if orientation_matches and has(root, "Which name do you see on your TV?") and has(root, "Roku TV"):
+                            break
+                        time.sleep(1)
+                    else:
+                        raise AssertionError(f"TCL system choices missing after rotation {rotation}")
+            finally:
+                adb("shell", "settings", "put", "system", "user_rotation", "0")
+            tap("Back to Tutorial", "roku_system_picker_exit")
+            wait_for_all(("Step 4 of 5", "Phone pictures"), "roku_system_picker_tutorial")
+            tap("Phone pictures", "roku_system_picker_reopen")
+            wait_for_all(("2. Connect to your phone (Roku)", "Resume guide"), "roku_system_picker_resume_ready")
+            tap("Resume guide", "roku_system_picker_resume")
+            wait_for_all(("TCL • Roku TV", "Step 2 of 5", "Check your Wi-Fi"), "roku_system_picker_retained_wifi")
+            screenshot("roku_system_picker_retained_wifi")
+            print("ROKU_SYSTEM_PICKER_CLOSE_OBSERVED: resume retains Roku Wi-Fi picture 2", flush=True)
+
+            reveal("? Step help", "roku_system_preview_help")
+            reveal("My screen looks different", "roku_system_preview_mismatch")
+            wait_for("Find the right screen", "roku_system_preview_recovery")
+            reveal("Choose another TV system", "roku_system_preview_options")
+            reveal("Google TV / Android TV", "roku_system_preview_google")
+            wait_for("TCL • Google TV / Android TV", "roku_system_preview_google_open")
+            tap("Back", "roku_system_preview_back")
+            wait_for_all(("Which name do you see on your TV?", "Roku TV"), "roku_system_preview_back_to_choices")
+            tap("Back to Tutorial", "roku_system_preview_exit")
+            wait_for_all(("Step 4 of 5", "Phone pictures"), "roku_system_preview_tutorial")
+            tap("Phone pictures", "roku_system_preview_reopen")
+            try:
+                wait_for_all(("2. Connect to your phone (Roku)", "Resume guide"), "roku_system_preview_resume_ready")
+            except AssertionError:
+                screenshot("roku_system_preview_wrong_phone_guide")
+                raise
+            tap("Resume guide", "roku_system_preview_resume")
+            wait_for_all(("TCL • Roku TV", "Step 2 of 5", "Check your Wi-Fi"), "roku_system_preview_retained_wifi")
+            screenshot("roku_system_preview_retained_wifi")
+            print("ROKU_SYSTEM_PREVIEW_BACK_OBSERVED: backing out of Google TV retains the Roku phone guide", flush=True)
+
+            # Revisiting the same TV keeps its system. A new brand choice clears it.
+            tap("Back to Tutorial", "roku_brand_change_close_phone")
+            wait_for_all(("Step 4 of 5", "Phone pictures"), "roku_brand_change_phone_step")
+            tap("Back", "roku_brand_change_back_to_tv")
+            reveal("Show TCL steps", "roku_brand_change_same_tcl")
+            wait_for_all(("TCL • Roku TV", "Set up your TCL TV"), "roku_brand_change_same_system")
+            tap("Back to Tutorial", "roku_brand_change_close_tv")
+            for previous, brand in (("TCL", "LG"), ("LG", "TCL")):
+                prefix = "roku_brand_change_to_" + brand.lower()
+                wait_for_all(("Step 3 of 5", f"Show {previous} steps"), prefix + "_plan")
+                tap("Back", prefix + "_back")
+                wait_for_all(("Step 2 of 5", f"Selected: {previous}"), prefix + "_previous")
+                reveal("Choose TV brand", prefix + "_picker")
+                tap(brand, prefix + "_select")
+            wait_for_all(("Step 3 of 5", "Show TCL steps"), "roku_brand_change_tcl_plan")
+            reveal("Show TCL steps", "roku_brand_change_open_tcl")
+            try:
+                wait_for_all(("Which name do you see on your TV?", "Roku TV"), "roku_brand_change_systems")
+            except AssertionError:
+                screenshot("roku_brand_change_unexpected_system")
+                raise
+            reveal("Roku TV", "roku_brand_change_choose_roku")
+            wait_for_all(("TCL • Roku TV", "Set up your TCL TV"), "roku_brand_change_chosen_system")
+            tap("Back to Tutorial", "roku_brand_change_close_chosen_tv")
+            reveal("? Setup help", "roku_brand_change_plan_help")
+            tap("Continue without pictures", "roku_brand_change_continue")
+            wait_for_all(("Step 4 of 5", "Phone pictures"), "roku_brand_change_returned")
+            tap("Phone pictures", "roku_brand_change_open_phone")
+            wait_for_all(("2. Connect to your phone (Roku)", "Resume guide"), "roku_brand_change_resume_ready")
+            tap("Resume guide", "roku_brand_change_resume")
+            wait_for_all(("TCL • Roku TV", "Step 2 of 5", "Check your Wi-Fi"), "roku_brand_change_saved_picture")
+            screenshot("roku_brand_change_saved_picture")
+
             for step in range(3, 6):
                 tap("Next", f"roku_handoff_phone_next_{step}")
                 wait_for(f"Step {step} of 5", f"roku_handoff_phone_{step}")
