@@ -276,7 +276,10 @@ class SetupGuideActivity : Activity() {
     private fun render(preserveScroll: Boolean = false) {
         val oldScroll = if (preserveScroll) scroll.scrollY else 0
         val version = ++renderVersion
-        if (groupId !in listOf("", "google", "alexa", "both", "neither", "phone", "voice")) selectedSystem = groupId
+        // Opening a brand's system chooser keeps the current system until a choice is made.
+        if (platforms.isEmpty() && groupId !in listOf("", "google", "alexa", "both", "neither", "phone", "voice")) {
+            selectedSystem = groupId
+        }
         setResult(RESULT_OK, resultPayload())
         content.removeAllViews()
         val route = route
