@@ -821,6 +821,22 @@ def main():
             wait_for("Find the right screen", "roku_system_picker_reopen_recovery")
             reveal("Choose another TV system", "roku_system_picker_reopen_options")
             wait_for_all(("Which name do you see on your TV?", "Roku TV"), "roku_system_picker_options_again")
+            adb("shell", "settings", "put", "system", "accelerometer_rotation", "0")
+            try:
+                for rotation in ("1", "0"):
+                    adb("shell", "settings", "put", "system", "user_rotation", rotation)
+                    name = f"roku_system_picker_rotation_{rotation}"
+                    for _ in range(6):
+                        root, _ = screen(name)
+                        if root.get("rotation") == rotation and all(
+                            has(root, label) for label in ("Which name do you see on your TV?", "Roku TV", "Google TV / Android TV")
+                        ):
+                            break
+                        time.sleep(1)
+                    else:
+                        raise AssertionError(f"TCL system choices missing after rotation {rotation}")
+            finally:
+                adb("shell", "settings", "put", "system", "user_rotation", "0")
             tap("Back to Tutorial", "roku_system_picker_exit")
             wait_for_all(("Step 4 of 5", "Phone pictures"), "roku_system_picker_tutorial")
             tap("Phone pictures", "roku_system_picker_reopen")
