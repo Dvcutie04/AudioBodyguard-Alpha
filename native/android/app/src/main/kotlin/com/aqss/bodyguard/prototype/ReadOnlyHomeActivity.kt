@@ -129,7 +129,7 @@ class ReadOnlyHomeActivity : Activity() {
             currentPage = { page },
             openSetup = { group -> openSetup(group) },
             currentSetupSystem = { selectedSetupSystem },
-            restoreSetupSystem = { selectedSetupSystem = it },
+            setSetupSystem = { selectedSetupSystem = it },
             openPhoto = { openInputTool("photo", fromTutorial = tutorial.isActive) },
             openTool = { tool -> if (tool == "voice") openInputTool("voice") else startActivity(Intent(this, LiveSoundCheckActivity::class.java).putExtra("dark", skin.dark)) },
             navigate = { target, area ->

@@ -27,7 +27,7 @@ class TutorialGuide(
     private val currentPage: () -> String,
     private val openSetup: (String) -> Unit,
     private val currentSetupSystem: () -> String?,
-    private val restoreSetupSystem: (String?) -> Unit,
+    private val setSetupSystem: (String?) -> Unit,
     private val openPhoto: () -> Unit,
     private val openTool: (String) -> Unit,
     private val navigate: (String, String?) -> Unit,
@@ -55,8 +55,10 @@ class TutorialGuide(
     val isBeginner get() = guide.topicId == "getting_started"
     val pictureTarget get() = guide.step?.target?.takeIf { isBeginner && it in listOf("connectionPlan", "connectionCheck") }
     fun useSuggestedTV(brand: String?): Boolean {
+        val previousBrand = selectedTV
         if (!guide.acceptPhotoBrand(brand)) return false
-        render(); return true
+        showSelectedTVPlan(previousBrand)
+        return true
     }
     fun completePictures(expectedTarget: String, routeId: String): Boolean {
         if (!guide.completePictures(expectedTarget, routeId)) return false
@@ -131,9 +133,25 @@ class TutorialGuide(
             "Follow the TV pictures, then the phone pictures. You can return at any time. Setup guidance does not verify a TV connection."
         })
     }
-    private fun chooseBrand() = skin.menu("Choose TV brand", guide.choices.map { choice ->
-        choice.title to { if (guide.select(choice.id)) { guide.next(); render() } }
-    }, searchable = true)
+    private fun chooseBrand() {
+        val previousBrand = selectedTV
+        skin.menu("Choose TV brand", guide.choices.map { choice ->
+            choice.title to {
+                if (guide.select(choice.id)) {
+                    guide.next()
+                    showSelectedTVPlan(previousBrand)
+                }
+            }
+        }, searchable = true)
+    }
+    private fun showSelectedTVPlan(previousBrand: String) {
+        val brand = selectedTV
+        val system = currentSetupSystem()
+        if (brand != previousBrand && system != null && system.substringBefore('_') != brand) {
+            setSetupSystem(null)
+        }
+        render()
+    }
     fun jump(target: String) {
         close(false); navigate(target, null)
         scroll.post {
@@ -312,7 +330,7 @@ class TutorialGuide(
         if (saved == null) { start("getting_started"); return }
         pausedTutorial = null
         saved.putString("tutorialPreviousPage", currentPage())
-        if (saved.containsKey("tutorialSetupSystem")) restoreSetupSystem(saved.getString("tutorialSetupSystem"))
+        if (saved.containsKey("tutorialSetupSystem")) setSetupSystem(saved.getString("tutorialSetupSystem"))
         restore(saved)
     }
     fun back() {
