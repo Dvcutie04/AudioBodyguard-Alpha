@@ -400,7 +400,8 @@ final class AQSSReadOnlyUITests: XCTestCase {
         XCTAssertFalse(app.staticTexts["Use a home app?"].exists)
         XCTAssertTrue(app.buttons["setup-from-samsung"].isHittable)
         XCTAssertFalse(app.buttons["guide-next"].exists, "The picture action must be the only primary route")
-        XCTAssertEqual(app.staticTexts["guide-device-context"].label, "Samsung  ·  iPhone")
+        let device = UIDevice.current.userInterfaceIdiom == .pad ? "iPad" : "iPhone"
+        XCTAssertEqual(app.staticTexts["guide-device-context"].label, "Samsung  ·  \(device)")
         screenshot("Simplified TV plan \(large)", app)
         let exitFrame = app.buttons["exit-tutorial"].frame
         XCTAssertTrue(app.frame.contains(exitFrame), "Exit \(exitFrame) must remain inside \(app.frame)")
@@ -411,7 +412,7 @@ final class AQSSReadOnlyUITests: XCTestCase {
         tap("Google Home", app, scroll: help)
         XCTAssertTrue(help.buttons["Jump to Google Home pictures"].exists)
         tap("Jump to phone Wi-Fi pictures", app, scroll: help)
-        label("iPhone — connect to your home Wi-Fi", app)
+        label("\(device) — connect to your home Wi-Fi", app)
         app.buttons["setup-next"].tap()
         for n in 1...6 {
             label("Step \(n) of 6", app)
@@ -2572,6 +2573,159 @@ final class AQSSReadOnlyUITests: XCTestCase {
         label("Check the phone controls", app)
         app.buttons["setup-next"].tap(); label("Step 5 of 5", app)
         exit(app); label("Connection not verified", app)
+    }
+
+    func testSetupBackKeepsTVAndHomeAppAtStandardAndLargestText() {
+        let device = UIDevice.current.userInterfaceIdiom == .pad ? "iPad" : "iPhone"
+        for largeText in [false, true] {
+            let app = launch(true, largeText: largeText)
+            label("Step 1 of 5", app)
+            next(app); label("Step 2 of 5", app)
+            let selection = app.staticTexts["guide-device-context"]
+            XCTAssertFalse(selection.exists, "The first visit must wait for the TV choice")
+            chooseTV("TCL", app)
+            chooseHome("Google Home", app)
+            next(app); label("Step 4 of 5", app)
+            next(app); label("Step 5 of 5", app)
+
+            let back = app.buttons["guide-back"]
+            let textSize = largeText ? "largest" : "standard"
+            for step in (1...4).reversed() {
+                XCTAssertTrue(back.isHittable, "Back must be reachable before Step \(step) on \(device)")
+                back.tap()
+                label("Step \(step) of 5", app)
+                assertOnlyGuide(app)
+                if step == 2 {
+                    XCTAssertEqual(selection.label, "TCL  ·  \(device)", "Show the retained TV and this device")
+                }
+                screenshot("\(device) \(textSize) text Back to setup step \(step)", app)
+            }
+            XCTAssertFalse(back.exists)
+            XCTAssertEqual(app.buttons["guide-next"].label, "Start picture setup")
+            next(app); label("Step 2 of 5", app)
+            XCTAssertEqual(selection.label, "TCL  ·  \(device)")
+            XCTAssertTrue(app.buttons["guide-next"].isHittable, "The retained brand must let the user continue")
+            next(app); label("Step 3 of 5", app)
+            XCTAssertTrue(app.buttons["setup-from-tcl"].isHittable)
+            tap("Setup help", app)
+            XCTAssertTrue(app.buttons["Jump to Google Home pictures"].waitForExistence(timeout: 5))
+            app.buttons["Close"].firstMatch.tap()
+            exit(app); label("Connection not verified", app)
+            app.terminate()
+        }
+    }
+
+    func testTCLRokuPhonePicturesResumeAfterBackToTutorial() {
+        let app = launch(true)
+        next(app); chooseTV("TCL", app)
+        tap("Show TCL steps", app); tap("Roku TV", app)
+        label("Set up your TCL TV", app)
+        restartPictureGuide(app)
+
+        let nextPicture = app.buttons["setup-next"]
+        let progress = app.staticTexts["setup-progress"]
+        for _ in 1..<5 { nextPicture.tap() }
+        label("Read your TV address", app)
+        XCTAssertEqual(progress.label, "Step 5 of 5")
+        XCTAssertEqual(nextPicture.label, "Finish part one")
+        let addressPicture = pictureDescription(app)
+        nextPicture.tap(); label("2. Connect to your phone (Roku)", app)
+        app.buttons["setup-back"].tap()
+        XCTAssertEqual(progress.label, "Step 5 of 5")
+        XCTAssertEqual(pictureDescription(app), addressPicture)
+        screenshot("Back from Roku phone introduction restores TV address", app)
+
+        nextPicture.tap(); label("2. Connect to your phone (Roku)", app)
+        restartPictureGuide(app)
+        nextPicture.tap(); label("Check your Wi-Fi", app)
+        XCTAssertEqual(progress.label, "Step 2 of 5")
+        let wifiPicture = pictureDescription(app)
+        XCTAssertEqual(app.buttons["setup-close"].label, "Back to Tutorial")
+        app.buttons["setup-close"].tap(); label("Step 4 of 5", app)
+
+        tap("Phone pictures", app); label("2. Connect to your phone (Roku)", app)
+        XCTAssertEqual(nextPicture.label, "Resume guide")
+        nextPicture.tap(); label("Check your Wi-Fi", app)
+        XCTAssertEqual(progress.label, "Step 2 of 5")
+        XCTAssertEqual(pictureDescription(app), wifiPicture)
+        screenshot("Roku phone Wi-Fi picture resumes from the tutorial", app)
+
+        app.buttons["setup-close"].tap(); label("Step 4 of 5", app)
+        exit(app); label("Connection not verified", app)
+        tab("devices", app)
+        tap("Illustrated setup guides", app); tap("LG", app)
+        label("Connect your LG TV", app)
+        closeSetupAndReturnToDevices(app)
+        tab("home", app)
+        tap("Back to Tutorial", app); label("Step 4 of 5", app)
+        tap("Phone pictures", app); label("2. Connect to your phone (Roku)", app)
+        XCTAssertEqual(nextPicture.label, "Resume guide")
+        nextPicture.tap(); label("Check your Wi-Fi", app)
+        XCTAssertEqual(progress.label, "Step 2 of 5")
+        XCTAssertEqual(pictureDescription(app), wifiPicture)
+        screenshot("Roku Wi-Fi picture resumes after visiting a different brand", app)
+
+        let brandContext = app.staticTexts["setup-device-context"]
+        XCTAssertTrue(brandContext.exists)
+        let rokuContext = brandContext.label
+        let back = app.buttons["setup-back"]
+        for closeToTutorial in [false, true] {
+            showStepHelp(app)
+            tap("My screen looks different", app); label("Find the right screen", app)
+            tap("Choose another TV or app", app); label("Choose your TV brand", app)
+            tap("LG", app); label("Connect your LG TV", app)
+            if closeToTutorial {
+                app.buttons["setup-close"].tap(); label("Step 4 of 5", app)
+                tap("Phone pictures", app)
+                guard app.staticTexts["2. Connect to your phone (Roku)"].waitForExistence(timeout: 10) else {
+                    screenshot("Unexpected phone guide after closing the LG detour", app)
+                    XCTFail("Back to Tutorial from LG must keep the selected TCL Roku system")
+                    return
+                }
+                XCTAssertEqual(nextPicture.label, "Resume guide")
+                nextPicture.tap()
+            } else {
+                back.tap(); label("Choose your TV brand", app)
+                back.tap(); label("Find the right screen", app)
+                XCTAssertEqual(back.label, "Return to step")
+                back.tap()
+            }
+            label("Check your Wi-Fi", app)
+            XCTAssertEqual(progress.label, "Step 2 of 5")
+            XCTAssertEqual(brandContext.label, rokuContext)
+            XCTAssertEqual(pictureDescription(app), wifiPicture)
+            screenshot(closeToTutorial ? "Back to Tutorial retains the Roku Wi-Fi picture" : "Step-by-step Back retains the Roku Wi-Fi picture", app)
+        }
+
+        for openedGoogleTV in [false, true] {
+            showStepHelp(app)
+            tap("My screen looks different", app); label("Find the right screen", app)
+            tap("Choose another TV system", app); label("Which name do you see on your TV?", app)
+            XCTAssertTrue(app.buttons["setup-platform-tcl_roku"].exists)
+            if openedGoogleTV {
+                tap("Google TV / Android TV", app); label("TCL • Google TV / Android TV", app)
+                back.tap(); label("Which name do you see on your TV?", app)
+            }
+            app.buttons["setup-close"].tap(); label("Step 4 of 5", app)
+            tap("Phone pictures", app)
+            let action = openedGoogleTV ? "backing out of Google TV" : "closing the TV system picker"
+            guard app.staticTexts["2. Connect to your phone (Roku)"].waitForExistence(timeout: 10) else {
+                screenshot("Unexpected phone guide after \(action)", app)
+                XCTFail("Roku setup should be retained after \(action)")
+                return
+            }
+            XCTAssertEqual(nextPicture.label, "Resume guide")
+            nextPicture.tap(); label("Check your Wi-Fi", app)
+            XCTAssertEqual(progress.label, "Step 2 of 5")
+            XCTAssertEqual(brandContext.label, rokuContext)
+            XCTAssertEqual(pictureDescription(app), wifiPicture)
+            screenshot("Roku Wi-Fi picture retained after \(action)", app)
+        }
+
+        for _ in 2..<5 { nextPicture.tap() }
+        XCTAssertEqual(nextPicture.label, "Finish part two")
+        nextPicture.tap(); label("Step 5 of 5", app)
+        next(app); label("Connection not verified", app)
     }
 
     private func restartPictureGuide(_ app: XCUIApplication) {

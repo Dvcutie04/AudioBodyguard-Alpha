@@ -44,4 +44,16 @@ Repeat at a larger system font size if you use one. Record the first step that d
 5. Tap **Back to Tutorial**. Confirm **Step 4 of 5** shows **Phone pictures**.
 6. Open **Phone pictures** and tap **Resume guide**. Confirm you return to **Check your Wi-Fi** for the same TCL Roku TV.
 
+## Test setup backward on iPhone or iPad
+
+Start at **Step 5 of 5**. Finish the TV and phone pictures or use **Continue without pictures** under **? Setup help** at Steps 3 and 4.
+
+1. Tap **Back**. **Step 4 of 5** shows **Phone pictures**.
+2. Tap **Back**. **Step 3 of 5** shows your chosen TV guide.
+3. Tap **Back**. **Step 2 of 5** shows your chosen TV and the correct iPhone or iPad label.
+4. Tap **Back**. **Step 1 of 5** shows **Start picture setup**.
+5. Tap **Start picture setup**, then **Next**. The same TV guide opens. If you chose an optional home app, check its shortcut under **? Setup help**.
+
+For **TCL Roku TV**, follow the handoff steps above using the app’s **Back** at the phone guide introduction. Repeat at your usual text size and a larger size. Record the first screen that differs.
+
 Record the first mismatch or failure, the step number, and whether Back kept your place. Keep codes, passwords and private network details out of shared screenshots. Report external-app pairing, Audio Bodyguard reachability and guide completion as separate observations. Simulator and emulator runs establish software behavior only.

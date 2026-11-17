@@ -458,7 +458,7 @@ private struct ReadOnlyHomeView: View {
     @AppStorage("aqssGuideDismissedV1") private var guideDismissed = false
     @State private var checkedFirstVisit = false
     @State private var guide = AQSSGuideProgress()
-    @State private var pausedGuide: AQSSGuideProgress?
+    @State private var pausedGuide: (progress: AQSSGuideProgress, setupSystem: String?)?
     private var tutorialTopicID: String? { guide.topicID }
     private var tutorialIndex: Int { guide.index }
     @State private var beginnerTourFinished = false
@@ -567,9 +567,29 @@ private struct ReadOnlyHomeView: View {
                 }
                 pictureTarget = nil; completedPictureRoute = nil
                 if voiceAfterGuide { voiceAfterGuide = false; voiceCheckVisible = true }
-            }) { request in SetupGuidesView(theme: theme, initialGroup: request.group, deviceGroup: request.deviceGroup, returningToTutorial: tutorialTopicID != nil, onDeviceGroupSelected: { selectedSetupSystem = $0 }, onVoiceCheck: { voiceAfterGuide = true }, onPartOne: { route in
-                if pictureTarget == "connectionPlan" && guide.completePictures(expectedTarget: "connectionPlan", routeID: route) { pictureTarget = "connectionCheck" }
-            }, onFinish: { completedPictureRoute = $0 }) }
+            }) { request in
+                SetupGuidesView(
+                    theme: theme, initialGroup: request.group, deviceGroup: request.deviceGroup,
+                    returningToTutorial: tutorialTopicID != nil,
+                    selectedSystem: Binding(
+                        get: { selectedSetupSystem },
+                        set: { system in
+                            if let system, !acceptsSetupGroup(system) { return }
+                            selectedSetupSystem = system
+                        }
+                    ),
+                    onVoiceCheck: { voiceAfterGuide = true },
+                    onPartOne: { route, group in
+                        if pictureTarget == "connectionPlan", acceptsSetupGroup(group),
+                           guide.completePictures(expectedTarget: "connectionPlan", routeID: route) {
+                            pictureTarget = "connectionCheck"
+                        }
+                    },
+                    onFinish: { route, group in
+                        if acceptsSetupGroup(group) { completedPictureRoute = route }
+                    }
+                )
+            }
             .sheet(isPresented: $navigationVisible, onDismiss: performHelpJump) {
                 menuSheet("Jump to") {
                     action("Sound check", icon: "mic") { pendingHelpJump = "sound"; navigationVisible = false }
@@ -639,6 +659,16 @@ private struct ReadOnlyHomeView: View {
         .onChange(of: guide.selections["chooseTV"]) { brand in
             if let brand = brand, let selected = selectedSetupSystem, selected != brand && !selected.hasPrefix(brand + "_") { selectedSetupSystem = nil }
         }
+    }
+
+    // Viewing a guide for another brand does not change the tutorial's TV or complete its pictures.
+    private func acceptsSetupGroup(_ group: String) -> Bool {
+        guard pictureTarget != nil, let brand = guide.selected("chooseTV")?.id,
+              brand != "other", brand != "unsure",
+              let groupBrand = group.split(separator: "_").first.map(String.init),
+              AQSSTutorialContent.choices["chooseTV"]?.contains(where: { $0.id == groupBrand }) == true
+        else { return true }
+        return groupBrand == brand
     }
 
     private func showSetup(_ group: String = "") {
@@ -1096,19 +1126,24 @@ private struct ReadOnlyHomeView: View {
         if restore { page = previousPage; focusedElement = .help }
     }
     private func exitToHome() {
-        pausedGuide = guide
+        pausedGuide = (progress: guide, setupSystem: selectedSetupSystem)
         if page != "home" { rememberPage() }
         closeTutorial(restore: false)
         page = "home"; navigationTarget = "page-heading"; navigationRequest += 1
     }
     private func resumeTutorial() {
         if let saved = pausedGuide {
-            previousPage = page; guide = saved; pausedGuide = nil
+            previousPage = page
+            selectedSetupSystem = saved.setupSystem
+            guide = saved.progress
+            pausedGuide = nil
             moreFeatures = false; tutorialHelp = false
         } else { startTutorial("getting_started") }
     }
     private func tutorialPanel(topic: AQSSTutorialTopic, step: AQSSTutorialStep) -> some View {
-        VStack(spacing: 0) {
+        let phone: AQSSSetupPhone = UIDevice.current.userInterfaceIdiom == .pad ? .ipad : .iphone
+        let phoneSymbol = phone == .ipad ? "ipad" : "iphone"
+        return VStack(spacing: 0) {
             HStack {
                 Text("Step \(guide.stepNumber) of \(guide.stepCount)").font(.subheadline.weight(.semibold)).foregroundColor(theme.muted)
                 Spacer(minLength: 8)
@@ -1120,17 +1155,17 @@ private struct ReadOnlyHomeView: View {
                 VStack(alignment: .leading, spacing: 20) {
                     GuidePictureCue(screenKey: tutorialStepKey) {
                         HStack(spacing: 18) {
-                            Image(systemName: step.target == "connectionCheck" ? "iphone" : "tv")
+                            Image(systemName: step.target == "connectionCheck" ? phoneSymbol : "tv")
                             Image(systemName: "arrow.right")
-                            Image(systemName: "iphone")
+                            Image(systemName: phoneSymbol)
                         }.font(.system(size: 32, weight: .light)).foregroundColor(theme.violet)
                     }.accessibilityHidden(true)
                     Text(step.title).font(.largeTitle.bold()).fixedSize(horizontal: false, vertical: true)
                         .accessibilityAddTraits(.isHeader).accessibilityFocused($focusedElement, equals: .tutorial(tutorialStepKey))
                     Text(step.explanation).fixedSize(horizontal: false, vertical: true)
                     if topic.id == "getting_started" {
-                        if let selected = guide.selected("chooseTV"), step.target != "chooseTV" {
-                            Text("\(selected.title)  ·  iPhone").font(.callout.weight(.semibold)).foregroundColor(theme.accent)
+                        if let selected = guide.selected("chooseTV") {
+                            Text("\(selected.title)  ·  \(phone.label)").font(.callout.weight(.semibold)).foregroundColor(theme.accent)
                                 .accessibilityIdentifier("guide-device-context")
                         }
                         if step.target == "welcome" { Text("1. Your TV  →  2. Your phone").foregroundColor(theme.accent).font(.headline) }

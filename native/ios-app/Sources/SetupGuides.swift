@@ -17,10 +17,10 @@ struct SetupGuidesView: View {
     let initialGroup: String
     var deviceGroup = ""
     var returningToTutorial = false
-    var onDeviceGroupSelected: ((String) -> Void)? = nil
+    var selectedSystem: Binding<String?>? = nil
     var onVoiceCheck: (() -> Void)? = nil
-    var onPartOne: ((String) -> Void)? = nil
-    var onFinish: ((String) -> Void)? = nil
+    var onPartOne: ((String, String) -> Void)? = nil
+    var onFinish: ((String, String) -> Void)? = nil
     @Environment(\.dismiss) private var dismiss
     @Environment(\.dynamicTypeSize) private var textSize
     @State private var groupID = ""
@@ -36,6 +36,7 @@ struct SetupGuidesView: View {
         let group: String
         let route: String?
         let index: Int
+        let selectedSystem: String?
         let mismatch, details, picker, references: Bool
     }
     @State private var history: [Location] = []
@@ -301,7 +302,10 @@ struct SetupGuidesView: View {
     private func writeProgress(_ id: String, _ value: Int?) { progress.record(id, value) }
     private func remember() {
         if history.count >= 100 { history.removeFirst() }
-        history.append(Location(group: groupID, route: routeID, index: index, mismatch: mismatch, details: detailsExpanded, picker: pickerExpanded, references: referencesExpanded))
+        history.append(Location(
+            group: groupID, route: routeID, index: index, selectedSystem: selectedSystem?.wrappedValue,
+            mismatch: mismatch, details: detailsExpanded, picker: pickerExpanded, references: referencesExpanded
+        ))
     }
     private func showOtherRoutes() {
         remember()
@@ -371,7 +375,12 @@ struct SetupGuidesView: View {
         if routeID == nil, platforms.isEmpty, let primary = group?.primaryRoutes, primary.count == 1 {
             routeID = groupID == "samsung" ? samsungStartingRoute() : primary[0]
         }
-        if !["", "google", "alexa", "both", "neither", "phone", "voice"].contains(groupID) { onDeviceGroupSelected?(groupID) }
+        reportDeviceGroupSelection()
+    }
+    private func reportDeviceGroupSelection() {
+        // Opening a brand's system picker is not a system selection.
+        guard platforms.isEmpty, !["", "google", "alexa", "both", "neither", "phone", "voice"].contains(groupID) else { return }
+        selectedSystem?.wrappedValue = groupID
     }
     private func control(_ title: String, icon: String, id: String, primary: Bool = false, action: @escaping () -> Void) -> some View {
         Button(action: action) {
@@ -491,12 +500,12 @@ struct SetupGuidesView: View {
                         if ["roku_network", "roku_model"].contains(route.id) {
                             remember()
                             writeProgress(route.id, nil)
-                            onPartOne?(route.id)
+                            onPartOne?(route.id, groupID)
                             routeID = "roku_phone"; index = -1; detailsExpanded = false; referencesExpanded = false
                             return
                         }
                         if route.id == "voice" { onVoiceCheck?() }
-                        else { onFinish?(route.id) }
+                        else { onFinish?(route.id, groupID) }
                         writeProgress(route.id, nil)
                         dismiss()
                     } else { remember(); index = index < 0 ? resumeIndex(route) ?? 0 : route.id == "philips_voice_remote" && index == 5 ? 7 : index + 1; detailsExpanded = false; referencesExpanded = false }
@@ -511,7 +520,9 @@ struct SetupGuidesView: View {
         guard let previous = history.popLast() else { dismiss(); return }
         groupID = previous.group; routeID = previous.route; index = previous.index; mismatch = previous.mismatch
         detailsExpanded = previous.details; pickerExpanded = previous.picker; referencesExpanded = previous.references
-        if !["", "google", "alexa", "both", "neither", "phone", "voice"].contains(groupID) { onDeviceGroupSelected?(groupID) }
+        if let selectedSystem, selectedSystem.wrappedValue != previous.selectedSystem {
+            selectedSystem.wrappedValue = previous.selectedSystem
+        }
     }
 }
 
