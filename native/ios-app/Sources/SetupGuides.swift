@@ -17,7 +17,7 @@ struct SetupGuidesView: View {
     let initialGroup: String
     var deviceGroup = ""
     var returningToTutorial = false
-    var onDeviceGroupSelected: ((String) -> Void)? = nil
+    var selectedSystem: Binding<String?>? = nil
     var onVoiceCheck: (() -> Void)? = nil
     var onPartOne: ((String, String) -> Void)? = nil
     var onFinish: ((String, String) -> Void)? = nil
@@ -36,6 +36,7 @@ struct SetupGuidesView: View {
         let group: String
         let route: String?
         let index: Int
+        let selectedSystem: String?
         let mismatch, details, picker, references: Bool
     }
     @State private var history: [Location] = []
@@ -301,7 +302,10 @@ struct SetupGuidesView: View {
     private func writeProgress(_ id: String, _ value: Int?) { progress.record(id, value) }
     private func remember() {
         if history.count >= 100 { history.removeFirst() }
-        history.append(Location(group: groupID, route: routeID, index: index, mismatch: mismatch, details: detailsExpanded, picker: pickerExpanded, references: referencesExpanded))
+        history.append(Location(
+            group: groupID, route: routeID, index: index, selectedSystem: selectedSystem?.wrappedValue,
+            mismatch: mismatch, details: detailsExpanded, picker: pickerExpanded, references: referencesExpanded
+        ))
     }
     private func showOtherRoutes() {
         remember()
@@ -376,7 +380,7 @@ struct SetupGuidesView: View {
     private func reportDeviceGroupSelection() {
         // Opening a brand's system picker is not a system selection.
         guard platforms.isEmpty, !["", "google", "alexa", "both", "neither", "phone", "voice"].contains(groupID) else { return }
-        onDeviceGroupSelected?(groupID)
+        selectedSystem?.wrappedValue = groupID
     }
     private func control(_ title: String, icon: String, id: String, primary: Bool = false, action: @escaping () -> Void) -> some View {
         Button(action: action) {
@@ -516,7 +520,9 @@ struct SetupGuidesView: View {
         guard let previous = history.popLast() else { dismiss(); return }
         groupID = previous.group; routeID = previous.route; index = previous.index; mismatch = previous.mismatch
         detailsExpanded = previous.details; pickerExpanded = previous.picker; referencesExpanded = previous.references
-        reportDeviceGroupSelection()
+        if let selectedSystem, selectedSystem.wrappedValue != previous.selectedSystem {
+            selectedSystem.wrappedValue = previous.selectedSystem
+        }
     }
 }
 

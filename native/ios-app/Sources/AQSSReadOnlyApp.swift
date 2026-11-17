@@ -571,9 +571,13 @@ private struct ReadOnlyHomeView: View {
                 SetupGuidesView(
                     theme: theme, initialGroup: request.group, deviceGroup: request.deviceGroup,
                     returningToTutorial: tutorialTopicID != nil,
-                    onDeviceGroupSelected: { group in
-                        if acceptsSetupGroup(group) { selectedSetupSystem = group }
-                    },
+                    selectedSystem: Binding(
+                        get: { selectedSetupSystem },
+                        set: { system in
+                            if let system, !acceptsSetupGroup(system) { return }
+                            selectedSetupSystem = system
+                        }
+                    ),
                     onVoiceCheck: { voiceAfterGuide = true },
                     onPartOne: { route, group in
                         if pictureTarget == "connectionPlan", acceptsSetupGroup(group),
