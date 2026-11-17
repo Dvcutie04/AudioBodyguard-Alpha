@@ -868,6 +868,39 @@ def main():
             screenshot("roku_system_preview_retained_wifi")
             print("ROKU_SYSTEM_PREVIEW_BACK_OBSERVED: backing out of Google TV retains the Roku phone guide", flush=True)
 
+            # Revisiting the same TV keeps its system. A new brand choice clears it.
+            tap("Back to Tutorial", "roku_brand_change_close_phone")
+            wait_for_all(("Step 4 of 5", "Phone pictures"), "roku_brand_change_phone_step")
+            tap("Back", "roku_brand_change_back_to_tv")
+            reveal("Show TCL steps", "roku_brand_change_same_tcl")
+            wait_for_all(("TCL • Roku TV", "Set up your TCL TV"), "roku_brand_change_same_system")
+            tap("Back to Tutorial", "roku_brand_change_close_tv")
+            for previous, brand in (("TCL", "LG"), ("LG", "TCL")):
+                prefix = "roku_brand_change_to_" + brand.lower()
+                wait_for_all(("Step 3 of 5", f"Show {previous} steps"), prefix + "_plan")
+                tap("Back", prefix + "_back")
+                wait_for_all(("Step 2 of 5", f"Selected: {previous}"), prefix + "_previous")
+                reveal("Choose TV brand", prefix + "_picker")
+                tap(brand, prefix + "_select")
+            wait_for_all(("Step 3 of 5", "Show TCL steps"), "roku_brand_change_tcl_plan")
+            reveal("Show TCL steps", "roku_brand_change_open_tcl")
+            try:
+                wait_for_all(("Which name do you see on your TV?", "Roku TV"), "roku_brand_change_systems")
+            except AssertionError:
+                screenshot("roku_brand_change_unexpected_system")
+                raise
+            reveal("Roku TV", "roku_brand_change_choose_roku")
+            wait_for_all(("TCL • Roku TV", "Set up your TCL TV"), "roku_brand_change_chosen_system")
+            tap("Back to Tutorial", "roku_brand_change_close_chosen_tv")
+            reveal("? Setup help", "roku_brand_change_plan_help")
+            tap("Continue without pictures", "roku_brand_change_continue")
+            wait_for_all(("Step 4 of 5", "Phone pictures"), "roku_brand_change_returned")
+            tap("Phone pictures", "roku_brand_change_open_phone")
+            wait_for_all(("2. Connect to your phone (Roku)", "Resume guide"), "roku_brand_change_resume_ready")
+            tap("Resume guide", "roku_brand_change_resume")
+            wait_for_all(("TCL • Roku TV", "Step 2 of 5", "Check your Wi-Fi"), "roku_brand_change_saved_picture")
+            screenshot("roku_brand_change_saved_picture")
+
             for step in range(3, 6):
                 tap("Next", f"roku_handoff_phone_next_{step}")
                 wait_for(f"Step {step} of 5", f"roku_handoff_phone_{step}")
