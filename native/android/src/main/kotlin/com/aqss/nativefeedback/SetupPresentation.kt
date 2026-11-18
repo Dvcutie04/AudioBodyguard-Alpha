@@ -28,7 +28,7 @@ object SetupPresentation {
         val platformHint = tv?.platformHint
         if (original.screen == "Platform" && platform != null && platformHint != null) {
             return original.copy(
-                screen = "${tv.brand ?: "TV"} platform",
+                screen = "${tv?.brand ?: "TV"} platform",
                 instruction = platformHint,
                 items = listOf(platform),
                 focus = 0,
