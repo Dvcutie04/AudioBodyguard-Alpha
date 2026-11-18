@@ -31,6 +31,7 @@ struct SetupGuidesView: View {
     @State private var detailsExpanded = false
     @State private var pickerExpanded = false
     @State private var brandQuery = ""
+    @State private var modelGroupID = ""
     @State private var modelNumber = ""
     @State private var modelError = false
     @State private var identifiedTV: TVModelIdentity?
@@ -299,8 +300,14 @@ struct SetupGuidesView: View {
                     } else { chooseGroup(initialGroup, recording: false) }
                 }
             }
-            .onChange(of: groupID) { _ in
-                identifiedTV = nil; modelNumber = ""; modelError = false; photoStep = nil
+            .onChange(of: groupID) { group in
+                photoStep = nil
+                modelError = false
+                // The empty group displays the chooser while the current model stays in memory.
+                guard !group.isEmpty, group != modelGroupID else { return }
+                modelGroupID = group
+                identifiedTV = nil
+                modelNumber = ""
             }
             .sheet(isPresented: Binding(get: { photoStep != nil }, set: { if !$0 { photoStep = nil } })) {
                 if let origin = photoStep {
