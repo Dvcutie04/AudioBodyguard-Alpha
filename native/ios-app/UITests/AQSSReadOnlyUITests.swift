@@ -2105,7 +2105,7 @@ final class AQSSReadOnlyUITests: XCTestCase {
         app.buttons["setup-back"].tap(); label("Find the right screen", app)
         XCTAssertEqual(app.buttons["setup-back"].label, "Return to step")
         app.buttons["setup-back"].tap()
-        screenshot("Model platform picture after closing the brand picker")
+        screenshot("Model platform picture after closing the brand picker", app)
         assertPlatformPicture(model: "V505M-K09", brand: "VIZIO", year: "2023 lineup", platform: smartCast)
         app.buttons["setup-close"].tap()
         tab("home", app); label("Connection not verified", app)

@@ -296,9 +296,11 @@ class SetupGuideActivity : Activity() {
         edit.apply()
     }
     private fun render(preserveScroll: Boolean = false) {
-        if (modelEntry.group == groupId) {
-            modelField?.let { modelEntry.draft = it.text.toString() }
-        } else { modelEntry = ModelEntry(groupId) }
+        modelField?.let { modelEntry.draft = it.text.toString() }
+        // Opening the brand chooser leaves the current model in memory until a brand is chosen.
+        if (groupId.isNotEmpty() && modelEntry.group != groupId) {
+            modelEntry = ModelEntry(groupId)
+        }
         modelField = null
         val oldScroll = if (preserveScroll) scroll.scrollY else 0
         val version = ++renderVersion
