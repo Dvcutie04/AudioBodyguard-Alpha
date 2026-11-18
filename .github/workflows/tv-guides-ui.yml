@@ -11,6 +11,7 @@ on:
       - aqss/vizio-guide-return-verification
       - aqss/tv-setup-mismatch-recovery
       - aqss/ios-setup-backward
+      - aqss/model-number-guide
   workflow_dispatch:
 
 permissions:
@@ -70,6 +71,15 @@ jobs:
           profile: pixel_5
           emulator-options: -no-window -gpu swiftshader -no-snapshot -noaudio -no-boot-anim -delay-adb
           script: timeout 1500 python3 tools/smoke_android_live_input.py --tv-guides-only
+      - name: Verify the tested Android trial APK and record its source and signature
+        run: python3 tools/record_android_test_apk.py
+      - name: Retain the tested Android trial APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: AudioBodyguard-Live-Input-Test
+          path: native/android/app/build/outputs/apk/liveInput/app-liveInput.apk
+          if-no-files-found: error
+          retention-days: 14
       - name: Retain TV guide Android UI evidence
         if: always()
         uses: actions/upload-artifact@v4
@@ -123,10 +133,20 @@ jobs:
           # Keep every UI assertion intact; do not disable AX or skip tests.
           xcrun simctl boot "$simulator_udid" || true
           xcrun simctl bootstatus "$simulator_udid" -b
+          python3 - <<'PYTHON'
+          import datetime, hashlib, os, pathlib
+          photo = pathlib.Path("native/ios/Tests/AQSSNativeFeedbackTests/Fixtures/tv-photo-labels.png")
+          assert hashlib.sha256(photo.read_bytes()).hexdigest() == "2f55775447c5d28841737a25713ae83a76b37bb6d614fa33007621ce92853f31"
+          now = datetime.datetime.now(datetime.timezone.utc)
+          captured = datetime.datetime(now.year, 1, 14, 12, tzinfo=datetime.timezone.utc).timestamp()
+          os.utime(photo, (captured, captured))
+          PYTHON
+          xcrun simctl addmedia "$simulator_udid" native/ios/Tests/AQSSNativeFeedbackTests/Fixtures/tv-photo-labels.png
           xcodebuild -project native/ios-app/AQSSReadOnly.xcodeproj -scheme AQSSReadOnly \
             -configuration Release -destination "platform=iOS Simulator,id=$simulator_udid" \
             -derivedDataPath "$RUNNER_TEMP/tv-guide-build" \
             -parallel-testing-enabled NO -resultBundlePath "$RUNNER_TEMP/sound-tv-guides.xcresult" \
+            -only-testing:AQSSReadOnlyUITests/AQSSReadOnlyUITests/testEnteringOrPhotographingAModelAdvancesOnePictureAndBackRestoresIt \
             -only-testing:AQSSReadOnlyUITests/AQSSReadOnlyUITests/testTVCodePicturesSeparateTheTVFromPhoneAndKeepOptionalLinksNeutral \
             -only-testing:AQSSReadOnlyUITests/AQSSReadOnlyUITests/testBrandPlatformsKeepRokuMenusSeparateAndOfferManualGoogleTVSetup \
             -only-testing:AQSSReadOnlyUITests/AQSSReadOnlyUITests/testLGVizioAndGoogleTVContinueIntoTheirOwnPhoneAppPictures \

@@ -1599,6 +1599,62 @@ def main():
         check_output_report()
         check_output_freshness()
         return
+    # A synthetic image in this isolated emulator goes through the real system
+    # picker, image decoder, bundled ML Kit and app review screen. Never inject
+    # OCR text or a result directly into the app.
+    def choose_photo_fixture(display_name, case_prefix):
+        tap("Choose a photo", f"{case_prefix}_choose")
+        chosen = False
+        for attempt in range(6):
+            picker, _ = screen(f"{case_prefix}_picker_{attempt}")
+            labels = {n.get(field, "") for n in picker.iter("node") for field in ("text", "content-desc")}
+            if display_name in labels:
+                tap(display_name, f"{case_prefix}_pick_fixture"); chosen = True; break
+            browse = next((s for s in ("Browse", "Browse…", "Browse...", "Browse files") if s in labels), None)
+            if browse:
+                tap(browse, f"{case_prefix}_browse_{attempt}"); continue
+            # On the stock single-photo picker, media cells expose their capture
+            # date instead of a filename. Accept only one visible photo cell.
+            cells = {s for s in labels if s.startswith("Photo taken on ") or s.startswith("Image taken on ")}
+            if len(cells) == 1:
+                tap(cells.pop(), f"{case_prefix}_pick_single_fixture"); chosen = True; break
+            time.sleep(1)
+        assert chosen, "No unambiguous synthetic image in the observed system picker"
+
+    @contextmanager
+    def published_photo_fixture(fixture_name, display_name, case_prefix):
+        fixture = Path("native/ios/Tests/AQSSNativeFeedbackTests/Fixtures") / fixture_name
+        inserted = adb("shell", "content", "insert", "--uri", "content://media/external_primary/images/media",
+                       "--bind", f"_display_name:s:{display_name}", "--bind", "mime_type:s:image/png",
+                       "--bind", "relative_path:s:Pictures/", "--bind", "is_pending:i:1").decode()
+        (out / f"{case_prefix}-fixture-insert.txt").write_text(inserted)
+        # The AOSP content insert command discards its returned URI. Query the exact
+        # test row; absence or ambiguity fails rather than guessing an item ID.
+        pending_match = r"android\:query-arg-match-pending:i:1"
+        query = adb("shell", shlex.join(["content", "query", "--uri", "content://media/external_primary/images/media",
+                    "--projection", "_id:_display_name:is_pending", "--extra", pending_match, "--where",
+                    f"_display_name='{display_name}' AND relative_path='Pictures/'"])).decode()
+        (out / f"{case_prefix}-fixture-query.txt").write_text(query)
+        rows = re.findall(rf"^Row: \d+ _id=(\d+), _display_name={re.escape(display_name)}, is_pending=1$", query, re.MULTILINE)
+        assert len(rows) == 1, "Expected one identifiable pending fixture in MediaStore"
+        image_uri = "content://media/external_primary/images/media/" + rows[0]
+        try:
+            written = subprocess.run(["adb", "shell", "content", "write", "--uri", image_uri],
+                                     input=fixture.read_bytes(), capture_output=True, timeout=45, check=True)
+            (out / f"{case_prefix}-fixture-write.txt").write_bytes(written.stdout + written.stderr)
+            assert adb("shell", "content", "read", "--uri", image_uri) == fixture.read_bytes(), "Imported image bytes differ"
+            adb("shell", shlex.join(["content", "update", "--uri", image_uri, "--bind", "is_pending:i:0",
+                "--extra", pending_match]))
+            published = adb("shell", "content", "query", "--uri", image_uri, "--projection", "_id:_display_name:is_pending").decode()
+            (out / f"{case_prefix}-fixture-published.txt").write_text(published)
+            assert f"_id={rows[0]}, _display_name={display_name}, is_pending=0" in published, "Fixture is not published to the picker"
+            yield
+        except Exception:
+            screenshot(f"{case_prefix}_failure")
+            raise
+        finally:
+            adb("shell", shlex.join(["content", "delete", "--uri", image_uri, "--extra", pending_match]))
+
     if args.tv_guides_only:
         def guide_tap(label, name):
             # Reopening a brand chooser can retain a previous lower scroll
@@ -1729,6 +1785,13 @@ def main():
         wait_for_all(("Check the phone controls", "Finish part two"), "tv_guides_lg_phone_final")
         screenshot("tv_guides_lg_phone_final")
         tap("Finish part two", "tv_guides_lg_phone_finish")
+        # Returning from the guide may restore the Devices tab below its status header.
+        wait_for("• Devices", "tv_guides_lg_phone_returned_to_devices")
+        for attempt in range(3):
+            root, _ = screen(f"tv_guides_lg_phone_status_view_{attempt}")
+            if has(root, "DEVICES"):
+                break
+            scroll_meter(f"tv_guides_lg_phone_scroll_to_status_{attempt}", down=False)
         wait_for_all(("DEVICES", "Connection not verified"), "tv_guides_lg_phone_no_connection")
 
         # Open the brand's Help to reach the alternate Vizio account route.
@@ -1825,6 +1888,75 @@ def main():
         tap("Back", "tv_guides_google_manual_back")
         wait_for("Step 1 of 7", "tv_guides_google_manual_back_restored")
         tap("Close", "tv_guides_google_manual_close")
+        open_brand("Another brand", "tv_guides_model")
+        start_picture("tv_guides_model")
+        tap("Next", "tv_guides_model_open_entry")
+        entry = wait_for_all(("Step 2 of 5", "Find the model safely", "Type the model below or use a photo"),
+                             "tv_guides_model_input")
+        screenshot("tv_guides_model_entry_cue")
+
+        def focus_model_field(page):
+            fields = [node for node in page.iter("node") if node.get("class") == "android.widget.EditText"]
+            assert len(fields) == 1, "The model step needs one visible input box"
+            x0, y0, x1, y1 = map(int, re.findall(r"-?\d+", fields[0].get("bounds")))
+            adb("shell", "input", "tap", str((x0+x1)//2), str((y0+y1)//2))
+
+        focus_model_field(entry)
+        adb("shell", "input", "text", "xr-65x90k")
+        adb("shell", "input", "keyevent", "KEYCODE_ENTER")
+        wait_for_all(("Step 3 of 5", "Identify the TV platform", "Model: XR-65X90K", "Model year: 2022",
+                      "This exact model uses Google TV. Look for the Google TV home screen."),
+                     "tv_guides_model_typed_next")
+        screenshot("tv_guides_model_typed_next")
+        tap("Back", "tv_guides_model_typed_back")
+        wait_for_all(("Step 2 of 5", "XR-65X90K"), "tv_guides_model_restored")
+        guide_tap("Read model from photo", "tv_guides_model_open_photo")
+        wait_for("Choose a photo", "tv_guides_model_photo_before_cancel")
+        adb("shell", "input", "keyevent", "KEYCODE_BACK")
+        wait_for_all(("Step 2 of 5", "XR-65X90K"), "tv_guides_model_cancel")
+        guide_tap("Read model from photo", "tv_guides_model_reopen_photo")
+        with published_photo_fixture("tv-photo-labels.png", "aqss-guide-model.png", "tv_guides_model"):
+            choose_photo_fixture("aqss-guide-model.png", "tv_guides_model")
+            page = wait_for_all(("Step 3 of 5", "Identify the TV platform", "Brand: VIZIO", "Model: V505M-K09",
+                                 "Model year: 2023 lineup",
+                                 "This exact model uses SmartCast. Look for the SmartCast Home screen."),
+                                "tv_guides_model_photo_next", attempts=30)
+            assert not has(page, "10.20.30.40"), "The model result may only carry TV identification"
+            screenshot("tv_guides_model_photo_next")
+        tap("Back", "tv_guides_model_photo_back")
+        restored = wait_for_all(("Step 2 of 5", "V505M-K09"), "tv_guides_photo_model_restored")
+        focus_model_field(restored)
+        adb("shell", "input", "keyevent", "KEYCODE_MOVE_END", *(["KEYCODE_DEL"] * len("V505M-K09")))
+        tap("Next", "tv_guides_model_clear_continue")
+
+        def assert_generic_platform(name):
+            page = wait_for_all(("Step 3 of 5", "Another brand", "Look for Google TV, Android TV, Roku"), name)
+            assert not has(page, "Model: V505M-K09") and not has(page, "SmartCast")
+
+        assert_generic_platform("tv_guides_model_cleared")
+        screenshot("tv_guides_model_cleared")
+        tap("Back", "tv_guides_model_clear_back")
+        cleared = wait_for_all(("Step 2 of 5", "Full model number"), "tv_guides_model_empty_again")
+        assert not has(cleared, "V505M-K09")
+        focus_model_field(cleared)
+        adb("shell", "input", "keyevent", "KEYCODE_ENTER")
+        assert_generic_platform("tv_guides_model_empty_keyboard")
+
+        tap("Back", "tv_guides_model_detour_entry")
+        focus_model_field(wait_for("Full model number", "tv_guides_model_detour_field"))
+        adb("shell", "input", "text", "V505M-K09")
+        adb("shell", "input", "keyevent", "KEYCODE_ENTER")
+        model_picture = ("Step 3 of 5", "Model: V505M-K09", "This exact model uses SmartCast.")
+        wait_for_all(model_picture, "tv_guides_model_before_brand_picker")
+        guide_tap("? Step help", "tv_guides_model_detour_help")
+        guide_tap("My screen looks different", "tv_guides_model_detour_mismatch")
+        guide_tap("Choose another TV or app", "tv_guides_model_brand_picker")
+        wait_for("Choose your TV brand", "tv_guides_model_picker_visible")
+        tap("Back", "tv_guides_model_dismiss_brand_picker")
+        wait_for("Find the right screen", "tv_guides_model_return_to_mismatch")
+        tap("Return to step", "tv_guides_model_return_to_picture")
+        wait_for_all(model_picture, "tv_guides_model_after_brand_picker")
+        tap("Close", "tv_guides_model_close")
         tap("Home", "tv_guides_home")
         wait_for("Connection not verified", "tv_guides_no_protection")
         print("TV_GUIDES_OBSERVED: TV/phone code separation, optional choices, Philips pairing decisions, Fire QR completion, brand/platform menus, app-specific phone checks, rotation/resume and large text; illustrated navigation only, no physical pairing", flush=True)
@@ -2074,28 +2206,6 @@ def main():
         wait_for("Voice check", name + "_sound_page")
         print("SUPPORT_REPORT_NATIVE_OBSERVED: " + name, flush=True)
 
-    # A synthetic image in this isolated emulator goes through the real system
-    # picker, image decoder, bundled ML Kit and app review screen. Never inject
-    # OCR text or a result directly into the app.
-    def choose_photo_fixture(display_name, case_prefix):
-        tap("Choose a photo", f"{case_prefix}_choose")
-        chosen = False
-        for attempt in range(6):
-            picker, _ = screen(f"{case_prefix}_picker_{attempt}")
-            labels = {n.get(field, "") for n in picker.iter("node") for field in ("text", "content-desc")}
-            if display_name in labels:
-                tap(display_name, f"{case_prefix}_pick_fixture"); chosen = True; break
-            browse = next((s for s in ("Browse", "Browse…", "Browse...", "Browse files") if s in labels), None)
-            if browse:
-                tap(browse, f"{case_prefix}_browse_{attempt}"); continue
-            # On the stock single-photo picker, media cells expose their capture
-            # date instead of a filename. Accept only one visible photo cell.
-            cells = {s for s in labels if s.startswith("Photo taken on ") or s.startswith("Image taken on ")}
-            if len(cells) == 1:
-                tap(cells.pop(), f"{case_prefix}_pick_single_fixture"); chosen = True; break
-            time.sleep(1)
-        assert chosen, "No unambiguous synthetic image in the observed system picker"
-
     def photo_fixture_case(fixture_name, display_name, case_prefix, expected):
         tap("Devices", f"{case_prefix}_devices_page")
         tap("TV photo setup. Read a model label or Network settings photo", "open_photo_check")
@@ -2127,31 +2237,7 @@ def main():
             wait_for_all(("TV photo setup", "No photo selected"), "photo_guide_unmatched_returns_to_photo")
         tap("Show photo details", f"{case_prefix}_show_details")
         wait_photo_fields(("No photo selected", "Brand: Not identified", "Model: Not identified", "TV IP hint: Not identified"), f"{case_prefix}_empty_details")
-        fixture = Path("native/ios/Tests/AQSSNativeFeedbackTests/Fixtures") / fixture_name
-        inserted = adb("shell", "content", "insert", "--uri", "content://media/external_primary/images/media",
-                       "--bind", f"_display_name:s:{display_name}", "--bind", "mime_type:s:image/png",
-                       "--bind", "relative_path:s:Pictures/", "--bind", "is_pending:i:1").decode()
-        (out / f"{case_prefix}-fixture-insert.txt").write_text(inserted)
-        # The AOSP content insert command discards its returned URI. Query the exact
-        # test row; absence or ambiguity fails rather than guessing an item ID.
-        pending_match = r"android\:query-arg-match-pending:i:1"
-        query = adb("shell", shlex.join(["content", "query", "--uri", "content://media/external_primary/images/media",
-                    "--projection", "_id:_display_name:is_pending", "--extra", pending_match, "--where",
-                    f"_display_name='{display_name}' AND relative_path='Pictures/'"])).decode()
-        (out / f"{case_prefix}-fixture-query.txt").write_text(query)
-        rows = re.findall(rf"^Row: \d+ _id=(\d+), _display_name={re.escape(display_name)}, is_pending=1$", query, re.MULTILINE)
-        assert len(rows) == 1, "Expected one identifiable pending fixture in MediaStore"
-        image_uri = "content://media/external_primary/images/media/" + rows[0]
-        try:
-            written = subprocess.run(["adb", "shell", "content", "write", "--uri", image_uri],
-                                     input=fixture.read_bytes(), capture_output=True, timeout=45, check=True)
-            (out / f"{case_prefix}-fixture-write.txt").write_bytes(written.stdout + written.stderr)
-            assert adb("shell", "content", "read", "--uri", image_uri) == fixture.read_bytes(), "Imported image bytes differ"
-            adb("shell", shlex.join(["content", "update", "--uri", image_uri, "--bind", "is_pending:i:0",
-                "--extra", pending_match]))
-            published = adb("shell", "content", "query", "--uri", image_uri, "--projection", "_id:_display_name:is_pending").decode()
-            (out / f"{case_prefix}-fixture-published.txt").write_text(published)
-            assert f"_id={rows[0]}, _display_name={display_name}, is_pending=0" in published, "Fixture is not published to the picker"
+        with published_photo_fixture(fixture_name, display_name, case_prefix):
             choose_photo_fixture(display_name, case_prefix)
             wait_photo_fields(expected,
                          f"{case_prefix}_native_ocr_result", attempts=30)
@@ -2201,11 +2287,7 @@ def main():
             wait_for("TV photo setup", f"{case_prefix}_close_returns_devices")
             tap("Home", f"{case_prefix}_back_home")
             wait_for("Connection not verified", f"{case_prefix}_did_not_connect")
-        except Exception:
-            screenshot(f"{case_prefix}_failure")
-            raise
-        finally:
-            adb("shell", shlex.join(["content", "delete", "--uri", image_uri, "--extra", pending_match]))
+
 
     photo_fixture_case("tv-photo-labels.png", "aqss-tv-labels.png", "photo",
                        ("Brand: VIZIO", "Model: V505M-K09", "TV IP hint: 10.20.30.40", "Nothing is connected."))

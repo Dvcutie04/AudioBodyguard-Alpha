@@ -567,9 +567,29 @@ private struct ReadOnlyHomeView: View {
                 }
                 pictureTarget = nil; completedPictureRoute = nil
                 if voiceAfterGuide { voiceAfterGuide = false; voiceCheckVisible = true }
-            }) { request in SetupGuidesView(theme: theme, initialGroup: request.group, deviceGroup: request.deviceGroup, returningToTutorial: tutorialTopicID != nil, onDeviceGroupSelected: { selectedSetupSystem = $0 }, onVoiceCheck: { voiceAfterGuide = true }, onPartOne: { route in
-                if pictureTarget == "connectionPlan" && guide.completePictures(expectedTarget: "connectionPlan", routeID: route) { pictureTarget = "connectionCheck" }
-            }, onFinish: { completedPictureRoute = $0 }) }
+            }) { request in
+                SetupGuidesView(
+                    theme: theme, initialGroup: request.group, deviceGroup: request.deviceGroup,
+                    returningToTutorial: tutorialTopicID != nil,
+                    selectedSystem: Binding(
+                        get: { selectedSetupSystem },
+                        set: { system in
+                            if let system, !acceptsSetupGroup(system) { return }
+                            selectedSetupSystem = system
+                        }
+                    ),
+                    onVoiceCheck: { voiceAfterGuide = true },
+                    onPartOne: { route, group in
+                        if pictureTarget == "connectionPlan", acceptsSetupGroup(group),
+                           guide.completePictures(expectedTarget: "connectionPlan", routeID: route) {
+                            pictureTarget = "connectionCheck"
+                        }
+                    },
+                    onFinish: { route, group in
+                        if acceptsSetupGroup(group) { completedPictureRoute = route }
+                    }
+                )
+            }
             .sheet(isPresented: $navigationVisible, onDismiss: performHelpJump) {
                 menuSheet("Jump to") {
                     action("Sound check", icon: "mic") { pendingHelpJump = "sound"; navigationVisible = false }
@@ -639,6 +659,16 @@ private struct ReadOnlyHomeView: View {
         .onChange(of: guide.selections["chooseTV"]) { brand in
             if let brand = brand, let selected = selectedSetupSystem, selected != brand && !selected.hasPrefix(brand + "_") { selectedSetupSystem = nil }
         }
+    }
+
+    // Viewing a guide for another brand does not change the tutorial's TV or complete its pictures.
+    private func acceptsSetupGroup(_ group: String) -> Bool {
+        guard pictureTarget != nil, let brand = guide.selected("chooseTV")?.id,
+              brand != "other", brand != "unsure",
+              let groupBrand = group.split(separator: "_").first.map(String.init),
+              AQSSTutorialContent.choices["chooseTV"]?.contains(where: { $0.id == groupBrand }) == true
+        else { return true }
+        return groupBrand == brand
     }
 
     private func showSetup(_ group: String = "") {

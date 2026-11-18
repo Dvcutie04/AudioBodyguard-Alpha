@@ -2,6 +2,25 @@ package com.aqss.nativefeedback
 import kotlin.test.*
 
 class TVPhotoHintsTest {
+    @Test fun typedAndPhotographedModelsKeepExactCodesAndOnlySupportedDetails() {
+        val typed = assertNotNull(TVModelIdentity.fromNumber("  v505m-k09 "))
+        assertEquals("VIZIO", typed.brand); assertEquals("VIZIO", typed.make); assertEquals("2023 lineup", typed.year)
+        assertEquals(typed, TVPhotoHints("VIZIO\nFull model number:\nV505M-K09").identity)
+        assertEquals(typed, TVPhotoHints("V505M-K09").identity)
+        val label = assertNotNull(TVPhotoHints("Brand: Example\nManufacturer: Maker Labs\nFull model number: 42PFL/F7\nModel year: 2021").identity)
+        assertEquals("42PFL/F7", label.model); assertEquals("EXAMPLE", label.brand)
+        assertEquals("MAKER LABS", label.make); assertEquals("2021", label.year)
+        assertEquals("2022", TVModelIdentity.fromNumber("xr-65x90k")?.year)
+        assertNull(TVModelIdentity.fromNumber("XR-65X90K-EU")?.year)
+        assertNull(TVPhotoHints("Model: 42PFL/F7\nManufactured: 2021").identity?.year)
+        for (invalid in listOf("", "full model number", "10.20.30.40", "X1\nY2", "X1/")) {
+            assertNull(TVModelIdentity.fromNumber(invalid), invalid)
+        }
+        for (text in listOf("Serial number:\nV505M-K09", "Model: X1\nModel: Y2", "SAMSUNG\nModel: V505M-K09")) {
+            assertNull(TVPhotoHints(text).identity, text)
+        }
+    }
+
     @Test fun vizioCheckTargetRequiresAnUnambiguousPrivateHost() {
         val addressRow = "IPv4 IP Address: 10.20.30.40"
         assertEquals("10.20.30.40", TVPhotoHints("VIZIO\n$addressRow").vizioCheckTarget?.address)

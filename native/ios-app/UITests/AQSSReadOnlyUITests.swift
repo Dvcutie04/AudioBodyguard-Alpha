@@ -1998,6 +1998,119 @@ final class AQSSReadOnlyUITests: XCTestCase {
         let shot = XCTAttachment(screenshot: app.screenshot()); shot.name = name; shot.lifetime = .keepAlways; add(shot)
     }
 
+    private func chooseDatedPhoto(_ prefix: String, in app: XCUIApplication) throws {
+        tap("Choose a photo", app, scroll: app.scrollViews["photo-review-scroll"])
+        // Match each fixture's capture date, never an assumed grid position.
+        // The picker can remain on Loading while the Photos service starts.
+        // Wait for an exact date label shape, excluding older assets that show a year.
+        let dateLabel = NSRegularExpression.escapedPattern(for: prefix) + "[^,]+"
+        let images = app.images.matching(NSPredicate(format: "label MATCHES %@", dateLabel))
+        _ = images.firstMatch.waitForExistence(timeout: 30)
+        let candidates = images.allElementsBoundByIndex
+        let inventory = XCTAttachment(string: app.debugDescription)
+        inventory.name = "System photo picker inventory"; inventory.lifetime = .keepAlways; add(inventory)
+        if candidates.count != 1 {
+            print("PHOTO_PICKER_INVENTORY " + app.debugDescription)
+            screenshot("Missing or ambiguous dated photo fixture", app)
+        }
+        let image = try XCTUnwrap(candidates.count == 1 ? candidates.first : nil,
+                                 "Require exactly one imported-date fixture; never guess among Photos assets")
+        // A remote Photos thumbnail can reject XCTest's AX scrolling even
+        // at the screen edge. Permit only half a point of horizontal frame
+        // rounding, and clamp the actual touch to the strict viewport.
+        // Offscreen images retain the native scroll-and-tap path.
+        let frame = image.frame
+        let appFrame = app.frame
+        let viewport = appFrame.insetBy(dx: 0, dy: 24)
+        let visible = frame.intersection(viewport)
+        print("PHOTO_PICKER_GEOMETRY image=\(frame) viewport=\(viewport) visible=\(visible)")
+        if frame.width >= 44, frame.height >= 44,
+           visible.width >= 44, visible.height >= 44,
+           viewport.insetBy(dx: -0.5, dy: 0).contains(frame) {
+            screenshot("Dated photo fixture ready", app)
+            let offset = CGVector(dx: visible.midX - appFrame.minX, dy: visible.midY - appFrame.minY)
+            app.coordinate(withNormalizedOffset: CGVector(dx: 0, dy: 0)).withOffset(offset).tap()
+        } else { image.tap() }
+    }
+
+    func testEnteringOrPhotographingAModelAdvancesOnePictureAndBackRestoresIt() throws {
+        let app = launch()
+        tab("devices", app); tap("Illustrated setup guides", app)
+        findSetupBrand("Another brand", app)
+        restartPictureGuide(app)
+        app.buttons["setup-next"].tap()
+        label("Step 2 of 5", app); label("Find the model safely", app)
+        label("Type the model below or use a photo", app)
+        let field = app.textFields["setup-model-number"]
+        XCTAssertTrue(field.waitForExistence(timeout: 5))
+        screenshot("Type or photograph the model on this screen", app)
+        field.tap(); field.typeText("xr-65x90k\n")
+        let summary = app.staticTexts["setup-identified-model"]
+        func assertPlatformPicture(model: String, brand: String, year: String, platform: String) {
+            XCTAssertTrue(summary.waitForExistence(timeout: 40), "A successful model entry must open the next picture")
+            label("Step 3 of 5", app); label("Identify the TV platform", app)
+            XCTAssertTrue(summary.label.contains("Model: " + model))
+            XCTAssertTrue(summary.label.contains("Brand: " + brand))
+            let context = app.staticTexts["setup-device-context"].label
+            XCTAssertTrue(context.contains(brand))
+            XCTAssertTrue(context.contains(UIDevice.current.userInterfaceIdiom == .pad ? "iPad" : "iPhone"))
+            XCTAssertTrue(summary.label.contains("Model year: " + year))
+            label(platform, app)
+            XCTAssertFalse(summary.label.contains("10.20.30.40"))
+        }
+        assertPlatformPicture(model: "XR-65X90K", brand: "Sony", year: "2022",
+                              platform: "This exact model uses Google TV. Look for the Google TV home screen.")
+        screenshot("Typed TV model opens platform picture", app)
+        app.buttons["setup-back"].tap()
+        label("Step 2 of 5", app)
+        XCTAssertEqual(field.value as? String, "XR-65X90K")
+
+        tap("Read model from photo", app, scroll: app.scrollViews["setup-scroll"])
+        XCTAssertTrue(app.buttons["photo-close"].waitForExistence(timeout: 5))
+        app.buttons["photo-close"].tap()
+        XCTAssertTrue(field.waitForExistence(timeout: 5))
+        XCTAssertEqual(field.value as? String, "XR-65X90K")
+        tap("Read model from photo", app, scroll: app.scrollViews["setup-scroll"])
+        try chooseDatedPhoto("Photo, January 14, ", in: app)
+        assertPlatformPicture(model: "V505M-K09", brand: "VIZIO", year: "2023 lineup",
+                              platform: "This exact model uses SmartCast. Look for the SmartCast Home screen.")
+        screenshot("Photographed TV model opens platform picture", app)
+        app.buttons["setup-back"].tap()
+        label("Step 2 of 5", app)
+        XCTAssertEqual(field.value as? String, "V505M-K09")
+        field.coordinate(withNormalizedOffset: CGVector(dx: 0.9, dy: 0.5)).tap()
+        field.typeText(String(repeating: XCUIKeyboardKey.delete.rawValue, count: "V505M-K09".count))
+        app.buttons["setup-next"].tap()
+        func assertGenericPlatform() {
+            label("Step 3 of 5", app)
+            label("Look for Google TV, Android TV, Roku", app)
+            XCTAssertFalse(summary.exists)
+            XCTAssertTrue(app.staticTexts["setup-device-context"].label.contains("Another brand"))
+        }
+        assertGenericPlatform()
+        screenshot("Cleared model returns to the generic platform picture", app)
+        app.buttons["setup-back"].tap()
+        label("Step 2 of 5", app)
+        XCTAssertTrue(["", "Full model number"].contains(field.value as? String ?? "missing field"))
+        field.tap(); field.typeText("\n")
+        assertGenericPlatform()
+
+        app.buttons["setup-back"].tap()
+        field.tap(); field.typeText("V505M-K09\n")
+        let smartCast = "This exact model uses SmartCast. Look for the SmartCast Home screen."
+        assertPlatformPicture(model: "V505M-K09", brand: "VIZIO", year: "2023 lineup", platform: smartCast)
+        showStepHelp(app)
+        tap("My screen looks different", app); label("Find the right screen", app)
+        tap("Choose another TV or app", app); label("Choose your TV brand", app)
+        app.buttons["setup-back"].tap(); label("Find the right screen", app)
+        XCTAssertEqual(app.buttons["setup-back"].label, "Return to step")
+        app.buttons["setup-back"].tap()
+        screenshot("Model platform picture after closing the brand picker", app)
+        assertPlatformPicture(model: "V505M-K09", brand: "VIZIO", year: "2023 lineup", platform: smartCast)
+        app.buttons["setup-close"].tap()
+        tab("home", app); label("Connection not verified", app)
+    }
+
     func testPhotoReviewGuidanceAndReplacement() throws {
         guard ProcessInfo.processInfo.environment["AQSS_TEST_PHOTO"] == "1" else {
             throw XCTSkip("The focused workflow must import the dated synthetic photo fixtures into Photos first.")
@@ -2011,38 +2124,7 @@ final class AQSSReadOnlyUITests: XCTestCase {
             let modified = try XCTUnwrap(ProcessInfo.processInfo.environment[key].flatMap(TimeInterval.init))
             let date = DateFormatter(); date.locale = Locale(identifier: "en_US_POSIX"); date.dateFormat = "MMMM dd"
             let prefix = "Photo, " + date.string(from: Date(timeIntervalSince1970: modified)) + ", "
-            tap("Choose a photo", app, scroll: app.scrollViews["photo-review-scroll"])
-            // Match each fixture's capture date, never an assumed grid position.
-            // The picker can remain on Loading while the Photos service starts.
-            // Wait for an exact date label shape, excluding older assets that show a year.
-            let dateLabel = NSRegularExpression.escapedPattern(for: prefix) + "[^,]+"
-            let images = app.images.matching(NSPredicate(format: "label MATCHES %@", dateLabel))
-            _ = images.firstMatch.waitForExistence(timeout: 30)
-            let candidates = images.allElementsBoundByIndex
-            let inventory = XCTAttachment(string: app.debugDescription)
-            inventory.name = "System photo picker inventory"; inventory.lifetime = .keepAlways; add(inventory)
-            if candidates.count != 1 {
-                print("PHOTO_PICKER_INVENTORY " + app.debugDescription)
-                screenshot("Missing or ambiguous dated photo fixture", app)
-            }
-            let image = try XCTUnwrap(candidates.count == 1 ? candidates.first : nil,
-                                     "Require exactly one imported-date fixture; never guess among Photos assets")
-            // A remote Photos thumbnail can reject XCTest's AX scrolling even
-            // at the screen edge. Permit only half a point of horizontal frame
-            // rounding, and clamp the actual touch to the strict viewport.
-            // Offscreen images retain the native scroll-and-tap path.
-            let frame = image.frame
-            let appFrame = app.frame
-            let viewport = appFrame.insetBy(dx: 0, dy: 24)
-            let visible = frame.intersection(viewport)
-            print("PHOTO_PICKER_GEOMETRY image=\(frame) viewport=\(viewport) visible=\(visible)")
-            if frame.width >= 44, frame.height >= 44,
-               visible.width >= 44, visible.height >= 44,
-               viewport.insetBy(dx: -0.5, dy: 0).contains(frame) {
-                screenshot("Dated photo fixture ready", app)
-                let offset = CGVector(dx: visible.midX - appFrame.minX, dy: visible.midY - appFrame.minY)
-                app.coordinate(withNormalizedOffset: CGVector(dx: 0, dy: 0)).withOffset(offset).tap()
-            } else { image.tap() }
+            try chooseDatedPhoto(prefix, in: app)
             // Import and OCR have the existing 30-second app result window.
             // Allow that window plus presentation before the first result;
             // every expected value still has to match, without another read.
@@ -2664,6 +2746,63 @@ final class AQSSReadOnlyUITests: XCTestCase {
         XCTAssertEqual(progress.label, "Step 2 of 5")
         XCTAssertEqual(pictureDescription(app), wifiPicture)
         screenshot("Roku Wi-Fi picture resumes after visiting a different brand", app)
+
+        let brandContext = app.staticTexts["setup-device-context"]
+        XCTAssertTrue(brandContext.exists)
+        let rokuContext = brandContext.label
+        let back = app.buttons["setup-back"]
+        for closeToTutorial in [false, true] {
+            showStepHelp(app)
+            tap("My screen looks different", app); label("Find the right screen", app)
+            tap("Choose another TV or app", app); label("Choose your TV brand", app)
+            tap("LG", app); label("Connect your LG TV", app)
+            if closeToTutorial {
+                app.buttons["setup-close"].tap(); label("Step 4 of 5", app)
+                tap("Phone pictures", app)
+                guard app.staticTexts["2. Connect to your phone (Roku)"].waitForExistence(timeout: 10) else {
+                    screenshot("Unexpected phone guide after closing the LG detour", app)
+                    XCTFail("Back to Tutorial from LG must keep the selected TCL Roku system")
+                    return
+                }
+                XCTAssertEqual(nextPicture.label, "Resume guide")
+                nextPicture.tap()
+            } else {
+                back.tap(); label("Choose your TV brand", app)
+                back.tap(); label("Find the right screen", app)
+                XCTAssertEqual(back.label, "Return to step")
+                back.tap()
+            }
+            label("Check your Wi-Fi", app)
+            XCTAssertEqual(progress.label, "Step 2 of 5")
+            XCTAssertEqual(brandContext.label, rokuContext)
+            XCTAssertEqual(pictureDescription(app), wifiPicture)
+            screenshot(closeToTutorial ? "Back to Tutorial retains the Roku Wi-Fi picture" : "Step-by-step Back retains the Roku Wi-Fi picture", app)
+        }
+
+        for openedGoogleTV in [false, true] {
+            showStepHelp(app)
+            tap("My screen looks different", app); label("Find the right screen", app)
+            tap("Choose another TV system", app); label("Which name do you see on your TV?", app)
+            XCTAssertTrue(app.buttons["setup-platform-tcl_roku"].exists)
+            if openedGoogleTV {
+                tap("Google TV / Android TV", app); label("TCL • Google TV / Android TV", app)
+                back.tap(); label("Which name do you see on your TV?", app)
+            }
+            app.buttons["setup-close"].tap(); label("Step 4 of 5", app)
+            tap("Phone pictures", app)
+            let action = openedGoogleTV ? "backing out of Google TV" : "closing the TV system picker"
+            guard app.staticTexts["2. Connect to your phone (Roku)"].waitForExistence(timeout: 10) else {
+                screenshot("Unexpected phone guide after \(action)", app)
+                XCTFail("Roku setup should be retained after \(action)")
+                return
+            }
+            XCTAssertEqual(nextPicture.label, "Resume guide")
+            nextPicture.tap(); label("Check your Wi-Fi", app)
+            XCTAssertEqual(progress.label, "Step 2 of 5")
+            XCTAssertEqual(brandContext.label, rokuContext)
+            XCTAssertEqual(pictureDescription(app), wifiPicture)
+            screenshot("Roku Wi-Fi picture retained after \(action)", app)
+        }
 
         for _ in 2..<5 { nextPicture.tap() }
         XCTAssertEqual(nextPicture.label, "Finish part two")

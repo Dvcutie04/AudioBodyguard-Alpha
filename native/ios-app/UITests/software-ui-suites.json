@@ -84,6 +84,7 @@
     "AQSSReadOnlyUITests/testVoiceSpeechSettingsReturnStaysOff",
     "AQSSReadOnlyUITests/testLiveSoundCheckStopsOnHomeAndRequiresAnotherStart",
     "AQSSReadOnlyUITests/testConnectedDemoAppearanceKeepsPhysicalReadinessUnverified",
-    "AQSSReadOnlyUITests/testPhotoReviewGuidanceAndReplacement"
+    "AQSSReadOnlyUITests/testPhotoReviewGuidanceAndReplacement",
+    "AQSSReadOnlyUITests/testEnteringOrPhotographingAModelAdvancesOnePictureAndBackRestoresIt"
   ]
 }

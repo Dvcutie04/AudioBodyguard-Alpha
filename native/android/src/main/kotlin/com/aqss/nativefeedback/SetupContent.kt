@@ -2,7 +2,7 @@
 package com.aqss.nativefeedback
 data class SetupSource(val id: String, val title: String, val url: String)
 data class SetupGroup(val id: String, val title: String, val routes: List<String>, val primaryRoutes: List<String>, val phoneRoute: String? = null)
-data class SetupStep(val title: String, val instruction: String, val surface: String, val screen: String, val items: List<String>, val focus: Int, val action: String, val note: String, val pictureSurface: String = surface) { val pictureKind get() = pictureSurface; val focusLabel get() = if (pictureKind == "choice") items.joinToString(" or ") else items[focus] }
+data class SetupStep(val title: String, val instruction: String, val surface: String, val screen: String, val items: List<String>, val focus: Int, val action: String, val note: String, val pictureSurface: String = surface, val modelInput: Boolean = false) { val pictureKind get() = pictureSurface; val focusLabel get() = if (pictureKind == "choice") items.joinToString(" or ") else items[focus] }
 data class SetupRoute(val id: String, val title: String, val appliesTo: String, val models: List<String>, val sources: List<String>, val steps: List<SetupStep>, val progressVersion: Int = 1, val pairingRoute: String? = null) { val bookmarkID get() = if (progressVersion == 1) id else "$id@v$progressVersion" }
 object SetupContent {
     const val reviewedAt = "2026-10-26"
@@ -48,6 +48,22 @@ object SetupContent {
         SetupSource("lg_google", "LG — Google speaker linking (matching TVs and services only)", "https://www.lg.com/us/support/smart-thinq-google-assistant-voice-control"),
         SetupSource("lg_login_change", "LG — affected social sign-in and assistant reconnection notice", "https://www.lg.com/sa_en/support/announcement/Notice-of-Discontinuation-of-Certain-Social-Account-Login-Services/"),
     )
+    data class ModelRecord(val brand: String, val make: String, val year: String, val platform: String, val platformHint: String)
+    val modelCatalog = mapOf(
+        "V505M-K09" to ModelRecord("VIZIO", "VIZIO", "2023 lineup", "SmartCast", "This exact model uses SmartCast. Look for the SmartCast Home screen."),
+        "XR-65X90K" to ModelRecord("Sony", "Sony", "2022", "Google TV", "This exact model uses Google TV. Look for the Google TV home screen."),
+        "OLED42C3PUA" to ModelRecord("LG", "LG Electronics", "2023", "webOS", "This exact model uses webOS. Look for the webOS home screen."),
+        "OLED48C3PUA" to ModelRecord("LG", "LG Electronics", "2023", "webOS", "This exact model uses webOS. Look for the webOS home screen."),
+        "OLED55C3PUA" to ModelRecord("LG", "LG Electronics", "2023", "webOS", "This exact model uses webOS. Look for the webOS home screen."),
+        "OLED65C3PUA" to ModelRecord("LG", "LG Electronics", "2023", "webOS", "This exact model uses webOS. Look for the webOS home screen."),
+        "OLED77C3PUA" to ModelRecord("LG", "LG Electronics", "2023", "webOS", "This exact model uses webOS. Look for the webOS home screen."),
+        "OLED83C3PUA" to ModelRecord("LG", "LG Electronics", "2023", "webOS", "This exact model uses webOS. Look for the webOS home screen."),
+        "65QM851G" to ModelRecord("TCL", "TCL", "2024", "Google TV", "This exact model uses Google TV. Look for the Google TV home screen."),
+        "75QM851G" to ModelRecord("TCL", "TCL", "2024", "Google TV", "This exact model uses Google TV. Look for the Google TV home screen."),
+        "85QM851G" to ModelRecord("TCL", "TCL", "2024", "Google TV", "This exact model uses Google TV. Look for the Google TV home screen."),
+        "98QM851G" to ModelRecord("TCL", "TCL", "2024", "Google TV", "This exact model uses Google TV. Look for the Google TV home screen."),
+        "QN55QN90CAFXZA" to ModelRecord("Samsung", "Samsung Electronics", "2023", "Tizen", "This exact model uses Tizen. Look for Samsung Smart Hub."),
+    )
     val groups: List<SetupGroup> = listOf(
         SetupGroup("samsung", "Samsung", listOf("samsung_ok", "samsung_pin", "samsung_phone", "samsung_model_new", "samsung_model_old", "google_samsung", "samsung_alexa", "google_legacy", "google_legacy_add", "identify"), listOf("samsung_ok"), "samsung_phone"),
         SetupGroup("lg", "LG", listOf("lg_pair", "lg_account5", "lg_account6", "lg_model_new", "lg_model_mid", "lg_model_2020", "lg_model_old", "google_lg", "lg_alexa", "google_legacy", "google_legacy_add", "lg_phone", "identify"), listOf("lg_pair"), "lg_phone"),
@@ -85,14 +101,14 @@ object SetupContent {
             SetupStep("Find the model", "On the TV, select All Settings.", "tv", "Settings", listOf("All Settings"), 0, "settings", "Use your real device. This picture is an illustration.", "tv"),
             SetupStep("Find the model", "On the TV, select Support.", "tv", "All Settings", listOf("Support"), 0, "select", "Use your real device. This picture is an illustration.", "tv"),
             SetupStep("Find the model", "On the TV, select About This TV.", "tv", "Support", listOf("About This TV"), 0, "select", "Some Samsung menus use Contact Samsung instead. Follow the matching label on your TV; pause if neither is present.", "tv"),
-            SetupStep("Read the full model code", "Write down the full Model Code shown on your TV. Keep regional letters.", "tv", "About This TV", listOf("Model Code", "Software version"), 0, "check", "Some older TVs use Contact Samsung instead. A matching brand is not enough.", "tv"),
+            SetupStep("Read the full model code", "Write down the full Model Code shown on your TV. Keep regional letters.", "tv", "About This TV", listOf("Model Code", "Software version"), 0, "check", "Some older TVs use Contact Samsung instead. A matching brand is not enough.", "tv", modelInput = true),
         ), 1, null),
         SetupRoute("samsung_model_old", "Samsung — find model (2021 and older)", "Use this menu version only when it matches your TV. Regional menus may differ.", listOf(), listOf("samsung_model"), listOf(
             SetupStep("Find the model", "On the TV, select Home.", "tv", "TV home", listOf("Home"), 0, "home", "Use your real device. This picture is an illustration.", "tv"),
             SetupStep("Find the model", "On the TV, select Settings.", "tv", "Home", listOf("Settings"), 0, "settings", "Use your real device. This picture is an illustration.", "tv"),
             SetupStep("Find the model", "On the TV, select Support.", "tv", "Settings", listOf("Support"), 0, "select", "Use your real device. This picture is an illustration.", "tv"),
             SetupStep("Find the model", "On the TV, select About This TV.", "tv", "Support", listOf("About This TV"), 0, "select", "Some Samsung menus use Contact Samsung instead. Follow the matching label on your TV; pause if neither is present.", "tv"),
-            SetupStep("Read the full model code", "Write down the full Model Code shown on your TV. Keep regional letters.", "tv", "About This TV", listOf("Model Code", "Software version"), 0, "check", "Some older TVs use Contact Samsung instead. A matching brand is not enough.", "tv"),
+            SetupStep("Read the full model code", "Write down the full Model Code shown on your TV. Keep regional letters.", "tv", "About This TV", listOf("Model Code", "Software version"), 0, "check", "Some older TVs use Contact Samsung instead. A matching brand is not enough.", "tv", modelInput = true),
         ), 1, null),
         SetupRoute("samsung_ok", "Samsung — connect with SmartThings", "Compatible Samsung SmartThings TVs. Use the same home Wi-Fi and Samsung account. Follow the request your TV actually displays.", listOf(), listOf("samsung_pair"), listOf(
             SetupStep("Use the same home network", "Turn on the TV. Connect the TV and this phone to the same home Wi-Fi.", "both", "Wi-Fi", listOf("Phone + TV → same Wi-Fi"), 0, "check", "Use the TV’s Network settings first, then connect the phone. If your menu differs, open Need help and the official reference.", "both"),
@@ -145,7 +161,7 @@ object SetupContent {
             SetupStep("Find TV information", "Choose the Settings gear at the top of the on-screen menu.", "tv", "Settings", listOf("Settings"), 0, "settings", "Use your real device. This picture is an illustration.", "tv"),
             SetupStep("Find TV information", "Use the remote to open Support.", "tv", "Settings", listOf("Support"), 0, "select", "Use your real device. This picture is an illustration.", "tv"),
             SetupStep("Find TV information", "Use the remote to open TV Information.", "tv", "Support", listOf("TV Information"), 0, "select", "Use your real device. This picture is an illustration.", "tv"),
-            SetupStep("Read the model and software", "Keep the complete model name and software version for matching instructions.", "tv", "TV Information", listOf("Model name", "Software version"), 0, "check", "Use your real device. This picture is an illustration.", "tv"),
+            SetupStep("Read the model and software", "Keep the complete model name and software version for matching instructions.", "tv", "TV Information", listOf("Model name", "Software version"), 0, "check", "Use your real device. This picture is an illustration.", "tv", modelInput = true),
         ), 1, null),
         SetupRoute("lg_model_mid", "LG — model information (webOS 6.0 / 22)", "Follow only if your webOS version and menu labels match.", listOf(), listOf("lg_model"), listOf(
             SetupStep("Find TV information", "Use the remote to open Settings.", "tv", "TV home", listOf("Settings"), 0, "settings", "Use your real device. This picture is an illustration.", "tv"),
@@ -154,14 +170,14 @@ object SetupContent {
             SetupStep("Find TV information", "Use the remote to open Devices.", "tv", "General", listOf("Devices"), 0, "select", "Use your real device. This picture is an illustration.", "tv"),
             SetupStep("Find TV information", "Use the remote to open TV Management.", "tv", "Devices", listOf("TV Management"), 0, "select", "Use your real device. This picture is an illustration.", "tv"),
             SetupStep("Find TV information", "Use the remote to open TV Information.", "tv", "TV Management", listOf("TV Information"), 0, "select", "Use your real device. This picture is an illustration.", "tv"),
-            SetupStep("Read the model and software", "Keep the complete model name and software version for matching instructions.", "tv", "TV Information", listOf("Model name", "Software version"), 0, "check", "Use your real device. This picture is an illustration.", "tv"),
+            SetupStep("Read the model and software", "Keep the complete model name and software version for matching instructions.", "tv", "TV Information", listOf("Model name", "Software version"), 0, "check", "Use your real device. This picture is an illustration.", "tv", modelInput = true),
         ), 1, null),
         SetupRoute("lg_model_2020", "LG — model information (webOS 5.0 (2020))", "Follow only if your webOS version and menu labels match.", listOf(), listOf("lg_model"), listOf(
             SetupStep("Find TV information", "Use the remote to open Settings.", "tv", "TV home", listOf("Settings"), 0, "settings", "Use your real device. This picture is an illustration.", "tv"),
             SetupStep("Find TV information", "Use the remote to open All Settings.", "tv", "Settings", listOf("All Settings"), 0, "settings", "Use your real device. This picture is an illustration.", "tv"),
             SetupStep("Find TV information", "Use the remote to open Support.", "tv", "All Settings", listOf("Support"), 0, "select", "Use your real device. This picture is an illustration.", "tv"),
             SetupStep("Find TV information", "Use the remote to open TV Information.", "tv", "Support", listOf("TV Information"), 0, "select", "Use your real device. This picture is an illustration.", "tv"),
-            SetupStep("Read the model and software", "Keep the complete model name and software version for matching instructions.", "tv", "TV Information", listOf("Model name", "Software version"), 0, "check", "Use your real device. This picture is an illustration.", "tv"),
+            SetupStep("Read the model and software", "Keep the complete model name and software version for matching instructions.", "tv", "TV Information", listOf("Model name", "Software version"), 0, "check", "Use your real device. This picture is an illustration.", "tv", modelInput = true),
         ), 1, null),
         SetupRoute("lg_model_old", "LG — model information (webOS 4.5 and older)", "Follow only if your webOS version and menu labels match.", listOf(), listOf("lg_model"), listOf(
             SetupStep("Find TV information", "Use the remote to open Settings.", "tv", "TV home", listOf("Settings"), 0, "settings", "Use your real device. This picture is an illustration.", "tv"),
@@ -169,7 +185,7 @@ object SetupContent {
             SetupStep("Find TV information", "Use the remote to open General.", "tv", "All Settings", listOf("General"), 0, "select", "Use your real device. This picture is an illustration.", "tv"),
             SetupStep("Find TV information", "Use the remote to open About this TV.", "tv", "General", listOf("About this TV"), 0, "select", "Use your real device. This picture is an illustration.", "tv"),
             SetupStep("Find TV information", "Use the remote to open TV Information.", "tv", "About this TV", listOf("TV Information"), 0, "select", "Use your real device. This picture is an illustration.", "tv"),
-            SetupStep("Read the model and software", "Keep the complete model name and software version for matching instructions.", "tv", "TV Information", listOf("Model name", "Software version"), 0, "check", "Use your real device. This picture is an illustration.", "tv"),
+            SetupStep("Read the model and software", "Keep the complete model name and software version for matching instructions.", "tv", "TV Information", listOf("Model name", "Software version"), 0, "check", "Use your real device. This picture is an illustration.", "tv", modelInput = true),
         ), 1, null),
         SetupRoute("lg_pair", "LG — pair with ThinQ", "Supported LG TVs, generally 2017 or later; some models are excluded. This is a menu-family guide, not a guarantee for every LG model.", listOf(), listOf("lg_pair", "lg_login_change"), listOf(
             SetupStep("Use the same home network", "Turn on the TV. Connect your phone to the same home Wi-Fi.", "both", "Wi-Fi", listOf("Phone + TV → same Wi-Fi"), 0, "check", "A network name or IP address alone does not identify or authorize a TV.", "both"),
@@ -469,7 +485,7 @@ object SetupContent {
         ), 1, null),
         SetupRoute("identify", "Find the right model or a different screen", "Use this route for an unlisted model, an unknown TV platform, or a menu that does not match. Do not borrow another brand’s approval procedure.", listOf(), listOf("samsung_model", "lg_model", "tcl_setup", "roku_alexa", "vizio_account"), listOf(
             SetupStep("Find the brand", "Look at the TV or remote brand. Do not move a heavy or wall-mounted TV.", "tv", "TV / remote", listOf("Brand name"), 0, "check", "Use your real device. This picture is an illustration.", "tv"),
-            SetupStep("Find the model safely", "Use the TV’s information screen, its box, or an accessible label. Photograph just the model information if helpful.", "tv", "Device information", listOf("Full model number", "Software version"), 0, "check", "Use your real device. This picture is an illustration.", "tv"),
+            SetupStep("Find the model safely", "Use the TV’s information screen, its box, or an accessible label. Photograph just the model information if helpful.", "tv", "Device information", listOf("Full model number", "Software version"), 0, "check", "Use your real device. This picture is an illustration.", "tv", modelInput = true),
             SetupStep("Identify the TV platform", "Look for Google TV, Android TV, Roku, Fire TV, VIDAA, webOS or Samsung menus. TCL and Hisense use several platforms.", "tv", "Platform", listOf("TV operating system"), 0, "check", "Use your real device. This picture is an illustration.", "tv"),
             SetupStep("Choose the matching guide", "Choose the matching TV menu in the guide list. Model examples appear before each guide starts.", "phone", "Audio Bodyguard", listOf("Matching model / menu guide"), 0, "tap", "Use your real device. This picture is an illustration.", "phone"),
             SetupStep("Use official instructions if unmatched", "Open the manufacturer source for your chosen brand. Search its support site using the complete model and country.", "phone", "Manufacturer support", listOf("Model + country"), 0, "type", "An unlisted model stays unverified. No connection or permission is inferred.", "phone"),
@@ -522,7 +538,7 @@ object SetupContent {
             SetupStep("Open Settings", "Highlight Settings with the up or down arrow. Then press the right arrow.", "tv", "Roku • Home", listOf("Home", "Settings", "Streaming Store"), 1, "settings", "Use the remote’s up or down arrow until Settings is highlighted on the TV. Press the right arrow. Look for the white Settings bar in the picture. Compare the highlighted menu with your TV. If it differs, open My screen looks different.", "tv"),
             SetupStep("Choose System", "Highlight System. Press the right arrow.", "tv", "Roku • Settings", listOf("Accessibility", "Audio", "Home screen", "System", "Power"), 3, "select", "In Settings, use up or down to select System. Press the right arrow to open the column on the right. The picture highlights System. Compare the highlighted menu with your TV. If it differs, open My screen looks different.", "tv"),
             SetupStep("Open About", "Highlight About in the right column. Press the right arrow.", "tv", "Roku • System", listOf("About", "Power", "System update", "Advanced system settings"), 0, "select", "In the right-hand column, select About and press the right arrow. Look for the highlighted About row in the picture. Compare the highlighted menu with your TV. If it differs, open My screen looks different.", "tv"),
-            SetupStep("Read your model", "Find Model on your TV. Read the full name there.", "tv", "Roku • System • About", listOf("Model — read on your TV", "Software version — read on your TV"), 0, "check", "Look for Model in the information panel. Copy the full model name and software version from your own TV. A Roku model code and a TCL model number may both appear. Next: use the picture guide to connect your phone with the official Roku app.", "tv"),
+            SetupStep("Read your model", "Find Model on your TV. Read the full name there.", "tv", "Roku • System • About", listOf("Model — read on your TV", "Software version — read on your TV"), 0, "check", "Look for Model in the information panel. Copy the full model name and software version from your own TV. A Roku model code and a TCL model number may both appear. Next: use the picture guide to connect your phone with the official Roku app.", "tv", modelInput = true),
         ), 1, null),
         SetupRoute("philips_voice_remote", "Philips Google TV — pair the voice remote", "Philips Google TV models listed in the manufacturer article. Button combinations are specific to this remote family; do not use them on a different remote.", listOf("43PUL7652/F7", "50PUL7552/F7", "55PUL7552/F7"), listOf("philips_remote"), listOf(
             SetupStep("Start with your TV home screen", "Press Home on your Philips remote. Use this guide only for the documented Google TV models.", "tv", "Philips Google TV", listOf("Home"), 0, "home", "Use the numbered highlight on your real device. This illustration does not confirm a connection to Audio Bodyguard.", "tv"),
