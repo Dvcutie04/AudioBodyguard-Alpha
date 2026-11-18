@@ -18,6 +18,18 @@ final class SetupPresentationTests: XCTestCase {
         XCTAssertEqual(original.items[original.focus], "Install")
     }
 
+    func testExactModelSpecializesOnlyThePlatformPicture() throws {
+        let original = try XCTUnwrap(AQSSSetupContent.routes.first { $0.id == "identify" }?.steps[2])
+        let vizio = try XCTUnwrap(TVModelIdentity(number: "V505M-K09"))
+        let shown = AQSSSetupPresentation.step(original, phone: .iphone, tv: vizio)
+        XCTAssertEqual(shown.screen, "VIZIO platform")
+        XCTAssertEqual(shown.items, ["SmartCast"])
+        XCTAssertEqual(shown.instruction,
+                       "This exact model uses SmartCast. Look for the SmartCast Home screen.")
+        let unknown = try XCTUnwrap(TVModelIdentity(number: "UNLISTED-42"))
+        XCTAssertEqual(AQSSSetupPresentation.step(original, phone: .iphone, tv: unknown), original)
+    }
+
     func testEveryPhonePresentationPreservesTheActionAndTvPictures() {
         for route in AQSSSetupContent.routes {
             for original in route.steps {

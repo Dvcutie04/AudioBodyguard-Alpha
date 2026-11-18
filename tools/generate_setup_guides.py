@@ -44,9 +44,10 @@ def validate(data):
             raise ValueError('official HTTPS source required')
     seen_models = set()
     for family in data['model_catalog']:
-        if set(family) != {'brand', 'make', 'year', 'models', 'source'} or not family['models']:
+        if set(family) != {'brand', 'make', 'year', 'platform', 'platform_hint', 'models', 'source'} or not family['models']:
             raise ValueError('model identity needs a source and exact codes')
         text(family['brand'], 64); text(family['make'], 64)
+        text(family['platform'], 64); text(family['platform_hint'], 180)
         if not re.fullmatch(r'(19|20)[0-9]{2}( lineup)?', family['year']):
             raise ValueError('model year or published lineup required')
         url = urlsplit(family['source'])
@@ -131,12 +132,12 @@ def sources(data):
     for source in data['sources']:
         swift += ['        AQSSSetupSource(' + ', '.join(k+': '+q(source[k]) for k in ('id','title','url')) + '),']
         kotlin += ['        SetupSource(' + ', '.join(kq(source[k]) for k in ('id','title','url')) + '),']
-    swift += ['    ]', '    static let modelCatalog: [String: (brand: String, make: String, year: String)] = [']
-    kotlin += ['    )', '    data class ModelRecord(val brand: String, val make: String, val year: String)',
+    swift += ['    ]', '    static let modelCatalog: [String: (brand: String, make: String, year: String, platform: String, platformHint: String)] = [']
+    kotlin += ['    )', '    data class ModelRecord(val brand: String, val make: String, val year: String, val platform: String, val platformHint: String)',
                '    val modelCatalog = mapOf(']
     for family in data['model_catalog']:
         for code in family['models']:
-            values = [family[key] for key in ('brand', 'make', 'year')]
+            values = [family[key] for key in ('brand', 'make', 'year', 'platform', 'platform_hint')]
             swift += [f"        {q(code)}: ({', '.join(map(q, values))}),"]
             kotlin += [f"        {kq(code)} to ModelRecord({', '.join(map(kq, values))}),"]
     swift += ['    ]', '    public static let groups: [AQSSSetupGroup] = [']

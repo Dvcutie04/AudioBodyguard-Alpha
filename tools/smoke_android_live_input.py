@@ -1891,7 +1891,8 @@ def main():
         adb("shell", "input", "tap", str((x0+x1)//2), str((y0+y1)//2))
         adb("shell", "input", "text", "xr-65x90k")
         adb("shell", "input", "keyevent", "KEYCODE_ENTER")
-        wait_for_all(("Step 3 of 5", "Identify the TV platform", "Model: XR-65X90K", "Model year: 2022"),
+        wait_for_all(("Step 3 of 5", "Identify the TV platform", "Model: XR-65X90K", "Model year: 2022",
+                      "This exact model uses Google TV. Look for the Google TV home screen."),
                      "tv_guides_model_typed_next")
         screenshot("tv_guides_model_typed_next")
         tap("Back", "tv_guides_model_typed_back")
@@ -1904,7 +1905,9 @@ def main():
         with published_photo_fixture("tv-photo-labels.png", "aqss-guide-model.png", "tv_guides_model"):
             choose_photo_fixture("aqss-guide-model.png", "tv_guides_model")
             page = wait_for_all(("Step 3 of 5", "Identify the TV platform", "Brand: VIZIO", "Model: V505M-K09",
-                                 "Model year: 2023 lineup"), "tv_guides_model_photo_next", attempts=30)
+                                 "Model year: 2023 lineup",
+                                 "This exact model uses SmartCast. Look for the SmartCast Home screen."),
+                                "tv_guides_model_photo_next", attempts=30)
             assert not has(page, "10.20.30.40"), "The model result may only carry TV identification"
             screenshot("tv_guides_model_photo_next")
         tap("Back", "tv_guides_model_photo_back")

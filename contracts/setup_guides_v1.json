@@ -6967,15 +6967,19 @@
       "brand": "VIZIO",
       "make": "VIZIO",
       "year": "2023 lineup",
+      "platform": "SmartCast",
+      "platform_hint": "This exact model uses SmartCast. Look for the SmartCast Home screen.",
       "models": [
         "V505M-K09"
       ],
-      "source": "https://s29.q4cdn.com/655755499/files/guides/V505M-K09.pdf"
+      "source": "https://www.vizio.com/content/dam/asset-portal/us/en/2022/tv/documentation/v-series/V-Series_UM_EN.pdf"
     },
     {
       "brand": "Sony",
       "make": "Sony",
       "year": "2022",
+      "platform": "Google TV",
+      "platform_hint": "This exact model uses Google TV. Look for the Google TV home screen.",
       "models": [
         "XR-65X90K"
       ],
@@ -6985,6 +6989,8 @@
       "brand": "LG",
       "make": "LG Electronics",
       "year": "2023",
+      "platform": "webOS",
+      "platform_hint": "This exact model uses webOS. Look for the webOS home screen.",
       "models": [
         "OLED42C3PUA",
         "OLED48C3PUA",
@@ -6999,22 +7005,26 @@
       "brand": "TCL",
       "make": "TCL",
       "year": "2024",
+      "platform": "Google TV",
+      "platform_hint": "This exact model uses Google TV. Look for the Google TV home screen.",
       "models": [
         "65QM851G",
         "75QM851G",
         "85QM851G",
         "98QM851G"
       ],
-      "source": "https://us.tcl.com/blogs/press-releases/tcl-introduces-new-q-class-and-s-class-tvs-leading-the-way-in-ultra-large-tv-with-three-new-98-tvs-and-three-levels-of-tcl-s-advanced-aipq-processing"
+      "source": "https://support.tcl.com/tcl-qm8-series-tv-featuring-google-tv/qm8-gtv"
     },
     {
       "brand": "Samsung",
       "make": "Samsung Electronics",
       "year": "2023",
+      "platform": "Tizen",
+      "platform_hint": "This exact model uses Tizen. Look for Samsung Smart Hub.",
       "models": [
         "QN55QN90CAFXZA"
       ],
-      "source": "https://image-us.samsung.com/SamsungUS/samsungbusiness/tv-ci-resources/Dimensions_QN90C.pdf"
+      "source": "https://image-us.samsung.com/SamsungUS/samsungbusiness/tv-ci-resources/QN90C_Spec_Sheet.pdf"
     }
   ]
 }

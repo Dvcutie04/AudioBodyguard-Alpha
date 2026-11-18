@@ -40,7 +40,14 @@ fun boundedTVPhotoText(rows: Sequence<String?>): String? {
 }
 
 /** Session-only TV label details for the picture guide. */
-data class TVModelIdentity private constructor(val model: String, val brand: String?, val make: String?, val year: String?) {
+data class TVModelIdentity private constructor(
+    val model: String,
+    val brand: String?,
+    val make: String?,
+    val year: String?,
+    val platform: String?,
+    val platformHint: String?,
+) {
     val summary: String get() = "Model: $model\nBrand: ${brand ?: "Unknown"} · Make: ${make ?: "Unknown"}\nModel year: ${year ?: "Unknown"}"
 
     companion object {
@@ -52,7 +59,10 @@ data class TVModelIdentity private constructor(val model: String, val brand: Str
             val model = code.uppercase(Locale.ROOT)
             val entry = SetupContent.modelCatalog[model]
             if (brand != null && entry != null && !entry.brand.equals(brand, ignoreCase = true)) return null
-            return TVModelIdentity(model, entry?.brand ?: brand, make ?: entry?.make, year ?: entry?.year)
+            return TVModelIdentity(
+                model, entry?.brand ?: brand, make ?: entry?.make, year ?: entry?.year,
+                entry?.platform, entry?.platformHint,
+            )
         }
     }
 }

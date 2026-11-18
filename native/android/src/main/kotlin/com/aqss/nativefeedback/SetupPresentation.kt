@@ -23,7 +23,17 @@ object SetupPresentation {
     )
 
     /** Keep documented shared labels; specialize only actual phone surfaces. */
-    fun step(original: SetupStep, phone: SetupPhone): SetupStep {
+    fun step(original: SetupStep, phone: SetupPhone, tv: TVModelIdentity? = null): SetupStep {
+        val platform = tv?.platform
+        val platformHint = tv?.platformHint
+        if (original.screen == "Platform" && platform != null && platformHint != null) {
+            return original.copy(
+                screen = "${tv.brand ?: "TV"} platform",
+                instruction = platformHint,
+                items = listOf(platform),
+                focus = 0,
+            )
+        }
         if (original.surface != "phone") return original
         val store = if (phone == SetupPhone.IPHONE) "App Store" else "Google Play"
         return when (original.screen) {

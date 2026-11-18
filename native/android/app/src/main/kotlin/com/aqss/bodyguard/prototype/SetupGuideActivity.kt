@@ -309,7 +309,7 @@ class SetupGuideActivity : Activity() {
         setResult(RESULT_OK, resultPayload())
         content.removeAllViews()
         val route = route
-        val step = route?.steps?.getOrNull(index)?.let { SetupPresentation.step(it, phone) }
+        val step = route?.steps?.getOrNull(index)?.let { SetupPresentation.step(it, phone, modelEntry.identity) }
         if (route != null && route.id != "voice" && step != null && !mismatch) {
             if (route.id in listOf("samsung_ok", "samsung_pin")) SetupContent.routes.filter { it.id in listOf("samsung_ok", "samsung_pin") && it.id != route.id }.forEach { saveProgress(it, null) }
             saveProgress(route, index)

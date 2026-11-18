@@ -2044,7 +2044,7 @@ final class AQSSReadOnlyUITests: XCTestCase {
         XCTAssertTrue(field.waitForExistence(timeout: 5))
         field.tap(); field.typeText("xr-65x90k\n")
         let summary = app.staticTexts["setup-identified-model"]
-        func assertPlatformPicture(model: String, brand: String, year: String) {
+        func assertPlatformPicture(model: String, brand: String, year: String, platform: String) {
             XCTAssertTrue(summary.waitForExistence(timeout: 40), "A successful model entry must open the next picture")
             label("Step 3 of 5", app); label("Identify the TV platform", app)
             XCTAssertTrue(summary.label.contains("Model: " + model))
@@ -2053,9 +2053,11 @@ final class AQSSReadOnlyUITests: XCTestCase {
             XCTAssertTrue(context.contains(brand))
             XCTAssertTrue(context.contains(UIDevice.current.userInterfaceIdiom == .pad ? "iPad" : "iPhone"))
             XCTAssertTrue(summary.label.contains("Model year: " + year))
+            label(platform, app)
             XCTAssertFalse(summary.label.contains("10.20.30.40"))
         }
-        assertPlatformPicture(model: "XR-65X90K", brand: "Sony", year: "2022")
+        assertPlatformPicture(model: "XR-65X90K", brand: "Sony", year: "2022",
+                              platform: "This exact model uses Google TV. Look for the Google TV home screen.")
         screenshot("Typed TV model opens platform picture", app)
         app.buttons["setup-back"].tap()
         label("Step 2 of 5", app)
@@ -2068,7 +2070,8 @@ final class AQSSReadOnlyUITests: XCTestCase {
         XCTAssertEqual(field.value as? String, "XR-65X90K")
         tap("Read model from photo", app, scroll: app.scrollViews["setup-scroll"])
         try chooseDatedPhoto("Photo, January 14, ", in: app)
-        assertPlatformPicture(model: "V505M-K09", brand: "VIZIO", year: "2023 lineup")
+        assertPlatformPicture(model: "V505M-K09", brand: "VIZIO", year: "2023 lineup",
+                              platform: "This exact model uses SmartCast. Look for the SmartCast Home screen.")
         screenshot("Photographed TV model opens platform picture", app)
         app.buttons["setup-back"].tap()
         label("Step 2 of 5", app)

@@ -48,21 +48,21 @@ object SetupContent {
         SetupSource("lg_google", "LG — Google speaker linking (matching TVs and services only)", "https://www.lg.com/us/support/smart-thinq-google-assistant-voice-control"),
         SetupSource("lg_login_change", "LG — affected social sign-in and assistant reconnection notice", "https://www.lg.com/sa_en/support/announcement/Notice-of-Discontinuation-of-Certain-Social-Account-Login-Services/"),
     )
-    data class ModelRecord(val brand: String, val make: String, val year: String)
+    data class ModelRecord(val brand: String, val make: String, val year: String, val platform: String, val platformHint: String)
     val modelCatalog = mapOf(
-        "V505M-K09" to ModelRecord("VIZIO", "VIZIO", "2023 lineup"),
-        "XR-65X90K" to ModelRecord("Sony", "Sony", "2022"),
-        "OLED42C3PUA" to ModelRecord("LG", "LG Electronics", "2023"),
-        "OLED48C3PUA" to ModelRecord("LG", "LG Electronics", "2023"),
-        "OLED55C3PUA" to ModelRecord("LG", "LG Electronics", "2023"),
-        "OLED65C3PUA" to ModelRecord("LG", "LG Electronics", "2023"),
-        "OLED77C3PUA" to ModelRecord("LG", "LG Electronics", "2023"),
-        "OLED83C3PUA" to ModelRecord("LG", "LG Electronics", "2023"),
-        "65QM851G" to ModelRecord("TCL", "TCL", "2024"),
-        "75QM851G" to ModelRecord("TCL", "TCL", "2024"),
-        "85QM851G" to ModelRecord("TCL", "TCL", "2024"),
-        "98QM851G" to ModelRecord("TCL", "TCL", "2024"),
-        "QN55QN90CAFXZA" to ModelRecord("Samsung", "Samsung Electronics", "2023"),
+        "V505M-K09" to ModelRecord("VIZIO", "VIZIO", "2023 lineup", "SmartCast", "This exact model uses SmartCast. Look for the SmartCast Home screen."),
+        "XR-65X90K" to ModelRecord("Sony", "Sony", "2022", "Google TV", "This exact model uses Google TV. Look for the Google TV home screen."),
+        "OLED42C3PUA" to ModelRecord("LG", "LG Electronics", "2023", "webOS", "This exact model uses webOS. Look for the webOS home screen."),
+        "OLED48C3PUA" to ModelRecord("LG", "LG Electronics", "2023", "webOS", "This exact model uses webOS. Look for the webOS home screen."),
+        "OLED55C3PUA" to ModelRecord("LG", "LG Electronics", "2023", "webOS", "This exact model uses webOS. Look for the webOS home screen."),
+        "OLED65C3PUA" to ModelRecord("LG", "LG Electronics", "2023", "webOS", "This exact model uses webOS. Look for the webOS home screen."),
+        "OLED77C3PUA" to ModelRecord("LG", "LG Electronics", "2023", "webOS", "This exact model uses webOS. Look for the webOS home screen."),
+        "OLED83C3PUA" to ModelRecord("LG", "LG Electronics", "2023", "webOS", "This exact model uses webOS. Look for the webOS home screen."),
+        "65QM851G" to ModelRecord("TCL", "TCL", "2024", "Google TV", "This exact model uses Google TV. Look for the Google TV home screen."),
+        "75QM851G" to ModelRecord("TCL", "TCL", "2024", "Google TV", "This exact model uses Google TV. Look for the Google TV home screen."),
+        "85QM851G" to ModelRecord("TCL", "TCL", "2024", "Google TV", "This exact model uses Google TV. Look for the Google TV home screen."),
+        "98QM851G" to ModelRecord("TCL", "TCL", "2024", "Google TV", "This exact model uses Google TV. Look for the Google TV home screen."),
+        "QN55QN90CAFXZA" to ModelRecord("Samsung", "Samsung Electronics", "2023", "Tizen", "This exact model uses Tizen. Look for Samsung Smart Hub."),
     )
     val groups: List<SetupGroup> = listOf(
         SetupGroup("samsung", "Samsung", listOf("samsung_ok", "samsung_pin", "samsung_phone", "samsung_model_new", "samsung_model_old", "google_samsung", "samsung_alexa", "google_legacy", "google_legacy_add", "identify"), listOf("samsung_ok"), "samsung_phone"),

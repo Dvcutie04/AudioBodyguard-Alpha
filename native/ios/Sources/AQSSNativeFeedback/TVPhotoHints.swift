@@ -46,7 +46,7 @@ public func boundedTVPhotoText<S: Sequence>(_ rows: S) -> String? where S.Elemen
 /// Session-only TV label details for the picture guide.
 public struct TVModelIdentity: Equatable, Sendable {
     public let model: String
-    public let brand, make, year: String?
+    public let brand, make, year, platform, platformHint: String?
 
     public init?(number: String, brand: String? = nil, make: String? = nil, year: String? = nil) {
         guard number.utf8.prefix(129).count <= 128 else { return nil }
@@ -61,6 +61,8 @@ public struct TVModelIdentity: Equatable, Sendable {
         self.brand = entry?.brand ?? brand
         self.make = make ?? entry?.make
         self.year = year ?? entry?.year
+        self.platform = entry?.platform
+        self.platformHint = entry?.platformHint
     }
 
     public var summary: String {

@@ -63,7 +63,9 @@ struct SetupGuidesView: View {
     private var route: AQSSSetupRoute? { AQSSSetupContent.routes.first { $0.id == routeID } }
     private var step: AQSSSetupStep? {
         guard let route = route, route.steps.indices.contains(index) else { return nil }
-        return AQSSSetupPresentation.step(route.steps[index], phone: UIDevice.current.userInterfaceIdiom == .pad ? .ipad : .iphone)
+        return AQSSSetupPresentation.step(route.steps[index],
+                                          phone: UIDevice.current.userInterfaceIdiom == .pad ? .ipad : .iphone,
+                                          tv: identifiedTV)
     }
     private var key: String { "\(groupID)-\(routeID ?? "")-\(index)-\(mismatch)" }
     private var phoneLabel: String { UIDevice.current.userInterfaceIdiom == .pad ? "iPad" : "iPhone" }
