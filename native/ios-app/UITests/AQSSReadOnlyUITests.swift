@@ -2094,6 +2094,19 @@ final class AQSSReadOnlyUITests: XCTestCase {
         XCTAssertTrue(["", "Full model number"].contains(field.value as? String ?? "missing field"))
         field.tap(); field.typeText("\n")
         assertGenericPlatform()
+
+        app.buttons["setup-back"].tap()
+        field.tap(); field.typeText("V505M-K09\n")
+        let smartCast = "This exact model uses SmartCast. Look for the SmartCast Home screen."
+        assertPlatformPicture(model: "V505M-K09", brand: "VIZIO", year: "2023 lineup", platform: smartCast)
+        showStepHelp(app)
+        tap("My screen looks different", app); label("Find the right screen", app)
+        tap("Choose another TV or app", app); label("Choose your TV brand", app)
+        app.buttons["setup-back"].tap(); label("Find the right screen", app)
+        XCTAssertEqual(app.buttons["setup-back"].label, "Return to step")
+        app.buttons["setup-back"].tap()
+        screenshot("Model platform picture after closing the brand picker")
+        assertPlatformPicture(model: "V505M-K09", brand: "VIZIO", year: "2023 lineup", platform: smartCast)
         app.buttons["setup-close"].tap()
         tab("home", app); label("Connection not verified", app)
     }
