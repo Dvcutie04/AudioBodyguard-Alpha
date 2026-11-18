@@ -1785,6 +1785,13 @@ def main():
         wait_for_all(("Check the phone controls", "Finish part two"), "tv_guides_lg_phone_final")
         screenshot("tv_guides_lg_phone_final")
         tap("Finish part two", "tv_guides_lg_phone_finish")
+        # Returning from the guide may restore the Devices tab below its status header.
+        wait_for("• Devices", "tv_guides_lg_phone_returned_to_devices")
+        for attempt in range(3):
+            root, _ = screen(f"tv_guides_lg_phone_status_view_{attempt}")
+            if has(root, "DEVICES"):
+                break
+            scroll_meter(f"tv_guides_lg_phone_scroll_to_status_{attempt}", down=False)
         wait_for_all(("DEVICES", "Connection not verified"), "tv_guides_lg_phone_no_connection")
 
         # Open the brand's Help to reach the alternate Vizio account route.
