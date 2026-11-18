@@ -195,7 +195,7 @@ class SetupGuideActivity : Activity() {
         backButton = button("Back") { back() }
         nextButton = button("Next", primary = true) {
             val field = modelField
-            if (field != null && field.text.isNotEmpty()) submitModel(field, modelOrigin) else advance()
+            if (field != null) submitModel(field, modelOrigin) else advance()
         }
         footer.addView(backButton, LinearLayout.LayoutParams(-2, -2).apply { marginEnd = dp(12) })
         footer.addView(nextButton, LinearLayout.LayoutParams(0, -2, 1f))
@@ -331,7 +331,14 @@ class SetupGuideActivity : Activity() {
         when {
             mismatch -> mismatchContent(route)
             route != null && step != null -> {
-                words(content, if (step.pictureKind == "remote") "On your TV remote" else when (step.surface) { "tv" -> "On your TV · use the remote"; "both" -> "Your TV + your phone"; else -> "On your phone" }, 15f, skin.accent, true)
+                val cue = when {
+                    step.modelInput -> "Type the model below or use a photo"
+                    step.pictureKind == "remote" -> "On your TV remote"
+                    step.surface == "tv" -> "On your TV · use the remote"
+                    step.surface == "both" -> "Your TV + your phone"
+                    else -> "On your phone"
+                }
+                words(content, cue, 15f, skin.accent, true)
                 words(content, step.instruction, 16f, bold = true)
                 if (step.modelInput) addModelEntry()
                 val picture = if (route.id == "roku_network" || route.id == "roku_model") rokuIllustration(step, index + 1, route.id) else if (route.id == "philips_voice_remote" && index in 1..2) profileIllustration(step, index + 1) else stepPictures.picture(step, index + 1)
@@ -460,12 +467,16 @@ class SetupGuideActivity : Activity() {
 
     private fun submitModel(field: EditText, origin: String) {
         if (field !== modelField || modelOrigin != origin) return
+        if (field.text.isEmpty()) {
+            continueFromModel(null, origin)
+            return
+        }
         val identity = TVModelIdentity.fromNumber(field.text.toString())
         if (identity == null) { field.error = "Enter the full model number from your TV label."; return }
-        acceptModel(modelEntry.identity?.takeIf { it.model == identity.model } ?: identity, origin)
+        continueFromModel(modelEntry.identity?.takeIf { it.model == identity.model } ?: identity, origin)
     }
 
-    private fun acceptModel(identity: TVModelIdentity, origin: String) {
+    private fun continueFromModel(identity: TVModelIdentity?, origin: String) {
         val route = route ?: return
         if (isFinishing || mismatch || origin != modelOrigin || route.steps.getOrNull(index)?.modelInput != true) return
         modelField?.let { field ->
@@ -473,9 +484,9 @@ class SetupGuideActivity : Activity() {
             field.clearFocus()
         }
         modelField = null
-        modelEntry.draft = identity.model
+        modelEntry.draft = identity?.model.orEmpty()
         modelEntry.identity = identity
-        if (index == route.steps.lastIndex && route.id != "roku_model") {
+        if (identity != null && index == route.steps.lastIndex && route.id != "roku_model") {
             val identify = SetupContent.routes.first { it.id == "identify" }
             remember(); saveProgress(route, null)
             routeId = identify.id; index = identify.steps.indexOfFirst { it.modelInput } + 1
@@ -494,7 +505,7 @@ class SetupGuideActivity : Activity() {
         val model = data.getStringExtra("model") ?: return
         val identity = TVModelIdentity.fromNumber(model, data.getStringExtra("brand"),
             data.getStringExtra("make"), data.getStringExtra("year")) ?: return
-        acceptModel(identity, origin)
+        continueFromModel(identity, origin)
     }
 
     override fun onRetainNonConfigurationInstance(): Any {

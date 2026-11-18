@@ -2040,8 +2040,10 @@ final class AQSSReadOnlyUITests: XCTestCase {
         restartPictureGuide(app)
         app.buttons["setup-next"].tap()
         label("Step 2 of 5", app); label("Find the model safely", app)
+        label("Type the model below or use a photo", app)
         let field = app.textFields["setup-model-number"]
         XCTAssertTrue(field.waitForExistence(timeout: 5))
+        screenshot("Type or photograph the model on this screen", app)
         field.tap(); field.typeText("xr-65x90k\n")
         let summary = app.staticTexts["setup-identified-model"]
         func assertPlatformPicture(model: String, brand: String, year: String, platform: String) {
@@ -2076,6 +2078,22 @@ final class AQSSReadOnlyUITests: XCTestCase {
         app.buttons["setup-back"].tap()
         label("Step 2 of 5", app)
         XCTAssertEqual(field.value as? String, "V505M-K09")
+        field.coordinate(withNormalizedOffset: CGVector(dx: 0.9, dy: 0.5)).tap()
+        field.typeText(String(repeating: XCUIKeyboardKey.delete.rawValue, count: "V505M-K09".count))
+        app.buttons["setup-next"].tap()
+        func assertGenericPlatform() {
+            label("Step 3 of 5", app)
+            label("Look for Google TV, Android TV, Roku", app)
+            XCTAssertFalse(summary.exists)
+            XCTAssertTrue(app.staticTexts["setup-device-context"].label.contains("Another brand"))
+        }
+        assertGenericPlatform()
+        screenshot("Cleared model returns to the generic platform picture", app)
+        app.buttons["setup-back"].tap()
+        label("Step 2 of 5", app)
+        XCTAssertTrue(["", "Full model number"].contains(field.value as? String ?? "missing field"))
+        field.tap(); field.typeText("\n")
+        assertGenericPlatform()
         app.buttons["setup-close"].tap()
         tab("home", app); label("Connection not verified", app)
     }

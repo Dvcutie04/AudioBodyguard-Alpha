@@ -181,9 +181,14 @@ struct SetupGuidesView: View {
                     if mismatch { mismatchContent }
                     else if let route = route {
                         if let step = step {
-                            Label(step.pictureKind == "remote" ? "On your TV remote" : step.surface == "tv" ? "On your TV · use the remote" : step.surface == "both" ? bothSurfaceText : phoneSurfaceText,
-                                  systemImage: step.pictureKind == "remote" ? "appletvremote.gen1" : step.surface == "phone" ? phoneSurfaceIcon : "tv")
-                                .font(.subheadline.weight(.semibold)).foregroundColor(theme.accent)
+                            Group {
+                                if step.modelInput {
+                                    Label("Type the model below or use a photo", systemImage: "keyboard")
+                                } else {
+                                    Label(step.pictureKind == "remote" ? "On your TV remote" : step.surface == "tv" ? "On your TV · use the remote" : step.surface == "both" ? bothSurfaceText : phoneSurfaceText,
+                                          systemImage: step.pictureKind == "remote" ? "appletvremote.gen1" : step.surface == "phone" ? phoneSurfaceIcon : "tv")
+                                }
+                            }.font(.subheadline.weight(.semibold)).foregroundColor(theme.accent)
                             Text(step.instruction).font(.body.weight(.medium)).fixedSize(horizontal: false, vertical: true)
                             if step.modelInput { modelEntry(at: key) }
                             GuidePictureCue(screenKey: key) {
@@ -301,7 +306,7 @@ struct SetupGuidesView: View {
                     TVPhotoView(theme: theme, onModelRead: { tv in
                         guard photoStep == origin, key == origin else { return }
                         photoStep = nil
-                        acceptModel(tv, at: origin)
+                        continueFromModel(tv, at: origin)
                     })
                 }
             }
@@ -328,19 +333,23 @@ struct SetupGuidesView: View {
 
     private func submitModel(at origin: String) {
         guard key == origin, step?.modelInput == true else { return }
+        if modelNumber.isEmpty {
+            continueFromModel(nil, at: origin)
+            return
+        }
         guard let tv = TVModelIdentity(number: modelNumber) else { modelError = true; return }
-        acceptModel(identifiedTV.flatMap { $0.model == tv.model ? $0 : nil } ?? tv, at: origin)
+        continueFromModel(identifiedTV.flatMap { $0.model == tv.model ? $0 : nil } ?? tv, at: origin)
     }
 
-    private func acceptModel(_ tv: TVModelIdentity, at origin: String) {
+    private func continueFromModel(_ tv: TVModelIdentity?, at origin: String) {
         guard key == origin, !mismatch, step?.modelInput == true, let route else { return }
         modelFieldFocused = false
         modelError = false
-        modelNumber = tv.model
+        modelNumber = tv?.model ?? ""
         identifiedTV = tv
         // A dedicated model-only guide continues with the common platform picture.
         // Roku already has its own next part, which is shared with the footer.
-        if index == route.steps.count - 1, route.id != "roku_model",
+        if tv != nil, index == route.steps.count - 1, route.id != "roku_model",
            let identify = AQSSSetupContent.routes.first(where: { $0.id == "identify" }),
            let modelIndex = identify.steps.firstIndex(where: { $0.modelInput }) {
             remember()
@@ -553,7 +562,7 @@ struct SetupGuidesView: View {
                 let displayedIndex = index
                 Button {
                     guard routeID == route.id, index == displayedIndex, !mismatch else { return }
-                    if step?.modelInput == true, !modelNumber.isEmpty { submitModel(at: key) }
+                    if step?.modelInput == true { submitModel(at: key) }
                     else { advance(route) }
                 } label: {
                     navigationLabel(nextTitle(route), icon: index == route.steps.count - 1 ? (route.id == "voice" && onVoiceCheck != nil ? "mic" : "checkmark") : "arrow.right")

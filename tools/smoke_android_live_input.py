@@ -1884,11 +1884,17 @@ def main():
         open_brand("Another brand", "tv_guides_model")
         start_picture("tv_guides_model")
         tap("Next", "tv_guides_model_open_entry")
-        entry = wait_for_all(("Step 2 of 5", "Find the model safely"), "tv_guides_model_input")
-        fields = [node for node in entry.iter("node") if node.get("class") == "android.widget.EditText"]
-        assert len(fields) == 1, "The model step needs one visible input box"
-        x0, y0, x1, y1 = map(int, re.findall(r"-?\d+", fields[0].get("bounds")))
-        adb("shell", "input", "tap", str((x0+x1)//2), str((y0+y1)//2))
+        entry = wait_for_all(("Step 2 of 5", "Find the model safely", "Type the model below or use a photo"),
+                             "tv_guides_model_input")
+        screenshot("tv_guides_model_entry_cue")
+
+        def focus_model_field(page):
+            fields = [node for node in page.iter("node") if node.get("class") == "android.widget.EditText"]
+            assert len(fields) == 1, "The model step needs one visible input box"
+            x0, y0, x1, y1 = map(int, re.findall(r"-?\d+", fields[0].get("bounds")))
+            adb("shell", "input", "tap", str((x0+x1)//2), str((y0+y1)//2))
+
+        focus_model_field(entry)
         adb("shell", "input", "text", "xr-65x90k")
         adb("shell", "input", "keyevent", "KEYCODE_ENTER")
         wait_for_all(("Step 3 of 5", "Identify the TV platform", "Model: XR-65X90K", "Model year: 2022",
@@ -1911,7 +1917,23 @@ def main():
             assert not has(page, "10.20.30.40"), "The model result may only carry TV identification"
             screenshot("tv_guides_model_photo_next")
         tap("Back", "tv_guides_model_photo_back")
-        wait_for_all(("Step 2 of 5", "V505M-K09"), "tv_guides_photo_model_restored")
+        restored = wait_for_all(("Step 2 of 5", "V505M-K09"), "tv_guides_photo_model_restored")
+        focus_model_field(restored)
+        adb("shell", "input", "keyevent", "KEYCODE_MOVE_END", *(["KEYCODE_DEL"] * len("V505M-K09")))
+        tap("Next", "tv_guides_model_clear_continue")
+
+        def assert_generic_platform(name):
+            page = wait_for_all(("Step 3 of 5", "Another brand", "Look for Google TV, Android TV, Roku"), name)
+            assert not has(page, "Model: V505M-K09") and not has(page, "SmartCast")
+
+        assert_generic_platform("tv_guides_model_cleared")
+        screenshot("tv_guides_model_cleared")
+        tap("Back", "tv_guides_model_clear_back")
+        cleared = wait_for_all(("Step 2 of 5", "Full model number"), "tv_guides_model_empty_again")
+        assert not has(cleared, "V505M-K09")
+        focus_model_field(cleared)
+        adb("shell", "input", "keyevent", "KEYCODE_ENTER")
+        assert_generic_platform("tv_guides_model_empty_keyboard")
         tap("Close", "tv_guides_model_close")
         tap("Home", "tv_guides_home")
         wait_for("Connection not verified", "tv_guides_no_protection")
