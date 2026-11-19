@@ -1,6 +1,7 @@
 {
   "suites": {
     "navigation": [
+      "AQSSReadOnlyUITests/testFeaturePicturesReturnToTheSamePageAtLargestText",
       "AQSSReadOnlyUITests/testSimplifiedSetupAndContextualJumps",
       "AQSSReadOnlyUITests/testSimplifiedSetupWithLargestTextAndReducedMotion",
       "AQSSReadOnlyUITests/testTVChoiceOffersPhotoAndKeepsOtherBrandsOnDemand",

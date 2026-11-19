@@ -2033,6 +2033,31 @@ final class AQSSReadOnlyUITests: XCTestCase {
         } else { image.tap() }
     }
 
+    func testFeaturePicturesReturnToTheSamePageAtLargestText() throws {
+        let app = launch(largeText: true)
+        for (page, first, last) in [
+            ("home", "Open the TV guide", "Move one step at a time"),
+            ("sound", "Start the check", "Speak and watch the bars"),
+            ("devices", "Choose the TV you use", "Follow the next picture"),
+            ("insights", "Open your recent checks", "Read one check"),
+            ("settings", "Open Appearance", "Pick a background")
+        ] {
+            if page != "home" { tab(page, app) }
+            let button = app.buttons["picture-guide-" + page]
+            XCTAssertTrue(button.waitForExistence(timeout: 5))
+            try reachScrollControl(button, in: app.scrollViews["home-scroll"], app: app)
+            button.tap()
+            XCTAssertTrue(app.staticTexts["1. " + first].waitForExistence(timeout: 5))
+            let end = app.staticTexts.matching(NSPredicate(format: "label ENDSWITH %@", last)).firstMatch
+            try reachScrollControl(end, in: app.scrollViews["picture-guide-steps"], app: app)
+            XCTAssertTrue(end.isHittable)
+            screenshot("Feature pictures at largest text " + page, app)
+            XCTAssertEqual(app.alerts.count, 0)
+            app.buttons["picture-guide-back"].tap()
+            XCTAssertTrue(button.waitForExistence(timeout: 5))
+        }
+    }
+
     func testEnteringOrPhotographingAModelAdvancesOnePictureAndBackRestoresIt() throws {
         let app = launch()
         tab("devices", app); tap("Illustrated setup guides", app)
@@ -2043,6 +2068,13 @@ final class AQSSReadOnlyUITests: XCTestCase {
         label("Type the model below or use a photo", app)
         let field = app.textFields["setup-model-number"]
         XCTAssertTrue(field.waitForExistence(timeout: 5))
+        let pictureHelp = app.buttons["picture-guide-model"]
+        try reachScrollControl(pictureHelp, in: app.scrollViews["setup-scroll"], app: app)
+        pictureHelp.tap()
+        XCTAssertTrue(app.staticTexts["Enter your TV model"].waitForExistence(timeout: 5))
+        app.buttons["picture-guide-back"].tap()
+        label("Step 2 of 5", app)
+        try reachScrollControl(field, in: app.scrollViews["setup-scroll"], app: app)
         screenshot("Type or photograph the model on this screen", app)
         field.tap(); field.typeText("xr-65x90k\n")
         let summary = app.staticTexts["setup-identified-model"]

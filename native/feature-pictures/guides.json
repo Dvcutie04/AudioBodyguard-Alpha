@@ -1,0 +1,127 @@
+{
+  "home": {
+    "title": "Follow the TV guide",
+    "steps": [
+      {
+        "picture": "open-guide",
+        "title": "Open the TV guide",
+        "detail": "Tap “TV & smart-home guide.” If you finished it before, tap “Replay connection guide.”"
+      },
+      {
+        "picture": "choose-tv",
+        "title": "Choose your TV",
+        "detail": "Pick the brand printed on your TV. If the guide asks which TV system you use, choose the one shown on your TV."
+      },
+      {
+        "picture": "back-next",
+        "title": "Move one step at a time",
+        "detail": "Tap Next for the next picture. Tap Back to see the previous step again."
+      }
+    ]
+  },
+  "sound": {
+    "title": "Try a sound check",
+    "steps": [
+      {
+        "picture": "start-mic",
+        "title": "Start the check",
+        "detail": "On Sound, tap “Live sound check,” then “Start sound check.”"
+      },
+      {
+        "picture": "permission",
+        "title": "Choose whether to use the microphone",
+        "detail": "If asked, allow microphone access to try the check. Tap “Start sound check” again when you are ready."
+      },
+      {
+        "picture": "stop",
+        "title": "Speak and watch the bars",
+        "detail": "The bars show sound reaching this device. Tap “Stop sound check” to finish early. The check ends after 30 seconds."
+      }
+    ]
+  },
+  "devices": {
+    "title": "Set up your TV",
+    "steps": [
+      {
+        "picture": "choose-tv",
+        "title": "Choose the TV you use",
+        "detail": "Tap “Set up your TV.” Select your TV brand and follow the pictures for your TV system."
+      },
+      {
+        "picture": "label",
+        "title": "Find the model if the guide asks",
+        "detail": "Look for “Model” on the TV information screen, on its box, or on a label you can reach. AB-123 in this picture is an example."
+      },
+      {
+        "picture": "back-next",
+        "title": "Follow the next picture",
+        "detail": "Use Next and Back to move through the guide. Follow any pairing instructions on your own TV."
+      }
+    ]
+  },
+  "model": {
+    "title": "Enter your TV model",
+    "steps": [
+      {
+        "picture": "label",
+        "title": "Find the word “Model”",
+        "detail": "Look beside it for letters and numbers. Use your own TV’s model. The illustration shows an example."
+      },
+      {
+        "picture": "type",
+        "title": "To type it, tap “Full model number”",
+        "detail": "Enter the letters, numbers, and dashes. Tap Next to continue."
+      },
+      {
+        "picture": "photo",
+        "title": "Or tap “Read model from photo”",
+        "detail": "Frame just the model label. Check the letters and numbers the app reads before using them."
+      }
+    ]
+  },
+  "insights": {
+    "title": "Read your sound checks",
+    "steps": [
+      {
+        "picture": "recent",
+        "title": "Open your recent checks",
+        "detail": "On Insights, tap “Recent sound checks.”"
+      },
+      {
+        "picture": "recap",
+        "title": "Read one check",
+        "detail": "Each entry tells you whether the microphone picked up sound and why the check ended. An empty list means there are no completed checks in this app session."
+      }
+    ]
+  },
+  "settings": {
+    "title": "Change how the app looks",
+    "steps": [
+      {
+        "picture": "appearance",
+        "title": "Open Appearance",
+        "detail": "On Settings, tap the button marked “Appearance.”"
+      },
+      {
+        "picture": "day-night",
+        "title": "Pick a background",
+        "detail": "Choose Daylight for a light background or Midnight for a dark one. Choose System to match your device."
+      }
+    ]
+  },
+  "settings-advanced": {
+    "title": "Understand a switch",
+    "steps": [
+      {
+        "picture": "switch-help",
+        "title": "Read what a switch does",
+        "detail": "Tap the question mark beside a setting to read about it."
+      },
+      {
+        "picture": "switch-off",
+        "title": "Check whether it stayed on",
+        "detail": "If you see “Not connected” and the switch moves back to Off, that feature is off."
+      }
+    ]
+  }
+}

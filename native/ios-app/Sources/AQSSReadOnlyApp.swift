@@ -501,6 +501,7 @@ private struct ReadOnlyHomeView: View {
                     ScrollView {
                         VStack(alignment: .leading, spacing: 22) {
                             pageHeading.padding(.top, 20).id("page-heading")
+                            FeaturePictureGuideButton(topic: pageScreenID, theme: theme)
                             pageContent
                         }.frame(maxWidth: 680, alignment: .leading).padding([.horizontal, .bottom], 20).frame(maxWidth: .infinity)
                     }.clipped().id(pageScreenID).accessibilityIdentifier("home-scroll")

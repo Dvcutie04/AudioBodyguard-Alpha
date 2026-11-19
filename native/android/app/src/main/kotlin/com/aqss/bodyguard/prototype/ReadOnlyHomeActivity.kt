@@ -286,6 +286,9 @@ class ReadOnlyHomeActivity : Activity() {
         hintView = null; settingControls.clear(); targets.clear(); column.removeAllViews(); scroll.scrollTo(0, 0)
         val current = InterfaceContent.pages.single { it.id == page }
         label(column, if (page == "settings" && advancedExpanded) "Advanced Settings" else current.title.uppercase(), 28f, bold = true).setPadding(0, 0, 0, dp(18))
+        val guideTopic = if (page == "settings" && advancedExpanded) "settings-advanced" else page
+        column.addView(FeaturePictureGuide.button(skin, guideTopic),
+            LinearLayout.LayoutParams(-1, -2).apply { bottomMargin = dp(12) })
         when (page) {
             "sound" -> soundPage()
             "devices" -> devicesPage()

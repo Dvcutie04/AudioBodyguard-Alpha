@@ -336,6 +336,7 @@ struct SetupGuidesView: View {
                 modelFieldFocused = false
                 photoStep = origin
             }
+            FeaturePictureGuideButton(topic: "model", theme: theme)
         }
     }
 

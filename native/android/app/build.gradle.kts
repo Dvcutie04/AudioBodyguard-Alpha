@@ -6,6 +6,7 @@ plugins {
 android {
     namespace = "com.aqss.bodyguard.prototype"
     compileSdk = 36
+    sourceSets.getByName("main").assets.srcDir("../../feature-pictures")
 
     defaultConfig {
         applicationId = "com.aqss.bodyguard.prototype"
