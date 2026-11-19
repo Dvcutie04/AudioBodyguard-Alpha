@@ -760,7 +760,7 @@ private struct ReadOnlyHomeView: View {
             destinationCard("Live sound check", subtitle: "Try a 30-second microphone check", icon: "mic") { liveSoundCheckVisible = true }
             destinationCard("Voice check", subtitle: "See microphone activity and recognized words", icon: "waveform") { voiceCheckVisible = true }
             QuestionDisclosure(title: "More sound tools", theme: theme, isExpanded: $soundToolsExpanded, identifier: "more-sound-tools") {
-                destinationCard("Output details", subtitle: "Review reported outputs", icon: "speaker.wave.2") { outputDetailsVisible = true }.accessibilityIdentifier("output-details-open")
+                destinationCard("Sound output", subtitle: "Check which speaker is selected", icon: "speaker.wave.2") { outputDetailsVisible = true }.accessibilityIdentifier("output-details-open")
                 destinationCard("Test setup", subtitle: "Record a two-phone test", icon: "doc.text") { testSetupDraft.clear(); testSetupVisible = true }.accessibilityIdentifier("test-setup-open")
             }
             card(target: "options") {
