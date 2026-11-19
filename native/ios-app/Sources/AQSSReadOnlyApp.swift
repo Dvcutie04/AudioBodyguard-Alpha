@@ -500,8 +500,7 @@ private struct ReadOnlyHomeView: View {
                     header
                     ScrollView {
                         VStack(alignment: .leading, spacing: 22) {
-                            pageHeading.padding(.top, 20).id("page-heading")
-                            FeaturePictureGuideButton(topic: pageScreenID, theme: theme)
+                            headingWithPictureGuide.padding(.top, 20).id("page-heading")
                             pageContent
                         }.frame(maxWidth: 680, alignment: .leading).padding([.horizontal, .bottom], 20).frame(maxWidth: .infinity)
                     }.clipped().id(pageScreenID).accessibilityIdentifier("home-scroll")
@@ -699,6 +698,21 @@ private struct ReadOnlyHomeView: View {
             Button { helpVisible = true } label: { Label("Help", systemImage: "questionmark.circle") }
                 .accessibilityLabel("Help & tutorials").accessibilityIdentifier("tutorial-help").accessibilityFocused($focusedElement, equals: .help)
         }.buttonStyle(AppButtonStyle(theme: theme)).padding(.horizontal, 20).padding(.vertical, 4).foregroundColor(theme.accent).background(theme.background)
+    }
+
+    @ViewBuilder private var headingWithPictureGuide: some View {
+        if textSize.isAccessibilitySize || isShowingAdvancedSettings {
+            VStack(alignment: .leading, spacing: 8) {
+                pageHeading
+                FeaturePictureGuideButton(topic: pageScreenID, theme: theme)
+            }
+        } else {
+            HStack(spacing: 12) {
+                pageHeading
+                Spacer(minLength: 0)
+                FeaturePictureGuideButton(topic: pageScreenID, theme: theme)
+            }
+        }
     }
 
     private var pageHeading: some View {
