@@ -885,8 +885,8 @@ struct TVPhotoView: View {
                             Text("Text recognition stays on this phone. Details clear on close. Your original photo remains in Photos.").font(.caption).foregroundColor(theme.muted)
                         }
                     }
-                }.padding()
-            }.accessibilityIdentifier("photo-review-scroll")
+                }.padding().padding(.bottom, 32)
+            }.modifier(PictureFormKeyboardDismissal()).accessibilityIdentifier("photo-review-scroll")
         }.background(theme.background.ignoresSafeArea()).foregroundColor(theme.text)
             .sheet(item: $setupRequest) { request in SetupGuidesView(theme: theme, initialGroup: request.group) }
             .sheet(isPresented: $showsVizioAddressPictures) {

@@ -95,3 +95,14 @@ struct FeaturePictureStep: View {
         .accessibilityIdentifier("task-picture-" + picture)
     }
 }
+
+/// Keep form controls reachable after typing on iOS 16 and later.
+struct PictureFormKeyboardDismissal: ViewModifier {
+    @ViewBuilder func body(content: Content) -> some View {
+        if #available(iOS 16.0, *) {
+            content.scrollDismissesKeyboard(.interactively)
+        } else {
+            content
+        }
+    }
+}

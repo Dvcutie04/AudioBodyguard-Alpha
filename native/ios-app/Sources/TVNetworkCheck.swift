@@ -337,7 +337,7 @@ struct TVNetworkCheckView: View {
                         }.buttonStyle(AppButtonStyle(theme: theme))
                     }
                 }.padding().frame(maxWidth: 680, alignment: .leading).frame(maxWidth: .infinity)
-            }.accessibilityIdentifier("tv-network-scroll")
+            }.modifier(PictureFormKeyboardDismissal()).accessibilityIdentifier("tv-network-scroll")
         }.background(theme.background.ignoresSafeArea()).foregroundColor(theme.text)
     }
 
