@@ -561,6 +561,7 @@ struct VoiceCheckView: View {
             HStack { Text("Voice check").font(.title2.bold()); Spacer(); RoseButton(title: "Close", theme: theme) { voice.clear(); dismiss() } }.padding()
             ScrollView {
                 VStack(alignment: .leading, spacing: 18) {
+                    FeaturePictureStep(picture: "voice", caption: "Tap Start voice check, speak, then read the words shown below.", theme: theme)
                     Text("See what your phone hears").font(.title.bold())
 
                     Text("Tap Start, then say “Audio Bodyguard, skip intro” or “Audio Bodyguard, skip recap.”")
@@ -829,7 +830,7 @@ struct TVPhotoView: View {
             HStack { Text(onModelRead == nil ? "TV photo setup" : "Read model from photo").font(.title2.bold()); Spacer(); RoseButton(title: "Close", theme: theme) { photo.clear(); dismiss() }.accessibilityIdentifier("photo-close") }.padding()
             ScrollView {
                 VStack(alignment: .leading, spacing: 18) {
-                    Image(systemName: "tv").font(.system(size: 42)).foregroundColor(theme.violet).accessibilityHidden(true)
+                    FeaturePictureStep(picture: "photo", caption: "Aim at the TV model label. Keep the letters and numbers clear.", theme: theme)
                     if onModelRead != nil {
                         Text("Take a clear picture of the model number on your TV label or About screen.")
                     } else {

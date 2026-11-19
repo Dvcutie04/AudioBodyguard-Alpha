@@ -72,3 +72,26 @@ struct FeaturePictureGuideButton: View {
         }
     }
 }
+
+/// Always visible beside the task. The caption supplies the same instruction to VoiceOver.
+struct FeaturePictureStep: View {
+    let picture: String
+    let caption: String
+    let theme: AppTheme
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            if let url = Bundle.main.url(forResource: picture, withExtension: "png",
+                                         subdirectory: FeaturePictureGuide.directory),
+               let image = UIImage(contentsOfFile: url.path) {
+                Image(uiImage: image).resizable().scaledToFit()
+                    .frame(maxWidth: 440).clipShape(RoundedRectangle(cornerRadius: 12))
+                    .accessibilityHidden(true)
+            }
+            Text(caption).font(.callout).fixedSize(horizontal: false, vertical: true)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .foregroundColor(theme.text)
+        .accessibilityIdentifier("task-picture-" + picture)
+    }
+}

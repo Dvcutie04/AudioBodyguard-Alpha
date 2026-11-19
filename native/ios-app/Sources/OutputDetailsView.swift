@@ -75,6 +75,7 @@ struct OutputDetailsView: View {
             if reviewing, let report = snapshot {
                 ScrollView {
                     VStack(alignment: .leading, spacing: 16) {
+                        FeaturePictureStep(picture: "review-share", caption: "Read the details before sharing. Choose Copy or Cancel in the device menu.", theme: theme)
                         Button { beginSetup(report) } label: {
                             Text("Add setup notes").frame(maxWidth: .infinity, minHeight: 44)
                                 .contentShape(Rectangle())
@@ -92,6 +93,7 @@ struct OutputDetailsView: View {
             } else {
                 ScrollView {
                     VStack(alignment: .leading, spacing: 16) {
+                        FeaturePictureStep(picture: "output", caption: "Check which speaker this device has selected.", theme: theme)
                         if let result = snapshot {
                             VStack(alignment: .leading, spacing: 14) {
                                 Text(soundSetting(result.connectionGuide))

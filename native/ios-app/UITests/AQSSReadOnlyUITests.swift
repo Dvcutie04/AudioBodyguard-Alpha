@@ -2043,6 +2043,10 @@ final class AQSSReadOnlyUITests: XCTestCase {
             ("settings", "Open Appearance", "Pick a background")
         ] {
             if page != "home" { tab(page, app) }
+            let illustrations = ["home": "open-guide", "sound": "start-mic", "devices": "choose-tv", "insights": "recent", "settings": "day-night"]
+            XCTAssertTrue(app.descendants(matching: .any)["task-picture-" + illustrations[page]!].firstMatch.exists,
+                          "The page must show its picture without opening help.")
+            screenshot("Always visible picture at largest text " + page, app)
             let button = app.buttons["picture-guide-" + page]
             XCTAssertTrue(button.waitForExistence(timeout: 5))
             try reachScrollControl(button, in: app.scrollViews["home-scroll"], app: app)

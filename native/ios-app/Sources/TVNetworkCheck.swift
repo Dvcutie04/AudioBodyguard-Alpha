@@ -273,8 +273,10 @@ struct TVNetworkCheckView: View {
             }.padding()
             ScrollView {
                 VStack(alignment: .leading, spacing: 18) {
+                    FeaturePictureStep(picture: "wifi", caption: "Use the same home Wi-Fi for this phone and TV. Enter the TV address shown in its network settings.", theme: theme)
                     Label("Phone → Wi-Fi → TV", systemImage: "wifi").font(.headline)
                     Text("Enter the IP address shown in your VIZIO TV’s network settings.")
+                    FeaturePictureStep(picture: "address", caption: "Copy the address from your TV into this box. Then tap Check.", theme: theme)
                     TextField("TV IP address", text: $check.address)
                         .keyboardType(.numbersAndPunctuation).autocapitalization(.none).disableAutocorrection(true)
                         .padding(12).background(theme.raised).cornerRadius(12)
@@ -373,9 +375,12 @@ struct TVNetworkCheckView: View {
                     .buttonStyle(AppButtonStyle(theme: theme)).accessibilityIdentifier("tv-network-report-back")
             }
             ScrollView {
-                Text(report.text).frame(maxWidth: .infinity, alignment: .leading)
+                VStack(alignment: .leading, spacing: 12) {
+                    FeaturePictureStep(picture: "review-share", caption: "Read the result. Share opens the device menu. Choose Copy or Cancel.", theme: theme)
+                    Text(report.text).frame(maxWidth: .infinity, alignment: .leading)
                     .fixedSize(horizontal: false, vertical: true).textSelection(.enabled)
                     .accessibilityIdentifier("tv-network-report-preview")
+                }
             }.accessibilityIdentifier("tv-network-report-scroll")
             Text(TVTrialReport.notice).font(.subheadline).fixedSize(horizontal: false, vertical: true)
             ReviewedTextShareButton(text: report.text, theme: theme, title: "Share test result", identifier: "tv-network-report-share")

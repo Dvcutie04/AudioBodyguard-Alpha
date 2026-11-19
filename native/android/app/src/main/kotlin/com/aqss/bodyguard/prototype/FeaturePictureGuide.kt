@@ -19,6 +19,25 @@ import org.json.JSONObject
 @Suppress("DEPRECATION")
 class FeaturePictureGuide : DialogFragment() {
     companion object {
+        fun step(skin: InterfaceTheme, picture: String, caption: String) = LinearLayout(skin.activity).apply {
+            orientation = LinearLayout.VERTICAL
+            setPadding(0, skin.dp(6), 0, skin.dp(12))
+            addView(ImageView(skin.activity).apply {
+                skin.activity.assets.open(picture + ".png").use { setImageBitmap(BitmapFactory.decodeStream(it)) }
+                adjustViewBounds = true
+                maxWidth = skin.dp(440)
+                scaleType = ImageView.ScaleType.FIT_CENTER
+                importantForAccessibility = View.IMPORTANT_FOR_ACCESSIBILITY_NO
+            }, LinearLayout.LayoutParams(-2, -2))
+            addView(TextView(skin.activity).apply {
+                text = caption
+                textSize = 17f
+                setTextColor(skin.text)
+                setPadding(0, skin.dp(6), 0, 0)
+            }, LinearLayout.LayoutParams(-1, -2))
+        }
+
+
         fun button(skin: InterfaceTheme, topic: String) = Button(skin.activity).apply {
             text = "Picture guide"
             skin.style(this)

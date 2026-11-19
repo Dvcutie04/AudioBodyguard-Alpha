@@ -383,6 +383,10 @@ class InputAssistanceActivity : Activity() {
             }
             insets
         }
+        column.addView(FeaturePictureGuide.step(skin,
+            if (isVoice) "voice" else "photo",
+            if (isVoice) "Tap Start voice check, speak, then read the words shown below."
+            else "Aim at the TV model label. Keep the letters and numbers clear."))
         if (isVoice) voicePage() else photoPage()
     }
     private fun label(value: String, large: Boolean = false): TextView = TextView(this).apply {

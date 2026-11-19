@@ -1679,6 +1679,15 @@ def main():
         ]:
             tag = "feature_pictures_" + page.lower()
             tap(page, tag + "_page")
+            captions = {
+                "Home": "Open the TV guide below. Follow one picture at a time.",
+                "Sound": "Choose a sound tool below. Start begins a check; Stop ends it.",
+                "Devices": "Choose your TV brand, then follow the pictures for your TV system.",
+                "Insights": "Open Recent sound checks to see the checks you completed.",
+                "Settings": "Tap Appearance to choose a light or dark background.",
+            }
+            wait_for(captions[page], tag + "_visible_picture")
+            screenshot(tag + "_visible_picture")
             guide_tap("Picture guide", tag + "_open")
             wait_for_all((title, "1. " + entry), tag + "_first_step")
             screenshot(tag)

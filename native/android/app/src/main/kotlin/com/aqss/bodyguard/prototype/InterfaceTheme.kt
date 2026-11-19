@@ -66,6 +66,7 @@ class InterfaceTheme(val activity: Activity, val dark: Boolean) {
         if (message.isNotEmpty()) list.addView(android.widget.TextView(activity).apply {
             text = message; textSize = 18f; setTextColor(this@InterfaceTheme.text); setPadding(0, dp(8), 0, dp(20))
         }, LinearLayout.LayoutParams(-1, -2))
+        list.addView(FeaturePictureGuide.step(this, "select", "Tap the choice you want. Cancel returns to the previous screen."))
         val rows = mutableListOf<Button>()
         if (searchable) {
             val search = android.widget.EditText(activity).apply { hint = "Search brands"; setTextColor(this@InterfaceTheme.text); setHintTextColor(muted); setSingleLine(true) }

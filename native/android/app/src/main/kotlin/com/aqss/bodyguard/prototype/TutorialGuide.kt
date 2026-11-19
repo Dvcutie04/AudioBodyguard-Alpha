@@ -178,27 +178,19 @@ class TutorialGuide(
         top.addView(roseButton(activity, skin, "Exit Home") { exitToHome() }.apply { contentDescription = "Exit tutorial" })
         header.addView(top)
         if (isBeginner) text(header, TutorialContent.previewNotice, 15f, skin.muted).setPadding(0, dp(4), 0, 0)
-        val symbols = when (step.target) {
-            "welcome" -> listOf("tv", "arrow.right", "phone")
-            "chooseTV" -> listOf("phone", "tv")
-            "connectionCheck" -> listOf("phone")
-            "chooseHome" -> listOf("house")
-            else -> listOf("tv")
+        val picture = when (step.target) {
+            "welcome" -> "open-guide"
+            "chooseTV" -> "choose-tv"
+            "connectionCheck" -> "verify-tv"
+            else -> "select"
         }
-        val iconRow = LinearLayout(activity).apply { setPadding(0, dp(12), 0, dp(16)) }
-        symbols.forEach { symbol ->
-            iconRow.addView(TextView(activity).apply {
-                setCompoundDrawablesWithIntrinsicBounds(InterfaceSymbol(skin, symbol, skin.violet, 36), null, null, null)
-                importantForAccessibility = View.IMPORTANT_FOR_ACCESSIBILITY_NO
-            }, LinearLayout.LayoutParams(dp(64), dp(40)))
-        }
-        skin.guideCue(iconRow)
-        content.addView(iconRow)
+        val taskPicture = FeaturePictureGuide.step(skin, picture, step.explanation)
+        skin.guideCue(taskPicture)
+        content.addView(taskPicture)
         text(content, step.title, 36f, bold = true).apply {
             if (Build.VERSION.SDK_INT >= 28) isAccessibilityHeading = true
             accessibilityLiveRegion = View.ACCESSIBILITY_LIVE_REGION_POLITE
         }
-        text(content, step.explanation)
         if (isBeginner) {
             guide.selected("chooseTV")?.takeIf { step.target != "chooseTV" }?.let {
                 text(content, "${it.title}  ·  ${SetupPhone.androidManufacturer(Build.MANUFACTURER).label}", 17f, skin.accent, true)

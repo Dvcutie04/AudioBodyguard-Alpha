@@ -48,6 +48,7 @@ class QuietOutputCheckActivity : Activity() {
             text = value; textSize = size; setTextColor(skin.text)
             setPadding(0, skin.dp(12), 0, skin.dp(12)); column.addView(this)
         }
+        column.addView(FeaturePictureGuide.step(skin, "output", "Tap Start quiet check. When it ends, tap Review check report."))
         words("Try this phone's playback connection with a brief quiet check.")
         words("May pause other audio. No microphone is used.", 15f)
         status = words(if (liveBuild) "Ready for a quiet check" else "Available in the Live Test build", 20f)

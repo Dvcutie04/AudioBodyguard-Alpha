@@ -109,8 +109,10 @@ class TVNetworkCheckActivity : Activity() {
         header.addView(heading, LinearLayout.LayoutParams(0, -2, 1f))
         header.addView(button("Back") { back() }); root.addView(header)
         val content = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL }
+        content.addView(FeaturePictureGuide.step(skin, "wifi", "Use the same home Wi-Fi for this phone and TV. Enter the TV address shown in its network settings."))
         content.addView(words("Phone → Wi-Fi → TV", 20f))
         content.addView(words("Enter the IP address shown in your VIZIO TV’s network settings."))
+        content.addView(FeaturePictureGuide.step(skin, "address", "Copy the address from your TV into this box. Then tap Check."))
         address = EditText(this).apply {
             hint = "TV IP address"; contentDescription = "TV IP address"; tag = "tv-network-address"
             inputType = InputType.TYPE_CLASS_PHONE; maxLines = 1; setTextColor(skin.text); setHintTextColor(skin.muted)
