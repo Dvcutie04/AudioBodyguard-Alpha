@@ -285,7 +285,17 @@ class ReadOnlyHomeActivity : Activity() {
         if (::tutorial.isInitialized) tutorial.detachTarget()
         hintView = null; settingControls.clear(); targets.clear(); column.removeAllViews(); scroll.scrollTo(0, 0)
         val current = InterfaceContent.pages.single { it.id == page }
-        label(column, if (page == "settings" && advancedExpanded) "Advanced Settings" else current.title.uppercase(), 28f, bold = true).setPadding(0, 0, 0, dp(18))
+        val advanced = page == "settings" && advancedExpanded
+        val config = resources.configuration
+        val stacked = advanced || config.fontScale >= 1.3f || config.screenWidthDp < 360
+        val heading = LinearLayout(this).apply {
+            orientation = if (stacked) LinearLayout.VERTICAL else LinearLayout.HORIZONTAL
+            gravity = Gravity.CENTER_VERTICAL
+        }
+        val title = label(heading, if (advanced) "Advanced Settings" else current.title.uppercase(), 28f, bold = true)
+        if (!stacked) title.layoutParams = LinearLayout.LayoutParams(0, -2, 1f)
+        heading.addView(FeaturePictureGuide.button(skin, if (advanced) "settings-advanced" else page))
+        column.addView(heading, LinearLayout.LayoutParams(-1, -2).apply { bottomMargin = dp(12) })
         when (page) {
             "sound" -> soundPage()
             "devices" -> devicesPage()

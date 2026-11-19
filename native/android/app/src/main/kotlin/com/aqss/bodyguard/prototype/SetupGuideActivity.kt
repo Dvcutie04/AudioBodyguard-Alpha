@@ -465,6 +465,7 @@ class SetupGuideActivity : Activity() {
                     .putExtra("mode", "modelPhoto").putExtra("dark", skin.dark), MODEL_PHOTO_REQUEST)
             }
         }
+        content.addView(FeaturePictureGuide.button(skin, "model"), LinearLayout.LayoutParams(-1, -2))
     }
 
     private fun submitModel(field: EditText, origin: String) {

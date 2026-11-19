@@ -1670,6 +1670,21 @@ def main():
                     scroll_meter(f"{name}-scroll-{direction}-{attempt}", down=down)
             raise AssertionError(f"TV guide target unavailable: {label}")
 
+        for page, title, entry in [
+            ("Home", "Follow the TV guide", "Open the TV guide"),
+            ("Sound", "Try a sound check", "Start the check"),
+            ("Devices", "Set up your TV", "Choose the TV you use"),
+            ("Insights", "Read your sound checks", "Open your recent checks"),
+            ("Settings", "Change how the app looks", "Open Appearance"),
+        ]:
+            tag = "feature_pictures_" + page.lower()
+            tap(page, tag + "_page")
+            guide_tap("Picture guide", tag + "_open")
+            wait_for_all((title, "1. " + entry), tag + "_first_step")
+            screenshot(tag)
+            adb("shell", "input", "keyevent", "KEYCODE_BACK")
+            wait_for_all((page.upper(), "Picture guide"), tag + "_returned")
+
         tap("Devices", "tv_guides_devices")
         tap("? Device help", "tv_guides_expand_device_help")
         guide_tap("Illustrated setup guides. Jump to a TV or home app", "tv_guides_open")
