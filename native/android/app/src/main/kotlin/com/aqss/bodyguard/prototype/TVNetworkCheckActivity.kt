@@ -119,11 +119,11 @@ class TVNetworkCheckActivity : Activity() {
             isSaveEnabled = false
         }
         content.addView(address)
+        result = words(IDLE).apply { tag = "tv-network-result" }; content.addView(result)
+        content.addView(words(LocalTVTarget.BOUNDARY, 15f))
         guideButton = button(addressGuide.title) { openPictureGuide(Guide.ADDRESS) }
         content.addView(guideButton)
         content.addView(words("Check contacts only this address on Wi-Fi. It sends no TV command.", 15f))
-        result = words(IDLE).apply { tag = "tv-network-result" }; content.addView(result)
-        content.addView(words(LocalTVTarget.BOUNDARY, 15f))
         start = button("Check this address", primary = true) {
             getSystemService(InputMethodManager::class.java)?.hideSoftInputFromWindow(address.windowToken, 0)
             if (token == null) begin() else stop()
@@ -260,6 +260,9 @@ class TVNetworkCheckActivity : Activity() {
         guidePanel = null
         heading.text = "VIZIO network check"
         form.visibility = View.VISIBLE
+        if (currentGuide == Guide.ADDRESS) {
+            form.post { if (guidePanel == null) form.scrollTo(0, address.top) }
+        }
     }
 
     private fun back() {

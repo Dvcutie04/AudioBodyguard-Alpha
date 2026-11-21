@@ -75,11 +75,11 @@ struct OutputDetailsView: View {
             if reviewing, let report = snapshot {
                 ScrollView {
                     VStack(alignment: .leading, spacing: 16) {
-                        FeaturePictureStep(picture: "review-share", caption: "Read the details before sharing. Choose Copy or Cancel in the device menu.", theme: theme)
                         Button { beginSetup(report) } label: {
                             Text("Add setup notes").frame(maxWidth: .infinity, minHeight: 44)
                                 .contentShape(Rectangle())
                         }.buttonStyle(AppButtonStyle(theme: theme)).accessibilityIdentifier("output-details-add-notes")
+                        FeaturePictureStep(picture: "review-share", caption: "Read the details before sharing. Choose Copy or Cancel in the device menu.", theme: theme)
                         Text(report.text).font(.body).fixedSize(horizontal: false, vertical: true)
                             .frame(maxWidth: .infinity, alignment: .leading).textSelection(.enabled)
                             .accessibilityIdentifier("output-details-preview")

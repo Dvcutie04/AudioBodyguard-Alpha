@@ -744,8 +744,14 @@ private struct ReadOnlyHomeView: View {
         }
     }
 
-    @ViewBuilder private var pageContent: some View {
+    private var taskPicture: some View {
         FeaturePictureStep(picture: pageTaskPicture, caption: pageTaskCaption, theme: theme)
+    }
+
+    private var settingsControlsFirst: Bool { page == "settings" && textSize.isAccessibilitySize }
+
+    @ViewBuilder private var pageContent: some View {
+        if !settingsControlsFirst { taskPicture }
         switch page {
         case "sound": soundPage
         case "devices": devicesPage
@@ -917,6 +923,7 @@ private struct ReadOnlyHomeView: View {
                     }
 
             }
+            if settingsControlsFirst { taskPicture }
             QuestionDisclosure(title: "More settings", theme: theme, isExpanded: $moreSettingsExpanded, identifier: "more-settings") {
                 action("Build details", icon: "info.circle") {
                     let details = installedBuildDetails
@@ -935,6 +942,7 @@ private struct ReadOnlyHomeView: View {
                         if item.id != AQSSInterfaceContent.settings.last?.id { Divider().padding(.leading, 42) }
                     }
                 }
+                if settingsControlsFirst { taskPicture }
                 whiteSettingsCard {
                     settingInfo("Device and route", detail: "Unknown", explanation: "No qualified output hardware or route has been identified. Use the matching device guide, then independently verify its output path.", target: "route")
                     Divider()
