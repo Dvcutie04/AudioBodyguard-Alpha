@@ -211,6 +211,21 @@ def main():
             return False
         raise AssertionError(f"Missing tap target: {text}")
 
+    def reveal(label, name):
+        for attempt in range(10):
+            root, clicked = screen(f"{name}_{attempt}", click=label)
+            if clicked:
+                return
+            viewport = next((n for n in root.iter("node") if n.get("class") == "android.widget.ScrollView"), None)
+            if viewport is None:
+                # A single empty FrameLayout can be published during a native transition.
+                time.sleep(.5)
+                continue
+            x0, y0, x1, y1 = map(int, re.findall(r"-?\d+", viewport.get("bounds")))
+            x = (x0 + x1) // 2
+            adb("shell", "input", "swipe", str(x), str(int(y0 + (y1-y0)*.8)), str(x), str(int(y0 + (y1-y0)*.2)), "300")
+        raise AssertionError("Unreachable control: " + label)
+
     def tap(text, name, optional=False):
         # Secondary destinations now live in the same contextual help menus
         # users open. Exercise those controls before reaching the real screen.
@@ -219,7 +234,6 @@ def main():
             "Advanced Settings": ("? More settings", "Jump to Advanced Settings"),
             "Test setup. Record the two-phone test arrangement": ("? More sound tools", "Jump to Test setup"),
             "Output inventory. Check this phone’s available audio outputs": ("? More sound tools", "Jump to Output inventory"),
-            "TV photo setup. Read a model label or Network settings photo": ("? Device help", "TV photo setup. Read a model label or settings photo"),
             "Show photo details": ("? Photo help", "Show photo details"),
         }
         if text not in routes:
@@ -696,20 +710,207 @@ def main():
         return
 
     if args.style_only:
-        def reveal(label, name):
-            for attempt in range(10):
-                root, clicked = screen(f"{name}_{attempt}", click=label)
-                if clicked:
-                    return
-                viewport = next((n for n in root.iter("node") if n.get("class") == "android.widget.ScrollView"), None)
-                if viewport is None:
-                    # A single empty FrameLayout can be published during a native transition.
-                    time.sleep(.5)
-                    continue
-                x0, y0, x1, y1 = map(int, re.findall(r"-?\d+", viewport.get("bounds")))
-                x = (x0 + x1) // 2
-                adb("shell", "input", "swipe", str(x), str(int(y0 + (y1-y0)*.8)), str(x), str(int(y0 + (y1-y0)*.2)), "300")
-            raise AssertionError("Unreachable control: " + label)
+        manufacturer = adb("shell", "getprop", "ro.product.manufacturer").decode().strip().lower()
+        wifi_steps = ("1. Open Settings.", "2. Search for Wi-Fi.", "3. Choose the home network your TV uses.")
+        phone_titles = {"google": "Google Pixel", "samsung": "Samsung Galaxy"}
+
+        def check_roku_handoff():
+            reveal("Replay connection guide", "roku_handoff_replay")
+            tap("Start picture setup", "roku_handoff_start")
+            reveal("Choose TV brand", "roku_handoff_picker")
+            tap("TCL", "roku_handoff_brand")
+            wait_for_all(("Step 3 of 5", "Show TCL steps"), "roku_handoff_plan")
+            reveal("Show TCL steps", "roku_handoff_open")
+            reveal("Roku TV", "roku_handoff_platform")
+            wait_for_all(("TCL • Roku TV", "Start guide"), "roku_handoff_intro")
+            tap("Start guide", "roku_handoff_start_tv")
+            for step in range(2, 6):
+                tap("Next", f"roku_handoff_tv_next_{step}")
+                wait_for(f"Step {step} of 5", f"roku_handoff_tv_{step}")
+            wait_for("Read your TV address", "roku_handoff_tv_result")
+            tap("Finish part one", "roku_handoff_to_phone")
+            wait_for_all(("2. Connect to your phone (Roku)", "Start part two"), "roku_handoff_phone_intro")
+
+            adb("shell", "input", "keyevent", "KEYCODE_BACK")
+            wait_for_all(("TCL • Roku TV", "Step 5 of 5", "Read your TV address"), "roku_handoff_back_to_tv")
+            screenshot("roku_handoff_back_to_tv")
+            tap("Finish part one", "roku_handoff_reopen_phone")
+            tap("Start part two", "roku_handoff_start_phone")
+            wait_for_all(("Step 1 of 5", "Get the Roku app"), "roku_handoff_phone_first")
+            tap("Next", "roku_handoff_phone_next")
+            wait_for_all(("Step 2 of 5", "Check your Wi-Fi"), "roku_handoff_phone_wifi")
+            tap("Back", "roku_handoff_back_from_wifi")
+            wait_for_all(("Step 1 of 5", "Get the Roku app"), "roku_handoff_back_to_first")
+            tap("Next", "roku_handoff_phone_next_again")
+            wait_for_all(("Step 2 of 5", "Check your Wi-Fi"), "roku_handoff_phone_wifi_again")
+
+            tap("Back to Tutorial", "roku_handoff_pause_phone")
+            wait_for_all(("Step 4 of 5", "Phone pictures"), "roku_handoff_tutorial_phone")
+            tap("Phone pictures", "roku_handoff_reopen_from_tutorial")
+            wait_for_all(("2. Connect to your phone (Roku)", "Resume guide"), "roku_handoff_resume_ready")
+            tap("Resume guide", "roku_handoff_resume_phone")
+            wait_for_all(("TCL • Roku TV", "Step 2 of 5", "Check your Wi-Fi"), "roku_handoff_resumed_wifi")
+            screenshot("roku_handoff_resumed_wifi")
+
+            # Keep the paused tutorial's system when standalone guides are explored.
+            tap("Back to Tutorial", "roku_pause_close_phone")
+            wait_for_all(("Step 4 of 5", "Phone pictures"), "roku_pause_tutorial_phone")
+            tap("Exit tutorial", "roku_pause_exit_home")
+            wait_for("Connection not verified", "roku_pause_unverified")
+            tap("Devices", "roku_pause_devices")
+            reveal("? Device help", "roku_pause_device_help")
+            reveal("Illustrated setup guides. Jump to a TV or home app", "roku_pause_guides")
+            reveal("LG", "roku_pause_other_brand")
+            wait_for("Connect your LG TV", "roku_pause_lg_intro")
+            tap("Close", "roku_pause_lg_close")
+            tap("Home", "roku_pause_home")
+            reveal("Back to Tutorial", "roku_pause_restore")
+            wait_for_all(("Step 4 of 5", "Phone pictures"), "roku_pause_restored_step")
+            tap("Phone pictures", "roku_pause_reopen_phone")
+            try:
+                wait_for_all(("2. Connect to your phone (Roku)", "Resume guide"), "roku_pause_resume_ready")
+            except AssertionError:
+                screenshot("roku_pause_unexpected_companion")
+                raise
+            tap("Resume guide", "roku_pause_resume_phone")
+            wait_for_all(("TCL • Roku TV", "Step 2 of 5", "Check your Wi-Fi"), "roku_pause_retained_wifi")
+            screenshot("roku_pause_retained_wifi")
+
+            for leave in ("back", "close"):
+                prefix = f"roku_mismatch_{leave}"
+                if leave == "back":
+                    reveal("? Step help", prefix + "_help")
+                reveal("My screen looks different", prefix + "_mismatch")
+                wait_for("Find the right screen", prefix + "_recovery")
+                reveal("Choose another TV or app", prefix + "_brands")
+                wait_for("Choose your TV brand", prefix + "_brand_picker")
+                reveal("LG", prefix + "_lg")
+                wait_for("Connect your LG TV", prefix + "_lg_intro")
+                if leave == "back":
+                    tap("Back", prefix + "_from_lg")
+                    wait_for("Choose your TV brand", prefix + "_back_to_picker")
+                    tap("Back", prefix + "_from_picker")
+                    wait_for("Find the right screen", prefix + "_back_to_recovery")
+                    tap("Return to step", prefix + "_return_to_step")
+                else:
+                    tap("Back to Tutorial", prefix + "_exit")
+                    wait_for_all(("Step 4 of 5", "Phone pictures"), prefix + "_tutorial")
+                    tap("Phone pictures", prefix + "_reopen")
+                    try:
+                        wait_for_all(("2. Connect to your phone (Roku)", "Resume guide"), prefix + "_resume_ready")
+                    except AssertionError:
+                        screenshot(prefix + "_unexpected_companion")
+                        raise
+                    tap("Resume guide", prefix + "_resume")
+                wait_for_all(("TCL • Roku TV", "Step 2 of 5", "Check your Wi-Fi"), prefix + "_retained_wifi")
+                screenshot(prefix + "_retained_wifi")
+            print("ROKU_MISMATCH_DETOUR_OBSERVED: Back and direct return retain Roku Wi-Fi picture 2", flush=True)
+
+            reveal("? Step help", "roku_system_picker_help")
+            reveal("My screen looks different", "roku_system_picker_mismatch")
+            wait_for("Find the right screen", "roku_system_picker_recovery")
+            reveal("Choose another TV system", "roku_system_picker_open")
+            wait_for_all(("Which name do you see on your TV?", "Roku TV"), "roku_system_picker_options")
+            adb("shell", "input", "keyevent", "KEYCODE_BACK")
+            wait_for("Find the right screen", "roku_system_picker_back_to_recovery")
+            tap("Return to step", "roku_system_picker_back_to_picture")
+            wait_for_all(("TCL • Roku TV", "Step 2 of 5", "Check your Wi-Fi"), "roku_system_picker_back_retained_wifi")
+            screenshot("roku_system_picker_back_retained_wifi")
+
+            reveal("My screen looks different", "roku_system_picker_reopen_mismatch")
+            wait_for("Find the right screen", "roku_system_picker_reopen_recovery")
+            reveal("Choose another TV system", "roku_system_picker_reopen_options")
+            wait_for_all(("Which name do you see on your TV?", "Roku TV"), "roku_system_picker_options_again")
+            adb("shell", "settings", "put", "system", "accelerometer_rotation", "0")
+            try:
+                for rotation in ("1", "0"):
+                    adb("shell", "settings", "put", "system", "user_rotation", rotation)
+                    name = f"roku_system_picker_rotation_{rotation}"
+                    for _ in range(6):
+                        root, _ = screen(name)
+                        x0, y0, x1, y1 = map(int, re.findall(r"-?\d+", root.find("node").get("bounds")))
+                        width, height = x1 - x0, y1 - y0
+                        orientation_matches = width > height if rotation == "1" else height > width
+                        if orientation_matches and has(root, "Which name do you see on your TV?") and has(root, "Roku TV"):
+                            break
+                        time.sleep(1)
+                    else:
+                        raise AssertionError(f"TCL system choices missing after rotation {rotation}")
+            finally:
+                adb("shell", "settings", "put", "system", "user_rotation", "0")
+            tap("Back to Tutorial", "roku_system_picker_exit")
+            wait_for_all(("Step 4 of 5", "Phone pictures"), "roku_system_picker_tutorial")
+            tap("Phone pictures", "roku_system_picker_reopen")
+            wait_for_all(("2. Connect to your phone (Roku)", "Resume guide"), "roku_system_picker_resume_ready")
+            tap("Resume guide", "roku_system_picker_resume")
+            wait_for_all(("TCL • Roku TV", "Step 2 of 5", "Check your Wi-Fi"), "roku_system_picker_retained_wifi")
+            screenshot("roku_system_picker_retained_wifi")
+            print("ROKU_SYSTEM_PICKER_CLOSE_OBSERVED: resume retains Roku Wi-Fi picture 2", flush=True)
+
+            reveal("? Step help", "roku_system_preview_help")
+            reveal("My screen looks different", "roku_system_preview_mismatch")
+            wait_for("Find the right screen", "roku_system_preview_recovery")
+            reveal("Choose another TV system", "roku_system_preview_options")
+            reveal("Google TV / Android TV", "roku_system_preview_google")
+            wait_for("TCL • Google TV / Android TV", "roku_system_preview_google_open")
+            tap("Back", "roku_system_preview_back")
+            wait_for_all(("Which name do you see on your TV?", "Roku TV"), "roku_system_preview_back_to_choices")
+            tap("Back to Tutorial", "roku_system_preview_exit")
+            wait_for_all(("Step 4 of 5", "Phone pictures"), "roku_system_preview_tutorial")
+            tap("Phone pictures", "roku_system_preview_reopen")
+            try:
+                wait_for_all(("2. Connect to your phone (Roku)", "Resume guide"), "roku_system_preview_resume_ready")
+            except AssertionError:
+                screenshot("roku_system_preview_wrong_phone_guide")
+                raise
+            tap("Resume guide", "roku_system_preview_resume")
+            wait_for_all(("TCL • Roku TV", "Step 2 of 5", "Check your Wi-Fi"), "roku_system_preview_retained_wifi")
+            screenshot("roku_system_preview_retained_wifi")
+            print("ROKU_SYSTEM_PREVIEW_BACK_OBSERVED: backing out of Google TV retains the Roku phone guide", flush=True)
+
+            # Revisiting the same TV keeps its system. A new brand choice clears it.
+            tap("Back to Tutorial", "roku_brand_change_close_phone")
+            wait_for_all(("Step 4 of 5", "Phone pictures"), "roku_brand_change_phone_step")
+            tap("Back", "roku_brand_change_back_to_tv")
+            reveal("Show TCL steps", "roku_brand_change_same_tcl")
+            wait_for_all(("TCL • Roku TV", "Set up your TCL TV"), "roku_brand_change_same_system")
+            tap("Back to Tutorial", "roku_brand_change_close_tv")
+            for previous, brand in (("TCL", "LG"), ("LG", "TCL")):
+                prefix = "roku_brand_change_to_" + brand.lower()
+                wait_for_all(("Step 3 of 5", f"Show {previous} steps"), prefix + "_plan")
+                tap("Back", prefix + "_back")
+                wait_for_all(("Step 2 of 5", f"Selected: {previous}"), prefix + "_previous")
+                reveal("Choose TV brand", prefix + "_picker")
+                tap(brand, prefix + "_select")
+            wait_for_all(("Step 3 of 5", "Show TCL steps"), "roku_brand_change_tcl_plan")
+            reveal("Show TCL steps", "roku_brand_change_open_tcl")
+            try:
+                wait_for_all(("Which name do you see on your TV?", "Roku TV"), "roku_brand_change_systems")
+            except AssertionError:
+                screenshot("roku_brand_change_unexpected_system")
+                raise
+            reveal("Roku TV", "roku_brand_change_choose_roku")
+            wait_for_all(("TCL • Roku TV", "Set up your TCL TV"), "roku_brand_change_chosen_system")
+            tap("Back to Tutorial", "roku_brand_change_close_chosen_tv")
+            reveal("? Setup help", "roku_brand_change_plan_help")
+            tap("Continue without pictures", "roku_brand_change_continue")
+            wait_for_all(("Step 4 of 5", "Phone pictures"), "roku_brand_change_returned")
+            tap("Phone pictures", "roku_brand_change_open_phone")
+            wait_for_all(("2. Connect to your phone (Roku)", "Resume guide"), "roku_brand_change_resume_ready")
+            tap("Resume guide", "roku_brand_change_resume")
+            wait_for_all(("TCL • Roku TV", "Step 2 of 5", "Check your Wi-Fi"), "roku_brand_change_saved_picture")
+            screenshot("roku_brand_change_saved_picture")
+
+            for step in range(3, 6):
+                tap("Next", f"roku_handoff_phone_next_{step}")
+                wait_for(f"Step {step} of 5", f"roku_handoff_phone_{step}")
+            wait_for("Check the phone remote", "roku_handoff_phone_result")
+            tap("Finish part two", "roku_handoff_finish_phone")
+            wait_for_all(("Step 5 of 5", "Go to Home"), "roku_handoff_finished")
+            tap("Go to Home", "roku_handoff_done")
+            wait_for("Connection not verified", "roku_handoff_unverified")
+            print("ROKU_HANDOFF_BACK_OBSERVED: returned to TV picture 5, resumed phone picture 2, connection unverified", flush=True)
+
         for scale in ("1.0", "1.5"):
             adb("shell", "settings", "put", "system", "font_scale", scale)
             adb("shell", "settings", "put", "global", "animator_duration_scale", "0" if scale == "1.5" else "1")
@@ -748,9 +949,18 @@ def main():
             reveal("? Setup help", prefix + "_home_help")
             wait_for("Jump to Google Home pictures", prefix + "_chosen_home")
             tap("Jump to phone Wi-Fi pictures", prefix + "_wifi_help")
-            root = wait_for("connect to your home Wi-Fi", prefix + "_wifi_intro")
-            if has(root, "Phone Wi-Fi setup") and has(root, "Google Pixel — connect to your home Wi-Fi"):
+            phone = phone_titles.get(manufacturer)
+            if phone:
+                wait_for(f"{phone} — connect to your home Wi-Fi", prefix + "_wifi_matched_intro")
+            else:
+                root = wait_for_all(("Phone Wi-Fi setup", *wifi_steps), prefix + "_wifi_generic_steps")
+                visible_text = [node.get("text") for node in root.iter("node")]
+                order = [visible_text.index(step) for step in wifi_steps]
+                assert order == sorted(order), "Keep the Android Wi-Fi steps in reading order"
+                assert not has(root, "Choose what matches your TV.") and not has(root, "Start guide")
+                screenshot(prefix + "_wifi_generic_steps")
                 reveal("Google Pixel — connect to your home Wi-Fi", prefix + "_wifi_virtual_phone_choice")
+                wait_for("Google Pixel — connect to your home Wi-Fi", prefix + "_wifi_chosen_intro")
             wait_for("Start guide", prefix + "_wifi_ready")
             tap("Start guide", prefix + "_wifi_start")
             for n in range(7):
@@ -796,10 +1006,38 @@ def main():
             root = wait_for("About the sound check", prefix + "_sound_shortcut")
             assert any(n.get("text", "").casefold() == "jump to recent sound checks" for n in root.iter("node"))
             tap("Close", prefix + "_sound_help_close")
+            # Close is asynchronous. Wait for the sound check window before sending system Back.
+            wait_for_all(("Live sound check", "Start sound check"), prefix + "_sound_help_dismissed")
             adb("shell", "input", "keyevent", "KEYCODE_BACK")
             wait_for("Step 5 of 5", prefix + "_sound_back")
+
+            # Walk back from the end one screen at a time, using both Back controls.
+            tap("Back", prefix + "_reverse_from_finish")
+            wait_for_all(("Step 4 of 5", "Phone pictures"), prefix + "_reverse_phone")
+            adb("shell", "input", "keyevent", "KEYCODE_BACK")
+            wait_for_all(("Step 3 of 5", "Show Samsung steps"), prefix + "_reverse_tv")
+            tap("Back", prefix + "_reverse_from_tv")
+            wait_for_all(("Step 2 of 5", "Selected: Samsung"), prefix + "_reverse_brand")
+            adb("shell", "input", "keyevent", "KEYCODE_BACK")
+            wait_for_all(("Step 1 of 5", "Start picture setup"), prefix + "_reverse_start")
+
+            # Going forward again keeps the earlier choices without selecting them again.
+            tap("Start picture setup", prefix + "_reverse_start_again")
+            wait_for_all(("Step 2 of 5", "Selected: Samsung"), prefix + "_reverse_brand_retained")
+            tap("Next", prefix + "_reverse_reuse_brand")
+            wait_for_all(("Step 3 of 5", "Show Samsung steps"), prefix + "_reverse_tv_retained")
+            reveal("? Setup help", prefix + "_reverse_tv_help")
+            wait_for("Jump to Google Home pictures", prefix + "_reverse_home_app_retained")
+            tap("Continue without pictures", prefix + "_reverse_skip_tv")
+            wait_for_all(("Step 4 of 5", "Phone pictures"), prefix + "_reverse_phone_again")
+            reveal("? Setup help", prefix + "_reverse_phone_help")
+            tap("Continue without pictures", prefix + "_reverse_skip_phone")
+            wait_for("Step 5 of 5", prefix + "_reverse_finish_again")
+            print(f"SETUP_REVERSE_OBSERVED: {scale} text scale; steps 5, 4, 3, 2, 1; TV and home-app choices retained", flush=True)
             tap("Go to Home", prefix + "_done")
             wait_for("Connection not verified", prefix + "_unverified")
+            if scale == "1.0":
+                check_roku_handoff()
             appops = adb("shell", "cmd", "appops", "get", package, "RECORD_AUDIO").decode()
             assert "(running)" not in appops, appops
             def page(label, name):
@@ -827,6 +1065,15 @@ def main():
             wait_for_all(("VIZIO V505M-K09 · Android", "My TV matches"), prefix + "_address_guide_model")
             reveal("My screen looks different", prefix + "_address_guide_mismatch")
             wait_for("Find the right screen", prefix + "_address_guide_recovery")
+            reveal("Network menu", prefix + "_address_guide_recovery_network")
+            recovered = wait_for("Step 3 of 5", prefix + "_address_guide_recovery_step")
+            assert any("Highlighted: Network Information." in node.get("content-desc", "") for node in recovered.iter("node"))
+            tap("Next", prefix + "_address_guide_recovery_next")
+            wait_for("Step 4 of 5", prefix + "_address_guide_recovery_next_step")
+            adb("shell", "input", "keyevent", "KEYCODE_BACK")
+            wait_for("Step 3 of 5", prefix + "_address_guide_back_to_recovered_step")
+            adb("shell", "input", "keyevent", "KEYCODE_BACK")
+            wait_for("Find the right screen", prefix + "_address_guide_back_to_recovery")
             tap("Back", prefix + "_address_guide_model_back")
             tap("My TV matches", prefix + "_address_guide_start")
             targets = ("Menu (gear)", "Network", "Network Information", "IP Address", "TV IP address")
@@ -843,6 +1090,11 @@ def main():
                     screenshot(name)
                 tap("Back to address field" if step == len(targets) else "Next", name + "_next")
             wait_for_all(("8.8.8.8", "Ready to check the address you enter."), prefix + "_address_guide_return")
+            reveal("Find my TV’s IP address", prefix + "_address_guide_reopen")
+            reveal("My screen looks different", prefix + "_address_guide_unmatched")
+            tap("Back to address field", prefix + "_address_guide_leave_recovery")
+            idle = wait_for_all(("8.8.8.8", "Ready to check the address you enter."), prefix + "_address_guide_unmatched_return")
+            assert not has(idle, "Read service certificate") and not has(idle, "Review test result")
             reveal("Check this address", prefix + "_network_rejected")
             root = wait_for_all(("Enter the private IPv4 address", "TV identity, pairing and audio protection are not verified."), prefix + "_network_boundary")
             assert not has(root, "Read service certificate")
@@ -905,7 +1157,7 @@ def main():
             tap("Back", prefix + "_network_back")
             reveal("Illustrated setup guides. Jump to a TV or home app", prefix + "_guides")
             reveal("Sony", prefix + "_google_tv")
-            wait_for_all(("Google TV / Android TV — pair a phone remote", "Start guide"), prefix + "_google_intro")
+            wait_for_all(("Set up your Sony TV", "Start guide"), prefix + "_google_intro")
             tap("Start guide", prefix + "_google_start")
             tap("Next", prefix + "_google_store")
             root = wait_for("Google Play", prefix + "_google_phone_store")
@@ -938,7 +1190,11 @@ def main():
                 if clicked:
                     return
                 scroller = next((n for n in root.iter("node") if n.get("class") == "android.widget.ScrollView"), None)
-                assert scroller is not None, "Worksheet content viewport unavailable"
+                if scroller is None:
+                    # The emulator can expose only its root during a keyboard/layout transition.
+                    # Wait for the worksheet before attempting a scroll.
+                    time.sleep(0.5)
+                    continue
                 x0, y0, x1, y1 = map(int, re.findall(r"-?\d+", scroller.get("bounds")))
                 x = (x0 + x1) // 2
                 adb("shell", "input", "swipe", str(x), str(int(y0 + (y1-y0)*.8)), str(x), str(int(y0 + (y1-y0)*.2)), "350")
@@ -1343,6 +1599,62 @@ def main():
         check_output_report()
         check_output_freshness()
         return
+    # A synthetic image in this isolated emulator goes through the real system
+    # picker, image decoder, bundled ML Kit and app review screen. Never inject
+    # OCR text or a result directly into the app.
+    def choose_photo_fixture(display_name, case_prefix):
+        tap("Choose a photo", f"{case_prefix}_choose")
+        chosen = False
+        for attempt in range(6):
+            picker, _ = screen(f"{case_prefix}_picker_{attempt}")
+            labels = {n.get(field, "") for n in picker.iter("node") for field in ("text", "content-desc")}
+            if display_name in labels:
+                tap(display_name, f"{case_prefix}_pick_fixture"); chosen = True; break
+            browse = next((s for s in ("Browse", "Browse…", "Browse...", "Browse files") if s in labels), None)
+            if browse:
+                tap(browse, f"{case_prefix}_browse_{attempt}"); continue
+            # On the stock single-photo picker, media cells expose their capture
+            # date instead of a filename. Accept only one visible photo cell.
+            cells = {s for s in labels if s.startswith("Photo taken on ") or s.startswith("Image taken on ")}
+            if len(cells) == 1:
+                tap(cells.pop(), f"{case_prefix}_pick_single_fixture"); chosen = True; break
+            time.sleep(1)
+        assert chosen, "No unambiguous synthetic image in the observed system picker"
+
+    @contextmanager
+    def published_photo_fixture(fixture_name, display_name, case_prefix):
+        fixture = Path("native/ios/Tests/AQSSNativeFeedbackTests/Fixtures") / fixture_name
+        inserted = adb("shell", "content", "insert", "--uri", "content://media/external_primary/images/media",
+                       "--bind", f"_display_name:s:{display_name}", "--bind", "mime_type:s:image/png",
+                       "--bind", "relative_path:s:Pictures/", "--bind", "is_pending:i:1").decode()
+        (out / f"{case_prefix}-fixture-insert.txt").write_text(inserted)
+        # The AOSP content insert command discards its returned URI. Query the exact
+        # test row; absence or ambiguity fails rather than guessing an item ID.
+        pending_match = r"android\:query-arg-match-pending:i:1"
+        query = adb("shell", shlex.join(["content", "query", "--uri", "content://media/external_primary/images/media",
+                    "--projection", "_id:_display_name:is_pending", "--extra", pending_match, "--where",
+                    f"_display_name='{display_name}' AND relative_path='Pictures/'"])).decode()
+        (out / f"{case_prefix}-fixture-query.txt").write_text(query)
+        rows = re.findall(rf"^Row: \d+ _id=(\d+), _display_name={re.escape(display_name)}, is_pending=1$", query, re.MULTILINE)
+        assert len(rows) == 1, "Expected one identifiable pending fixture in MediaStore"
+        image_uri = "content://media/external_primary/images/media/" + rows[0]
+        try:
+            written = subprocess.run(["adb", "shell", "content", "write", "--uri", image_uri],
+                                     input=fixture.read_bytes(), capture_output=True, timeout=45, check=True)
+            (out / f"{case_prefix}-fixture-write.txt").write_bytes(written.stdout + written.stderr)
+            assert adb("shell", "content", "read", "--uri", image_uri) == fixture.read_bytes(), "Imported image bytes differ"
+            adb("shell", shlex.join(["content", "update", "--uri", image_uri, "--bind", "is_pending:i:0",
+                "--extra", pending_match]))
+            published = adb("shell", "content", "query", "--uri", image_uri, "--projection", "_id:_display_name:is_pending").decode()
+            (out / f"{case_prefix}-fixture-published.txt").write_text(published)
+            assert f"_id={rows[0]}, _display_name={display_name}, is_pending=0" in published, "Fixture is not published to the picker"
+            yield
+        except Exception:
+            screenshot(f"{case_prefix}_failure")
+            raise
+        finally:
+            adb("shell", shlex.join(["content", "delete", "--uri", image_uri, "--extra", pending_match]))
+
     if args.tv_guides_only:
         def guide_tap(label, name):
             # Reopening a brand chooser can retain a previous lower scroll
@@ -1358,18 +1670,43 @@ def main():
                     scroll_meter(f"{name}-scroll-{direction}-{attempt}", down=down)
             raise AssertionError(f"TV guide target unavailable: {label}")
 
+        for page, title, entry in [
+            ("Home", "Follow the TV guide", "Open the TV guide"),
+            ("Sound", "Try a sound check", "Start the check"),
+            ("Devices", "Set up your TV", "Choose the TV you use"),
+            ("Insights", "Read your sound checks", "Open your recent checks"),
+            ("Settings", "Change how the app looks", "Open Appearance"),
+        ]:
+            tag = "feature_pictures_" + page.lower()
+            tap(page, tag + "_page")
+            captions = {
+                "Home": "Open the TV guide below. Follow one picture at a time.",
+                "Sound": "Choose a sound tool below. Start begins a check; Stop ends it.",
+                "Devices": "Choose your TV brand, then follow the pictures for your TV system.",
+                "Insights": "Open Recent sound checks to see the checks you completed.",
+                "Settings": "Tap Appearance to choose a light or dark background.",
+            }
+            wait_for(captions[page], tag + "_visible_picture")
+            screenshot(tag + "_visible_picture")
+            guide_tap("Picture guide", tag + "_open")
+            wait_for_all((title, "1. " + entry), tag + "_first_step")
+            screenshot(tag)
+            adb("shell", "input", "keyevent", "KEYCODE_BACK")
+            wait_for_all((page.upper(), "Picture guide"), tag + "_returned")
+
         tap("Devices", "tv_guides_devices")
         tap("? Device help", "tv_guides_expand_device_help")
         guide_tap("Illustrated setup guides. Jump to a TV or home app", "tv_guides_open")
         guide_tap("Philips", "tv_guides_philips")
         guide_tap("Google TV / Android TV", "tv_guides_philips_platform")
-        guide_tap("? Step help", "tv_guides_philips_help")
-        guide_tap("Other setup options", "tv_guides_philips_options")
+        guide_tap("? Help", "tv_guides_philips_help")
+        guide_tap("Try another way", "tv_guides_philips_options")
         guide_tap("Philips Google TV — pair the voice remote", "tv_guides_philips_remote")
         tap("Start guide", "tv_guides_philips_start")
         for number in range(4):
             tap("Next", f"tv_guides_philips_prefix_{number}")
         wait_for_all(("Step 5 of 10", "Check whether the remote is already paired"), "tv_guides_philips_decision")
+        guide_tap("? Step help", "tv_guides_philips_remote_help")
         guide_tap("Remote already connected", "tv_guides_philips_connected")
         wait_for_all(("Step 10 of 10", "Check the real status"), "tv_guides_philips_skipped")
         screenshot("tv_guides_philips_skipped")
@@ -1382,6 +1719,7 @@ def main():
         wait_for("Step 8 of 10", "tv_guides_philips_skips_reset")
         tap("Back", "tv_guides_philips_blinking_back")
         wait_for("Step 6 of 10", "tv_guides_philips_pair_back")
+        guide_tap("? Step help", "tv_guides_philips_blinking_help")
         guide_tap("Light is not blinking", "tv_guides_philips_not_blinking")
         wait_for("Step 7 of 10", "tv_guides_philips_reset_only_when_needed")
         screenshot("tv_guides_philips_reset_only_when_needed")
@@ -1409,7 +1747,7 @@ def main():
                 screenshot(name + "_missing_intro")
                 raise AssertionError(f"TV guide intro not ready: {name}")
             if has(root, "Resume guide"):
-                guide_tap("? Step help", name + "_restart_help")
+                guide_tap("? Help", name + "_restart_help")
                 guide_tap("Start from the beginning", name + "_restart")
             else:
                 tap("Start part two" if phone else "Start guide", name + "_start")
@@ -1432,6 +1770,7 @@ def main():
         wait_for("Step 6 of 9", "tv_guides_google_back_on_tv")
         tap("Close", "tv_guides_google_close")
         open_brand("Sony", "tv_guides_google_reopen")
+        guide_tap("? Help", "tv_guides_google_resume_help")
         wait_for("Continue at picture 6.", "tv_guides_google_resume_intro")
         tap("Resume guide", "tv_guides_google_resume")
         wait_for("Read your TV code", "tv_guides_google_resumed_tv")
@@ -1455,14 +1794,14 @@ def main():
         tap("Close", "tv_guides_lg_close")
 
         open_brand("LG", "tv_guides_lg_phone")
-        guide_tap("? Step help", "tv_guides_lg_phone_help")
-        guide_tap("Other setup options", "tv_guides_lg_phone_options")
+        guide_tap("? Help", "tv_guides_lg_phone_help")
+        wait_for("Testing on your TV?", "tv_guides_lg_live_check_help")
+        guide_tap("Try another way", "tv_guides_lg_phone_options")
         guide_tap("2. Check LG ThinQ on your phone", "tv_guides_lg_phone_select")
-        # Pairing is an optional action behind Step help, not a primary intro
-        # button. Exercise the real help disclosure and one-step Back history.
-        guide_tap("? Step help", "tv_guides_lg_phone_pairing_disclosure")
+        # Open intro Help before jumping to the pairing guide, then verify Back.
+        guide_tap("? Help", "tv_guides_lg_phone_pairing_disclosure")
         guide_tap("Open pairing pictures", "tv_guides_lg_phone_pairing_jump")
-        wait_for("LG — pair with ThinQ", "tv_guides_lg_pairing_intro")
+        wait_for("Connect your LG TV", "tv_guides_lg_pairing_intro")
         tap("Back", "tv_guides_lg_pairing_back_to_phone")
         wait_for("2. Check LG ThinQ on your phone", "tv_guides_lg_phone_restored")
         start_picture("tv_guides_lg_phone", phone=True)
@@ -1470,12 +1809,19 @@ def main():
         wait_for_all(("Check the phone controls", "Finish part two"), "tv_guides_lg_phone_final")
         screenshot("tv_guides_lg_phone_final")
         tap("Finish part two", "tv_guides_lg_phone_finish")
+        # Returning from the guide may restore the Devices tab below its status header.
+        wait_for("• Devices", "tv_guides_lg_phone_returned_to_devices")
+        for attempt in range(3):
+            root, _ = screen(f"tv_guides_lg_phone_status_view_{attempt}")
+            if has(root, "DEVICES"):
+                break
+            scroll_meter(f"tv_guides_lg_phone_scroll_to_status_{attempt}", down=False)
         wait_for_all(("DEVICES", "Connection not verified"), "tv_guides_lg_phone_no_connection")
 
-        # Vizio exposes two primary routes; its brand screen has a visible
-        # `? Other setup options` disclosure, not a route-intro step-help button.
+        # Open the brand's Help to reach the alternate Vizio account route.
         open_brand("Vizio", "tv_guides_vizio")
-        guide_tap("? Other setup options", "tv_guides_vizio_options")
+        guide_tap("? Help", "tv_guides_vizio_options")
+        guide_tap("Try another way", "tv_guides_vizio_other_routes")
         guide_tap("Vizio — link the TV account (6-digit code)", "tv_guides_vizio_account")
         start_picture("tv_guides_vizio")
         for number in range(2, 12):
@@ -1487,10 +1833,10 @@ def main():
         tap("Close", "tv_guides_vizio_close")
 
         for name, brand, platform, title, selection in (
-            ("tcl_roku", "TCL", "Roku TV", "Find my IP address", "Network"),
-            ("sharp", "Sharp — Roku TV models", None, "Find my exact model", "System"),
-            ("roku", "Roku-branded TV", None, "Find my IP address", "Network"),
-            ("philips_roku", "Philips", "Roku TV", "Find my IP address", "Network"),
+            ("tcl_roku", "TCL", "Roku TV", "Set up your TCL TV", "Network"),
+            ("sharp", "Sharp — Roku TV models", None, "Set up your Sharp TV", "System"),
+            ("roku", "Roku-branded TV", None, "Set up your Roku TV", "Network"),
+            ("philips_roku", "Philips", "Roku TV", "Set up your Philips TV", "Network"),
         ):
             open_brand(brand, "tv_guides_" + name, platform)
             wait_for(title, "tv_guides_" + name + "_title")
@@ -1499,10 +1845,35 @@ def main():
             tap("Next", "tv_guides_" + name + "_menu")
             wait_for_all(("Step 3 of 5", "3 → " + selection), "tv_guides_" + name + "_correct_menu")
             screenshot("tv_guides_" + name + "_correct_menu")
+            if name == "tcl_roku":
+                guide_tap("? Step help", "tv_guides_tcl_step_help")
+                guide_tap("My screen looks different", "tv_guides_tcl_mismatch")
+                wait_for("Find the right screen", "tv_guides_tcl_mismatch_open")
+                guide_tap("Choose another model or menu", "tv_guides_tcl_other_menus")
+                guide_tap("Find my exact model (Roku TV)", "tv_guides_tcl_roku_model")
+                wait_for_all(("Find my exact model (Roku TV)", "Start guide"), "tv_guides_tcl_roku_model_open")
+                tap("Back", "tv_guides_tcl_roku_model_back")
+                wait_for("Hide other ways", "tv_guides_tcl_alternatives_still_open")
+                tap("Back", "tv_guides_tcl_alternatives_back")
+                wait_for("Find the right screen", "tv_guides_tcl_mismatch_after_model")
+
+                guide_tap("Choose another TV system", "tv_guides_tcl_other_systems")
+                wait_for("Which name do you see on your TV?", "tv_guides_tcl_system_choices")
+                screenshot("tv_guides_tcl_system_choices")
+                guide_tap("Google TV / Android TV", "tv_guides_tcl_switch_to_google")
+                wait_for("TCL • Google TV / Android TV", "tv_guides_tcl_google_platform")
+                tap("Back", "tv_guides_tcl_google_to_picker")
+                wait_for("Which name do you see on your TV?", "tv_guides_tcl_picker_restored")
+                tap("Back", "tv_guides_tcl_picker_to_mismatch")
+                wait_for("Find the right screen", "tv_guides_tcl_mismatch_after_system")
+                tap("Return to step", "tv_guides_tcl_return_to_picture")
+                wait_for_all(("Step 3 of 5", "3 → Network"), "tv_guides_tcl_network_restored")
             tap("Close", "tv_guides_" + name + "_close")
 
         open_brand("Hisense", "tv_guides_hisense", "VIDAA")
-        wait_for("43A6GV / VIDAA U5", "tv_guides_hisense_model_scope")
+        guide_tap("? Help", "tv_guides_hisense_model_help")
+        wait_for_all(("Hisense • VIDAA (43A6GV / U5 documented)", "Example TV models: 43A6GV"),
+                     "tv_guides_hisense_model_scope")
         screenshot("tv_guides_hisense_model_scope")
         tap("Close", "tv_guides_hisense_close")
         open_brand("Insignia — match Roku TV or Fire TV", "tv_guides_insignia", "Fire TV")
@@ -1512,6 +1883,7 @@ def main():
         screenshot("tv_guides_fire_choice")
         tap("Next", "tv_guides_fire_account")
         wait_for_all(("Step 6 of 8", "Read the account approval screen"), "tv_guides_fire_tv_account")
+        guide_tap("? Step help", "tv_guides_fire_account_help")
         guide_tap("Account sign-in finished", "tv_guides_fire_account_done")
         wait_for("Step 8 of 8", "tv_guides_fire_skipped_code")
         tap("Back", "tv_guides_fire_back")
@@ -1520,8 +1892,8 @@ def main():
         tap("Close", "tv_guides_fire_close")
 
         open_brand("TCL", "tv_guides_google_manual", "Google TV / Android TV")
-        guide_tap("? Step help", "tv_guides_google_setup_help")
-        guide_tap("Other setup options", "tv_guides_google_setup_options")
+        guide_tap("? Help", "tv_guides_google_setup_help")
+        guide_tap("Try another way", "tv_guides_google_setup_options")
         guide_tap("Google TV — first setup with Google Home", "tv_guides_google_setup")
         start_picture("tv_guides_google_qr")
         for number in range(8): tap("Next", f"tv_guides_google_qr_prefix_{number}")
@@ -1540,6 +1912,75 @@ def main():
         tap("Back", "tv_guides_google_manual_back")
         wait_for("Step 1 of 7", "tv_guides_google_manual_back_restored")
         tap("Close", "tv_guides_google_manual_close")
+        open_brand("Another brand", "tv_guides_model")
+        start_picture("tv_guides_model")
+        tap("Next", "tv_guides_model_open_entry")
+        entry = wait_for_all(("Step 2 of 5", "Find the model safely", "Type the model below or use a photo"),
+                             "tv_guides_model_input")
+        screenshot("tv_guides_model_entry_cue")
+
+        def focus_model_field(page):
+            fields = [node for node in page.iter("node") if node.get("class") == "android.widget.EditText"]
+            assert len(fields) == 1, "The model step needs one visible input box"
+            x0, y0, x1, y1 = map(int, re.findall(r"-?\d+", fields[0].get("bounds")))
+            adb("shell", "input", "tap", str((x0+x1)//2), str((y0+y1)//2))
+
+        focus_model_field(entry)
+        adb("shell", "input", "text", "xr-65x90k")
+        adb("shell", "input", "keyevent", "KEYCODE_ENTER")
+        wait_for_all(("Step 3 of 5", "Identify the TV platform", "Model: XR-65X90K", "Model year: 2022",
+                      "This exact model uses Google TV. Look for the Google TV home screen."),
+                     "tv_guides_model_typed_next")
+        screenshot("tv_guides_model_typed_next")
+        tap("Back", "tv_guides_model_typed_back")
+        wait_for_all(("Step 2 of 5", "XR-65X90K"), "tv_guides_model_restored")
+        guide_tap("Read model from photo", "tv_guides_model_open_photo")
+        wait_for("Choose a photo", "tv_guides_model_photo_before_cancel")
+        adb("shell", "input", "keyevent", "KEYCODE_BACK")
+        wait_for_all(("Step 2 of 5", "XR-65X90K"), "tv_guides_model_cancel")
+        guide_tap("Read model from photo", "tv_guides_model_reopen_photo")
+        with published_photo_fixture("tv-photo-labels.png", "aqss-guide-model.png", "tv_guides_model"):
+            choose_photo_fixture("aqss-guide-model.png", "tv_guides_model")
+            page = wait_for_all(("Step 3 of 5", "Identify the TV platform", "Brand: VIZIO", "Model: V505M-K09",
+                                 "Model year: 2023 lineup",
+                                 "This exact model uses SmartCast. Look for the SmartCast Home screen."),
+                                "tv_guides_model_photo_next", attempts=30)
+            assert not has(page, "10.20.30.40"), "The model result may only carry TV identification"
+            screenshot("tv_guides_model_photo_next")
+        tap("Back", "tv_guides_model_photo_back")
+        restored = wait_for_all(("Step 2 of 5", "V505M-K09"), "tv_guides_photo_model_restored")
+        focus_model_field(restored)
+        adb("shell", "input", "keyevent", "KEYCODE_MOVE_END", *(["KEYCODE_DEL"] * len("V505M-K09")))
+        tap("Next", "tv_guides_model_clear_continue")
+
+        def assert_generic_platform(name):
+            page = wait_for_all(("Step 3 of 5", "Another brand", "Look for Google TV, Android TV, Roku"), name)
+            assert not has(page, "Model: V505M-K09") and not has(page, "SmartCast")
+
+        assert_generic_platform("tv_guides_model_cleared")
+        screenshot("tv_guides_model_cleared")
+        tap("Back", "tv_guides_model_clear_back")
+        cleared = wait_for_all(("Step 2 of 5", "Full model number"), "tv_guides_model_empty_again")
+        assert not has(cleared, "V505M-K09")
+        focus_model_field(cleared)
+        adb("shell", "input", "keyevent", "KEYCODE_ENTER")
+        assert_generic_platform("tv_guides_model_empty_keyboard")
+
+        tap("Back", "tv_guides_model_detour_entry")
+        focus_model_field(wait_for("Full model number", "tv_guides_model_detour_field"))
+        adb("shell", "input", "text", "V505M-K09")
+        adb("shell", "input", "keyevent", "KEYCODE_ENTER")
+        model_picture = ("Step 3 of 5", "Model: V505M-K09", "This exact model uses SmartCast.")
+        wait_for_all(model_picture, "tv_guides_model_before_brand_picker")
+        guide_tap("? Step help", "tv_guides_model_detour_help")
+        guide_tap("My screen looks different", "tv_guides_model_detour_mismatch")
+        guide_tap("Choose another TV or app", "tv_guides_model_brand_picker")
+        wait_for("Choose your TV brand", "tv_guides_model_picker_visible")
+        tap("Back", "tv_guides_model_dismiss_brand_picker")
+        wait_for("Find the right screen", "tv_guides_model_return_to_mismatch")
+        tap("Return to step", "tv_guides_model_return_to_picture")
+        wait_for_all(model_picture, "tv_guides_model_after_brand_picker")
+        tap("Close", "tv_guides_model_close")
         tap("Home", "tv_guides_home")
         wait_for("Connection not verified", "tv_guides_no_protection")
         print("TV_GUIDES_OBSERVED: TV/phone code separation, optional choices, Philips pairing decisions, Fire QR completion, brand/platform menus, app-specific phone checks, rotation/resume and large text; illustrated navigation only, no physical pairing", flush=True)
@@ -1562,13 +2003,14 @@ def main():
 
         tap("Devices", "samsung_devices")
         open_samsung("samsung_first")
-        intro = wait_for("Samsung — connect with SmartThings", "samsung_single_intro")
+        intro = wait_for("Set up your Samsung TV", "samsung_single_intro")
         assert not has(intro, "TV shows a PIN"), "Do not predict the TV request at the entry screen"
         tap("Start guide", "samsung_start")
         for number in range(14):
             tap("Next", f"samsung_prefix_{number}")
         wait_for_all(("Step 15 of 17", "Approve on the television"), "samsung_ok_request")
         screenshot("samsung_ok_request")
+        tap_scroll("? Step help", "samsung_pin_options_help")
         tap_scroll("TV shows a PIN", "samsung_switch_pin")
         wait_for_all(("Step 15 of 18", "Read the TV PIN", "On your TV"), "samsung_tv_pin")
         screenshot("samsung_tv_pin")
@@ -1585,6 +2027,7 @@ def main():
         wait_for("Enter the TV PIN", "samsung_pin_portrait")
         tap("Close", "samsung_close_pin")
         open_samsung("samsung_reopen_pin")
+        tap_scroll("? Help", "samsung_pin_resume_help")
         wait_for("Continue at picture 16.", "samsung_pin_resume_intro")
         tap("Resume guide", "samsung_resume_pin")
         wait_for("Enter the TV PIN", "samsung_resumed_phone_pin")
@@ -1593,7 +2036,7 @@ def main():
         tap("Finish guide", "samsung_pin_finish")
         wait_for("No qualified device connected", "samsung_pin_finished_unknown")
         open_samsung("samsung_cleared")
-        root = wait_for_all(("Samsung — connect with SmartThings", "Start guide"), "samsung_pairing_bookmark_cleared")
+        root = wait_for_all(("Set up your Samsung TV", "Start guide"), "samsung_pairing_bookmark_cleared")
         assert not has(root, "Continue at picture"), "Completing the variant must clear the shared pairing bookmark"
         tap("Close", "samsung_close_cleared")
         tap("Home", "samsung_home")
@@ -1612,7 +2055,7 @@ def main():
         tap_scroll("Phone pictures", "samsung_phone_pictures")
         wait_for_all(("2. Check Samsung on your phone", "TV is missing — open pairing"), "samsung_phone_intro")
         tap_scroll("TV is missing — open pairing", "samsung_missing_help")
-        wait_for("Samsung — connect with SmartThings", "samsung_missing_pairing_intro")
+        wait_for("Set up your Samsung TV", "samsung_missing_pairing_intro")
         tap("Back", "samsung_missing_back")
         wait_for("2. Check Samsung on your phone", "samsung_missing_returns_to_phone_intro")
         tap("Start part two", "samsung_phone_begin")
@@ -1787,31 +2230,10 @@ def main():
         wait_for("Voice check", name + "_sound_page")
         print("SUPPORT_REPORT_NATIVE_OBSERVED: " + name, flush=True)
 
-    # A synthetic image in this isolated emulator goes through the real system
-    # picker, image decoder, bundled ML Kit and app review screen. Never inject
-    # OCR text or a result directly into the app.
-    def choose_photo_fixture(display_name, case_prefix):
-        tap("Choose a photo", f"{case_prefix}_choose")
-        chosen = False
-        for attempt in range(6):
-            picker, _ = screen(f"{case_prefix}_picker_{attempt}")
-            labels = {n.get(field, "") for n in picker.iter("node") for field in ("text", "content-desc")}
-            if display_name in labels:
-                tap(display_name, f"{case_prefix}_pick_fixture"); chosen = True; break
-            browse = next((s for s in ("Browse", "Browse…", "Browse...", "Browse files") if s in labels), None)
-            if browse:
-                tap(browse, f"{case_prefix}_browse_{attempt}"); continue
-            # On the stock single-photo picker, media cells expose their capture
-            # date instead of a filename. Accept only one visible photo cell.
-            cells = {s for s in labels if s.startswith("Photo taken on ") or s.startswith("Image taken on ")}
-            if len(cells) == 1:
-                tap(cells.pop(), f"{case_prefix}_pick_single_fixture"); chosen = True; break
-            time.sleep(1)
-        assert chosen, "No unambiguous synthetic image in the observed system picker"
-
     def photo_fixture_case(fixture_name, display_name, case_prefix, expected):
         tap("Devices", f"{case_prefix}_devices_page")
-        tap("TV photo setup. Read a model label or Network settings photo", "open_photo_check")
+        reveal("? Device help", f"{case_prefix}_open_device_help")
+        reveal("TV photo setup. Read a model label or settings photo", f"{case_prefix}_open_photo_check")
         empty = wait_for("No photo selected", f"{case_prefix}_starts_empty")
         assert not has(empty, "Brand:") and not has(empty, "Model:") and not has(empty, "TV IP hint:"), "New photo screen must keep optional details hidden"
         if case_prefix == "photo":
@@ -1832,33 +2254,15 @@ def main():
                     screenshot("photo_guide_ip_address")
                 tap("Back to photo setup" if step == 4 else "Next", f"photo_guide_advance_{step}")
             wait_for_all(("TV photo setup", "No photo selected"), "photo_guide_returns_to_photo")
+            if not has(screen("photo_guide_help_state")[0], "VIZIO V505M-K09 address pictures"):
+                tap("? Photo help", "photo_reopen_guide_help")
+            tap("VIZIO V505M-K09 address pictures", "photo_reopen_model_guide")
+            tap("My screen looks different", "photo_guide_unmatched")
+            tap("Back to photo setup", "photo_guide_leave_recovery")
+            wait_for_all(("TV photo setup", "No photo selected"), "photo_guide_unmatched_returns_to_photo")
         tap("Show photo details", f"{case_prefix}_show_details")
         wait_photo_fields(("No photo selected", "Brand: Not identified", "Model: Not identified", "TV IP hint: Not identified"), f"{case_prefix}_empty_details")
-        fixture = Path("native/ios/Tests/AQSSNativeFeedbackTests/Fixtures") / fixture_name
-        inserted = adb("shell", "content", "insert", "--uri", "content://media/external_primary/images/media",
-                       "--bind", f"_display_name:s:{display_name}", "--bind", "mime_type:s:image/png",
-                       "--bind", "relative_path:s:Pictures/", "--bind", "is_pending:i:1").decode()
-        (out / f"{case_prefix}-fixture-insert.txt").write_text(inserted)
-        # The AOSP content insert command discards its returned URI. Query the exact
-        # test row; absence or ambiguity fails rather than guessing an item ID.
-        pending_match = r"android\:query-arg-match-pending:i:1"
-        query = adb("shell", shlex.join(["content", "query", "--uri", "content://media/external_primary/images/media",
-                    "--projection", "_id:_display_name:is_pending", "--extra", pending_match, "--where",
-                    f"_display_name='{display_name}' AND relative_path='Pictures/'"])).decode()
-        (out / f"{case_prefix}-fixture-query.txt").write_text(query)
-        rows = re.findall(rf"^Row: \d+ _id=(\d+), _display_name={re.escape(display_name)}, is_pending=1$", query, re.MULTILINE)
-        assert len(rows) == 1, "Expected one identifiable pending fixture in MediaStore"
-        image_uri = "content://media/external_primary/images/media/" + rows[0]
-        try:
-            written = subprocess.run(["adb", "shell", "content", "write", "--uri", image_uri],
-                                     input=fixture.read_bytes(), capture_output=True, timeout=45, check=True)
-            (out / f"{case_prefix}-fixture-write.txt").write_bytes(written.stdout + written.stderr)
-            assert adb("shell", "content", "read", "--uri", image_uri) == fixture.read_bytes(), "Imported image bytes differ"
-            adb("shell", shlex.join(["content", "update", "--uri", image_uri, "--bind", "is_pending:i:0",
-                "--extra", pending_match]))
-            published = adb("shell", "content", "query", "--uri", image_uri, "--projection", "_id:_display_name:is_pending").decode()
-            (out / f"{case_prefix}-fixture-published.txt").write_text(published)
-            assert f"_id={rows[0]}, _display_name={display_name}, is_pending=0" in published, "Fixture is not published to the picker"
+        with published_photo_fixture(fixture_name, display_name, case_prefix):
             choose_photo_fixture(display_name, case_prefix)
             wait_photo_fields(expected,
                          f"{case_prefix}_native_ocr_result", attempts=30)
@@ -1908,11 +2312,7 @@ def main():
             wait_for("TV photo setup", f"{case_prefix}_close_returns_devices")
             tap("Home", f"{case_prefix}_back_home")
             wait_for("Connection not verified", f"{case_prefix}_did_not_connect")
-        except Exception:
-            screenshot(f"{case_prefix}_failure")
-            raise
-        finally:
-            adb("shell", shlex.join(["content", "delete", "--uri", image_uri, "--extra", pending_match]))
+
 
     photo_fixture_case("tv-photo-labels.png", "aqss-tv-labels.png", "photo",
                        ("Brand: VIZIO", "Model: V505M-K09", "TV IP hint: 10.20.30.40", "Nothing is connected."))

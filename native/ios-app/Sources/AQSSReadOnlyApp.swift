@@ -254,7 +254,10 @@ private struct ReviewedTextSharePresenter: UIViewControllerRepresentable {
         private func present(_ pending: ReviewedTextShareRequest, from presenter: UIViewController,
                              anchor: UIViewController) {
             let controller = UIActivityViewController(activityItems: [pending.text], applicationActivities: nil)
-            controller.modalPresentationStyle = UIDevice.current.userInterfaceIdiom == .pad ? .popover : .pageSheet
+            // Leave the phone's modal layout to UIKit, as in the native Share control.
+            if UIDevice.current.userInterfaceIdiom == .pad {
+                controller.modalPresentationStyle = .popover
+            }
             if let popover = controller.popoverPresentationController {
                 popover.sourceView = anchor.view
                 popover.sourceRect = anchor.view.bounds
@@ -376,6 +379,7 @@ struct SupportReportReviewContent: View {
     @Binding var includeRecentChecks: Bool
     var body: some View {
         Group {
+            FeaturePictureStep(picture: "review-share", caption: "Read the report. Share opens your device’s share menu. Choose Copy or Cancel.", theme: theme)
             Toggle("Include recent sound checks", isOn: $includeRecentChecks)
                 .tint(theme.accent).accessibilityIdentifier("support-report-include-checks")
             let preview = report.text(includeRecentChecks: includeRecentChecks)
@@ -455,7 +459,7 @@ private struct ReadOnlyHomeView: View {
     @AppStorage("aqssGuideDismissedV1") private var guideDismissed = false
     @State private var checkedFirstVisit = false
     @State private var guide = AQSSGuideProgress()
-    @State private var pausedGuide: AQSSGuideProgress?
+    @State private var pausedGuide: (progress: AQSSGuideProgress, setupSystem: String?)?
     private var tutorialTopicID: String? { guide.topicID }
     private var tutorialIndex: Int { guide.index }
     @State private var beginnerTourFinished = false
@@ -497,7 +501,7 @@ private struct ReadOnlyHomeView: View {
                     header
                     ScrollView {
                         VStack(alignment: .leading, spacing: 22) {
-                            pageHeading.padding(.top, 20).id("page-heading")
+                            headingWithPictureGuide.padding(.top, 20).id("page-heading")
                             pageContent
                         }.frame(maxWidth: 680, alignment: .leading).padding([.horizontal, .bottom], 20).frame(maxWidth: .infinity)
                     }.clipped().id(pageScreenID).accessibilityIdentifier("home-scroll")
@@ -564,9 +568,29 @@ private struct ReadOnlyHomeView: View {
                 }
                 pictureTarget = nil; completedPictureRoute = nil
                 if voiceAfterGuide { voiceAfterGuide = false; voiceCheckVisible = true }
-            }) { request in SetupGuidesView(theme: theme, initialGroup: request.group, deviceGroup: request.deviceGroup, returningToTutorial: tutorialTopicID != nil, onDeviceGroupSelected: { selectedSetupSystem = $0 }, onVoiceCheck: { voiceAfterGuide = true }, onPartOne: { route in
-                if pictureTarget == "connectionPlan" && guide.completePictures(expectedTarget: "connectionPlan", routeID: route) { pictureTarget = "connectionCheck" }
-            }, onFinish: { completedPictureRoute = $0 }) }
+            }) { request in
+                SetupGuidesView(
+                    theme: theme, initialGroup: request.group, deviceGroup: request.deviceGroup,
+                    returningToTutorial: tutorialTopicID != nil,
+                    selectedSystem: Binding(
+                        get: { selectedSetupSystem },
+                        set: { system in
+                            if let system, !acceptsSetupGroup(system) { return }
+                            selectedSetupSystem = system
+                        }
+                    ),
+                    onVoiceCheck: { voiceAfterGuide = true },
+                    onPartOne: { route, group in
+                        if pictureTarget == "connectionPlan", acceptsSetupGroup(group),
+                           guide.completePictures(expectedTarget: "connectionPlan", routeID: route) {
+                            pictureTarget = "connectionCheck"
+                        }
+                    },
+                    onFinish: { route, group in
+                        if acceptsSetupGroup(group) { completedPictureRoute = route }
+                    }
+                )
+            }
             .sheet(isPresented: $navigationVisible, onDismiss: performHelpJump) {
                 menuSheet("Jump to") {
                     action("Sound check", icon: "mic") { pendingHelpJump = "sound"; navigationVisible = false }
@@ -638,6 +662,16 @@ private struct ReadOnlyHomeView: View {
         }
     }
 
+    // Viewing a guide for another brand does not change the tutorial's TV or complete its pictures.
+    private func acceptsSetupGroup(_ group: String) -> Bool {
+        guard pictureTarget != nil, let brand = guide.selected("chooseTV")?.id,
+              brand != "other", brand != "unsure",
+              let groupBrand = group.split(separator: "_").first.map(String.init),
+              AQSSTutorialContent.choices["chooseTV"]?.contains(where: { $0.id == groupBrand }) == true
+        else { return true }
+        return groupBrand == brand
+    }
+
     private func showSetup(_ group: String = "") {
         completedPictureRoute = nil
         pictureTarget = tutorialTopicID == "getting_started" && ["connectionPlan", "connectionCheck"].contains(tutorialStep?.target ?? "") ? tutorialStep?.target : nil
@@ -667,13 +701,57 @@ private struct ReadOnlyHomeView: View {
         }.buttonStyle(AppButtonStyle(theme: theme)).padding(.horizontal, 20).padding(.vertical, 4).foregroundColor(theme.accent).background(theme.background)
     }
 
+    @ViewBuilder private var headingWithPictureGuide: some View {
+        if textSize.isAccessibilitySize || isShowingAdvancedSettings {
+            VStack(alignment: .leading, spacing: 8) {
+                pageHeading
+                FeaturePictureGuideButton(topic: pageScreenID, theme: theme)
+            }
+        } else {
+            HStack(spacing: 12) {
+                pageHeading
+                Spacer(minLength: 0)
+                FeaturePictureGuideButton(topic: pageScreenID, theme: theme)
+            }
+        }
+    }
+
     private var pageHeading: some View {
         Text(isShowingAdvancedSettings ? "Advanced Settings" : currentPage.title.uppercased()).font(.title.bold())
             .fixedSize(horizontal: false, vertical: true).accessibilityAddTraits(.isHeader)
             .accessibilityIdentifier("page-\(pageScreenID)")
     }
 
+    private var pageTaskPicture: String {
+        switch pageScreenID {
+        case "sound": return "start-mic"
+        case "devices": return "choose-tv"
+        case "insights": return "recent"
+        case "settings": return "day-night"
+        case "settings-advanced": return "switch-help"
+        default: return "open-guide"
+        }
+    }
+
+    private var pageTaskCaption: String {
+        switch pageScreenID {
+        case "sound": return "Choose a sound tool below. Start begins a check; Stop ends it."
+        case "devices": return "Choose your TV brand, then follow the pictures for your TV system."
+        case "insights": return "Open Recent sound checks to see the checks you completed."
+        case "settings": return "Tap Appearance to choose a light or dark background."
+        case "settings-advanced": return "Tap the question mark beside a switch to learn what it does."
+        default: return "Open the TV guide below. Follow one picture at a time."
+        }
+    }
+
+    private var taskPicture: some View {
+        FeaturePictureStep(picture: pageTaskPicture, caption: pageTaskCaption, theme: theme)
+    }
+
+    private var settingsControlsFirst: Bool { page == "settings" && textSize.isAccessibilitySize }
+
     @ViewBuilder private var pageContent: some View {
+        if !settingsControlsFirst { taskPicture }
         switch page {
         case "sound": soundPage
         case "devices": devicesPage
@@ -727,7 +805,7 @@ private struct ReadOnlyHomeView: View {
             destinationCard("Live sound check", subtitle: "Try a 30-second microphone check", icon: "mic") { liveSoundCheckVisible = true }
             destinationCard("Voice check", subtitle: "See microphone activity and recognized words", icon: "waveform") { voiceCheckVisible = true }
             QuestionDisclosure(title: "More sound tools", theme: theme, isExpanded: $soundToolsExpanded, identifier: "more-sound-tools") {
-                destinationCard("Output details", subtitle: "Review reported outputs", icon: "speaker.wave.2") { outputDetailsVisible = true }.accessibilityIdentifier("output-details-open")
+                destinationCard("Sound output", subtitle: "Check which speaker is selected", icon: "speaker.wave.2") { outputDetailsVisible = true }.accessibilityIdentifier("output-details-open")
                 destinationCard("Test setup", subtitle: "Record a two-phone test", icon: "doc.text") { testSetupDraft.clear(); testSetupVisible = true }.accessibilityIdentifier("test-setup-open")
             }
             card(target: "options") {
@@ -845,6 +923,7 @@ private struct ReadOnlyHomeView: View {
                     }
 
             }
+            if settingsControlsFirst { taskPicture }
             QuestionDisclosure(title: "More settings", theme: theme, isExpanded: $moreSettingsExpanded, identifier: "more-settings") {
                 action("Build details", icon: "info.circle") {
                     let details = installedBuildDetails
@@ -863,6 +942,7 @@ private struct ReadOnlyHomeView: View {
                         if item.id != AQSSInterfaceContent.settings.last?.id { Divider().padding(.leading, 42) }
                     }
                 }
+                if settingsControlsFirst { taskPicture }
                 whiteSettingsCard {
                     settingInfo("Device and route", detail: "Unknown", explanation: "No qualified output hardware or route has been identified. Use the matching device guide, then independently verify its output path.", target: "route")
                     Divider()
@@ -883,6 +963,8 @@ private struct ReadOnlyHomeView: View {
         if let report = item.supportReport {
             SupportReportReviewContent(theme: theme, report: report, includeRecentChecks: $includeRecentChecks)
         } else {
+            FeaturePictureStep(picture: item.shareText == nil ? "switch-help" : "review-share",
+                caption: item.shareText == nil ? "Read the help, then tap Back to return to your setting." : "Read the details before sharing. Copy copies them; Cancel returns to the app.", theme: theme)
             Text(item.explanation).fixedSize(horizontal: false, vertical: true)
             if let text = item.shareText {
                 ReviewedTextShareButton(text: text, theme: theme, title: "Share build details", identifier: "share-build-details")
@@ -1042,6 +1124,7 @@ private struct ReadOnlyHomeView: View {
     private func menuSheet<Content: View>(_ title: String, @ViewBuilder content: () -> Content) -> some View {
         ScrollView { VStack(alignment: .leading, spacing: 16) {
             HStack { Text(title).font(.title2.bold()); Spacer(); RoseButton(title: "Back", theme: theme, compact: true) { helpVisible = false; navigationVisible = false; pagesVisible = false } }
+            FeaturePictureStep(picture: "select", caption: "Tap the choice you want. Back returns to the previous screen.", theme: theme)
             content()
         }.padding(20) }
             .background(theme.background).foregroundColor(theme.text).accessibilityIdentifier("menu-scroll")
@@ -1093,19 +1176,23 @@ private struct ReadOnlyHomeView: View {
         if restore { page = previousPage; focusedElement = .help }
     }
     private func exitToHome() {
-        pausedGuide = guide
+        pausedGuide = (progress: guide, setupSystem: selectedSetupSystem)
         if page != "home" { rememberPage() }
         closeTutorial(restore: false)
         page = "home"; navigationTarget = "page-heading"; navigationRequest += 1
     }
     private func resumeTutorial() {
         if let saved = pausedGuide {
-            previousPage = page; guide = saved; pausedGuide = nil
+            previousPage = page
+            selectedSetupSystem = saved.setupSystem
+            guide = saved.progress
+            pausedGuide = nil
             moreFeatures = false; tutorialHelp = false
         } else { startTutorial("getting_started") }
     }
     private func tutorialPanel(topic: AQSSTutorialTopic, step: AQSSTutorialStep) -> some View {
-        VStack(spacing: 0) {
+        let phone: AQSSSetupPhone = UIDevice.current.userInterfaceIdiom == .pad ? .ipad : .iphone
+        return VStack(spacing: 0) {
             HStack {
                 Text("Step \(guide.stepNumber) of \(guide.stepCount)").font(.subheadline.weight(.semibold)).foregroundColor(theme.muted)
                 Spacer(minLength: 8)
@@ -1116,18 +1203,16 @@ private struct ReadOnlyHomeView: View {
             }) {
                 VStack(alignment: .leading, spacing: 20) {
                     GuidePictureCue(screenKey: tutorialStepKey) {
-                        HStack(spacing: 18) {
-                            Image(systemName: step.target == "connectionCheck" ? "iphone" : "tv")
-                            Image(systemName: "arrow.right")
-                            Image(systemName: "iphone")
-                        }.font(.system(size: 32, weight: .light)).foregroundColor(theme.violet)
-                    }.accessibilityHidden(true)
+                        FeaturePictureStep(picture: step.target == "chooseTV" ? "choose-tv" :
+                            step.target == "connectionCheck" ? "verify-tv" :
+                            step.target == "welcome" ? "open-guide" : "select",
+                            caption: step.explanation, theme: theme)
+                    }
                     Text(step.title).font(.largeTitle.bold()).fixedSize(horizontal: false, vertical: true)
                         .accessibilityAddTraits(.isHeader).accessibilityFocused($focusedElement, equals: .tutorial(tutorialStepKey))
-                    Text(step.explanation).fixedSize(horizontal: false, vertical: true)
                     if topic.id == "getting_started" {
-                        if let selected = guide.selected("chooseTV"), step.target != "chooseTV" {
-                            Text("\(selected.title)  ·  iPhone").font(.callout.weight(.semibold)).foregroundColor(theme.accent)
+                        if let selected = guide.selected("chooseTV") {
+                            Text("\(selected.title)  ·  \(phone.label)").font(.callout.weight(.semibold)).foregroundColor(theme.accent)
                                 .accessibilityIdentifier("guide-device-context")
                         }
                         if step.target == "welcome" { Text("1. Your TV  →  2. Your phone").foregroundColor(theme.accent).font(.headline) }

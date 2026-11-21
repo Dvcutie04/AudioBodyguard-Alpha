@@ -23,7 +23,16 @@ public enum AQSSSetupPhone: String, CaseIterable, Sendable {
 
 public enum AQSSSetupPresentation {
     /// Keep documented shared app labels. Specialize only actual phone surfaces.
-    public static func step(_ original: AQSSSetupStep, phone: AQSSSetupPhone) -> AQSSSetupStep {
+    public static func step(_ original: AQSSSetupStep, phone: AQSSSetupPhone,
+                            tv: TVModelIdentity? = nil) -> AQSSSetupStep {
+        if original.screen == "Platform", let platform = tv?.platform,
+           let hint = tv?.platformHint {
+            return AQSSSetupStep(title: original.title, instruction: hint, surface: original.surface,
+                                 screen: "\(tv?.brand ?? "TV") platform", items: [platform],
+                                 focus: 0, action: original.action, note: original.note,
+                                 pictureSurface: original.pictureSurface,
+                                 modelInput: original.modelInput)
+        }
         guard original.surface == "phone" else { return original }
         let appleDevice = phone == .iphone || phone == .ipad
         let store = appleDevice ? "App Store" : "Google Play"
@@ -38,6 +47,7 @@ public enum AQSSSetupPresentation {
         else if screen == "Phone • Wi-Fi" { screen = "\(phone.label) • Wi-Fi" }
         return AQSSSetupStep(title: original.title, instruction: instruction, surface: original.surface,
                              screen: screen, items: items, focus: original.focus, action: original.action,
-                             note: original.note, pictureSurface: original.pictureSurface)
+                             note: original.note, pictureSurface: original.pictureSurface,
+                             modelInput: original.modelInput)
     }
 }

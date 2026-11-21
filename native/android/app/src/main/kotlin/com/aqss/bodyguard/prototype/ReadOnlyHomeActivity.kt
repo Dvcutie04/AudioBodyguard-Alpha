@@ -128,6 +128,8 @@ class ReadOnlyHomeActivity : Activity() {
         tutorial = TutorialGuide(this, scroll, targets, skin,
             currentPage = { page },
             openSetup = { group -> openSetup(group) },
+            currentSetupSystem = { selectedSetupSystem },
+            setSetupSystem = { selectedSetupSystem = it },
             openPhoto = { openInputTool("photo", fromTutorial = tutorial.isActive) },
             openTool = { tool -> if (tool == "voice") openInputTool("voice") else startActivity(Intent(this, LiveSoundCheckActivity::class.java).putExtra("dark", skin.dark)) },
             navigate = { target, area ->
@@ -283,7 +285,26 @@ class ReadOnlyHomeActivity : Activity() {
         if (::tutorial.isInitialized) tutorial.detachTarget()
         hintView = null; settingControls.clear(); targets.clear(); column.removeAllViews(); scroll.scrollTo(0, 0)
         val current = InterfaceContent.pages.single { it.id == page }
-        label(column, if (page == "settings" && advancedExpanded) "Advanced Settings" else current.title.uppercase(), 28f, bold = true).setPadding(0, 0, 0, dp(18))
+        val advanced = page == "settings" && advancedExpanded
+        val config = resources.configuration
+        val stacked = advanced || config.fontScale >= 1.3f || config.screenWidthDp < 360
+        val heading = LinearLayout(this).apply {
+            orientation = if (stacked) LinearLayout.VERTICAL else LinearLayout.HORIZONTAL
+            gravity = Gravity.CENTER_VERTICAL
+        }
+        val title = label(heading, if (advanced) "Advanced Settings" else current.title.uppercase(), 28f, bold = true)
+        if (!stacked) title.layoutParams = LinearLayout.LayoutParams(0, -2, 1f)
+        heading.addView(FeaturePictureGuide.button(skin, if (advanced) "settings-advanced" else page))
+        column.addView(heading, LinearLayout.LayoutParams(-1, -2).apply { bottomMargin = dp(12) })
+        val task = when {
+            advanced -> "switch-help" to "Tap the question mark beside a switch to learn what it does."
+            page == "sound" -> "start-mic" to "Choose a sound tool below. Start begins a check; Stop ends it."
+            page == "devices" -> "choose-tv" to "Choose your TV brand, then follow the pictures for your TV system."
+            page == "insights" -> "recent" to "Open Recent sound checks to see the checks you completed."
+            page == "settings" -> "day-night" to "Tap Appearance to choose a light or dark background."
+            else -> "open-guide" to "Open the TV guide below. Follow one picture at a time."
+        }
+        column.addView(FeaturePictureGuide.step(skin, task.first, task.second))
         when (page) {
             "sound" -> soundPage()
             "devices" -> devicesPage()
@@ -388,9 +409,16 @@ class ReadOnlyHomeActivity : Activity() {
             return
         }
         if (requestCode != PICTURE_REQUEST) return
-        data?.getStringExtra(SetupGuideActivity.SELECTED_SYSTEM)?.takeIf { id -> com.aqss.nativefeedback.SetupContent.groups.any { it.id == id } }?.let { selectedSetupSystem = it }
         val expected = pendingPictureTarget
         pendingPictureTarget = null
+        val system = data?.getStringExtra(SetupGuideActivity.SELECTED_SYSTEM)
+            ?.takeIf { id -> com.aqss.nativefeedback.SetupContent.groups.any { it.id == id } }
+        if (system != null) {
+            // Viewing another brand from mismatch help does not replace the tutorial TV.
+            val brand = if (expected != null && ::tutorial.isInitialized) tutorial.selectedTV else ""
+            if (brand !in listOf("", "other", "unsure") && system != brand && !system.startsWith(brand + "_")) return
+            selectedSetupSystem = system
+        }
         if (resultCode == RESULT_OK && expected != null && ::tutorial.isInitialized) {
             val partOne = data?.getStringExtra(SetupGuideActivity.COMPLETED_TV_ROUTE)
             if (expected == "connectionPlan" && partOne != null) tutorial.completePictures(expected, partOne)

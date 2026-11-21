@@ -418,3 +418,52 @@ def test_voice_check_shows_one_action_per_picture_with_optional_safety_context()
     assert '30 seconds' in steps[7]['note'] and 'no cloud fallback' in steps[7]['note']
     assert 'not authenticated TV control' in steps[8]['note']
 
+
+
+def test_beginner_guide_choices_are_bounded_for_every_supported_tv_brand():
+    """Keep real TV-system decisions, but put non-TV and alternative routes behind Help."""
+    root = Path(__file__).resolve().parents[1]
+    catalog = json.loads((root / 'contracts/setup_guides_v1.json').read_text())
+    groups = {group['id']: group for group in catalog['groups']}
+    brands = {'samsung', 'lg', 'sony', 'tcl', 'hisense', 'vizio',
+              'philips', 'sharp', 'roku', 'insignia'}
+    assert len(groups) == 29
+    assert len(catalog['routes']) == 53
+    assert sum(len(route['steps']) for route in catalog['routes']) == 447
+    for brand in brands:
+        group = groups[brand]
+        assert 1 <= len(group['primary_routes']) <= 3
+        assert set(group['primary_routes']) <= set(group['routes'])
+        assert len(group['routes']) > len(group['primary_routes'])
+    # The catalog keeps the TV manufacturer's real button/menu names.
+    # Explanations and alternative routes belong in the app's Help disclosure.
+    for route in catalog['routes']:
+        assert all(1 <= len(step['instruction'].split()) <= 20 for step in route['steps'])
+    ios = (root / 'native/ios-app/Sources/SetupGuides.swift').read_text()
+    android = (root / 'native/android/app/src/main/kotlin/com/aqss/bodyguard/prototype/SetupGuideActivity.kt').read_text()
+    assert 'id: "setup-brand-help"' in ios
+    assert 'id: "setup-group-help"' in ios
+    assert 'id: "setup-intro-options"' in ios
+    assert 'if detailsExpanded {' in ios
+    assert 'if (detailsExpanded)' in android
+    assert 'Try another way' in ios and 'Try another way' in android
+    for brand in ('Samsung', 'LG', 'Sony', 'TCL', 'Hisense', 'VIZIO',
+                  'Philips', 'Sharp', 'Roku', 'Insignia'):
+        assert f'"{brand}"' in ios
+        assert f'"{brand}"' in android
+    samsung = next(route for route in catalog['routes'] if route['id'] == 'samsung_ok')
+    assert 'If it shows a PIN code instead, tap ? Help.' in samsung['steps'][14]['instruction']
+
+
+def test_missing_tv_guest_wifi_recovery_stays_inside_optional_help_on_both_phones():
+    root = Path(__file__).resolve().parents[1]
+    ios = (root / 'native/ios-app/Sources/SetupGuides.swift').read_text()
+    android = (root / 'native/android/app/src/main/kotlin/com/aqss/bodyguard/prototype/SetupGuideActivity.kt').read_text()
+    hint = 'TV missing from the phone app? Check that the phone and TV use the same home Wi-Fi. Guest Wi-Fi may hide devices.'
+    for source in (ios, android):
+        assert source.count(hint) == 1
+        assert source.count('wifiRecoveryHelp(route)') == 2  # Intro and picture-step Help only.
+    assert '!route.id.hasPrefix("phone_")' in ios
+    assert '!route.id.startsWith("phone_")' in android
+    assert 'if detailsExpanded {' in ios
+    assert 'if (detailsExpanded)' in android

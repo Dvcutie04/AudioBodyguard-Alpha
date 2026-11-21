@@ -17,6 +17,17 @@ class SetupPresentationTest {
         assertEquals("Install", original.items[original.focus])
     }
 
+    @Test fun exactModelSpecializesOnlyThePlatformPicture() {
+        val original = SetupContent.routes.single { it.id == "identify" }.steps[2]
+        val vizio = requireNotNull(TVModelIdentity.fromNumber("V505M-K09"))
+        val shown = SetupPresentation.step(original, SetupPhone.ANDROID, vizio)
+        assertEquals("VIZIO platform", shown.screen)
+        assertEquals(listOf("SmartCast"), shown.items)
+        assertEquals("This exact model uses SmartCast. Look for the SmartCast Home screen.", shown.instruction)
+        val unknown = requireNotNull(TVModelIdentity.fromNumber("UNLISTED-42"))
+        assertEquals(original, SetupPresentation.step(original, SetupPhone.ANDROID, unknown))
+    }
+
     @Test fun allPresentationsKeepActionsTargetsAndTvPictures() {
         for (route in SetupContent.routes) for (original in route.steps) for (phone in SetupPhone.entries) {
             val shown = SetupPresentation.step(original, phone)

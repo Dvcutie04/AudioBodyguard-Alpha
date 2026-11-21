@@ -2,7 +2,22 @@ name: TV brand picture guide verification
 
 on:
   push:
-    branches: ["aqss/tv-guide-clarity-0323", "aqss/overnight-cyan-guide-audit"]
+    branches:
+      - aqss/tv-guide-clarity-0323
+      - aqss/overnight-cyan-guide-audit
+      - aqss/vizio-address-recovery
+      - aqss/all-brand-beta-trial
+      - aqss/all-brand-night-preflight
+      - aqss/vizio-guide-return-verification
+      - aqss/tv-setup-mismatch-recovery
+      - aqss/ios-setup-backward
+      - aqss/model-number-guide
+  pull_request:
+    branches: [aqss/clear-sound-output, aqss/feature-picture-guides]
+    paths:
+      - 'native/**'
+      - 'tools/smoke_android_live_input.py'
+      - '.github/workflows/tv-guides-ui.yml'
   workflow_dispatch:
 
 permissions:
@@ -11,6 +26,9 @@ permissions:
 concurrency:
   group: tv-guide-${{ github.ref }}
   cancel-in-progress: true
+
+env:
+  AQSS_SOURCE: ${{ github.event.pull_request.head.sha || github.sha }}
 
 jobs:
   android-tv-guides:
@@ -21,12 +39,13 @@ jobs:
       - uses: actions/checkout@v4
         with:
           persist-credentials: false
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
       - name: Record exact verification source
         run: |
           python3 - <<'PYTHON'
           import json, os, pathlib, subprocess
           source = subprocess.check_output(['git', 'rev-parse', 'HEAD'], text=True).strip()
-          assert source == os.environ['GITHUB_SHA']
+          assert source == os.environ['AQSS_SOURCE']
           record = {'source_commit': source,
                     'source_tree': subprocess.check_output(['git', 'rev-parse', 'HEAD^{tree}'], text=True).strip(),
                     'workflow_run_id': os.environ['GITHUB_RUN_ID'],
@@ -62,6 +81,15 @@ jobs:
           profile: pixel_5
           emulator-options: -no-window -gpu swiftshader -no-snapshot -noaudio -no-boot-anim -delay-adb
           script: timeout 1500 python3 tools/smoke_android_live_input.py --tv-guides-only
+      - name: Verify the tested Android trial APK and record its source and signature
+        run: python3 tools/record_android_test_apk.py
+      - name: Retain the tested Android trial APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: AudioBodyguard-Live-Input-Test
+          path: native/android/app/build/outputs/apk/liveInput/app-liveInput.apk
+          if-no-files-found: error
+          retention-days: 14
       - name: Retain TV guide Android UI evidence
         if: always()
         uses: actions/upload-artifact@v4
@@ -89,12 +117,13 @@ jobs:
       - uses: actions/checkout@v4
         with:
           persist-credentials: false
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
       - name: Record exact verification source
         run: |
           python3 - <<'PYTHON'
           import json, os, pathlib, subprocess
           source = subprocess.check_output(['git', 'rev-parse', 'HEAD'], text=True).strip()
-          assert source == os.environ['GITHUB_SHA']
+          assert source == os.environ['AQSS_SOURCE']
           record = {'source_commit': source,
                     'source_tree': subprocess.check_output(['git', 'rev-parse', 'HEAD^{tree}'], text=True).strip(),
                     'workflow_run_id': os.environ['GITHUB_RUN_ID'],
@@ -115,10 +144,21 @@ jobs:
           # Keep every UI assertion intact; do not disable AX or skip tests.
           xcrun simctl boot "$simulator_udid" || true
           xcrun simctl bootstatus "$simulator_udid" -b
+          python3 - <<'PYTHON'
+          import datetime, hashlib, os, pathlib
+          photo = pathlib.Path("native/ios/Tests/AQSSNativeFeedbackTests/Fixtures/tv-photo-labels.png")
+          assert hashlib.sha256(photo.read_bytes()).hexdigest() == "2f55775447c5d28841737a25713ae83a76b37bb6d614fa33007621ce92853f31"
+          now = datetime.datetime.now(datetime.timezone.utc)
+          captured = datetime.datetime(now.year, 1, 14, 12, tzinfo=datetime.timezone.utc).timestamp()
+          os.utime(photo, (captured, captured))
+          PYTHON
+          xcrun simctl addmedia "$simulator_udid" native/ios/Tests/AQSSNativeFeedbackTests/Fixtures/tv-photo-labels.png
           xcodebuild -project native/ios-app/AQSSReadOnly.xcodeproj -scheme AQSSReadOnly \
             -configuration Release -destination "platform=iOS Simulator,id=$simulator_udid" \
             -derivedDataPath "$RUNNER_TEMP/tv-guide-build" \
             -parallel-testing-enabled NO -resultBundlePath "$RUNNER_TEMP/sound-tv-guides.xcresult" \
+            -only-testing:AQSSReadOnlyUITests/AQSSReadOnlyUITests/testFeaturePicturesReturnToTheSamePageAtLargestText \
+            -only-testing:AQSSReadOnlyUITests/AQSSReadOnlyUITests/testEnteringOrPhotographingAModelAdvancesOnePictureAndBackRestoresIt \
             -only-testing:AQSSReadOnlyUITests/AQSSReadOnlyUITests/testTVCodePicturesSeparateTheTVFromPhoneAndKeepOptionalLinksNeutral \
             -only-testing:AQSSReadOnlyUITests/AQSSReadOnlyUITests/testBrandPlatformsKeepRokuMenusSeparateAndOfferManualGoogleTVSetup \
             -only-testing:AQSSReadOnlyUITests/AQSSReadOnlyUITests/testLGVizioAndGoogleTVContinueIntoTheirOwnPhoneAppPictures \
@@ -127,6 +167,8 @@ jobs:
             -only-testing:AQSSReadOnlyUITests/AQSSReadOnlyUITests/testSonyLegacyAndHisenseVIDAAKeepTheirOwnPicturesAndBack \
             -only-testing:AQSSReadOnlyUITests/AQSSReadOnlyUITests/testNewVizioTVShowsAccountThenPhonePicturesInOrder \
             -only-testing:AQSSReadOnlyUITests/AQSSReadOnlyUITests/testLargestTextKeepsExitAndNextReachable \
+            -only-testing:AQSSReadOnlyUITests/AQSSReadOnlyUITests/testSetupBackKeepsTVAndHomeAppAtStandardAndLargestText \
+            -only-testing:AQSSReadOnlyUITests/AQSSReadOnlyUITests/testTCLRokuPhonePicturesResumeAfterBackToTutorial \
             -only-testing:AQSSReadOnlyUITests/AQSSReadOnlyUITests/testTVNetworkRejectsPublicAddressWithoutContact \
             -only-testing:AQSSReadOnlyUITests/AQSSReadOnlyUITests/testTVAddressPicturesKeepTheCheckDraftAndStepOrder \
             -only-testing:AQSSReadOnlyUITests/AQSSReadOnlyUITests/testTVNetworkVisitClearsDraftOnBackgroundAndBack \
@@ -186,4 +228,20 @@ jobs:
             ${{ runner.temp }}/sound-tv-guides.xcresult
             ${{ runner.temp }}/sound-vizio-*.xcresult
           if-no-files-found: ignore
+          retention-days: 14
+      - name: Package the tested iOS Simulator app
+        if: matrix.device == 'iPhone'
+        run: |
+          ditto -c -k --sequesterRsrc --keepParent \
+            "$RUNNER_TEMP/tv-guide-build/Build/Products/Release-iphonesimulator/AQSSReadOnly.app" \
+            "$RUNNER_TEMP/AQSSReadOnly-iOS-SIMULATION.app.zip"
+      - name: Retain the tested iOS Simulator app
+        if: matrix.device == 'iPhone'
+        uses: actions/upload-artifact@v4
+        with:
+          name: tv-guides-iOS-Simulator
+          path: |
+            ${{ runner.temp }}/AQSSReadOnly-iOS-SIMULATION.app.zip
+            ${{ runner.temp }}/sound-check-screenshots/source-identity.json
+          if-no-files-found: error
           retention-days: 14

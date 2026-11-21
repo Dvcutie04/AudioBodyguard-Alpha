@@ -784,7 +784,8 @@
           ],
           "focus": 0,
           "action": "check",
-          "note": "Some older TVs use Contact Samsung instead. A matching brand is not enough."
+          "note": "Some older TVs use Contact Samsung instead. A matching brand is not enough.",
+          "model_input": true
         }
       ]
     },
@@ -856,7 +857,8 @@
           ],
           "focus": 0,
           "action": "check",
-          "note": "Some older TVs use Contact Samsung instead. A matching brand is not enough."
+          "note": "Some older TVs use Contact Samsung instead. A matching brand is not enough.",
+          "model_input": true
         }
       ]
     },
@@ -1045,7 +1047,7 @@
         },
         {
           "title": "Approve on the television",
-          "instruction": "Read the request on your TV. Select OK for your phone. If the TV displays a PIN, choose TV shows a PIN below.",
+          "instruction": "Read the request on your TV and choose OK. If it shows a PIN code instead, tap ? Help.",
           "surface": "tv",
           "screen": "Connection request",
           "items": [
@@ -1461,7 +1463,8 @@
           ],
           "focus": 0,
           "action": "check",
-          "note": "Use your real device. This picture is an illustration."
+          "note": "Use your real device. This picture is an illustration.",
+          "model_input": true
         }
       ]
     },
@@ -1557,7 +1560,8 @@
           ],
           "focus": 0,
           "action": "check",
-          "note": "Use your real device. This picture is an illustration."
+          "note": "Use your real device. This picture is an illustration.",
+          "model_input": true
         }
       ]
     },
@@ -1629,7 +1633,8 @@
           ],
           "focus": 0,
           "action": "check",
-          "note": "Use your real device. This picture is an illustration."
+          "note": "Use your real device. This picture is an illustration.",
+          "model_input": true
         }
       ]
     },
@@ -1713,7 +1718,8 @@
           ],
           "focus": 0,
           "action": "check",
-          "note": "Use your real device. This picture is an illustration."
+          "note": "Use your real device. This picture is an illustration.",
+          "model_input": true
         }
       ]
     },
@@ -2406,7 +2412,7 @@
         },
         {
           "title": "Check which setup screen you have",
-          "instruction": "Scan only if your TV offers this and your phone has Android 9+ or iOS 17+. Otherwise, use TV remote setup.",
+          "instruction": "Scan if your TV offers it and your phone runs Android 9+ or iOS 17+. Otherwise choose TV remote setup.",
           "surface": "tv",
           "screen": "Set up with your phone",
           "items": [
@@ -2471,7 +2477,7 @@
         },
         {
           "title": "Check the actual TV result",
-          "instruction": "Check that setup finished and the Home screen appears on your own TV. If it does not, use My screen looks different.",
+          "instruction": "Check that your TV shows its Home screen. If not, open ? Step help and select My screen looks different.",
           "surface": "tv",
           "screen": "Google TV Home",
           "items": [
@@ -3361,7 +3367,7 @@
         },
         {
           "title": "Check the TV account link",
-          "instruction": "If not linked, first follow LG webOS 5.0 or webOS 6.0+ account steps from this guide list. Return here after the account link is complete.",
+          "instruction": "If not linked, follow LG webOS 5.0 or webOS 6.0+ account steps in this guide list. Then return.",
           "surface": "phone",
           "screen": "Before Alexa setup",
           "items": [
@@ -3397,7 +3403,7 @@
         },
         {
           "title": "Select the TV-capable skill",
-          "instruction": "Choose the official LG ThinQ skill whose description supports your TV. Where Basic and Complete both include TV support, either is valid.",
+          "instruction": "Choose an official LG ThinQ skill supporting your TV. Check whether Basic or Complete lists TV support.",
           "surface": "phone",
           "screen": "LG ThinQ",
           "items": [
@@ -4326,7 +4332,7 @@
         },
         {
           "title": "Open Alexa skills",
-          "instruction": "In the Alexa version with a menu, open Skills / Skills & Games. If your app differs, use the official source in Help.",
+          "instruction": "In Alexa, open Skills / Skills & Games. If your menu differs, check the official source under ? Help.",
           "surface": "phone",
           "screen": "Alexa menu",
           "items": [
@@ -5158,7 +5164,8 @@
           ],
           "focus": 0,
           "action": "check",
-          "note": "Use your real device. This picture is an illustration."
+          "note": "Use your real device. This picture is an illustration.",
+          "model_input": true
         },
         {
           "title": "Identify the TV platform",
@@ -5174,7 +5181,7 @@
         },
         {
           "title": "Choose the matching guide",
-          "instruction": "Return to the guide list and select that platform or menu version. Exact model examples are listed before a guide begins.",
+          "instruction": "Choose the matching TV menu in the guide list. Model examples appear before each guide starts.",
           "surface": "phone",
           "screen": "Audio Bodyguard",
           "items": [
@@ -5754,7 +5761,8 @@
           ],
           "focus": 0,
           "action": "check",
-          "note": "Look for Model in the information panel. Copy the full model name and software version from your own TV. A Roku model code and a TCL model number may both appear. Next: use the picture guide to connect your phone with the official Roku app."
+          "note": "Look for Model in the information panel. Copy the full model name and software version from your own TV. A Roku model code and a TCL model number may both appear. Next: use the picture guide to connect your phone with the official Roku app.",
+          "model_input": true
         }
       ]
     },
@@ -6952,6 +6960,71 @@
           "note": "Use the option actually shown on your TV. Passwords and account approvals stay in the official TV setup."
         }
       ]
+    }
+  ],
+  "model_catalog": [
+    {
+      "brand": "VIZIO",
+      "make": "VIZIO",
+      "year": "2023 lineup",
+      "platform": "SmartCast",
+      "platform_hint": "This exact model uses SmartCast. Look for the SmartCast Home screen.",
+      "models": [
+        "V505M-K09"
+      ],
+      "source": "https://www.vizio.com/content/dam/asset-portal/us/en/2022/tv/documentation/v-series/V-Series_UM_EN.pdf"
+    },
+    {
+      "brand": "Sony",
+      "make": "Sony",
+      "year": "2022",
+      "platform": "Google TV",
+      "platform_hint": "This exact model uses Google TV. Look for the Google TV home screen.",
+      "models": [
+        "XR-65X90K"
+      ],
+      "source": "https://www.sony.com/electronics/support/televisions-projectors-lcd-tvs-android-/xr-65x90k/specifications"
+    },
+    {
+      "brand": "LG",
+      "make": "LG Electronics",
+      "year": "2023",
+      "platform": "webOS",
+      "platform_hint": "This exact model uses webOS. Look for the webOS home screen.",
+      "models": [
+        "OLED42C3PUA",
+        "OLED48C3PUA",
+        "OLED55C3PUA",
+        "OLED65C3PUA",
+        "OLED77C3PUA",
+        "OLED83C3PUA"
+      ],
+      "source": "https://www.lg.com/us/press-release/LG-OLED-2023-Pricing-Availability.pdf"
+    },
+    {
+      "brand": "TCL",
+      "make": "TCL",
+      "year": "2024",
+      "platform": "Google TV",
+      "platform_hint": "This exact model uses Google TV. Look for the Google TV home screen.",
+      "models": [
+        "65QM851G",
+        "75QM851G",
+        "85QM851G",
+        "98QM851G"
+      ],
+      "source": "https://support.tcl.com/tcl-qm8-series-tv-featuring-google-tv/qm8-gtv"
+    },
+    {
+      "brand": "Samsung",
+      "make": "Samsung Electronics",
+      "year": "2023",
+      "platform": "Tizen",
+      "platform_hint": "This exact model uses Tizen. Look for Samsung Smart Hub.",
+      "models": [
+        "QN55QN90CAFXZA"
+      ],
+      "source": "https://image-us.samsung.com/SamsungUS/samsungbusiness/tv-ci-resources/QN90C_Spec_Sheet.pdf"
     }
   ]
 }
