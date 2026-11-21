@@ -561,6 +561,7 @@ struct VoiceCheckView: View {
             HStack { Text("Voice check").font(.title2.bold()); Spacer(); RoseButton(title: "Close", theme: theme) { voice.clear(); dismiss() } }.padding()
             ScrollView {
                 VStack(alignment: .leading, spacing: 18) {
+                    FeaturePictureStep(picture: "voice", caption: "Tap Start voice check, speak, then read the words shown below.", theme: theme)
                     Text("See what your phone hears").font(.title.bold())
 
                     Text("Tap Start, then say “Audio Bodyguard, skip intro” or “Audio Bodyguard, skip recap.”")
@@ -829,7 +830,7 @@ struct TVPhotoView: View {
             HStack { Text(onModelRead == nil ? "TV photo setup" : "Read model from photo").font(.title2.bold()); Spacer(); RoseButton(title: "Close", theme: theme) { photo.clear(); dismiss() }.accessibilityIdentifier("photo-close") }.padding()
             ScrollView {
                 VStack(alignment: .leading, spacing: 18) {
-                    Image(systemName: "tv").font(.system(size: 42)).foregroundColor(theme.violet).accessibilityHidden(true)
+                    FeaturePictureStep(picture: "photo", caption: "Aim at the TV model label. Keep the letters and numbers clear.", theme: theme)
                     if onModelRead != nil {
                         Text("Take a clear picture of the model number on your TV label or About screen.")
                     } else {
@@ -884,8 +885,8 @@ struct TVPhotoView: View {
                             Text("Text recognition stays on this phone. Details clear on close. Your original photo remains in Photos.").font(.caption).foregroundColor(theme.muted)
                         }
                     }
-                }.padding()
-            }.accessibilityIdentifier("photo-review-scroll")
+                }.padding().padding(.bottom, 32)
+            }.modifier(PictureFormKeyboardDismissal()).accessibilityIdentifier("photo-review-scroll")
         }.background(theme.background.ignoresSafeArea()).foregroundColor(theme.text)
             .sheet(item: $setupRequest) { request in SetupGuidesView(theme: theme, initialGroup: request.group) }
             .sheet(isPresented: $showsVizioAddressPictures) {

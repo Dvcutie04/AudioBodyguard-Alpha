@@ -296,6 +296,15 @@ class ReadOnlyHomeActivity : Activity() {
         if (!stacked) title.layoutParams = LinearLayout.LayoutParams(0, -2, 1f)
         heading.addView(FeaturePictureGuide.button(skin, if (advanced) "settings-advanced" else page))
         column.addView(heading, LinearLayout.LayoutParams(-1, -2).apply { bottomMargin = dp(12) })
+        val task = when {
+            advanced -> "switch-help" to "Tap the question mark beside a switch to learn what it does."
+            page == "sound" -> "start-mic" to "Choose a sound tool below. Start begins a check; Stop ends it."
+            page == "devices" -> "choose-tv" to "Choose your TV brand, then follow the pictures for your TV system."
+            page == "insights" -> "recent" to "Open Recent sound checks to see the checks you completed."
+            page == "settings" -> "day-night" to "Tap Appearance to choose a light or dark background."
+            else -> "open-guide" to "Open the TV guide below. Follow one picture at a time."
+        }
+        column.addView(FeaturePictureGuide.step(skin, task.first, task.second))
         when (page) {
             "sound" -> soundPage()
             "devices" -> devicesPage()

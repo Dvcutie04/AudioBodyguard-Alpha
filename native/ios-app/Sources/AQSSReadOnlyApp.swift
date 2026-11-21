@@ -379,6 +379,7 @@ struct SupportReportReviewContent: View {
     @Binding var includeRecentChecks: Bool
     var body: some View {
         Group {
+            FeaturePictureStep(picture: "review-share", caption: "Read the report. Share opens your device’s share menu. Choose Copy or Cancel.", theme: theme)
             Toggle("Include recent sound checks", isOn: $includeRecentChecks)
                 .tint(theme.accent).accessibilityIdentifier("support-report-include-checks")
             let preview = report.text(includeRecentChecks: includeRecentChecks)
@@ -721,7 +722,36 @@ private struct ReadOnlyHomeView: View {
             .accessibilityIdentifier("page-\(pageScreenID)")
     }
 
+    private var pageTaskPicture: String {
+        switch pageScreenID {
+        case "sound": return "start-mic"
+        case "devices": return "choose-tv"
+        case "insights": return "recent"
+        case "settings": return "day-night"
+        case "settings-advanced": return "switch-help"
+        default: return "open-guide"
+        }
+    }
+
+    private var pageTaskCaption: String {
+        switch pageScreenID {
+        case "sound": return "Choose a sound tool below. Start begins a check; Stop ends it."
+        case "devices": return "Choose your TV brand, then follow the pictures for your TV system."
+        case "insights": return "Open Recent sound checks to see the checks you completed."
+        case "settings": return "Tap Appearance to choose a light or dark background."
+        case "settings-advanced": return "Tap the question mark beside a switch to learn what it does."
+        default: return "Open the TV guide below. Follow one picture at a time."
+        }
+    }
+
+    private var taskPicture: some View {
+        FeaturePictureStep(picture: pageTaskPicture, caption: pageTaskCaption, theme: theme)
+    }
+
+    private var settingsControlsFirst: Bool { page == "settings" && textSize.isAccessibilitySize }
+
     @ViewBuilder private var pageContent: some View {
+        if !settingsControlsFirst { taskPicture }
         switch page {
         case "sound": soundPage
         case "devices": devicesPage
@@ -893,6 +923,7 @@ private struct ReadOnlyHomeView: View {
                     }
 
             }
+            if settingsControlsFirst { taskPicture }
             QuestionDisclosure(title: "More settings", theme: theme, isExpanded: $moreSettingsExpanded, identifier: "more-settings") {
                 action("Build details", icon: "info.circle") {
                     let details = installedBuildDetails
@@ -911,6 +942,7 @@ private struct ReadOnlyHomeView: View {
                         if item.id != AQSSInterfaceContent.settings.last?.id { Divider().padding(.leading, 42) }
                     }
                 }
+                if settingsControlsFirst { taskPicture }
                 whiteSettingsCard {
                     settingInfo("Device and route", detail: "Unknown", explanation: "No qualified output hardware or route has been identified. Use the matching device guide, then independently verify its output path.", target: "route")
                     Divider()
@@ -931,6 +963,8 @@ private struct ReadOnlyHomeView: View {
         if let report = item.supportReport {
             SupportReportReviewContent(theme: theme, report: report, includeRecentChecks: $includeRecentChecks)
         } else {
+            FeaturePictureStep(picture: item.shareText == nil ? "switch-help" : "review-share",
+                caption: item.shareText == nil ? "Read the help, then tap Back to return to your setting." : "Read the details before sharing. Copy copies them; Cancel returns to the app.", theme: theme)
             Text(item.explanation).fixedSize(horizontal: false, vertical: true)
             if let text = item.shareText {
                 ReviewedTextShareButton(text: text, theme: theme, title: "Share build details", identifier: "share-build-details")
@@ -1090,6 +1124,7 @@ private struct ReadOnlyHomeView: View {
     private func menuSheet<Content: View>(_ title: String, @ViewBuilder content: () -> Content) -> some View {
         ScrollView { VStack(alignment: .leading, spacing: 16) {
             HStack { Text(title).font(.title2.bold()); Spacer(); RoseButton(title: "Back", theme: theme, compact: true) { helpVisible = false; navigationVisible = false; pagesVisible = false } }
+            FeaturePictureStep(picture: "select", caption: "Tap the choice you want. Back returns to the previous screen.", theme: theme)
             content()
         }.padding(20) }
             .background(theme.background).foregroundColor(theme.text).accessibilityIdentifier("menu-scroll")
@@ -1157,7 +1192,6 @@ private struct ReadOnlyHomeView: View {
     }
     private func tutorialPanel(topic: AQSSTutorialTopic, step: AQSSTutorialStep) -> some View {
         let phone: AQSSSetupPhone = UIDevice.current.userInterfaceIdiom == .pad ? .ipad : .iphone
-        let phoneSymbol = phone == .ipad ? "ipad" : "iphone"
         return VStack(spacing: 0) {
             HStack {
                 Text("Step \(guide.stepNumber) of \(guide.stepCount)").font(.subheadline.weight(.semibold)).foregroundColor(theme.muted)
@@ -1169,15 +1203,13 @@ private struct ReadOnlyHomeView: View {
             }) {
                 VStack(alignment: .leading, spacing: 20) {
                     GuidePictureCue(screenKey: tutorialStepKey) {
-                        HStack(spacing: 18) {
-                            Image(systemName: step.target == "connectionCheck" ? phoneSymbol : "tv")
-                            Image(systemName: "arrow.right")
-                            Image(systemName: phoneSymbol)
-                        }.font(.system(size: 32, weight: .light)).foregroundColor(theme.violet)
-                    }.accessibilityHidden(true)
+                        FeaturePictureStep(picture: step.target == "chooseTV" ? "choose-tv" :
+                            step.target == "connectionCheck" ? "verify-tv" :
+                            step.target == "welcome" ? "open-guide" : "select",
+                            caption: step.explanation, theme: theme)
+                    }
                     Text(step.title).font(.largeTitle.bold()).fixedSize(horizontal: false, vertical: true)
                         .accessibilityAddTraits(.isHeader).accessibilityFocused($focusedElement, equals: .tutorial(tutorialStepKey))
-                    Text(step.explanation).fixedSize(horizontal: false, vertical: true)
                     if topic.id == "getting_started" {
                         if let selected = guide.selected("chooseTV") {
                             Text("\(selected.title)  ·  \(phone.label)").font(.callout.weight(.semibold)).foregroundColor(theme.accent)
