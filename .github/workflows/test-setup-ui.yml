@@ -141,13 +141,25 @@ jobs:
           }, indent=2) + '\n')
           print('SWIFT_SETUP_MISSING_API_REPRODUCED ' + source)
           PYTHON
-      - name: Prepare attributed rotation-safe worksheet test source
+      - name: Verify the worksheet XCTest source before compiling
         shell: bash
         run: |
-          set -euo pipefail
-          python3 tools/prepare_ios_worksheet_rotation_test.py \
-            native/ios-app/UITests/AQSSReadOnlyUITests.swift \
-            --receipt "$RUNNER_TEMP/sound-check-screenshots/compiled-test-source.json"
+          python3 - <<'PYTHON'
+          import hashlib, json, os, pathlib, subprocess
+          path = pathlib.Path("native/ios-app/UITests/AQSSReadOnlyUITests.swift")
+          source = os.environ["GITHUB_SHA"]
+          committed = subprocess.check_output(["git", "rev-parse", f"{source}:{path}"], text=True).strip()
+          working = subprocess.check_output(["git", "hash-object", str(path)], text=True).strip()
+          if working != committed:
+              raise SystemExit("Worksheet XCTest differs from the checked-out revision")
+          receipt = pathlib.Path(os.environ["RUNNER_TEMP"]) / "sound-check-screenshots" / "compiled-test-source.json"
+          receipt.write_text(json.dumps({
+              "source_commit": source, "source_path": str(path),
+              "original_test_blob": committed, "compiled_test_blob": working,
+              "compiled_test_sha256": hashlib.sha256(path.read_bytes()).hexdigest(),
+              "native_execution": "UNRUN at source verification",
+          }, indent=2) + "\n")
+          PYTHON
       - name: Build and prepare native worksheet tests
         shell: bash
         run: |
@@ -253,7 +265,7 @@ jobs:
             -resultBundlePath "$RUNNER_TEMP/sound-test-setup-control.xcresult" \
             -only-testing:AQSSReadOnlyUITests/AQSSReadOnlyUITests/testIndependentUIKitShareControlCopy
       - name: Clear isolated clipboard fixture
-        if: always()
+        if: always() && env.AQSS_SIMULATOR != ''
         run: python3 tools/check_ios_build_share_clipboard.py clear "$AQSS_SIMULATOR" --output "$RUNNER_TEMP/setup-clipboard"
       - name: Retain opt-in simulator Share lifecycle events
         if: always()

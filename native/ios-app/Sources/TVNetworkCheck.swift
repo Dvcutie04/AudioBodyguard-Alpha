@@ -229,6 +229,7 @@ struct TVNetworkCheckView: View {
     @Environment(\.dismiss) private var dismiss
     @Environment(\.scenePhase) private var scenePhase
     @StateObject private var check = TVNetworkCheck()
+    @FocusState private var addressFocused: Bool
     @State private var help = false
     @State private var guideContext: TVCheckPictureGuide.Context?
     @State private var reviewedReport: TVTrialReport?
@@ -273,30 +274,30 @@ struct TVNetworkCheckView: View {
             }.padding()
             ScrollView {
                 VStack(alignment: .leading, spacing: 18) {
-                    Label("Phone → Wi-Fi → TV", systemImage: "wifi").font(.headline)
-                    Text("Enter the IP address shown in your VIZIO TV’s network settings.")
+                    FeaturePictureStep(picture: "address", caption: "Type the IP address from your TV’s network settings.", theme: theme)
                     TextField("TV IP address", text: $check.address)
+                        .focused($addressFocused).submitLabel(.done).onSubmit { addressFocused = false }
                         .keyboardType(.numbersAndPunctuation).autocapitalization(.none).disableAutocorrection(true)
                         .padding(12).background(theme.raised).cornerRadius(12)
                         .disabled(check.busy).accessibilityLabel("TV IP address").accessibilityIdentifier("tv-network-address")
+                    Button(check.busy ? "Stop check" : "Check this address") {
+                        guard scenePhase == .active else { return }
+                        reportError = nil
+                        addressFocused = false
+                        if check.busy { check.stop() } else { check.start() }
+                    }.buttonStyle(AppButtonStyle(theme: theme, primary: followUp == nil))
+                        .disabled(check.stopping || (!check.busy && check.address.isEmpty))
+                        .accessibilityIdentifier("tv-network-start-stop")
                     if let route = TVCheckPictureGuide.Context.addressField.route {
                         Button(route.title) { openGuide(.addressField) }
                             .buttonStyle(AppButtonStyle(theme: theme, primary: followUp == .addressPictures))
                             .disabled(check.busy).accessibilityIdentifier("tv-address-guide-open")
                     }
-                    Text("Check contacts only this address on Wi-Fi. It sends no TV command.").font(.subheadline)
+                    Text("Use the same home Wi-Fi for this phone and TV. Check contacts only the address you enter and sends no TV command.").font(.subheadline)
                     Text(check.message).font(.headline).fixedSize(horizontal: false, vertical: true)
                         .accessibilityIdentifier("tv-network-result")
                     Text(AQSSLocalTVTarget.boundary).font(.subheadline).foregroundColor(theme.muted)
                         .accessibilityIdentifier("tv-network-boundary")
-                    Button(check.busy ? "Stop check" : "Check this address") {
-                        guard scenePhase == .active else { return }
-                        reportError = nil
-                        UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
-                        if check.busy { check.stop() } else { check.start() }
-                    }.buttonStyle(AppButtonStyle(theme: theme, primary: followUp == nil))
-                        .disabled(check.stopping || (!check.busy && check.address.isEmpty))
-                        .accessibilityIdentifier("tv-network-start-stop")
                     if check.canReadCertificate {
                         Button("Read service certificate") {
                             guard scenePhase == .active else { return }
@@ -323,7 +324,8 @@ struct TVNetworkCheckView: View {
                     }
                     if let error = reportError { Text(error).font(.subheadline) }
                     QuestionDisclosure(title: "Help with this check", theme: theme, isExpanded: $help, identifier: "tv-network-help") {
-                        Text("Use the same home Wi-Fi for phone and TV. Guest Wi-Fi or device isolation can prevent contact. This check cannot diagnose your router’s policy.")
+                        FeaturePictureStep(picture: "wifi", caption: "Use the same home Wi-Fi for this phone and TV.", theme: theme)
+                        Text("Guest Wi-Fi or device isolation can prevent contact. This check cannot diagnose your router’s policy.")
                         if followUp != .phoneWiFi { phoneWiFiButton(primary: false) }
                         Text("This first check tries TCP ports 7345 and 9000, for up to four seconds each, on one private IPv4 address. These are SmartCast research candidates, not a guarantee for every VIZIO model. An answer proves only service reachability at that moment.")
                         Text("After a reply, Read service certificate checks that service again on Wi-Fi and shows a fingerprint for comparison. TV identity still needs independent verification.")
@@ -335,7 +337,7 @@ struct TVNetworkCheckView: View {
                         }.buttonStyle(AppButtonStyle(theme: theme))
                     }
                 }.padding().frame(maxWidth: 680, alignment: .leading).frame(maxWidth: .infinity)
-            }.accessibilityIdentifier("tv-network-scroll")
+            }.modifier(PictureFormKeyboardDismissal()).accessibilityIdentifier("tv-network-scroll")
         }.background(theme.background.ignoresSafeArea()).foregroundColor(theme.text)
     }
 
@@ -373,9 +375,12 @@ struct TVNetworkCheckView: View {
                     .buttonStyle(AppButtonStyle(theme: theme)).accessibilityIdentifier("tv-network-report-back")
             }
             ScrollView {
-                Text(report.text).frame(maxWidth: .infinity, alignment: .leading)
+                VStack(alignment: .leading, spacing: 12) {
+                    FeaturePictureStep(picture: "review-share", caption: "Read the result. Share opens the device menu. Choose Copy or Cancel.", theme: theme)
+                    Text(report.text).frame(maxWidth: .infinity, alignment: .leading)
                     .fixedSize(horizontal: false, vertical: true).textSelection(.enabled)
                     .accessibilityIdentifier("tv-network-report-preview")
+                }
             }.accessibilityIdentifier("tv-network-report-scroll")
             Text(TVTrialReport.notice).font(.subheadline).fixedSize(horizontal: false, vertical: true)
             ReviewedTextShareButton(text: report.text, theme: theme, title: "Share test result", identifier: "tv-network-report-share")
@@ -402,6 +407,7 @@ struct TVCheckPictureGuide: View {
     let onReturn: () -> Void
     @State private var index = -1
     @State private var mismatch = false
+    @State private var recoveryHistory: [(step: Int, origin: Int)] = []
     @AccessibilityFocusState private var focusedHeading: String?
 
     private var route: AQSSSetupRoute? { context.route }
@@ -448,7 +454,17 @@ struct TVCheckPictureGuide: View {
                         .font(.title.bold()).fixedSize(horizontal: false, vertical: true)
                         .accessibilityAddTraits(.isHeader).accessibilityFocused($focusedHeading, equals: screenKey)
                     if mismatch {
-                        Text(isWiFi ? "Search for Wi-Fi in Settings." : "Look up the network information for your exact TV model in VIZIO Support.")
+                        if isWiFi {
+                            Text("Search for Wi-Fi in Settings.")
+                        } else {
+                            Text("Check the model number on the back of your TV. If it says V505M-K09, choose what you see on the TV.")
+                            ForEach(recoveryChoices.indices, id: \.self) { index in
+                                Button(recoveryChoices[index]) { resumeFromRecovery(at: index) }
+                                    .buttonStyle(AppButtonStyle(theme: theme))
+                                    .accessibilityIdentifier(prefix + "-recovery-\(index)")
+                            }
+                            Text("If your model or menu differs, return to setup. Use the address from your TV’s own network settings.")
+                        }
                     } else {
                         if let step = step {
                             Text(step.instruction).font(.body.weight(.medium)).fixedSize(horizontal: false, vertical: true)
@@ -486,9 +502,26 @@ struct TVCheckPictureGuide: View {
         }.background(theme.background.ignoresSafeArea()).foregroundColor(theme.text)
     }
 
+    private let recoveryChoices = ["TV home screen", "TV Settings", "Network menu", "Network Information"]
+
+    private func resumeFromRecovery(at step: Int) {
+        guard steps.indices.contains(step) else { return }
+        recoveryHistory.append((step: step, origin: index))
+        index = step
+        mismatch = false
+    }
+
     private func back() {
-        if mismatch { mismatch = false }
-        else if index >= 0 { index -= 1 }
-        else { onReturn() }
+        if mismatch {
+            mismatch = false
+        } else if let recovery = recoveryHistory.last, index == recovery.step {
+            recoveryHistory.removeLast()
+            index = recovery.origin
+            mismatch = true
+        } else if index >= 0 {
+            index -= 1
+        } else {
+            onReturn()
+        }
     }
 }

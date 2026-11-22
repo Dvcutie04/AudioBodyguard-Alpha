@@ -65,6 +65,24 @@ class InterfaceContentTests(unittest.TestCase):
         self.assertIn("if (primary) controlBorder else accent", android)
         self.assertIn("RippleDrawable(ColorStateList.valueOf(accent), shapeStates, null)", android)
 
+    def test_tv_system_choice_illustrations_use_cyan_instead_of_blue_or_purple(self):
+        """All enabled app-owned choices share cyan; labels remain readable."""
+        path = ROOT / "native/ios-app/Sources/SetupGuides.swift"
+        source = path.read_text()
+        self.assertIn("foregroundColor(theme.controlText).padding(10).background(theme.control)", source)
+        self.assertNotIn("background(blue ? Color.blue : theme.violet)", source)
+        self.assertIn("buttonStyle(AppButtonStyle(theme: theme))", source)
+        self.assertIn("!isEnabled ? theme.outline", (ROOT / "native/ios-app/Sources/AQSSReadOnlyApp.swift").read_text())
+        android = (ROOT / "native/android/app/src/main/kotlin/com/aqss/bodyguard/prototype/SetupGuideActivity.kt").read_text()
+        self.assertIn("skin.style(this, primary)", android)
+
+    def test_daylight_canvas_is_pure_white_with_accessible_controls(self):
+        # The owner's white default is a presentation choice, not proof of connectivity.
+        self.assertEqual(self.data["palettes"]["daylight"]["background"], "FFFFFF")
+        self.assertEqual(self.data["palettes"]["daylight"]["control"], "64DAE8")
+        # Existing contrast and neutral disabled-state contract checks still apply.
+        validate(self.data)
+
     def test_fresh_install_defaults_to_daylight_without_overriding_saved_preferences(self):
         # Static guard for first-launch presentation; native light-appearance screenshots
         # remain a separate verification gate. Existing saved choices are untouched.

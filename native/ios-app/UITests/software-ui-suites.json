@@ -1,12 +1,14 @@
 {
   "suites": {
     "navigation": [
+      "AQSSReadOnlyUITests/testFeaturePicturesReturnToTheSamePageAtLargestText",
       "AQSSReadOnlyUITests/testSimplifiedSetupAndContextualJumps",
       "AQSSReadOnlyUITests/testSimplifiedSetupWithLargestTextAndReducedMotion",
       "AQSSReadOnlyUITests/testTVChoiceOffersPhotoAndKeepsOtherBrandsOnDemand",
       "AQSSReadOnlyUITests/testRoseExitResumesTheExactTutorialAndHeadStaysDisconnected",
       "AQSSReadOnlyUITests/testAllFivePagesKeepHelpAndTruthfulEmptyStates",
       "AQSSReadOnlyUITests/testFirstVisitHasOnePathChoiceGatesTailoredPlanAndReplay",
+      "AQSSReadOnlyUITests/testSetupBackKeepsTVAndHomeAppAtStandardAndLargestText",
       "AQSSReadOnlyUITests/testOptionsAndAdvancedRemainUnavailable",
       "AQSSReadOnlyUITests/testAdvancedSwitchExplainsWhyItStaysOffAndHelpReturnsToCaller",
       "AQSSReadOnlyUITests/testAdvancedSwitchResetSurvivesNavigationBackgroundAndLargestText",
@@ -22,6 +24,7 @@
       "AQSSReadOnlyUITests/testRokuPicturesResumeAndFinishWithoutClaimingConnection",
       "AQSSReadOnlyUITests/testNewVizioTVShowsAccountThenPhonePicturesInOrder",
       "AQSSReadOnlyUITests/testRokuPartOneImmediatelyOpensPhonePicturesInFirstVisit",
+      "AQSSReadOnlyUITests/testTCLRokuPhonePicturesResumeAfterBackToTutorial",
       "AQSSReadOnlyUITests/testIllustratedGuideFromTCLPlanAndVoiceHelp",
       "AQSSReadOnlyUITests/testSamsungPinChoiceBackAndResumeStayAtTheApproval",
       "AQSSReadOnlyUITests/testIllustratedApprovalFinishesWithoutClaimingConnection",
@@ -82,6 +85,7 @@
     "AQSSReadOnlyUITests/testVoiceSpeechSettingsReturnStaysOff",
     "AQSSReadOnlyUITests/testLiveSoundCheckStopsOnHomeAndRequiresAnotherStart",
     "AQSSReadOnlyUITests/testConnectedDemoAppearanceKeepsPhysicalReadinessUnverified",
-    "AQSSReadOnlyUITests/testPhotoReviewGuidanceAndReplacement"
+    "AQSSReadOnlyUITests/testPhotoReviewGuidanceAndReplacement",
+    "AQSSReadOnlyUITests/testEnteringOrPhotographingAModelAdvancesOnePictureAndBackRestoresIt"
   ]
 }

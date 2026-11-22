@@ -33,6 +33,7 @@ import android.window.OnBackInvokedDispatcher
 import com.aqss.nativefeedback.LocalTVTarget
 import com.aqss.nativefeedback.SetupContent
 import com.aqss.nativefeedback.SetupPhone
+import com.aqss.nativefeedback.SetupPresentation
 import com.aqss.nativefeedback.TVNetworkOutcome
 import com.aqss.nativefeedback.TVNetworkResult
 import com.aqss.nativefeedback.TVNetworkRunner
@@ -79,6 +80,9 @@ class TVNetworkCheckActivity : Activity() {
     private var guidePanel: LinearLayout? = null
     private var guideIndex = -1
     private var guideMismatch = false
+    private data class RecoveryJump(val step: Int, val origin: Int)
+    private val recoveryHistory = mutableListOf<RecoveryJump>()
+    private val recoveryChoices = listOf("TV home screen", "TV Settings", "Network menu", "Network Information")
     private var lastOutcome: TVTrialOutcome? = null
     private data class ReachedPeer(val target: LocalTVTarget, val port: Int, val wifi: Network)
     private var reachedPeer: ReachedPeer? = null
@@ -105,19 +109,21 @@ class TVNetworkCheckActivity : Activity() {
         header.addView(heading, LinearLayout.LayoutParams(0, -2, 1f))
         header.addView(button("Back") { back() }); root.addView(header)
         val content = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL }
+        content.addView(FeaturePictureGuide.step(skin, "wifi", "Use the same home Wi-Fi for this phone and TV. Enter the TV address shown in its network settings."))
         content.addView(words("Phone → Wi-Fi → TV", 20f))
         content.addView(words("Enter the IP address shown in your VIZIO TV’s network settings."))
+        content.addView(FeaturePictureGuide.step(skin, "address", "Copy the address from your TV into this box. Then tap Check."))
         address = EditText(this).apply {
             hint = "TV IP address"; contentDescription = "TV IP address"; tag = "tv-network-address"
             inputType = InputType.TYPE_CLASS_PHONE; maxLines = 1; setTextColor(skin.text); setHintTextColor(skin.muted)
             isSaveEnabled = false
         }
         content.addView(address)
+        result = words(IDLE).apply { tag = "tv-network-result" }; content.addView(result)
+        content.addView(words(LocalTVTarget.BOUNDARY, 15f))
         guideButton = button(addressGuide.title) { openPictureGuide(Guide.ADDRESS) }
         content.addView(guideButton)
         content.addView(words("Check contacts only this address on Wi-Fi. It sends no TV command.", 15f))
-        result = words(IDLE).apply { tag = "tv-network-result" }; content.addView(result)
-        content.addView(words(LocalTVTarget.BOUNDARY, 15f))
         start = button("Check this address", primary = true) {
             getSystemService(InputMethodManager::class.java)?.hideSoftInputFromWindow(address.windowToken, 0)
             if (token == null) begin() else stop()
@@ -173,6 +179,7 @@ class TVNetworkCheckActivity : Activity() {
         currentGuide = guide
         guideIndex = -1
         guideMismatch = false
+        recoveryHistory.clear()
         val panel = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL }
         guidePanel = panel
         form.visibility = View.GONE
@@ -199,7 +206,21 @@ class TVNetworkCheckActivity : Activity() {
             accessibilityLiveRegion = View.ACCESSIBILITY_LIVE_REGION_POLITE
         })
         if (guideMismatch) {
-            content.addView(words(if (isWiFi) "Search for Wi-Fi in Settings." else "Look up the network information for your exact TV model in VIZIO Support."))
+            if (isWiFi) {
+                content.addView(words("Search for Wi-Fi in Settings."))
+            } else {
+                content.addView(words("Check the model number on the back of your TV. If it says V505M-K09, choose what you see on the TV."))
+                recoveryChoices.forEachIndexed { index, label ->
+                    content.addView(button(label) {
+                        if (index !in steps.indices) return@button
+                        recoveryHistory.add(RecoveryJump(index, guideIndex))
+                        guideIndex = index
+                        guideMismatch = false
+                        renderPictureGuide()
+                    })
+                }
+                content.addView(words("If your model or menu differs, return to setup. Use the address from your TV’s own network settings."))
+            }
         } else {
             when {
                 step != null -> {
@@ -207,11 +228,7 @@ class TVNetworkCheckActivity : Activity() {
                     content.addView(stepPictures.picture(step, guideIndex + 1).also(skin::guideCue))
                 }
                 route != null -> content.addView(words(route.appliesTo))
-                else -> {
-                    content.addView(words("1. Open Settings."))
-                    content.addView(words("2. Search for Wi-Fi."))
-                    content.addView(words("3. Choose the home network your TV uses."))
-                }
+                else -> SetupPresentation.androidWiFiSteps.forEach { content.addView(words(it)) }
             }
             if (route != null) {
                 content.addView(button("My screen looks different") {
@@ -243,12 +260,22 @@ class TVNetworkCheckActivity : Activity() {
         guidePanel = null
         heading.text = "VIZIO network check"
         form.visibility = View.VISIBLE
+        if (currentGuide == Guide.ADDRESS) {
+            form.post { if (guidePanel == null) form.scrollTo(0, address.top) }
+        }
     }
 
     private fun back() {
+        val recovery = recoveryHistory.lastOrNull()
         when {
             guidePanel == null -> finish()
             guideMismatch -> { guideMismatch = false; renderPictureGuide() }
+            recovery != null && guideIndex == recovery.step -> {
+                recoveryHistory.removeAt(recoveryHistory.lastIndex)
+                guideIndex = recovery.origin
+                guideMismatch = true
+                renderPictureGuide()
+            }
             guideIndex >= 0 -> { guideIndex -= 1; renderPictureGuide() }
             else -> closePictureGuide()
         }

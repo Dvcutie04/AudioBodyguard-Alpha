@@ -43,17 +43,45 @@ public func boundedTVPhotoText<S: Sequence>(_ rows: S) -> String? where S.Elemen
     return text
 }
 
+/// Session-only TV label details for the picture guide.
+public struct TVModelIdentity: Equatable, Sendable {
+    public let model: String
+    public let brand, make, year, platform, platformHint: String?
+
+    public init?(number: String, brand: String? = nil, make: String? = nil, year: String? = nil) {
+        guard number.utf8.prefix(129).count <= 128 else { return nil }
+        let code = number.trimmingCharacters(in: CharacterSet(charactersIn: " \t"))
+        guard (2...40).contains(code.utf8.count),
+              code.range(of: #"^[A-Za-z0-9]+(?:[._/-][A-Za-z0-9]+)*\z"#, options: .regularExpression) != nil,
+              code.contains(where: { $0 >= "0" && $0 <= "9" }),
+              !code.contains(".") || code.contains(where: { $0.isLetter }) else { return nil }
+        model = code.uppercased()
+        let entry = AQSSSetupContent.modelCatalog[model]
+        if let brand, let entry, brand.caseInsensitiveCompare(entry.brand) != .orderedSame { return nil }
+        self.brand = entry?.brand ?? brand
+        self.make = make ?? entry?.make
+        self.year = year ?? entry?.year
+        self.platform = entry?.platform
+        self.platformHint = entry?.platformHint
+    }
+
+    public var summary: String {
+        "Model: \(model)\nBrand: \(brand ?? "Unknown") · Make: \(make ?? "Unknown")\nModel year: \(year ?? "Unknown")"
+    }
+}
+
 /// Untrusted presentation hints only. Deliberately has no connection or authority API.
 public struct TVPhotoHints {
     public let brand: String?
     public let model: String?
+    public let identity: TVModelIdentity?
     public let address: String?
     public let vizioCheckTarget: AQSSLocalTVTarget?
     public init(_ text: String) {
-        guard photoTextFits(text) else { brand = nil; model = nil; address = nil; vizioCheckTarget = nil; return }
-        let modelLabel = "MODEL(?:[ \\t]+(?:NAME|CODE|NUMBER|NO\\.?))?"
+        guard photoTextFits(text) else { brand = nil; model = nil; identity = nil; address = nil; vizioCheckTarget = nil; return }
+        let modelLabel = "(?:FULL[ \\t]+)?MODEL(?![ \\t]+YEAR\\b)(?:[ \\t]+(?:NAME|CODE|NUMBER|NO\\.?))?"
         let addressLabel = "(?:IPV4[ \\t]+IP[ \\t]+ADDRESS|IP(?:V4)?(?:[ \\t]+ADDRESS)?)"
-        let upper = text.uppercased().replacingOccurrences(of: "(?m)^[ \\t]*(\(modelLabel)|\(addressLabel))[ \\t]*[:=]?[ \\t]*\\r?\\n[ \\t]*", with: "$1: ", options: .regularExpression)
+        let upper = text.uppercased().replacingOccurrences(of: "(?m)^[ \\t]*(\(modelLabel)|\(addressLabel)|BRAND|MAKE|MANUFACTURER|MODEL[ \\t]+YEAR)[ \\t]*[:=]?[ \\t]*\\r?\\n[ \\t]*", with: "$1: ", options: .regularExpression)
         func matches(_ pattern: String) -> [String] {
             guard let re = try? NSRegularExpression(pattern: pattern, options: [.anchorsMatchLines]) else { return [] }
             let ns = upper as NSString
@@ -70,10 +98,25 @@ public struct TVPhotoHints {
                 .map { $0.trimmingCharacters(in: CharacterSet(charactersIn: " \t")) })
             return values.count == 1 ? values.first : nil
         }
-        if let candidate = labelled(modelLabel),
-           candidate.range(of: "^[A-Z0-9][A-Z0-9._-]{1,39}$", options: .regularExpression) != nil,
-           candidate.contains(where: { $0 >= "0" && $0 <= "9" }) { model = candidate }
-        else { model = nil }
+        let modelRows = matches("^[ \\t]*(\(modelLabel))(?=[ \\t:=]|$)")
+        let loneCodes = Set(upper.components(separatedBy: .newlines).map {
+            $0.trimmingCharacters(in: .whitespaces)
+        }.filter { AQSSSetupContent.modelCatalog[$0] != nil })
+        let bare = upper.trimmingCharacters(in: .whitespacesAndNewlines)
+        let candidate = modelRows.isEmpty && AQSSSetupContent.modelCatalog[bare] != nil ? bare : labelled(modelLabel)
+        model = candidate.flatMap { TVModelIdentity(number: $0)?.model }
+        func name(_ label: String) -> String? {
+            labelled(label).flatMap { $0.range(of: #"^[A-Z][A-Z0-9 &.,'()-]{0,55}\z"#, options: .regularExpression) == nil ? nil : $0 }
+        }
+        let namedBrand = name("BRAND")
+        let year = labelled("MODEL[ \\t]+YEAR").flatMap {
+            $0.range(of: #"^(19|20)[0-9]{2}\z"#, options: .regularExpression) == nil ? nil : $0
+        }
+        if let model, brands.count <= 1, loneCodes.subtracting([model]).isEmpty,
+           namedBrand == nil || brand == nil || namedBrand == brand {
+            identity = TVModelIdentity(number: model, brand: namedBrand ?? brand,
+                                       make: name("(?:MANUFACTURER|MAKE)"), year: year)
+        } else { identity = nil }
         let privateAddress = labelled(addressLabel).flatMap { Self.isPrivateIPv4($0) ? $0 : nil }
         address = privateAddress
         vizioCheckTarget = brands.isEmpty || brands == ["VIZIO"]

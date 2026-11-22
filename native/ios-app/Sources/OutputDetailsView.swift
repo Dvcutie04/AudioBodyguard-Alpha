@@ -42,7 +42,7 @@ struct OutputDetailsView: View {
     @State private var reviewing = false
     @State private var setupVisible = false
     @StateObject private var setupDraft = TestSetupDraft()
-    @State private var status = "Ready to read output details"
+    @State private var status = "Tap Check sound to see which speaker is selected."
     @State private var explanationVisible = false
 
     var body: some View {
@@ -62,13 +62,15 @@ struct OutputDetailsView: View {
     private var detailsContent: some View {
         VStack(alignment: .leading, spacing: 12) {
             HStack(spacing: 12) {
-                Text(reviewing ? (textSize.isAccessibilitySize ? "Review details" : "Review output details") : "Output details")
+                Text(reviewing ? "Sound report" : "Sound output")
                     .font(.title2.bold()).fixedSize(horizontal: false, vertical: true)
                     .accessibilityAddTraits(.isHeader).accessibilityIdentifier("output-details-heading")
                 Spacer(minLength: 0)
-                RoseButton(title: "Back", theme: theme, compact: true) {
+                Button {
                     if reviewing { reviewing = false } else { clear(); dismiss() }
-                }.accessibilityIdentifier("output-details-back")
+                } label: {
+                    Label("Back", systemImage: "chevron.left").fixedSize(horizontal: true, vertical: false)
+                }.buttonStyle(AppButtonStyle(theme: theme)).accessibilityIdentifier("output-details-back")
             }
             if reviewing, let report = snapshot {
                 ScrollView {
@@ -77,6 +79,7 @@ struct OutputDetailsView: View {
                             Text("Add setup notes").frame(maxWidth: .infinity, minHeight: 44)
                                 .contentShape(Rectangle())
                         }.buttonStyle(AppButtonStyle(theme: theme)).accessibilityIdentifier("output-details-add-notes")
+                        FeaturePictureStep(picture: "review-share", caption: "Read the details before sharing. Choose Copy or Cancel in the device menu.", theme: theme)
                         Text(report.text).font(.body).fixedSize(horizontal: false, vertical: true)
                             .frame(maxWidth: .infinity, alignment: .leading).textSelection(.enabled)
                             .accessibilityIdentifier("output-details-preview")
@@ -90,23 +93,20 @@ struct OutputDetailsView: View {
             } else {
                 ScrollView {
                     VStack(alignment: .leading, spacing: 16) {
-                        Text("Check where this phone may send audio.")
-                            .fixedSize(horizontal: false, vertical: true)
-                        Text("No sound, microphone, or TV command is used.")
-                            .font(.subheadline).fixedSize(horizontal: false, vertical: true)
-                        Text(status).font(.headline).fixedSize(horizontal: false, vertical: true)
-                            .accessibilityIdentifier("output-details-status")
+                        FeaturePictureStep(picture: "output", caption: "Check which speaker this device has selected.", theme: theme)
                         if let result = snapshot {
-                            VStack(alignment: .leading, spacing: 10) {
-                                Label(result.connectionGuide.title, systemImage: "arrow.right.circle.fill")
-                                    .font(.headline).fixedSize(horizontal: false, vertical: true)
+                            VStack(alignment: .leading, spacing: 14) {
+                                Text(soundSetting(result.connectionGuide))
+                                    .font(.title3.bold()).accessibilityAddTraits(.isHeader)
                                     .accessibilityIdentifier("output-connection-guide-title")
-                                Text(result.connectionGuide.nextStep)
-                                    .fixedSize(horizontal: false, vertical: true)
-                                    .accessibilityIdentifier("output-connection-guide-next")
-                                Text("Connection not verified • No TV command sent")
-                                    .font(.subheadline.weight(.semibold)).foregroundColor(theme.warning)
-                                    .fixedSize(horizontal: false, vertical: true)
+                                if result.connectionGuide == .phone || result.connectionGuide == .unavailable {
+                                    airPlaySteps
+                                } else {
+                                    Text(result.connectionGuide.nextStep)
+                                        .accessibilityIdentifier("output-connection-guide-next")
+                                }
+                                Text("TV connection unconfirmed. No TV command sent.")
+                                    .font(.subheadline).foregroundColor(theme.muted)
                                     .accessibilityIdentifier("output-connection-boundary")
                             }
                             .padding(16).background(theme.raised)
@@ -114,32 +114,93 @@ struct OutputDetailsView: View {
                             .overlay(RoundedRectangle(cornerRadius: 16).stroke(theme.outline, lineWidth: 1))
                             .accessibilityElement(children: .contain)
                             .accessibilityIdentifier("output-connection-guide")
-                            QuestionDisclosure(title: "Why isn’t this verified?", theme: theme,
+                            QuestionDisclosure(title: "About this check", theme: theme,
                                 isExpanded: $explanationVisible, identifier: "output-connection-explanation") {
                                 VStack(alignment: .leading, spacing: 10) {
-                                    Text("iPhone reports route types, not a checked TV identity or a physical playback result.")
+                                    Text("This check reads the speaker setting. It does not play a sound or use the microphone. To check that sound reaches the TV, listen at the TV.")
                                     Text(result.summary).font(.subheadline).fixedSize(horizontal: false, vertical: true)
                                         .accessibilityIdentifier("output-details-summary")
-                                    Text("Actual playback route: Unknown\nNegotiated format: Unknown")
-                                        .font(.subheadline).fixedSize(horizontal: false, vertical: true)
-                                    Text("Details clear after an output-change notice, when you leave the app, or when you close this screen.")
+                                    Text("Check again after switching speakers or coming back to this app.")
                                         .font(.subheadline).fixedSize(horizontal: false, vertical: true)
                                 }
                             }
+                            Button { reviewing = true } label: {
+                                Text("View sound report").frame(maxWidth: .infinity, minHeight: 44)
+                            }.buttonStyle(AppButtonStyle(theme: theme))
+                                .accessibilityIdentifier("output-details-review")
+                        } else {
+                            Text(status).font(.headline)
+                                .accessibilityIdentifier("output-details-status")
                         }
                     }.frame(maxWidth: .infinity, alignment: .leading)
+                    .fixedSize(horizontal: false, vertical: true)
+                    .padding(2)
                 }.accessibilityIdentifier("output-details-scroll")
-                Button { reviewing = snapshot != nil } label: {
-                    Text("Review output details").frame(maxWidth: .infinity, minHeight: 44)
-                }.buttonStyle(AppButtonStyle(theme: theme)).disabled(snapshot == nil)
-                    .accessibilityIdentifier("output-details-review")
                 Button(action: refresh) {
-                    Text("Refresh details").frame(maxWidth: .infinity, minHeight: 44)
+                    Text(snapshot == nil ? "Check sound" : "Check again").frame(maxWidth: .infinity, minHeight: 44)
                 }.buttonStyle(AppButtonStyle(theme: theme, primary: true)).accessibilityIdentifier("output-details-refresh")
             }
         }
         .padding(20).frame(maxWidth: 680, maxHeight: .infinity).frame(maxWidth: .infinity, maxHeight: .infinity)
         .foregroundColor(theme.text).accentColor(theme.accent).background(theme.background.ignoresSafeArea())
+    }
+
+    private var deviceName: String {
+        UIDevice.current.userInterfaceIdiom == .pad ? "iPad" : "iPhone"
+    }
+
+    private func soundSetting(_ guide: IOSConnectionGuide) -> String {
+        switch guide {
+        case .phone: return "Sound is set to this \(deviceName)."
+        case .personalAudio: return "Headphones or Bluetooth audio are selected."
+        case .homeAudioCandidate: return "AirPlay or HDMI is selected."
+        case .externalAudio: return "A cable or accessory is selected."
+        case .mixed: return "Check which speaker is selected."
+        case .unavailable: return "The speaker setting is unknown."
+        }
+    }
+
+    private var airPlaySteps: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Text("To hear your \(deviceName) on your TV").font(.headline)
+                .accessibilityIdentifier("output-connection-guide-next")
+            Text("1. Swipe down from the top-right corner to open Control Center.")
+            if UIDevice.current.userInterfaceIdiom == .phone {
+                Text("If your iPhone has a round Home button, swipe up from the bottom instead.")
+                    .font(.subheadline)
+            }
+            Text("2. In the music controls, tap the AirPlay symbol shown below.")
+            airPlayPicture
+            Text("3. Tap your TV’s name. If you don’t see it, check that your TV supports AirPlay and uses the same Wi-Fi as your \(deviceName).")
+            Text("4. Come back here and tap Check sound to see the new setting.")
+        }
+    }
+
+    // A noninteractive illustration of the music tile, with the audio destination circled.
+    private var airPlayPicture: some View {
+        VStack(spacing: 12) {
+            HStack {
+                Image(systemName: "music.note")
+                    .frame(width: 40, height: 40).background(theme.raised).cornerRadius(6)
+                Spacer()
+                Image(systemName: "airplayaudio")
+                    .font(.system(size: 30, weight: .semibold)).frame(width: 52, height: 52)
+                    .background(Circle().fill(theme.control)).foregroundColor(theme.controlText)
+                    .overlay(Circle().stroke(theme.controlBorder, lineWidth: 3))
+            }
+            HStack(spacing: 22) {
+                Image(systemName: "backward.fill")
+                Image(systemName: "play.fill")
+                Image(systemName: "forward.fill")
+            }.font(.system(size: 18))
+        }
+        .padding(12).frame(maxWidth: 188)
+        .background(RoundedRectangle(cornerRadius: 14).fill(theme.surface))
+        .overlay(RoundedRectangle(cornerRadius: 14).stroke(theme.outline, lineWidth: 2))
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel("Picture of the music controls. The AirPlay symbol is circled at the top right. It looks like a triangle with rings above it.")
+        .accessibilityAddTraits(.isImage)
+        .accessibilityIdentifier("output-airplay-picture")
     }
 
     private func beginSetup(_ report: OutputDetailsSnapshot) {
@@ -149,20 +210,20 @@ struct OutputDetailsView: View {
 
     private func clear() {
         snapshot = nil; reviewing = false; explanationVisible = false
-        status = "Ready to read output details"
+        status = "Tap Check sound to see which speaker is selected."
     }
     private func changed() {
-        clear(); status = "Output details may have changed. Tap Refresh details."
+        clear(); status = "The speaker setting may have changed. Tap Check sound."
     }
     private func refresh() {
         guard scenePhase == .active else { return }
         clear()
         guard ForegroundMicrophoneGate.shared.available else {
-            status = ForegroundMicrophoneGate.shared.blocked ? "Audio cleanup is unresolved. Close this app before trying again." :
-                "Stop the sound or voice check before refreshing these details."
+            status = ForegroundMicrophoneGate.shared.blocked ? "Close Audio Bodyguard, then open it again to check the speaker." :
+                "Stop the sound or voice check, then tap Check sound."
             return
         }
-        do { snapshot = try SessionOutputReader.capture(); status = "Check complete. Follow the next step below." }
-        catch { status = "Output details are unavailable. Check this phone’s date, then try Refresh details." }
+        do { snapshot = try SessionOutputReader.capture() }
+        catch { status = "The speaker setting could not be read. Check the date on this device, then tap Check sound." }
     }
 }

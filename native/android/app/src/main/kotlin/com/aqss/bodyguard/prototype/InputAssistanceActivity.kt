@@ -12,6 +12,7 @@ import android.speech.*
 import android.view.View
 import android.widget.*
 import com.aqss.nativefeedback.LocalTVTarget
+import com.aqss.nativefeedback.TVModelIdentity
 import com.aqss.nativefeedback.TVPhotoHints
 import com.aqss.nativefeedback.PhotoReviewRun
 import com.aqss.nativefeedback.PhotoWorkSlot
@@ -336,6 +337,8 @@ class InputAssistanceActivity : Activity() {
     private val worker = Executors.newSingleThreadExecutor()
     private var instructions: TextView? = null
     private var photoBrand: String? = null
+    private val readingGuideModel get() = intent.getStringExtra("mode") == "modelPhoto"
+    private var pendingGuideModel: TVModelIdentity? = null
     private var useBrand: Button? = null
     private var photoExtra: TextView? = null
     private var photoTarget: LocalTVTarget? = null
@@ -364,7 +367,7 @@ class InputAssistanceActivity : Activity() {
         skin = InterfaceTheme(this, dark)
         val root = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; setPadding(skin.dp(16), skin.dp(28), skin.dp(16), skin.dp(16)); setBackgroundColor(skin.background) }
         val header = LinearLayout(this)
-        header.addView(TextView(this).apply { text = if (isVoice) "Voice check" else "TV photo setup"; textSize = 24f; setTextColor(skin.text) }, LinearLayout.LayoutParams(0, -2, 1f))
+        header.addView(TextView(this).apply { text = if (isVoice) "Voice check" else if (readingGuideModel) "Read model from photo" else "TV photo setup"; textSize = 24f; setTextColor(skin.text) }, LinearLayout.LayoutParams(0, -2, 1f))
         header.addView(roseButton(this, skin, "Close") { finish() })
         root.addView(header)
         column = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; setPadding(0, skin.dp(12), 0, 0) }
@@ -380,6 +383,10 @@ class InputAssistanceActivity : Activity() {
             }
             insets
         }
+        column.addView(FeaturePictureGuide.step(skin,
+            if (isVoice) "voice" else "photo",
+            if (isVoice) "Tap Start voice check, speak, then read the words shown below."
+            else "Aim at the TV model label. Keep the letters and numbers clear."))
         if (isVoice) voicePage() else photoPage()
     }
     private fun label(value: String, large: Boolean = false): TextView = TextView(this).apply {
@@ -660,12 +667,20 @@ class InputAssistanceActivity : Activity() {
     }
     private fun photoPage() {
         val fromTutorial = intent.getBooleanExtra("fromTutorial", false)
-        label("Find your TV details", true)
-        label("Photograph your TV’s model label, About screen, or IP address row. Keep passwords out of the picture.")
+        if (readingGuideModel) {
+            label("Take a clear picture of the model number on your TV label or About screen.")
+        } else {
+            label("Find your TV details", true)
+            label("Photograph your TV’s model label, About screen, or IP address row. Keep passwords out of the picture.")
+        }
         action("Take a TV photo", primary = true) { selectPhoto(camera = true) }
         action("Choose a photo") { selectPhoto(camera = false) }
         status = label("No photo selected", true)
         details = label("Brand: Not identified").apply { visibility = View.GONE }
+        if (readingGuideModel) return
+        photoExtra = label("Model: Not identified\nTV IP hint: Not identified").apply {
+            visibility = View.GONE
+        }
         if (fromTutorial) {
             useBrand = action("Use brand and continue", primary = true) {
                 photoBrand?.lowercase()?.let { id ->
@@ -682,9 +697,6 @@ class InputAssistanceActivity : Activity() {
                     usePhotoAddress?.isEnabled = true
                 }
             }.apply { visibility = View.GONE }
-        }
-        photoExtra = label("Model: Not identified\nTV IP hint: Not identified").apply {
-            visibility = View.GONE
         }
         label("Check the suggested details on your TV. A photo does not connect it. Choosing another picture clears these details.")
         action("? Photo help") {
@@ -712,7 +724,17 @@ class InputAssistanceActivity : Activity() {
         usePhotoAddress?.visibility = reviewVisibility
     }
 
+    private fun returnGuideModel() {
+        val model = pendingGuideModel ?: return
+        if (!visible || isFinishing || isDestroyed) return
+        pendingGuideModel = null
+        setResult(RESULT_OK, Intent().putExtra("model", model.model).putExtra("brand", model.brand)
+            .putExtra("make", model.make).putExtra("year", model.year))
+        finish()
+    }
+
     private fun clearPhoto() {
+        pendingGuideModel = null
         waitingForPhotoWork = false
         stopPhotoWatchdog()
         pendingPhoto = null; photoRun.clear(); cameraPhoto?.close(); cameraPhoto = null; photoBrand = null
@@ -860,6 +882,12 @@ class InputAssistanceActivity : Activity() {
                 val hints = TVPhotoHints(text ?: "")
                 runOnUiThread {
                     if (acceptPhoto(token)) {
+                        if (readingGuideModel) {
+                            pendingGuideModel = hints.identity
+                            if (pendingGuideModel == null) status.text = "Couldn’t identify one model. Try a closer photo, or close this screen and type the number."
+                            else returnGuideModel()
+                            return@runOnUiThread
+                        }
                         details.text = "Brand: ${hints.brand ?: "Not identified"}"
                         details.visibility = if (hints.brand == null) View.GONE else View.VISIBLE
                         photoExtra?.text = "Model: ${hints.model ?: "Not identified"}\nTV IP hint: ${hints.address ?: "Not identified"}"
@@ -904,6 +932,7 @@ class InputAssistanceActivity : Activity() {
     }
     override fun onResume() {
         super.onResume(); visible = true
+        if (pendingGuideModel != null) { returnGuideModel(); return }
         usePhotoAddress?.isEnabled = true
         readingPhoto?.let { if (!photoRun.isReading(it)) showPhotoEnd(it) }
         if (isVoice) refreshVoicePermissionGuidance() else observePhotoWork()
