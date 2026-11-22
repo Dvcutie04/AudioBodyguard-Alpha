@@ -6,6 +6,8 @@
     <queries><intent><action android:name="android.speech.RecognitionService" /></intent></queries>
     <application
         android:label="@string/app_name"
+        android:icon="@mipmap/ic_launcher"
+        android:roundIcon="@mipmap/ic_launcher"
         android:theme="@style/AQSSLaunchTheme">
         <provider android:name=".TVPhotoFileProvider"
             android:authorities="${applicationId}.tvphotos"
