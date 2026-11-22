@@ -2269,7 +2269,7 @@ def main():
             screenshot(f"{case_prefix}_native_ocr_result")
             if case_prefix == "photo":
                 wait_for("Address read from photo: 10.20.30.40", "photo_address_review")
-                tap("Use address in VIZIO check", "photo_address_confirm")
+                reveal("Use address in VIZIO check", "photo_address_confirm")
                 check = wait_for_all(("VIZIO network check", "Ready to check the address you enter."), "photo_address_idle_check")
                 field = next(n for n in check.iter("node") if n.get("class") == "android.widget.EditText")
                 assert field.get("text") == "10.20.30.40" and field.get("enabled") == "true"

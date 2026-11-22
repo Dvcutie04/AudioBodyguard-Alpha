@@ -678,6 +678,9 @@ class InputAssistanceActivity : Activity() {
         status = label("No photo selected", true)
         details = label("Brand: Not identified").apply { visibility = View.GONE }
         if (readingGuideModel) return
+        photoExtra = label("Model: Not identified\nTV IP hint: Not identified").apply {
+            visibility = View.GONE
+        }
         if (fromTutorial) {
             useBrand = action("Use brand and continue", primary = true) {
                 photoBrand?.lowercase()?.let { id ->
@@ -694,9 +697,6 @@ class InputAssistanceActivity : Activity() {
                     usePhotoAddress?.isEnabled = true
                 }
             }.apply { visibility = View.GONE }
-        }
-        photoExtra = label("Model: Not identified\nTV IP hint: Not identified").apply {
-            visibility = View.GONE
         }
         label("Check the suggested details on your TV. A photo does not connect it. Choosing another picture clears these details.")
         action("? Photo help") {
