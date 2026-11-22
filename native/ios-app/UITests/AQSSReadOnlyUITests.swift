@@ -636,7 +636,48 @@ final class AQSSReadOnlyUITests: XCTestCase {
         XCTAssertTrue(preview.waitForExistence(timeout: 5)); XCTAssertTrue(preview.label.contains("Playback phone: Unknown"))
         app.buttons["test-setup-back"].tap(); try fillTestSetup(app)
         XCUIDevice.shared.orientation = .landscapeLeft
-        app.buttons["test-setup-review"].tap()
+        // A preserved iPad 18.5 failure tapped an intermediate rotation frame
+        // (471.7 x 271.9), not the settled Review control (541 x 61).
+        // Observe stable, hittable geometry before the one original tap.
+        // No retries, fixed sleeps or changes to the five-second preview check.
+        let reviewAfterRotation = app.buttons["test-setup-review"]
+        var previousLayout: (window: CGRect, button: CGRect)?
+        var stableSince: TimeInterval?
+        var readinessSamples = 0
+        var lastReadiness = "No review geometry observed"
+        let layoutReady = XCTNSPredicateExpectation(predicate: NSPredicate { _, _ in
+            guard reviewAfterRotation.exists, reviewAfterRotation.isEnabled,
+                  reviewAfterRotation.isHittable else {
+                lastReadiness = "Review not present, enabled and hittable"
+                previousLayout = nil; stableSince = nil; return false
+            }
+            let window = app.frame
+            let button = reviewAfterRotation.frame
+            readinessSamples += 1
+            lastReadiness = "Sample \(readinessSamples): window=\(window), review=\(button)"
+            let dimensions = [window.minX, window.minY, window.width, window.height,
+                              button.minX, button.minY, button.width, button.height]
+            guard dimensions.allSatisfy({ $0.isFinite }), window.width > window.height,
+                  window.height > 0, button.width >= 44, button.height >= 44,
+                  window.contains(button) else {
+                lastReadiness += "; geometry not landscape, in-bounds and at least 44pt"
+                previousLayout = nil; stableSince = nil; return false
+            }
+            let now = ProcessInfo.processInfo.systemUptime
+            guard let previous = previousLayout, previous.window == window,
+                  previous.button == button, let since = stableSince else {
+                lastReadiness += "; awaiting matching subsequent frame"
+                previousLayout = (window, button); stableSince = now; return false
+            }
+            lastReadiness += "; matching frame for \(now - since) seconds"
+            return now >= since && now - since >= 0.25
+        }, object: nil)
+        guard XCTWaiter.wait(for: [layoutReady], timeout: 3) == .completed else {
+            screenshot("Worksheet rotation did not settle before Review", app)
+            XCTFail("Require stable landscape Review geometry before the first tap; last observation: \(lastReadiness). \(app.debugDescription)")
+            return
+        }
+        reviewAfterRotation.tap()
         XCTAssertTrue(preview.waitForExistence(timeout: 5)); let reviewed = preview.label
         XCTAssertTrue(reviewed.contains("Phone speaker"))
         XCUIDevice.shared.orientation = .portrait
@@ -913,6 +954,11 @@ final class AQSSReadOnlyUITests: XCTestCase {
         }
         let app = launch()
         tab("settings", app)
+        guard app.staticTexts["page-settings"].waitForExistence(timeout: 5) else {
+            screenshot("Settings missing after selecting the tab", app)
+            XCTFail("Selecting Settings once must open Settings before reviewing a report: \(app.debugDescription)")
+            throw NSError(domain: "AQSSBuildShare", code: 8)
+        }
         if supportReport { tap("Advanced Settings", app); tap("About Private support report", app) }
         else { tap("Build details", app) }
         let share = app.buttons[supportReport ? "share-support-report" : "share-build-details"]
@@ -2043,6 +2089,10 @@ final class AQSSReadOnlyUITests: XCTestCase {
             ("settings", "Open Appearance", "Pick a background")
         ] {
             if page != "home" { tab(page, app) }
+            let illustrations = ["home": "open-guide", "sound": "start-mic", "devices": "choose-tv", "insights": "recent", "settings": "day-night"]
+            XCTAssertTrue(app.descendants(matching: .any)["task-picture-" + illustrations[page]!].firstMatch.exists,
+                          "The page must show its picture without opening help.")
+            screenshot("Always visible picture at largest text " + page, app)
             let button = app.buttons["picture-guide-" + page]
             XCTAssertTrue(button.waitForExistence(timeout: 5))
             try reachScrollControl(button, in: app.scrollViews["home-scroll"], app: app)

@@ -383,6 +383,10 @@ class InputAssistanceActivity : Activity() {
             }
             insets
         }
+        column.addView(FeaturePictureGuide.step(skin,
+            if (isVoice) "voice" else "photo",
+            if (isVoice) "Tap Start voice check, speak, then read the words shown below."
+            else "Aim at the TV model label. Keep the letters and numbers clear."))
         if (isVoice) voicePage() else photoPage()
     }
     private fun label(value: String, large: Boolean = false): TextView = TextView(this).apply {
@@ -674,6 +678,9 @@ class InputAssistanceActivity : Activity() {
         status = label("No photo selected", true)
         details = label("Brand: Not identified").apply { visibility = View.GONE }
         if (readingGuideModel) return
+        photoExtra = label("Model: Not identified\nTV IP hint: Not identified").apply {
+            visibility = View.GONE
+        }
         if (fromTutorial) {
             useBrand = action("Use brand and continue", primary = true) {
                 photoBrand?.lowercase()?.let { id ->
@@ -690,9 +697,6 @@ class InputAssistanceActivity : Activity() {
                     usePhotoAddress?.isEnabled = true
                 }
             }.apply { visibility = View.GONE }
-        }
-        photoExtra = label("Model: Not identified\nTV IP hint: Not identified").apply {
-            visibility = View.GONE
         }
         label("Check the suggested details on your TV. A photo does not connect it. Choosing another picture clears these details.")
         action("? Photo help") {

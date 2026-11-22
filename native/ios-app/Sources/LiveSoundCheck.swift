@@ -227,6 +227,7 @@ struct LiveSoundCheckView: View {
             }.padding()
             ScrollView {
                 VStack(alignment: .leading, spacing: 18) {
+                    FeaturePictureStep(picture: "start-mic", caption: "Tap Start sound check. Speak, then watch the bars. Tap Stop sound check to finish.", theme: theme)
                     Text("Try a 30-second microphone check. Speak normally and watch the bars respond.")
                     Text("This check may pause other audio on your iPhone.").font(.caption).foregroundColor(theme.muted)
                     Text(check.status).font(.headline).accessibilityIdentifier("sound-check-status")
@@ -307,6 +308,7 @@ struct RecentSoundChecksView: View {
             ScrollView {
                 VStack(alignment: .leading, spacing: 18) {
                     Text("Up to five completed checks, most recent first. Kept in memory; cleared when this app process ends.")
+                    FeaturePictureStep(picture: "recent", caption: "Each entry below is one completed check. An empty list means there are no completed checks in this app session.", theme: theme)
                     if rows.isEmpty {
                         Text("No completed sound checks in this app session.")
                             .accessibilityIdentifier("sound-recaps-empty")
@@ -354,6 +356,7 @@ private struct RecapSupportReportView: View {
             }.padding(20)
             ScrollView {
                 VStack(alignment: .leading, spacing: 20) {
+                    FeaturePictureStep(picture: "review-share", caption: "Read the report before sharing. Choose Copy to copy it, or Cancel to go back.", theme: theme)
                     SupportReportReviewContent(theme: theme, report: report, includeRecentChecks: $includeRecentChecks)
                 }.frame(maxWidth: .infinity, alignment: .leading).padding(20)
             }.accessibilityIdentifier("recap-report-scroll")

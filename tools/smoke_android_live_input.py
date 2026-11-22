@@ -211,6 +211,21 @@ def main():
             return False
         raise AssertionError(f"Missing tap target: {text}")
 
+    def reveal(label, name):
+        for attempt in range(10):
+            root, clicked = screen(f"{name}_{attempt}", click=label)
+            if clicked:
+                return
+            viewport = next((n for n in root.iter("node") if n.get("class") == "android.widget.ScrollView"), None)
+            if viewport is None:
+                # A single empty FrameLayout can be published during a native transition.
+                time.sleep(.5)
+                continue
+            x0, y0, x1, y1 = map(int, re.findall(r"-?\d+", viewport.get("bounds")))
+            x = (x0 + x1) // 2
+            adb("shell", "input", "swipe", str(x), str(int(y0 + (y1-y0)*.8)), str(x), str(int(y0 + (y1-y0)*.2)), "300")
+        raise AssertionError("Unreachable control: " + label)
+
     def tap(text, name, optional=False):
         # Secondary destinations now live in the same contextual help menus
         # users open. Exercise those controls before reaching the real screen.
@@ -219,7 +234,6 @@ def main():
             "Advanced Settings": ("? More settings", "Jump to Advanced Settings"),
             "Test setup. Record the two-phone test arrangement": ("? More sound tools", "Jump to Test setup"),
             "Output inventory. Check this phone’s available audio outputs": ("? More sound tools", "Jump to Output inventory"),
-            "TV photo setup. Read a model label or Network settings photo": ("? Device help", "TV photo setup. Read a model label or settings photo"),
             "Show photo details": ("? Photo help", "Show photo details"),
         }
         if text not in routes:
@@ -700,20 +714,6 @@ def main():
         wifi_steps = ("1. Open Settings.", "2. Search for Wi-Fi.", "3. Choose the home network your TV uses.")
         phone_titles = {"google": "Google Pixel", "samsung": "Samsung Galaxy"}
 
-        def reveal(label, name):
-            for attempt in range(10):
-                root, clicked = screen(f"{name}_{attempt}", click=label)
-                if clicked:
-                    return
-                viewport = next((n for n in root.iter("node") if n.get("class") == "android.widget.ScrollView"), None)
-                if viewport is None:
-                    # A single empty FrameLayout can be published during a native transition.
-                    time.sleep(.5)
-                    continue
-                x0, y0, x1, y1 = map(int, re.findall(r"-?\d+", viewport.get("bounds")))
-                x = (x0 + x1) // 2
-                adb("shell", "input", "swipe", str(x), str(int(y0 + (y1-y0)*.8)), str(x), str(int(y0 + (y1-y0)*.2)), "300")
-            raise AssertionError("Unreachable control: " + label)
         def check_roku_handoff():
             reveal("Replay connection guide", "roku_handoff_replay")
             tap("Start picture setup", "roku_handoff_start")
@@ -1679,6 +1679,15 @@ def main():
         ]:
             tag = "feature_pictures_" + page.lower()
             tap(page, tag + "_page")
+            captions = {
+                "Home": "Open the TV guide below. Follow one picture at a time.",
+                "Sound": "Choose a sound tool below. Start begins a check; Stop ends it.",
+                "Devices": "Choose your TV brand, then follow the pictures for your TV system.",
+                "Insights": "Open Recent sound checks to see the checks you completed.",
+                "Settings": "Tap Appearance to choose a light or dark background.",
+            }
+            wait_for(captions[page], tag + "_visible_picture")
+            screenshot(tag + "_visible_picture")
             guide_tap("Picture guide", tag + "_open")
             wait_for_all((title, "1. " + entry), tag + "_first_step")
             screenshot(tag)
@@ -2223,7 +2232,8 @@ def main():
 
     def photo_fixture_case(fixture_name, display_name, case_prefix, expected):
         tap("Devices", f"{case_prefix}_devices_page")
-        tap("TV photo setup. Read a model label or Network settings photo", "open_photo_check")
+        reveal("? Device help", f"{case_prefix}_open_device_help")
+        reveal("TV photo setup. Read a model label or settings photo", f"{case_prefix}_open_photo_check")
         empty = wait_for("No photo selected", f"{case_prefix}_starts_empty")
         assert not has(empty, "Brand:") and not has(empty, "Model:") and not has(empty, "TV IP hint:"), "New photo screen must keep optional details hidden"
         if case_prefix == "photo":
@@ -2259,7 +2269,7 @@ def main():
             screenshot(f"{case_prefix}_native_ocr_result")
             if case_prefix == "photo":
                 wait_for("Address read from photo: 10.20.30.40", "photo_address_review")
-                tap("Use address in VIZIO check", "photo_address_confirm")
+                reveal("Use address in VIZIO check", "photo_address_confirm")
                 check = wait_for_all(("VIZIO network check", "Ready to check the address you enter."), "photo_address_idle_check")
                 field = next(n for n in check.iter("node") if n.get("class") == "android.widget.EditText")
                 assert field.get("text") == "10.20.30.40" and field.get("enabled") == "true"

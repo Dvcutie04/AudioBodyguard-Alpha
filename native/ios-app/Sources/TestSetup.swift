@@ -37,9 +37,12 @@ struct TestSetupView: View {
             }
             if let report = draft.reviewed {
                 ScrollView {
-                    Text(report.text).font(.body).fixedSize(horizontal: false, vertical: true)
-                        .frame(maxWidth: .infinity, alignment: .leading).textSelection(.enabled)
-                        .accessibilityIdentifier("test-setup-preview")
+                    VStack(alignment: .leading, spacing: 12) {
+                        FeaturePictureStep(picture: "review-share", caption: "Read your notes. Share opens the device menu. Choose Copy or Cancel.", theme: theme)
+                        Text(report.text).font(.body).fixedSize(horizontal: false, vertical: true)
+                            .frame(maxWidth: .infinity, alignment: .leading).textSelection(.enabled)
+                            .accessibilityIdentifier("test-setup-preview")
+                    }
                 }.accessibilityIdentifier("test-setup-report-scroll")
                 Text(report.reviewNotice).font(.subheadline)
                     .fixedSize(horizontal: false, vertical: true).accessibilityIdentifier("test-setup-notice")
@@ -49,7 +52,8 @@ struct TestSetupView: View {
             } else {
                 ScrollView {
                     VStack(alignment: .leading, spacing: 16) {
-                        Text("Record the two-phone test arrangement. These are your notes, not verified measurements.")
+                        FeaturePictureStep(picture: "notes", caption: "Fill in the boxes you know. Then tap Review setup report.", theme: theme)
+                    Text("Record the two-phone test arrangement. These are your notes, not verified measurements.")
                             .fixedSize(horizontal: false, vertical: true)
                         Text("Every answer is optional. Leave blank for Unknown. Brief technical details only.")
                             .font(.subheadline).fixedSize(horizontal: false, vertical: true)

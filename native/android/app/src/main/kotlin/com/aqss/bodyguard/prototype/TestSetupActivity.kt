@@ -159,6 +159,7 @@ class TestSetupActivity : Activity() {
         shareButton = null
         val root = root("Test setup")
         val column = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; isFocusableInTouchMode = true }
+        column.addView(FeaturePictureGuide.step(skin, "notes", "Fill in the boxes you know. Then tap Review setup report."))
         words(column, "Record the two-phone test arrangement. These are your notes, not verified measurements.")
         words(column, "Every answer is optional. Leave blank for Unknown. Brief technical details only.", 15f)
         if (outputReport != null || quietReport != null) {
@@ -221,6 +222,7 @@ class TestSetupActivity : Activity() {
 
     private fun renderReview(report: TestSetupReportSnapshot) {
         val root = root("Review setup report")
+        root.addView(FeaturePictureGuide.step(skin, "review-share", "Read your notes before sharing. Choose Copy or Cancel in the device menu."))
         val preview = TextView(this).apply {
             text = report.text; textSize = 16f; setTextColor(skin.text); setTextIsSelectable(true)
             tag = "test-setup-report-preview"

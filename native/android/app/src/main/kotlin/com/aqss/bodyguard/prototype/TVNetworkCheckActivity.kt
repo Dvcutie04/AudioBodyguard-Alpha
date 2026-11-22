@@ -109,19 +109,21 @@ class TVNetworkCheckActivity : Activity() {
         header.addView(heading, LinearLayout.LayoutParams(0, -2, 1f))
         header.addView(button("Back") { back() }); root.addView(header)
         val content = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL }
+        content.addView(FeaturePictureGuide.step(skin, "wifi", "Use the same home Wi-Fi for this phone and TV. Enter the TV address shown in its network settings."))
         content.addView(words("Phone → Wi-Fi → TV", 20f))
         content.addView(words("Enter the IP address shown in your VIZIO TV’s network settings."))
+        content.addView(FeaturePictureGuide.step(skin, "address", "Copy the address from your TV into this box. Then tap Check."))
         address = EditText(this).apply {
             hint = "TV IP address"; contentDescription = "TV IP address"; tag = "tv-network-address"
             inputType = InputType.TYPE_CLASS_PHONE; maxLines = 1; setTextColor(skin.text); setHintTextColor(skin.muted)
             isSaveEnabled = false
         }
         content.addView(address)
+        result = words(IDLE).apply { tag = "tv-network-result" }; content.addView(result)
+        content.addView(words(LocalTVTarget.BOUNDARY, 15f))
         guideButton = button(addressGuide.title) { openPictureGuide(Guide.ADDRESS) }
         content.addView(guideButton)
         content.addView(words("Check contacts only this address on Wi-Fi. It sends no TV command.", 15f))
-        result = words(IDLE).apply { tag = "tv-network-result" }; content.addView(result)
-        content.addView(words(LocalTVTarget.BOUNDARY, 15f))
         start = button("Check this address", primary = true) {
             getSystemService(InputMethodManager::class.java)?.hideSoftInputFromWindow(address.windowToken, 0)
             if (token == null) begin() else stop()
@@ -258,6 +260,9 @@ class TVNetworkCheckActivity : Activity() {
         guidePanel = null
         heading.text = "VIZIO network check"
         form.visibility = View.VISIBLE
+        if (currentGuide == Guide.ADDRESS) {
+            form.post { if (guidePanel == null) form.scrollTo(0, address.top) }
+        }
     }
 
     private fun back() {

@@ -77,6 +77,7 @@ class OutputInventoryActivity : Activity() {
             text = value; textSize = size; setTextColor(skin.text)
             setPadding(0, skin.dp(10), 0, skin.dp(10)); column.addView(this)
         }
+        column.addView(FeaturePictureGuide.step(skin, "output", "Look below for the outputs this phone reports. Use the phone’s output picker to choose where sound goes."))
         words("Find a TV or home-audio option without playing sound.")
         words("No sound, microphone, or TV command is used.", 15f)
         connectionGuide = words(GUIDE_IDLE, 18f).apply { tag = "output-connection-guide" }
@@ -254,7 +255,12 @@ class OutputInventoryActivity : Activity() {
             tag = "output-report-preview"; setTextIsSelectable(true)
             setPadding(0, skin.dp(12), 0, skin.dp(12))
         }
-        root.addView(ScrollView(this).apply { addView(preview) }, LinearLayout.LayoutParams(-1, 0, 1f))
+        val reportContent = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            addView(FeaturePictureGuide.step(skin, "review-share", "Read the result before sharing. Choose Copy or Cancel in the device menu."))
+            addView(preview)
+        }
+        root.addView(ScrollView(this).apply { addView(reportContent) }, LinearLayout.LayoutParams(-1, 0, 1f))
         root.addView(TextView(this).apply {
             text = "Snapshot only. Outputs may have changed."; textSize = 14f
             setTextColor(skin.text); setPadding(0, skin.dp(8), 0, 0)
