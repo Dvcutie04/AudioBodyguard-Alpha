@@ -61,9 +61,10 @@ class LiveSoundCheckActivity : Activity() {
             this.text = value; textSize = size; setTextColor(skin.text)
             setPadding(0, skin.dp(12), 0, skin.dp(12)); column.addView(this)
         }
+        status = text("Microphone off", 21f)
+        level = text("No live input", 22f)
         column.addView(FeaturePictureGuide.step(skin, "start-mic", "Tap Start sound check. Speak, then watch the bars. Tap Stop sound check to finish."))
         text("Try a 30-second microphone check. Speak normally and watch the bars respond.")
-        status = text("Microphone off", 21f)
         permissionSettings = Button(this).apply {
             this.text = "Open app settings"; skin.style(this); visibility = View.GONE
             setOnClickListener { openPermissionSettings() }
@@ -72,7 +73,6 @@ class LiveSoundCheckActivity : Activity() {
         meter = LiveInputMeter(this, skin)
         val meterHeight = if (resources.configuration.orientation == Configuration.ORIENTATION_LANDSCAPE) 84 else 135
         column.addView(meter, LinearLayout.LayoutParams(-1, skin.dp(meterHeight)))
-        level = text("No live input", 22f)
         text("Relative microphone input · not calibrated room loudness", 15f).setTextColor(skin.muted)
         column.addView(Button(this).apply {
             this.text = "[?] What does this show?"; skin.style(this)
