@@ -24,8 +24,8 @@ jobs:
     runs-on: macos-15
     env:
       DEVELOPER_DIR: /Applications/Xcode_26.3.app/Contents/Developer
-    # Pictures export every brand walkthrough. Navigation also packages the simulator app.
-    timeout-minutes: ${{ matrix.suite == 'tools' && 35 || 65 }}
+    # Allow time for simulator tests, evidence export, and packaging.
+    timeout-minutes: 65
     steps:
       - uses: actions/checkout@v4
         with:
