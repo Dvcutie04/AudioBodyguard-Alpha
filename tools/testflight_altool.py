@@ -17,7 +17,7 @@ def require_success(operation, returncode, output):
         raise ValueError(f'Apple {operation} reported an error; acceptance is unverified')
     verb = 'validating' if operation == 'validate' else 'uploading'
     banner = 'VERIFY|VALIDATION' if operation == 'validate' else 'UPLOAD'
-    confirmed = re.search(rf'^\s*(?:{banner}) SUCCEEDED with no errors\s*$', output, re.M)
+    confirmed = re.search(rf'^\s*(?:{banner}) SUCCEEDED with no errors(?:, [0-9]+ warnings?)?\s*$', output, re.M)
     confirmed = confirmed or re.search(rf'\bNo errors {verb} archive at ', output)
     if not confirmed:
         raise ValueError(f'Apple {operation} did not explicitly confirm success')

@@ -10,6 +10,8 @@ from tools.testflight_altool import require_success
 @pytest.mark.parametrize(('operation', 'output'), [
     ('validate', "No errors validating archive at '/tmp/app.ipa'.\n"),
     ('validate', 'VERIFY SUCCEEDED with no errors\n'),
+    ('validate', 'VERIFY SUCCEEDED with no errors, 1 warning\n'),
+    ('upload', 'UPLOAD SUCCEEDED with no errors, 2 warnings\n'),
     ('upload', "No errors uploading archive at '/tmp/app.ipa'.\n"),
     ('upload', 'UPLOAD SUCCEEDED with no errors\nDelivery UUID: example\n'),
 ])
@@ -22,6 +24,10 @@ def test_explicit_acceptance(operation, output):
     '',
     "Running altool at path '/Applications/Xcode.app/.../altool'...",
     'VERIFY FAILED with 1 error\nValidation failed (409) Invalid bundle. No orientations were specified.',
+    'VERIFY SUCCEEDED with no errors, 1 warning\nValidation failed (409)',
+    'UPLOAD SUCCEEDED with no errors, 1 warning\nERROR: contradictory rejection',
+    'VERIFY SUCCEEDED with no errors, 1 warning and 1 error',
+    'UPLOAD SUCCEEDED with no errors, 1 warning and 1 error',
     'UPLOAD FAILED with 1 error\nFailed to upload package.',
     'ERROR: [ContentDelivery.Uploader] Validation failed (409)',
     'UPLOAD SUCCEEDED with no errors\nERROR: contradictory rejection',
@@ -32,9 +38,13 @@ def test_zero_exit_without_unambiguous_acceptance_fails(operation, output):
         require_success(operation, 0, output)
 
 
-def test_validation_success_does_not_prove_upload():
+@pytest.mark.parametrize('output', [
+    'No errors validating archive at /tmp/app.ipa',
+    'VERIFY SUCCEEDED with no errors, 1 warning',
+])
+def test_validation_success_does_not_prove_upload(output):
     with pytest.raises(ValueError):
-        require_success('upload', 0, 'No errors validating archive at /tmp/app.ipa')
+        require_success('upload', 0, output)
 
 
 def test_nonzero_exit_always_fails():
