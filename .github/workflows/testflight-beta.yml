@@ -144,6 +144,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           ref: ${{ needs.identify-source.outputs.revision }}
+          fetch-depth: 0
           persist-credentials: false
       - name: Select private runner temporary storage
         run: |
@@ -240,12 +241,15 @@ jobs:
             --build-number "$BUILD_NUMBER" --revision "$SOURCE_REVISION" --tree-sha "$SOURCE_TREE" \
             --workflow-run-id "$GITHUB_RUN_ID" --workflow-attempt "$GITHUB_RUN_ATTEMPT" \
             --output "$RUNNER_TEMP/testflight-upload-provenance.json"
-          python3 tools/testflight_altool.py validate --ipa "$IPA"
+          # The protected workflow owns the Apple response parser. Keep the app
+          # checkout and the signed IPA pinned to the checked source revision.
+          git show "$GITHUB_SHA:tools/testflight_altool.py" > "$TASK_DIR/testflight_altool.py"
+          python3 "$TASK_DIR/testflight_altool.py" validate --ipa "$IPA"
       - name: Upload to Apple without inviting testers
         shell: bash
         run: |
           set -euo pipefail
-          python3 tools/testflight_altool.py upload --ipa "$TASK_DIR/export/AQSSReadOnly.ipa"
+          python3 "$TASK_DIR/testflight_altool.py" upload --ipa "$TASK_DIR/export/AQSSReadOnly.ipa"
           python3 - <<'PY'
           import json, os, pathlib, subprocess
           path = pathlib.Path(os.environ['RUNNER_TEMP'])/'testflight-upload-provenance.json'
